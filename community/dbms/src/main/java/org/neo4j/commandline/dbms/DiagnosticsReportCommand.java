@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -67,11 +66,14 @@ public class DiagnosticsReportCommand implements AdminCommand
     private static final OptionalNamedArg destinationArgument =
             new OptionalCanonicalPath( "to", System.getProperty( "java.io.tmpdir" ), "reports" + File.separator,
                     "Destination directory for reports" );
+    public static final String PID_KEY = "pid";
+    private static final long NO_PID = 0;
     private static final Arguments arguments = new Arguments()
             .withArgument( new OptionalListArgument() )
             .withArgument( destinationArgument )
             .withArgument( new OptionalVerboseArgument() )
             .withArgument( new OptionalForceArgument() )
+            .withArgument( new OptionalNamedArg( PID_KEY, "1234", "", "Specify process id of running neo4j instance" ) )
             .withPositionalArgument( new ClassifierFiltersArgument() );
 
     private final Path homeDir;
@@ -85,6 +87,7 @@ public class DiagnosticsReportCommand implements AdminCommand
     private final PrintStream err;
     private static final DateTimeFormatter filenameDateTimeFormatter =
             new DateTimeFormatterBuilder().appendPattern( "yyyy-MM-dd_HHmmss" ).toFormatter();
+    private long pid;
 
     DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -103,9 +106,10 @@ public class DiagnosticsReportCommand implements AdminCommand
     @Override
     public void execute( String[] stringArgs ) throws IncorrectUsage, CommandFailed
     {
-        Args args = Args.withFlags( "list", "to", "verbose", "force" ).parse( stringArgs );
+        Args args = Args.withFlags( "list", "to", "verbose", "force", PID_KEY ).parse( stringArgs );
         verbose = args.has( "verbose" );
         jmxDumper = new JMXDumper( homeDir, fs, out, err, verbose );
+        pid = parsePid( args );
         boolean force = args.has( "force" );
 
         DiagnosticsReporter reporter = createAndRegisterSources();
@@ -130,6 +134,22 @@ public class DiagnosticsReportCommand implements AdminCommand
         {
             throw new CommandFailed( "Creating archive failed", e );
         }
+    }
+
+    private static long parsePid( Args args ) throws CommandFailed
+    {
+        if ( args.has( PID_KEY ) )
+        {
+            try
+            {
+                return Long.parseLong( args.get( PID_KEY, "" ) );
+            }
+            catch ( NumberFormatException e )
+            {
+                throw new CommandFailed( "Unable to parse --" + PID_KEY, e );
+            }
+        }
+        return NO_PID;
     }
 
     private String getDefaultFilename() throws UnknownHostException
@@ -171,8 +191,8 @@ public class DiagnosticsReportCommand implements AdminCommand
             if ( classifiers.size() != 1 )
             {
                 classifiers.remove( "all" );
-                throw new IncorrectUsage( "If you specify 'all' this has to be the only classifier. Found ['" +
-                        classifiers.stream().collect( Collectors.joining( "','" ) ) + "'] as well." );
+                throw new IncorrectUsage(
+                        "If you specify 'all' this has to be the only classifier. Found ['" + String.join( "','", classifiers ) + "'] as well." );
             }
         }
         else
@@ -242,7 +262,15 @@ public class DiagnosticsReportCommand implements AdminCommand
 
     private void registerJMXSources( DiagnosticsReporter reporter )
     {
-        Optional<JmxDump> jmxDump = jmxDumper.getJMXDump();
+        Optional<JmxDump> jmxDump;
+        if ( pid == NO_PID )
+        {
+            jmxDump = jmxDumper.getJMXDump();
+        }
+        else
+        {
+            jmxDump = jmxDumper.getJMXDump( pid );
+        }
         jmxDump.ifPresent( jmx ->
         {
             reporter.registerSource( "threads", jmx.threadDump() );

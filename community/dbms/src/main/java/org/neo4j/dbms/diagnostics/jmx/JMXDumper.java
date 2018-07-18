@@ -21,12 +21,17 @@ package org.neo4j.dbms.diagnostics.jmx;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+
+import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.PID_KEY;
 
 /**
  * Facilitates JMX Dump for current running Neo4j instance.
@@ -55,35 +60,42 @@ public class JMXDumper
         Optional<Long> pid = getPid();
         if ( pid.isPresent() )
         {
-            try
-            {
-                LocalVirtualMachine vm = LocalVirtualMachine.from( pid.get() );
-                out.println( "Attached to running process with process id " + pid.get() );
-                try
-                {
-                    JmxDump jmxDump = JmxDump.connectTo( vm.getJmxAddress() );
-                    jmxDump.attachSystemProperties( vm.getSystemProperties() );
-                    out.println( "Connected to JMX endpoint" );
-                    return Optional.of( jmxDump );
-                }
-                catch ( IOException e )
-                {
-                    printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
-                }
-            }
-            catch ( java.lang.NoClassDefFoundError e )
-            {
-                printError( "Unable to attach to process. Reason: JDK is not available, please point " +
-                        "environment variable JAVA_HOME to a valid JDK location.", e);
-            }
-            catch ( IOException e )
-            {
-                printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
-            }
+            return getJMXDump( pid.get() );
         }
         else
         {
             out.println( "No running instance of neo4j was found. Online reports will be omitted." );
+            out.println( "If neo4j is running but not detected, you can supply the process id of the running instance with --" + PID_KEY );
+            return Optional.empty();
+        }
+    }
+
+    public Optional<JmxDump> getJMXDump( long pid )
+    {
+        try
+        {
+            LocalVirtualMachine vm = LocalVirtualMachine.from( pid );
+            out.println( "Attached to running process with process id " + pid );
+            try
+            {
+                JmxDump jmxDump = JmxDump.connectTo( vm.getJmxAddress() );
+                jmxDump.attachSystemProperties( vm.getSystemProperties() );
+                out.println( "Connected to JMX endpoint" );
+                return Optional.of( jmxDump );
+            }
+            catch ( IOException e )
+            {
+                printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
+            }
+        }
+        catch ( java.lang.NoClassDefFoundError e )
+        {
+            printError( "Unable to attach to process. Reason: JDK is not available, please point " +
+                    "environment variable JAVA_HOME to a valid JDK location.", e);
+        }
+        catch ( IOException e )
+        {
+            printError( "Unable to connect to process with process id " + pid + ". Reason: " + e.getMessage(), e );
         }
 
         return Optional.empty();
@@ -108,8 +120,9 @@ public class JMXDumper
         Path pidFile = this.homeDir.resolve( "run/neo4j.pid" );
         if ( this.fs.fileExists( pidFile.toFile() ) )
         {
-            try ( BufferedReader reader = new BufferedReader( this.fs.openAsReader( pidFile.toFile(), Charset
-                    .defaultCharset() ) ) )
+            // The file cannot be opened with write permissions on Windows
+            try ( InputStream inputStream = Files.newInputStream( pidFile, StandardOpenOption.READ );
+                    BufferedReader reader = new BufferedReader( new InputStreamReader( inputStream ) ) )
             {
                 String pidFileContent = reader.readLine();
                 try

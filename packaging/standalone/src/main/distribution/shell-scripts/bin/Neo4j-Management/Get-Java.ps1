@@ -247,6 +247,8 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
     {
       # Generate the commandline args
       $ClassPath = ''
+      # Augment with tools.jar if found
+      if (Test-Path -Path "$EnvJavaHome\lib\tools.jar") { $ClassPath += "`"$EnvJavaHome\lib\tools.jar`";" }
       # Enumerate all JARS in the lib directory and add to the class path
       Get-ChildItem -Path (Join-Path  -Path $Neo4jServer.Home -ChildPath 'lib') | Where-Object { $_.Extension -eq '.jar'} | % {
         $ClassPath += "`"$($_.FullName)`";"
