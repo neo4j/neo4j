@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.bolt.runtime.BoltResult;
@@ -95,6 +96,12 @@ class CypherAdapterStream implements BoltResult
         {
             visitor.addMetadata( "notifications", NotificationConverter.convert( notifications ) );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "CypherAdapterStream{" + "delegate=" + delegate + ", fieldNames=" + Arrays.toString( fieldNames ) + '}';
     }
 
     private MapValue queryStats( QueryStatistics queryStatistics )

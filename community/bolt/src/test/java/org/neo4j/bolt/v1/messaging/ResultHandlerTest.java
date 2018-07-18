@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.bolt.messaging.ResponseMessage;
@@ -105,6 +106,12 @@ class ResultHandlerTest
         @Override
         public void close()
         {
+        }
+
+        @Override
+        public String toString()
+        {
+            return "TestBoltResult{" + "records=" + Arrays.toString( records ) + '}';
         }
     }
 }

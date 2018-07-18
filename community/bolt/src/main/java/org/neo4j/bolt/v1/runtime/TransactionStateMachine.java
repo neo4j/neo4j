@@ -249,6 +249,7 @@ public class TransactionStateMachine implements StatementProcessor
                     State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark ) throws KernelException
                     {
                         waitForBookmark( ctx, spi, bookmark );
+                        ctx.currentResult = BoltResult.EMPTY;
                         ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
                         return EXPLICIT_TRANSACTION;
                     }
@@ -259,11 +260,6 @@ public class TransactionStateMachine implements StatementProcessor
                         if ( bookmark != null )
                         {
                             spi.awaitUpToDate( bookmark.txId() );
-                            ctx.currentResult = new BookmarkResult( bookmark );
-                        }
-                        else
-                        {
-                            ctx.currentResult = BoltResult.EMPTY;
                         }
                     }
 

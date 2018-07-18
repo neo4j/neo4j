@@ -67,5 +67,11 @@ public interface BoltResult extends AutoCloseable
         public void accept( Visitor visitor )
         {
         }
+
+        @Override
+        public String toString()
+        {
+            return "EmptyBoltResult{}";
+        }
     };
 }

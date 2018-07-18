@@ -242,7 +242,7 @@ public class TransactionIT
             machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
             machine.process( PullAllMessage.INSTANCE, recorder );
 
-            assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
+            assertThat( recorder.nextResponse(), succeeded() );
             assertThat( recorder.nextResponse(), succeededWithRecord( "two" ) );
             assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
         }

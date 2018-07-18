@@ -49,4 +49,10 @@ public class BookmarkResult implements BoltResult
     public void close()
     {
     }
+
+    @Override
+    public String toString()
+    {
+        return "BookmarkResult{" + "bookmark=" + bookmark + '}';
+    }
 }

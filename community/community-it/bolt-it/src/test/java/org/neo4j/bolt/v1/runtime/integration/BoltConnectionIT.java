@@ -48,14 +48,17 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
@@ -231,6 +234,36 @@ public class BoltConnectionIT
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
+    }
+
+    @Test
+    public void shouldNotSendBookmarkInPullAllResponse() throws Throwable
+    {
+        // Given
+        BoltStateMachine machine = env.newMachine( boltChannel );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
+
+        // And Given that I've ran and pulled one stream
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( new RunMessage( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "COMMIT", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        AnyValue bookmark = recorder.nextResponse().metadata( "bookmark" );
+        assertNotNull( bookmark );
+        String bookmarkStr = ((TextValue) bookmark).stringValue();
+
+        // When I run a new statement
+        recorder.reset();
+        machine.process( new RunMessage( "BEGIN", map( "bookmark", bookmarkStr ) ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+
+        // Then
+        RecordedBoltResponse response = recorder.nextResponse();
+        assertThat( response, succeeded() );
+        assertThat( response.hasMetadata( "bookmark" ), is( false ) );
     }
 
     @Test
