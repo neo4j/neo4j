@@ -22,40 +22,24 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.{AnyValues, Comparison}
+import org.neo4j.cypher.operations.CypherBoolean
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
-  def compare(comparisonResult: Option[Int]): Option[Boolean]
+  def comparator: ((AnyValue, AnyValue) => Value)
 
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     val l = left(m, state)
     val r = right(m, state)
 
-    val res = if (l == Values.NO_VALUE || r == Values.NO_VALUE) None
-    else (l, r) match {
-      case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
-      case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
-      case (n1: NumberValue, n2: NumberValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: TextValue, n2: TextValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: BooleanValue, n2: BooleanValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: PointValue, n2: PointValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: DateValue, n2: DateValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: LocalTimeValue, n2: LocalTimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: TimeValue, n2: TimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: LocalDateTimeValue, n2: LocalDateTimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: DateTimeValue, n2: DateTimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case _ => None
+    if (l == Values.NO_VALUE || r == Values.NO_VALUE) None
+    else comparator(l, r) match {
+      case Values.TRUE => Some(true)
+      case Values.FALSE => Some(false)
+      case Values.NO_VALUE => None
     }
-    res
-  }
-
-  private def undefinedToNone(i: Comparison) : Option[Int] = {
-    // Do NOT use Option here (as suggested by the warning).
-    // This would lead to NullPointerExceptions when i == null
-    if(i == Comparison.UNDEFINED) None
-    else Some(i.value())
   }
 
   def sign: String
@@ -110,7 +94,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ < 0)
+  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.lessThan
 
   def sign: String = "<"
 
@@ -119,7 +103,7 @@ case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a,
 
 case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ > 0)
+  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.greaterThan
 
   def sign: String = ">"
 
@@ -128,7 +112,7 @@ case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate
 
 case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ <= 0)
+  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.lessThanOrEqual
 
   def sign: String = "<="
 
@@ -137,7 +121,7 @@ case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredi
 
 case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ >= 0)
+  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.greaterThanOrEqual
 
   def sign: String = ">="
 

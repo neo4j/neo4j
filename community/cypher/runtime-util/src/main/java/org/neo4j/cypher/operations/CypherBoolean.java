@@ -20,18 +20,22 @@
 package org.neo4j.cypher.operations;
 
 import org.opencypher.v9_0.util.CypherTypeException;
+import org.opencypher.v9_0.util.InternalException;
 import org.opencypher.v9_0.util.InvalidSemanticsException;
 
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.Comparison;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.NumberValue;
@@ -39,13 +43,14 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
+import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
 
 /**
  * This class contains static helper boolean methods used by the compiled expressions
@@ -62,12 +67,12 @@ public final class CypherBoolean
 
     public static Value xor( AnyValue lhs, AnyValue rhs )
     {
-        return (lhs == Values.TRUE) ^ (rhs == Values.TRUE) ? Values.TRUE : Values.FALSE;
+        return (lhs == TRUE) ^ (rhs == TRUE) ? TRUE : FALSE;
     }
 
     public static Value not( AnyValue in )
     {
-        return in != Values.TRUE ? Values.TRUE : Values.FALSE;
+        return in != TRUE ? TRUE : FALSE;
     }
 
     public static Value equals( AnyValue lhs, AnyValue rhs )
@@ -77,7 +82,7 @@ public final class CypherBoolean
         {
             return NO_VALUE;
         }
-        return compare ? Values.TRUE : Values.FALSE;
+        return compare ? TRUE : FALSE;
     }
 
     public static Value notEquals( AnyValue lhs, AnyValue rhs )
@@ -87,7 +92,7 @@ public final class CypherBoolean
         {
             return NO_VALUE;
         }
-        return compare ? Values.FALSE : Values.TRUE;
+        return compare ? FALSE : TRUE;
     }
 
     public static Value regex( AnyValue lhs, AnyValue rhs )
@@ -98,7 +103,7 @@ public final class CypherBoolean
             try
             {
                 boolean matches = Pattern.compile( regexString ).matcher( ((TextValue) lhs).stringValue() ).matches();
-                return matches ? Values.TRUE : Values.FALSE;
+                return matches ? TRUE : FALSE;
             }
             catch ( PatternSyntaxException e )
             {
@@ -116,7 +121,7 @@ public final class CypherBoolean
         if ( text instanceof TextValue )
         {
             boolean matches = pattern.matcher( ((TextValue) text).stringValue() ).matches();
-            return matches ? Values.TRUE : Values.FALSE;
+            return matches ? TRUE : FALSE;
         }
         else
         {
@@ -128,7 +133,7 @@ public final class CypherBoolean
     {
         if ( lhs instanceof TextValue && rhs instanceof TextValue )
         {
-            return ((TextValue) lhs).stringValue().startsWith( ((TextValue) rhs).stringValue() ) ? Values.TRUE : Values.FALSE;
+            return ((TextValue) lhs).stringValue().startsWith( ((TextValue) rhs).stringValue() ) ? TRUE : FALSE;
         }
         else
         {
@@ -140,7 +145,7 @@ public final class CypherBoolean
     {
         if ( lhs instanceof TextValue && rhs instanceof TextValue )
         {
-            return ((TextValue) lhs).stringValue().endsWith( ((TextValue) rhs).stringValue() ) ? Values.TRUE : Values.FALSE;
+            return ((TextValue) lhs).stringValue().endsWith( ((TextValue) rhs).stringValue() ) ? TRUE : FALSE;
         }
         else
         {
@@ -152,7 +157,199 @@ public final class CypherBoolean
     {
         if ( lhs instanceof TextValue && rhs instanceof TextValue )
         {
-            return ((TextValue) lhs).stringValue().contains( ((TextValue) rhs).stringValue() ) ? Values.TRUE : Values.FALSE;
+            return ((TextValue) lhs).stringValue().contains( ((TextValue) rhs).stringValue() ) ? TRUE : FALSE;
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static Value lessThan( AnyValue lhs, AnyValue rhs )
+    {
+        if ( isNan(lhs) || isNan( rhs ))
+        {
+            return NO_VALUE;
+        }
+        else if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TextValue && rhs instanceof TextValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof BooleanValue && rhs instanceof BooleanValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof PointValue && rhs instanceof PointValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateValue && rhs instanceof DateValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalTimeValue && rhs instanceof LocalTimeValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TimeValue && rhs instanceof TimeValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalDateTimeValue && rhs instanceof LocalDateTimeValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateTimeValue && rhs instanceof DateTimeValue )
+        {
+            return lessThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static Value lessThanOrEqual( AnyValue lhs, AnyValue rhs )
+    {
+        if ( isNan(lhs) || isNan( rhs ))
+        {
+            return NO_VALUE;
+        }
+        else if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TextValue && rhs instanceof TextValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof BooleanValue && rhs instanceof BooleanValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof PointValue && rhs instanceof PointValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateValue && rhs instanceof DateValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalTimeValue && rhs instanceof LocalTimeValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TimeValue && rhs instanceof TimeValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalDateTimeValue && rhs instanceof LocalDateTimeValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateTimeValue && rhs instanceof DateTimeValue )
+        {
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static Value greaterThan( AnyValue lhs, AnyValue rhs )
+    {
+        if ( isNan(lhs) || isNan( rhs ))
+        {
+            return NO_VALUE;
+        }
+        else if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TextValue && rhs instanceof TextValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof BooleanValue && rhs instanceof BooleanValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof PointValue && rhs instanceof PointValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateValue && rhs instanceof DateValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalTimeValue && rhs instanceof LocalTimeValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TimeValue && rhs instanceof TimeValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalDateTimeValue && rhs instanceof LocalDateTimeValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateTimeValue && rhs instanceof DateTimeValue )
+        {
+            return greaterThan( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static Value greaterThanOrEqual( AnyValue lhs, AnyValue rhs )
+    {
+        if ( isNan(lhs) || isNan( rhs ))
+        {
+            return NO_VALUE;
+        }
+        else if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TextValue && rhs instanceof TextValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof BooleanValue && rhs instanceof BooleanValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof PointValue && rhs instanceof PointValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateValue && rhs instanceof DateValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalTimeValue && rhs instanceof LocalTimeValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof TimeValue && rhs instanceof TimeValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof LocalDateTimeValue && rhs instanceof LocalDateTimeValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
+        }
+        else if ( lhs instanceof DateTimeValue && rhs instanceof DateTimeValue )
+        {
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
         }
         else
         {
@@ -165,12 +362,81 @@ public final class CypherBoolean
         return value.map( BOOLEAN_MAPPER );
     }
 
+    private static Value lessThan( Comparison comparison )
+    {
+        switch ( comparison )
+        {
+        case GREATER_THAN:
+        case EQUAL:
+            return FALSE;
+        case SMALLER_THAN:
+            return TRUE;
+        case UNDEFINED:
+            return NO_VALUE;
+        default:
+            throw new InternalException( comparison + " is not a known comparison", null );
+        }
+    }
+
+    private static Value lessThanOrEqual( Comparison comparison )
+    {
+        switch ( comparison )
+        {
+        case GREATER_THAN:
+            return FALSE;
+        case EQUAL:
+        case SMALLER_THAN:
+            return TRUE;
+        case UNDEFINED:
+            return NO_VALUE;
+        default:
+            throw new InternalException( comparison + " is not a known comparison", null );
+        }
+    }
+
+    private static Value greaterThanOrEqual( Comparison comparison )
+    {
+        switch ( comparison )
+        {
+        case GREATER_THAN:
+        case EQUAL:
+            return TRUE;
+        case SMALLER_THAN:
+            return FALSE;
+        case UNDEFINED:
+            return NO_VALUE;
+        default:
+            throw new InternalException( comparison + " is not a known comparison", null );
+        }
+    }
+
+    private static Value greaterThan( Comparison comparison )
+    {
+        switch ( comparison )
+        {
+        case GREATER_THAN:
+            return TRUE;
+        case EQUAL:
+        case SMALLER_THAN:
+            return FALSE;
+        case UNDEFINED:
+            return NO_VALUE;
+        default:
+            throw new InternalException( comparison + " is not a known comparison", null );
+        }
+    }
+
+    private static boolean isNan( AnyValue value )
+    {
+        return value instanceof FloatingPointValue && ((FloatingPointValue) value).isNaN();
+    }
+
     private static final class BooleanMapper implements ValueMapper<Value>
     {
         @Override
         public Value mapPath( PathValue value )
         {
-            return value.size() > 0 ? Values.TRUE : Values.FALSE;
+            return value.size() > 0 ? TRUE : FALSE;
         }
 
         @Override
@@ -200,7 +466,7 @@ public final class CypherBoolean
         @Override
         public Value mapSequence( SequenceValue value )
         {
-            return value.length() > 0 ? Values.TRUE : Values.FALSE;
+            return value.length() > 0 ? TRUE : FALSE;
         }
 
         @Override

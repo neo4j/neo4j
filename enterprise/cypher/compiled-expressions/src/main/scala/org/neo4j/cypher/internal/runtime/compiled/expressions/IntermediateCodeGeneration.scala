@@ -255,6 +255,38 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           ternary(notEqual(e.ir, noValue), truthValue, falseValue), nullable = false, e.fields)
       }
 
+    case LessThan(lhs, rhs) =>
+      for {l <- compile(lhs)
+           r <- compile(rhs)} yield {
+        IntermediateExpression(
+          noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("lessThan"), l.ir, r.ir)),
+          nullable = true, l.fields ++ r.fields)
+      }
+
+    case LessThanOrEqual(lhs, rhs) =>
+      for {l <- compile(lhs)
+           r <- compile(rhs)} yield {
+        IntermediateExpression(
+          noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("lessThanOrEqual"), l.ir, r.ir)),
+          nullable = true, l.fields ++ r.fields)
+      }
+
+    case GreaterThan(lhs, rhs) =>
+      for {l <- compile(lhs)
+           r <- compile(rhs)} yield {
+        IntermediateExpression(
+          noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("greaterThan"), l.ir, r.ir)),
+          nullable = true, l.fields ++ r.fields)
+      }
+
+    case GreaterThanOrEqual(lhs, rhs) =>
+      for {l <- compile(lhs)
+           r <- compile(rhs)} yield {
+        IntermediateExpression(
+          noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("greaterThanOrEqual"), l.ir, r.ir)),
+          nullable = true, l.fields ++ r.fields)
+      }
+
     // misc
     case CoerceTo(expr, typ) =>
       for (e <- compile(expr)) yield {

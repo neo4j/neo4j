@@ -35,19 +35,20 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues._
 import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue, VirtualValues}
+import org.neo4j.values.{AnyValue, AnyValues}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.symbols.{CypherType, ListType}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -1106,6 +1107,34 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("hi")))) should equal(NO_VALUE)
   }
 
+  test("should compare values using <") {
+    for (left <- allValues)
+      for (right <- allValues) {
+        lessThan(literal(left), literal(right))  should compareUsingLessThan(left, right)
+      }
+  }
+
+  test("should compare values using <=") {
+    for (left <- allValues)
+      for (right <- allValues) {
+        lessThanOrEqual(literal(left), literal(right))  should compareUsingLessThanOrEqual(left, right)
+      }
+  }
+
+  test("should compare values using >") {
+    for (left <- allValues)
+      for (right <- allValues) {
+        greaterThan(literal(left), literal(right))  should compareUsingGreaterThan(left, right)
+      }
+  }
+
+  test("should compare values using >=") {
+    for (left <- allValues)
+      for (right <- allValues) {
+        greaterThanOrEqual(literal(left), literal(right))  should compareUsingGreaterThanOrEqual(left, right)
+      }
+  }
+
   test("isNull") {
     val compiled= compile(isNull(parameter("a")))
 
@@ -1380,7 +1409,25 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def containerIndex(container: Expression, index: Expression) = ContainerIndex(container, index)(pos)
 
- private def literalString(s: String) = expressions.StringLiteral(s)(pos)
+  private def literalString(s: String) = expressions.StringLiteral(s)(pos)
+
+  private def literal(a: Any) = a match {
+    case null => noValue
+    case s: String => literalString(s)
+    case d: Double => literalFloat(d)
+    case d: java.lang.Float => literalFloat(d.doubleValue())
+    case i: Byte => literalInt(i)
+    case i: Short => literalInt(i)
+    case i: Int => literalInt(i)
+    case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
+  }
+  private def lessThan(lhs: Expression, rhs: Expression) = LessThan(lhs, rhs)(pos)
+
+  private def lessThanOrEqual(lhs: Expression, rhs: Expression) = LessThanOrEqual(lhs, rhs)(pos)
+
+  private def greaterThan(lhs: Expression, rhs: Expression) = GreaterThan(lhs, rhs)(pos)
+
+  private def greaterThanOrEqual(lhs: Expression, rhs: Expression) = GreaterThanOrEqual(lhs, rhs)(pos)
 
   private def regex(lhs: Expression, rhs: Expression) = RegexMatch(lhs, rhs)(pos)
 
@@ -1398,5 +1445,95 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def isNull(expression: Expression) = expressions.IsNull(expression)(pos)
 
   private def isNotNull(expression: Expression) = expressions.IsNotNull(expression)(pos)
+
+  private val numericalValues: Seq[AnyRef] = Seq[Number](
+    Double.NegativeInfinity,
+    Double.MinValue,
+    Long.MinValue,
+    -1,
+    -0.5,
+    0,
+    Double.MinPositiveValue,
+    0.5,
+    1,
+    10.00,
+    10.33,
+    10.66,
+    11.00,
+    Math.PI,
+    Long.MaxValue,
+    Double.MaxValue,
+    Double.PositiveInfinity,
+    Double.NaN,
+    null
+  ).flatMap {
+    case null => Seq(null)
+    case v: Number if v.doubleValue().isNaN => Seq[Number](v.doubleValue(), v.floatValue(), v)
+    case v: Number =>
+      Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
+  }
+
+  private val textualValues: Seq[String] = Seq(
+    "",
+    "Hal",
+    s"Hal${Character.MIN_VALUE}",
+    "Hallo",
+    "Hallo!",
+    "Hello",
+    "Hullo",
+    null,
+    "\uD801\uDC37"
+  ).flatMap {
+    case null => Seq(null)
+    case v: String => Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
+  }
+
+  private def reverse(s: String) = new StringBuilder(s).reverse.toString()
+
+  private val allValues = numericalValues ++ textualValues
+
+  case class compareUsingLessThan(left: Any, right: Any) extends compareUsing(left, right, "<")
+
+  case class compareUsingLessThanOrEqual(left: Any, right: Any) extends compareUsing(left, right, "<=")
+
+  case class compareUsingGreaterThanOrEqual(left: Any, right: Any) extends compareUsing(left, right, ">=")
+
+  case class compareUsingGreaterThan(left: Any, right: Any) extends compareUsing(left, right, ">")
+
+  class compareUsing(left: Any, right: Any, operator: String) extends Matcher[Expression] {
+    def apply(predicate: Expression): MatchResult = {
+      val actual = compile(predicate).evaluate(ctx, db, EMPTY_MAP)
+
+      if (isIncomparable(left, right))
+        buildResult(actual == NO_VALUE, actual)
+      else {
+        assert(actual != NO_VALUE && actual.isInstanceOf[BooleanValue], s"$left $operator $right")
+        val actualBoolean = actual.asInstanceOf[BooleanValue].booleanValue()
+        val expected = AnyValues.COMPARATOR.compare(Values.of(left), Values.of(right))
+        val result = operator match {
+          case "<" => (expected < 0) == actualBoolean
+          case "<=" => (expected <= 0) == actualBoolean
+          case ">=" => (expected >= 0) == actualBoolean
+          case ">" => (expected > 0) == actualBoolean
+        }
+        buildResult(result, actual)
+      }
+    }
+
+    def isIncomparable(left: Any, right: Any): Boolean = {
+      left == null || (left.isInstanceOf[Number] && left.asInstanceOf[Number].doubleValue().isNaN) ||
+        right == null || (right.isInstanceOf[Number] && right.asInstanceOf[Number].doubleValue().isNaN) ||
+        left.isInstanceOf[Number] && right.isInstanceOf[String] ||
+        left.isInstanceOf[String] && right.isInstanceOf[Number]
+    }
+
+    def buildResult(result: Boolean, actual: Any) = {
+      MatchResult(
+        result,
+        s"Expected $left $operator $right to compare as $result but it was $actual",
+        s"Expected $left $operator $right to not compare as $result but it was $actual"
+      )
+    }
+  }
 
 }
