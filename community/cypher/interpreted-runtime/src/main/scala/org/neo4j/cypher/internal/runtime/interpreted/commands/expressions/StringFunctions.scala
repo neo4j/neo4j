@@ -125,10 +125,10 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
       case text: TextValue =>
-        val startVal = asInt(start(m, state)).value()
+        val startVal = asPrimitiveInt(start(m, state))
         length match {
           case None => text.substring(startVal)
-          case Some(func) => text.substring(startVal, asInt(func(m, state)).value())
+          case Some(func) => text.substring(startVal, asPrimitiveInt(func(m, state)))
         }
       case _ => StringFunction.notAString(value)
     }
@@ -191,7 +191,7 @@ case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-      case origVal: TextValue => origVal.substring(0, asInt(length(m, state)).value())
+      case origVal: TextValue => origVal.substring(0, asPrimitiveInt(length(m, state)))
       case _ => StringFunction.notAString(value)
   }
 
@@ -209,7 +209,7 @@ case class RightFunction(orig: Expression, length: Expression)
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
       case origVal: TextValue =>
         // if length goes off the end of the string, let's be nice and handle that.
-        val lengthVal = asInt(length(m, state)).value()
+        val lengthVal = asPrimitiveInt(length(m, state))
         if (lengthVal < 0) throw new IndexOutOfBoundsException(s"negative length")
         val startVal = origVal.length - lengthVal
         origVal.substring(Math.max(0,startVal))
