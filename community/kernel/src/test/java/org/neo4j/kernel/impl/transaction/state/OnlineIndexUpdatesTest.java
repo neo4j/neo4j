@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyTraverser;
 import org.neo4j.kernel.impl.store.CountsComputer;
+import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -67,6 +69,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,6 +78,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -83,6 +88,10 @@ import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 
 public class OnlineIndexUpdatesTest
 {
+    private static final int ENTITY_TOKEN = 1;
+    private static final int OTHER_ENTITY_TOKEN = 2;
+    private static final int[] ENTITY_TOKENS = {ENTITY_TOKEN};
+
     @Rule
     public PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
     private NodeStore nodeStore;
@@ -92,9 +101,7 @@ public class OnlineIndexUpdatesTest
     private NeoStores neoStores;
     private LifeSupport life;
     private PropertyCreator propertyCreator;
-    private PropertyStore propertyStore;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
-    private JobScheduler scheduler;
 
     @Before
     public void setUp() throws Exception
@@ -110,16 +117,15 @@ public class OnlineIndexUpdatesTest
         CountsComputer.recomputeCounts( neoStores, pageCache );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
-        propertyStore = neoStores.getPropertyStore();
-        scheduler = new CentralJobScheduler();
+        PropertyStore propertyStore = neoStores.getPropertyStore();
+        JobScheduler scheduler = new CentralJobScheduler();
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( EMPTY );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies );
         life.add( providerMap );
-        indexingService =
-                IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, providerMap,
-                        new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(),
-                        NullLogProvider.getInstance(), IndexingService.NO_MONITOR, new DatabaseSchemaState( NullLogProvider.getInstance() ) );
+        indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, providerMap,
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(), NullLogProvider.getInstance(),
+                IndexingService.NO_MONITOR, new DatabaseSchemaState( NullLogProvider.getInstance() ) );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );
@@ -153,12 +159,11 @@ public class OnlineIndexUpdatesTest
         propertyBlocks.setNodeId( nodeId );
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        StoreIndexDescriptor indexDescriptor =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
+        StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
         indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
 
-        onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, asList( propertyCommand ) ), LongObjectMaps.immutable.empty(),
+        onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( propertyCommand ) ), LongObjectMaps.immutable.empty(),
                 LongObjectMaps.immutable.of( nodeId, nodeCommand ), LongObjectMaps.immutable.empty() );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator = onlineIndexUpdates.iterator();
@@ -172,10 +177,10 @@ public class OnlineIndexUpdatesTest
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
 
         long relId = 0;
-        RelationshipRecord inUse = getRelationship( relId, true );
+        RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
         Value propertyValue = Values.of( "hej" );
         long propertyId = createRelationshipProperty( inUse, propertyValue, 1 );
-        RelationshipRecord notInUse = getRelationship( relId, false );
+        RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         relationshipStore.updateRecord( inUse );
 
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
@@ -183,12 +188,11 @@ public class OnlineIndexUpdatesTest
         propertyBlocks.setRelId( relId );
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        StoreIndexDescriptor indexDescriptor =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
+        StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
         indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
 
-        onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, asList( propertyCommand ) ),
+        onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, singletonList( propertyCommand ) ),
                 LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator = onlineIndexUpdates.iterator();
@@ -214,16 +218,15 @@ public class OnlineIndexUpdatesTest
         Command.PropertyCommand nodePropertyCommand =
                 new Command.PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
-        StoreIndexDescriptor nodeIndexDescriptor =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
+        StoreIndexDescriptor nodeIndexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( nodeIndexDescriptor );
         indexingService.getIndexProxy( nodeIndexDescriptor.schema() ).awaitStoreScanCompleted();
 
         long relId = 0;
-        RelationshipRecord inUse = getRelationship( relId, true );
+        RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
         Value relationshipPropertyValue = Values.of( "da" );
         long propertyId = createRelationshipProperty( inUse, relationshipPropertyValue, 1 );
-        RelationshipRecord notInUse = getRelationship( relId, false );
+        RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         relationshipStore.updateRecord( inUse );
 
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
@@ -233,12 +236,12 @@ public class OnlineIndexUpdatesTest
                 new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
 
         StoreIndexDescriptor relationshipIndexDescriptor =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
+                forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
         indexingService.createIndexes( relationshipIndexDescriptor );
         indexingService.getIndexProxy( relationshipIndexDescriptor.schema() ).awaitStoreScanCompleted();
 
-        onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, asList( nodePropertyCommand ) ),
-                LongObjectMaps.immutable.of( relId, asList( relationshipPropertyCommand ) ), LongObjectMaps.immutable.of( nodeId, nodeCommand ),
+        onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( nodePropertyCommand ) ),
+                LongObjectMaps.immutable.of( relId, singletonList( relationshipPropertyCommand ) ), LongObjectMaps.immutable.of( nodeId, nodeCommand ),
                 LongObjectMaps.immutable.of( relId, relationshipCommand ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         assertThat( onlineIndexUpdates,
@@ -252,12 +255,12 @@ public class OnlineIndexUpdatesTest
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
 
         long relId = 0;
-        RelationshipRecord inUse = getRelationship( relId, true );
+        RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
         Value propertyValue = Values.of( "hej" );
         Value propertyValue2 = Values.of( "da" );
         long propertyId = createRelationshipProperty( inUse, propertyValue, 1 );
         long propertyId2 = createRelationshipProperty( inUse, propertyValue2, 4 );
-        RelationshipRecord notInUse = getRelationship( relId, false );
+        RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         relationshipStore.updateRecord( inUse );
 
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
@@ -269,12 +272,12 @@ public class OnlineIndexUpdatesTest
         propertyBlocks2.setRelId( relId );
         Command.PropertyCommand propertyCommand2 = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
 
-        StoreIndexDescriptor indexDescriptor0 =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
-        StoreIndexDescriptor indexDescriptor1 =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 2, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
+        StoreIndexDescriptor indexDescriptor0 = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
+        StoreIndexDescriptor indexDescriptor1 = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 2, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
         StoreIndexDescriptor indexDescriptor2 =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[]{1}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 2 );
+                forSchema( multiToken( new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 2 );
+        StoreIndexDescriptor indexDescriptor3 =
+                forSchema( multiToken( new int[]{OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 3 );
         indexingService.createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
         indexingService.getIndexProxy( indexDescriptor0.schema() ).awaitStoreScanCompleted();
         indexingService.getIndexProxy( indexDescriptor1.schema() ).awaitStoreScanCompleted();
@@ -286,27 +289,33 @@ public class OnlineIndexUpdatesTest
         assertThat( onlineIndexUpdates, containsInAnyOrder( IndexEntryUpdate.remove( relId, indexDescriptor0, propertyValue, propertyValue2, null ),
                 IndexEntryUpdate.remove( relId, indexDescriptor1, null, propertyValue2, null ),
                 IndexEntryUpdate.remove( relId, indexDescriptor2, propertyValue ) ) );
+        assertThat( onlineIndexUpdates, not( containsInAnyOrder( indexDescriptor3 ) ) ); // This index is only for a different relationship type.
     }
 
     private long createRelationshipProperty( RelationshipRecord relRecord, Value propertyValue, int propertyKey )
     {
-        return propertyCreator.createPropertyChain( relRecord, asList( propertyCreator.encodePropertyValue( propertyKey, propertyValue ) ).iterator(),
+        return propertyCreator.createPropertyChain( relRecord, singletonList( propertyCreator.encodePropertyValue( propertyKey, propertyValue ) ).iterator(),
                 recordAccess );
     }
 
     private long createNodeProperty( NodeRecord inUse, Value value, int propertyKey )
     {
-        return propertyCreator.createPropertyChain( inUse, asList( propertyCreator.encodePropertyValue( propertyKey, value ) ).iterator(), recordAccess );
+        return propertyCreator.createPropertyChain( inUse, singletonList( propertyCreator.encodePropertyValue( propertyKey, value ) ).iterator(),
+                recordAccess );
     }
 
     private NodeRecord getNode( int nodeId, boolean inUse )
     {
-        return new NodeRecord( nodeId ).initialize( inUse, NO_NEXT_PROPERTY.longValue(), false, NO_NEXT_RELATIONSHIP.longValue(), NO_LABELS_FIELD.longValue() );
+        NodeRecord nodeRecord = new NodeRecord( nodeId );
+        nodeRecord = nodeRecord.initialize( inUse, NO_NEXT_PROPERTY.longValue(), false, NO_NEXT_RELATIONSHIP.longValue(), NO_LABELS_FIELD.longValue() );
+        InlineNodeLabels labelFieldWriter = new InlineNodeLabels( nodeRecord );
+        labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null );
+        return nodeRecord;
     }
 
-    private RelationshipRecord getRelationship( long relId, boolean inUse )
+    private RelationshipRecord getRelationship( long relId, boolean inUse, int type )
     {
-        return new RelationshipRecord( relId ).initialize( inUse, NO_NEXT_PROPERTY.longValue(), 0, 0, 1, NO_NEXT_RELATIONSHIP.longValue(),
+        return new RelationshipRecord( relId ).initialize( inUse, NO_NEXT_PROPERTY.longValue(), 0, 0, type, NO_NEXT_RELATIONSHIP.longValue(),
                 NO_NEXT_RELATIONSHIP.longValue(), NO_NEXT_RELATIONSHIP.longValue(), NO_NEXT_RELATIONSHIP.longValue(), true, false );
     }
 }
