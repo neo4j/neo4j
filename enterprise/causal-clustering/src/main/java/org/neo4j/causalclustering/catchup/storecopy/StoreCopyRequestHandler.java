@@ -87,15 +87,15 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
             }
             else
             {
-                File storeDir = neoStoreDataSource.getDatabaseDirectory();
+                File databaseDirectory = neoStoreDataSource.getDatabaseDirectory();
                 try ( ResourceIterator<StoreFileMetadata> resourceIterator = files( request, neoStoreDataSource ) )
                 {
                     while ( resourceIterator.hasNext() )
                     {
                         StoreFileMetadata storeFileMetadata = resourceIterator.next();
-                        storeFileStreamingProtocol.stream( ctx,
-                                new StoreResource( storeFileMetadata.file(), relativePath( storeDir, storeFileMetadata.file() ), storeFileMetadata.recordSize(),
-                                        fs ) );
+                        StoreResource storeResource = new StoreResource( storeFileMetadata.file(), relativePath( databaseDirectory, storeFileMetadata.file() ),
+                                storeFileMetadata.recordSize(), fs );
+                        storeFileStreamingProtocol.stream( ctx, storeResource );
                     }
                 }
                 responseStatus = StoreCopyFinishedResponse.Status.SUCCESS;

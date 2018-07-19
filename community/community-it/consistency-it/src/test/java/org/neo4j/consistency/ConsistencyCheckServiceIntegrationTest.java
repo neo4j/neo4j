@@ -160,7 +160,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
@@ -216,7 +216,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
         File databaseDirectory = testDirectory.databaseDir();
-        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.directory() );
+        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.storeDir() );
 
         Label label = Label.label( "label" );
         String propKey = "propKey";
@@ -246,7 +246,7 @@ public class ConsistencyCheckServiceIntegrationTest
     @Test
     public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         String defaultSchemaProvider = GraphDatabaseSettings.default_schema_provider.name();
         Label label = Label.label( "label" );
         String propKey = "propKey";
@@ -265,7 +265,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
                 Config.defaults( settings( defaultSchemaProvider, NATIVE20.providerName() ) );
-        Result result = runFullConsistencyCheck( service, configuration, storeDir );
+        Result result = runFullConsistencyCheck( service, configuration, testDirectory.databaseDir() );
         assertTrue( result.isSuccessful() );
     }
 
@@ -316,7 +316,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.directory() )
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();

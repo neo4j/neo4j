@@ -99,8 +99,8 @@ public class NativeLuceneFusionIndexProviderFactory20 extends
                 DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
     }
 
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
     {
-        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir, DESCRIPTOR );
+        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
     }
 }

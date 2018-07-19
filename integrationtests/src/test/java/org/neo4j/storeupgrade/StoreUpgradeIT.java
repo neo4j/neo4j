@@ -22,7 +22,6 @@
  */
 package org.neo4j.storeupgrade;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -153,7 +152,7 @@ public class StoreUpgradeIT
             File databaseDirectory = store.prepareDirectory( testDir.databaseDir() );
 
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.storeDir() );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
@@ -215,14 +214,12 @@ public class StoreUpgradeIT
         }
 
         @Test
-        //TODO
-        @Ignore
         public void migratingOlderDataAndThanStartAClusterUsingTheNewerDataShouldWork() throws Throwable
         {
             // migrate the store using a single instance
             File databaseDirectory = store.prepareDirectory( testDir.databaseDir() );
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.storeDir() );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );

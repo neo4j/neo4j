@@ -94,7 +94,7 @@ public class NativeLabelScanStoreMigratorTest
     @Before
     public void setUp() throws Exception
     {
-        storeDir = testDirectory.directory();
+        storeDir = testDirectory.storeDir();
         databaseDirectory = testDirectory.databaseDir();
         nativeLabelIndex = new File( testDirectory.databaseDir(), NativeLabelScanStore.FILE_NAME );
         migrationDir = testDirectory.directory( "migrationDir" );

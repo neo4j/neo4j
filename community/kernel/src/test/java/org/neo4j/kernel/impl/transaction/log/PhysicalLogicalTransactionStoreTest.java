@@ -75,13 +75,13 @@ public class PhysicalLogicalTransactionStoreTest
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
     public TestDirectory dir = TestDirectory.testDirectory();
-    private File testDir;
+    private File databaseDirectory;
     private Monitors monitors = new Monitors();
 
     @Before
     public void setup()
     {
-        testDir = dir.databaseDir();
+        databaseDirectory = dir.databaseDir();
     }
 
     @Test
@@ -96,7 +96,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( testDir, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
                                                  .withTransactionIdStore( transactionIdStore )
                                                  .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.add( logFiles );
@@ -129,7 +129,7 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 1000 );
 
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( testDir, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.add( logFiles );
@@ -161,7 +161,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( testDir, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
 
@@ -188,7 +188,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
-        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( testDir, logFiles, fileSystemRule.get() );
+        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystemRule.get() );
         life.add( new Recovery( new RecoveryService()
         {
             @Override
@@ -255,7 +255,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( testDir, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.start();

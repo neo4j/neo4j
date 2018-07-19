@@ -56,7 +56,7 @@ public class BatchingNeoStoresIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private FileSystemAbstraction fileSystem;
-    private File storeDir;
+    private File databaseDirectory;
     private AssertableLogProvider provider;
     private SimpleLogService logService;
 
@@ -64,7 +64,7 @@ public class BatchingNeoStoresIT
     public void setUp()
     {
         fileSystem = fileSystemRule.get();
-        storeDir = testDirectory.databaseDir();
+        databaseDirectory = testDirectory.databaseDir();
         provider = new AssertableLogProvider();
         logService = new SimpleLogService( provider, provider );
     }
@@ -74,7 +74,7 @@ public class BatchingNeoStoresIT
     {
         Config config = Config.defaults( MetricsSettings.metricsEnabled, "true"  );
         try ( BatchingNeoStores batchingNeoStores = BatchingNeoStores
-                .batchingNeoStores( fileSystem, storeDir, RecordFormatSelector.defaultFormat(), Configuration.DEFAULT,
+                .batchingNeoStores( fileSystem, databaseDirectory, RecordFormatSelector.defaultFormat(), Configuration.DEFAULT,
                         logService, AdditionalInitialIds.EMPTY, config ) )
         {
             batchingNeoStores.createNew();
@@ -86,13 +86,13 @@ public class BatchingNeoStoresIT
     public void createStoreWithNotEmptyInitialIds() throws IOException
     {
         try ( BatchingNeoStores batchingNeoStores = BatchingNeoStores
-                .batchingNeoStores( fileSystem, storeDir, RecordFormatSelector.defaultFormat(), Configuration.DEFAULT,
+                .batchingNeoStores( fileSystem, databaseDirectory, RecordFormatSelector.defaultFormat(), Configuration.DEFAULT,
                         logService, new TestAdditionalInitialIds(), Config.defaults() ) )
         {
             batchingNeoStores.createNew();
         }
 
-        GraphDatabaseService database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.directory() );
+        GraphDatabaseService database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
         try
         {
             TransactionIdStore transactionIdStore = getTransactionIdStore( (GraphDatabaseAPI) database );

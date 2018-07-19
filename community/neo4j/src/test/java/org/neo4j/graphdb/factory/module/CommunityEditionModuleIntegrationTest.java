@@ -51,8 +51,7 @@ public class CommunityEditionModuleIntegrationTest
     @Test
     public void createBufferedIdComponentsByDefault()
     {
-        GraphDatabaseAPI database =
-                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
         try
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();

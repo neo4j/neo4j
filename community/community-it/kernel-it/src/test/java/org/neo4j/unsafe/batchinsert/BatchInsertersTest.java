@@ -65,18 +65,17 @@ public class BatchInsertersTest
         verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getKernelExtensions() ), fs );
     }
 
-    private Iterable<KernelExtensionFactory<?>> getKernelExtensions()
+    private static Iterable<KernelExtensionFactory<?>> getKernelExtensions()
     {
         return Iterables.asIterable( new NativeLuceneFusionIndexProviderFactory20() );
     }
 
-    private Map<String,String> getConfig()
+    private static Map<String,String> getConfig()
     {
         return MapUtil.stringMap();
     }
 
-    private void verifyProvidedFileSystemOpenAfterShutdown( BatchInserter inserter,
-            EphemeralFileSystemAbstraction fileSystemAbstraction )
+    private static void verifyProvidedFileSystemOpenAfterShutdown( BatchInserter inserter, EphemeralFileSystemAbstraction fileSystemAbstraction )
     {
         inserter.shutdown();
         assertFalse( fileSystemAbstraction.isClosed() );
@@ -84,10 +83,10 @@ public class BatchInsertersTest
 
     private File getStoreDir()
     {
-        return testDirectory.databaseDir();
+        return testDirectory.storeDir();
     }
 
-    private void verifyInserterFileSystemClose( BatchInserter inserter )
+    private static void verifyInserterFileSystemClose( BatchInserter inserter )
     {
         assertThat( "Expect specific implementation that will do required cleanups.", inserter,
                 is( instanceOf( FileSystemClosingBatchInserter.class ) ) );

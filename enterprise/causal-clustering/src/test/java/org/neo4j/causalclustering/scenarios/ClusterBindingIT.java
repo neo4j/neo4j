@@ -98,7 +98,7 @@ public class ClusterBindingIT
             tx.success();
         } );
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
+        List<File> coreStoreDirs = databaseDirs( cluster.coreMembers() );
 
         cluster.shutdown();
 
@@ -121,7 +121,7 @@ public class ClusterBindingIT
         // WHEN
         cluster.start();
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
+        List<File> coreStoreDirs = databaseDirs( cluster.coreMembers() );
 
         cluster.coreTx( ( db, tx ) ->
         {
@@ -148,10 +148,10 @@ public class ClusterBindingIT
             tx.success();
         } );
 
-        File storeDir = cluster.getCoreMemberById( 0 ).databaseDirectory();
+        File databaseDirectory = cluster.getCoreMemberById( 0 ).databaseDirectory();
 
         cluster.removeCoreMemberWithServerId( 0 );
-        changeStoreId( storeDir );
+        changeStoreId( databaseDirectory );
 
         // WHEN
         try
@@ -194,7 +194,7 @@ public class ClusterBindingIT
         // THEN
         assertEquals( 3, cluster.healthyCoreMembers().size() );
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
+        List<File> coreStoreDirs = databaseDirs( cluster.coreMembers() );
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
@@ -259,12 +259,12 @@ public class ClusterBindingIT
         // THEN
         assertEquals( 4, cluster.healthyCoreMembers().size() );
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
+        List<File> coreStoreDirs = databaseDirs( cluster.coreMembers() );
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
-    private static List<File> storeDirs( Collection<CoreClusterMember> dbs )
+    private static List<File> databaseDirs( Collection<CoreClusterMember> dbs )
     {
         return dbs.stream().map( CoreClusterMember::databaseDirectory ).collect( Collectors.toList() );
     }

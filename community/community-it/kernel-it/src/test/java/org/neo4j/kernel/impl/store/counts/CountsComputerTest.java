@@ -89,7 +89,7 @@ public class CountsComputerTest
     public void setup()
     {
         fs = fsRule.get();
-        dir = testDir.directory();
+        dir = testDir.storeDir();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );

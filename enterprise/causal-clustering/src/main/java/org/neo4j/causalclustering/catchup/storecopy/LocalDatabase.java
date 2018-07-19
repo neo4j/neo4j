@@ -205,7 +205,7 @@ public class LocalDatabase implements Lifecycle
         return storeFiles.isEmpty( databaseDirectory, filesToLookFor );
     }
 
-    public File databaseDirectort()
+    public File databaseDirectory()
     {
         return databaseDirectory;
     }

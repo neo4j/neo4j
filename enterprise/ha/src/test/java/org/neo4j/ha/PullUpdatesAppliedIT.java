@@ -55,7 +55,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.rule.TestDirectory;
@@ -221,7 +220,7 @@ public class PullUpdatesAppliedIT
         Thread.sleep( 15000 );
 
         restart( serverIdOfDatabaseToKill ); // recovery and branching.
-        File databaseDirectory = new File( storeDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File databaseDirectory = testDirectory.databaseDir( storeDirectory );
         boolean hasBranchedData = new File( databaseDirectory, "branched" ).listFiles().length > 0;
         assertFalse( hasBranchedData );
     }

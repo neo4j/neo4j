@@ -28,6 +28,7 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -176,9 +177,13 @@ public class TestDirectory extends ExternalResource
     public File databaseDir( File storeDirectory )
     {
         File directory = new File( storeDirectory, DEFAULT_DATABASE_DIRECTORY );
-        if ( fileSystem.mkdir( directory ) )
+        try
         {
-            throw new RuntimeException( "Failed to create directory: " + directory );
+            fileSystem.mkdirs( directory );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( "Failed to create directory: " + directory, e );
         }
         return directory;
     }

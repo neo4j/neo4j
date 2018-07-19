@@ -44,7 +44,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -207,14 +206,9 @@ public class BoltFailuresIT
         return startDbWithBolt( newDbFactory().setMonitors( monitors ), port );
     }
 
-    private GraphDatabaseService startTestDb( LogProvider internalLogProvider, int port )
-    {
-        return startDbWithBolt( newDbFactory().setInternalLogProvider( internalLogProvider ), port );
-    }
-
     private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory, int port )
     {
-        return dbFactory.newEmbeddedDatabaseBuilder( dir.databaseDir() )
+        return dbFactory.newEmbeddedDatabaseBuilder( dir.storeDir() )
                 .setConfig( new BoltConnector( "0" ).type, BOLT.name() )
                 .setConfig( new BoltConnector( "0" ).enabled, TRUE )
                 .setConfig( new BoltConnector( "0" ).listen_address, "localhost:" + port )

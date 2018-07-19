@@ -56,7 +56,7 @@ public class HalfCreatedConstraintIT
     @Test
     public void uniqueIndexWithoutOwningConstraintIsIgnoredDuringCheck() throws ConsistencyCheckTool.ToolFailureException, IOException
     {
-        File storeDir = testDirectory.directory();
+        File storeDir = testDirectory.storeDir();
         Label marker = Label.label( "MARKER" );
         String property = "property";
 

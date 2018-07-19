@@ -66,7 +66,7 @@ public class TestStoreAccess
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
-                .newImpermanentDatabase( testDirectory.directory() );
+                .newImpermanentDatabase( testDirectory.storeDir() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

@@ -477,7 +477,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         Applier()
         {
             database = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( directory.directory() )
+                    .newEmbeddedDatabaseBuilder( directory.storeDir() )
                     .setConfig( "dbms.backup.enabled", "false" )
                     .newGraphDatabase();
             DependencyResolver dependencyResolver = database.getDependencyResolver();
@@ -526,7 +526,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private void generateInitialData()
     {
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.directory() );
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() );
         GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
@@ -571,7 +571,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 try
                 {
                     generateInitialData();
-                    start( GraphStoreFixture.this.directory.databaseDir() );
+                    start( GraphStoreFixture.this.directory.storeDir() );
                     try
                     {
                         base.evaluate();

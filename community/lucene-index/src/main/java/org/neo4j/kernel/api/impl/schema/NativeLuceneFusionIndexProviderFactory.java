@@ -39,9 +39,9 @@ abstract class NativeLuceneFusionIndexProviderFactory<DEPENDENCIES> extends Kern
         super( ExtensionType.DATABASE, KEY );
     }
 
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir, IndexProvider.Descriptor descriptor )
+    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory, IndexProvider.Descriptor descriptor )
     {
-        IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( storeDir ).forProvider( descriptor );
+        IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( databaseDirectory ).forProvider( descriptor );
         return directoriesBySubProvider( parentDirectoryStructure );
     }
 }

@@ -75,7 +75,7 @@ public class BoltMetricsIT
         // Given
         File metricsFolder = testDirectory.directory( "metrics" );
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( new BoltConnector( "bolt" ).type, "BOLT" )
                 .setConfig( new BoltConnector( "bolt" ).enabled, "true" )
                 .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:" + port )

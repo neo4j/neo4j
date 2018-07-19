@@ -49,7 +49,7 @@ public class StoreResourceStreamFactory
     {
         NeoStoreDataSource dataSource = dataSourceSupplier.get();
 
-        File storeDir = dataSource.getDatabaseDirectory();
+        File databaseDirectory = dataSource.getDatabaseDirectory();
         ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( false );
 
         return new RawCursor<StoreResource,IOException>()
@@ -73,7 +73,7 @@ public class StoreResourceStreamFactory
 
                 StoreFileMetadata md = files.next();
 
-                resource = new StoreResource( md.file(), relativePath( storeDir, md.file() ), md.recordSize(), fs );
+                resource = new StoreResource( md.file(), relativePath( databaseDirectory, md.file() ), md.recordSize(), fs );
                 return true;
             }
 

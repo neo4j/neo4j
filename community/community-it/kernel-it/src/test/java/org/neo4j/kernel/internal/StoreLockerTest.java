@@ -282,7 +282,7 @@ public class StoreLockerTest
     @Test
     public void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
-        File storeDir = target.databaseDir();
+        File storeDir = target.storeDir();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {

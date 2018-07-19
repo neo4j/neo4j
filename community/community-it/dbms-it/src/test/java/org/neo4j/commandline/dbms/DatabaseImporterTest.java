@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -135,10 +134,10 @@ public class DatabaseImporterTest
     private File provideStoreDirectory()
     {
         GraphDatabaseService db = null;
-        File storeDir = testDir.directory( "home" );
+        File homeStoreDir = testDir.storeDir( "home" );
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( homeStoreDir );
             try ( Transaction transaction = db.beginTx() )
             {
                 db.createNode();
@@ -153,10 +152,10 @@ public class DatabaseImporterTest
             }
         }
 
-        return new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        return testDir.databaseDir( homeStoreDir );
     }
 
-    private Matcher<File> isExistingDatabase()
+    private static Matcher<File> isExistingDatabase()
     {
         return new BaseMatcher<File>()
         {

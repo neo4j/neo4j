@@ -86,7 +86,7 @@ public class BatchInsertIndexProviderTest
         BatchInserter inserter = newBatchInserter( config );
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
-        GraphDatabaseService db = graphDatabaseService( storeDir.directory(), config );
+        GraphDatabaseService db = graphDatabaseService( storeDir.storeDir(), config );
         try ( Transaction tx = db.beginTx() )
         {
             DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();

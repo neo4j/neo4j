@@ -54,7 +54,7 @@ public class RunOutOfDiskSpaceIT
         // Given
         TransactionFailureException exceptionThrown = null;
 
-        File storeDir = testDirectory.directory();
+        File storeDir = testDirectory.storeDir();
         LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( storeDir );
 
         try ( Transaction tx = db.beginTx() )

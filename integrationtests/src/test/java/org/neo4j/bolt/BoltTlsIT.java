@@ -68,7 +68,7 @@ public class BoltTlsIT
     @Before
     public void setup() throws IOException
     {
-        File sslObjectsDir = new File( testDirectory.databaseDir(), "certificates" );
+        File sslObjectsDir = new File( testDirectory.storeDir(), "certificates" );
         assertTrue( sslObjectsDir.mkdirs() );
 
         sslResource = selfSignedKeyId( 0 ).trustKeyId( 0 ).install( sslObjectsDir );
@@ -117,13 +117,13 @@ public class BoltTlsIT
         };
     }
 
-    @Parameter()
+    @Parameter
     public TestSetup setup;
 
     private void createAndStartDb()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( bolt.enabled, "true" )
                 .setConfig( bolt.listen_address, ":" + PortAuthority.allocatePort() )
                 .setConfig( GraphDatabaseSettings.bolt_ssl_policy, "bolt" )

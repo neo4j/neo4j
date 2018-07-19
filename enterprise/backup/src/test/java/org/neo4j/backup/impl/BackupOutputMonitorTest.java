@@ -23,34 +23,29 @@
 package org.neo4j.backup.impl;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 
 import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.ParameterisedOutsideWorld;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.backup.impl.OnlineBackupCommandCcIT.wrapWithNormalOutput;
 
 public class BackupOutputMonitorTest
 {
-    private Monitors monitors = new Monitors();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final Monitors monitors = new Monitors();
     private OutsideWorld outsideWorld;
-    private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    private PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
-
-    private ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
-    private PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
 
     @Before
     public void setup()
     {
-        outsideWorld = new ParameterisedOutsideWorld( System.console(), outputStream, errorStream, System.in, new DefaultFileSystemAbstraction() );
+        outsideWorld = new ParameterisedOutsideWorld( System.console(), System.out, System.err, System.in, new DefaultFileSystemAbstraction() );
     }
 
     @Test
@@ -64,6 +59,6 @@ public class BackupOutputMonitorTest
         storeCopyClientMonitor.startReceivingStoreFiles();
 
         // then
-        assertTrue( byteArrayOutputStream.toString().contains( "Start receiving store files" ) );
+        assertTrue( suppressOutput.getOutputVoice().toString().toString().contains( "Start receiving store files" ) );
     }
 }

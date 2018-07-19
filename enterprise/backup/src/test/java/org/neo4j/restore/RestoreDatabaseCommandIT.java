@@ -79,89 +79,89 @@ public class RestoreDatabaseCommandIT
     public final ExpectedException expectedException = ExpectedException.none();
     private Config toConfig;
     private static final String databaseName = "to";
-    private File fromStorePath;
-    private File fromDatabasePath;
+    private File fromStore;
+    private File fromDatabase;
     private String fromLogicalLogsPath;
-    private File toStorePath;
+    private File toStore;
     private String toLogicalLogsPath;
 
     @Before
     public void setUp() throws Exception
     {
         toConfig = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
-        fromStorePath = directory.directory( "from" );
-        fromDatabasePath = new File( fromStorePath, DataSourceManager.DEFAULT_DATABASE_NAME );
-        fromLogicalLogsPath = fromDatabasePath.getAbsolutePath();
-        toStorePath = toConfig.get( GraphDatabaseSettings.database_path ).getParentFile();
-        toLogicalLogsPath = toStorePath.getAbsolutePath();
+        fromStore = directory.storeDir( "from" );
+        fromDatabase = directory.databaseDir( fromStore );
+        fromLogicalLogsPath = fromDatabase.getAbsolutePath();
+        toStore = toConfig.get( GraphDatabaseSettings.database_path ).getParentFile();
+        toLogicalLogsPath = toStore.getAbsolutePath();
     }
 
     @Test
     public void forceShouldRespectStoreLock() throws Exception
     {
-        createDbAt( fromStorePath, fromLogicalLogsPath, 10 );
-        createDbAt( toStorePath, toLogicalLogsPath, 20, toConfig );
+        createDbAt( fromStore, fromLogicalLogsPath, 10 );
+        createDbAt( toStore, toLogicalLogsPath, 20, toConfig );
 
         expectedException.expect( CommandFailed.class );
         expectedException.expectMessage( "the database is in use -- stop Neo4j and try again" );
 
         FileSystemAbstraction fs = fileSystemRule.get();
-        try ( StoreLocker storeLocker = new StoreLocker( fs, toStorePath ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fs, toStore ) )
         {
             storeLocker.checkLock();
-            new RestoreDatabaseCommand( fs, fromDatabasePath, toConfig, databaseName, true ).execute();
+            new RestoreDatabaseCommand( fs, fromDatabase, toConfig, databaseName, true ).execute();
         }
     }
 
     @Test
     public void shouldNotCopyOverAndExistingDatabase() throws Exception
     {
-        createDbAt( fromStorePath, fromLogicalLogsPath, 0 );
-        createDbAt( toStorePath, toLogicalLogsPath, 0, toConfig );
+        createDbAt( fromStore, fromLogicalLogsPath, 0 );
+        createDbAt( toStore, toLogicalLogsPath, 0, toConfig );
 
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Database with name [to] already exists" );
 
         // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabasePath, toConfig, databaseName, false ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, false ).execute();
     }
 
     @Test
     public void shouldThrowExceptionIfBackupDirectoryDoesNotExist() throws Exception
     {
-        createDbAt( toStorePath, toLogicalLogsPath, 0, toConfig );
+        createDbAt( toStore, toLogicalLogsPath, 0, toConfig );
 
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Source directory does not exist" );
 
         // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabasePath, toConfig, databaseName, false ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, false ).execute();
     }
 
     @Test
     public void shouldThrowExceptionIfBackupDirectoryDoesNotHaveStoreFiles() throws Exception
     {
-        assertTrue( fromDatabasePath.mkdirs() );
+        assertTrue( fromDatabase.mkdirs() );
 
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Source directory is not a database backup" );
 
         // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabasePath, toConfig, databaseName, false ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, false ).execute();
     }
 
     @Test
     public void shouldAllowForcedCopyOverAnExistingDatabase() throws Exception
     {
-        createDbAt( fromStorePath, fromLogicalLogsPath, 10 );
-        createDbAt( toStorePath, toLogicalLogsPath, 20, toConfig );
+        createDbAt( fromStore, fromLogicalLogsPath, 10 );
+        createDbAt( toStore, toLogicalLogsPath, 20, toConfig );
 
         // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabasePath, toConfig, databaseName, true ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, true ).execute();
 
         // then
         toConfig.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( toStorePath )
+        GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( toStore )
                 .setConfig( toConfig.getRaw() )
                 .newGraphDatabase();
 
@@ -180,9 +180,9 @@ public class RestoreDatabaseCommandIT
         Config toConfig = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
         File toStorePath = toConfig.get( GraphDatabaseSettings.database_path );
 
-        createDbWithExplicitIndexAt( fromStorePath, 100 );
+        createDbWithExplicitIndexAt( fromStore, 100 );
 
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabasePath, toConfig, databaseName, true ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, true ).execute();
 
         GraphDatabaseService restoredDatabase = createDatabase( toStorePath, toStorePath.getAbsolutePath(), toConfig );
 
@@ -214,17 +214,17 @@ public class RestoreDatabaseCommandIT
         File customTxLogDirectory = directory.directory( "customLogicalLog" );
         String customTransactionLogDirectory = customTxLogDirectory.getAbsolutePath();
 
-        createDbAt( fromStorePath, fromLogicalLogsPath, 10 );
+        createDbAt( fromStore, fromLogicalLogsPath, 10 );
 
-        GraphDatabaseService db = createDatabase( toStorePath, customTransactionLogDirectory, toConfig );
+        GraphDatabaseService db = createDatabase( toStore, customTransactionLogDirectory, toConfig );
         createTestData( 20, db );
         db.shutdown();
 
         // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabasePath, toConfig, databaseName, true ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, true ).execute();
 
-        LogFiles fromStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromDatabasePath, fileSystemRule.get() ).build();
-        LogFiles toStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( toStorePath, databaseName ), fileSystemRule.get() ).build();
+        LogFiles fromStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromDatabase, fileSystemRule.get() ).build();
+        LogFiles toStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( toStore, databaseName ), fileSystemRule.get() ).build();
         LogFiles customLogLocationLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( customTxLogDirectory, fileSystemRule.get() ).build();
         assertThat( toStoreLogFiles.logFiles(), emptyArray() );
         assertThat( customLogLocationLogFiles.logFiles(), arrayWithSize( 1 ) );
@@ -244,9 +244,9 @@ public class RestoreDatabaseCommandIT
         Config config = Config.defaults( GraphDatabaseSettings.database_path, databaseDirectory.getAbsolutePath() );
         config.augment( GraphDatabaseSettings.logical_logs_location, relativeLogDirectory.getAbsolutePath() );
 
-        createDbAt( fromStorePath, fromLogicalLogsPath, 10 );
+        createDbAt( fromStore, fromLogicalLogsPath, 10 );
 
-        new RestoreDatabaseCommand( fileSystem, fromDatabasePath, config, testDatabase, true ).execute();
+        new RestoreDatabaseCommand( fileSystem, fromDatabase, config, testDatabase, true ).execute();
 
         verify( fileSystem ).deleteRecursively( eq( databaseDirectory ) );
         verify( fileSystem, never() ).deleteRecursively( eq( relativeLogDirectory ) );

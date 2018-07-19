@@ -62,7 +62,7 @@ public class IndexPopulationIT
     @BeforeClass
     public static void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.databaseDir() );
+        database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.storeDir() );
         executorService = Executors.newCachedThreadPool();
     }
 

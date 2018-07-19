@@ -49,21 +49,21 @@ public class CountsMigratorTest
     {
         // given
         CountsMigrator migrator = new CountsMigrator( fs, null, Config.defaults() );
-        File storeDir = directory.databaseDir();
-        File countsStoreFileA = new File( storeDir, COUNTS_STORE_LEFT.fileName( STORE ) );
-        File countsStoreFileB = new File( storeDir, COUNTS_STORE_RIGHT.fileName( STORE ) );
+        File databaseDir = directory.databaseDir();
+        File countsStoreFileA = new File( databaseDir, COUNTS_STORE_LEFT.fileName( STORE ) );
+        File countsStoreFileB = new File( databaseDir, COUNTS_STORE_RIGHT.fileName( STORE ) );
         fs.create( countsStoreFileA );
         fs.create( countsStoreFileB );
-        File migrationDir = new File( storeDir, "migration" );
+        File migrationDir = new File( databaseDir, "migration" );
         fs.mkdirs( migrationDir );
         String versionToMigrateFrom = StoreVersion.STANDARD_V3_2.versionString();
         String versionToMigrateTo = StoreVersion.STANDARD_V3_4.versionString();
-        migrator.migrate( storeDir, migrationDir, SilentProgressReporter.INSTANCE, versionToMigrateFrom, versionToMigrateTo );
+        migrator.migrate( databaseDir, migrationDir, SilentProgressReporter.INSTANCE, versionToMigrateFrom, versionToMigrateTo );
         assertEquals( "Invalid test assumption: There should not have been migration for those versions", 0,
                 fs.listFiles( migrationDir ).length );
 
         // when
-        migrator.moveMigratedFiles( migrationDir, storeDir, versionToMigrateFrom, versionToMigrateTo );
+        migrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom, versionToMigrateTo );
 
         // then
         assertTrue( fs.fileExists( countsStoreFileA ) );

@@ -78,7 +78,7 @@ public class ReadReplicaStartupProcessTest
     private AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "127.0.0.1", 123 );
     private StoreId localStoreId = new StoreId( 1, 2, 3, 4 );
     private StoreId otherStoreId = new StoreId( 5, 6, 7, 8 );
-    private File storeDir = new File( "store-dir" );
+    private File databaseDirectory = new File( "store-dir" );
 
     @Before
     public void commonMocking() throws IOException
@@ -88,7 +88,7 @@ public class ReadReplicaStartupProcessTest
 
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
         when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) ).thenAnswer( f -> Stream.empty() );
-        when( localDatabase.databaseDirectort() ).thenReturn( storeDir );
+        when( localDatabase.databaseDirectory() ).thenReturn( databaseDirectory );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
         when( topologyService.allCoreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( members );

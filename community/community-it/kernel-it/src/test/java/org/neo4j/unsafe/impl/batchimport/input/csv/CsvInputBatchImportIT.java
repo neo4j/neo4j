@@ -315,7 +315,7 @@ public class CsvInputBatchImportIT
                 expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.directory() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.storeDir() );
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes

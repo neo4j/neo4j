@@ -178,7 +178,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         File databaseDir = db.databaseDirectory();
         File data = testDirectory.cleanDirectory( "data" );
         File databases = new File( data, "databases" );
-        File graphdb = new File( databases, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File graphdb = testDirectory.databaseDir( databases );
         assertTrue( graphdb.mkdirs() );
         FileUtils.copyRecursively( databaseDir, graphdb );
         FileUtils.deleteRecursively( databaseDir );

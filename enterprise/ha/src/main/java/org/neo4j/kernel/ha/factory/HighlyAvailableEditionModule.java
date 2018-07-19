@@ -230,7 +230,6 @@ public class HighlyAvailableEditionModule
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
-        //TODO: particular database directory
         File databaseDirectory = new File( platformModule.storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
         life.add( new BranchedDataMigrator( databaseDirectory ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
@@ -600,7 +599,6 @@ public class HighlyAvailableEditionModule
     {
         switch ( config.get( HaSettings.branched_data_copying_strategy ) )
         {
-            // :TODO: particular database directory should be used here
             case branch_then_copy:
                 return new SwitchToSlaveBranchThenCopy( databaseDirectory, logging,
                         platformModule.fileSystem, config, idGeneratorFactory,

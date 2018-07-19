@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
@@ -84,7 +83,7 @@ public class CoreBootstrapperIT
                 testDirectory.directory(), fileSystem, nodeCount, Standard.LATEST_NAME );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        File classicDatabaseDirectory = new File( classicNeo4jStore, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File classicDatabaseDirectory = testDirectory.databaseDir( classicNeo4jStore );
         CoreBootstrapper bootstrapper = new CoreBootstrapper( classicDatabaseDirectory, pageCache, fileSystem,
                 Config.defaults(), NullLogProvider.getInstance() );
         bootstrapAndVerify( nodeCount, fileSystem, classicDatabaseDirectory, pageCache, Config.defaults(), bootstrapper );
@@ -102,7 +101,7 @@ public class CoreBootstrapperIT
                 Standard.LATEST_NAME, customTransactionLogsLocation );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        File classicDatabaseDirectory = new File( classicNeo4jStore, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File classicDatabaseDirectory = testDirectory.databaseDir( classicNeo4jStore );
         Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location,
                 customTransactionLogsLocation );
         CoreBootstrapper bootstrapper = new CoreBootstrapper( classicDatabaseDirectory, pageCache, fileSystem,

@@ -40,7 +40,6 @@ class BackupRecoveryService
         Map<String,String> configParams = config.getRaw();
         configParams.put( GraphDatabaseSettings.logical_logs_location.name(), databaseDirectory.toString() );
         configParams.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
-        //TODO:
         GraphDatabaseAPI targetDb = startTemporaryDb( databaseDirectory.getParent(), pageCache, configParams );
         targetDb.shutdown();
     }

@@ -68,7 +68,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading disabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
+                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
@@ -84,7 +84,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading disabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
+                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
@@ -98,7 +98,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading enabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
+                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .newGraphDatabase();
         db.shutdown();
@@ -108,7 +108,7 @@ public class LogVersionUpgradeCheckerIT
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
+                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -129,10 +129,10 @@ public class LogVersionUpgradeCheckerIT
 
     private void appendCheckpoint( LogEntryVersion logVersion ) throws IOException
     {
-        File storeDir = storeDirectory.databaseDir();
+        File databaseDir = storeDirectory.databaseDir();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withLogEntryReader( logEntryReader ).build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseDir, fs, pageCache ).withLogEntryReader( logEntryReader ).build();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         LogTailScanner.LogTailInformation tailInformation = tailScanner.getTailInformation();
 

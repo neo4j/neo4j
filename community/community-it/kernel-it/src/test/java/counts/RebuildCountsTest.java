@@ -77,7 +77,7 @@ public class RebuildCountsTest
     @Before
     public void before() throws IOException
     {
-        storeDir = testDirectory.directory();
+        storeDir = testDirectory.storeDir();
         restart( fsRule.get() );
     }
 

@@ -60,7 +60,7 @@ public class RecoveryRequiredCheckerTest
     @Before
     public void setup()
     {
-        storeDir = testDirectory.directory();
+        storeDir = testDirectory.storeDir();
         databaseDirectory = testDirectory.databaseDir();
         fileSystem = fileSystemRule.get();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();

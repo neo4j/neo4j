@@ -56,7 +56,7 @@ public class PointPropertiesRecordFormatIT
     @Test
     public void failToCreatePointOnOldDatabase()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = nonUpgradedStore.beginTx() )
         {
@@ -84,7 +84,7 @@ public class PointPropertiesRecordFormatIT
     @Test
     public void failToCreatePointArrayOnOldDatabase()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
         PointValue point = pointValue( Cartesian, 1.0, 2.0 );
         try ( Transaction transaction = nonUpgradedStore.beginTx() )
@@ -113,7 +113,7 @@ public class PointPropertiesRecordFormatIT
     @Test
     public void createPointPropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
@@ -138,7 +138,7 @@ public class PointPropertiesRecordFormatIT
     @Test
     public void createPointArrayPropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
@@ -168,7 +168,7 @@ public class PointPropertiesRecordFormatIT
     @Test
     public void failToOpenStoreWithPointPropertyUsingOldFormat()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
         {

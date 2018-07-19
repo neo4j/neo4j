@@ -96,7 +96,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -161,7 +160,7 @@ public class RecoveryIT
         // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
         File restoreDbStoreDir = copyTransactionLogs();
 
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir.getParentFile() );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
@@ -188,7 +187,7 @@ public class RecoveryIT
         }
 
         File restoreDbStoreDir = copyTransactionLogs();
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir.getParentFile() );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
@@ -234,7 +233,7 @@ public class RecoveryIT
         File restoreDbStoreDir = copyTransactionLogs();
 
         // database should be restored and node should have expected properties
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir.getParentFile() );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
         try ( Transaction ignored = recoveredDatabase.beginTx() )
         {
             Node node = findNodeByLabel( recoveredDatabase, testLabel );
@@ -384,7 +383,7 @@ public class RecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( directory.directory() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( directory.storeDir() );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
         EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();
@@ -456,7 +455,7 @@ public class RecoveryIT
                 }
                 .setFileSystem( crashedFs )
                 .setMonitors( monitors )
-                .newImpermanentDatabase( directory.directory() )
+                .newImpermanentDatabase( directory.storeDir() )
                 .shutdown();
 
         // then
@@ -806,10 +805,10 @@ public class RecoveryIT
 
     private File copyTransactionLogs() throws IOException
     {
-        File restoreDbStoreDir = new File( this.directory.directory( "restore-db" ), DataSourceManager.DEFAULT_DATABASE_NAME );
-        restoreDbStoreDir.mkdir();
+        File restoreDbStore = directory.storeDir( "restore-db" );
+        File restoreDbStoreDir = directory.databaseDir( restoreDbStore );
         move( fileSystemRule.get(), this.directory.databaseDir(), restoreDbStoreDir );
-        return restoreDbStoreDir;
+        return restoreDbStore;
     }
 
     private static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException

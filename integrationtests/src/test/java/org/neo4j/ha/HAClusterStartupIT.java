@@ -23,7 +23,6 @@
 package org.neo4j.ha;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -58,7 +57,6 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 @RunWith( Enclosed.class )
-@Ignore
 public class HAClusterStartupIT
 {
     public static class SimpleCluster

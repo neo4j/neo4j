@@ -62,7 +62,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class PartialTransactionFailureIT
 {
     @Rule
-    public TestDirectory dir = TestDirectory.testDirectory();
+    public final TestDirectory dir = TestDirectory.testDirectory();
 
     @Test
     public void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction()
@@ -73,7 +73,7 @@ public class PartialTransactionFailureIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = dir.databaseDir();
+        File storeDir = dir.storeDir();
         final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params )
         {

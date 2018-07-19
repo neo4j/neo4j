@@ -51,7 +51,7 @@ public class LuceneRecoveryIT
     @Test
     public void testHardCoreRecovery() throws Exception
     {
-        String path = testDirectory.databaseDir().getPath();
+        String path = testDirectory.storeDir().getPath();
 
         Process process = Runtime.getRuntime().exec( new String[]{
                 ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
@@ -67,7 +67,7 @@ public class LuceneRecoveryIT
         GraphDatabaseService db = null;
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
             try ( Transaction transaction = db.beginTx() )
             {
                 assertTrue( db.index().existsForNodes( "myIndex" ) );

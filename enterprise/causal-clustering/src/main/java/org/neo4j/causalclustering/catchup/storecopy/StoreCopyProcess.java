@@ -54,7 +54,7 @@ public class StoreCopyProcess
     public void replaceWithStoreFrom( CatchupAddressProvider addressProvider, StoreId expectedStoreId )
             throws IOException, StoreCopyFailedException, DatabaseShutdownException
     {
-        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache, localDatabase.databaseDirectort() ) )
+        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache, localDatabase.databaseDirectory() ) )
         {
             remoteStore.copy( addressProvider, expectedStoreId, tempStore.databaseDirectory(),
                     false );

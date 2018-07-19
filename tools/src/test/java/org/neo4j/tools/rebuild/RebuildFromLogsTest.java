@@ -48,7 +48,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -145,9 +144,9 @@ public class RebuildFromLogsTest
         return new File( dir.directory(), "prototype" );
     }
 
-    private static File getDatabasePath( File file )
+    private File getDatabasePath( File storeDir )
     {
-        return new File( file, DataSourceManager.DEFAULT_DATABASE_NAME );
+        return dir.databaseDir( storeDir );
     }
 
     private long populatePrototype( File prototypePath )

@@ -74,7 +74,7 @@ public class CheckPointerIntegrationTest
     public void setup()
     {
         fs = fsRule.get();
-        File storeDir = testDirectory.directory();
+        File storeDir = testDirectory.storeDir();
         builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( storeDir );
     }

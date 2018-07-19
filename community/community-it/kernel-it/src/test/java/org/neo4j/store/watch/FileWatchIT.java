@@ -63,7 +63,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
-//TODO
+// TODO watchers needs to be moved into datasource lifecycle
 @Ignore
 public class FileWatchIT
 {
@@ -79,7 +79,7 @@ public class FileWatchIT
     @Before
     public void setUp()
     {
-        storeDir = testDirectory.directory();
+        storeDir = testDirectory.storeDir();
         logProvider = new AssertableLogProvider();
         database = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( storeDir );
     }
@@ -124,7 +124,7 @@ public class FileWatchIT
         {
             db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                     .setFileSystem( new NonWatchableFileSystemAbstraction() )
-                    .newEmbeddedDatabase( testDirectory.directory( "failed-start-db" ) );
+                    .newEmbeddedDatabase( testDirectory.storeDir( "failed-start-db" ) );
 
             logProvider.assertContainsMessageContaining( "Can not create file watcher for current file system. " +
                     "File monitoring capabilities for store files will be disabled." );

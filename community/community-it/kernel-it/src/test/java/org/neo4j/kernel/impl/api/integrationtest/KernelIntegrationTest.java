@@ -174,7 +174,7 @@ public abstract class KernelIntegrationTest
     protected GraphDatabaseService createGraphDatabase()
     {
         GraphDatabaseBuilder graphDatabaseBuilder = createGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
-                .newEmbeddedDatabaseBuilder( testDir.databaseDir() );
+                .newEmbeddedDatabaseBuilder( testDir.storeDir() );
         return configure( graphDatabaseBuilder ).newGraphDatabase();
     }
 

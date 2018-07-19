@@ -63,7 +63,7 @@ public class ConcurrentChangesOnEntitiesTest
     public void setup()
     {
         db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .newGraphDatabase();
     }
 

@@ -32,7 +32,6 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -50,7 +49,7 @@ public class SlaveUpgradeTest
         try
         {
             File storeDirectory = testDirectory.directory( "haShouldFailToStartWithOldStore" );
-            File databaseDirectory = new File( storeDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
+            File databaseDirectory = testDirectory.databaseDir( storeDirectory );
             MigrationTestUtils.find23FormatStoreDirectory( databaseDirectory );
 
             new TestHighlyAvailableGraphDatabaseFactory()

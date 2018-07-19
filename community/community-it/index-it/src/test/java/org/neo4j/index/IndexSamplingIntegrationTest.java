@@ -71,7 +71,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
             {
@@ -140,7 +140,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
@@ -202,7 +202,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )
@@ -225,7 +225,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )

@@ -268,7 +268,7 @@ public class ConsistencyCheckToolTest
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( testDirectory.directory() )
+                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( config.getRaw()  )
                 .newGraphDatabase();
 

@@ -75,7 +75,7 @@ public class ManyPropertyKeysIT
     @Before
     public void setup()
     {
-        storeDir  = testDirectory.databaseDir();
+        storeDir  = testDirectory.storeDir();
     }
 
     @Test
@@ -123,7 +123,7 @@ public class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.directory() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
     }
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )

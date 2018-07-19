@@ -22,7 +22,6 @@
  */
 package org.neo4j;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -84,7 +83,6 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.withBaseUri;
 
-@Ignore
 @RunWith( Parameterized.class )
 public class TransactionTerminationIT
 {

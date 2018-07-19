@@ -107,7 +107,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     protected GraphDatabaseService createGraphDatabase()
     {
         return new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
-                .newEmbeddedDatabase( testDir.databaseDir() );
+                .newEmbeddedDatabase( testDir.storeDir() );
     }
 
     @Test

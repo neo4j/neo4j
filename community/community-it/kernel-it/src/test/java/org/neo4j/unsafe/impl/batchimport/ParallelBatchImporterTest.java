@@ -56,7 +56,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
@@ -169,9 +168,8 @@ public class ParallelBatchImporterTest
     {
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
-        File storeDir = directory.directory( "dir" + random.nextAlphaNumericString( 8, 8 ) );
-        storeDir.mkdirs();
-        final BatchImporter inserter = new ParallelBatchImporter( new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME ),
+        File storeDir = directory.storeDir( "dir" + random.nextAlphaNumericString( 8, 8 ) );
+        final BatchImporter inserter = new ParallelBatchImporter( directory.databaseDir( storeDir ),
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
                 processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR );
 
@@ -237,7 +235,7 @@ public class ParallelBatchImporterTest
     protected void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
-        File databaseDirectory = new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File databaseDirectory = directory.databaseDir( storeDir );
         Result result = consistencyChecker.runFullConsistencyCheck( databaseDirectory,
                 Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 ProgressMonitorFactory.NONE,

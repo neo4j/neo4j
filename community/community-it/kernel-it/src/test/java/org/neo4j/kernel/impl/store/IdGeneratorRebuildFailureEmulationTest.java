@@ -70,7 +70,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     public void initialize()
     {
         fs = new FileSystem();
-        storeDirectory = testDirectory.directory();
+        storeDirectory = testDirectory.storeDir();
         GraphDatabaseService graphdb = new Database( storeDirectory );
         createInitialData( graphdb );
         graphdb.shutdown();

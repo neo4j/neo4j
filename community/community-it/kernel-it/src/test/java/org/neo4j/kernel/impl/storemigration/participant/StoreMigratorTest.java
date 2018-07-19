@@ -94,8 +94,8 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        File storeDir = directory.databaseDir();
-        File neoStore = new File( storeDir, DEFAULT_NAME );
+        File databaseDir = directory.databaseDir();
+        File neoStore = new File( databaseDir, DEFAULT_NAME );
         neoStore.createNewFile();
 
         // ... and mocks
@@ -121,8 +121,8 @@ public class StoreMigratorTest
     {
         // given
         long txId = 42;
-        File storeDir = directory.databaseDir();
-        File neoStore = new File( storeDir, DEFAULT_NAME );
+        File databaseDir = directory.databaseDir();
+        File neoStore = new File( databaseDir, DEFAULT_NAME );
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
@@ -192,8 +192,8 @@ public class StoreMigratorTest
     {
         // given
         long txId = 1;
-        File storeDir = directory.databaseDir();
-        File neoStore = new File( storeDir, DEFAULT_NAME );
+        File databaseDir = directory.databaseDir();
+        File neoStore = new File( databaseDir, DEFAULT_NAME );
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );

@@ -91,7 +91,7 @@ public class KernelRecoveryTest
     {
         return new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabase( testDirectory.directory() );
+                .newImpermanentDatabase( testDirectory.storeDir() );
     }
 
     private static long createNode( GraphDatabaseService db )

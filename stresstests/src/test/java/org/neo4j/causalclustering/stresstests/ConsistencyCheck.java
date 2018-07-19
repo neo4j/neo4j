@@ -49,11 +49,11 @@ public class ConsistencyCheck extends Validation
 
         for ( ClusterMember member : members )
         {
-            String storeDir = member.databaseDirectory().getAbsolutePath();
-            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir}, System.out, System.err );
+            String databasePath = member.databaseDirectory().getAbsolutePath();
+            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{databasePath}, System.out, System.err );
             if ( !result.isSuccessful() )
             {
-                throw new RuntimeException( "Not consistent database in " + storeDir );
+                throw new RuntimeException( "Not consistent database in " + databasePath );
             }
         }
     }

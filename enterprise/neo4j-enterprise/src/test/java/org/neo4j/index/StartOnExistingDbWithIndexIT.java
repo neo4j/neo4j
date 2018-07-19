@@ -40,7 +40,7 @@ import org.neo4j.test.rule.TestDirectory;
 public class StartOnExistingDbWithIndexIT
 {
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void startStopDatabaseWithIndex()
@@ -72,12 +72,12 @@ public class StartOnExistingDbWithIndexIT
     {
         return new TestEnterpriseGraphDatabaseFactory()
                 .setInternalLogProvider( logProvider )
-                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
     }
 
-    private void waitIndexes( GraphDatabaseService db )
+    private static void waitIndexes( GraphDatabaseService db )
     {
         try ( Transaction transaction = db.beginTx() )
         {

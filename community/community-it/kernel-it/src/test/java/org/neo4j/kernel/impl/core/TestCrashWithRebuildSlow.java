@@ -75,7 +75,7 @@ public class TestCrashWithRebuildSlow
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() ).newImpermanentDatabaseBuilder( testDir.directory() )
+                .setFileSystem( fs.get() ).newImpermanentDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
@@ -110,7 +110,7 @@ public class TestCrashWithRebuildSlow
         assertNumberOfFreeIdsEquals( testDir.databaseDir(), snapshot, 0 );
         GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( snapshot )
-                .newImpermanentDatabaseBuilder( testDir.directory() )
+                .newImpermanentDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE )
                 .newGraphDatabase();
         Map<IdType,Long> highIdsAfterCrash = getHighIds( newDb );

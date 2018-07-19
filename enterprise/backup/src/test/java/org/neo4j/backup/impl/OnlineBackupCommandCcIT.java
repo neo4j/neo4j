@@ -22,8 +22,6 @@
  */
 package org.neo4j.backup.impl;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +35,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -58,8 +55,6 @@ import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -67,7 +62,6 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -82,8 +76,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
-import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_server;
 
 @RunWith( Parameterized.class )
@@ -92,7 +84,6 @@ public class OnlineBackupCommandCcIT
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    @Rule
     public ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 3 )

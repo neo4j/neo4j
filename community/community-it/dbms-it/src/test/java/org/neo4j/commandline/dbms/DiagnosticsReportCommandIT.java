@@ -60,7 +60,7 @@ public class DiagnosticsReportCommandIT
     @Before
     public void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+        database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .newGraphDatabase();
     }
 

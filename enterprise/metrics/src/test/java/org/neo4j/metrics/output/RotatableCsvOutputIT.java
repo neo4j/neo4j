@@ -63,7 +63,7 @@ public class RotatableCsvOutputIT
     public void setup()
     {
         outputPath = testDirectory.directory( "metrics" );
-        database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+        database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( csvPath, outputPath.getAbsolutePath() )
                 .setConfig( csvRotationThreshold, "21" )
                 .setConfig( csvMaxArchives, String.valueOf( MAX_ARCHIVES ) )

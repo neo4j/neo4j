@@ -136,7 +136,6 @@ public class ClusterSeedingIT
         // then
         if ( backup.isPresent() )
         {
-            //TODO:
             Config config = Config.defaults( GraphDatabaseSettings.active_database, backup.get().getName() );
             dataMatchesEventually( DbRepresentation.of( backup.get().getParentFile(), config ), cluster.coreMembers() );
         }

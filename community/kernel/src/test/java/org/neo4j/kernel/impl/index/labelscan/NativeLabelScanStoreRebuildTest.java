@@ -63,12 +63,12 @@ public class NativeLabelScanStoreRebuildTest
     {
         throw new IllegalArgumentException();
     };
-    private File storeDir;
+    private File databaseDirectory;
 
     @Before
     public void setup()
     {
-        storeDir = testDirectory.databaseDir();
+        databaseDirectory = testDirectory.databaseDir();
     }
 
     @Test
@@ -84,7 +84,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, fileSystemRule.get(), EMPTY, false, monitors, IMMEDIATE );
+                new NativeLabelScanStore( pageCache, databaseDirectory, fileSystemRule.get(), EMPTY, false, monitors, IMMEDIATE );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -106,7 +106,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, fileSystemRule.get(), EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
+                new NativeLabelScanStore( pageCache, databaseDirectory, fileSystemRule.get(), EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -127,7 +127,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, fileSystemRule.get(), EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
+                new NativeLabelScanStore( pageCache, databaseDirectory, fileSystemRule.get(), EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -147,7 +147,7 @@ public class NativeLabelScanStoreRebuildTest
         try
         {
             nativeLabelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, fileSystemRule.get(), changeStream, false, new Monitors(), IMMEDIATE );
+                    new NativeLabelScanStore( pageCache, databaseDirectory, fileSystemRule.get(), changeStream, false, new Monitors(), IMMEDIATE );
             nativeLabelScanStore.init();
 
             // when
@@ -174,7 +174,7 @@ public class NativeLabelScanStoreRebuildTest
         NativeLabelScanStore nativeLabelScanStore = null;
         try
         {
-            nativeLabelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystemRule.get(), THROWING_STREAM, false,
+            nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseDirectory, fileSystemRule.get(), THROWING_STREAM, false,
                     new Monitors(), IMMEDIATE );
 
             nativeLabelScanStore.init();

@@ -43,9 +43,9 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.causalclustering.ClusterRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
@@ -77,7 +77,8 @@ public class ConvertNonCausalClusteringStoreIT
     public void shouldReplicateTransactionToCoreMembers() throws Throwable
     {
         // given
-        File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db-" + recordFormat );
+        TestDirectory testDirectory = clusterRule.testDirectory();
+        File dbDir = testDirectory.cleanDirectory( "classic-db-" + recordFormat );
         int classicNodeCount = 1024;
         File classicNeo4jStore = createNeoStore( dbDir, classicNodeCount );
 
@@ -87,8 +88,7 @@ public class ConvertNonCausalClusteringStoreIT
         {
             for ( CoreClusterMember core : cluster.coreMembers() )
             {
-                //TODO: looks strange
-                new RestoreDatabaseCommand( fileSystem, new File( classicNeo4jStore, DataSourceManager.DEFAULT_DATABASE_NAME ), core.config(),
+                new RestoreDatabaseCommand( fileSystem, testDirectory.databaseDir( classicNeo4jStore ), core.config(),
                         core.settingValue( GraphDatabaseSettings.active_database.name() ), true ).execute();
             }
         }

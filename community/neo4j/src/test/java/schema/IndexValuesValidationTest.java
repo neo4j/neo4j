@@ -58,7 +58,7 @@ public class IndexValuesValidationTest
     @BeforeClass
     public static void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.databaseDir() );
+        database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.storeDir() );
     }
 
     @AfterClass

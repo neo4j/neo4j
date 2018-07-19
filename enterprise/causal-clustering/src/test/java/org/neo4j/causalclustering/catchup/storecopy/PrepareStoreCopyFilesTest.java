@@ -59,7 +59,7 @@ public class PrepareStoreCopyFilesTest
     public final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemAbstraction );
     private PrepareStoreCopyFiles prepareStoreCopyFiles;
     private NeoStoreFileIndexListing indexListingMock;
-    private File storeDir;
+    private File databaseDirectory;
     private NeoStoreFileListing.StoreFileListingBuilder fileListingBuilder;
 
     @Before
@@ -67,8 +67,8 @@ public class PrepareStoreCopyFilesTest
     {
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         fileListingBuilder = mock( NeoStoreFileListing.StoreFileListingBuilder.class, CALLS_REAL_METHODS );
-        storeDir = testDirectory.databaseDir();
-        when( dataSource.getDatabaseDirectory() ).thenReturn( storeDir );
+        databaseDirectory = testDirectory.databaseDir();
+        when( dataSource.getDatabaseDirectory() ).thenReturn( databaseDirectory );
         indexListingMock = mock( NeoStoreFileIndexListing.class );
         when( indexListingMock.getIndexIds() ).thenReturn( new LongHashSet() );
         NeoStoreFileListing storeFileListing = mock( NeoStoreFileListing.class );
@@ -97,8 +97,8 @@ public class PrepareStoreCopyFilesTest
     public void shouldReturnExpectedListOfFileNamesForEachType() throws Exception
     {
         // given
-        StoreFileMetadata[] expectedFiles =
-                new StoreFileMetadata[]{new StoreFileMetadata( new File( storeDir, "a" ), 1 ), new StoreFileMetadata( new File( storeDir, "b" ), 2 )};
+        StoreFileMetadata[] expectedFiles = new StoreFileMetadata[]{new StoreFileMetadata( new File( databaseDirectory, "a" ), 1 ),
+                new StoreFileMetadata( new File( databaseDirectory, "b" ), 2 )};
         setExpectedFiles( expectedFiles );
 
         //when
@@ -143,7 +143,7 @@ public class PrepareStoreCopyFilesTest
     {
         try
         {
-            return relativePath( storeDir, f.file() );
+            return relativePath( databaseDirectory, f.file() );
         }
         catch ( IOException e )
         {

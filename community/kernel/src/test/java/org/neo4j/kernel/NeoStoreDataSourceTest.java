@@ -245,7 +245,7 @@ public class NeoStoreDataSourceTest
     public void shouldAlwaysShutdownLifeEvenWhenCheckPointingFails() throws Exception
     {
         // Given
-        File storeDir = dir.databaseDir();
+        File databaseDir = dir.databaseDir();
         FileSystemAbstraction fs = this.fs.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
@@ -255,7 +255,7 @@ public class NeoStoreDataSourceTest
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseHealth );
-        NeoStoreDataSource dataSource = dsRule.getDataSource( storeDir, fs, pageCache, dependencies );
+        NeoStoreDataSource dataSource = dsRule.getDataSource( databaseDir, fs, pageCache, dependencies );
         dataSource.start();
 
         try

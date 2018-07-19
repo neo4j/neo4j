@@ -43,7 +43,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
@@ -82,11 +81,6 @@ public class DatabaseRebuildToolTest
 
         // THEN
         assertEquals( DbRepresentation.of( databaseDirectory( from ) ), DbRepresentation.of( databaseDirectory( to ) ) );
-    }
-
-    private static File databaseDirectory( File file )
-    {
-        return new File( file, DataSourceManager.DEFAULT_DATABASE_NAME );
     }
 
     @Test
@@ -179,7 +173,12 @@ public class DatabaseRebuildToolTest
         }
     }
 
-    private long lastAppliedTx( File storeDir )
+    private File databaseDirectory( File storeDir )
+    {
+        return directory.databaseDir( storeDir );
+    }
+
+    private static long lastAppliedTx( File storeDir )
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = createPageCache( fileSystem ) )
@@ -193,7 +192,7 @@ public class DatabaseRebuildToolTest
         }
     }
 
-    private InputStream input( String... strings )
+    private static InputStream input( String... strings )
     {
         StringBuilder all = new StringBuilder();
         for ( String string : strings )

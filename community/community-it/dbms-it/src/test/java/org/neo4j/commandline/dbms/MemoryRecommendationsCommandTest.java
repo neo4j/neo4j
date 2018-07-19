@@ -21,7 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -167,7 +166,6 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    @Ignore
     public void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
     {
         // given
@@ -179,7 +177,7 @@ public class MemoryRecommendationsCommandTest
         String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
         File databaseDirectory = fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).build().get( database_path );
-        createDatabaseWithNativeIndexes( directory.directory() );
+        createDatabaseWithNativeIndexes( databaseDirectory.getParentFile(), databaseName );
         OutsideWorld outsideWorld = new OutputCaptureOutsideWorld( output );
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
@@ -240,7 +238,7 @@ public class MemoryRecommendationsCommandTest
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 
-    private static void createDatabaseWithNativeIndexes( File storeDir )
+    private static void createDatabaseWithNativeIndexes( File storeDir, String databaseName )
     {
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
@@ -248,6 +246,7 @@ public class MemoryRecommendationsCommandTest
             GraphDatabaseService db =
                     new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                             .setConfig( default_schema_provider, schemaIndex.providerName() )
+                            .setConfig( active_database, databaseName )
                             .newGraphDatabase();
             String key = "key-" + schemaIndex.name();
             try

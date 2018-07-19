@@ -71,7 +71,6 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 public class OpenEnterpriseNeoServer extends CommunityNeoServer
 {
 
-    // TODO:
     private static final GraphFactory HA_FACTORY = ( config, dependencies ) ->
     {
         File storeDir = config.get( GraphDatabaseSettings.database_path ).getParentFile();

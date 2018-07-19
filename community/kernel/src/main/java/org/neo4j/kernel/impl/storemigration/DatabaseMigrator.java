@@ -75,7 +75,7 @@ public class DatabaseMigrator
     /**
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
-     * @param databaseDirectory store to migrate
+     * @param databaseDirectory database to migrate
      */
     public void migrate( File databaseDirectory )
     {

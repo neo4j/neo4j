@@ -52,7 +52,7 @@ public class TestMigration
     public void providerGetsFilledInAutomatically()
     {
         Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" );
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         Neo4jTestCase.deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = startDatabase( storeDir );
         try ( Transaction transaction = graphDb.beginTx() )
@@ -113,7 +113,7 @@ public class TestMigration
         graphDb.shutdown();
     }
 
-    private GraphDatabaseService startDatabase( File storeDir )
+    private static GraphDatabaseService startDatabase( File storeDir )
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }

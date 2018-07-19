@@ -58,7 +58,6 @@ public class CommunityNeoServer extends AbstractNeoServer
 {
     protected static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) ->
     {
-        //TODO:
         File storeDir = config.get( GraphDatabaseSettings.database_path ).getParentFile();
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 .newFacade( storeDir, config, dependencies );

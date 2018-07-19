@@ -96,7 +96,7 @@ public class CatchupServerIT
     public void startDb() throws Throwable
     {
         temporaryDirectory = testDirectory.directory( "temp" );
-        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fsa ).newEmbeddedDatabase( testDirectory.directory() );
+        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fsa ).newEmbeddedDatabase( testDirectory.storeDir() );
         createLegacyIndex();
         createPropertyIndex();
         addData( graphDb );

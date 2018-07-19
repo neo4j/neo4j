@@ -76,7 +76,6 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -132,8 +131,8 @@ public class BackupIT
     public void before()
     {
         servers = new ArrayList<>();
-        serverStorePath = testDir.directory( "server" );
-        serverDatabasePath = new File( serverStorePath, DataSourceManager.DEFAULT_DATABASE_NAME );
+        serverStorePath = testDir.storeDir( "server" );
+        serverDatabasePath = testDir.databaseDir( serverStorePath );
         otherServerPath = testDir.directory( "server2" );
         backupDatabasePath = testDir.directory( "backedup-serverdb" );
     }

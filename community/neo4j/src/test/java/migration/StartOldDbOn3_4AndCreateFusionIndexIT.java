@@ -118,7 +118,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         unzip( getClass(), ZIP_FILE_3_2, directory.databaseDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
 
-        File storeDir = directory.directory();
+        File storeDir = directory.storeDir();
         // when
         GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
 
@@ -176,7 +176,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         // given
         unzip( getClass(), ZIP_FILE_3_3, directory.databaseDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
-        File storeDir = directory.directory();
+        File storeDir = directory.storeDir();
 
         // when
         GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );

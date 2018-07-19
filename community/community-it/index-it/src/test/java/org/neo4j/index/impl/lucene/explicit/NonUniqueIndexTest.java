@@ -132,7 +132,7 @@ public class NonUniqueIndexTest
                     }
                 };
             }
-        }.newFacade( resources.directory().directory(), config,
+        }.newFacade( resources.directory().storeDir(), config,
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 
@@ -160,11 +160,11 @@ public class NonUniqueIndexTest
     private List<Long> nodeIdsInIndex( Config config, int indexId, String value ) throws Exception
     {
         PageCache pageCache = resources.pageCache();
-        File storeDir = resources.directory().databaseDir();
+        File databaseDirectory = resources.directory().databaseDir();
         FileSystemAbstraction fs = resources.fileSystem();
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         OperationalMode operationalMode = OperationalMode.single;
-        IndexProvider indexProvider = selectIndexProvider( pageCache, storeDir, fs, monitor, config, operationalMode );
+        IndexProvider indexProvider = selectIndexProvider( pageCache, databaseDirectory, fs, monitor, config, operationalMode );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor(
                 forSchema( forLabel( 0, 0 ), indexProvider.getProviderDescriptor() ).withId( indexId ), samplingConfig );
@@ -174,22 +174,22 @@ public class NonUniqueIndexTest
         }
     }
 
-    private IndexProvider selectIndexProvider( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
-            OperationalMode operationalMode )
+    private static IndexProvider selectIndexProvider( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
+            Config config, OperationalMode operationalMode )
     {
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
         if ( LUCENE10.providerName().equals( defaultSchemaProvider ) )
         {
             return LuceneIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+                    .newInstance( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
         }
         else if ( NATIVE10.providerName().equals( defaultSchemaProvider ) )
         {
             return NativeLuceneFusionIndexProviderFactory10
-                    .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+                    .create( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
         }
         return NativeLuceneFusionIndexProviderFactory20
-                .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+                .create( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 }

@@ -83,7 +83,7 @@ public class RecoveryCleanupIT
     @Before
     public void setup()
     {
-        storeDir = testDirectory.databaseDir();
+        storeDir = testDirectory.storeDir();
         testSpecificConfig.clear();
     }
 

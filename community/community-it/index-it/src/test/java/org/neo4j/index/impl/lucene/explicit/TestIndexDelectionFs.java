@@ -47,7 +47,7 @@ public class TestIndexDelectionFs
     @Before
     public void doBefore()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.directory() );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
     }
 
     @After

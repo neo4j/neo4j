@@ -56,7 +56,7 @@ public class PrometheusOutputIT
     public void setUp()
     {
         serverAddress = "localhost:" + PortAuthority.allocatePort();
-        database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+        database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( prometheusEnabled, Settings.TRUE )
                 .setConfig( prometheusEndpoint, serverAddress )
                 .newGraphDatabase();

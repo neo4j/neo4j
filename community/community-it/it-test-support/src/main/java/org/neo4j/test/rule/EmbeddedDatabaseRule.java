@@ -76,7 +76,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( testDirectory.directory() );
+        return factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
     }
 
     @Override

@@ -54,7 +54,7 @@ public class CompositeConstraintIT
     public void compositeNodeKeyConstraintUpdate() throws Exception
     {
         GraphDatabaseService database = new EnterpriseGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 

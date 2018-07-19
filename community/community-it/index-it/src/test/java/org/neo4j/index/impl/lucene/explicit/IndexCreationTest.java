@@ -78,7 +78,7 @@ public class IndexCreationTest
     @Before
     public void before()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
     }
 
     @After

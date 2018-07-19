@@ -22,7 +22,6 @@
  */
 package org.neo4j.ha;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -47,7 +46,6 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.entireClusterSeesMemberAsNotAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 
-@Ignore
 public class BoltHAIT
 {
     @Rule

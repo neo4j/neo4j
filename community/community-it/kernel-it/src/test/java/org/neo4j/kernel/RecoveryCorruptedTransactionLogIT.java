@@ -110,7 +110,7 @@ public class RecoveryCorruptedTransactionLogIT
     @Before
     public void setUp() throws Exception
     {
-        storeDir = directory.directory();
+        storeDir = directory.storeDir();
         monitors.addMonitorListener( recoveryMonitor );
         databaseFactory = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).setMonitors( monitors );
         logFiles = buildDefaultLogFiles();

@@ -111,8 +111,8 @@ class IdReuse
 
         void visitAllIds( ClusterMember member, Consumer<Long> idConsumer )
         {
-            String storeDir = member.databaseDirectory().getAbsolutePath();
-            File idFile = new File( storeDir, MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME + ".id" );
+            String databasePath = member.databaseDirectory().getAbsolutePath();
+            File idFile = new File( databasePath, MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME + ".id" );
             IdContainer idContainer = new IdContainer( fs, idFile, 1024, true );
             idContainer.init();
             log.info( idFile.getAbsolutePath() + " has " + idContainer.getFreeIdCount() + " free ids" );

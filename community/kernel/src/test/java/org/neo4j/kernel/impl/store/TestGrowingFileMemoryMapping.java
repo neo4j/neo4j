@@ -65,12 +65,12 @@ public class TestGrowingFileMemoryMapping
         // given
         final int NUMBER_OF_RECORDS = 1000000;
 
-        File storeDir = testDirectory.databaseDir();
+        File databaseDir = testDirectory.databaseDir();
         Config config = Config.defaults( pagecache_memory, mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) );
         FileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache,
+        StoreFactory storeFactory = new StoreFactory( databaseDir, config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
