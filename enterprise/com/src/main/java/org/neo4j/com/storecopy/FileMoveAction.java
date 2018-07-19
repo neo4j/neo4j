@@ -38,7 +38,7 @@ public interface FileMoveAction
 
     File file();
 
-    static FileMoveAction copyViaPageCache( File file, PageCache pageCache )
+    static FileMoveAction moveViaPageCache( File file, PageCache pageCache )
     {
         return new FileMoveAction()
         {
@@ -80,6 +80,25 @@ public interface FileMoveAction
             public File file()
             {
                 return file;
+            }
+        };
+    }
+
+    static FileMoveAction moveViaFileSystem( File sourceFile, File sourceDirectory )
+    {
+        return new FileMoveAction()
+        {
+            @Override
+            public void move( File toDir, CopyOption... copyOptions ) throws IOException
+            {
+                copyViaFileSystem( sourceFile, sourceDirectory ).move( toDir, copyOptions );
+                assert sourceFile.delete() : sourceFile;
+            }
+
+            @Override
+            public File file()
+            {
+                return sourceFile;
             }
         };
     }
