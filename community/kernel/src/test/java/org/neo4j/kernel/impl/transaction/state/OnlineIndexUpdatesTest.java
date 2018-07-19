@@ -83,7 +83,6 @@ import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 
 public class OnlineIndexUpdatesTest
 {
-
     @Rule
     public PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
     private NodeStore nodeStore;
