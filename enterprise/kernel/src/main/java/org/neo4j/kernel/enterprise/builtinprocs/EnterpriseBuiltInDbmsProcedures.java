@@ -106,10 +106,7 @@ public class EnterpriseBuiltInDbmsProcedures
                             "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
         }
 
-        try ( Statement statement = getCurrentTx().acquireStatement() )
-        {
-            statement.queryRegistration().setMetaData( data );
-        }
+        getCurrentTx().setMetaData( data );
     }
 
     @Description( "Provides attached transaction metadata." )

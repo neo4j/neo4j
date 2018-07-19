@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.runtime;
 
+import java.time.Duration;
+import java.util.Map;
+
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -30,7 +33,7 @@ public interface TransactionStateMachineSPI
 
     long newestEncounteredTxId();
 
-    KernelTransaction beginTransaction( LoginContext loginContext );
+    KernelTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, Map<String,Object> txMetaData );
 
     void bindTransactionToCurrentThread( KernelTransaction tx );
 
@@ -38,5 +41,6 @@ public interface TransactionStateMachineSPI
 
     boolean isPeriodicCommit( String query );
 
-    BoltResultHandle executeQuery( BoltQuerySource querySource, LoginContext loginContext, String statement, MapValue params );
+    BoltResultHandle executeQuery( BoltQuerySource querySource, LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
+            Map<String,Object> txMetaData );
 }

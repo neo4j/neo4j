@@ -20,18 +20,18 @@
 package org.neo4j.bolt.v3.messaging.request;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.bolt.v3.messaging.decoder.StatementMode;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.bolt.v3.messaging.request.BeginMessage.parseBookmark;
-import static org.neo4j.bolt.v3.messaging.request.BeginMessage.parseStatementMode;
+import static org.neo4j.bolt.v3.messaging.request.BeginMessage.parseTransactionMetadata;
 import static org.neo4j.bolt.v3.messaging.request.BeginMessage.parseTransactionTimeout;
 
 public class RunMessage implements RequestMessage
@@ -42,9 +42,9 @@ public class RunMessage implements RequestMessage
     private final MapValue params;
     private final MapValue meta;
 
-    private final StatementMode mode;
     private final Bookmark bookmark;
     private final Duration txTimeout;
+    private final Map<String,Object> txMetadata;
 
     public RunMessage( String statement ) throws BoltIOException
     {
@@ -62,9 +62,9 @@ public class RunMessage implements RequestMessage
         this.params = requireNonNull( params );
         this.meta = requireNonNull( meta );
 
-        this.mode = parseStatementMode( meta );
         this.bookmark = parseBookmark( meta );
         this.txTimeout = parseTransactionTimeout( meta );
+        this.txMetadata = parseTransactionMetadata( meta );
     }
 
     public String statement()
@@ -120,13 +120,13 @@ public class RunMessage implements RequestMessage
         return bookmark;
     }
 
-    public StatementMode mode()
-    {
-        return mode;
-    }
-
     public Duration transactionTimeout()
     {
         return txTimeout;
+    }
+
+    public Map<String,Object> transactionMetadata()
+    {
+        return txMetadata;
     }
 }

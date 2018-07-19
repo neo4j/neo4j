@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -144,5 +145,11 @@ public class TopLevelTransaction implements InternalTransaction
     public Optional<Status> terminationReason()
     {
         return transaction.getReasonIfTerminated();
+    }
+
+    @Override
+    public void setMetaData( Map<String,Object> txMeta )
+    {
+        transaction.setMetaData( txMeta );
     }
 }

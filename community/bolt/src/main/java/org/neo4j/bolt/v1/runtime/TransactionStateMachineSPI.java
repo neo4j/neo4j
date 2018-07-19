@@ -21,6 +21,8 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.runtime.BoltQuerySource;
@@ -50,6 +52,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.TransactionStateMachineSPI
@@ -88,9 +91,9 @@ public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.Transa
     }
 
     @Override
-    public KernelTransaction beginTransaction( LoginContext loginContext )
+    public KernelTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, Map<String,Object> txMetadata )
     {
-        db.beginTransaction( KernelTransaction.Type.explicit, loginContext );
+        beginTransaction( explicit, loginContext, txTimeout, txMetadata );
         return txBridge.getKernelTransactionBoundToThisThread( false );
     }
 
@@ -113,10 +116,10 @@ public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.Transa
     }
 
     @Override
-    public BoltResultHandle executeQuery( BoltQuerySource querySource,
-            LoginContext loginContext, String statement, MapValue params )
+    public BoltResultHandle executeQuery( BoltQuerySource querySource, LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
+            Map<String,Object> txMetadata )
     {
-        InternalTransaction internalTransaction = db.beginTransaction( implicit, loginContext );
+        InternalTransaction internalTransaction = beginTransaction( implicit, loginContext, txTimeout, txMetadata );
         ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName(),
                 querySource.clientName(),
                 querySource.connectionDescriptor().clientAddress(),
@@ -168,6 +171,25 @@ public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.Transa
             }
 
         };
+    }
+
+    private InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, Duration txTimeout, Map<String, Object> txMetadata )
+    {
+        InternalTransaction tx;
+        if ( txTimeout == null )
+        {
+            tx = db.beginTransaction( type, loginContext );
+        }
+        else
+        {
+            tx = db.beginTransaction( type, loginContext, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
+        }
+
+        if ( txMetadata != null )
+        {
+            tx.setMetaData( txMetadata );
+        }
+        return tx;
     }
 
     private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI db, AvailabilityGuard guard )

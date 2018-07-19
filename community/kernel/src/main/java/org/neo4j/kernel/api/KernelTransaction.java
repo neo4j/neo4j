@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.NotInTransactionException;
@@ -168,6 +169,13 @@ public interface KernelTransaction extends Transaction, AssertOpen
      * API call is made while this cursor is used, it might get corrupted and return wrong results.
      */
     PropertyCursor ambientPropertyCursor();
+
+    /**
+     * Attaches a map of data to the transaction.
+     * The daga will be printed when listing queries and inserted in to th query log.
+     * @param metaData The data to add.
+     */
+    void setMetaData( Map<String, Object> metaData );
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

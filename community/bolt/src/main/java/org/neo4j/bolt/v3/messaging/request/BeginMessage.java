@@ -20,15 +20,21 @@
 package org.neo4j.bolt.v3.messaging.request;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.bolt.v3.messaging.decoder.StatementMode;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -39,14 +45,14 @@ import static java.util.Objects.requireNonNull;
 
 public class BeginMessage implements RequestMessage
 {
+    public static final byte SIGNATURE = 0x11;
+    private static final String TX_TIMEOUT_KEY = "tx_timeout";
+    private static final String TX_META_DATA_KEY = "tx_metadata";
+
     private final MapValue meta;
-    private final StatementMode mode;
     private final Bookmark bookmark;
     private final Duration txTimeout;
-
-    private static final String MODE_KEY = "mode";
-    private static final String TX_TIMEOUT_KEY = "tx_timeout";
-    public static final byte SIGNATURE = 0x11;
+    private final Map<String,Object> txMetadata;
 
     public BeginMessage() throws BoltIOException
     {
@@ -57,8 +63,22 @@ public class BeginMessage implements RequestMessage
     {
         this.meta = requireNonNull( meta );
         this.bookmark = parseBookmark( meta );
-        this.mode = parseStatementMode( meta );
         this.txTimeout = parseTransactionTimeout( meta );
+        this.txMetadata = parseTransactionMetadata( meta );
+    }
+
+    static Map<String,Object> parseTransactionMetadata( MapValue meta )
+    {
+        AnyValue anyValue = meta.get( TX_META_DATA_KEY );
+        if ( !(anyValue instanceof MapValue) )
+        {
+            return null;
+        }
+        MapValue mapValue = (MapValue) anyValue;
+        TransactionMetadataWriter writer = new TransactionMetadataWriter();
+        Map<String,Object> txMeta = new HashMap<>( mapValue.size() );
+        mapValue.foreach( ( key, value ) -> writer.valueAsObject( value ) );
+        return txMeta;
     }
 
     static Bookmark parseBookmark( MapValue meta ) throws BoltIOException
@@ -90,31 +110,9 @@ public class BeginMessage implements RequestMessage
         }
     }
 
-    static StatementMode parseStatementMode( MapValue meta ) throws BoltIOException
-    {
-        AnyValue anyValue = meta.get( MODE_KEY );
-        if ( anyValue == Values.NO_VALUE )
-        {
-            return null;
-        }
-        else if ( anyValue instanceof TextValue )
-        {
-            return StatementMode.parseMode( ((TextValue) anyValue).stringValue() );
-        }
-        else
-        {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Expecting transaction statement mode value to be a String value, but got: " + anyValue );
-        }
-    }
-
     public Bookmark bookmark()
     {
         return this.bookmark;
-    }
-
-    public StatementMode mode()
-    {
-        return this.mode;
     }
 
     public Duration transactionTimeout()
@@ -158,5 +156,37 @@ public class BeginMessage implements RequestMessage
     public MapValue meta()
     {
         return meta;
+    }
+
+    public Map<String,Object> transactionMetadata()
+    {
+        return txMetadata;
+    }
+
+    private static class TransactionMetadataWriter extends BaseToObjectValueWriter<RuntimeException>
+    {
+        @Override
+        protected Node newNodeProxyById( long id )
+        {
+            throw new UnsupportedOperationException( "Transaction metadata should not contain nodes" );
+        }
+
+        @Override
+        protected Relationship newRelationshipProxyById( long id )
+        {
+            throw new UnsupportedOperationException( "Transaction metadata should not contain relationships" );
+        }
+
+        @Override
+        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
+        {
+            return Values.pointValue( crs, coordinate );
+        }
+
+        Object valueAsObject( AnyValue value )
+        {
+            value.writeTo( this );
+            return value();
+        }
     }
 }

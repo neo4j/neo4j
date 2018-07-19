@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.runtime;
 
+import java.time.Duration;
+import java.util.Map;
+
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -29,9 +32,11 @@ public interface StatementProcessor
 {
     void beginTransaction( Bookmark bookmark ) throws KernelException;
 
+    void beginTransaction( Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetadata ) throws KernelException;
+
     StatementMetadata run( String statement, MapValue params ) throws KernelException;
 
-    StatementMetadata run( String statement, MapValue params, Bookmark bookmark ) throws KernelException;
+    StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData ) throws KernelException;
 
     void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception;
 
@@ -56,6 +61,12 @@ public interface StatementProcessor
         @Override
         public void beginTransaction( Bookmark bookmark ) throws KernelException
         {
+            throw new UnsupportedOperationException( "Unable to run statements" );
+        }
+
+        @Override
+        public void beginTransaction( Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetadata ) throws KernelException
+        {
             throw new UnsupportedOperationException( "Unable to begin a transaction" );
         }
 
@@ -66,7 +77,7 @@ public interface StatementProcessor
         }
 
         @Override
-        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark ) throws KernelException
+        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData ) throws KernelException
         {
             throw new UnsupportedOperationException( "Unable to run statements" );
         }

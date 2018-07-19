@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.Lock;
@@ -99,5 +100,11 @@ public class PlaceboTransaction implements InternalTransaction
     public Optional<Status> terminationReason()
     {
         return currentTransaction.getReasonIfTerminated();
+    }
+
+    @Override
+    public void setMetaData( Map<String,Object> txMeta )
+    {
+        currentTransaction.setMetaData( txMeta );
     }
 }

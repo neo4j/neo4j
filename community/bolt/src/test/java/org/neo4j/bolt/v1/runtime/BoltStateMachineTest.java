@@ -427,7 +427,7 @@ public class BoltStateMachineTest
     {
         // Given
         TransactionStateMachineSPI transactionSPI = mock( TransactionStateMachineSPI.class );
-        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any() );
+        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any(), any(), txMeta );
 
         BoltStateMachine machine = newMachineWithTransactionSPI( transactionSPI );
 
