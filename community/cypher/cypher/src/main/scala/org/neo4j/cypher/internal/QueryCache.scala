@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -63,8 +64,31 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
                                                                   val tracer: CacheTracer[QUERY_KEY]) {
 
   val inner: Cache[QUERY_KEY, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, EXECUTABLE_QUERY]()
+  val parameterMapping: Cache[QUERY_REP, List[MapValue]] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_REP,List[MapValue]]()
 
   import QueryCache.NOT_PRESENT
+
+  /**
+    * TODO: Explain why this is used
+    * @param potentialQueryKey
+    * @return
+    */
+
+  private def getActualQueryKey(potentialQueryKey: QUERY_KEY): QUERY_KEY = {
+    val queryRep = potentialQueryKey.first()
+    val queryParams = potentialQueryKey.other()
+    val maybeParams = parameterMapping.getIfPresent(queryRep)
+
+    if (maybeParams != null) {
+      for (params <- maybeParams) {
+        if (Values.mapsEqualsOnValueTypes(params, queryParams)) {
+          // found! use old params so that key matches
+          return Pair.of(queryRep, params).asInstanceOf[QUERY_KEY]
+        }
+      }
+    }
+    potentialQueryKey
+  }
 
   /**
     * Retrieve the CachedExecutionPlan associated with the given queryKey, or compile, cache and
@@ -84,20 +108,32 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
     if (maximumSize == 0)
       CacheDisabled(compile())
     else {
-      inner.getIfPresent(queryKey) match {
+      val actualKey = getActualQueryKey(queryKey)
+      inner.getIfPresent(actualKey) match {
         case NOT_PRESENT =>
-          compileAndCache(queryKey, tc, compile, metaData)
+          compileAndCache(actualKey, tc, compile, metaData)
 
         case executableQuery =>
           stalenessCaller.staleness(tc, executableQuery) match {
             case NotStale =>
-              hit(queryKey, executableQuery, metaData)
+              hit(actualKey, executableQuery, metaData)
             case Stale(secondsSincePlan) =>
-              tracer.queryCacheStale(queryKey, secondsSincePlan, metaData)
-              compileAndCache(queryKey, tc, compile, metaData)
+              tracer.queryCacheStale(actualKey, secondsSincePlan, metaData)
+              compileAndCacheForStale(actualKey, tc, compile, metaData)
           }
       }
     }
+  }
+
+  private def compileAndCacheForStale(queryKey: QUERY_KEY,
+                              tc: TransactionalContext,
+                              compile: () => EXECUTABLE_QUERY,
+                              metaData: String
+                             ): CacheLookup[EXECUTABLE_QUERY] = {
+    val oldList = parameterMapping.getIfPresent(queryKey.first()) // at this point it can't be null
+    val result = compileAndCache(queryKey,tc,compile,metaData)
+    parameterMapping.put(queryKey.first(), oldList ::: List(queryKey.other()))
+    result
   }
 
   /**
@@ -114,6 +150,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
                        ): CacheLookup[EXECUTABLE_QUERY] = {
     val newExecutableQuery = compile()
     inner.put(queryKey, newExecutableQuery)
+    parameterMapping.put(queryKey.first(), List(queryKey.other()))
     miss(queryKey, newExecutableQuery, metaData)
   }
 
@@ -140,6 +177,8 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
     val priorSize = inner.estimatedSize()
     inner.invalidateAll()
     inner.cleanUp()
+    parameterMapping.invalidateAll()
+    parameterMapping.cleanUp()
     tracer.queryCacheFlush(priorSize)
     priorSize
   }
