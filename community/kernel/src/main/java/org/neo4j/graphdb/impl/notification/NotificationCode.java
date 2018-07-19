@@ -194,7 +194,7 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.ExperimentalFeature,
             "You are using an experimental feature" ),
-    SUBOPTIMAL_INDEX_FOR_CONSTAINS_QUERY(
+    SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,
             "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-providers, see " +
