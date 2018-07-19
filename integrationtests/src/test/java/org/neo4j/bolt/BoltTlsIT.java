@@ -32,6 +32,8 @@ import org.junit.runners.Parameterized.Parameter;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -47,9 +49,7 @@ import org.neo4j.ssl.SslResource;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.ssl.SslContextFactory.SslParameters.protocols;
 import static org.neo4j.ssl.SslContextFactory.makeSslPolicy;
@@ -155,21 +155,19 @@ public class BoltTlsIT
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         int boltPort = config.get( bolt.advertised_address ).getPort();
         SslContextFactory.SslParameters params = protocols( setup.clientTlsVersions ).ciphers();
-        SecureClient client = new SecureClient( makeSslPolicy( sslResource, params ), logProvider );
+        SecureClient client = new SecureClient( makeSslPolicy( sslResource, params ) );
 
         // when
         client.connect( boltPort );
 
         // then
-        assertTrue( client.sslHandshakeFuture().await( 1, MINUTES ) );
-
-        if ( setup.shouldSucceed )
+        try
         {
-            assertNull( client.sslHandshakeFuture().cause() );
+            assertTrue( client.sslHandshakeFuture().get( 1, TimeUnit.MINUTES ).isActive() );
         }
-        else
+        catch ( ExecutionException e )
         {
-            assertNotNull( client.sslHandshakeFuture().cause() );
+            assertFalse( setup.shouldSucceed );
         }
     }
 }

@@ -36,6 +36,8 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,7 +61,7 @@ public class SslPolicyLoaderIT
     private static final PkiUtils PKI_UTILS = new PkiUtils();
     private static final LogProvider LOG_PROVIDER = FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out );
     private static final String POLICY_NAME = "fakePolicy";
-    private static final SslPolicyConfig sslPolicyConfig = new SslPolicyConfig( POLICY_NAME );
+    private static final SslPolicyConfig SSL_POLICY_CONFIG = new SslPolicyConfig( POLICY_NAME );
 
     @Test
     public void certificatesWithInvalidCommonNameAreRejected() throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException
@@ -79,7 +81,7 @@ public class SslPolicyLoaderIT
         SecureServer secureServer = new SecureServer( serverPolicy );
         secureServer.start();
         int port = secureServer.port();
-        SecureClient secureClient = new SecureClient( clientPolicy, LOG_PROVIDER );
+        SecureClient secureClient = new SecureClient( clientPolicy );
 
         // when client connects to server with a non-matching hostname
         try
@@ -87,10 +89,17 @@ public class SslPolicyLoaderIT
             secureClient.connect( port );
 
             // then handshake complete with exception describing hostname mismatch
-            assertTrue( secureClient.sslHandshakeFuture().await( 1, MINUTES ) );
+            secureClient.sslHandshakeFuture().get( 1, MINUTES );
+        }
+        catch ( ExecutionException e )
+        {
             String expectedMessage = "No subject alternative DNS name matching localhost found.";
-            assertThat( causes( secureClient.sslHandshakeFuture().cause() ).map( Throwable::getMessage ).collect( Collectors.toList() ),
+            assertThat( causes( e ).map( Throwable::getMessage ).collect( Collectors.toList() ),
                     IsCollectionContaining.hasItem( expectedMessage ) );
+        }
+        catch ( TimeoutException e )
+        {
+            e.printStackTrace();
         }
         finally
         {
@@ -100,7 +109,7 @@ public class SslPolicyLoaderIT
 
     @Test
     public void normalBehaviourIfServerCertificateMatchesClientExpectation()
-            throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException
+            throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException, TimeoutException, ExecutionException
     {
         // given server has valid hostname
         Config serverConfig = aConfig( "localhost" );
@@ -116,14 +125,15 @@ public class SslPolicyLoaderIT
         SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, LOG_PROVIDER ).getPolicy( POLICY_NAME );
         SecureServer secureServer = new SecureServer( serverPolicy );
         secureServer.start();
-        SecureClient secureClient = new SecureClient( clientPolicy, LOG_PROVIDER );
+        SecureClient secureClient = new SecureClient( clientPolicy );
 
         // then
         clientCanCommunicateWithServer( secureClient, secureServer );
     }
 
     @Test
-    public void legacyPolicyDoesNotHaveHostnameVerification() throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException
+    public void legacyPolicyDoesNotHaveHostnameVerification()
+            throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException, TimeoutException, ExecutionException
     {
         // given server has an invalid hostname
         Config serverConfig = aConfig( "invalid-localhost" );
@@ -139,13 +149,14 @@ public class SslPolicyLoaderIT
         SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, LOG_PROVIDER ).getPolicy( "legacy" );
         SecureServer secureServer = new SecureServer( serverPolicy );
         secureServer.start();
-        SecureClient secureClient = new SecureClient( clientPolicy, LOG_PROVIDER );
+        SecureClient secureClient = new SecureClient( clientPolicy );
 
         // then
         clientCanCommunicateWithServer( secureClient, secureServer );
     }
 
-    private void clientCanCommunicateWithServer( SecureClient secureClient, SecureServer secureServer ) throws InterruptedException
+    private void clientCanCommunicateWithServer( SecureClient secureClient, SecureServer secureServer )
+            throws InterruptedException, TimeoutException, ExecutionException
     {
         int port = secureServer.port();
         try
@@ -155,7 +166,7 @@ public class SslPolicyLoaderIT
             secureClient.channel().writeAndFlush( request );
 
             ByteBuf expected = ByteBufAllocator.DEFAULT.buffer().writeBytes( SecureServer.RESPONSE );
-            assertTrue( secureClient.sslHandshakeFuture().await( 1, MINUTES ) );
+            assertTrue( secureClient.sslHandshakeFuture().get( 1, MINUTES ).isActive() );
             secureClient.assertResponse( expected );
         }
         finally
@@ -176,21 +187,21 @@ public class SslPolicyLoaderIT
         revoked.mkdirs();
         PKI_UTILS.createSelfSignedCertificate( validCertificatePath, validPrivateKeyPath, hostname ); // Sets Subject Alternative Name(s) to hostname
         return Config.builder()
-                .withSetting( sslPolicyConfig.base_directory, baseDirectory.toString() )
-                .withSetting( sslPolicyConfig.trusted_dir, trusted.toString() )
-                .withSetting( sslPolicyConfig.revoked_dir, revoked.toString() )
-                .withSetting( sslPolicyConfig.private_key, validPrivateKeyPath.toString() )
-                .withSetting( sslPolicyConfig.public_certificate, validCertificatePath.toString() )
+                .withSetting( SSL_POLICY_CONFIG.base_directory, baseDirectory.toString() )
+                .withSetting( SSL_POLICY_CONFIG.trusted_dir, trusted.toString() )
+                .withSetting( SSL_POLICY_CONFIG.revoked_dir, revoked.toString() )
+                .withSetting( SSL_POLICY_CONFIG.private_key, validPrivateKeyPath.toString() )
+                .withSetting( SSL_POLICY_CONFIG.public_certificate, validCertificatePath.toString() )
 
-                .withSetting( sslPolicyConfig.tls_versions, "TLSv1.2" )
-                .withSetting( sslPolicyConfig.ciphers, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA" )
+                .withSetting( SSL_POLICY_CONFIG.tls_versions, "TLSv1.2" )
+                .withSetting( SSL_POLICY_CONFIG.ciphers, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA" )
 
-                .withSetting( sslPolicyConfig.client_auth, "none" )
-                .withSetting( sslPolicyConfig.allow_key_generation, "false" )
+                .withSetting( SSL_POLICY_CONFIG.client_auth, "none" )
+                .withSetting( SSL_POLICY_CONFIG.allow_key_generation, "false" )
 
                 // Even if we trust all, certs should be rejected if don't match Common Name (CA) or Subject Alternative Name
-                .withSetting( sslPolicyConfig.trust_all, "false" )
-                .withSetting( sslPolicyConfig.verify_hostname, "true" )
+                .withSetting( SSL_POLICY_CONFIG.trust_all, "false" )
+                .withSetting( SSL_POLICY_CONFIG.verify_hostname, "true" )
                 .build();
     }
 

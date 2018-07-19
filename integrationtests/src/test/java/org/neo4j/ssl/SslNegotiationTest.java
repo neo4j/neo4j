@@ -28,6 +28,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.concurrent.ExecutionException;
+
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.SslContextFactory.SslParameters;
@@ -36,8 +38,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.ssl.SslContextFactory.SslParameters.protocols;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
@@ -181,20 +182,18 @@ public class SslNegotiationTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource, setup.serverParams ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource, setup.clientParams ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource, setup.clientParams ) );
         client.connect( server.port() );
 
-        assertTrue( client.sslHandshakeFuture().await( 1, MINUTES ) );
-
-        if ( setup.expectedSuccess )
+        try
         {
-            assertNull( client.sslHandshakeFuture().cause() );
+            assertTrue( client.sslHandshakeFuture().get( 1, MINUTES ).isActive() );
             assertEquals( setup.expectedProtocol, client.protocol() );
             assertEquals( setup.expectedCipher.substring( 4 ), client.ciphers().substring( 4 ) ); // cut away SSL_ or TLS_
         }
-        else
+        catch ( ExecutionException e )
         {
-            assertNotNull( client.sslHandshakeFuture().cause() );
+            assertFalse( setup.expectedSuccess );
         }
     }
 

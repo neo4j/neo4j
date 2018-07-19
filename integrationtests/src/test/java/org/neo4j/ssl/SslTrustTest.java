@@ -40,7 +40,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.ssl.SslContextFactory.makeSslPolicy;
 import static org.neo4j.ssl.SslResourceBuilder.caSignedKeyId;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 
@@ -88,7 +87,7 @@ public class SslTrustTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ) );
         client.connect( server.port() );
 
         // when
@@ -111,7 +110,7 @@ public class SslTrustTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ) );
         client.connect( server.port() );
 
         // when
@@ -134,7 +133,7 @@ public class SslTrustTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ) );
         client.connect( server.port() );
 
         try
@@ -159,7 +158,7 @@ public class SslTrustTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ) );
         client.connect( server.port() );
 
         try
@@ -183,7 +182,7 @@ public class SslTrustTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ) );
         client.connect( server.port() );
 
         try
@@ -207,7 +206,7 @@ public class SslTrustTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ) );
         client.connect( server.port() );
 
         try

@@ -40,9 +40,6 @@ import java.net.InetSocketAddress;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SecureServer
@@ -77,7 +74,6 @@ public class SecureServer
                         sslEngine.setNeedClientAuth( true );
                         SslHandler sslHandler = new SslHandler( sslEngine );
                         pipeline.addLast( sslHandler );
-                        //sslHandler.handshakeFuture().addListener( f -> f.cause().printStackTrace() ); // for debugging
 
                         pipeline.addLast( new Responder() );
                     }

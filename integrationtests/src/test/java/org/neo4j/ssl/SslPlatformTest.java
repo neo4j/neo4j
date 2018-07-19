@@ -39,7 +39,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.ssl.SslContextFactory.makeSslPolicy;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 
 @SuppressWarnings( "FieldCanBeLocal" )
@@ -73,7 +72,7 @@ public class SslPlatformTest
         server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource, SslProvider.OPENSSL.name() ) );
 
         server.start();
-        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource, SslProvider.OPENSSL.name() ), LOG_PROVIDER );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource, SslProvider.OPENSSL.name() ) );
         client.connect( server.port() );
 
         // when

@@ -20,9 +20,7 @@
 package org.neo4j.ssl;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelOutboundHandler;
+import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
@@ -40,7 +38,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.logging.LogProvider;
 
-public class SslPolicy<T extends ChannelInboundHandler & ChannelOutboundHandler>
+public class SslPolicy
 {
     /* cryptographic objects */
     private final PrivateKey privateKey;
@@ -55,9 +53,10 @@ public class SslPolicy<T extends ChannelInboundHandler & ChannelOutboundHandler>
     private final SslProvider sslProvider;
 
     private final boolean verifyHostname;
+    private final LogProvider logProvider;
 
     public SslPolicy( PrivateKey privateKey, X509Certificate[] keyCertChain, List<String> tlsVersions, List<String> ciphers, ClientAuth clientAuth,
-            TrustManagerFactory trustManagerFactory, SslProvider sslProvider, boolean verifyHostname )
+            TrustManagerFactory trustManagerFactory, SslProvider sslProvider, boolean verifyHostname, LogProvider logProvider )
     {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;
@@ -67,6 +66,7 @@ public class SslPolicy<T extends ChannelInboundHandler & ChannelOutboundHandler>
         this.trustManagerFactory = trustManagerFactory;
         this.sslProvider = sslProvider;
         this.verifyHostname = verifyHostname;
+        this.logProvider = logProvider;
     }
 
     public SslContext nettyServerContext() throws SSLException
@@ -107,28 +107,26 @@ public class SslPolicy<T extends ChannelInboundHandler & ChannelOutboundHandler>
     }
 
     @SuppressWarnings( "unused" )
-    public T nettyServerHandler( Channel channel ) throws SSLException
+    public ChannelHandler nettyServerHandler( Channel channel ) throws SSLException
     {
         return nettyServerHandler( channel, nettyServerContext() );
     }
 
-    public T nettyServerHandler( Channel channel, SslContext sslContext ) throws SSLException
+    private ChannelHandler nettyServerHandler( Channel channel, SslContext sslContext ) throws SSLException
     {
         SSLEngine sslEngine = sslContext.newEngine( channel.alloc() );
-        return (T) new SslHandler( sslEngine );
+        return new SslHandler( sslEngine );
     }
 
     @SuppressWarnings( "unused" )
-    public T nettyClientHandler( Channel channel ) throws SSLException
+    public ChannelHandler nettyClientHandler( Channel channel ) throws SSLException
     {
         return nettyClientHandler( channel, nettyClientContext() );
     }
 
-    public T nettyClientHandler( Channel channel, SslContext sslContext ) throws SSLException
+    ChannelHandler nettyClientHandler( Channel channel, SslContext sslContext ) throws SSLException
     {
-        OnConnectSslHandlerInjectorHandler clientSslHandler =
-                new OnConnectSslHandlerInjectorHandler( channel, sslContext, true, verifyHostname, tlsVersions );
-        return (T) clientSslHandler;
+        return new OnConnectSslHandler( channel, sslContext, true, verifyHostname, tlsVersions );
     }
 
     public PrivateKey privateKey()

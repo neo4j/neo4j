@@ -163,7 +163,7 @@ public class SslPolicyLoader
         X509Certificate[] keyCertChain = loadCertificateChain( certificateFile );
 
         return new SslPolicy( privateKey, keyCertChain, TLS_VERSION_DEFAULTS, CIPHER_SUITES_DEFAULTS,
-                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider, false );
+                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider, false, logProvider );
     }
 
     private void load( Config config, Log log )
@@ -226,7 +226,7 @@ public class SslPolicyLoader
             List<String> ciphers = config.get( policyConfig.ciphers );
 
             SslPolicy sslPolicy =
-                    new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory, sslProvider, verifyHostname );
+                    new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory, sslProvider, verifyHostname, logProvider );
             log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) );
             policies.put( policyName, sslPolicy );
         }
