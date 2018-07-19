@@ -22,13 +22,42 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import java.io.IOException;
+
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 
 class DataSourceChecks
 {
     private DataSourceChecks()
     {
+    }
+
+    static boolean isTransactionWithinReach( long requiredTxId, CheckPointer checkpointer )
+    {
+        if ( isWithinLastCheckPoint( requiredTxId, checkpointer ) )
+        {
+            return true;
+        }
+        else
+        {
+            try
+            {
+                checkpointer.tryCheckPoint( new SimpleTriggerInfo( "Store file copy" ) );
+                return isWithinLastCheckPoint( requiredTxId, checkpointer );
+            }
+            catch ( IOException e )
+            {
+                return false;
+            }
+        }
+    }
+
+    private static boolean isWithinLastCheckPoint( long atLeast, CheckPointer checkPointer )
+    {
+        return checkPointer.lastCheckPointedTransactionId() >= atLeast;
     }
 
     static boolean hasSameStoreId( StoreId storeId, NeoStoreDataSource dataSource )

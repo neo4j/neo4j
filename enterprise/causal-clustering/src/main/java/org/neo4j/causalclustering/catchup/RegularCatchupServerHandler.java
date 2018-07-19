@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -60,13 +61,14 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     private final PageCache pageCache;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CoreSnapshotService snapshotService;
-    private final CheckPointerService checkPointerService;
+    private final Supplier<CheckPointer> checkPointerSupplier;
 
     public RegularCatchupServerHandler( Monitors monitors, LogProvider logProvider, Supplier<StoreId> storeIdSupplier,
             Supplier<TransactionIdStore> transactionIdStoreSupplier, Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier, FileSystemAbstraction fs, PageCache pageCache,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex, CoreSnapshotService snapshotService, CheckPointerService checkPointerService )
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex, CoreSnapshotService snapshotService, Supplier<CheckPointer> checkPointerSupplier )
     {
+
         this.monitors = monitors;
         this.logProvider = logProvider;
         this.storeIdSupplier = storeIdSupplier;
@@ -78,7 +80,7 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
         this.pageCache = pageCache;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.snapshotService = snapshotService;
-        this.checkPointerService = checkPointerService;
+        this.checkPointerSupplier = checkPointerSupplier;
     }
 
     @Override
@@ -97,21 +99,22 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     @Override
     public ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerService::getCheckPointer, storeCopyCheckPointMutex,
-                dataSourceSupplier, new PrepareStoreCopyFilesProvider( pageCache, fs ) );
+        return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
+                new PrepareStoreCopyFilesProvider( pageCache, fs ) );
     }
 
     @Override
     public ChannelHandler getStoreFileRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new StoreCopyRequestHandler.GetStoreFileRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerService,
-                new StoreFileStreamingProtocol(), pageCache, fs, logProvider );
+        return new StoreCopyRequestHandler.GetStoreFileRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerSupplier,
+                new StoreFileStreamingProtocol(), pageCache, fs,
+                logProvider );
     }
 
     @Override
     public ChannelHandler getIndexSnapshotRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new StoreCopyRequestHandler.GetIndexSnapshotRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerService,
+        return new StoreCopyRequestHandler.GetIndexSnapshotRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerSupplier,
                 new StoreFileStreamingProtocol(), pageCache, fs, logProvider );
     }
 

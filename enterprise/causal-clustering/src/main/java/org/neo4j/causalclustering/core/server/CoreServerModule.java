@@ -35,7 +35,6 @@ import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerHandler;
-import org.neo4j.causalclustering.catchup.CheckPointerService;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.RegularCatchupServerHandler;
 import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
@@ -193,13 +192,11 @@ public class CoreServerModule
         ApplicationProtocolRepository catchupProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedCatchupProtocols );
         ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( ModifierProtocols.values(), supportedModifierProtocols );
 
-        CheckPointerService checkPointerService =
-                new CheckPointerService( new CheckpointerSupplier( platformModule.dependencies ), jobScheduler, JobScheduler.Groups.checkPoint );
         CatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, platformModule.pageCache, platformModule.storeCopyCheckPointMutex, snapshotService,
-                checkPointerService );
+                new CheckpointerSupplier( platformModule.dependencies ) );
 
         CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( serverPipelineBuilderFactory,
                 logProvider, catchupServerHandler );
