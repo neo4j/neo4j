@@ -390,20 +390,20 @@ public class DbStructureCollector implements DbStructureVisitor
                     //TODO: Add support for composite indexes
                     SchemaDescriptor next = iterator.next();
                     EntityType type = next.entityType();
-                    String[] enetityTokens;
+                    String[] entityTokens;
                     switch ( type )
                     {
                     case NODE:
-                        enetityTokens = labels.byIdOrFail( next.getEntityTokenIds() );
+                        entityTokens = labels.byIdOrFail( next.getEntityTokenIds() );
                         break;
                     case RELATIONSHIP:
-                        enetityTokens = relationshipTypes.byIdOrFail( next.getEntityTokenIds() );
+                        entityTokens = relationshipTypes.byIdOrFail( next.getEntityTokenIds() );
                         break;
                     default:
                         throw new IllegalStateException( "Indexing is not supported for EntityType: " + type );
                     }
                     String[] propertyKeyNames = propertyKeys.byIdOrFail( next.getPropertyIds() );
-                    return Pair.of( enetityTokens, propertyKeyNames );
+                    return Pair.of( entityTokens, propertyKeyNames );
                 }
 
                 @Override
