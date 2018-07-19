@@ -78,7 +78,7 @@ public class PropertyLevelSecurityIT
     public void setUp() throws Throwable
     {
         TestGraphDatabaseFactory s = new TestEnterpriseGraphDatabaseFactory();
-        db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( testDirectory.graphDbDir() )
+        db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( SecuritySettings.property_level_authorization_enabled, "true" )
                 .setConfig( SecuritySettings.property_level_authorization_permissions, "Agent=alias,secret" )
                 .setConfig( SecuritySettings.procedure_roles, "test.*:procRole" )

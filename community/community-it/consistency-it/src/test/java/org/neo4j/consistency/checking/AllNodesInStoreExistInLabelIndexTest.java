@@ -88,7 +88,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     @Test
     public void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
     {
-        File databaseDirectory = db.getTestDirectory().graphDbDir();
+        File databaseDirectory = db.databaseDirectory();
         someData();
         db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = new File( databaseDirectory, "label_index_copy" );
@@ -113,7 +113,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     @Test
     public void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
     {
-        File databaseDirectory = db.getTestDirectory().graphDbDir();
+        File databaseDirectory = db.databaseDirectory();
         someData();
         db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = new File( databaseDirectory, "label_index_copy" );
@@ -268,7 +268,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     {
         db.restartDatabase( ( fs, directory ) ->
         {
-            File databaseDirectory = db.getTestDirectory().graphDbDir();
+            File databaseDirectory = db.databaseDirectory();
             fs.deleteFile( new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ) );
             fs.copyFile( labelIndexFileCopy, new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ) );
         } );
@@ -276,7 +276,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
     private File copyLabelIndexFile() throws IOException
     {
-        File databaseDirectory = db.getTestDirectory().graphDbDir();
+        File databaseDirectory = db.databaseDirectory();
         File labelIndexFileCopy = new File( databaseDirectory, "label_index_copy" );
         db.restartDatabase( ( fs, directory ) ->
                 fs.copyFile( new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy ) );
@@ -373,7 +373,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.getTestDirectory().graphDbDir(), config, NONE, log, fsa, true,
+            return service.runFullConsistencyCheck( db.databaseDirectory(), config, NONE, log, fsa, true,
                     new ConsistencyFlags( config ) );
         }
     }

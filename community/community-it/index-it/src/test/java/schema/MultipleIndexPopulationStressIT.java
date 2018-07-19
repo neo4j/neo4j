@@ -163,7 +163,7 @@ public class MultipleIndexPopulationStressIT
         // WHEN creating the indexes under stressful updates
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
-        Result result = cc.runFullConsistencyCheck( directory.graphDbDir(),
+        Result result = cc.runFullConsistencyCheck( directory.databaseDir(),
                 Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
@@ -173,7 +173,7 @@ public class MultipleIndexPopulationStressIT
     private void populateDbAndIndexes( int nodeCount, boolean multiThreaded ) throws InterruptedException
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
+                .newEmbeddedDatabaseBuilder( directory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
                 .newGraphDatabase();
         try
@@ -210,7 +210,7 @@ public class MultipleIndexPopulationStressIT
     private void dropIndexes()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
+                .newEmbeddedDatabaseBuilder( directory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
@@ -298,7 +298,7 @@ public class MultipleIndexPopulationStressIT
         Config config = Config.defaults();
         RecordFormats recordFormats =
                 RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
-        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
+        BatchImporter importer = new ParallelBatchImporter( directory.databaseDir(), fileSystemRule.get(),
                 null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR );
         try ( RandomDataInput input = new RandomDataInput( count ) )
         {
@@ -360,7 +360,7 @@ public class MultipleIndexPopulationStressIT
         {
             try
             {
-                return new BadCollector( fileSystemRule.get().openAsOutputStream( new File( directory.graphDbDir(), "bad" ), false ), 0, 0 );
+                return new BadCollector( fileSystemRule.get().openAsOutputStream( new File( directory.databaseDir(), "bad" ), false ), 0, 0 );
             }
             catch ( IOException e )
             {

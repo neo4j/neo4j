@@ -67,7 +67,7 @@ public class TestArrayStore
     @Before
     public void before()
     {
-        File dir = testDirectory.graphDbDir();
+        File dir = testDirectory.databaseDir();
         FileSystemAbstraction fs = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );

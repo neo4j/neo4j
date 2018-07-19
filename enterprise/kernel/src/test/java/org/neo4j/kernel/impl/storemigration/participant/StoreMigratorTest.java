@@ -84,7 +84,7 @@ public class StoreMigratorTest
             // For test code sanity
             String fromStoreVersion = StoreVersion.HIGH_LIMIT_V3_0_0.versionString();
             Result hasVersionResult = new StoreVersionCheck( pageCache ).hasVersion(
-                    new File( directory.graphDbDir(), NEO_STORE.fileName( STORE ) ), fromStoreVersion );
+                    new File( directory.databaseDir(), NEO_STORE.fileName( STORE ) ), fromStoreVersion );
             assertTrue( hasVersionResult.actualVersion, hasVersionResult.outcome.isSuccessful() );
 
             // WHEN
@@ -93,7 +93,7 @@ public class StoreMigratorTest
             ProgressReporter monitor = mock( ProgressReporter.class );
             File migrationDir = new File( storeDir, "migration" );
             fs.mkdirs( migrationDir );
-            migrator.migrate( directory.graphDbDir(), migrationDir, monitor, fromStoreVersion,
+            migrator.migrate( directory.databaseDir(), migrationDir, monitor, fromStoreVersion,
                     StoreVersion.HIGH_LIMIT_V3_0_6.versionString() );
 
             // THEN

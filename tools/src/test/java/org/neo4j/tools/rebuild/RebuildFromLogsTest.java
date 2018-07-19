@@ -114,7 +114,7 @@ public class RebuildFromLogsTest
         File prototypePath = getPrototypePath();
         long txId = populatePrototype( prototypePath );
 
-        File copy = new File( dir.graphDbDir(), "copy" );
+        File copy = new File( dir.databaseDir(), "copy" );
         FileUtils.copyRecursively( prototypePath, copy );
         GraphDatabaseAPI db = db( copy );
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )

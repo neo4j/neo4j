@@ -64,7 +64,7 @@ public class BatchingNeoStoresIT
     public void setUp()
     {
         fileSystem = fileSystemRule.get();
-        storeDir = testDirectory.graphDbDir();
+        storeDir = testDirectory.databaseDir();
         provider = new AssertableLogProvider();
         logService = new SimpleLogService( provider, provider );
     }

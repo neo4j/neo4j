@@ -66,7 +66,7 @@ public class CorruptedLogsTruncatorTest
     @Before
     public void setUp() throws Exception
     {
-        storeDir = testDirectory.graphDbDir();
+        storeDir = testDirectory.databaseDir();
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystemRule )

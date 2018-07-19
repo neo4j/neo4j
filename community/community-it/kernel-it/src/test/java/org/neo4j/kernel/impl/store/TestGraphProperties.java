@@ -194,7 +194,7 @@ public class TestGraphProperties
         db.shutdown();
 
         Config config = Config.defaults();
-        StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config, new DefaultIdGeneratorFactory( fs.get() ),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseDir(), config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores();
         long prop = neoStores.getMetaDataStore().getGraphNextProp();

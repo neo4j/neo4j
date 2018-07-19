@@ -214,7 +214,7 @@ public class BoltFailuresIT
 
     private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory, int port )
     {
-        return dbFactory.newEmbeddedDatabaseBuilder( dir.graphDbDir() )
+        return dbFactory.newEmbeddedDatabaseBuilder( dir.databaseDir() )
                 .setConfig( new BoltConnector( "0" ).type, BOLT.name() )
                 .setConfig( new BoltConnector( "0" ).enabled, TRUE )
                 .setConfig( new BoltConnector( "0" ).listen_address, "localhost:" + port )

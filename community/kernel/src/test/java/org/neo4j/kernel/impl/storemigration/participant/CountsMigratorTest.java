@@ -49,7 +49,7 @@ public class CountsMigratorTest
     {
         // given
         CountsMigrator migrator = new CountsMigrator( fs, null, Config.defaults() );
-        File storeDir = directory.graphDbDir();
+        File storeDir = directory.databaseDir();
         File countsStoreFileA = new File( storeDir, COUNTS_STORE_LEFT.fileName( STORE ) );
         File countsStoreFileB = new File( storeDir, COUNTS_STORE_RIGHT.fileName( STORE ) );
         fs.create( countsStoreFileA );

@@ -89,7 +89,7 @@ public class RunOutOfDiskSpaceIT
         db.shutdown();
 
         PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
-        File neoStore = new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME );
+        File neoStore = new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME );
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 
@@ -148,7 +148,7 @@ public class RunOutOfDiskSpaceIT
         db.shutdown();
 
         PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
-        File neoStore = new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME );
+        File neoStore = new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME );
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 

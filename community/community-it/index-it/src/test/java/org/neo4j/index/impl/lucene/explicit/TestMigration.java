@@ -52,7 +52,7 @@ public class TestMigration
     public void providerGetsFilledInAutomatically()
     {
         Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" );
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         Neo4jTestCase.deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = startDatabase( storeDir );
         try ( Transaction transaction = graphDb.beginTx() )

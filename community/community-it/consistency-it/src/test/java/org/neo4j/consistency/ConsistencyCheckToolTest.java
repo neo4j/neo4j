@@ -218,7 +218,7 @@ public class ConsistencyCheckToolTest
     {
         createGraphDbAndKillIt( Config.defaults() );
 
-        runConsistencyCheckToolWith( fs.get(), testDirectory.graphDbDir().getAbsolutePath() );
+        runConsistencyCheckToolWith( fs.get(), testDirectory.databaseDir().getAbsolutePath() );
     }
 
     @Test( expected = ToolFailureException.class )
@@ -228,7 +228,7 @@ public class ConsistencyCheckToolTest
         Config customConfig = Config.defaults( logical_logs_location, "otherLocation" );
         createGraphDbAndKillIt( customConfig );
         MapUtil.store( customConfig.getRaw(), customConfigFile );
-        String[] args = {testDirectory.graphDbDir().getPath(), "-config", customConfigFile.getPath()};
+        String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
         runConsistencyCheckToolWith( fs.get(), args );
     }
@@ -241,7 +241,7 @@ public class ConsistencyCheckToolTest
         Config customConfig = Config.defaults( logical_logs_location, otherLocation.getAbsolutePath() );
         createGraphDbAndKillIt( customConfig );
         MapUtil.store( customConfig.getRaw(), customConfigFile );
-        String[] args = {testDirectory.graphDbDir().getPath(), "-config", customConfigFile.getPath()};
+        String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
         runConsistencyCheckToolWith( fs.get(), args );
     }

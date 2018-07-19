@@ -283,7 +283,7 @@ public class LuceneDataSourceTest
 
     private LuceneDataSource getLuceneDataSource( Config config, OperationalMode operationalMode )
     {
-        return new LuceneDataSource( directory.graphDbDir(), config, indexStore,
+        return new LuceneDataSource( directory.databaseDir(), config, indexStore,
                 new DefaultFileSystemAbstraction(), operationalMode );
     }
 }

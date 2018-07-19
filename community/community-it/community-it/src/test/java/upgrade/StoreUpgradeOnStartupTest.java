@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -87,8 +86,8 @@ public class StoreUpgradeOnStartupTest
     {
         fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        workingStoreDir = testDir.directory( "working_" + version );
-        workingDatabaseDirectory = new File( workingStoreDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        workingStoreDir = testDir.storeDir( "working_" + version );
+        workingDatabaseDirectory = testDir.databaseDir( workingStoreDir );
         check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseDirectory, prepareDirectory );

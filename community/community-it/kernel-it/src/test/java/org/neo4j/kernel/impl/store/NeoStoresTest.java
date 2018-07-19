@@ -146,7 +146,7 @@ public class NeoStoresTest
     @Before
     public void setUpNeoStores()
     {
-        storeDir = dir.graphDbDir();
+        storeDir = dir.databaseDir();
         Config config = Config.defaults();
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
@@ -533,7 +533,7 @@ public class NeoStoresTest
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = dir.directory();
         createTestDatabase( fileSystem, storeDir ).shutdown();
-        File databaseDirectory = dir.graphDbDir();
+        File databaseDirectory = dir.databaseDir();
         assertEquals( 0, MetaDataStore.setRecord( pageCache, new File( databaseDirectory,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( databaseDirectory,
@@ -552,7 +552,7 @@ public class NeoStoresTest
     public void shouldNotReadNonRecordDataAsRecord() throws Exception
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File neoStoreDir = dir.graphDbDir();
+        File neoStoreDir = dir.databaseDir();
         StoreFactory factory = newStoreFactory( neoStoreDir, pageCache, fileSystem );
         long recordVersion = defaultStoreVersion();
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
@@ -648,7 +648,7 @@ public class NeoStoresTest
     public void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage()
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File neoStoreDir = dir.graphDbDir();
+        File neoStoreDir = dir.databaseDir();
         StoreFactory factory = new StoreFactory(
                 neoStoreDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
                 LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
@@ -671,7 +671,7 @@ public class NeoStoresTest
     public void shouldAddUpgradeFieldsToTheNeoStoreIfNotPresent() throws IOException
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File neoStoreDir = dir.graphDbDir();
+        File neoStoreDir = dir.databaseDir();
         StoreFactory factory = newStoreFactory( neoStoreDir, pageCache, fileSystem );
         long recordVersion = defaultStoreVersion();
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )

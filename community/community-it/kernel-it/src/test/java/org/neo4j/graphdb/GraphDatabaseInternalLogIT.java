@@ -49,7 +49,7 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
-        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.databaseDir() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
                 .newGraphDatabase().shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
@@ -66,7 +66,7 @@ public class GraphDatabaseInternalLogIT
     public void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.databaseDir() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
                 .newGraphDatabase();
 
@@ -88,7 +88,7 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteDebugToInternalDiagnosticsLogForEnabledContexts() throws Exception
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.databaseDir() )
                 .setConfig( GraphDatabaseSettings.store_internal_debug_contexts, getClass().getName() + ",java.io" )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
                 .newGraphDatabase();

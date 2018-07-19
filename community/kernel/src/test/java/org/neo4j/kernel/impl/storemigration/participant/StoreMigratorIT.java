@@ -111,7 +111,7 @@ public class StoreMigratorIT
     public void shouldBeAbleToResumeMigrationOnMoving() throws Exception
     {
         // GIVEN a legacy database
-        File storeDirectory = directory.graphDbDir();
+        File storeDirectory = directory.databaseDir();
         File prepare = directory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
         // and a state of the migration saying that it has done the actual migration
@@ -151,7 +151,7 @@ public class StoreMigratorIT
     public void shouldBeAbleToMigrateWithoutErrors() throws Exception
     {
         // GIVEN a legacy database
-        File storeDirectory = directory.graphDbDir();
+        File storeDirectory = directory.databaseDir();
         File prepare = directory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
 
@@ -192,7 +192,7 @@ public class StoreMigratorIT
     public void shouldBeAbleToResumeMigrationOnRebuildingCounts() throws Exception
     {
         // GIVEN a legacy database
-        File storeDirectory = directory.graphDbDir();
+        File storeDirectory = directory.databaseDir();
         File prepare = directory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
         // and a state of the migration saying that it has done the actual migration
@@ -230,7 +230,7 @@ public class StoreMigratorIT
     public void shouldComputeTheLastTxLogPositionCorrectly() throws Throwable
     {
         // GIVEN a legacy database
-        File storeDirectory = directory.graphDbDir();
+        File storeDirectory = directory.databaseDir();
         File prepare = directory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
         // and a state of the migration saying that it has done the actual migration
@@ -257,7 +257,7 @@ public class StoreMigratorIT
     public void shouldComputeTheLastTxInfoCorrectly() throws Exception
     {
         // given
-        File storeDirectory = directory.graphDbDir();
+        File storeDirectory = directory.databaseDir();
         File prepare = directory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
         // and a state of the migration saying that it has done the actual migration

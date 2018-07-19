@@ -62,7 +62,7 @@ public class TestIndexDelectionFs
         String indexName = "index";
         String otherIndexName = "other-index";
 
-        File indexBaseDir = new File( testDirectory.graphDbDir(), "index" );
+        File indexBaseDir = new File( testDirectory.databaseDir(), "index" );
         File pathToLuceneIndex = LuceneDataSource.getFileDirectory( indexBaseDir,
                 new IndexIdentifier( IndexEntityType.Node, indexName ) );
         File pathToOtherLuceneIndex = LuceneDataSource.getFileDirectory( indexBaseDir,

@@ -35,8 +35,8 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
 /**
@@ -45,14 +45,14 @@ import org.neo4j.test.rule.TestDirectory;
 public class HaIPv6ConfigurationIT
 {
     @Rule
-    public TestDirectory dir = TestDirectory.testDirectory();
+    public final TestDirectory dir = TestDirectory.testDirectory();
 
     @Test
-    public void testClusterWithLocalhostAddresses() throws Throwable
+    public void testClusterWithLocalhostAddresses()
     {
         int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
+                .newEmbeddedDatabaseBuilder( dir.storeDir() )
                 .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( "::1", clusterPort ) )
                 .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( "::1", clusterPort ) )
                 .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::1", PortAuthority.allocatePort() ) )
@@ -100,11 +100,11 @@ public class HaIPv6ConfigurationIT
         }
     }
 
-    private void testWithAddress( InetAddress inetAddress ) throws Exception
+    private void testWithAddress( InetAddress inetAddress )
     {
         int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
+                .newEmbeddedDatabaseBuilder( dir.storeDir() )
                 .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( inetAddress.getHostAddress(), clusterPort ) )
                 .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( inetAddress.getHostAddress(), clusterPort ) )
                 .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", PortAuthority.allocatePort() ) )
@@ -122,11 +122,11 @@ public class HaIPv6ConfigurationIT
     }
 
     @Test
-    public void testClusterWithWildcardAddresses() throws Throwable
+    public void testClusterWithWildcardAddresses()
     {
         int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
+                .newEmbeddedDatabaseBuilder( dir.storeDir() )
                 .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( "::", clusterPort ) )
                 .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( "::1", clusterPort ) )
                 .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", PortAuthority.allocatePort() ) )
@@ -143,7 +143,7 @@ public class HaIPv6ConfigurationIT
         db.shutdown();
     }
 
-    private String ipv6HostPortSetting( String address, int port )
+    private static String ipv6HostPortSetting( String address, int port )
     {
         return "[" + address + "]:" + port;
     }

@@ -86,7 +86,7 @@ public class NeoStoreDataSourceTest
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( databaseHealth );
 
-            theDataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            theDataSource = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     dependencies );
 
             databaseHealth.panic( new Throwable() );
@@ -109,7 +109,7 @@ public class NeoStoreDataSourceTest
     public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCache );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -125,7 +125,7 @@ public class NeoStoreDataSourceTest
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCache );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -144,7 +144,7 @@ public class NeoStoreDataSourceTest
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( health );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, dependencies );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCache, dependencies );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -223,7 +223,7 @@ public class NeoStoreDataSourceTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
 
-        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(),
+        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.databaseDir(), fs.get(),
                 pageCache, dependencies );
 
         try
@@ -245,7 +245,7 @@ public class NeoStoreDataSourceTest
     public void shouldAlwaysShutdownLifeEvenWhenCheckPointingFails() throws Exception
     {
         // Given
-        File storeDir = dir.graphDbDir();
+        File storeDir = dir.databaseDir();
         FileSystemAbstraction fs = this.fs.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DatabaseHealth databaseHealth = mock( DatabaseHealth.class );

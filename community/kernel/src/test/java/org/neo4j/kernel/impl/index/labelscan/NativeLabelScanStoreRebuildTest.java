@@ -68,7 +68,7 @@ public class NativeLabelScanStoreRebuildTest
     @Before
     public void setup()
     {
-        storeDir = testDirectory.graphDbDir();
+        storeDir = testDirectory.databaseDir();
     }
 
     @Test

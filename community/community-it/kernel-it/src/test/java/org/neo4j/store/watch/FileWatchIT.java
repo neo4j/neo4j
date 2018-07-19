@@ -108,7 +108,7 @@ public class FileWatchIT
         }
         while ( !deletionListener.awaitModificationNotification() );
 
-        deleteFile( testDirectory.graphDbDir(), fileName );
+        deleteFile( testDirectory.databaseDir(), fileName );
         deletionListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
@@ -221,7 +221,7 @@ public class FileWatchIT
         String fileName = TransactionLogFiles.DEFAULT_NAME + ".0";
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
         fileWatcher.addFileWatchEventListener( deletionListener );
-        deleteFile( testDirectory.graphDbDir(), fileName );
+        deleteFile( testDirectory.databaseDir(), fileName );
         deletionListener.awaitDeletionNotification();
 
         AssertableLogProvider.LogMatcher logMatcher =

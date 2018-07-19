@@ -52,7 +52,7 @@ public class CommunityEditionModuleIntegrationTest
     public void createBufferedIdComponentsByDefault()
     {
         GraphDatabaseAPI database =
-                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
         try
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();

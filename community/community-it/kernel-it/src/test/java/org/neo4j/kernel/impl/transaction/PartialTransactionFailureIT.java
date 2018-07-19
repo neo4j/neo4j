@@ -73,7 +73,7 @@ public class PartialTransactionFailureIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = dir.graphDbDir();
+        File storeDir = dir.databaseDir();
         final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params )
         {

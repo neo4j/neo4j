@@ -46,8 +46,8 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -272,6 +272,6 @@ public class HardKillIT
 
     private File path( int i )
     {
-        return new File( testDirectory.graphDbDir(), "" + i );
+        return new File( testDirectory.databaseDir(), "" + i );
     }
 }

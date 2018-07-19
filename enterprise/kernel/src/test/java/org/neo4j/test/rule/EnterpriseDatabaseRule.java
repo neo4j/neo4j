@@ -27,6 +27,16 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 public class EnterpriseDatabaseRule extends EmbeddedDatabaseRule
 {
+    public EnterpriseDatabaseRule()
+    {
+        super();
+    }
+
+    public EnterpriseDatabaseRule( TestDirectory testDirectory )
+    {
+        super( testDirectory );
+    }
+
     @Override
     protected GraphDatabaseFactory newFactory()
     {

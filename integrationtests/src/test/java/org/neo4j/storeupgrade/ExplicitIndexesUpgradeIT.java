@@ -147,7 +147,7 @@ public class ExplicitIndexesUpgradeIT
 
     private void prepareStore( String store ) throws IOException
     {
-        Unzip.unzip( getClass(), store, testDir.graphDbDir() );
+        Unzip.unzip( getClass(), store, testDir.databaseDir() );
     }
 
     private static IntFunction<Object> intValues()

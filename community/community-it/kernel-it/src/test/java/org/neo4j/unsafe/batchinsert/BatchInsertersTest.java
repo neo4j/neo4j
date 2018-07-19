@@ -84,7 +84,7 @@ public class BatchInsertersTest
 
     private File getStoreDir()
     {
-        return testDirectory.graphDbDir();
+        return testDirectory.databaseDir();
     }
 
     private void verifyInserterFileSystemClose( BatchInserter inserter )

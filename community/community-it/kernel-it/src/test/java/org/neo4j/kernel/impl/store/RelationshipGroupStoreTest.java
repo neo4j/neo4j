@@ -78,7 +78,7 @@ public class RelationshipGroupStoreTest
     @Before
     public void before()
     {
-        directory = testDir.graphDbDir();
+        directory = testDir.databaseDir();
         fs = new DefaultFileSystemAbstraction();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }

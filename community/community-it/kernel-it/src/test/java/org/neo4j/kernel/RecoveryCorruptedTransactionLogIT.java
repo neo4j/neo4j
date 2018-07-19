@@ -506,7 +506,7 @@ public class RecoveryCorruptedTransactionLogIT
     private void addCorruptedCommandsToLastLogFile() throws IOException
     {
         PositiveLogFilesBasedLogVersionRepository versionRepository = new PositiveLogFilesBasedLogVersionRepository( logFiles );
-        LogFiles internalLogFiles = LogFilesBuilder.builder( directory.graphDbDir(), fileSystemRule )
+        LogFiles internalLogFiles = LogFilesBuilder.builder( directory.databaseDir(), fileSystemRule )
                 .withLogVersionRepository( versionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
         try ( Lifespan lifespan = new Lifespan( internalLogFiles ) )
@@ -546,7 +546,7 @@ public class RecoveryCorruptedTransactionLogIT
 
     private LogFiles buildDefaultLogFiles() throws IOException
     {
-        return LogFilesBuilder.builder( directory.graphDbDir(), fileSystemRule )
+        return LogFilesBuilder.builder( directory.databaseDir(), fileSystemRule )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
     }

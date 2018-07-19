@@ -62,8 +62,9 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
-    public EnterpriseDatabaseRule db = new EnterpriseDatabaseRule().startLazily();
-    private TestDirectory dir = db.getTestDirectory();
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public EnterpriseDatabaseRule db = new EnterpriseDatabaseRule( testDirectory ).startLazily();
 
     private static void verifyEventuallyWarmsUp( long pagesInMemory, File metricsDirectory ) throws Exception
     {
@@ -75,7 +76,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
     @Test
     public void warmupMustReloadHotPagesAfterRestartAndFaultsMustBeVisibleViaMetrics() throws Exception
     {
-        File metricsDirectory = dir.directory( "metrics" );
+        File metricsDirectory = testDirectory.directory( "metrics" );
         db.setConfig( MetricsSettings.metricsEnabled, Settings.FALSE )
           .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
           .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
@@ -109,8 +110,8 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
 
         BinaryLatch latch = pauseProfile( db.getMonitors() ); // We don't want torn profile files in this test.
 
-        File metricsDirectory = dir.cleanDirectory( "metrics" );
-        File backupDir = dir.cleanDirectory( "backup" );
+        File metricsDirectory = testDirectory.cleanDirectory( "metrics" );
+        File backupDir = testDirectory.cleanDirectory( "backup" );
         assertTrue( OnlineBackup.from( "localhost", backupPort ).backup( backupDir ).isConsistent() );
         latch.release();
         DatabaseRule.RestartAction useBackupDir = ( fs, storeDir ) ->
@@ -145,7 +146,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
 
         for ( int i = 0; i < 20; i++ )
         {
-            String backupDir = dir.cleanDirectory( "backup" ).getAbsolutePath();
+            String backupDir = testDirectory.cleanDirectory( "backup" ).getAbsolutePath();
             assertTrue( OnlineBackup.from( "localhost", backupPort ).full( backupDir ).isConsistent() );
         }
     }
@@ -175,14 +176,14 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
                 },
                 true );
         File databaseDir = db.databaseDirectory();
-        File data = dir.cleanDirectory( "data" );
+        File data = testDirectory.cleanDirectory( "data" );
         File databases = new File( data, "databases" );
         File graphdb = new File( databases, DataSourceManager.DEFAULT_DATABASE_NAME );
         assertTrue( graphdb.mkdirs() );
         FileUtils.copyRecursively( databaseDir, graphdb );
         FileUtils.deleteRecursively( databaseDir );
         Path homePath = data.toPath().getParent();
-        File dumpDir = dir.cleanDirectory( "dump-dir" );
+        File dumpDir = testDirectory.cleanDirectory( "dump-dir" );
         adminTool.execute( homePath, homePath, "dump", "--database=" + DataSourceManager.DEFAULT_DATABASE_NAME, "--to=" + dumpDir );
 
         FileUtils.deleteRecursively( graphdb );
@@ -191,7 +192,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         FileUtils.copyRecursively( graphdb, databaseDir );
         FileUtils.deleteRecursively( graphdb );
 
-        File metricsDirectory = dir.cleanDirectory( "metrics" );
+        File metricsDirectory = testDirectory.cleanDirectory( "metrics" );
         db.ensureStarted(
                 OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE,
                 MetricsSettings.neoPageCacheEnabled.name(), Settings.TRUE,

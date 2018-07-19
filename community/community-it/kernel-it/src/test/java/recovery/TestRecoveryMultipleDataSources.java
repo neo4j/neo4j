@@ -59,7 +59,7 @@ public class TestRecoveryMultipleDataSources
     public void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         assertEquals( 0, getRuntime().exec( new String[]{
                 ProcessUtil.getJavaExecutable().toString(), "-Djava.awt.headless=true", "-cp",
                 ProcessUtil.getClassPath(), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );

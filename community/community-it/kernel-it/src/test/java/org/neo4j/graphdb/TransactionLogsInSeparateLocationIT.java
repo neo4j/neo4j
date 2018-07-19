@@ -50,7 +50,7 @@ public class TransactionLogsInSeparateLocationIT
     @Test
     public void databaseWithTransactionLogsInSeparateRelativeLocation() throws IOException
     {
-        File databaseDirectory = testDirectory.graphDbDir();
+        File databaseDirectory = testDirectory.databaseDir();
         File txDirectory = new File( databaseDirectory, "transaction-logs" );
         performTransactions( txDirectory.getName(), testDirectory.directory() );
         verifyTransactionLogs( txDirectory, databaseDirectory );
@@ -59,7 +59,7 @@ public class TransactionLogsInSeparateLocationIT
     @Test
     public void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
     {
-        File databaseDirectory = testDirectory.graphDbDir();
+        File databaseDirectory = testDirectory.databaseDir();
         File txDirectory = testDirectory.directory( "transaction-logs" );
         performTransactions( txDirectory.getAbsolutePath(), testDirectory.directory() );
         verifyTransactionLogs( txDirectory, databaseDirectory );

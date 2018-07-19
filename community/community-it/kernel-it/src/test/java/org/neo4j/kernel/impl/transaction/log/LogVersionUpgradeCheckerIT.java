@@ -129,7 +129,7 @@ public class LogVersionUpgradeCheckerIT
 
     private void appendCheckpoint( LogEntryVersion logVersion ) throws IOException
     {
-        File storeDir = storeDirectory.graphDbDir();
+        File storeDir = storeDirectory.databaseDir();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withLogEntryReader( logEntryReader ).build();

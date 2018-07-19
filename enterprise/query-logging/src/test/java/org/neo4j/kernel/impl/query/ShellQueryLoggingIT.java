@@ -185,7 +185,7 @@ public class ShellQueryLoggingIT
 
     private File logsDirectory()
     {
-        File logsDir = new File( dir.graphDbDir(), "logs" );
+        File logsDir = new File( dir.databaseDir(), "logs" );
         fs.get().mkdirs( logsDir );
         return logsDir;
     }

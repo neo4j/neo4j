@@ -63,7 +63,7 @@ public class BatchInserterImplTest
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystemRule.get(),
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseDir(), fileSystemRule.get(),
                 stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
@@ -77,7 +77,7 @@ public class BatchInserterImplTest
     public void testCreatesStoreLockFile() throws Exception
     {
         // Given
-        File file = testDirectory.graphDbDir();
+        File file = testDirectory.databaseDir();
 
         // When
         BatchInserter inserter = BatchInserters.inserter( file.getAbsoluteFile(), fileSystemRule.get() );
@@ -91,7 +91,7 @@ public class BatchInserterImplTest
     public void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
-        File parent = testDirectory.graphDbDir();
+        File parent = testDirectory.databaseDir();
         try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
               StoreLocker lock = new StoreLocker( fileSystemAbstraction, parent ) )
         {

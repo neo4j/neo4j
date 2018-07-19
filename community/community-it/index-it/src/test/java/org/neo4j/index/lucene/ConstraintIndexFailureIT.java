@@ -110,7 +110,7 @@ public class ConstraintIndexFailureIT
 
     private void storeIndexFailure( String failure ) throws IOException
     {
-        File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.graphDbDir() )
+        File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.databaseDir() )
                 .forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
         PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
                 .withFileSystem( fileSystemRule.get() )

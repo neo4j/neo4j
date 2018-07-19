@@ -55,7 +55,7 @@ public abstract class AbstractLuceneIndexTest
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+        graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
     }
 
     @AfterClass

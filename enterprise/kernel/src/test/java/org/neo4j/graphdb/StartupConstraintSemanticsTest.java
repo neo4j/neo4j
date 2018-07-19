@@ -64,7 +64,7 @@ public class StartupConstraintSemanticsTest
     private void assertThatCommunityCanStartOnNormalConstraint( String constraintCreationQuery )
     {
         // given
-        GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+        GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dir.databaseDir() );
         try
         {
             graphDb.execute( constraintCreationQuery );
@@ -78,7 +78,7 @@ public class StartupConstraintSemanticsTest
         // when
         try
         {
-            graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+            graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.databaseDir() );
             // Should not get exception
         }
         finally
@@ -93,7 +93,7 @@ public class StartupConstraintSemanticsTest
     private void assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( String constraintCreationQuery, String errorMessage )
     {
         // given
-        GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+        GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dir.databaseDir() );
         try
         {
             graphDb.execute( constraintCreationQuery );
@@ -107,7 +107,7 @@ public class StartupConstraintSemanticsTest
         // when
         try
         {
-            graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+            graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.databaseDir() );
             fail( "should have failed to start!" );
         }
         // then

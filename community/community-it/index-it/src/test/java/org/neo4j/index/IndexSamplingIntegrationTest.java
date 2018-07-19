@@ -71,7 +71,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
             {
@@ -140,7 +140,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
@@ -202,7 +202,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )
@@ -225,7 +225,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )
@@ -247,7 +247,7 @@ public class IndexSamplingIntegrationTest
     {
         // Trigger index resampling on next at startup
         String baseName = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
-        FileUtils.deleteFile( new File( testDirectory.graphDbDir(), baseName + CountsTracker.LEFT ) );
-        FileUtils.deleteFile( new File( testDirectory.graphDbDir(), baseName + CountsTracker.RIGHT ) );
+        FileUtils.deleteFile( new File( testDirectory.databaseDir(), baseName + CountsTracker.LEFT ) );
+        FileUtils.deleteFile( new File( testDirectory.databaseDir(), baseName + CountsTracker.RIGHT ) );
     }
 }

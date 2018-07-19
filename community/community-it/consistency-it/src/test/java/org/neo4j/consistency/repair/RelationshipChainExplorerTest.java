@@ -148,7 +148,7 @@ public class RelationshipChainExplorerTest
         }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        StoreAccess storeAccess = new StoreAccess( fileSystemRule.get(), pageCache, testDirectory.graphDbDir(),
+        StoreAccess storeAccess = new StoreAccess( fileSystemRule.get(), pageCache, testDirectory.databaseDir(),
                 Config.defaults() );
         return storeAccess.initialize();
     }

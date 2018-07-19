@@ -76,9 +76,9 @@ public class NeoStoresRule extends ExternalResource
     {
         assert neoStores == null : "Already opened";
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );
-        File storeDir = testDirectory.makeGraphDbDir();
+        File databaseDir = testDirectory.databaseDir();
         Config configuration = configOf( config );
-        StoreFactory storeFactory = new StoreFactory( storeDir, configuration, idGeneratorFactory.apply( fs ),
+        StoreFactory storeFactory = new StoreFactory( databaseDir, configuration, idGeneratorFactory.apply( fs ),
                 pageCache, fs, format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )

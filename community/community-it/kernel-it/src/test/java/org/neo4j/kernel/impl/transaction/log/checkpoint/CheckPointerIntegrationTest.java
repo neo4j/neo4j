@@ -127,7 +127,7 @@ public class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
 
         assertTrue( "Expected at least two (at least one for time interval and one for shutdown), was " +
                 checkPoints.toString(), checkPoints.size() >= 2 );
@@ -177,7 +177,7 @@ public class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
 
         assertEquals( 2, checkPoints.size() );
     }
@@ -202,7 +202,7 @@ public class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 1 check point has been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
 
         assertEquals( 1, checkPoints.size() );
     }
@@ -221,7 +221,7 @@ public class CheckPointerIntegrationTest
         graphDatabaseBuilder.newGraphDatabase().shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
 
         assertEquals( 2, checkPoints.size() );
     }

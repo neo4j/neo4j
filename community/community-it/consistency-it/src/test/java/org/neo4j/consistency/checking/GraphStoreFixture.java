@@ -165,7 +165,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Config config = Config.defaults();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
             StoreFactory storeFactory = new StoreFactory(
-                    directory.graphDbDir(), config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
+                    directory.databaseDir(), config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
             neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
@@ -187,7 +187,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
-            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.graphDbDir(), config, logProvider, monitors);
+            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseDir(), config, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
         }
         return directStoreAccess;
@@ -196,7 +196,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors )
     {
         NativeLabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, directory.graphDbDir(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
+                new NativeLabelScanStore( pageCache, directory.databaseDir(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
         try
         {
@@ -221,7 +221,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     public File databaseDirectory()
     {
-        return directory.graphDbDir();
+        return directory.databaseDir();
     }
 
     public Statistics getAccessStatistics()
@@ -571,7 +571,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 try
                 {
                     generateInitialData();
-                    start( GraphStoreFixture.this.directory.graphDbDir() );
+                    start( GraphStoreFixture.this.directory.databaseDir() );
                     try
                     {
                         base.evaluate();

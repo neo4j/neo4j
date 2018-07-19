@@ -150,7 +150,7 @@ public class StoreUpgradeIT
         @Test
         public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
-            File databaseDirectory = store.prepareDirectory( testDir.graphDbDir() );
+            File databaseDirectory = store.prepareDirectory( testDir.databaseDir() );
 
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
@@ -220,7 +220,7 @@ public class StoreUpgradeIT
         public void migratingOlderDataAndThanStartAClusterUsingTheNewerDataShouldWork() throws Throwable
         {
             // migrate the store using a single instance
-            File databaseDirectory = store.prepareDirectory( testDir.graphDbDir() );
+            File databaseDirectory = store.prepareDirectory( testDir.databaseDir() );
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
@@ -297,7 +297,7 @@ public class StoreUpgradeIT
         public void migrationShouldFail() throws Throwable
         {
             // migrate the store using a single instance
-            File databaseDirectory = Unzip.unzip( getClass(), dbFileName, testDir.graphDbDir() );
+            File databaseDirectory = Unzip.unzip( getClass(), dbFileName, testDir.databaseDir() );
             new File( databaseDirectory, "debug.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
@@ -336,7 +336,7 @@ public class StoreUpgradeIT
         @Test
         public void shouldBeAbleToUpgradeAStoreWithoutIdFilesAsBackups() throws Throwable
         {
-            File databaseDirectory = store.prepareDirectory( testDir.graphDbDir() );
+            File databaseDirectory = store.prepareDirectory( testDir.databaseDir() );
 
             // remove id files
             File[] idFiles = databaseDirectory.listFiles( ( dir1, name ) -> name.endsWith( ".id" ) );

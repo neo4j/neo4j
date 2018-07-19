@@ -185,7 +185,7 @@ public class RebuildCountsTest
 
     private void deleteCounts( FileSystemAbstraction snapshot )
     {
-        final File storeFileBase = new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+        final File storeFileBase = new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
         File alpha = new File( storeFileBase + CountsTracker.LEFT );
         File beta = new File( storeFileBase + CountsTracker.RIGHT );
         assertTrue( snapshot.deleteFile( alpha ) );

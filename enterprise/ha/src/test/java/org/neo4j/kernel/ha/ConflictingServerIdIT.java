@@ -31,8 +31,8 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
@@ -120,6 +120,6 @@ public class ConflictingServerIdIT
 
     private File path( int i )
     {
-        return new File( testDirectory.graphDbDir(), "" + i );
+        return new File( testDirectory.databaseDir(), "" + i );
     }
 }

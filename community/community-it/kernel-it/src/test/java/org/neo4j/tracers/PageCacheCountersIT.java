@@ -63,7 +63,7 @@ public class PageCacheCountersIT
     @Before
     public void setUp()
     {
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
         numberOfWorkers = Runtime.getRuntime().availableProcessors();
         executors = Executors.newFixedThreadPool( numberOfWorkers );
     }

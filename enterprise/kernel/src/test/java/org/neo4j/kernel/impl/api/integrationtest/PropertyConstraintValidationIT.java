@@ -323,7 +323,7 @@ public class PropertyConstraintValidationIT
         protected GraphDatabaseService createGraphDatabase()
         {
             return new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
-                    .newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                    .newEmbeddedDatabaseBuilder( testDir.databaseDir() )
                     .newGraphDatabase();
         }
 

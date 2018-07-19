@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -102,8 +101,8 @@ public class StoreUpgraderInterruptionTestIT
     @Before
     public void setUpLabelScanStore()
     {
-        workingDirectory = directory.directory( "working" );
-        workingDatabaseDirectory = new File( workingDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
+        workingDirectory = directory.storeDir( "working" );
+        workingDatabaseDirectory = directory.databaseDir( workingDirectory );
         prepareDirectory = directory.directory( "prepare" );
     }
 

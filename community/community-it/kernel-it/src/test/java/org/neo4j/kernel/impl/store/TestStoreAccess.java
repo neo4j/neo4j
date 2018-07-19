@@ -58,7 +58,7 @@ public class TestStoreAccess
             assertTrue( "Store should be unclean", isUnclean( snapshot ) );
 
             PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-            new StoreAccess( snapshot, pageCache, testDirectory.graphDbDir(), Config.defaults() ).initialize().close();
+            new StoreAccess( snapshot, pageCache, testDirectory.databaseDir(), Config.defaults() ).initialize().close();
             assertTrue( "Store should be unclean", isUnclean( snapshot ) );
         }
     }
@@ -81,6 +81,6 @@ public class TestStoreAccess
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, Config.defaults(), monitors );
-        return requiredChecker.isRecoveryRequiredAt( testDirectory.graphDbDir() );
+        return requiredChecker.isRecoveryRequiredAt( testDirectory.databaseDir() );
     }
 }

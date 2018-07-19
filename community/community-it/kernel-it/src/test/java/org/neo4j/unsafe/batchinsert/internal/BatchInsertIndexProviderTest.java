@@ -109,7 +109,7 @@ public class BatchInsertIndexProviderTest
 
     private BatchInserter newBatchInserter( Map<String,String> config ) throws Exception
     {
-        return BatchInserters.inserter( storeDir.graphDbDir(), fileSystemRule.get(), config );
+        return BatchInserters.inserter( storeDir.databaseDir(), fileSystemRule.get(), config );
     }
 
     private GraphDatabaseService graphDatabaseService( File storeDir, Map<String, String> config )

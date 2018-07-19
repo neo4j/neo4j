@@ -77,7 +77,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = Config.defaults( params );
-        factory = new StoreFactory( testDirectory.graphDbDir(), config, new DefaultIdGeneratorFactory( fs ),
+        factory = new StoreFactory( testDirectory.databaseDir(), config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
@@ -106,7 +106,7 @@ public class IdGeneratorRebuildFailureEmulationTest
 
     private void performTest( String neostoreFileName )
     {
-        File idFile = new File( testDirectory.graphDbDir(), neostoreFileName + ".id" );
+        File idFile = new File( testDirectory.databaseDir(), neostoreFileName + ".id" );
         // emulate the need for rebuilding id generators by deleting it
         fs.deleteFile( idFile );
         try ( NeoStores neoStores = factory.openAllNeoStores() )

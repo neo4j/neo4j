@@ -86,7 +86,7 @@ public class CompositeConstraintIT
         }
         database.shutdown();
 
-        ConsistencyCheckService.Result consistencyCheckResult = checkDbConsistency( testDirectory.graphDbDir() );
+        ConsistencyCheckService.Result consistencyCheckResult = checkDbConsistency( testDirectory.databaseDir() );
         assertTrue( "Database is consistent", consistencyCheckResult.isSuccessful() );
     }
 

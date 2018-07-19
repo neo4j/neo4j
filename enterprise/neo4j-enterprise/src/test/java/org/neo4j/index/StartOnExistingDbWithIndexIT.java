@@ -72,7 +72,7 @@ public class StartOnExistingDbWithIndexIT
     {
         return new TestEnterpriseGraphDatabaseFactory()
                 .setInternalLogProvider( logProvider )
-                .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
     }

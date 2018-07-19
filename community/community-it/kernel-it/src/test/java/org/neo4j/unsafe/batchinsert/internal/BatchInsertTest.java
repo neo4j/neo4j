@@ -594,7 +594,7 @@ public class BatchInsertTest
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
-        File storeDir = localTestDirectory.graphDbDir();
+        File storeDir = localTestDirectory.databaseDir();
         BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap() );
         inserter.shutdown();
         assertTrue( new File( storeDir, INTERNAL_LOG_FILE ).delete() );
@@ -1386,12 +1386,12 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserter() throws Exception
     {
-        return BatchInserters.inserter( localTestDirectory.graphDbDir(), fileSystemRule.get(), configuration() );
+        return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration() );
     }
 
     private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
-        return BatchInserters.inserter( localTestDirectory.graphDbDir(), fileSystemRule.get(), configuration(), singletonList( provider ) );
+        return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration(), singletonList( provider ) );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
@@ -1416,7 +1416,7 @@ public class BatchInsertTest
     private LabelScanStore getLabelScanStore()
     {
         DefaultFileSystemAbstraction fs = fileSystemRule.get();
-        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), localTestDirectory.graphDbDir(), fs,
+        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), localTestDirectory.databaseDir(), fs,
                 FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 

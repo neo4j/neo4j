@@ -87,7 +87,7 @@ class CsvImporterTest
 
     private String getDatabasePath()
     {
-        return testDir.graphDbDir().getAbsolutePath();
+        return testDir.databaseDir().getAbsolutePath();
     }
 
     private String getLogsDirectory()

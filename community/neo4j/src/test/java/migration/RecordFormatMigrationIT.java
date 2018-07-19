@@ -56,7 +56,7 @@ public class RecordFormatMigrationIT
     @Before
     public void setUp()
     {
-        storeDir = testDirectory.graphDbDir();
+        storeDir = testDirectory.databaseDir();
     }
 
     @Test

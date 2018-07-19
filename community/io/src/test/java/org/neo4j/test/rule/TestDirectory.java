@@ -48,7 +48,7 @@ import static java.lang.String.format;
  *     @Test
  *     public void shouldDoSomething()
  *     {
- *       File storeDir = dir.graphDbDir();
+ *       File storeDir = dir.databaseDir();
  *       // do stuff with store dir
  *     }
  *   }
@@ -158,14 +158,34 @@ public class TestDirectory extends ExternalResource
         return new File( directory(), name );
     }
 
-    public File graphDbDir()
+    public File databaseDir()
     {
         return directory( DEFAULT_DATABASE_DIRECTORY );
     }
 
-    public File makeGraphDbDir() throws IOException
+    public File storeDir()
     {
-        return cleanDirectory( DEFAULT_DATABASE_DIRECTORY );
+        return directory();
+    }
+
+    public File storeDir( String storeDirName )
+    {
+        return directory( storeDirName );
+    }
+
+    public File databaseDir( File storeDirectory )
+    {
+        File directory = new File( storeDirectory, DEFAULT_DATABASE_DIRECTORY );
+        if ( fileSystem.mkdir( directory ) )
+        {
+            throw new RuntimeException( "Failed to create directory: " + directory );
+        }
+        return directory;
+    }
+
+    public File databaseDir( String customStoreDirectoryName )
+    {
+        return databaseDir( storeDir( customStoreDirectoryName ) );
     }
 
     public void cleanup() throws IOException

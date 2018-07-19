@@ -72,7 +72,7 @@ public class KernelRecoveryTest
             db.shutdown();
 
             // Then the logical log should be in sync
-            File logFile = new File( testDirectory.graphDbDir(), TransactionLogFiles.DEFAULT_NAME + ".0" );
+            File logFile = new File( testDirectory.databaseDir(), TransactionLogFiles.DEFAULT_NAME + ".0" );
             assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),

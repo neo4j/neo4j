@@ -256,14 +256,14 @@ public class CatchupServerIT
 
     private File databaseFileToClientFile( File file ) throws IOException
     {
-        String relativePathToDatabaseDir = relativePath( testDirectory.graphDbDir(), file );
+        String relativePathToDatabaseDir = relativePath( testDirectory.databaseDir(), file );
         return new File( temporaryDirectory, relativePathToDatabaseDir );
     }
 
     private File clientFileToDatabaseFile( File file ) throws IOException
     {
         String relativePathToDatabaseDir = relativePath( temporaryDirectory, file );
-        return new File( testDirectory.graphDbDir(), relativePathToDatabaseDir );
+        return new File( testDirectory.databaseDir(), relativePathToDatabaseDir );
     }
 
     private void fileContentEquals( File fileA, File fileB ) throws IOException

@@ -76,7 +76,7 @@ public class IndexConsistencyIT
     @Test
     public void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
     {
-        File databaseDirectory = db.getTestDirectory().graphDbDir();
+        File databaseDirectory = db.databaseDirectory();
         someData();
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File indexesCopy = new File( databaseDirectory, "indexesCopy" );
@@ -238,7 +238,7 @@ public class IndexConsistencyIT
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.getTestDirectory().graphDbDir(), config, NONE, log, fsa, true );
+            return service.runFullConsistencyCheck( db.databaseDirectory(), config, NONE, log, fsa, true );
         }
     }
 }

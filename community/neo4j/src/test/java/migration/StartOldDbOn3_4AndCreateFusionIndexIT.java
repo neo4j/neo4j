@@ -115,7 +115,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
-        unzip( getClass(), ZIP_FILE_3_2, directory.graphDbDir() );
+        unzip( getClass(), ZIP_FILE_3_2, directory.databaseDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
 
         File storeDir = directory.directory();
@@ -174,7 +174,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     public void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
-        unzip( getClass(), ZIP_FILE_3_3, directory.graphDbDir() );
+        unzip( getClass(), ZIP_FILE_3_3, directory.databaseDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         File storeDir = directory.directory();
 

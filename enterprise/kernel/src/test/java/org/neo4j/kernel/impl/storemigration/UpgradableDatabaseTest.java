@@ -102,7 +102,7 @@ public class UpgradableDatabaseTest
         public void setup() throws IOException
         {
             fileSystem = fileSystemRule.get();
-            workingDirectory = testDirectory.graphDbDir();
+            workingDirectory = testDirectory.databaseDir();
             MigrationTestUtils.findFormatStoreDirectoryForVersion( version, workingDirectory );
             VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fileSystem ).build();
@@ -201,7 +201,7 @@ public class UpgradableDatabaseTest
         public void setup() throws IOException
         {
             fileSystem = fileSystemRule.get();
-            workingDirectory = testDirectory.graphDbDir();
+            workingDirectory = testDirectory.databaseDir();
             // doesn't matter which version we pick we are changing it to the wrong one...
             MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_3.STORE_VERSION, workingDirectory );
             changeVersionNumber( fileSystem, new File( workingDirectory, neostoreFilename ), version );

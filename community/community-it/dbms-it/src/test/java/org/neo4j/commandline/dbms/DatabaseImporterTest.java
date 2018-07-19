@@ -113,7 +113,7 @@ public class DatabaseImporterTest
 
         assertTrue( oldMessagesLog.createNewFile() );
 
-        File destination = testDir.graphDbDir();
+        File destination = testDir.databaseDir();
 
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
         DatabaseImporter importer =

@@ -85,7 +85,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         public void setup()
         {
             fs = pageCacheAndDependenciesRule.fileSystem();
-            graphDbDir = pageCacheAndDependenciesRule.directory().graphDbDir();
+            graphDbDir = pageCacheAndDependenciesRule.directory().databaseDir();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
         }

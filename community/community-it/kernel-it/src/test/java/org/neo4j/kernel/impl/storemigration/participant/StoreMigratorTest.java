@@ -94,7 +94,7 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        File storeDir = directory.graphDbDir();
+        File storeDir = directory.databaseDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
 
@@ -121,7 +121,7 @@ public class StoreMigratorTest
     {
         // given
         long txId = 42;
-        File storeDir = directory.graphDbDir();
+        File storeDir = directory.databaseDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
         Config config = mock( Config.class );
@@ -145,7 +145,7 @@ public class StoreMigratorTest
     @Test
     public void extractTransactionInformationFromLogsInCustomRelativeLocation() throws Exception
     {
-        File databaseDirectory = directory.graphDbDir();
+        File databaseDirectory = directory.databaseDir();
         File customLogLocation = new File( databaseDirectory, "customLogLocation" );
         extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, databaseDirectory, directory.directory() );
     }
@@ -153,7 +153,7 @@ public class StoreMigratorTest
     @Test
     public void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
-        File databaseDirectory = directory.graphDbDir();
+        File databaseDirectory = directory.databaseDir();
         File customLogLocation = directory.directory( "customLogLocation" );
         extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, databaseDirectory, directory.directory() );
     }
@@ -192,7 +192,7 @@ public class StoreMigratorTest
     {
         // given
         long txId = 1;
-        File storeDir = directory.graphDbDir();
+        File storeDir = directory.databaseDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
         Config config = mock( Config.class );
@@ -219,9 +219,9 @@ public class StoreMigratorTest
         StoreMigrator migrator = newStoreMigrator();
         TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextLong(), random.nextLong() );
 
-        migrator.writeLastTxInformation( directory.graphDbDir(), writtenTxId );
+        migrator.writeLastTxInformation( directory.databaseDir(), writtenTxId );
 
-        TransactionId readTxId = migrator.readLastTxInformation( directory.graphDbDir() );
+        TransactionId readTxId = migrator.readLastTxInformation( directory.databaseDir() );
 
         assertEquals( writtenTxId, readTxId );
     }
@@ -232,9 +232,9 @@ public class StoreMigratorTest
         StoreMigrator migrator = newStoreMigrator();
         LogPosition writtenLogPosition = new LogPosition( random.nextLong(), random.nextLong() );
 
-        migrator.writeLastTxLogPosition( directory.graphDbDir(), writtenLogPosition );
+        migrator.writeLastTxLogPosition( directory.databaseDir(), writtenLogPosition );
 
-        LogPosition readLogPosition = migrator.readLastTxLogPosition( directory.graphDbDir() );
+        LogPosition readLogPosition = migrator.readLastTxLogPosition( directory.databaseDir() );
 
         assertEquals( writtenLogPosition, readLogPosition );
     }
@@ -244,7 +244,7 @@ public class StoreMigratorTest
     {
         // Prepare migrator and file
         StoreMigrator migrator = newStoreMigrator();
-        File graphDbDir = directory.graphDbDir();
+        File graphDbDir = directory.databaseDir();
         File neoStore = new File( graphDbDir, DEFAULT_NAME );
         neoStore.createNewFile();
 

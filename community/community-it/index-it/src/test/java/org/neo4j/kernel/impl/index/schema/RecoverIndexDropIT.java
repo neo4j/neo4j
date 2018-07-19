@@ -82,7 +82,7 @@ public class RecoverIndexDropIT
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         createIndex( db );
         db.shutdown();
-        appendDropTransactionToTransactionLog( directory.graphDbDir(), dropTransaction );
+        appendDropTransactionToTransactionLog( directory.databaseDir(), dropTransaction );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();

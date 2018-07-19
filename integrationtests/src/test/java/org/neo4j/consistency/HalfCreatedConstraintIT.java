@@ -72,7 +72,7 @@ public class HalfCreatedConstraintIT
             database.shutdown();
         }
 
-        ConsistencyCheckService.Result checkResult = ConsistencyCheckTool.runConsistencyCheckTool( new String[]{testDirectory.graphDbDir().getAbsolutePath()},
+        ConsistencyCheckService.Result checkResult = ConsistencyCheckTool.runConsistencyCheckTool( new String[]{testDirectory.databaseDir().getAbsolutePath()},
                 emptyPrintStream(), emptyPrintStream() );
         assertTrue( String.join( System.lineSeparator(), Files.readAllLines( checkResult.reportFile().toPath() ) ), checkResult.isSuccessful() );
     }

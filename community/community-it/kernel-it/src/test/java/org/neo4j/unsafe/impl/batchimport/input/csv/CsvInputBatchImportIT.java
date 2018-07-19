@@ -125,7 +125,7 @@ public class CsvInputBatchImportIT
     {
         // GIVEN
         Config dbConfig = Config.builder().withSetting( db_timezone, LogTimeZone.SYSTEM.name() ).build();
-        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(), null,
+        BatchImporter importer = new ParallelBatchImporter( directory.databaseDir(), fileSystemRule.get(), null,
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), AdditionalInitialIds.EMPTY, dbConfig,
                 RecordFormatSelector.defaultFormat(), NO_MONITOR );
         List<InputEntity> nodeData = randomNodeData();

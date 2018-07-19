@@ -50,7 +50,7 @@ public class PropertyKeyTest
     {
         // Given
         FileSystemAbstraction fileSystem = fs.get();
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystem );
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseDir(), fileSystem );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();

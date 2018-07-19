@@ -81,7 +81,7 @@ public class PhysicalLogicalTransactionStoreTest
     @Before
     public void setup()
     {
-        testDir = dir.graphDbDir();
+        testDir = dir.databaseDir();
     }
 
     @Test

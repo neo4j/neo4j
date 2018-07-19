@@ -67,7 +67,7 @@ public class PrepareStoreCopyFilesTest
     {
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         fileListingBuilder = mock( NeoStoreFileListing.StoreFileListingBuilder.class, CALLS_REAL_METHODS );
-        storeDir = testDirectory.graphDbDir();
+        storeDir = testDirectory.databaseDir();
         when( dataSource.getDatabaseDirectory() ).thenReturn( storeDir );
         indexListingMock = mock( NeoStoreFileIndexListing.class );
         when( indexListingMock.getIndexIds() ).thenReturn( new LongHashSet() );

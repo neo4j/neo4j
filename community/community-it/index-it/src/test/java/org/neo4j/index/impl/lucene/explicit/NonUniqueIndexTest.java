@@ -160,7 +160,7 @@ public class NonUniqueIndexTest
     private List<Long> nodeIdsInIndex( Config config, int indexId, String value ) throws Exception
     {
         PageCache pageCache = resources.pageCache();
-        File storeDir = resources.directory().graphDbDir();
+        File storeDir = resources.directory().databaseDir();
         FileSystemAbstraction fs = resources.fileSystem();
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         OperationalMode operationalMode = OperationalMode.single;

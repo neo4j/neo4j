@@ -46,7 +46,7 @@ public class ExplicitIndexTest
     @Test( timeout = TEST_TIMEOUT )
     public void explicitIndexPopulationWithBunchOfFields() throws Exception
     {
-        BatchInserter batchNode = BatchInserters.inserter( directory.graphDbDir() );
+        BatchInserter batchNode = BatchInserters.inserter( directory.databaseDir() );
         LuceneBatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( batchNode );
         try
         {

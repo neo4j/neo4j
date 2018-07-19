@@ -72,7 +72,7 @@ public class DatabaseShutdownTest
 
         try
         {
-            factory.newEmbeddedDatabase( testDirectory.graphDbDir() ).shutdown();
+            factory.newEmbeddedDatabase( testDirectory.databaseDir() ).shutdown();
             fail( "Should have thrown" );
         }
         catch ( LifecycleException ex )

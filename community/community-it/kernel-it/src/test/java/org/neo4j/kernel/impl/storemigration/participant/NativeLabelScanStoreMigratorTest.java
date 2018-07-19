@@ -95,10 +95,10 @@ public class NativeLabelScanStoreMigratorTest
     public void setUp() throws Exception
     {
         storeDir = testDirectory.directory();
-        databaseDirectory = testDirectory.graphDbDir();
-        nativeLabelIndex = new File( testDirectory.graphDbDir(), NativeLabelScanStore.FILE_NAME );
+        databaseDirectory = testDirectory.databaseDir();
+        nativeLabelIndex = new File( testDirectory.databaseDir(), NativeLabelScanStore.FILE_NAME );
         migrationDir = testDirectory.directory( "migrationDir" );
-        luceneLabelScanStore = testDirectory.graphDbDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
+        luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
         fileSystem = fileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( fileSystemRule );

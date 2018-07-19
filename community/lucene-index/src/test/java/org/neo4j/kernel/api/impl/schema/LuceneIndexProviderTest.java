@@ -64,7 +64,7 @@ class LuceneIndexProviderTest
     @BeforeEach
     void setup()
     {
-        graphDbDir = testDir.graphDbDir();
+        graphDbDir = testDir.databaseDir();
     }
 
     @Test

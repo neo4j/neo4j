@@ -77,7 +77,7 @@ public abstract class IndexPopulationStressTest
     @Before
     public void setup() throws IOException
     {
-        File storeDir = rules.directory().graphDbDir();
+        File storeDir = rules.directory().databaseDir();
         IndexDirectoryStructure.Factory directory = directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( PROVIDER ) );
 
         IndexProvider indexProvider = newProvider( directory );

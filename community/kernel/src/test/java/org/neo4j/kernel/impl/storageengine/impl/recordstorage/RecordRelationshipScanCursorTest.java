@@ -167,7 +167,7 @@ public class RecordRelationshipScanCursorTest
     private StoreFactory getStoreFactory()
     {
         return new StoreFactory(
-                storage.directory().graphDbDir(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
+                storage.directory().databaseDir(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
                 storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 

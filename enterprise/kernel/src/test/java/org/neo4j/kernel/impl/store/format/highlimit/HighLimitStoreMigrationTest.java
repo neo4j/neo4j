@@ -73,8 +73,8 @@ public class HighLimitStoreMigrationTest
 
         StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance() );
 
-        File storeDir = new File( testDirectory.graphDbDir(), "storeDir" );
-        File migrationDir = new File( testDirectory.graphDbDir(), "migrationDir" );
+        File storeDir = new File( testDirectory.databaseDir(), "storeDir" );
+        File migrationDir = new File( testDirectory.databaseDir(), "migrationDir" );
         fileSystem.mkdir( migrationDir );
         fileSystem.mkdir( storeDir );
 

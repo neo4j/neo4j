@@ -42,7 +42,7 @@ public class BatchInsertersIT
     @Test
     public void shouldStartBatchInserterWithRealIndexProvider() throws Exception
     {
-        BatchInserter inserter = inserter( testDirectory.graphDbDir(), MapUtil.stringMap(), getKernelExtensions() );
+        BatchInserter inserter = inserter( testDirectory.databaseDir(), MapUtil.stringMap(), getKernelExtensions() );
         //If we didn't throw, all good!
         inserter.shutdown();
     }

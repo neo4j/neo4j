@@ -65,10 +65,10 @@ public class RebuildReplicatedIdGeneratorsTest
     public void rebuildReplicatedIdGeneratorsOnRecovery() throws Exception
     {
         DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
-        File stickyGenerator = new File( testDirectory.graphDbDir(), "stickyGenerator" );
-        File nodeStoreIdGenerator = new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME + ".id" );
+        File stickyGenerator = new File( testDirectory.databaseDir(), "stickyGenerator" );
+        File nodeStoreIdGenerator = new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME + ".id" );
 
-        StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), Config.defaults(),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseDir(), Config.defaults(),
                 getIdGenerationFactory( fileSystem ), pageCacheRule.getPageCache( fileSystem ), fileSystem,
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )

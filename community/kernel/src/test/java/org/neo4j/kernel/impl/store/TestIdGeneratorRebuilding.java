@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -123,7 +122,7 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
-        StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config,
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseDir(), config,
                 new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider
                 .getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );

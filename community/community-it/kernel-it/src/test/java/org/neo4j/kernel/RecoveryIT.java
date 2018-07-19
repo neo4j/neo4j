@@ -257,7 +257,7 @@ public class RecoveryIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = directory.graphDbDir();
+        File storeDir = directory.databaseDir();
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fileSystemRule.get(), adversary )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .newGraphDatabase();
@@ -466,7 +466,7 @@ public class RecoveryIT
         {
             // Here we verify that the neostore contents, record by record are exactly the same when comparing
             // the store as it was right after the checkpoint with the store as it was right after reverse recovery completed.
-            assertSameStoreContents( checkPointFs, reversedFs.get(), directory.graphDbDir() );
+            assertSameStoreContents( checkPointFs, reversedFs.get(), directory.databaseDir() );
         }
         finally
         {
@@ -808,7 +808,7 @@ public class RecoveryIT
     {
         File restoreDbStoreDir = new File( this.directory.directory( "restore-db" ), DataSourceManager.DEFAULT_DATABASE_NAME );
         restoreDbStoreDir.mkdir();
-        move( fileSystemRule.get(), this.directory.graphDbDir(), restoreDbStoreDir );
+        move( fileSystemRule.get(), this.directory.databaseDir(), restoreDbStoreDir );
         return restoreDbStoreDir;
     }
 

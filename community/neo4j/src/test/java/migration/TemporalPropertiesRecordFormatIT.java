@@ -57,7 +57,7 @@ public class TemporalPropertiesRecordFormatIT
     @Test
     public void failToCreateDateOnOldDatabase() throws Exception
     {
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = nonUpgradedStore.beginTx() )
         {
@@ -85,7 +85,7 @@ public class TemporalPropertiesRecordFormatIT
     @Test
     public void failToCreateDateArrayOnOldDatabase() throws Exception
     {
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
         LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
         try ( Transaction transaction = nonUpgradedStore.beginTx() )
@@ -114,7 +114,7 @@ public class TemporalPropertiesRecordFormatIT
     @Test
     public void createDatePropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         Label label = Label.label( "DateNode" );
         String propertyKey = "a";
         LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
@@ -139,7 +139,7 @@ public class TemporalPropertiesRecordFormatIT
     @Test
     public void createDateArrayOnLatestDatabase() throws Exception
     {
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         Label label = Label.label( "DateNode" );
         String propertyKey = "a";
         LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
@@ -169,7 +169,7 @@ public class TemporalPropertiesRecordFormatIT
     @Test
     public void failToOpenStoreWithDatePropertyUsingOldFormat()
     {
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
         {

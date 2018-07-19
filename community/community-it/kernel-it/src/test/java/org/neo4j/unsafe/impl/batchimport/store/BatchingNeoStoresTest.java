@@ -78,7 +78,7 @@ public class BatchingNeoStoresTest
         try
         {
             RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
-            try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().graphDbDir(), recordFormats,
+            try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().databaseDir(), recordFormats,
                     DEFAULT, NullLogService.getInstance(), EMPTY, Config.defaults() ) )
             {
                 store.createNew();

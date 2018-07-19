@@ -274,17 +274,17 @@ public class StoreCopyClientIT
                     CatchupAddressProvider.fromSingleAddress( new AdvertisedSocketAddress( listenAddress.getHostname(), listenAddress.getPort() ) );
 
             StoreId storeId = halfWayFailingServerhandler.getStoreId();
-            File storeDir = testDirectory.makeGraphDbDir();
-            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( storeDir, fsa, new Monitors() );
+            File databaseDir = testDirectory.databaseDir();
+            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( databaseDir, fsa, new Monitors() );
 
             // and
             subject.copyStoreFiles( addressProvider, storeId, streamToDiskProvider, () -> defaultTerminationCondition, targetLocation );
 
             // then
-            assertEquals( fileContent( new File( storeDir, fileName ) ), finishedContent );
+            assertEquals( fileContent( new File( databaseDir, fileName ) ), finishedContent );
 
             // and
-            File fileCopy = new File( storeDir, copyFileName );
+            File fileCopy = new File( databaseDir, copyFileName );
 
             ByteBuffer buffer = ByteBuffer.wrap( new byte[finishedContent.length()] );
             try ( StoreChannel storeChannel = fsa.create( fileCopy ) )

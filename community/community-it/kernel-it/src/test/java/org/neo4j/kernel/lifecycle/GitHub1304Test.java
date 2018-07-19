@@ -40,7 +40,7 @@ public class GitHub1304Test
     @Test
     public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws IOException
     {
-        BatchInserter batchInserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystemRule.get() );
+        BatchInserter batchInserter = BatchInserters.inserter( testDirectory.databaseDir(), fileSystemRule.get() );
 
         long nodeId = batchInserter.createNode( Collections.emptyMap() );
 

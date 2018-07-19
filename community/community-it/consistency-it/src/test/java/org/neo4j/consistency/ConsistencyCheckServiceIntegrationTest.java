@@ -160,7 +160,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
@@ -215,7 +215,7 @@ public class ConsistencyCheckServiceIntegrationTest
     public void shouldReportMissingSchemaIndex() throws Exception
     {
         // given
-        File databaseDirectory = testDirectory.graphDbDir();
+        File databaseDirectory = testDirectory.databaseDir();
         GraphDatabaseService gds = getGraphDatabaseService( testDirectory.directory() );
 
         Label label = Label.label( "label" );
@@ -246,7 +246,7 @@ public class ConsistencyCheckServiceIntegrationTest
     @Test
     public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.databaseDir();
         String defaultSchemaProvider = GraphDatabaseSettings.default_schema_provider.name();
         Label label = Label.label( "label" );
         String propKey = "propKey";

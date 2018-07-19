@@ -59,7 +59,7 @@ public class ServerMetricsIT
         // Given
         File metrics = folder.file( "metrics" );
         NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
-                .usingDataDir( folder.graphDbDir().getAbsolutePath() )
+                .usingDataDir( folder.databaseDir().getAbsolutePath() )
                 .withProperty( MetricsSettings.metricsEnabled.name(), "true" )
                 .withProperty( MetricsSettings.csvEnabled.name(), "true" )
                 .withProperty( MetricsSettings.csvPath.name(), metrics.getPath() )

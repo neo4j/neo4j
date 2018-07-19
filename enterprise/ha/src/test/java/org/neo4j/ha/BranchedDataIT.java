@@ -98,7 +98,7 @@ public class BranchedDataIT
         }
 
         File storeDirectory = directory.directory();
-        File databaseDirectory = directory.graphDbDir();
+        File databaseDirectory = directory.databaseDir();
         int clusterPort = PortAuthority.allocatePort();
         new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( storeDirectory )
@@ -336,7 +336,7 @@ public class BranchedDataIT
 
     private long moveAwayToLookLikeOldBranchedDirectory() throws IOException
     {
-        File dir = directory.graphDbDir();
+        File dir = directory.databaseDir();
         long timestamp = System.currentTimeMillis();
         File branchDir = new File( dir, "branched-" + timestamp );
         assertTrue( "create directory: " + branchDir, branchDir.mkdirs() );

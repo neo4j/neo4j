@@ -44,6 +44,11 @@ public class EmbeddedDatabaseRule extends DatabaseRule
         this.testDirectory = TestDirectory.testDirectory();
     }
 
+    public EmbeddedDatabaseRule( TestDirectory testDirectory )
+    {
+        this.testDirectory = testDirectory;
+    }
+
     @Override
     public EmbeddedDatabaseRule startLazily()
     {
@@ -53,7 +58,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     public File databaseDirectory()
     {
-        return testDirectory.graphDbDir();
+        return testDirectory.databaseDir();
     }
 
     @Override
@@ -80,14 +85,4 @@ public class EmbeddedDatabaseRule extends DatabaseRule
         return testDirectory.apply( super.apply( base, description ), description );
     }
 
-    /**
-     * Get the inner {@link TestDirectory} instance that is used to prepare the store directory for this database.
-     * <p>
-     * <strong>Note:</strong> There is no need to add a {@link org.junit.Rule} annotation on this {@link TestDirectory}
-     * instance.
-     */
-    public TestDirectory getTestDirectory()
-    {
-        return testDirectory;
-    }
 }

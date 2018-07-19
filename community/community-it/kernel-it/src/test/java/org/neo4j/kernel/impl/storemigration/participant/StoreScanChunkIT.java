@@ -42,7 +42,7 @@ public class StoreScanChunkIT
     @Test
     public void differentChunksHaveDifferentCursors()
     {
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
         try
         {
             RecordStorageEngine recordStorageEngine = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
