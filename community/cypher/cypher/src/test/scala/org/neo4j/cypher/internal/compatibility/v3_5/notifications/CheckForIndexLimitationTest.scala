@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.notifications
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.notification.checkForIndexLimitation
-import org.neo4j.cypher.internal.compiler.v3_5.SuboptimalIndexForWildcardQueryNotification
+import org.neo4j.cypher.internal.compiler.v3_5.{SuboptimalIndexForConstainsQueryNotification, SuboptimalIndexForEndsWithQueryNotification}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.planner.v3_5.spi
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, IndexLimitation, PlanContext, SlowContains}
@@ -40,7 +40,7 @@ class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTes
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor(1, 1, Set[IndexLimitation](SlowContains))))
     val plan = NodeIndexContainsScan("id", LabelToken("label", LabelId(1)), PropertyKeyToken("prop", PropertyKeyId(1)), True()(pos), Set.empty)
 
-    checkForIndexLimitation(planContext)(plan) should equal(Set(SuboptimalIndexForWildcardQueryNotification("label", Seq("prop"))))
+    checkForIndexLimitation(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("label", Seq("prop"))))
   }
 
   test("should notify for NodeIndexEndsWithScan backed by limited index") {
@@ -48,7 +48,7 @@ class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTes
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor(1, 1, Set[IndexLimitation](SlowContains))))
     val plan = NodeIndexEndsWithScan("id", LabelToken("label", LabelId(1)), PropertyKeyToken("prop", PropertyKeyId(1)), True()(pos), Set.empty)
 
-    checkForIndexLimitation(planContext)(plan) should equal(Set(SuboptimalIndexForWildcardQueryNotification("label", Seq("prop"))))
+    checkForIndexLimitation(planContext)(plan) should equal(Set(SuboptimalIndexForEndsWithQueryNotification("label", Seq("prop"))))
   }
 
   test("should not notify for NodeIndexContainsScan backed by index with no limitations") {

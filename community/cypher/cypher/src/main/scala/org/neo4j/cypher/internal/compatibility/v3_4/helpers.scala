@@ -152,7 +152,12 @@ object helpers {
     case nfV3_4.DeprecatedRelTypeSeparatorNotification(position) => nfv3_5.DeprecatedRelTypeSeparatorNotification(as3_5(position))
     case nfV3_4.DeprecatedPlannerNotification => compilerv3_5.DeprecatedPlannerNotification
     case nfV3_4.ExperimentalFeatureNotification(msg) => compilerv3_5.ExperimentalFeatureNotification(msg)
-    case nfV3_4.SuboptimalIndexForWildcardQueryNotification(label, propertyKeys) => compilerv3_5.SuboptimalIndexForWildcardQueryNotification(label, propertyKeys)
+    case nfV3_4.SuboptimalIndexForWildcardQueryNotification(label, propertyKeys) => compilerv3_5.SuboptimalIndexForConstainsQueryNotification(label, propertyKeys)
+    // todo In 3.4.4 and earlier SuboptimalIndexForWildcardQueryNotification was the only one.
+    // This has been split in two, SuboptimalIndexForContainsQueryNotification and SuboptimalIndexForEndsWithQueryNotification.
+    // When 3.4.5 is released this mapping must be updated to reflect this, like this:
+    // case nfV3_4.SuboptimalIndexForContainsQueryNotification(label, propertyKeys) => compilerv3_5.SuboptimalIndexForConstainsQueryNotification(label, propertyKeys)
+    // case nfV3_4.SuboptimalIndexForEndsWithQueryNotification(label, propertyKeys) => compilerv3_5.SuboptimalIndexForEndsWithQueryNotification(label, propertyKeys)
   }
 
   def as3_5(logicalPlanState: LogicalPlanStateV3_4) : LogicalPlanState = {

@@ -194,10 +194,16 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.ExperimentalFeature,
             "You are using an experimental feature" ),
-    SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY(
+    SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,
-            "Index cannot execute wildcard query efficiently" );
+            "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-providers, see " +
+                    "documentation on index configuration." ),
+    SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY(
+            SeverityLevel.INFORMATION,
+            Status.Statement.SuboptimalIndexForWildcardQuery,
+            "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see " +
+                    "documentation on index configuration." );
 
     private final Status status;
     private final String description;

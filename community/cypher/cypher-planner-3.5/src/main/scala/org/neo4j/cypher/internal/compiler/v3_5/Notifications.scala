@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_5
 
 import org.opencypher.v9_0.util.{InputPosition, InternalNotification}
 
-case class SuboptimalIndexForWildcardQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
+case class SuboptimalIndexForConstainsQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
+
+case class SuboptimalIndexForEndsWithQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
 
 case object PlannerUnsupportedNotification extends InternalNotification
 
