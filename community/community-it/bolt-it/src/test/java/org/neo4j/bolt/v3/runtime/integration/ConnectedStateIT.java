@@ -54,7 +54,7 @@ import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSA
 class ConnectedStateIT extends BoltStateMachineStateTestBase
 {
     @Test
-    void shouldExecuteStatement() throws Throwable
+    void shouldHandleHelloMessage() throws Throwable
     {
         // Given
         BoltStateMachineV3 machine = newStateMachine();

@@ -40,7 +40,7 @@ import static org.neo4j.values.storable.Values.stringArray;
 
 public class TransactionReadyState extends FailSafeBoltStateMachineState
 {
-    private BoltStateMachineState streaming;
+    private BoltStateMachineState streamingState;
     private BoltStateMachineState interruptedState;
     private BoltStateMachineState readyState;
 
@@ -75,7 +75,7 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
 
     public void setTransactionStreamingState( BoltStateMachineState streamingState )
     {
-        this.streaming = streamingState;
+        this.streamingState = streamingState;
     }
 
     public void setInterruptedState( BoltStateMachineState interruptedState )
@@ -97,7 +97,7 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
 
         context.connectionState().onMetadata( FIELDS_KEY, stringArray( statementMetadata.fieldNames() ) );
         context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
-        return streaming;
+        return streamingState;
     }
 
     private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws Exception
@@ -117,7 +117,7 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
 
     private void assertInitialized()
     {
-        checkState( streaming != null, "Streaming state not set" );
+        checkState( streamingState != null, "Streaming state not set" );
         checkState( interruptedState != null, "Interrupted state not set" );
         checkState( readyState != null, "Ready state not set" );
         checkState( failedState != null, "Failed state not set" );

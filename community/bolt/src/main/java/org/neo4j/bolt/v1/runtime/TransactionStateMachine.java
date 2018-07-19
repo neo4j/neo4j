@@ -248,19 +248,10 @@ public class TransactionStateMachine implements StatementProcessor
                     @Override
                     State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark ) throws KernelException
                     {
-                        waitForBookmark( ctx, spi, bookmark );
+                        waitForBookmark( spi, bookmark );
                         ctx.currentResult = BoltResult.EMPTY;
                         ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
                         return EXPLICIT_TRANSACTION;
-                    }
-
-                    private void waitForBookmark( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark )
-                            throws TransactionFailureException
-                    {
-                        if ( bookmark != null )
-                        {
-                            spi.awaitUpToDate( bookmark.txId() );
-                        }
                     }
 
                     @Override
@@ -268,7 +259,7 @@ public class TransactionStateMachine implements StatementProcessor
                             throws KernelException
                     {
                         statement = parseStatement( ctx, statement );
-                        waitForBookmark( ctx, spi, bookmark );
+                        waitForBookmark( spi, bookmark );
                         execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ) );
                         return AUTO_COMMIT;
                     }
@@ -504,6 +495,15 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
+    }
+
+    private static void waitForBookmark( TransactionStateMachineSPI spi, Bookmark bookmark )
+            throws TransactionFailureException
+    {
+        if ( bookmark != null )
+        {
+            spi.awaitUpToDate( bookmark.txId() );
+        }
     }
 
     private static Bookmark newestBookmark( TransactionStateMachineSPI spi )

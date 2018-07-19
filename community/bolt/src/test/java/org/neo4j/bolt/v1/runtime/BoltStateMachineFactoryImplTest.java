@@ -58,7 +58,7 @@ class BoltStateMachineFactoryImplTest
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
-    void shouldCreateBoltStateMachines( long protocolVersion ) throws Throwable
+    void shouldCreateBoltStateMachinesV1( long protocolVersion ) throws Throwable
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 

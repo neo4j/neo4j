@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -72,24 +73,38 @@ public class BeginMessage implements RequestMessage
         }
     }
 
-    static Duration parseTransactionTimeout( MapValue meta )
+    static Duration parseTransactionTimeout( MapValue meta ) throws BoltIOException
     {
         AnyValue anyValue = meta.get( TX_TIMEOUT_KEY );
-        if ( anyValue instanceof LongValue )
+        if ( anyValue == Values.NO_VALUE )
+        {
+            return null;
+        }
+        else if ( anyValue instanceof LongValue )
         {
             return Duration.ofMillis( ((LongValue) anyValue).longValue() );
         }
-        return null;
+        else
+        {
+            throw new BoltIOException( Status.Request.InvalidFormat, "Expecting transaction timeout value to be a Long value, but got: " + anyValue );
+        }
     }
 
     static StatementMode parseStatementMode( MapValue meta ) throws BoltIOException
     {
         AnyValue anyValue = meta.get( MODE_KEY );
-        if ( anyValue instanceof TextValue )
+        if ( anyValue == Values.NO_VALUE )
+        {
+            return null;
+        }
+        else if ( anyValue instanceof TextValue )
         {
             return StatementMode.parseMode( ((TextValue) anyValue).stringValue() );
         }
-        return null;
+        else
+        {
+            throw new BoltIOException( Status.Request.InvalidFormat, "Expecting transaction statement mode value to be a String value, but got: " + anyValue );
+        }
     }
 
     public Bookmark bookmark()

@@ -38,8 +38,11 @@ import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
+import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
@@ -90,8 +93,7 @@ public class BoltV3TransportIT
     @Parameters( name = "{0}" )
     public static List<Class<? extends TransportConnection>> transports()
     {
-        return asList( SocketConnection.class );
-                //, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
+        return asList( SocketConnection.class, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
     }
 
     @Before
@@ -123,7 +125,7 @@ public class BoltV3TransportIT
     }
 
     @Test
-    public void shouldNegotiateProtocolV2WhenClientSupportsBothV1V2AndV3() throws Exception
+    public void shouldNegotiateProtocolV3WhenClientSupportsBothV1V2AndV3() throws Exception
     {
         connection.connect( address )
                 .send( util.acceptedVersions( 3, 2, 1, 0 ) )

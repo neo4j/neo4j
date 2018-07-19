@@ -22,7 +22,7 @@ package org.neo4j.bolt.v3.messaging.decoder;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public enum StatementMode //TODO is this already somewhere?
+public enum StatementMode
 {
     READ( "R" ),
     WRITE( "W" );
@@ -41,11 +41,11 @@ public enum StatementMode //TODO is this already somewhere?
 
     public static StatementMode parseMode( String str ) throws BoltIOException
     {
-        if ( str.equalsIgnoreCase( READ.signature() ) )
+        if ( READ.signature().equalsIgnoreCase( str ) )
         {
             return READ;
         }
-        else if ( str.equalsIgnoreCase( WRITE.signature() ) )
+        else if ( WRITE.signature().equalsIgnoreCase( str ) )
         {
             return WRITE;
         }
