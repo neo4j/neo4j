@@ -197,13 +197,13 @@ public enum NotificationCode
     SUBOPTIMAL_INDEX_FOR_CONSTAINS_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,
-            "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-provider: https://neo4j" +
-                    ".com/docs/operations-manual/current/performance/index-configuration/" ),
+            "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-providers, see " +
+                    "documentation on index configuration." ),
     SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,
-            "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-provider: https://neo4j" +
-                    ".com/docs/operations-manual/current/performance/index-configuration/" );
+            "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see " +
+                    "documentation on index configuration." );
 
     private final Status status;
     private final String description;
