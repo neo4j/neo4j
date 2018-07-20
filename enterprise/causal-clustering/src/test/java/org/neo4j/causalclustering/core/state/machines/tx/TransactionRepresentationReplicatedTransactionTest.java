@@ -107,7 +107,7 @@ public class TransactionRepresentationReplicatedTransactionTest
     }
 
     @Test
-    public void shouldMarhsalSame() throws IOException
+    public void shouldMarshalSame() throws IOException
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( ofSize( 1 ) );
         ReplicatedTransaction byteTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( tx );
@@ -126,13 +126,9 @@ public class TransactionRepresentationReplicatedTransactionTest
         buffer1.readerIndex( 0 );
         buffer2.readerIndex( 0 );
 
-        //        buffer1.setInt( 0, -1 );
-        //        buffer2.setInt( 0, -1 );
+        buffer1.setInt( 0, -1 );
+        buffer2.setInt( 0, -1 );
 
         assertArrayEquals( buffer1.array(), buffer2.array() );
-
-        ReplicatedTransactionFactory.extractTransactionRepresentation( unmarshalByte, new byte[0] );
-        ReplicatedTransactionFactory.extractTransactionRepresentation( unmarshalrepr, new byte[0] );
-        //        ReplicatedTransactionFactory.extractTransactionRepresentation( byteTx, new byte[0]);
     }
 }
