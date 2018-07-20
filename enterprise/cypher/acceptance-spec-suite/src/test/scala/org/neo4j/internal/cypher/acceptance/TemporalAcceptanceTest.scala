@@ -877,7 +877,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     )
     for(returnQuery <- returnQueries) {
       withClue("executing " + returnQuery) {
-        failWithError(failConf2, "MATCH (n) RETURN " + returnQuery, Seq("Invalid call signature"), Seq("CypherExecutionException"))
+        failWithError(failConf2, "MATCH (n) RETURN " + returnQuery, Seq("Invalid call signature", "Can't coerce"), Seq("CypherExecutionException", "CypherTypeException"))
       }
     }
   }
