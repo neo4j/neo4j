@@ -49,8 +49,8 @@ import static org.neo4j.commandline.Util.neo4jVersion;
 public abstract class ServerBootstrapper implements Bootstrapper
 {
     public static final int OK = 0;
-    public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
-    public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
+    private static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
+    private static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
     private static final String SIGTERM = "TERM";
     private static final String SIGINT = "INT";
 
@@ -83,7 +83,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public final int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
     {
         addShutdownHook();
-        installSignalHandler();
+        installSignalHandlers();
         try
         {
             // Create config file from arguments
@@ -184,31 +184,18 @@ public abstract class ServerBootstrapper implements Bootstrapper
     }
 
     // Exit gracefully if possible
-    private void installSignalHandler()
+    private void installSignalHandlers()
+    {
+        installSignalHandler( SIGTERM ); // SIGTERM is invoked when system service is stopped
+        installSignalHandler( SIGINT ); // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
+    }
+
+    private void installSignalHandler( String sig )
     {
         try
         {
-            /*
-             * We want to interrupt the main thread which has start()ed lifecycle instances that may be blocked
-             * somewhere. If we don't do that, then the JVM will hang on the final join() for non daemon threads.
-             */
-            Thread t = Thread.currentThread();
-            log.debug( "Installing signal handler to interrupt thread named " + t.getName() );
-            // SIGTERM is invoked when system service is stopped
-            Signal.handle( new Signal( SIGTERM ), signal ->
-            {
-                t.interrupt();
-                System.exit( 0 );
-            } );
-        }
-        catch ( Throwable e )
-        {
-            log.warn( "Unable to install signal handler. Exit code may not be 0 on graceful shutdown.", e );
-        }
-        try
-        {
-            // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
-            Signal.handle( new Signal( SIGINT ), signal -> System.exit( 0 ) );
+            // System.exit() will trigger the shutdown hook
+            Signal.handle( new Signal( sig ), signal -> System.exit( 0 ) );
         }
         catch ( Throwable e )
         {
