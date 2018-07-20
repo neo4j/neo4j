@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -37,10 +37,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings( "unchecked" )
-public class StoreProcessorTaskTest
+class StoreProcessorTaskTest
 {
     @Test
-    public void singlePassShouldOnlyProcessTheStoreOnce()
+    void singlePassShouldOnlyProcessTheStoreOnce()
     {
         // given
         StoreProcessor singlePassProcessor = mock( StoreProcessor.class );

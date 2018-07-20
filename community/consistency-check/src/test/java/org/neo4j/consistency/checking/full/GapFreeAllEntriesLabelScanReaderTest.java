@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,27 +28,29 @@ import java.util.List;
 
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
-public class GapFreeAllEntriesLabelScanReaderTest
+@ExtendWith( RandomExtension.class )
+class GapFreeAllEntriesLabelScanReaderTest
 {
     private static final int EMPTY_RANGE = 0;
     private static final int NON_EMPTY_RANGE = 0b10101; // 0, 2, 4
     private static final int RANGE_SIZE = 10;
     private static final long[] LABEL_IDS = new long[] {1};
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldFillGapInBeginning()
+    void shouldFillGapInBeginning()
     {
         // given
         int[] ranges = array( EMPTY_RANGE, EMPTY_RANGE, NON_EMPTY_RANGE );
@@ -62,7 +64,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillGapInEnd()
+    void shouldFillGapInEnd()
     {
         // given
         int[] ranges = array( NON_EMPTY_RANGE, EMPTY_RANGE, EMPTY_RANGE );
@@ -76,7 +78,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillGapInMiddle()
+    void shouldFillGapInMiddle()
     {
         // given
         int[] ranges = array( EMPTY_RANGE, NON_EMPTY_RANGE, EMPTY_RANGE );
@@ -90,7 +92,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillRandomGaps()
+    void shouldFillRandomGaps()
     {
         // given
         int numberOfRanges = random.intBetween( 50, 100 );
@@ -108,7 +110,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
         assertRanges( iterator, ranges );
     }
 
-    private void assertRanges( Iterator<NodeLabelRange> iterator, int[] expectedRanges )
+    private static void assertRanges( Iterator<NodeLabelRange> iterator, int[] expectedRanges )
     {
         for ( int expectedRangeId = 0; expectedRangeId < expectedRanges.length; expectedRangeId++ )
         {
@@ -128,7 +130,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
         assertFalse( iterator.hasNext() );
     }
 
-    private GapFreeAllEntriesLabelScanReader newGapFreeAllEntriesLabelScanReader( int... ranges )
+    private static GapFreeAllEntriesLabelScanReader newGapFreeAllEntriesLabelScanReader( int... ranges )
     {
         return new GapFreeAllEntriesLabelScanReader( ranges( RANGE_SIZE, ranges ), RANGE_SIZE * ranges.length );
     }

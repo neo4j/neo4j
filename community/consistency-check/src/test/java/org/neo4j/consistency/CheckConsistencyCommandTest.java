@@ -19,9 +19,8 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -42,11 +41,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -54,16 +56,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CheckConsistencyCommandTest
+@ExtendWith( TestDirectoryExtension.class )
+class CheckConsistencyCommandTest
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
-
-    @Rule
-    public final ExpectedException expect = ExpectedException.none();
+    @Inject
+    private TestDirectory testDir;
 
     @Test
-    public void runsConsistencyChecker() throws Exception
+    void runsConsistencyChecker() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -90,7 +90,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void enablesVerbosity() throws Exception
+    void enablesVerbosity() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -117,7 +117,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void failsWhenInconsistenciesAreFound() throws Exception
+    void failsWhenInconsistenciesAreFound() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -134,18 +134,13 @@ public class CheckConsistencyCommandTest
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ) ) );
 
-        try
-        {
-            checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), containsString( new File( "/the/report/path" ).toString() ) );
-        }
+        CommandFailed commandFailed =
+                assertThrows( CommandFailed.class, () -> checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} ) );
+        assertThat( commandFailed.getMessage(), containsString( new File( "/the/report/path" ).toString() ) );
     }
 
     @Test
-    public void shouldWriteReportFileToCurrentDirectoryByDefault()
+    void shouldWriteReportFileToCurrentDirectoryByDefault()
             throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
 
     {
@@ -169,7 +164,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void shouldWriteReportFileToSpecifiedDirectory()
+    void shouldWriteReportFileToSpecifiedDirectory()
             throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
 
     {
@@ -194,9 +189,8 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void shouldCanonicalizeReportDirectory()
+    void shouldCanonicalizeReportDirectory()
             throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
-
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -219,8 +213,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void passesOnCheckParameters() throws Exception
-
+    void passesOnCheckParameters() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -243,7 +236,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void databaseAndBackupAreMutuallyExclusive() throws Exception
+    void databaseAndBackupAreMutuallyExclusive() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -257,14 +250,13 @@ public class CheckConsistencyCommandTest
                 any(), anyBoolean(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        expect.expect( IncorrectUsage.class );
-        expect.expectMessage( "Only one of '--database' and '--backup' can be specified." );
-
-        checkConsistencyCommand.execute( new String[]{"--database=foo", "--backup=bar"} );
+        IncorrectUsage incorrectUsage =
+                assertThrows( IncorrectUsage.class, () -> checkConsistencyCommand.execute( new String[]{"--database=foo", "--backup=bar"} ) );
+        assertEquals( "Only one of '--database' and '--backup' can be specified.", incorrectUsage.getMessage() );
     }
 
     @Test
-    public void backupNeedsToBePath() throws Exception
+    void backupNeedsToBePath() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -276,14 +268,12 @@ public class CheckConsistencyCommandTest
 
         File backupPath = new File( homeDir.toFile(), "dir/does/not/exist" );
 
-        expect.expect( CommandFailed.class );
-        expect.expectMessage( "Specified backup should be a directory: " + backupPath );
-
-        checkConsistencyCommand.execute( new String[]{"--backup=" + backupPath} );
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> checkConsistencyCommand.execute( new String[]{"--backup=" + backupPath} ) );
+        assertEquals( "Specified backup should be a directory: " + backupPath, commandFailed.getMessage() );
     }
 
     @Test
-    public void canRunOnBackup() throws Exception
+    void canRunOnBackup() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -311,7 +301,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

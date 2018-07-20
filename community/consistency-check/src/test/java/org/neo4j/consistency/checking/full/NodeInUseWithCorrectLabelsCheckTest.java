@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,10 +44,10 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 
-public class NodeInUseWithCorrectLabelsCheckTest
+class NodeInUseWithCorrectLabelsCheckTest
 {
     @Test
-    public void shouldReportNodeNotInUse()
+    void shouldReportNodeNotInUse()
     {
         // given
         int nodeId = 42;
@@ -65,7 +65,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineBothDirections()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineBothDirections()
     {
         // given
         int nodeId = 42;
@@ -85,7 +85,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineIndexToStore()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineIndexToStore()
     {
         // given
         int nodeId = 42;
@@ -105,7 +105,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicBothDirections()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicBothDirections()
     {
         // given
         int nodeId = 42;
@@ -129,7 +129,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicIndexToStore()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicIndexToStore()
     {
         // given
         int nodeId = 42;
@@ -153,7 +153,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void reportNodeWithoutLabelsWhenLabelsAreInlined()
+    void reportNodeWithoutLabelsWhenLabelsAreInlined()
     {
         int nodeId = 42;
         long[] indexLabelIds = {3};
@@ -175,7 +175,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void reportNodeWithoutLabelsWhenLabelsAreDynamic()
+    void reportNodeWithoutLabelsWhenLabelsAreDynamic()
     {
         int nodeId = 42;
         long[] indexLabelIds = {3, 7, 9, 10};
@@ -201,7 +201,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldRemainSilentWhenEverythingIsInOrder()
+    void shouldRemainSilentWhenEverythingIsInOrder()
     {
         // given
         int nodeId = 42;
@@ -219,13 +219,13 @@ public class NodeInUseWithCorrectLabelsCheckTest
         verifyNoMoreInteractions( report );
     }
 
-    private NodeRecord withInlineLabels( NodeRecord nodeRecord, long... labelIds )
+    private static NodeRecord withInlineLabels( NodeRecord nodeRecord, long... labelIds )
     {
         new InlineNodeLabels( nodeRecord ).put( labelIds, null, null );
         return nodeRecord;
     }
 
-    private NodeRecord withDynamicLabels( RecordAccessStub recordAccess, NodeRecord nodeRecord, long... labelIds )
+    private static NodeRecord withDynamicLabels( RecordAccessStub recordAccess, NodeRecord nodeRecord, long... labelIds )
     {
         List<DynamicRecord> preAllocatedRecords = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
@@ -244,15 +244,15 @@ public class NodeInUseWithCorrectLabelsCheckTest
         return nodeRecord;
     }
 
-    private Engine engineFor( ConsistencyReport.LabelScanConsistencyReport report )
+    private static Engine engineFor( ConsistencyReport.LabelScanConsistencyReport report )
     {
         Engine engine = mock( Engine.class );
         when( engine.report() ).thenReturn( report );
         return engine;
     }
 
-    private NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport> checker(
-            long[] expectedLabels, boolean checkStoreToIndex )
+    private static NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport> checker( long[] expectedLabels,
+            boolean checkStoreToIndex )
     {
         return new NodeInUseWithCorrectLabelsCheck<>( expectedLabels, checkStoreToIndex );
     }

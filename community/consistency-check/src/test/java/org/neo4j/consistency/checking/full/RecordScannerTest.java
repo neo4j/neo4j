@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
@@ -35,10 +35,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RecordScannerTest
+class RecordScannerTest
 {
     @Test
-    public void shouldProcessRecordsSequentiallyAndUpdateProgress() throws Exception
+    void shouldProcessRecordsSequentiallyAndUpdateProgress() throws Exception
     {
         // given
         ProgressMonitorFactory.MultiPartBuilder progressBuilder = mock( ProgressMonitorFactory.MultiPartBuilder.class );
@@ -64,7 +64,7 @@ public class RecordScannerTest
     }
 
     @Test
-    public void shouldProcessRecordsParallelAndUpdateProgress() throws Exception
+    void shouldProcessRecordsParallelAndUpdateProgress() throws Exception
     {
         // given
         ProgressMonitorFactory.MultiPartBuilder progressBuilder = mock( ProgressMonitorFactory.MultiPartBuilder.class );
@@ -89,8 +89,8 @@ public class RecordScannerTest
         verifyProcessCloseAndDone( recordProcessor, store, progressListener );
     }
 
-    private void verifyProcessCloseAndDone( RecordProcessor<Integer> recordProcessor, BoundedIterable<Integer> store,
-            ProgressListener progressListener ) throws Exception
+    private static void verifyProcessCloseAndDone( RecordProcessor<Integer> recordProcessor, BoundedIterable<Integer> store, ProgressListener progressListener )
+            throws Exception
     {
         verify( recordProcessor ).process( 42 );
         verify( recordProcessor ).process( 75 );

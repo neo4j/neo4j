@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.neo4j.consistency.checking.full.Stage;
@@ -38,11 +38,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CheckNextRelTaskTest
+class CheckNextRelTaskTest
 {
 
     @Test
-    public void scanForHighIdOnlyOnceWhenProcessCache()
+    void scanForHighIdOnlyOnceWhenProcessCache()
     {
         NeoStores neoStores = mock( NeoStores.class, Mockito.RETURNS_MOCKS );
         NodeStore nodeStore = mock( NodeStore.class );

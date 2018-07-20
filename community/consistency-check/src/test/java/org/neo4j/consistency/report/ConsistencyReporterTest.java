@@ -56,9 +56,9 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -411,7 +411,7 @@ public class ConsistencyReporterTest
             throw new IllegalArgumentException( format( "Don't know how to provide parameter of type %s", type.getName() ) );
         }
 
-        private SchemaRule simpleSchemaRule()
+        private static SchemaRule simpleSchemaRule()
         {
             return new SchemaRule()
             {

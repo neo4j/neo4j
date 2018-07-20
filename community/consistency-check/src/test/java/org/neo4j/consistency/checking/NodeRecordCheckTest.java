@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,15 +41,15 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class NodeRecordCheckTest
+class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
 {
-    public NodeRecordCheckTest()
+    NodeRecordCheckTest()
     {
         super( new NodeRecordCheck( RelationshipField.NEXT_REL, LabelsField.LABELS,
                 new PropertyChain<>( from -> null ) ),
@@ -57,7 +57,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodeNotInUse()
+    void shouldNotReportAnythingForNodeNotInUse()
     {
         // given
         NodeRecord node = notInUse( new NodeRecord( 42, false, 0, 0 ) );
@@ -70,7 +70,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodeThatDoesNotReferenceOtherRecords()
+    void shouldNotReportAnythingForNodeThatDoesNotReferenceOtherRecords()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -83,7 +83,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodeWithConsistentReferences()
+    void shouldNotReportAnythingForNodeWithConsistentReferences()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
@@ -98,7 +98,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipNotInUse()
+    void shouldReportRelationshipNotInUse()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
@@ -114,7 +114,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotInUse()
+    void shouldReportPropertyNotInUse()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, 11 ) );
@@ -129,7 +129,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotFirstInChain()
+    void shouldReportPropertyNotFirstInChain()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, 11 ) );
@@ -145,7 +145,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipForOtherNodes()
+    void shouldReportRelationshipForOtherNodes()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -160,7 +160,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipNotFirstInSourceChain()
+    void shouldReportRelationshipNotFirstInSourceChain()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -179,7 +179,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipNotFirstInTargetChain()
+    void shouldReportRelationshipNotFirstInTargetChain()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -198,7 +198,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportLoopRelationshipNotFirstInTargetAndSourceChains()
+    void shouldReportLoopRelationshipNotFirstInTargetAndSourceChains()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -218,7 +218,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportLabelNotInUse()
+    void shouldReportLabelNotInUse()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -236,7 +236,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportDynamicLabelsNotInUse()
+    void shouldReportDynamicLabelsNotInUse()
     {
         // given
         long[] labelIds = createLabels( 100 );
@@ -268,7 +268,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportDuplicateLabels()
+    void shouldReportDuplicateLabels()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -288,7 +288,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportDuplicateDynamicLabels()
+    void shouldReportDuplicateDynamicLabels()
     {
         // given
         long[] labelIds = createLabels( 100 );
@@ -317,7 +317,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportOutOfOrderLabels()
+    void shouldReportOutOfOrderLabels()
     {
         // given
         final NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -348,7 +348,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldProperlyReportOutOfOrderLabelsThatAreFarAway()
+    void shouldProperlyReportOutOfOrderLabelsThatAreFarAway()
     {
         // given
         final NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -388,7 +388,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportOutOfOrderDynamicLabels()
+    void shouldReportOutOfOrderDynamicLabels()
     {
         // given
         long[] labelIds = createLabels( 100 );
@@ -419,7 +419,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldDynamicLabelRecordsNotInUse()
+    void shouldDynamicLabelRecordsNotInUse()
     {
         // given
         long[] labelIds = createLabels( 100 );
@@ -458,7 +458,7 @@ public class NodeRecordCheckTest
         return labelIds;
     }
 
-    private void assertDynamicRecordChain( DynamicRecord... records )
+    private static void assertDynamicRecordChain( DynamicRecord... records )
     {
         if ( records.length > 0 )
         {

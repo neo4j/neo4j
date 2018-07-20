@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -28,17 +28,17 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class MetaDataStoreCheckTest
+class MetaDataStoreCheckTest
         extends RecordCheckTestBase<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport,NeoStoreCheck>
 {
-    public MetaDataStoreCheckTest()
+    MetaDataStoreCheckTest()
     {
         super( new NeoStoreCheck( new PropertyChain<>( from -> null ) ),
                 ConsistencyReport.NeoStoreConsistencyReport.class, new int[0] );
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordWithNoPropertyReference()
+    void shouldNotReportAnythingForRecordWithNoPropertyReference()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();
@@ -51,7 +51,7 @@ public class MetaDataStoreCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordWithConsistentReferenceToProperty()
+    void shouldNotReportAnythingForRecordWithConsistentReferenceToProperty()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();
@@ -65,7 +65,7 @@ public class MetaDataStoreCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotInUse()
+    void shouldReportPropertyNotInUse()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();
@@ -81,7 +81,7 @@ public class MetaDataStoreCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotFirstInChain()
+    void shouldReportPropertyNotFirstInChain()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();

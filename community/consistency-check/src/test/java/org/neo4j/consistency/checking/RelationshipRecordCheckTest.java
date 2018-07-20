@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipField;
 import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipTypeField;
@@ -37,12 +37,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 
-public class RelationshipRecordCheckTest extends
+class RelationshipRecordCheckTest extends
         RecordCheckTestBase<RelationshipRecord, RelationshipConsistencyReport, RelationshipRecordCheck>
 {
     private boolean checkSingleDirection;
 
-    public RelationshipRecordCheckTest()
+    RelationshipRecordCheckTest()
     {
         super( new RelationshipRecordCheck(
                 RelationshipTypeField.RELATIONSHIP_TYPE, NodeField.SOURCE, RelationshipField.SOURCE_PREV,
@@ -75,7 +75,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldNotReportAnythingForRelationshipNotInUse()
+    void shouldNotReportAnythingForRelationshipNotInUse()
     {
         // given
         RelationshipRecord relationship = notInUse( new RelationshipRecord( 42, 0, 0, 0 ) );
@@ -88,7 +88,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldNotReportAnythingForRelationshipThatDoesNotReferenceOtherRecords()
+    void shouldNotReportAnythingForRelationshipThatDoesNotReferenceOtherRecords()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -104,7 +104,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldNotReportAnythingForRelationshipWithConsistentReferences()
+    void shouldNotReportAnythingForRelationshipWithConsistentReferences()
     {
         // given
         /*
@@ -139,7 +139,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportIllegalRelationshipType()
+    void shouldReportIllegalRelationshipType()
     {
         // given
         checkSingleDirection();
@@ -156,7 +156,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportRelationshipTypeNotInUse()
+    void shouldReportRelationshipTypeNotInUse()
     {
         // given
         checkSingleDirection();
@@ -174,7 +174,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportIllegalSourceNode()
+    void shouldReportIllegalSourceNode()
     {
         // given
         checkSingleDirection();
@@ -191,7 +191,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourceNodeNotInUse()
+    void shouldReportSourceNodeNotInUse()
     {
         // given
         checkSingleDirection();
@@ -210,7 +210,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportIllegalTargetNode()
+    void shouldReportIllegalTargetNode()
     {
         // given
         checkSingleDirection();
@@ -227,7 +227,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetNodeNotInUse()
+    void shouldReportTargetNodeNotInUse()
     {
         // given
         checkSingleDirection();
@@ -246,7 +246,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportPropertyNotInUse()
+    void shouldReportPropertyNotInUse()
     {
         // given
         checkSingleDirection();
@@ -266,7 +266,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportPropertyNotFirstInChain()
+    void shouldReportPropertyNotFirstInChain()
     {
         // given
         checkSingleDirection();
@@ -287,7 +287,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourceNodeNotReferencingBackForFirstRelationshipInSourceChain()
+    void shouldReportSourceNodeNotReferencingBackForFirstRelationshipInSourceChain()
     {
         // given
         checkSingleDirection();
@@ -306,7 +306,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetNodeNotReferencingBackForFirstRelationshipInTargetChain()
+    void shouldReportTargetNodeNotReferencingBackForFirstRelationshipInTargetChain()
     {
         // given
         checkSingleDirection();
@@ -325,7 +325,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourceAndTargetNodeNotReferencingBackForFirstRelationshipInChains()
+    void shouldReportSourceAndTargetNodeNotReferencingBackForFirstRelationshipInChains()
     {
         // given
         checkSingleDirection();
@@ -345,7 +345,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourceNodeWithoutChainForRelationshipInTheMiddleOfChain()
+    void shouldReportSourceNodeWithoutChainForRelationshipInTheMiddleOfChain()
     {
         // given
         checkSingleDirection();
@@ -368,7 +368,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetNodeWithoutChainForRelationshipInTheMiddleOfChain()
+    void shouldReportTargetNodeWithoutChainForRelationshipInTheMiddleOfChain()
     {
         // given
         checkSingleDirection();
@@ -391,7 +391,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourcePrevReferencingOtherNodes()
+    void shouldReportSourcePrevReferencingOtherNodes()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -411,7 +411,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetPrevReferencingOtherNodes()
+    void shouldReportTargetPrevReferencingOtherNodes()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -431,7 +431,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourceNextReferencingOtherNodes()
+    void shouldReportSourceNextReferencingOtherNodes()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -450,7 +450,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetNextReferencingOtherNodes()
+    void shouldReportTargetNextReferencingOtherNodes()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -469,7 +469,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourcePrevReferencingOtherNodesWhenReferencingTargetNode()
+    void shouldReportSourcePrevReferencingOtherNodesWhenReferencingTargetNode()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -489,7 +489,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetPrevReferencingOtherNodesWhenReferencingSourceNode()
+    void shouldReportTargetPrevReferencingOtherNodesWhenReferencingSourceNode()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -509,7 +509,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourceNextReferencingOtherNodesWhenReferencingTargetNode()
+    void shouldReportSourceNextReferencingOtherNodesWhenReferencingTargetNode()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -528,7 +528,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetNextReferencingOtherNodesWhenReferencingSourceNode()
+    void shouldReportTargetNextReferencingOtherNodesWhenReferencingSourceNode()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -547,7 +547,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourcePrevNotReferencingBack()
+    void shouldReportSourcePrevNotReferencingBack()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -567,7 +567,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetPrevNotReferencingBack()
+    void shouldReportTargetPrevNotReferencingBack()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -587,7 +587,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportSourceNextNotReferencingBack()
+    void shouldReportSourceNextNotReferencingBack()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
@@ -606,7 +606,7 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportTargetNextNotReferencingBack()
+    void shouldReportTargetNextNotReferencingBack()
     {
         // given
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );

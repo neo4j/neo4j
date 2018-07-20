@@ -19,27 +19,21 @@
  */
 package org.neo4j.consistency.report;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.logging.AssertableLogProvider;
 
-public class MessageConsistencyLoggerTest
+class MessageConsistencyLoggerTest
 {
     private static final AssertableLogProvider.LogMatcherBuilder INLOG = AssertableLogProvider.inLog( MessageConsistencyLoggerTest.class );
-    // given
-    private final InconsistencyMessageLogger logger;
-    private final AssertableLogProvider logProvider;
-
-    {
-        logProvider = new AssertableLogProvider();
-        logger = new InconsistencyMessageLogger( logProvider.getLog( getClass() ) );
-    }
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final InconsistencyMessageLogger logger = new InconsistencyMessageLogger( logProvider.getLog( getClass() ) );
 
     @Test
-    public void shouldFormatErrorForRecord()
+    void shouldFormatErrorForRecord()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
@@ -50,16 +44,8 @@ public class MessageConsistencyLoggerTest
         );
     }
 
-    private String neoStoreRecord( boolean used, long nextProp )
-    {
-        NeoStoreRecord record = new NeoStoreRecord();
-        record.setInUse( used );
-        record.setNextProp( nextProp );
-        return record.toString();
-    }
-
     @Test
-    public void shouldFlattenAMultiLineMessageToASingleLine()
+    void shouldFlattenAMultiLineMessageToASingleLine()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2 );
@@ -71,7 +57,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatWarningForRecord()
+    void shouldFormatWarningForRecord()
     {
         // when
         logger.warning( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
@@ -83,7 +69,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatLogForChangedRecord()
+    void shouldFormatLogForChangedRecord()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), new NeoStoreRecord(), "sample message", 1, 2 );
@@ -97,7 +83,7 @@ public class MessageConsistencyLoggerTest
         );
     }
 
-    private String join( String firstLine, String... lines )
+    private static String join( String firstLine, String... lines )
     {
         StringBuilder expected = new StringBuilder( firstLine );
         for ( String line : lines )
@@ -105,5 +91,13 @@ public class MessageConsistencyLoggerTest
             expected.append( System.lineSeparator() ).append( Strings.TAB ).append( line );
         }
         return expected.toString();
+    }
+
+    private static String neoStoreRecord( boolean used, long nextProp )
+    {
+        NeoStoreRecord record = new NeoStoreRecord();
+        record.setInUse( used );
+        record.setNextProp( nextProp );
+        return record.toString();
     }
 }

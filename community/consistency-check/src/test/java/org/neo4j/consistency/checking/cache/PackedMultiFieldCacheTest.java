@@ -19,15 +19,15 @@
  */
 package org.neo4j.consistency.checking.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class PackedMultiFieldCacheTest
+class PackedMultiFieldCacheTest
 {
     @Test
-    public void shouldPutValuesIntoSlots()
+    void shouldPutValuesIntoSlots()
     {
         // GIVEN
         PackedMultiFieldCache cache = new PackedMultiFieldCache( 5, 10, 25, 24 );
@@ -45,7 +45,7 @@ public class PackedMultiFieldCacheTest
     }
 
     @Test
-    public void shouldHaveCorrectDefaultValues()
+    void shouldHaveCorrectDefaultValues()
     {
         // GIVEN
         PackedMultiFieldCache cache = new PackedMultiFieldCache( 1, 34, 35 );
@@ -61,20 +61,12 @@ public class PackedMultiFieldCacheTest
     }
 
     @Test
-    public void shouldBeAbleToChangeSlotSize()
+    void shouldBeAbleToChangeSlotSize()
     {
         // GIVEN
         PackedMultiFieldCache cache = new PackedMultiFieldCache( 1, 5 );
         int index = 10;
-        try
-        {
-            cache.put( index, 0, 10 );
-            fail( "Shouldn't fit" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // Good
-        }
+        assertThrows( IllegalStateException.class, () -> cache.put( index, 0, 10 ) );
 
         // WHEN
         cache.setSlotSizes( 5, 20 );

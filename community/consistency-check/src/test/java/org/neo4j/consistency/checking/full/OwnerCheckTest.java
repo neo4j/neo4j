@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.DynamicStore;
@@ -37,11 +37,10 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.consistency.checking.DynamicRecordCheckTest.configureDynamicStore;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.NONE;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.array;
@@ -58,10 +57,10 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.propertyBlock;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.string;
 
-public class OwnerCheckTest
+class OwnerCheckTest
 {
     @Test
-    public void shouldNotDecorateCheckerWhenInactive()
+    void shouldNotDecorateCheckerWhenInactive()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( false );
@@ -76,7 +75,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodesWithDifferentPropertyChains()
+    void shouldNotReportAnythingForNodesWithDifferentPropertyChains()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -100,7 +99,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodesNotInUse()
+    void shouldNotReportAnythingForNodesNotInUse()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -124,7 +123,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRelationshipsWithDifferentPropertyChains()
+    void shouldNotReportAnythingForRelationshipsWithDifferentPropertyChains()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -152,7 +151,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportTwoNodesWithSamePropertyChain()
+    void shouldReportTwoNodesWithSamePropertyChain()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -176,7 +175,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportTwoRelationshipsWithSamePropertyChain()
+    void shouldReportTwoRelationshipsWithSamePropertyChain()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -204,7 +203,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipWithSamePropertyChainAsNode()
+    void shouldReportRelationshipWithSamePropertyChainAsNode()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -232,7 +231,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipWithReferenceToTheGraphGlobalChain()
+    void shouldReportRelationshipWithReferenceToTheGraphGlobalChain()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -261,7 +260,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithSamePropertyChainAsRelationship()
+    void shouldReportNodeWithSamePropertyChainAsRelationship()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -289,7 +288,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithReferenceToTheGraphGlobalChain()
+    void shouldReportNodeWithReferenceToTheGraphGlobalChain()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -316,7 +315,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportNodeStoreReferencingSameChainAsNode()
+    void shouldReportNodeStoreReferencingSameChainAsNode()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -343,7 +342,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportNodeStoreReferencingSameChainAsRelationship()
+    void shouldReportNodeStoreReferencingSameChainAsRelationship()
     {
         // given
         OwnerCheck decorator = new OwnerCheck( true );
@@ -372,7 +371,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportOrphanPropertyChain()
+    void shouldReportOrphanPropertyChain()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -394,7 +393,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldNotReportOrphanIfOwnedByNode()
+    void shouldNotReportOrphanIfOwnedByNode()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -421,7 +420,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldNotReportOrphanIfOwnedByRelationship()
+    void shouldNotReportOrphanIfOwnedByRelationship()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -450,7 +449,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldNotReportOrphanIfOwnedByNeoStore()
+    void shouldNotReportOrphanIfOwnedByNeoStore()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -479,7 +478,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByTwoOtherDynamicRecords()
+    void shouldReportDynamicRecordOwnedByTwoOtherDynamicRecords()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -508,7 +507,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicStringRecordOwnedByTwoPropertyRecords()
+    void shouldReportDynamicStringRecordOwnedByTwoPropertyRecords()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -537,7 +536,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicArrayRecordOwnedByTwoPropertyRecords()
+    void shouldReportDynamicArrayRecordOwnedByTwoPropertyRecords()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -566,7 +565,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByPropertyAndOtherDynamic()
+    void shouldReportDynamicRecordOwnedByPropertyAndOtherDynamic()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -598,7 +597,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicStringRecordOwnedByOtherDynamicAndProperty()
+    void shouldReportDynamicStringRecordOwnedByOtherDynamicAndProperty()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -630,7 +629,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicArrayRecordOwnedByOtherDynamicAndProperty()
+    void shouldReportDynamicArrayRecordOwnedByOtherDynamicAndProperty()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -662,7 +661,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByTwoRelationshipLabels()
+    void shouldReportDynamicRecordOwnedByTwoRelationshipLabels()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -690,7 +689,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByRelationshipLabelAndOtherDynamicRecord()
+    void shouldReportDynamicRecordOwnedByRelationshipLabelAndOtherDynamicRecord()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -723,7 +722,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByOtherDynamicRecordAndRelationshipLabel()
+    void shouldReportDynamicRecordOwnedByOtherDynamicRecordAndRelationshipLabel()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -756,7 +755,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByTwoPropertyKeys()
+    void shouldReportDynamicRecordOwnedByTwoPropertyKeys()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -784,7 +783,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByPropertyKeyAndOtherDynamicRecord()
+    void shouldReportDynamicRecordOwnedByPropertyKeyAndOtherDynamicRecord()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -817,7 +816,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportDynamicRecordOwnedByOtherDynamicRecordAndPropertyKey()
+    void shouldReportDynamicRecordOwnedByOtherDynamicRecordAndPropertyKey()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -850,7 +849,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportOrphanedDynamicStringRecord()
+    void shouldReportOrphanedDynamicStringRecord()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -873,7 +872,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportOrphanedDynamicArrayRecord()
+    void shouldReportOrphanedDynamicArrayRecord()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -896,7 +895,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportOrphanedDynamicRelationshipLabelRecord()
+    void shouldReportOrphanedDynamicRelationshipLabelRecord()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();
@@ -919,7 +918,7 @@ public class OwnerCheckTest
     }
 
     @Test
-    public void shouldReportOrphanedDynamicPropertyKeyRecord()
+    void shouldReportOrphanedDynamicPropertyKeyRecord()
     {
         // given
         RecordAccessStub records = new RecordAccessStub();

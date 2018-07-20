@@ -19,17 +19,17 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -42,30 +42,20 @@ import static org.neo4j.consistency.checking.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 
-public class SchemaRecordCheckTest
+class SchemaRecordCheckTest
         extends RecordCheckTestBase<DynamicRecord, ConsistencyReport.SchemaConsistencyReport, SchemaRecordCheck>
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
 
-    public SchemaRecordCheckTest()
+    SchemaRecordCheckTest()
     {
         super( new SchemaRecordCheck( configureSchemaStore(), configureIndexAccessors() ),
                 ConsistencyReport.SchemaConsistencyReport.class, new int[0] );
     }
 
-    private static IndexAccessors configureIndexAccessors()
-    {
-        return mock( IndexAccessors.class );
-    }
-
-    private static SchemaStorage configureSchemaStore()
-    {
-        return mock( SchemaStorage.class );
-    }
-
     @Test
-    public void shouldReportMalformedSchemaRule() throws Exception
+    void shouldReportMalformedSchemaRule() throws Exception
     {
         // given
         DynamicRecord badRecord = inUse( new DynamicRecord( 0 ) );
@@ -81,7 +71,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportInvalidLabelReferences() throws Exception
+    void shouldReportInvalidLabelReferences() throws Exception
     {
         // given
         int schemaRuleId = 0;
@@ -102,7 +92,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportInvalidPropertyReferenceFromIndexRule() throws Exception
+    void shouldReportInvalidPropertyReferenceFromIndexRule() throws Exception
     {
         // given
         int schemaRuleId = 0;
@@ -123,7 +113,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportInvalidPropertyReferenceFromUniquenessConstraintRule() throws Exception
+    void shouldReportInvalidPropertyReferenceFromUniquenessConstraintRule() throws Exception
     {
         // given
         int schemaRuleId = 0;
@@ -146,7 +136,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportUniquenessConstraintNotReferencingBack() throws Exception
+    void shouldReportUniquenessConstraintNotReferencingBack() throws Exception
     {
         // given
         int ruleId1 = 0;
@@ -178,7 +168,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportConstraintIndexRuleWithoutBackReference() throws Exception
+    void shouldNotReportConstraintIndexRuleWithoutBackReference() throws Exception
     {
         // given
         int ruleId = 1;
@@ -204,7 +194,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportTwoUniquenessConstraintsReferencingSameIndex() throws Exception
+    void shouldReportTwoUniquenessConstraintsReferencingSameIndex() throws Exception
     {
         // given
         int ruleId1 = 0;
@@ -231,7 +221,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportUnreferencedUniquenessConstraint() throws Exception
+    void shouldReportUnreferencedUniquenessConstraint() throws Exception
     {
         // given
         int ruleId = 0;
@@ -255,7 +245,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportConstraintIndexNotReferencingBack() throws Exception
+    void shouldReportConstraintIndexNotReferencingBack() throws Exception
     {
         // given
         int ruleId1 = 0;
@@ -287,7 +277,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportTwoConstraintIndexesReferencingSameConstraint() throws Exception
+    void shouldReportTwoConstraintIndexesReferencingSameConstraint() throws Exception
     {
         // given
         int ruleId1 = 0;
@@ -316,7 +306,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportUnreferencedConstraintIndex() throws Exception
+    void shouldReportUnreferencedConstraintIndex() throws Exception
     {
         // given
         int ruleId = 0;
@@ -342,7 +332,7 @@ public class SchemaRecordCheckTest
     }
 
     @Test
-    public void shouldReportTwoIndexRulesWithDuplicateContent() throws Exception
+    void shouldReportTwoIndexRulesWithDuplicateContent() throws Exception
     {
         // given
         int ruleId1 = 0;
@@ -370,7 +360,17 @@ public class SchemaRecordCheckTest
         verify( report ).duplicateRuleContent( record1 );
     }
 
-    private DynamicRecord dynamicRecord( long id )
+    private static IndexAccessors configureIndexAccessors()
+    {
+        return mock( IndexAccessors.class );
+    }
+
+    private static SchemaStorage configureSchemaStore()
+    {
+        return mock( SchemaStorage.class );
+    }
+
+    private static DynamicRecord dynamicRecord( long id )
     {
         DynamicRecord record = new DynamicRecord( id );
         record.setType( RecordAccessStub.SCHEMA_RECORD_TYPE );

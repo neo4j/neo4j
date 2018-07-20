@@ -19,36 +19,36 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
 
-public class QueueDistributionTest
+class QueueDistributionTest
 {
 
     private static final int MAX_NUMBER_OF_THREADS = 1_000_000;
     private static final int NUMBER_OF_DISTRIBUTION_ITERATIONS = 1000;
 
     @Test
-    public void roundRobinRecordDistribution() throws Exception
+    void roundRobinRecordDistribution() throws Exception
     {
         testRecordDistribution( QueueDistribution.ROUND_ROBIN );
     }
 
     @Test
-    public void relationshipNodesDistribution() throws InterruptedException
+    void relationshipNodesDistribution() throws InterruptedException
     {
         testRecordDistribution( QueueDistribution.RELATIONSHIPS );
     }
 
-    private void testRecordDistribution( QueueDistribution queueDistribution ) throws InterruptedException
+    private static void testRecordDistribution( QueueDistribution queueDistribution ) throws InterruptedException
     {
         ThreadLocalRandom randomGenerator = ThreadLocalRandom.current();
         int numberOfThreads = randomGenerator.nextInt( MAX_NUMBER_OF_THREADS );
@@ -67,7 +67,7 @@ public class QueueDistributionTest
         }
     }
 
-    private long nextLong( ThreadLocalRandom randomGenerator )
+    private static long nextLong( ThreadLocalRandom randomGenerator )
     {
         return randomGenerator.nextLong();
     }

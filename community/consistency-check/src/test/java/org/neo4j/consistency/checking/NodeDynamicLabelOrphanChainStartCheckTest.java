@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,17 +34,17 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 
-public class NodeDynamicLabelOrphanChainStartCheckTest
+class NodeDynamicLabelOrphanChainStartCheckTest
         extends RecordCheckTestBase<DynamicRecord, DynamicLabelConsistencyReport, NodeDynamicLabelOrphanChainStartCheck>
 {
 
-    public NodeDynamicLabelOrphanChainStartCheckTest()
+    NodeDynamicLabelOrphanChainStartCheckTest()
     {
         super( new NodeDynamicLabelOrphanChainStartCheck(), DynamicLabelConsistencyReport.class, new int[0] );
     }
 
     @Test
-    public void shouldReportMissingOwnerId()
+    void shouldReportMissingOwnerId()
     {
         // given
         DynamicRecord record = new DynamicRecord( 0 );
@@ -59,7 +59,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     }
 
     @Test
-    public void shouldReportOwningNodeRecordNotInUse()
+    void shouldReportOwningNodeRecordNotInUse()
     {
         // given
         NodeRecord nodeRecord = notInUse( new NodeRecord( 12L, false, -1, -1 ) );
@@ -76,7 +76,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     }
 
     @Test
-    public void shouldReportOwningNodeRecordNotPointingBack()
+    void shouldReportOwningNodeRecordNotPointingBack()
     {
         // given
         long nodeId = 12L;
