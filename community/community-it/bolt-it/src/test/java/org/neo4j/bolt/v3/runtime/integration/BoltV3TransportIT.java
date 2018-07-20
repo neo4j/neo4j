@@ -32,6 +32,7 @@ import org.junit.runners.Parameterized.Parameter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
@@ -48,8 +49,12 @@ import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -72,6 +77,7 @@ import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -413,6 +419,38 @@ public class BoltV3TransportIT
                 msgFailure( Status.Schema.IndexDropFailed,
                         "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)." ),
                 msgIgnored() ) );
+    }
+
+    @Test
+    public void shouldSetTxMetadata() throws Throwable
+    {
+        // Given
+        negotiateBoltV3();
+        Map<String,Object> txMetadata = map( "who-is-your-boss", "Molly-mostly-white" );
+        Map<String,Object> msgMetadata = map( "tx_metadata", txMetadata );
+        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+
+        connection.send( util.chunk(
+                new BeginMessage( meta ),
+                new RunMessage( "RETURN 1" ),
+                PullAllMessage.INSTANCE ) );
+
+        // When
+        assertThat( connection, util.eventuallyReceives(
+                msgSuccess(),
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
+                msgSuccess() ) );
+
+        // Then
+        GraphDatabaseAPI gdb = (GraphDatabaseAPI) server.graphDatabaseService();
+        Set<KernelTransactionHandle> txHandles = gdb.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
+        assertThat( txHandles.size(), equalTo( 1 ) );
+        for ( KernelTransactionHandle txHandle: txHandles )
+        {
+            assertThat( txHandle.getMetaData(), equalTo( txMetadata ) );
+        }
+        connection.send( util.chunk( ROLLBACK_MESSAGE ) );
     }
 
     private void negotiateBoltV3() throws Exception

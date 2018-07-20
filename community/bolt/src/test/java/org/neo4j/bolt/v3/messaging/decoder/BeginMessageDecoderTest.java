@@ -54,7 +54,7 @@ class BeginMessageDecoderTest
     void shouldDecodeBeginMessage() throws Exception
     {
         BeginMessage originalMessage =
-                new BeginMessage( VirtualValues.map( new String[]{"mode", "tx_timeout"}, new AnyValue[]{stringValue( "R" ), longValue( 10000 )} ) );
+                new BeginMessage( VirtualValues.map( new String[]{"tx_metadata", "tx_timeout"}, new AnyValue[]{stringValue( "R" ), longValue( 10000 )} ) );
         assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
     }
 }

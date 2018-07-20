@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -798,6 +799,12 @@ public class QueryExecutionLocksIT
         public PropertyCursor ambientPropertyCursor()
         {
             return internal.ambientPropertyCursor();
+        }
+
+        @Override
+        public void setMetaData( Map<String,Object> metaData )
+        {
+            internal.setMetaData( metaData );
         }
 
         @Override

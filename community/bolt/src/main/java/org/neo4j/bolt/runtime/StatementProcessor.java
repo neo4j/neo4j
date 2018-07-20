@@ -77,7 +77,8 @@ public interface StatementProcessor
         }
 
         @Override
-        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData ) throws KernelException
+        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData )
+                throws KernelException
         {
             throw new UnsupportedOperationException( "Unable to run statements" );
         }

@@ -72,7 +72,7 @@ class TransactionStateMachineTest
     void shouldTransitionToExplicitTransactionOnBegin() throws Exception
     {
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION,
-                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( mutableState, stateMachineSPI, null, null, txMetaData ) );
+                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( mutableState, stateMachineSPI, null, null, null ) );
     }
 
     @Test
@@ -93,7 +93,7 @@ class TransactionStateMachineTest
     void shouldThrowOnBeginInExplicitTransaction() throws Exception
     {
         QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( mutableState, stateMachineSPI, null, null, txMetaData ) );
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( mutableState, stateMachineSPI, null, null, null ) );
 
         assertEquals( "Nested transactions are not supported.", e.getMessage() );
     }
@@ -458,8 +458,8 @@ class TransactionStateMachineTest
         BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), txMeta ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), txMeta ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }
@@ -469,8 +469,8 @@ class TransactionStateMachineTest
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), txMeta ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), txMeta ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }

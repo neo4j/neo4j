@@ -98,7 +98,8 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData ) throws KernelException
+    public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData )
+            throws KernelException
     {
         before();
         try

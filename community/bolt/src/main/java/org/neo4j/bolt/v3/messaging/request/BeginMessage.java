@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.LongValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -67,20 +66,6 @@ public class BeginMessage implements RequestMessage
         this.txMetadata = parseTransactionMetadata( meta );
     }
 
-    static Map<String,Object> parseTransactionMetadata( MapValue meta )
-    {
-        AnyValue anyValue = meta.get( TX_META_DATA_KEY );
-        if ( !(anyValue instanceof MapValue) )
-        {
-            return null;
-        }
-        MapValue mapValue = (MapValue) anyValue;
-        TransactionMetadataWriter writer = new TransactionMetadataWriter();
-        Map<String,Object> txMeta = new HashMap<>( mapValue.size() );
-        mapValue.foreach( ( key, value ) -> writer.valueAsObject( value ) );
-        return txMeta;
-    }
-
     static Bookmark parseBookmark( MapValue meta ) throws BoltIOException
     {
         try
@@ -107,6 +92,27 @@ public class BeginMessage implements RequestMessage
         else
         {
             throw new BoltIOException( Status.Request.InvalidFormat, "Expecting transaction timeout value to be a Long value, but got: " + anyValue );
+        }
+    }
+
+    static Map<String,Object> parseTransactionMetadata( MapValue meta ) throws BoltIOException
+    {
+        AnyValue anyValue = meta.get( TX_META_DATA_KEY );
+        if ( anyValue == Values.NO_VALUE )
+        {
+            return null;
+        }
+        else if ( anyValue instanceof MapValue )
+        {
+            MapValue mapValue = (MapValue) anyValue;
+            TransactionMetadataWriter writer = new TransactionMetadataWriter();
+            Map<String,Object> txMeta = new HashMap<>( mapValue.size() );
+            mapValue.foreach( ( key, value ) -> txMeta.put( key, writer.valueAsObject( value ) ) );
+            return txMeta;
+        }
+        else
+        {
+            throw new BoltIOException( Status.Request.InvalidFormat, "Expecting transaction metadata value to be a Map value, but got: " + anyValue );
         }
     }
 

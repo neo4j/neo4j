@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -283,6 +284,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public PropertyCursor ambientPropertyCursor()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void setMetaData( Map<String,Object> metaData )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
