@@ -84,8 +84,8 @@ class ContainerIndexTest extends CypherFunSuite {
     when(node.getId).thenReturn(0)
     implicit val expression = Literal(node)
 
-    when(qtx.getPropertyKeyId("v")).thenReturn(42)
-    when(qtx.getPropertyKeyId("c")).thenReturn(43)
+    when(qtx.propertyKey("v")).thenReturn(42)
+    when(qtx.propertyKey("c")).thenReturn(43)
 
     when(qtx.nodeProperty(0, 42)).thenReturn(longValue(1))
     when(qtx.nodeProperty(0, 43)).thenReturn(Values.NO_VALUE)
@@ -98,8 +98,8 @@ class ContainerIndexTest extends CypherFunSuite {
     when(rel.getId).thenReturn(0)
     implicit val expression = Literal(rel)
 
-    when(qtx.getPropertyKeyId("v")).thenReturn(42)
-    when(qtx.getPropertyKeyId("c")).thenReturn(43)
+    when(qtx.propertyKey("v")).thenReturn(42)
+    when(qtx.propertyKey("c")).thenReturn(43)
     when(qtx.relationshipProperty(0, 42)).thenReturn(longValue(1))
     when(qtx.relationshipProperty(0, 43)).thenReturn(Values.NO_VALUE)
     idx("v") should equal(longValue(1))

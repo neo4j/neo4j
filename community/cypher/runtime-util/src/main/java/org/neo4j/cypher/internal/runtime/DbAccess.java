@@ -46,8 +46,6 @@ public interface DbAccess
 
     Value relationshipProperty( long node, int property );
 
-    int getRelTypeId( String name );
-
     int[] relationshipPropertyIds( long node );
 
     boolean relationshipHasProperty( long node, int property );

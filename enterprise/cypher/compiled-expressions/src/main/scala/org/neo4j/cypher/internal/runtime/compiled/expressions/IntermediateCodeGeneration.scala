@@ -396,7 +396,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(
         block(
           condition(equal(loadField(f), constant(-1)))(
-            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKey"), constant(key)))),
           invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("nodeProperty"),
                  getLongAt(offset), loadField(f))), nullable = true, Seq(f)))
 
@@ -412,7 +412,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(
         block(
           condition(equal(loadField(f), constant(-1)))(
-            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKeyId"), constant(key)))),
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKey"), constant(key)))),
         ternary(
         invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
                getLongAt(offset), loadField(f)), truthValue, falseValue)), nullable = false, Seq(f)))
@@ -427,7 +427,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(
         block(
           condition(equal(loadField(f), constant(-1)))(
-            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKeyId"), constant(key)))),
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKey"), constant(key)))),
         invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("relationshipProperty"),
                   getLongAt(offset), loadField(f))), nullable = true, Seq(f)))
 
@@ -445,7 +445,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(
         block(
           condition(equal(loadField(f), constant(-1)))(
-            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKeyId"), constant(key)))),
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKey"), constant(key)))),
         ternary(
         invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
                getLongAt(offset), loadField(f)),

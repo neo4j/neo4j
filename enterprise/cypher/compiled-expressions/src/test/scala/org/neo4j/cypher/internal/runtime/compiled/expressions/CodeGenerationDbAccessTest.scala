@@ -184,6 +184,6 @@ class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTest
   when(dbAccess.nodeGetTotalDegree(node, relTypeId)).thenReturn(3)
   when(dbAccess.nodeById(node)).thenReturn(nodeValue)
   when(dbAccess.relationshipById(relationship)).thenReturn(relationshipValue)
-  when(dbAccess.getRelTypeId(relType)).thenReturn(relTypeId)
+  when(dbAccess.relationshipType(relType)).thenReturn(relTypeId)
 
 }

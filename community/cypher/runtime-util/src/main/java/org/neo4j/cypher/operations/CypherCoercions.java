@@ -346,18 +346,17 @@ public final class CypherCoercions
         }
     }
 
-
     @FunctionalInterface
     interface Coercer
     {
         AnyValue apply( AnyValue value, Neo4jTypes.AnyType coerceTo, DbAccess access );
     }
 
-    private final static Map<Class<? extends Neo4jTypes.AnyType>,Coercer> CONVERTERS = new HashMap<>();
+    private static final Map<Class<? extends Neo4jTypes.AnyType>,Coercer> CONVERTERS = new HashMap<>();
 
     private AnyValue coerceTo( AnyValue value, DbAccess access, Neo4jTypes.AnyType types )
     {
-       Coercer function = CONVERTERS.get( types.getClass() );
+        Coercer function = CONVERTERS.get( types.getClass() );
 
         return function.apply( value, types, access );
     }
@@ -403,7 +402,7 @@ public final class CypherCoercions
 
     private static Neo4jTypes.AnyType nextInner( Neo4jTypes.AnyType type )
     {
-        if (type instanceof Neo4jTypes.ListType )
+        if ( type instanceof Neo4jTypes.ListType )
         {
             return ((Neo4jTypes.ListType) type).innerType();
         }
@@ -419,7 +418,7 @@ public final class CypherCoercions
         {
             return (ListValue) value;
         }
-        else if (value instanceof ArrayValue )
+        else if ( value instanceof ArrayValue )
         {
             return VirtualValues.fromArray( (ArrayValue) value );
         }
@@ -430,25 +429,26 @@ public final class CypherCoercions
         throw cantCoerce( value, "List" );
     }
 
-    static {
-        CONVERTERS.put( NTAny.getClass(), (a, ignore1, ignore2) -> a );
-        CONVERTERS.put( NTString.getClass(), (a, ignore1, ignore2) -> asTextValue(a) );
-        CONVERTERS.put( NTNumber.getClass(), (a, ignore1, ignore2) -> asNumberValue(a) );
-        CONVERTERS.put( NTInteger.getClass(), (a, ignore1, ignore2) -> asIntegralValue(a) );
-        CONVERTERS.put( NTFloat.getClass(), (a, ignore1, ignore2) -> asFloatingPointValue(a) );
-        CONVERTERS.put( NTBoolean.getClass(), (a, ignore1, ignore2) -> asBooleanValue(a) );
-        CONVERTERS.put( NTMap.getClass(), (a, ignore, c) -> asMapValue(a, c) );
-        CONVERTERS.put( NTNode.getClass(), (a, ignore1, ignore2) ->asNodeValue(a) );
-        CONVERTERS.put( NTRelationship.getClass(), (a, ignore1, ignore2) -> asRelationshipValue(a) );
-        CONVERTERS.put( NTPath.getClass(), (a, ignore1, ignore2) -> asPathValue(a) );
-        CONVERTERS.put( NTGeometry.getClass(), (a, ignore1, ignore2) ->asPointValue(a) );
-        CONVERTERS.put( NTPoint.getClass(), (a, ignore1, ignore2) ->asPointValue(a) );
-        CONVERTERS.put( NTDateTime.getClass(),(a, ignore1, ignore2) -> asDateTimeValue(a) );
-        CONVERTERS.put( NTLocalDateTime.getClass(), (a, ignore1, ignore2) -> asLocalDateTimeValue(a) );
-        CONVERTERS.put( NTDate.getClass(), (a, ignore1, ignore2) -> asDateValue(a) );
-        CONVERTERS.put( NTTime.getClass(), (a, ignore1, ignore2) -> asTimeValue(a) );
-        CONVERTERS.put( NTLocalTime.getClass(), (a, ignore1, ignore2) -> asLocalTimeValue(a) );
-        CONVERTERS.put( NTDuration.getClass(), (a, ignore1, ignore2) -> asDurationValue(a) );
+    static
+    {
+        CONVERTERS.put( NTAny.getClass(), ( a, ignore1, ignore2 ) -> a );
+        CONVERTERS.put( NTString.getClass(), ( a, ignore1, ignore2 ) -> asTextValue( a ) );
+        CONVERTERS.put( NTNumber.getClass(), ( a, ignore1, ignore2 ) -> asNumberValue( a ) );
+        CONVERTERS.put( NTInteger.getClass(), ( a, ignore1, ignore2 ) -> asIntegralValue( a ) );
+        CONVERTERS.put( NTFloat.getClass(), ( a, ignore1, ignore2 ) -> asFloatingPointValue( a ) );
+        CONVERTERS.put( NTBoolean.getClass(), ( a, ignore1, ignore2 ) -> asBooleanValue( a ) );
+        CONVERTERS.put( NTMap.getClass(), ( a, ignore, c ) -> asMapValue( a, c ) );
+        CONVERTERS.put( NTNode.getClass(), ( a, ignore1, ignore2 ) -> asNodeValue( a ) );
+        CONVERTERS.put( NTRelationship.getClass(), ( a, ignore1, ignore2 ) -> asRelationshipValue( a ) );
+        CONVERTERS.put( NTPath.getClass(), ( a, ignore1, ignore2 ) -> asPathValue( a ) );
+        CONVERTERS.put( NTGeometry.getClass(), ( a, ignore1, ignore2 ) -> asPointValue( a ) );
+        CONVERTERS.put( NTPoint.getClass(), ( a, ignore1, ignore2 ) -> asPointValue( a ) );
+        CONVERTERS.put( NTDateTime.getClass(), ( a, ignore1, ignore2 ) -> asDateTimeValue( a ) );
+        CONVERTERS.put( NTLocalDateTime.getClass(), ( a, ignore1, ignore2 ) -> asLocalDateTimeValue( a ) );
+        CONVERTERS.put( NTDate.getClass(), ( a, ignore1, ignore2 ) -> asDateValue( a ) );
+        CONVERTERS.put( NTTime.getClass(), ( a, ignore1, ignore2 ) -> asTimeValue( a ) );
+        CONVERTERS.put( NTLocalTime.getClass(), ( a, ignore1, ignore2 ) -> asLocalTimeValue( a ) );
+        CONVERTERS.put( NTDuration.getClass(), ( a, ignore1, ignore2 ) -> asDurationValue( a ) );
         CONVERTERS.put( Neo4jTypes.ListType.class, new ListCoercer() );
     }
 }
