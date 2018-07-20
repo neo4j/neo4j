@@ -36,12 +36,20 @@ public class CommunityEntryPoint
         }
     }
 
+    /**
+     * Used by the windows service wrapper
+     */
+    @SuppressWarnings( "unused" )
     public static void start( String[] args )
     {
         bootstrapper = new BlockingBootstrapper( new CommunityBootstrapper() );
         System.exit( ServerBootstrapper.start( bootstrapper, args ) );
     }
 
+    /**
+     * Used by the windows service wrapper
+     */
+    @SuppressWarnings( "unused" )
     public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
     {
         if ( bootstrapper != null )
