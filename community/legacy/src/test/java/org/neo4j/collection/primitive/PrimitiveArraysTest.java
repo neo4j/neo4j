@@ -22,13 +22,13 @@ package org.neo4j.collection.primitive;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 
-public class PrimitiveArraysTest
+class PrimitiveArraysTest
 {
     private static final int[] NO_INTS = new int[0];
     private static final int[] ONE_INT = new int[]{1};
@@ -38,7 +38,7 @@ public class PrimitiveArraysTest
     // union() null checks. Actual behaviour is tested in PrimitiveSortedArraySetUnionTest
 
     @Test
-    public void union_shouldHandleNullInput()
+    void union_shouldHandleNullInput()
     {
         assertThat( PrimitiveArrays.union( null, null ), nullValue() );
         assertThat( PrimitiveArrays.union( null, NO_INTS ), equalTo( NO_INTS ) );
@@ -50,7 +50,7 @@ public class PrimitiveArraysTest
     // intersect()
 
     @Test
-    public void intersect_shouldHandleNullInput()
+    void intersect_shouldHandleNullInput()
     {
         assertThat( PrimitiveArrays.intersect( null, null ), equalTo( NO_LONGS ) );
         assertThat( PrimitiveArrays.intersect( null, NO_LONGS ), equalTo( NO_LONGS ) );
@@ -60,7 +60,7 @@ public class PrimitiveArraysTest
     }
 
     @Test
-    public void intersect_shouldHandleNonIntersectingArrays()
+    void intersect_shouldHandleNonIntersectingArrays()
     {
         assertThat( PrimitiveArrays.intersect( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
                 equalTo( NO_LONGS ) );
@@ -70,7 +70,7 @@ public class PrimitiveArraysTest
     }
 
     @Test
-    public void intersect_shouldHandleIntersectingArrays()
+    void intersect_shouldHandleIntersectingArrays()
     {
         assertThat( PrimitiveArrays.intersect( new long[]{1, 2, 3}, new long[]{3, 4, 5} ),
                 isArray( 3 ) );
@@ -80,7 +80,7 @@ public class PrimitiveArraysTest
     }
 
     @Test
-    public void intersect_shouldHandleComplexIntersectingArraysWithGaps()
+    void intersect_shouldHandleComplexIntersectingArraysWithGaps()
     {
         assertThat(
                 PrimitiveArrays.intersect( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
@@ -93,7 +93,7 @@ public class PrimitiveArraysTest
     // symmetricDifference()
 
     @Test
-    public void symDiff_shouldHandleNullInput()
+    void symDiff_shouldHandleNullInput()
     {
         assertThat( PrimitiveArrays.symmetricDifference( null, null ), equalTo( null ) );
         assertThat( PrimitiveArrays.symmetricDifference( null, NO_LONGS ), equalTo( NO_LONGS ) );
@@ -103,7 +103,7 @@ public class PrimitiveArraysTest
     }
 
     @Test
-    public void symDiff_shouldHandleNonIntersectingArrays()
+    void symDiff_shouldHandleNonIntersectingArrays()
     {
         assertThat( PrimitiveArrays.symmetricDifference( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
                 isArray( 1, 2, 3, 4, 5, 6 ) );
@@ -113,7 +113,7 @@ public class PrimitiveArraysTest
     }
 
     @Test
-    public void symDiff_shouldHandleIntersectingArrays()
+    void symDiff_shouldHandleIntersectingArrays()
     {
         assertThat( PrimitiveArrays.symmetricDifference( new long[]{1, 2, 3}, new long[]{3, 4, 5} ),
                 isArray( 1, 2, 4, 5 ) );
@@ -123,7 +123,7 @@ public class PrimitiveArraysTest
     }
 
     @Test
-    public void symDiff_shouldHandleComplexIntersectingArraysWithGaps()
+    void symDiff_shouldHandleComplexIntersectingArraysWithGaps()
     {
         assertThat(
                 PrimitiveArrays
@@ -138,7 +138,7 @@ public class PrimitiveArraysTest
     // count unique
 
     @Test
-    public void shouldCountUnique()
+    void shouldCountUnique()
     {
         assertThat(
                 PrimitiveArrays.countUnique( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
@@ -179,7 +179,7 @@ public class PrimitiveArraysTest
 
     // helpers
 
-    private Matcher<Long> isIntPair( int left, int right )
+    private static Matcher<Long> isIntPair( int left, int right )
     {
         return new BaseMatcher<Long>()
         {

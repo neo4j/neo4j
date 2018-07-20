@@ -19,18 +19,18 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.memory.LocalMemoryTracker;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveCollectionsAllocationsTest
+class PrimitiveCollectionsAllocationsTest
 {
 
     @Test
-    public void trackPrimitiveMemoryAllocations()
+    void trackPrimitiveMemoryAllocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
         PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet( memoryTracker );
@@ -41,7 +41,7 @@ public class PrimitiveCollectionsAllocationsTest
     }
 
     @Test
-    public void trackPrimitiveMemoryOnResize()
+    void trackPrimitiveMemoryOnResize()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
         PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet( memoryTracker );

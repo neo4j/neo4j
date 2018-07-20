@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,14 +40,14 @@ import org.neo4j.test.randomized.TestResource;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class PrimitiveLongSetRIT
+class PrimitiveLongSetRIT
 {
     @Test
-    public void thoroughlyTestIt()
+    void thoroughlyTestIt()
     {
         long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
         while ( currentTimeMillis() < endTime )
@@ -72,7 +72,7 @@ public class PrimitiveLongSetRIT
         }
     }
 
-    private void fullVerification( Sets target, Random random )
+    private static void fullVerification( Sets target, Random random )
     {
         for ( Long value: target.normalSet )
         {
@@ -85,23 +85,23 @@ public class PrimitiveLongSetRIT
         }
     }
 
-    private Printable given()
+    private static Printable given()
     {
         return out -> out.println( PrimitiveLongSet.class.getSimpleName() + " set = " +
                 Primitive.class.getSimpleName() + ".longSet();" );
     }
 
-    private ActionFactory<Sets, String> actionFactory( final Random random )
+    private static ActionFactory<Sets, String> actionFactory( final Random random )
     {
         return from -> generateAction( random, from );
     }
 
-    private TargetFactory<Sets> setFactory()
+    private static TargetFactory<Sets> setFactory()
     {
         return Sets::new;
     }
 
-    protected Action<Sets, String> generateAction( Random random, Sets from )
+    private static Action<Sets, String> generateAction( Random random, Sets from )
     {
         boolean anExisting = !from.normalSet.isEmpty() && random.nextInt( 3 ) == 0;
         long value = anExisting ?
@@ -118,7 +118,7 @@ public class PrimitiveLongSetRIT
         return new AddAction( value );
     }
 
-    private long randomNonExisting( Random random, Set<Long> existing )
+    private static long randomNonExisting( Random random, Set<Long> existing )
     {
         while ( true )
         {
@@ -130,7 +130,7 @@ public class PrimitiveLongSetRIT
         }
     }
 
-    private long randomExisting( Random random, Set<Long> existing )
+    private static long randomExisting( Random random, Set<Long> existing )
     {
         int index = random.nextInt( existing.size() ) + 1;
         Iterator<Long> iterator = existing.iterator();

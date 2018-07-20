@@ -19,16 +19,16 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveIntStackTest
+class PrimitiveIntStackTest
 {
     @Test
-    public void shouldPushAndPollSomeEntities()
+    void shouldPushAndPollSomeEntities()
     {
         // GIVEN
         PrimitiveIntStack stack = new PrimitiveIntStack( 6 );
@@ -52,7 +52,7 @@ public class PrimitiveIntStackTest
     }
 
     @Test
-    public void shouldGrowArray()
+    void shouldGrowArray()
     {
         // GIVEN
         PrimitiveIntStack stack = new PrimitiveIntStack( 5 );
@@ -74,7 +74,7 @@ public class PrimitiveIntStackTest
     }
 
     @Test
-    public void shouldIterate()
+    void shouldIterate()
     {
         // GIVEN
         PrimitiveIntStack stack = new PrimitiveIntStack();

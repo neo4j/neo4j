@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,17 +27,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveIntCollectionsTest
+class PrimitiveIntCollectionsTest
 {
     @Test
-    public void arrayOfItemsAsIterator()
+    void arrayOfItemsAsIterator()
     {
         // GIVEN
         int[] items = new int[]{2, 5, 234};
@@ -50,7 +50,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void convertCollectionToLongArray()
+    void convertCollectionToLongArray()
     {
         PrimitiveIntSet heapSet = PrimitiveIntCollections.asSet( new int[]{1, 2, 3} );
         PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet( GlobalMemoryTracker.INSTANCE );
@@ -61,7 +61,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void concatenateTwoIterators()
+    void concatenateTwoIterators()
     {
         // GIVEN
         PrimitiveIntIterator firstItems = PrimitiveIntCollections.iterator( 10, 3, 203, 32 );
@@ -75,7 +75,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void filter()
+    void filter()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -88,7 +88,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void deduplicate()
+    void deduplicate()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
@@ -131,7 +131,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void iteratorAsSet()
+    void iteratorAsSet()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -144,18 +144,11 @@ public class PrimitiveIntCollectionsTest
         assertTrue( set.contains( 2 ) );
         assertTrue( set.contains( 3 ) );
         assertFalse( set.contains( 4 ) );
-        try
-        {
-            PrimitiveIntCollections.asSet( PrimitiveIntCollections.iterator( 1, 2, 1 ) );
-            fail( "Should fail on duplicates" );
-        }
-        catch ( IllegalStateException e )
-        {   // good
-        }
+        assertThrows( IllegalStateException.class, () -> PrimitiveIntCollections.asSet( PrimitiveIntCollections.iterator( 1, 2, 1 ) ) );
     }
 
     @Test
-    public void shouldNotContinueToCallNextOnHasNextFalse()
+    void shouldNotContinueToCallNextOnHasNextFalse()
     {
         // GIVEN
         AtomicInteger count = new AtomicInteger( 2 );
@@ -181,7 +174,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldDeduplicate()
+    void shouldDeduplicate()
     {
         // GIVEN
         int[] array = new int[]{1, 6, 2, 5, 6, 1, 6};
@@ -194,7 +187,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void copyMap()
+    void copyMap()
     {
         PrimitiveIntObjectMap<Object> originalMap = Primitive.intObjectMap();
         originalMap.put( 1, "a" );
@@ -208,42 +201,24 @@ public class PrimitiveIntCollectionsTest
         assertEquals( "c", copyMap.get( 3 ) );
     }
 
-    private void assertNoMoreItems( PrimitiveIntIterator iterator )
+    private static void assertNoMoreItems( PrimitiveIntIterator iterator )
     {
-        assertFalse( iterator + " should have no more items", iterator.hasNext() );
-        try
-        {
-            iterator.next();
-            fail( "Invoking next() on " + iterator +
-                    " which has no items left should have thrown NoSuchElementException" );
-        }
-        catch ( NoSuchElementException e )
-        {   // Good
-        }
+        assertFalse( iterator.hasNext(), iterator + " should have no more items" );
+        assertThrows( NoSuchElementException.class, iterator::next );
     }
 
-    private void assertNextEquals( long expected, PrimitiveIntIterator iterator )
+    private static void assertNextEquals( long expected, PrimitiveIntIterator iterator )
     {
-        assertTrue( iterator + " should have had more items", iterator.hasNext() );
+        assertTrue( iterator.hasNext(), iterator + " should have had more items" );
         assertEquals( expected, iterator.next() );
     }
 
-    private void assertItems( PrimitiveIntIterator iterator, int... expectedItems )
+    private static void assertItems( PrimitiveIntIterator iterator, int... expectedItems )
     {
         for ( long expectedItem: expectedItems )
         {
             assertNextEquals( expectedItem, iterator );
         }
         assertNoMoreItems( iterator );
-    }
-
-    private int[] reverse( int[] items )
-    {
-        int[] result = new int[items.length];
-        for ( int i = 0; i < items.length; i++ )
-        {
-            result[i] = items[items.length - i - 1];
-        }
-        return result;
     }
 }

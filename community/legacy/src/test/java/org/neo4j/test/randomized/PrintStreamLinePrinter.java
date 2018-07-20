@@ -26,12 +26,7 @@ public class PrintStreamLinePrinter implements LinePrinter
     private final PrintStream out;
     private final int indentation;
 
-    public PrintStreamLinePrinter( PrintStream out )
-    {
-        this( out, 0 );
-    }
-
-    public PrintStreamLinePrinter( PrintStream out, int indentation )
+    PrintStreamLinePrinter( PrintStream out, int indentation )
     {
         this.out = out;
         this.indentation = indentation;

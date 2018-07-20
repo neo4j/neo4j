@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,21 +44,21 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.memory.GlobalMemoryTracker;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class PrimitiveLongMapTest
+class PrimitiveLongMapTest
 {
     @Test
-    public void shouldContainAddedValues()
+    void shouldContainAddedValues()
     {
         // GIVEN
         Map<Long, Integer> expectedEntries = new HashMap<>();
@@ -79,10 +79,10 @@ public class PrimitiveLongMapTest
         Integer previous = map.put( 1433091763, 35 );
         boolean existsAfter = map.containsKey( 1433091763 );
         Integer valueAfter = map.get( 1433091763 );
-        assertTrue( "1433091763 should exist before putting here", existedBefore );
+        assertTrue( existedBefore, "1433091763 should exist before putting here" );
         assertEquals( (Integer) 22, valueBefore );
         assertEquals( (Integer) 22, previous );
-        assertTrue( "(1433091763, 35) should exist", existsAfter );
+        assertTrue( existsAfter, "(1433091763, 35) should exist" );
         assertEquals( (Integer) 35, valueAfter );
         expectedEntries.put( 1433091763L, 35 );
 
@@ -96,7 +96,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldContainAddedValues_2()
+    void shouldContainAddedValues_2()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -111,15 +111,15 @@ public class PrimitiveLongMapTest
         Integer previous = map.put( 1508493474, 62 );
         boolean existsAfter = map.containsKey( 1508493474 );
         Integer valueAfter = map.get( 1508493474 );
-        assertTrue( "1508493474 should exist before putting here", existedBefore );
-        assertEquals( "value before should be 82", (Integer) 82, valueBefore );
-        assertEquals( "value returned from put should be 82", (Integer) 82, previous );
-        assertTrue( "1508493474 should exist", existsAfter );
-        assertEquals( "value after putting should be 62", (Integer) 62, valueAfter );
+        assertTrue( existedBefore, "1508493474 should exist before putting here" );
+        assertEquals( (Integer) 82, valueBefore, "value before should be 82" );
+        assertEquals( (Integer) 82, previous, "value returned from put should be 82" );
+        assertTrue( existsAfter, "1508493474 should exist" );
+        assertEquals( (Integer) 62, valueAfter, "value after putting should be 62" );
     }
 
     @Test
-    public void shouldContainAddedValues_3()
+    void shouldContainAddedValues_3()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -161,15 +161,15 @@ public class PrimitiveLongMapTest
         Integer previous = map.put( 468007595, 67 );
         boolean existsAfter = map.containsKey( 468007595 );
         Integer valueAfter = map.get( 468007595 );
-        assertFalse( "468007595 should not exist before putting here", existedBefore );
-        assertNull( "value before putting should be null", valueBefore );
-        assertNull( "value returned from putting should be null", previous );
-        assertTrue( "468007595 should exist", existsAfter );
-        assertEquals( "value after putting should be 67", (Integer) 67, valueAfter );
+        assertFalse( existedBefore, "468007595 should not exist before putting here" );
+        assertNull( valueBefore, "value before putting should be null" );
+        assertNull( previous, "value returned from putting should be null" );
+        assertTrue( existsAfter, "468007595 should exist" );
+        assertEquals( (Integer) 67, valueAfter, "value after putting should be 67" );
     }
 
     @Test
-    public void shouldHaveCorrectSize()
+    void shouldHaveCorrectSize()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -245,17 +245,17 @@ public class PrimitiveLongMapTest
         boolean existsAfter = map.containsKey( 679686325 );
         Integer valueAfter = map.get( 679686325 );
         int sizeAfter = map.size();
-        assertEquals( "Size before put should have been 64", 64, sizeBefore );
-        assertFalse( "679686325 should not exist before putting here", existedBefore );
-        assertNull( "value before putting should be null", valueBefore );
-        assertNull( "value returned from putting should be null", previous );
-        assertTrue( "679686325 should exist", existsAfter );
-        assertEquals( "value after putting should be 63", (Integer) 63, valueAfter );
-        assertEquals( "Size after put should have been 65", 65, sizeAfter );
+        assertEquals( 64, sizeBefore, "Size before put should have been 64" );
+        assertFalse( existedBefore, "679686325 should not exist before putting here" );
+        assertNull( valueBefore, "value before putting should be null" );
+        assertNull( previous, "value returned from putting should be null" );
+        assertTrue( existsAfter, "679686325 should exist" );
+        assertEquals( (Integer) 63, valueAfter, "value after putting should be 63" );
+        assertEquals( 65, sizeAfter, "Size after put should have been 65" );
     }
 
     @Test
-    public void shouldMoveValuesWhenMovingEntriesAround()
+    void shouldMoveValuesWhenMovingEntriesAround()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -271,17 +271,17 @@ public class PrimitiveLongMapTest
         boolean existsAfter = map.containsKey( 689837337 );
         Integer valueAfter = map.get( 689837337 );
         int sizeAfter = map.size();
-        assertEquals( "Size before put should have been 2", 2, sizeBefore );
-        assertTrue( "689837337 should exist before putting here", existedBefore );
-        assertEquals( "value before should be 7", (Integer) 7, valueBefore );
-        assertEquals( "value returned from put should be 7", (Integer) 7, previous );
-        assertTrue( "689837337 should exist", existsAfter );
-        assertEquals( "value after putting should be 20", (Integer) 20, valueAfter );
-        assertEquals( "Size after put should have been 2", 2, sizeAfter );
+        assertEquals( 2, sizeBefore, "Size before put should have been 2" );
+        assertTrue( existedBefore, "689837337 should exist before putting here" );
+        assertEquals( (Integer) 7, valueBefore, "value before should be 7" );
+        assertEquals( (Integer) 7, previous, "value returned from put should be 7" );
+        assertTrue( existsAfter, "689837337 should exist" );
+        assertEquals( (Integer) 20, valueAfter, "value after putting should be 20" );
+        assertEquals( 2, sizeAfter, "Size after put should have been 2" );
     }
 
     @Test
-    public void shouldReturnCorrectPreviousValue()
+    void shouldReturnCorrectPreviousValue()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -297,17 +297,17 @@ public class PrimitiveLongMapTest
         boolean existsAfter = map.containsKey( 429170228 );
         int valueAfter = map.get( 429170228 );
         int sizeAfter = map.size();
-        assertEquals( "Size before put should have been 2", 2, sizeBefore );
-        assertTrue( "429170228 should exist before putting here", existedBefore );
-        assertEquals( "value before should be 99", 99, valueBefore );
-        assertEquals( "value returned from put should be 99", 99, previous );
-        assertTrue( "429170228 should exist", existsAfter );
-        assertEquals( "value after putting should be 1", 1, valueAfter );
-        assertEquals( "Size after put should have been 2", 2, sizeAfter );
+        assertEquals( 2, sizeBefore, "Size before put should have been 2" );
+        assertTrue( existedBefore, "429170228 should exist before putting here" );
+        assertEquals( 99, valueBefore, "value before should be 99" );
+        assertEquals( 99, previous, "value returned from put should be 99" );
+        assertTrue( existsAfter, "429170228 should exist" );
+        assertEquals( 1, valueAfter, "value after putting should be 1" );
+        assertEquals( 2, sizeAfter, "Size after put should have been 2" );
     }
 
     @Test
-    public void shouldOnlyContainAddedValues()
+    void shouldOnlyContainAddedValues()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -385,17 +385,17 @@ public class PrimitiveLongMapTest
         boolean existsAfter = map.containsKey( 1452811669 );
         int valueAfter = map.get( 1452811669 );
         int sizeAfter = map.size();
-        assertEquals( "Size before put should have been 64", 64, sizeBefore );
-        assertFalse( "1452811669 should not exist before putting here", existedBefore );
-        assertEquals( "value before should be -1", -1, valueBefore );
-        assertEquals( "value returned from put should be -1", -1, previous );
-        assertTrue( "1452811669 should exist", existsAfter );
-        assertEquals( "value after putting should be 16", 16, valueAfter );
-        assertEquals( "Size after put should have been 65", 65, sizeAfter );
+        assertEquals( 64, sizeBefore, "Size before put should have been 64" );
+        assertFalse( existedBefore, "1452811669 should not exist before putting here" );
+        assertEquals( -1, valueBefore, "value before should be -1" );
+        assertEquals( -1, previous, "value returned from put should be -1" );
+        assertTrue( existsAfter, "1452811669 should exist" );
+        assertEquals( 16, valueAfter, "value after putting should be 16" );
+        assertEquals( 65, sizeAfter, "Size after put should have been 65" );
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_2()
+    void shouldOnlyContainAddedValues_2()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -432,15 +432,15 @@ public class PrimitiveLongMapTest
         int removed = map.remove( 947430652 );
         boolean existsAfter = map.containsKey( 947430652 );
         int valueAfter = map.get( 947430652 );
-        assertTrue( "947430652 should exist before removing here", existedBefore );
-        assertEquals( "value before should be 26", 26, valueBefore );
-        assertEquals( "value returned from remove should be 26", 26, removed );
-        assertFalse( "947430652 should not exist", existsAfter );
-        assertEquals( "value after removing should be -1", -1, valueAfter );
+        assertTrue( existedBefore, "947430652 should exist before removing here" );
+        assertEquals( 26, valueBefore, "value before should be 26" );
+        assertEquals( 26, removed, "value returned from remove should be 26" );
+        assertFalse( existsAfter, "947430652 should not exist" );
+        assertEquals( -1, valueAfter, "value after removing should be -1" );
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_3()
+    void shouldOnlyContainAddedValues_3()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -848,18 +848,18 @@ public class PrimitiveLongMapTest
         boolean existsAfter = map.containsKey( 5826258075197365143L );
         Integer valueAfter = map.get( 5826258075197365143L );
         int sizeAfter = map.size();
-        assertEquals( "Size before put should have been 199", 199, sizeBefore );
-        assertFalse( "5826258075197365143 should not exist before putting here", existedBefore );
-        assertNull( "value before putting should be null", valueBefore );
-        assertNull( "value returned from putting should be null", previous );
-        assertTrue( "5826258075197365143 should exist", existsAfter );
-        assertEquals( "value after putting should be 6", (Integer) 6, valueAfter );
-        assertEquals( "Size after put should have been 200", 200, sizeAfter );
+        assertEquals( 199, sizeBefore, "Size before put should have been 199" );
+        assertFalse( existedBefore, "5826258075197365143 should not exist before putting here" );
+        assertNull( valueBefore, "value before putting should be null" );
+        assertNull( previous, "value returned from putting should be null" );
+        assertTrue( existsAfter, "5826258075197365143 should exist" );
+        assertEquals( (Integer) 6, valueAfter, "value after putting should be 6" );
+        assertEquals( 200, sizeAfter, "Size after put should have been 200" );
     }
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longIntEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longIntEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -879,7 +879,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longIntEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longIntEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -898,7 +898,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void intLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void intLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveIntLongMap map = Primitive.intLongMap();
@@ -918,7 +918,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void intLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void intLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntLongMap map = Primitive.intLongMap();
@@ -937,7 +937,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongLongVisitor<RuntimeException> visitor;
@@ -960,7 +960,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -981,7 +981,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongOffHeapEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongOffHeapEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongLongVisitor<RuntimeException> visitor;
@@ -1004,7 +1004,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongOffHeapEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongOffHeapEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -1025,7 +1025,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1045,7 +1045,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1064,7 +1064,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void intObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void intObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1084,7 +1084,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void intObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void intObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1103,7 +1103,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longIntKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longIntKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -1123,7 +1123,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longIntKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longIntKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -1142,7 +1142,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
@@ -1164,7 +1164,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -1185,7 +1185,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongOffHeapKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongOffHeapKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
@@ -1207,7 +1207,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongOffHeapKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongOffHeapKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -1228,7 +1228,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1248,7 +1248,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1267,7 +1267,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void intObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void intObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1287,7 +1287,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void intObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void intObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1305,7 +1305,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longObjectMapValuesContainsAllValues()
+    void longObjectMapValuesContainsAllValues()
     {
         PrimitiveLongObjectMap<String> map = Primitive.longObjectMap();
         map.put( 1, "a" );
@@ -1316,7 +1316,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void recursivePutGrowInterleavingShouldNotDropOriginalValues()
+    void recursivePutGrowInterleavingShouldNotDropOriginalValues()
     {
         // List of values which causes calls to put() call grow(), which will call put() which calls grow() again
         List<Long> lst = Arrays.asList(
@@ -1335,7 +1335,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void recursivePutGrowInterleavingShouldNotDropOriginalValuesEvenWhenFirstGrowAddsMoreValuesAfterSecondGrow()
+    void recursivePutGrowInterleavingShouldNotDropOriginalValuesEvenWhenFirstGrowAddsMoreValuesAfterSecondGrow()
     {
         // List of values that cause recursive growth like above, but this time the first grow wants to add more values
         // to the table *after* the second grow has occurred.
@@ -1354,7 +1354,7 @@ public class PrimitiveLongMapTest
         verifyMapRetainsAllEntries( lst );
     }
 
-    private void verifyMapRetainsAllEntries( List<Long> lst )
+    private static void verifyMapRetainsAllEntries( List<Long> lst )
     {
         PrimitiveLongIntMap map = Primitive.longIntMap();
         Set<Long> set = new HashSet<>();

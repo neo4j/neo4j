@@ -19,17 +19,17 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 
-public class JumpingSequencePutTest
+class JumpingSequencePutTest
 {
     @Test
-    public void shouldHandlePathologicalSequenceCase()
+    void shouldHandlePathologicalSequenceCase()
     {
         // Given
         PrimitiveLongSet set = Primitive.longSet();
@@ -40,8 +40,6 @@ public class JumpingSequencePutTest
         {
             set.add( seqGen.next() );
         }
-
-        // Then it should not have run out of RAM
     }
 
     /**

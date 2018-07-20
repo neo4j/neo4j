@@ -19,31 +19,32 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveLongListTest
+class PrimitiveLongListTest
 {
 
     @Test
-    public void newListIsEmpty()
+    void newListIsEmpty()
     {
         assertTrue( new PrimitiveLongList().isEmpty() );
         assertTrue( new PrimitiveLongList( 12 ).isEmpty() );
     }
 
     @Test
-    public void newListHasZeroSize()
+    void newListHasZeroSize()
     {
         assertEquals( 0, new PrimitiveLongList().size() );
         assertEquals( 0, new PrimitiveLongList( 12 ).size() );
     }
 
     @Test
-    public void addingElementsChangeSize()
+    void addingElementsChangeSize()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         longList.add( 1L );
@@ -62,7 +63,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void accessAddedElements()
+    void accessAddedElements()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         for ( long i = 1; i < 6L; i++ )
@@ -74,15 +75,15 @@ public class PrimitiveLongListTest
         assertEquals( 1L, longList.get( 0 ) );
     }
 
-    @Test( expected = IndexOutOfBoundsException.class )
-    public void throwExceptionOnAccessingNonExistentElement()
+    @Test
+    void throwExceptionOnAccessingNonExistentElement()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
-        longList.get( 0 );
+        assertThrows( IndexOutOfBoundsException.class, () -> longList.get( 0 ) );
     }
 
     @Test
-    public void iterateOverListElements()
+    void iterateOverListElements()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         for ( long i = 0; i < 10L; i++ )
@@ -103,7 +104,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void clearResetListSize()
+    void clearResetListSize()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         long size = 10;
@@ -120,7 +121,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void transformListToArray()
+    void transformListToArray()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         long size = 24L;
@@ -138,7 +139,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void holdLotsOfElements()
+    void holdLotsOfElements()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         long size = 13077L;

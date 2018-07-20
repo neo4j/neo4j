@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,15 +40,15 @@ import org.neo4j.test.randomized.TestResource;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class PrimitiveLongObjectMapRIT
+class PrimitiveLongObjectMapRIT
 {
     @Test
-    public void thoroughlyTestIt()
+    void thoroughlyTestIt()
     {
         long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
         while ( currentTimeMillis() < endTime )
@@ -74,7 +74,7 @@ public class PrimitiveLongObjectMapRIT
         }
     }
 
-    private void fullVerification( Maps target, Random random )
+    private static void fullVerification( Maps target, Random random )
     {
         for ( Map.Entry<Long, Integer> entry: target.normalMap.entrySet() )
         {
@@ -88,23 +88,23 @@ public class PrimitiveLongObjectMapRIT
         }
     }
 
-    private Printable given()
+    private static Printable given()
     {
         return out -> out.println( PrimitiveLongObjectMap.class.getSimpleName() + "<Integer> map = " +
                 Primitive.class.getSimpleName() + ".longObjectMap();" );
     }
 
-    private ActionFactory<Maps, String> actionFactory( final Random random )
+    private static ActionFactory<Maps, String> actionFactory( final Random random )
     {
         return from -> generateAction( random, from );
     }
 
-    private TargetFactory<Maps> mapFactory()
+    private static TargetFactory<Maps> mapFactory()
     {
         return Maps::new;
     }
 
-    protected Action<Maps, String> generateAction( Random random, Maps from )
+    private static Action<Maps, String> generateAction( Random random, Maps from )
     {
         boolean anExisting = !from.normalMap.isEmpty() && random.nextInt( 3 ) == 0;
         long key = anExisting ?
@@ -122,7 +122,7 @@ public class PrimitiveLongObjectMapRIT
         return new AddAction( key, value );
     }
 
-    private long randomNonExisting( Random random, Map<Long, Integer> existing )
+    private static long randomNonExisting( Random random, Map<Long,Integer> existing )
     {
         while ( true )
         {
@@ -134,7 +134,7 @@ public class PrimitiveLongObjectMapRIT
         }
     }
 
-    private long randomExisting( Random random, Map<Long, Integer> existing )
+    private static long randomExisting( Random random, Map<Long,Integer> existing )
     {
         int index = random.nextInt( existing.size() ) + 1;
         Iterator<Long> iterator = existing.keySet().iterator();
@@ -195,13 +195,13 @@ public class PrimitiveLongObjectMapRIT
             if ( includeChecks )
             {
                 boolean existing = existingValue != null;
-                out.println( format( "int sizeBefore = map.size();" ) );
+                out.println( "int sizeBefore = map.size();" );
                 out.println( format( "boolean existedBefore = map.containsKey( %d );", key ) );
                 out.println( format( "Integer valueBefore = map.get( %d );", key ) );
                 out.println( format( "Integer previous = %s", addition ) );
                 out.println( format( "boolean existsAfter = map.containsKey( %d );", key ) );
                 out.println( format( "Integer valueAfter = map.get( %d );", key ) );
-                out.println( format( "int sizeAfter = map.size();" ) );
+                out.println( "int sizeAfter = map.size();" );
 
                 int actualSizeBefore = source.normalMap.size();
                 out.println( format( "assertEquals( \"%s\", %d, sizeBefore );",

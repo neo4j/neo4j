@@ -19,16 +19,16 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @SuppressWarnings( "unchecked" )
-public class ClosingTablesTest
+class ClosingTablesTest
 {
     @Test
-    public void intCollectionsMustDelegateCloseToTable()
+    void intCollectionsMustDelegateCloseToTable()
     {
         // Given
         Table table = mock( Table.class );
@@ -55,7 +55,7 @@ public class ClosingTablesTest
     }
 
     @Test
-    public void longCollectionsMustDelegateCloseToTable()
+    void longCollectionsMustDelegateCloseToTable()
     {
         // Given
         Table table = mock( Table.class );

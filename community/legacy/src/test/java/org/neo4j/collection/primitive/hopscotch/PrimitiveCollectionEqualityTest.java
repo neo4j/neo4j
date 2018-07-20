@@ -371,7 +371,7 @@ public class PrimitiveCollectionEqualityTest
         return ThreadLocalRandom.current().nextInt( 30, 1200 );
     }
 
-    private void assertEquals( PrimitiveCollection a, PrimitiveCollection b )
+    private static void assertEquals( PrimitiveCollection a, PrimitiveCollection b )
     {
         assertThat( a, is( equalTo( b ) ) );
         assertThat( b, is( equalTo( a ) ) );
