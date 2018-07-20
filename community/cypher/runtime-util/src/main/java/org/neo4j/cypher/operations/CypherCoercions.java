@@ -72,6 +72,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public final class CypherCoercions
@@ -385,7 +386,8 @@ public final class CypherCoercions
             {
                 for ( int i = 0; i < coercedValues.length; i++ )
                 {
-                    coercedValues[i] = innerCoercer.apply( listValue.value( i ), nextInner, access );
+                    AnyValue nextItem = listValue.value( i );
+                    coercedValues[i] = nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( nextItem, nextInner, access );
                 }
             }
             else
@@ -393,7 +395,8 @@ public final class CypherCoercions
                 int i = 0;
                 for ( AnyValue anyValue : listValue )
                 {
-                    coercedValues[i++] = innerCoercer.apply( anyValue, nextInner, access );
+                    AnyValue nextItem = listValue.value( i );
+                    coercedValues[i++] = nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( anyValue, nextInner, access );
                 }
             }
             return VirtualValues.list( coercedValues );

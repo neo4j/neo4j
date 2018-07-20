@@ -297,79 +297,79 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           case CTString =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, TextValue, AnyValue]("asTextValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTNode =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, NodeValue, AnyValue]("asNodeValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTRelationship =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, RelationshipValue, AnyValue]("asRelationshipValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTPath =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, PathValue, AnyValue]("asPathValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTInteger =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, IntegralValue, AnyValue]("asIntegralValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTFloat =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, FloatingPointValue, AnyValue]("asFloatingPointValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTMap =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, MapValue, AnyValue, DbAccess]("asMapValue"), e.ir, DB_ACCESS)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
 
           case l: ListType  =>
             val typ = asNeoType(l.innerType)
 
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, ListValue, AnyValue, AnyType, DbAccess]("asList"), e.ir, typ, DB_ACCESS)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
 
           case CTBoolean =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, BooleanValue, AnyValue]("asBooleanValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTNumber =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, NumberValue, AnyValue]("asNumberValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTPoint =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, PointValue, AnyValue]("asPointValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTGeometry =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, PointValue, AnyValue]("asPointValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTDate =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, DateValue, AnyValue]("asDateValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTLocalTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, LocalTimeValue, AnyValue]("asLocalTimeValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, TimeValue, AnyValue]("asTimeValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTLocalDateTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, LocalDateTimeValue, AnyValue]("asLocalDateTimeValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTDateTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, DateTimeValue, AnyValue]("asDateTimeValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case CTDuration =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, DurationValue, AnyValue]("asDurationValue"), e.ir)),
-              nullable = false, e.fields)
+              e.nullable, e.fields)
           case _ =>  throw new CypherTypeException(s"Can't coerce to $typ")
         }
       }

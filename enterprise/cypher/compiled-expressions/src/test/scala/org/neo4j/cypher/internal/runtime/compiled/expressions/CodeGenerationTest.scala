@@ -1341,6 +1341,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
            ListType(symbols.CTFloat)) should equal(list(doubleValue(1.2), doubleValue(2), doubleValue(3.1)))
     coerce(list(list(doubleValue(1.2), longValue(2)), list(doubleValue(3.1))),
            ListType(ListType(symbols.CTInteger))) should equal(list(list(longValue(1), longValue(2)), list(longValue(3))))
+    coerce(list(longValue(42), NO_VALUE, longValue(43)), ListType(symbols.CTInteger)) should equal(
+      list(longValue(42), NO_VALUE, longValue(43)))
 
     a [CypherTypeException] should be thrownBy coerce(path(11), ListType(symbols.CTNode))
     a [CypherTypeException] should be thrownBy coerce(path(11), ListType(symbols.CTRelationship))
