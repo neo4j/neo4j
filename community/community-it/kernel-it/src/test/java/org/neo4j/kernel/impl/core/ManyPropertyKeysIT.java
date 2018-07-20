@@ -70,12 +70,12 @@ public class ManyPropertyKeysIT
     public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
             .around( fileSystemRule ).around( pageCacheRule );
 
-    private File storeDir;
+    private File databaseDir;
 
     @Before
     public void setup()
     {
-        storeDir  = testDirectory.storeDir();
+        databaseDir = testDirectory.databaseDir();
     }
 
     @Test
@@ -130,8 +130,7 @@ public class ManyPropertyKeysIT
     {
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        StoreFactory storeFactory = new StoreFactory(
-                storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ), pageCache,
+        StoreFactory storeFactory = new StoreFactory( databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ), pageCache,
                 fileSystemRule.get(),
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );

@@ -360,7 +360,7 @@ public class ConstraintHaIT
             HighlyAvailableGraphDatabase master = cluster.getMaster();
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            File slaveStoreDirectory = cluster.getStoreDir( slave );
+            File slaveStoreDirectory = cluster.getDatabaseDir( slave );
 
             // Crash the slave
             ClusterManager.RepairKit shutdownSlave = cluster.shutdown( slave );

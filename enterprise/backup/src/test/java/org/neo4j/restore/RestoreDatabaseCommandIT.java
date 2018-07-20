@@ -129,6 +129,7 @@ public class RestoreDatabaseCommandIT
     @Test
     public void shouldThrowExceptionIfBackupDirectoryDoesNotExist() throws Exception
     {
+        assertTrue( fromDatabase.delete() );
         createDbAt( toStore, toLogicalLogsPath, 0, toConfig );
 
         expectedException.expect( IllegalArgumentException.class );
@@ -141,8 +142,6 @@ public class RestoreDatabaseCommandIT
     @Test
     public void shouldThrowExceptionIfBackupDirectoryDoesNotHaveStoreFiles() throws Exception
     {
-        assertTrue( fromDatabase.mkdirs() );
-
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Source directory is not a database backup" );
 

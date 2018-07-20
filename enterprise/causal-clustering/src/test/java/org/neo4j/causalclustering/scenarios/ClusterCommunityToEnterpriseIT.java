@@ -27,8 +27,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
@@ -80,20 +78,19 @@ public class ClusterCommunityToEnterpriseIT
     public void shouldRestoreBySeedingAllMembers() throws Throwable
     {
         // given
-        File storeDir = testDir.storeDir();
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, HighLimit.NAME )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();
         database.shutdown();
         Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        DbRepresentation before = DbRepresentation.of( storeDir, config );
+        DbRepresentation before = DbRepresentation.of( testDir.storeDir(), config );
 
         // when
-        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 0 ).databaseDirectory() );
-        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 1 ).databaseDirectory() );
-        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 2 ).databaseDirectory() );
+        fsa.copyRecursively( testDir.databaseDir(), cluster.getCoreMemberById( 0 ).databaseDirectory() );
+        fsa.copyRecursively( testDir.databaseDir(), cluster.getCoreMemberById( 1 ).databaseDirectory() );
+        fsa.copyRecursively( testDir.databaseDir(), cluster.getCoreMemberById( 2 ).databaseDirectory() );
         cluster.start();
 
         // then

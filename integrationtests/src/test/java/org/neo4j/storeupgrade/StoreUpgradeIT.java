@@ -31,7 +31,6 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,7 +54,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -217,9 +215,10 @@ public class StoreUpgradeIT
         public void migratingOlderDataAndThanStartAClusterUsingTheNewerDataShouldWork() throws Throwable
         {
             // migrate the store using a single instance
-            File databaseDirectory = store.prepareDirectory( testDir.databaseDir() );
+            File storeDir = testDir.storeDir( "initialData" );
+            File databaseDirectory = store.prepareDirectory( testDir.databaseDir( storeDir ) );
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.storeDir() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
@@ -237,10 +236,9 @@ public class StoreUpgradeIT
             assertConsistentStore( databaseDirectory );
 
             // start the cluster with the db migrated from the old instance
-            File haDir = Files.createTempDirectory("ha-stuff" ).toFile();
-            FileUtils.deleteRecursively( haDir );
+            File haDir = testDir.storeDir( "ha-stuff" );
             ClusterManager clusterManager = new ClusterManager.Builder( haDir )
-                    .withSeedDir( databaseDirectory ).withCluster( clusterOfSize( 2 ) ).build();
+                    .withSeedDir( storeDir ).withCluster( clusterOfSize( 2 ) ).build();
 
             clusterManager.start();
 
@@ -389,15 +387,15 @@ public class StoreUpgradeIT
             this.formatFamily = formatFamily;
         }
 
-        File prepareDirectory( File targetDir ) throws IOException
+        File prepareDirectory( File databaseDirectory ) throws IOException
         {
-            if ( !targetDir.exists() && !targetDir.mkdirs() )
+            if ( !databaseDirectory.exists() && !databaseDirectory.mkdirs() )
             {
-                throw new IOException( "Could not create directory " + targetDir );
+                throw new IOException( "Could not create directory " + databaseDirectory );
             }
-            Unzip.unzip( getClass(), resourceName, targetDir );
-            new File( targetDir, "debug.log" ).delete(); // clear the log
-            return targetDir;
+            Unzip.unzip( getClass(), resourceName, databaseDirectory );
+            new File( databaseDirectory, "debug.log" ).delete(); // clear the log
+            return databaseDirectory;
         }
 
         @Override

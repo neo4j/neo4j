@@ -57,7 +57,7 @@ public class SlaveWritingAfterStoreCopyIT
         cluster.sync();
 
         // ... crash the slave
-        File slaveStoreDirectory = cluster.getStoreDir( slave );
+        File slaveStoreDirectory = cluster.getDatabaseDir( slave );
         ClusterManager.RepairKit shutdownSlave = cluster.shutdown( slave );
         deleteRecursively( slaveStoreDirectory );
 

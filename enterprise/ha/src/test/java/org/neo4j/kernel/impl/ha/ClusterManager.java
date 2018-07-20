@@ -1353,7 +1353,7 @@ public class ClusterManager
             return member.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
         }
 
-        public File getStoreDir( HighlyAvailableGraphDatabase member )
+        public File getDatabaseDir( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
             return member.databaseDirectory();

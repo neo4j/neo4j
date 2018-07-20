@@ -86,9 +86,8 @@ import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PrepareTrackingRecordFormats;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.NeoStoresRule;
@@ -121,6 +120,9 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TransactionRecordStateTest
 {
+    @Rule
+    public final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
+
     private static final String LONG_STRING = "string value long enough not to be stored as a short string";
     private static final int propertyId1 = 1;
     private static final int propertyId2 = 2;
@@ -130,6 +132,8 @@ public class TransactionRecordStateTest
     private final long[] oneLabelId = new long[]{3};
     private final long[] secondLabelId = new long[]{4};
     private final long[] bothLabelIds = new long[]{3, 4};
+    private final IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
+    private RecordChangeSet recordChangeSet;
 
     private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )
     {
@@ -196,11 +200,6 @@ public class TransactionRecordStateTest
         }
         return count;
     }
-
-    @Rule
-    public final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
-    private final IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
-    private RecordChangeSet recordChangeSet;
 
     @Test
     public void shouldCreateEqualEntityPropertyUpdatesOnRecoveryOfCreatedEntities() throws Exception

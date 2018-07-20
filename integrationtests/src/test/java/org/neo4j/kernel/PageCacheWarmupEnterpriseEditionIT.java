@@ -60,11 +60,11 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSupport
 {
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public EnterpriseDatabaseRule db = new EnterpriseDatabaseRule( testDirectory ).startLazily();
+    public final EnterpriseDatabaseRule db = new EnterpriseDatabaseRule( testDirectory ).startLazily();
 
     private static void verifyEventuallyWarmsUp( long pagesInMemory, File metricsDirectory ) throws Exception
     {
@@ -179,7 +179,6 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         File data = testDirectory.cleanDirectory( "data" );
         File databases = new File( data, "databases" );
         File graphdb = testDirectory.databaseDir( databases );
-        assertTrue( graphdb.mkdirs() );
         FileUtils.copyRecursively( databaseDir, graphdb );
         FileUtils.deleteRecursively( databaseDir );
         Path homePath = data.toPath().getParent();

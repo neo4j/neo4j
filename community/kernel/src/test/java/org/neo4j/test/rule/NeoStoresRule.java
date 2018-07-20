@@ -71,11 +71,11 @@ public class NeoStoresRule extends ExternalResource
     }
 
     private NeoStores open( FileSystemAbstraction fs, PageCache pageCache, RecordFormats format,
-            Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory, String... config )
-                    throws IOException
+            Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory, String... config ) throws IOException
     {
         assert neoStores == null : "Already opened";
-        TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );
+        TestDirectory testDirectory = TestDirectory.testDirectory( fs );
+        testDirectory.prepareDirectory( testClass, null );
         File databaseDir = testDirectory.databaseDir();
         Config configuration = configOf( config );
         StoreFactory storeFactory = new StoreFactory( databaseDir, configuration, idGeneratorFactory.apply( fs ),
