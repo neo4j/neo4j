@@ -30,8 +30,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
-abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
-                                    properties: Option[Expression])
+abstract class BaseCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
+                                          properties: Option[Expression])
   extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
@@ -50,10 +50,12 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
   private def getNode(row: ExecutionContext, name: String): NodeValue =
     row.get(name) match {
       case Some(n: NodeValue) => n
-      case x => throw new InternalException(s"Expected to find a node at $name but found nothing $x")
+      case Some(Values.NO_VALUE) => throw new InternalException(s"Expected to find a node at $name but found instead: null")
+      case Some(x) => throw new InternalException(s"Expected to find a node at $name but found instead: $x")
+      case None => throw new InternalException(s"Expected to find a node at $name but found instead: null")
     }
 
-  private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
+  private def setProperties(context: ExecutionContext, state: QueryState, relId: Long): Unit = {
     properties.foreach { expr =>
       expr(context, state) match {
         case _: NodeValue | _: RelationshipValue =>
@@ -68,7 +70,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
     }
   }
 
-  private def setProperty(relId: Long, key: String, value: AnyValue, qtx: QueryContext) {
+  private def setProperty(relId: Long, key: String, value: AnyValue, qtx: QueryContext): Unit = {
     //do not set properties for null values
     if (value == Values.NO_VALUE) {
       handleNull(key: String)
@@ -85,7 +87,7 @@ case class CreateRelationshipPipe(src: Pipe,
                                   key: String, startNode: String, typ: LazyType, endNode: String,
                                   properties: Option[Expression])
                                  (val id: Id = Id.INVALID_ID)
-  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
+  extends BaseCreateRelationshipPipe(src, key, startNode, typ, endNode, properties) {
   override protected def handleNull(key: String) {
     //do nothing
   }
@@ -94,7 +96,7 @@ case class CreateRelationshipPipe(src: Pipe,
 case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                        properties: Option[Expression])
                                       (val id: Id = Id.INVALID_ID)
-  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
+  extends BaseCreateRelationshipPipe(src, key, startNode, typ, endNode, properties) {
 
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create

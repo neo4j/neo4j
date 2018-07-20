@@ -31,19 +31,19 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, makeValueNeoSafe}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
-abstract class BaseRelationshipSlottedPipe(src: Pipe,
-                                           RelationshipKey: String,
-                                           startNode: Slot,
-                                           typ: LazyType,
-                                           endNode: Slot,
-                                           slots: SlotConfiguration,
-                                           properties: Option[Expression]) extends PipeWithSource(src) {
+abstract class BaseCreateRelationshipSlottedPipe(src: Pipe,
+                                                 RelationshipKey: String,
+                                                 startNode: Slot,
+                                                 typ: LazyType,
+                                                 endNode: Slot,
+                                                 slots: SlotConfiguration,
+                                                 properties: Option[Expression]) extends PipeWithSource(src) {
 
   //===========================================================================
   // Compile-time initializations
@@ -56,12 +56,19 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe,
   // Runtime code
   //===========================================================================
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map {
       row =>{
         val start = getStartNodeFunction(row)
         val end = getEndNodeFunction(row)
         val typeId = typ.typ(state.query)
+
+        if (start == -1) {
+          throw new InternalException(s"Expected to find a node at ref slot ${startNode.offset} but found instead: null")
+        }
+        if (end == -1) {
+          throw new InternalException(s"Expected to find a node at ref slot ${endNode.offset} but found instead: null")
+        }
         val relationship = state.query.createRelationship(start, end, typeId)
 
         relationship.`type`() // we do this to make sure the relationship is loaded from the store into this object
@@ -73,7 +80,7 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe,
       }
     }
 
-  private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
+  private def setProperties(context: ExecutionContext, state: QueryState, relId: Long): Unit = {
     properties.foreach { expr =>
       expr(context, state) match {
         case _: Node | _: Relationship =>
@@ -91,7 +98,7 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe,
     }
   }
 
-  private def setProperty(relId: Long, key: String, value: AnyValue, qtx: QueryContext) {
+  private def setProperty(relId: Long, key: String, value: AnyValue, qtx: QueryContext): Unit = {
     //do not set properties for null values
     if (value == Values.NO_VALUE) {
       handleNull(key: String)
@@ -112,8 +119,8 @@ case class CreateRelationshipSlottedPipe(src: Pipe,
                                          slots: SlotConfiguration,
                                          properties: Option[Expression])
                                         (val id: Id = Id.INVALID_ID)
-  extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
-  override protected def handleNull(key: String) {
+  extends BaseCreateRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
+  override protected def handleNull(key: String): Unit = {
     //do nothing
   }
 }
@@ -126,9 +133,9 @@ case class MergeCreateRelationshipSlottedPipe(src: Pipe,
                                               slots: SlotConfiguration,
                                               properties: Option[Expression])
                                              (val id: Id = Id.INVALID_ID)
-  extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
+  extends BaseCreateRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
 
-  override protected def handleNull(key: String) {
+  override protected def handleNull(key: String): Unit = {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
     throw new InvalidSemanticsException(s"Cannot merge relationship using null property value for $key")
   }

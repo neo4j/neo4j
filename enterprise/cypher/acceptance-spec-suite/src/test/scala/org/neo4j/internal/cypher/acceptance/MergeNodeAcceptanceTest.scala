@@ -89,4 +89,16 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = executeWith(Configs.UpdateConf, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge, c.name as name")
     result.toList should equal(List(Map("sameEdge" -> false, "name" -> null)))
   }
+
+  test("should give sensible error message on add relationship to null node") {
+    val query =
+      """OPTIONAL MATCH (a)
+        |MERGE (a)-[:X]->()
+      """.stripMargin
+
+    failWithError(Configs.AbsolutelyAll - Configs.Compiled - Configs.AllRulePlanners - Configs.Cost2_3, query, Seq(
+      "Expected to find a node at a but found instead: null",
+      "Expected to find a node at ref slot 0 but found instead: null",
+      "Expected to find a node at a but found nothing Some(null)"))
+  }
 }

@@ -35,6 +35,9 @@ object SlottedPipeBuilderUtils {
   // TODO: Check if having try/catch blocks inside some of these generated functions prevents inlining or other JIT optimizations
   //       If so we may want to consider moving the handling and responsibility out to the pipes that use them
 
+  val UNDEFINED_NODE: Long = -1L
+  val UNDEFINED_REL: Long = -1L
+
   /**
     * Use this to make a specialized getter function for a slot,
     * that given an ExecutionContext returns an AnyValue.
@@ -108,7 +111,7 @@ object SlottedPipeBuilderUtils {
           val value = context.getRefAt(offset)
           try {
             if (value == Values.NO_VALUE)
-              -1L
+              UNDEFINED_NODE
             else
               value.asInstanceOf[VirtualNodeValue].id()
           } catch {
@@ -121,7 +124,7 @@ object SlottedPipeBuilderUtils {
           val value = context.getRefAt(offset)
           try {
             if (value == Values.NO_VALUE)
-              -1L
+              UNDEFINED_REL
             else
               value.asInstanceOf[VirtualRelationshipValue].id()
           } catch {
