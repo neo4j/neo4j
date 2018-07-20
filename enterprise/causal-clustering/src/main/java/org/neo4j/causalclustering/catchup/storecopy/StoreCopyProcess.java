@@ -60,6 +60,6 @@ public class StoreCopyProcess
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
             localDatabase.replaceWith( tempStore.storeDir() );
         }
-        log.info( "Replaced store with one downloaded from %s", addressProvider );
+        log.info( "Replaced store successfully" );
     }
 }
