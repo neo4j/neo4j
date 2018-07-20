@@ -81,7 +81,7 @@ public class ConnectedState implements BoltStateMachineState
         {
             AuthenticationResult authResult = context.boltSpi().authenticate( authToken );
             String username = authResult.getLoginContext().subject().username();
-            context.authenticationCompleted( username );
+            context.authenticatedAsUser( username );
 
             StatementProcessor statementProcessor = newStatementProcessor( username, userAgent, authResult, context );
             context.connectionState().setStatementProcessor( statementProcessor );

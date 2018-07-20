@@ -23,7 +23,7 @@ import java.time.Clock;
 
 public interface StateMachineContext
 {
-    void authenticationCompleted( String user );
+    void authenticatedAsUser( String user );
 
     void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
 
