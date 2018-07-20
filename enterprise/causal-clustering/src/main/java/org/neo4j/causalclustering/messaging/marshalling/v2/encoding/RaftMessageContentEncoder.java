@@ -40,13 +40,13 @@ import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftL
 /**
  * Serializes a raft messages content in the order Message, RaftLogTerms, ReplicatedContent.
  */
-public class RaftMessageContentSerializer extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
+public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
 {
 
     private final CoreReplicatedContentMarshal serializer;
     private Handler replicatedContentHandler = new Handler();
 
-    public RaftMessageContentSerializer( CoreReplicatedContentMarshal serializer )
+    public RaftMessageContentEncoder( CoreReplicatedContentMarshal serializer )
     {
         this.serializer = serializer;
     }

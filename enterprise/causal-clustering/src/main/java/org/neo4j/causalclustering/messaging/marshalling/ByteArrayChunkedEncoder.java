@@ -23,54 +23,62 @@
 package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class ByteArrayByteBufAwareMarshal implements ByteBufAwareMarshal
+public class ByteArrayChunkedEncoder implements ChunkedEncoder
 {
+    private static final int CHUNK_SIZE = 8 * 1024;
     private final byte[] content;
     private final ByteArrayInputStream inputStream;
+    private final int chunkSize;
 
-    public ByteArrayByteBufAwareMarshal( byte[] content )
+    ByteArrayChunkedEncoder( byte[] content, int chunkSize )
     {
         inputStream = new ByteArrayInputStream( content );
         this.content = content;
+        this.chunkSize = chunkSize;
+    }
+
+    public ByteArrayChunkedEncoder( byte[] content )
+    {
+        this( content, CHUNK_SIZE );
     }
 
     @Override
-    public boolean encode( ByteBuf byteBuf ) throws IOException
+    public ByteBuf encodeChunk( ByteBufAllocator allocator ) throws IOException
     {
-        if ( inputStream.available() == content.length )
+        if ( isEndOfInput() )
         {
-            if ( !byteBuf.isWritable( 5 ) )
+            return null;
+        }
+        int toWrite = Math.min( inputStream.available(), chunkSize );
+        ByteBuf buffer = allocator.buffer( toWrite );
+        try
+        {
+            if ( inputStream.available() == content.length )
             {
-                return true;
+                buffer.writeInt( content.length );
+                toWrite -= 4;
             }
-
-            byteBuf.writeInt( content.length );
+            buffer.writeBytes( inputStream, toWrite );
+            return buffer;
         }
-        if ( !hasBytes() )
+        catch ( Throwable t )
         {
-            return false;
+            buffer.release();
+            throw t;
         }
-        int toWrite = Math.min( inputStream.available(), byteBuf.writableBytes() );
-        byteBuf.writeBytes( inputStream, toWrite );
-        return hasBytes();
     }
 
     @Override
-    public int length()
+    public boolean isEndOfInput()
     {
-        // initial int plus array length
-        return content.length + 4;
-    }
-
-    private boolean hasBytes()
-    {
-        return inputStream.available() > 0;
+        return inputStream.available() == 0;
     }
 
     @Override

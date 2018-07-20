@@ -31,7 +31,7 @@ import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
-import org.neo4j.causalclustering.messaging.marshalling.ByteBufAwareMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.ContentBuilder;
 import org.neo4j.storageengine.api.ReadableChannel;
 
@@ -77,9 +77,9 @@ public class  DistributedOperation implements ReplicatedContent
      *
      * @return Consumer with instructions for writing to channel.
      */
-    public ByteBufAwareMarshal serialize()
+    public ChunkedEncoder serialize()
     {
-        return ByteBufAwareMarshal.simple( channel1 ->
+        return ChunkedEncoder.single( channel1 ->
         {
             channel1.putLong( globalSession().sessionId().getMostSignificantBits() );
             channel1.putLong( globalSession().sessionId().getLeastSignificantBits() );

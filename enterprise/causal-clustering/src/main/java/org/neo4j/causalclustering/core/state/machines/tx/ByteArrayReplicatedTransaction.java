@@ -22,37 +22,56 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
-import io.netty.buffer.ByteBuf;
+import java.util.Arrays;
+import java.util.Optional;
 
-import java.util.function.Consumer;
-
-import org.neo4j.causalclustering.core.state.CommandDispatcher;
-import org.neo4j.causalclustering.core.state.Result;
+import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
-public interface ReplicatedTransaction extends CoreReplicatedContent
+public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
 {
-    static TransactionRepresentationReplicatedTransaction from( TransactionRepresentation tx )
+    private final byte[] txBytes;
+
+    @Override
+    public Optional<Long> size()
     {
-        return new TransactionRepresentationReplicatedTransaction( tx );
+        return Optional.of( (long) txBytes.length );
     }
 
-    static ByteArrayReplicatedTransaction from( byte[] bytes )
+    ByteArrayReplicatedTransaction( byte[] txBytes )
     {
-        return new ByteArrayReplicatedTransaction( bytes );
+        this.txBytes = txBytes;
     }
 
-    static ByteBufReplicatedTransaction from( ByteBuf byteBuf )
+    byte[] getTxBytes()
     {
-        return new ByteBufReplicatedTransaction( byteBuf );
+        return txBytes;
     }
 
     @Override
-    default void dispatch( CommandDispatcher commandDispatcher, long commandIndex, Consumer<Result> callback )
+    public boolean equals( Object o )
     {
-        commandDispatcher.dispatch( this, commandIndex, callback );
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        ByteArrayReplicatedTransaction that = (ByteArrayReplicatedTransaction) o;
+        return Arrays.equals( txBytes, that.txBytes );
     }
 
-    ChunkedEncoder marshal();
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode( txBytes );
+    }
+
+    @Override
+    public ChunkedEncoder marshal()
+    {
+        return new ByteArrayChunkedEncoder( getTxBytes() );
+    }
 }

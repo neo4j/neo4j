@@ -23,10 +23,7 @@
 package org.neo4j.causalclustering.messaging.marshalling.v2;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.util.ReferenceCountUtil;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,6 +42,7 @@ import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenR
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.TokenType;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
+import org.neo4j.causalclustering.helpers.Buffers;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
@@ -56,49 +54,36 @@ import static org.junit.Assert.assertEquals;
 @RunWith( Parameterized.class )
 public class CoreReplicatedContentMarshallingTest
 {
+    @Rule
+    public final Buffers buffers = new Buffers();
+
     @Parameterized.Parameter()
     public ReplicatedContent replicatedContent;
-    private ByteBuf buffer;
 
     @Parameterized.Parameters( name = "{0}" )
     public static ReplicatedContent[] data()
     {
-        return new ReplicatedContent[]{
-                new DummyRequest( new byte[]{1, 2, 3} ), new ReplicatedTransaction( new byte[]{'a', 3, 'b'} ),
+        return new ReplicatedContent[]{new DummyRequest( new byte[]{1, 2, 3} ), ReplicatedTransaction.from( new byte[16 * 1024] ),
                 new MemberIdSet( new HashSet<MemberId>()
                 {{
                     add( new MemberId( UUID.randomUUID() ) );
                 }} ), new ReplicatedTokenRequest( TokenType.LABEL, "token", new byte[]{'c', 'o', 5} ), new NewLeaderBarrier(),
                 new ReplicatedLockTokenRequest( new MemberId( UUID.randomUUID() ), 2 ), new DistributedOperation(
-                new DistributedOperation( new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5, 6} ),
+                new DistributedOperation( ReplicatedTransaction.from( new byte[]{1, 2, 3, 4, 5, 6} ),
                         new GlobalSession( UUID.randomUUID(), new MemberId( UUID.randomUUID() ) ), new LocalOperationId( 1, 2 ) ),
                 new GlobalSession( UUID.randomUUID(), new MemberId( UUID.randomUUID() ) ), new LocalOperationId( 4, 5 ) )};
-    }
-
-    @Before
-    public void setUpBuffer()
-    {
-        buffer = Unpooled.buffer();
-    }
-
-    @After
-    public void releaseBuffer()
-    {
-        if ( buffer != null )
-        {
-            ReferenceCountUtil.release( buffer );
-        }
     }
 
     @Test
     public void shouldSerializeAndDeserialize() throws Exception
     {
-        ChannelMarshal<ReplicatedContent> coreReplicatedContentSerializer = new CoreReplicatedContentMarshal();
+        ChannelMarshal<ReplicatedContent> coreReplicatedContentMarshal = new CoreReplicatedContentMarshal();
+        ByteBuf buffer = buffers.buffer();
         NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( buffer );
-        coreReplicatedContentSerializer.marshal( replicatedContent, channel );
+        coreReplicatedContentMarshal.marshal( replicatedContent, channel );
 
         NetworkReadableClosableChannelNetty4 readChannel = new NetworkReadableClosableChannelNetty4( buffer );
-        ReplicatedContent result = coreReplicatedContentSerializer.unmarshal( readChannel );
+        ReplicatedContent result = coreReplicatedContentMarshal.unmarshal( readChannel );
 
         assertEquals( replicatedContent, result );
     }

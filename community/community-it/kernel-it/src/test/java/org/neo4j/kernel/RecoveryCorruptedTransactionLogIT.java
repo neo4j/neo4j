@@ -603,7 +603,7 @@ public class RecoveryCorruptedTransactionLogIT
         public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
                 byte[] additionalHeaderData ) throws IOException
         {
-            writeLogEntryHeader( TX_START );
+            writeLogEntryHeader( TX_START, channel );
         }
     }
 

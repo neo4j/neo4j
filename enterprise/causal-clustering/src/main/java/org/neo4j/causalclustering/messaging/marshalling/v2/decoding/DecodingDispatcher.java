@@ -35,12 +35,12 @@ import org.neo4j.logging.LogProvider;
 
 public class DecodingDispatcher extends RequestDecoderDispatcher<ContentType>
 {
-    private final ReplicatedContentChunkDecoder decoder;
+    private final ChunkHandler chunkHandler;
 
-    public DecodingDispatcher( Protocol<ContentType> protocol, LogProvider logProvider )
+    public DecodingDispatcher( Protocol<ContentType> protocol, LogProvider logProvider, ChunkHandler chunkHandler )
     {
         super( protocol, logProvider );
-        decoder = new ReplicatedContentChunkDecoder();
+        this.chunkHandler = chunkHandler;
 
         register( ContentType.ContentType, new ByteToMessageDecoder()
         {
@@ -54,14 +54,14 @@ public class DecodingDispatcher extends RequestDecoderDispatcher<ContentType>
             }
         } );
         register( ContentType.RaftLogEntryTerms, new RaftLogEntryTermsDecoder( protocol ) );
-        register( ContentType.ReplicatedContent, decoder );
+        register( ContentType.ReplicatedContent, new ReplicatedContentChunkDecoder( chunkHandler ) );
         register( ContentType.Message, new RaftMessageDecoder( protocol ) );
     }
 
     @Override
     public void channelInactive( ChannelHandlerContext ctx )
     {
-        decoder.close();
+        chunkHandler.close();
         ctx.fireChannelInactive();
     }
 }

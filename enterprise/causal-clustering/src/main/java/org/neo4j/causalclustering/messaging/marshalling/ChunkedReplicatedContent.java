@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 
@@ -33,30 +34,17 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
 {
-    private static final int DEFAULT_CHUNK_SIZE = 8192;
-    private static final int MINIMUM_CHUNK_SIZE = 8;
+    private static final int METADATA_SIZE = Integer.BYTES + 1;
 
     private final byte contentType;
-    private final ByteBufAwareMarshal byteBufAwareMarshal;
-    private final int chunkSize;
+    private final ChunkedEncoder byteBufAwareMarshal;
     private boolean endOfInput;
     private int progress;
 
-    private ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal, int chunkSize )
+    ChunkedReplicatedContent( byte contentType, ChunkedEncoder byteBufAwareMarshal )
     {
-        if ( chunkSize < MINIMUM_CHUNK_SIZE )
-        {
-            throw new IllegalArgumentException( "Chunk size must be at least " + MINIMUM_CHUNK_SIZE + " bytes" );
-        }
-
         this.byteBufAwareMarshal = byteBufAwareMarshal;
-        this.chunkSize = chunkSize;
         this.contentType = contentType;
-    }
-
-    ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal )
-    {
-        this( contentType, byteBufAwareMarshal, DEFAULT_CHUNK_SIZE );
     }
 
     @Override
@@ -91,30 +79,46 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
         {
             return null;
         }
-        ByteBuf buffer = allocator.buffer( chunkSize );
+        ByteBuf data = byteBufAwareMarshal.encodeChunk( allocator );
+        if ( data == null )
+        {
+            return null;
+        }
+        endOfInput = byteBufAwareMarshal.isEndOfInput();
+        CompositeByteBuf allData = new CompositeByteBuf( allocator, false, 2 );
+        allData.addComponent( true, data );
         try
         {
-            buffer.writerIndex( 1 ); // space for endOfInput marker
-            if ( progress() == 0 )
-            {
-                // extra metadata on first chunk
-                buffer.writeByte( contentType );
-                buffer.writeInt( byteBufAwareMarshal.length() );
-            }
-            if ( !byteBufAwareMarshal.encode( buffer ) )
-            {
-                endOfInput = true;
-            }
-            progress += buffer.readableBytes();
+            boolean isFirstChunk = progress() == 0;
+            allData.addComponent( true, 0, writeMetadata( isFirstChunk, allocator, data ) );
+            progress += allData.readableBytes();
             assert progress > 0; // logic relies on this
-            buffer.setBoolean( 0, endOfInput );
-            return buffer;
+            return allData;
         }
         catch ( Throwable e )
         {
-            buffer.release();
+            allData.release();
             throw e;
         }
+    }
+
+    private int metadataSize( boolean isFirstChunk )
+    {
+        return METADATA_SIZE + (isFirstChunk ? 1 : 0);
+    }
+
+    private ByteBuf writeMetadata( boolean isFirstChunk, ByteBufAllocator allocator, ByteBuf data )
+    {
+        int length = data.writerIndex();
+        int capacity = metadataSize( isFirstChunk );
+        ByteBuf metaData = allocator.buffer( capacity, capacity );
+        metaData.writeBoolean( byteBufAwareMarshal.isEndOfInput() );
+        metaData.writeInt( length );
+        if ( isFirstChunk )
+        {
+            metaData.writeByte( contentType );
+        }
+        return metaData;
     }
 
     @Override

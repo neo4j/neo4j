@@ -17,23 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.WritableChannel;
 
-/**
- * A stream of commands from one or more transactions, that can be serialized to a transaction log or applied to a
- * store.
- */
-public interface CommandStream extends Iterable<StorageCommand>
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
+
+public class StorageCommandSerializer implements Visitor<StorageCommand,IOException>
 {
-    /**
-     * Accepts a visitor into the commands making up this transaction.
-     * @param visitor {@link Visitor} which will see the commands.
-     * @return {@code true} if any {@link StorageCommand} visited returned {@code true}, otherwise {@code false}.
-     * @throws IOException if there were any problem reading the commands.
-     */
-    boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException;
+    private final WritableChannel channel;
+
+    public StorageCommandSerializer( WritableChannel channel )
+    {
+        this.channel = channel;
+    }
+
+    @Override
+    public boolean visit( StorageCommand command ) throws IOException
+    {
+        LogEntryWriter.writeLogEntryHeader( COMMAND, channel );
+        command.serialize( channel );
+        return false;
+    }
 }

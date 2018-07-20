@@ -66,7 +66,7 @@ public class ClusterIdAwareMessageComposerTest
         {
             RaftMessageComposer raftMessageComposer = new RaftMessageComposer( Clock.systemUTC() );
 
-            ReplicatedTransaction replicatedTransaction = new ReplicatedTransaction( new byte[0] );
+            ReplicatedTransaction replicatedTransaction = ReplicatedTransaction.from( new byte[0] );
             raftMessageComposer.decode( null, replicatedTransaction, null );
             List<Object> out = new ArrayList<>();
             raftMessageComposer.decode( null, messageCreator( ( a, b ) -> Optional.of( dummyRequest() ) ), out );

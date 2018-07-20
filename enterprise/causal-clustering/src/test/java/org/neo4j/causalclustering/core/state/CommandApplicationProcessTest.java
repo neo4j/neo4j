@@ -92,7 +92,7 @@ public class CommandApplicationProcessTest
             NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ),
             sessionTracker, coreState, inFlightCache, monitors );
 
-    private ReplicatedTransaction nullTx = new ReplicatedTransaction( new byte[0] );
+    private ReplicatedTransaction nullTx = ReplicatedTransaction.from( new byte[0] );
 
     private final CommandDispatcher commandDispatcher = mock( CommandDispatcher.class );
 
@@ -106,7 +106,7 @@ public class CommandApplicationProcessTest
     {
         byte[] dataArray = new byte[30];
         Arrays.fill( dataArray, dataValue );
-        return new ReplicatedTransaction( dataArray );
+        return ReplicatedTransaction.from( dataArray );
     }
 
     private int sequenceNumber;

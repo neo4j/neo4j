@@ -23,49 +23,37 @@
 package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
-public class ByteArrayByteBufAwareMarshalTest
+public class ByteArrayChunkedEncoderTest
 {
     @Test
     public void shouldWriteToBufferInChunks() throws IOException
     {
         byte[] data = new byte[]{1, 2, 3, 4, 5, 6};
         byte[] readData = new byte[6];
-        ByteArrayByteBufAwareMarshal byteArraySerializer = new ByteArrayByteBufAwareMarshal( data );
+        ByteArrayChunkedEncoder byteArraySerializer = new ByteArrayChunkedEncoder( data, 5 );
 
-        ByteBuf buffer = Unpooled.buffer( 5 );
-        assertTrue( byteArraySerializer.encode( buffer ) );
+        UnpooledByteBufAllocator allocator = UnpooledByteBufAllocator.DEFAULT;
+        ByteBuf buffer = byteArraySerializer.encodeChunk( allocator );
         assertEquals( 6, buffer.readInt() );
         assertEquals( 1, buffer.readableBytes() );
         buffer.readBytes( readData, 0, 1 );
         buffer.release();
 
-        buffer = Unpooled.buffer( 6 );
-        assertFalse( byteArraySerializer.encode( buffer ) );
+        buffer = byteArraySerializer.encodeChunk( allocator );
         buffer.readBytes( readData, 1, buffer.readableBytes() );
         assertArrayEquals( data, readData );
         assertEquals( 0, buffer.readableBytes() );
         buffer.release();
-    }
 
-    @Test
-    public void shouldHaveSameLengthAsBytesEncoded() throws IOException
-    {
-        byte[] data = new byte[10];
-        ByteArrayByteBufAwareMarshal byteArraySerializer = new ByteArrayByteBufAwareMarshal( data );
-
-        ByteBuf buffer = Unpooled.buffer( 100 );
-        byteArraySerializer.encode( buffer );
-
-        assertEquals( buffer.readableBytes(), byteArraySerializer.length() );
+        assertNull( byteArraySerializer.encodeChunk( allocator ) );
     }
 }

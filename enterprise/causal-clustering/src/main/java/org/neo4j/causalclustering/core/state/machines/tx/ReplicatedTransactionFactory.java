@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.neo4j.io.ByteUnit.gibiBytes;
 
@@ -82,23 +83,38 @@ public class ReplicatedTransactionFactory
         byte[] txBytes = Arrays.copyOf( transactionBuffer.array(), transactionBuffer.writerIndex() );
         transactionBuffer.release();
 
-        return new ReplicatedTransaction( txBytes );
+        return ReplicatedTransaction.from( txBytes );
     }
 
     public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction transactionCommand, byte[] extraHeader )
     {
-        ByteBuf txBuffer = Unpooled.wrappedBuffer( transactionCommand.getTxBytes() );
-        NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
-
-        try
+        if ( transactionCommand instanceof TransactionRepresentationReplicatedTransaction )
         {
-            return read( channel, extraHeader );
+            return ((TransactionRepresentationReplicatedTransaction) transactionCommand).tx();
         }
-        catch ( IOException e )
+        else
         {
-            // TODO: This should not happen. All operations are in memory, no IOException should be thrown
-            // Easier said than done though, we use the LogEntry handling routines which throw IOException
-            throw new RuntimeException( e );
+            ByteBuf txBuffer;
+            if ( transactionCommand instanceof ByteBufReplicatedTransaction )
+            {
+                txBuffer = ((ByteBufReplicatedTransaction) transactionCommand).content();
+            }
+            else
+            {
+                txBuffer = Unpooled.wrappedBuffer( ((ByteArrayReplicatedTransaction) transactionCommand).getTxBytes() );
+            }
+            NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
+
+            try
+            {
+                return read( channel, extraHeader );
+            }
+            catch ( IOException e )
+            {
+                // TODO: This should not happen. All operations are in memory, no IOException should be thrown
+                // Easier said than done though, we use the LogEntry handling routines which throw IOException
+                throw new RuntimeException( e );
+            }
         }
     }
 

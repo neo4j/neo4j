@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory.createImmutableReplicatedTransaction;
 import static org.neo4j.kernel.api.exceptions.Status.Cluster.ReplicationFailure;
 
 public class ReplicatedTransactionCommitProcess implements TransactionCommitProcess
@@ -50,7 +49,7 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
                         final CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        ReplicatedTransaction transaction = createImmutableReplicatedTransaction( tx.transactionRepresentation() );
+        TransactionRepresentationReplicatedTransaction transaction = ReplicatedTransaction.from( tx.transactionRepresentation() );
         Future<Object> futureTxId;
         try
         {

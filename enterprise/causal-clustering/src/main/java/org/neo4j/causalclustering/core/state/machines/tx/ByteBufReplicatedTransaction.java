@@ -20,25 +20,39 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.messaging.marshalling;
+package org.neo4j.causalclustering.core.state.machines.tx;
 
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.DefaultByteBufHolder;
+import io.netty.util.ReferenceCountUtil;
 
-/**
- * Implementations of this class perform marshalling (encoding/decoding) of instances of {@link STATE} into/from a
- * {@link ByteBuffer}.
- * @param <STATE> The class of objects supported by this marshal
- */
-public interface ByteBufferMarshal<STATE>
+import java.util.Optional;
+
+import org.neo4j.causalclustering.messaging.marshalling.ByteBufMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
+
+public class ByteBufReplicatedTransaction extends DefaultByteBufHolder implements ReplicatedTransaction, AutoCloseable
 {
-    /**
-     * Marshals the target into buffer. The buffer is expected to be large enough to hold the result.
-     */
-    void marshal( STATE state, ByteBuffer buffer );
+    @Override
+    public Optional<Long> size()
+    {
+        return Optional.of( (long) content().writerIndex() );
+    }
 
-    /**
-     * Unmarshals an instance of {@link STATE} from source. If the source does not have enough bytes to fully read an
-     * instance, null must be returned.
-     */
-    STATE unmarshal( ByteBuffer source );
+    ByteBufReplicatedTransaction( ByteBuf txBytes )
+    {
+        super( txBytes );
+    }
+
+    @Override
+    public ChunkedEncoder marshal()
+    {
+        return new ByteBufMarshal( content().slice() );
+    }
+
+    @Override
+    public void close()
+    {
+        ReferenceCountUtil.release( this );
+    }
 }

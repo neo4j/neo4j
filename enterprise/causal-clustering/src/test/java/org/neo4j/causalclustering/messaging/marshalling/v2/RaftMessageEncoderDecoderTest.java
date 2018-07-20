@@ -25,6 +25,7 @@ package org.neo4j.causalclustering.messaging.marshalling.v2;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,9 +70,9 @@ public class RaftMessageEncoderDecoderTest
         return new RaftMessages.RaftMessage[]{
                                 new RaftMessages.Heartbeat( MEMBER_ID, 1, 2, 3 ),
                                 new RaftMessages.HeartbeatResponse( MEMBER_ID ),
-                                new RaftMessages.NewEntry.Request( MEMBER_ID, new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5,6, 7,8} ) ),
+                new RaftMessages.NewEntry.Request( MEMBER_ID, ReplicatedTransaction.from( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) ),
                                 new RaftMessages.NewEntry.Request( MEMBER_ID, new DistributedOperation(
-                                        new DistributedOperation( new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5} ),
+                                        new DistributedOperation( ReplicatedTransaction.from( new byte[]{1, 2, 3, 4, 5} ),
                                                 new GlobalSession( UUID.randomUUID(), MEMBER_ID ), new LocalOperationId( 1, 2 ) ),
                                         new GlobalSession( UUID.randomUUID(), MEMBER_ID ), new LocalOperationId( 3, 4 ) ) ),
                                 new RaftMessages.AppendEntries.Request( MEMBER_ID, 1, 2, 3, new RaftLogEntry[]{
@@ -132,6 +133,7 @@ public class RaftMessageEncoderDecoderTest
         assertEquals( clusterId, message.clusterId() );
         assertEquals( raftMessage, message.message() );
         assertNull( inbound.readInbound() );
+        ReferenceCountUtil.release( handler.msg );
     }
 
     class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<RaftMessages.RaftMessage>>

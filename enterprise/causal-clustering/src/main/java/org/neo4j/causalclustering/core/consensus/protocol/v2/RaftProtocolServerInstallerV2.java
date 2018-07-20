@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentTypeProtocol;
+import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ChunkHandler;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ContentTypeDispatcher;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.DecodingDispatcher;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.RaftMessageComposer;
@@ -76,11 +77,13 @@ public class RaftProtocolServerInstallerV2 implements ProtocolInstaller<Orientat
     {
 
         ContentTypeProtocol contentTypeProtocol = new ContentTypeProtocol();
-        DecodingDispatcher decodingDispatcher = new DecodingDispatcher( contentTypeProtocol, logProvider );
+        ChunkHandler chunkHandler = new ChunkHandler();
+        DecodingDispatcher decodingDispatcher = new DecodingDispatcher( contentTypeProtocol, logProvider, chunkHandler );
         pipelineBuilderFactory
                 .server( channel, log )
                 .modify( modifiers )
                 .addFraming()
+                .onClose( chunkHandler::close )
                 .add( "raft_content_type_dispatcher", new ContentTypeDispatcher( contentTypeProtocol ) )
                 .add( "raft_component_decoder", decodingDispatcher )
                 .add( "raft_content_decoder", new ReplicatedContentDecoder( contentTypeProtocol ) )

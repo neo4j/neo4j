@@ -26,10 +26,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.messaging.marshalling.ByteArrayByteBufAwareMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.ByteBufAwareMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
-import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedTransactionSerializer
 {
@@ -37,40 +34,23 @@ public class ReplicatedTransactionSerializer
     {
     }
 
-    public static void marshal( ReplicatedTransaction transaction, WritableChannel channel ) throws IOException
+    public static ReplicatedTransaction decode( ByteBuf byteBuf )
     {
-        byte[] txBytes = transaction.getTxBytes();
-        channel.putInt( txBytes.length );
-        channel.put( txBytes, txBytes.length );
+        int length = byteBuf.readInt();
+        if ( length == -1 )
+        {
+            length = byteBuf.readableBytes();
+        }
+        byte[] bytes = new byte[length];
+        byteBuf.readBytes( bytes );
+        return ReplicatedTransaction.from( bytes );
     }
 
     public static ReplicatedTransaction unmarshal( ReadableChannel channel ) throws IOException
     {
         int txBytesLength = channel.getInt();
-        byte[] txBytes = new  byte[txBytesLength];
+        byte[] txBytes = new byte[txBytesLength];
         channel.get( txBytes, txBytesLength );
-
-        return new ReplicatedTransaction( txBytes );
-    }
-
-    public static void marshal( ReplicatedTransaction transaction, ByteBuf buffer )
-    {
-        byte[] txBytes = transaction.getTxBytes();
-        buffer.writeInt( txBytes.length );
-        buffer.writeBytes( txBytes );
-    }
-
-    public static ReplicatedTransaction unmarshal( ByteBuf buffer )
-    {
-        int txBytesLength = buffer.readInt();
-        byte[] txBytes = new  byte[txBytesLength];
-        buffer.readBytes( txBytes );
-
-        return new ReplicatedTransaction( txBytes );
-    }
-
-    public static ByteBufAwareMarshal serializer( ReplicatedTransaction replicatedTransaction )
-    {
-        return new ByteArrayByteBufAwareMarshal( replicatedTransaction.getTxBytes() );
+        return ReplicatedTransaction.from( txBytes );
     }
 }

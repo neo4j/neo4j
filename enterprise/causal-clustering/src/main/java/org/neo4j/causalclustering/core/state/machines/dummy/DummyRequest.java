@@ -31,8 +31,8 @@ import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.ByteArrayByteBufAwareMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.ByteBufAwareMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
+import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -62,15 +62,15 @@ public class DummyRequest implements CoreReplicatedContent
         commandDispatcher.dispatch( this, commandIndex, callback );
     }
 
-    public ByteBufAwareMarshal serializer()
+    public ChunkedEncoder serializer()
     {
         if ( data != null )
         {
-            return new ByteArrayByteBufAwareMarshal( data );
+            return new ByteArrayChunkedEncoder( data );
         }
         else
         {
-            return ByteBufAwareMarshal.simple( channel -> channel.putInt( 0 ) );
+            return ChunkedEncoder.single( channel -> channel.putInt( 0 ) );
         }
     }
 

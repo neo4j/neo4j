@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -165,5 +166,11 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
             builder.append( '\n' ).append( command );
         }
         return builder.toString();
+    }
+
+    @Override
+    public Iterator<StorageCommand> iterator()
+    {
+        return commands.iterator();
     }
 }

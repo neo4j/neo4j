@@ -23,12 +23,14 @@
 package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+
+import org.neo4j.causalclustering.helpers.Buffers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -36,12 +38,15 @@ import static org.junit.Assert.assertNull;
 
 public class StringMarshalTest
 {
+    @Rule
+    public final Buffers buffers = new Buffers();
+
     @Test
     public void shouldSerializeAndDeserializeString()
     {
         // given
         final String TEST_STRING = "ABC123_?";
-        final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();
+        final ByteBuf buffer = buffers.buffer();
 
         // when
         StringMarshal.marshal( buffer, TEST_STRING );
@@ -57,7 +62,7 @@ public class StringMarshalTest
     {
         // given
         final String TEST_STRING = "";
-        final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();
+        final ByteBuf buffer = buffers.buffer();
 
         // when
         StringMarshal.marshal( buffer, TEST_STRING );
@@ -72,7 +77,7 @@ public class StringMarshalTest
     public void shouldSerializeAndDeserializeNull()
     {
         // given
-        final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();
+        final ByteBuf buffer = buffers.buffer();
 
         // when
         StringMarshal.marshal( buffer, null );

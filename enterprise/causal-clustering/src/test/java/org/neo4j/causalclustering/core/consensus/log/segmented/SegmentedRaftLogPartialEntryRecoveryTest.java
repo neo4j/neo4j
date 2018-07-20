@@ -111,7 +111,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         raftLog.append( new RaftLogEntry( 5, new ReplicatedTokenRequest( TokenType.LABEL,
                 "labelToken", new byte[]{ 1, 2, 3 } ) ) );
         raftLog.append( new RaftLogEntry( 5,
-                new ReplicatedTransaction( new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9 , 10 } ) ) );
+                ReplicatedTransaction.from( new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9 , 10 } ) ) );
 
         raftLog.stop();
 

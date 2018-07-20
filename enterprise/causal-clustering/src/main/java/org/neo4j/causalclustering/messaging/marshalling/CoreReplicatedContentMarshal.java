@@ -42,11 +42,13 @@ import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionSerializer;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
+import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ChunkHandler;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.util.Collections.singleton;
-import static org.neo4j.causalclustering.messaging.marshalling.ByteBufAwareMarshal.simple;
+import static org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder.single;
 
 public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedContent>
 {
@@ -63,31 +65,34 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
     {
         if ( content instanceof ReplicatedTransaction )
         {
-            return singleton( new ChunkedReplicatedContent( TX_CONTENT_TYPE, ReplicatedTransactionSerializer.serializer( (ReplicatedTransaction) content ) ) );
+            return singleton( new ChunkedReplicatedContent( TX_CONTENT_TYPE, ((ReplicatedTransaction) content).marshal() ) );
+
         }
         else if ( content instanceof MemberIdSet )
         {
             return singleton( new ChunkedReplicatedContent( RAFT_MEMBER_SET_TYPE,
-                    simple( channel -> MemberIdSetSerializer.marshal( (MemberIdSet) content, channel ) ) ) );
+                    single( channel -> MemberIdSetSerializer.marshal( (MemberIdSet) content, channel ) ) ) );
         }
         else if ( content instanceof ReplicatedIdAllocationRequest )
         {
             return singleton( new ChunkedReplicatedContent( ID_RANGE_REQUEST_TYPE,
-                    simple( channel -> ReplicatedIdAllocationRequestSerializer.marshal( (ReplicatedIdAllocationRequest) content, channel ) ) ) );
+                    single( channel -> ReplicatedIdAllocationRequestSerializer.marshal( (ReplicatedIdAllocationRequest) content, channel ) ) ) );
         }
         else if ( content instanceof ReplicatedTokenRequest )
         {
             return singleton( new ChunkedReplicatedContent( TOKEN_REQUEST_TYPE,
-                    simple( channel -> ReplicatedTokenRequestSerializer.marshal( (ReplicatedTokenRequest) content, channel ) ) ) );
+                    single( channel -> ReplicatedTokenRequestSerializer.marshal( (ReplicatedTokenRequest) content, channel ) ) ) );
         }
         else if ( content instanceof NewLeaderBarrier )
         {
-            return singleton( new ChunkedReplicatedContent( NEW_LEADER_BARRIER_TYPE, simple( channel -> {} ) ) );
+            return singleton( new ChunkedReplicatedContent( NEW_LEADER_BARRIER_TYPE, single( channel ->
+            {
+            } ) ) );
         }
         else if ( content instanceof ReplicatedLockTokenRequest )
         {
             return singleton( new ChunkedReplicatedContent( LOCK_TOKEN_REQUEST,
-                    simple( channel -> ReplicatedLockTokenSerializer.marshal( (ReplicatedLockTokenRequest) content, channel ) ) ) );
+                    single( channel -> ReplicatedLockTokenSerializer.marshal( (ReplicatedLockTokenRequest) content, channel ) ) ) );
         }
         else if ( content instanceof DistributedOperation )
         {
@@ -102,6 +107,33 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
         else
         {
             throw new IllegalArgumentException( "Unknown content type " + content.getClass() );
+        }
+    }
+
+    public ContentBuilder<ReplicatedContent> decode( ChunkHandler.ComposedChunks composedChunks ) throws IOException, EndOfStreamException
+    {
+        switch ( composedChunks.contentType() )
+        {
+        case TX_CONTENT_TYPE:
+        {
+            try
+            {
+                return ContentBuilder.finished( ReplicatedTransactionSerializer.decode( composedChunks.content() ) );
+            }
+            finally
+            {
+                composedChunks.release();
+            }
+        }
+        default:
+            try
+            {
+                return read( composedChunks.contentType(), new NetworkReadableClosableChannelNetty4( composedChunks.content() ) );
+            }
+            finally
+            {
+                composedChunks.release();
+            }
         }
     }
 
