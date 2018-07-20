@@ -29,6 +29,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import org.neo4j.causalclustering.core.state.machines.tx.TransactionRepresentationReplicatedTransaction;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
@@ -146,7 +147,17 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         @Override
         public Void handle( RaftMessages.NewEntry.Request newEntryRequest ) throws Exception
         {
-            marshal.marshal( newEntryRequest.content(), channel );
+            ReplicatedContent content = newEntryRequest.content();
+            ByteBuf buffer = channel.buffer();
+            int contentStartIndex = buffer.writerIndex() + 1;
+            marshal.marshal( content, channel );
+            if ( content instanceof TransactionRepresentationReplicatedTransaction )
+            {
+                // TransactionRepresentationReplicatedTransaction does not support marshal because it has unknown size
+                int contentEndIndex = buffer.writerIndex();
+                int size = contentEndIndex - contentStartIndex - Integer.BYTES; // the integer is the length integer which should be excluded
+                buffer.setInt( contentStartIndex, size );
+            }
 
             return null;
         }
