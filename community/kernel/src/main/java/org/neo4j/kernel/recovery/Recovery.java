@@ -20,7 +20,9 @@
 package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -30,7 +32,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
@@ -116,12 +117,17 @@ public class Recovery extends LifecycleAdapter
                 recoveryToPosition = transactionsToRecover.position();
             }
         }
+        catch ( Error | ClosedByInterruptException e )
+        {
+            // We do not want to truncate logs based on these exceptions. Since users can influence them with config changes
+            // the users are able to workaround this if truncations is really needed.
+            throw e;
+        }
         catch ( Throwable t )
         {
             if ( failOnCorruptedLogFiles )
             {
-                throwIfUnchecked( t );
-                throw new RuntimeException( t );
+                throwUnableToCleanRecover( t );
             }
             if ( lastTransaction != null )
             {
@@ -140,6 +146,15 @@ public class Recovery extends LifecycleAdapter
         recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition );
         startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
         monitor.recoveryCompleted( numberOfRecoveredTransactions );
+    }
+
+    static void throwUnableToCleanRecover( Throwable t )
+    {
+        throw new RuntimeException(
+                "Error reading transaction logs, recovery not possible. To force the database to start anyway, you can specify '" +
+                        GraphDatabaseSettings.fail_on_corrupted_log_files.name() + "=false'. This will try to recover as much " +
+                        "as possible and then truncate the corrupt part of the transaction log. Doing this means your database " +
+                        "integrity might be compromised, please consider restoring from a consistent backup instead.", t );
     }
 
     private void initProgressReporter( RecoveryStartInformation recoveryStartInformation,

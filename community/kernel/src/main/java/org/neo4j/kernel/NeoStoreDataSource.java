@@ -160,7 +160,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
@@ -224,8 +223,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
-    private final boolean failOnCorruptedLogFiles = FeatureToggles.flag( NeoStoreDataSource.class,
-            "failOnCorruptedLogFiles", false );
 
     private final Monitors monitors;
     private final Tracers tracers;
@@ -279,6 +276,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private StorageEngine storageEngine;
     private NeoStoreTransactionLogModule transactionLogModule;
     private NeoStoreKernelModule kernelModule;
+
+    private final boolean failOnCorruptedLogFiles;
 
     public NeoStoreDataSource( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory,
             LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
@@ -363,6 +362,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.pageCache = pageCache;
         this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
         this.collectionsFactorySupplier = collectionsFactorySupplier;
+        this.failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
     }
 
     @Override
