@@ -22,12 +22,10 @@
  */
 package org.neo4j.causalclustering.upstream.strategies;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -61,27 +59,5 @@ public class ConnectRandomlyWithinServerGroupStrategyTest
 
         // then
         assertThat( result, contains( isIn( myGroupMemberIds ) ) );
-    }
-
-    @Test
-    public void filtersSelf()
-    {
-        // given
-        String groupName = "groupName";
-        Config config = Config.defaults();
-        config.augment( CausalClusteringSettings.server_groups, groupName );
-
-        // and
-        ConnectRandomlyWithinServerGroupStrategy connectRandomlyWithinServerGroupStrategy = new ConnectRandomlyWithinServerGroupStrategy();
-        MemberId myself = new MemberId( new UUID( 123, 456 ) );
-        connectRandomlyWithinServerGroupStrategy.inject( new TopologyServiceThatPrioritisesItself( myself, groupName ), config, NullLogProvider.getInstance(),
-                myself );
-
-        // when
-        Optional<MemberId> result = connectRandomlyWithinServerGroupStrategy.upstreamDatabase();
-
-        // then
-        Assert.assertTrue( result.isPresent() );
-        Assert.assertNotEquals( myself, result.get() );
     }
 }

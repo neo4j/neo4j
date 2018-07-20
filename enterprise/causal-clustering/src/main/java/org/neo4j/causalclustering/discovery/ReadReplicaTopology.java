@@ -59,6 +59,15 @@ public class ReadReplicaTopology implements Topology<ReadReplicaInfo>
         return String.format( "{readReplicas=%s}", readReplicaMembers );
     }
 
+    public Optional<MemberId> randomReadReplicaMemberId()
+    {
+        if ( readReplicaMembers.isEmpty() )
+        {
+            return Optional.empty();
+        }
+        return readReplicaMembers.keySet().stream().skip( ThreadLocalRandom.current().nextInt( readReplicaMembers.size() ) ).findFirst();
+    }
+
     @Override
     public ReadReplicaTopology filterTopologyByDb( String dbName )
     {

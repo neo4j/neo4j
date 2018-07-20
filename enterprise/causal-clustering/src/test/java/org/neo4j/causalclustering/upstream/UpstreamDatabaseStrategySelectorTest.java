@@ -41,7 +41,8 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
@@ -103,7 +104,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( topologyService.localCoreServers() ).thenReturn(
                 new CoreTopology( new ClusterId( UUID.randomUUID() ), false, mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
-        ConnectToRandomCoreServerStrategy shouldNotUse = mock( ConnectToRandomCoreServerStrategy.class );
+        ConnectToRandomCoreServerStrategy shouldNotUse = new ConnectToRandomCoreServerStrategy();
 
         UpstreamDatabaseSelectionStrategy mockStrategy = mock( UpstreamDatabaseSelectionStrategy.class );
         when( mockStrategy.upstreamDatabase() ).thenReturn( Optional.of( new MemberId( UUID.randomUUID() ) ) );
@@ -115,7 +116,7 @@ public class UpstreamDatabaseStrategySelectorTest
         selector.bestUpstreamDatabase();
 
         // then
-        verifyZeroInteractions( shouldNotUse );
+        verify( mockStrategy, times( 2 ) ).upstreamDatabase();
     }
 
     @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
