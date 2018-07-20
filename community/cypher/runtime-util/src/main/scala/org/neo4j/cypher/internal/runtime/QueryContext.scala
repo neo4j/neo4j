@@ -215,6 +215,10 @@ trait QueryContext extends TokenContext with DbAccess {
 
   override def relationshipById(id: Long): RelationshipValue = relationshipOps.getById(id)
 
+  override def propertyKey(name: String): Int = transactionalContext.tokenRead.propertyKey(name)
+
+  override def relationshipType(name: String): Int = transactionalContext.tokenRead.relationshipType(name)
+
   override def nodeProperty(node: Long, property: Int): Value = nodeOps.getProperty(node, property)
 
   override def nodePropertyIds(node: Long): Array[Int] = nodeOps.propertyKeyIds(node)

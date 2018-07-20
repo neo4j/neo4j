@@ -383,12 +383,12 @@ public final class CypherFunctions
     {
         if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), dbAccess.getPropertyKeyId( key ) ) ? TRUE : FALSE;
+            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( key ) ) ? TRUE : FALSE;
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(),
-                    dbAccess.getPropertyKeyId( key ) ) ? TRUE : FALSE;
+                    dbAccess.propertyKey( key ) ) ? TRUE : FALSE;
         }
         else if ( container instanceof MapValue )
         {
@@ -404,12 +404,12 @@ public final class CypherFunctions
     {
         if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), dbAccess.getPropertyKeyId( asString( index ) ) );
+            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( asString( index ) ) );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
-                    dbAccess.getPropertyKeyId( asString( index ) ) );
+                    dbAccess.propertyKey( asString( index ) ) );
         }
         if ( container instanceof MapValue )
         {
@@ -959,7 +959,7 @@ public final class CypherFunctions
         MapValueBuilder builder = new MapValueBuilder();
         for ( String key : POINT_KEYS )
         {
-            Value value = access.nodeProperty( nodeValue.id(), access.getPropertyKeyId( key ) );
+            Value value = access.nodeProperty( nodeValue.id(), access.propertyKey( key ) );
             if ( value == NO_VALUE )
             {
                 continue;
@@ -975,7 +975,7 @@ public final class CypherFunctions
         MapValueBuilder builder = new MapValueBuilder();
         for ( String key : POINT_KEYS )
         {
-            Value value = access.relationshipProperty( relationshipValue.id(), access.getPropertyKeyId( key ) );
+            Value value = access.relationshipProperty( relationshipValue.id(), access.propertyKey( key ) );
             if ( value == NO_VALUE )
             {
                 continue;

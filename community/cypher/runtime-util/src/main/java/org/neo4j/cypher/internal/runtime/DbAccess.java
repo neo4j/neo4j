@@ -38,7 +38,9 @@ public interface DbAccess
 
     int[] nodePropertyIds( long node );
 
-    int getPropertyKeyId( String name );
+    int propertyKey( String name );
+
+    int relationshipType( String name );
 
     boolean nodeHasProperty( long node, int property );
 

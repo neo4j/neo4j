@@ -482,7 +482,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             IntermediateExpression(
               block(
                 condition(equal(loadField(f), constant(-1)))(
-                  setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getRelTypeId"), constant(t)))),
+                  setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("relationshipType"), constant(t)))),
                 invokeStatic(method[Values, IntValue, Int]("intValue"),
                            invoke(DB_ACCESS, method[DbAccess, Int, Long, Int](methodName),
                                   getLongAt(offset), loadField(f)))), nullable = false, Seq(f)))

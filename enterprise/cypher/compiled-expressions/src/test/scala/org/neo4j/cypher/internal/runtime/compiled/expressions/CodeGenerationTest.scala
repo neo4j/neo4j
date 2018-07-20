@@ -264,7 +264,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(function("exists", property(parameter("a"), "prop")))
 
     val node = nodeValue(1, EMPTY_TEXT_ARRAY, map(Array("prop"), Array(stringValue("hello"))))
-    when(db.getPropertyKeyId("prop")).thenReturn(42)
+    when(db.propertyKey("prop")).thenReturn(42)
     when(db.nodeHasProperty(1, 42)).thenReturn(true)
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
@@ -278,7 +278,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                 nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
                                 nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
                                 stringValue("R"), map(Array("prop"), Array(stringValue("hello"))))
-    when(db.getPropertyKeyId("prop")).thenReturn(42)
+    when(db.propertyKey("prop")).thenReturn(42)
     when(db.relationshipHasProperty(43, 42)).thenReturn(true)
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
@@ -509,9 +509,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val pointMap = map(Array("x", "y", "crs"),
                        Array(doubleValue(1.0), doubleValue(2.0), stringValue("cartesian")))
     val node = nodeValue(1, EMPTY_TEXT_ARRAY, pointMap)
-    when(db.getPropertyKeyId("x")).thenReturn(1)
-    when(db.getPropertyKeyId("y")).thenReturn(2)
-    when(db.getPropertyKeyId("crs")).thenReturn(3)
+    when(db.propertyKey("x")).thenReturn(1)
+    when(db.propertyKey("y")).thenReturn(2)
+    when(db.propertyKey("crs")).thenReturn(3)
 
     when(db.nodeProperty(any[Long], any[Int])).thenAnswer(new Answer[AnyValue] {
       override def answer(in: InvocationOnMock): AnyValue = in.getArgument[Int](1) match {
@@ -535,9 +535,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                       nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
                       nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
                       stringValue("R"),pointMap)
-    when(db.getPropertyKeyId("x")).thenReturn(1)
-    when(db.getPropertyKeyId("y")).thenReturn(2)
-    when(db.getPropertyKeyId("crs")).thenReturn(3)
+    when(db.propertyKey("x")).thenReturn(1)
+    when(db.propertyKey("y")).thenReturn(2)
+    when(db.propertyKey("crs")).thenReturn(3)
 
     when(db.relationshipProperty(any[Long], any[Int])).thenAnswer(new Answer[AnyValue] {
       override def answer(in: InvocationOnMock): AnyValue = in.getArgument[Int](1) match {
@@ -1229,7 +1229,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("containerIndex on node") {
     val node =  nodeValue(1, EMPTY_TEXT_ARRAY, map(Array("prop"), Array(stringValue("hello"))))
-    when(db.getPropertyKeyId("prop")).thenReturn(42)
+    when(db.propertyKey("prop")).thenReturn(42)
     when(db.nodeProperty(1, 42)).thenReturn(stringValue("hello"))
     val compiled = compile(containerIndex(parameter("a"), literalString("prop")))
 
@@ -1242,7 +1242,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                 nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
                                 nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
                                 stringValue("R"), map(Array("prop"), Array(stringValue("hello"))))
-    when(db.getPropertyKeyId("prop")).thenReturn(42)
+    when(db.propertyKey("prop")).thenReturn(42)
     when(db.relationshipProperty(43, 42)).thenReturn(stringValue("hello"))
     val compiled = compile(containerIndex(parameter("a"), literalString("prop")))
 
