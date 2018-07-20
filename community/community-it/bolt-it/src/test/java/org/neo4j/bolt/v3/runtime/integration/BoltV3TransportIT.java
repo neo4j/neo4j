@@ -157,7 +157,24 @@ public class BoltV3TransportIT
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ) ) ) ) );
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), hasKey( "bookmark" ) ) ) ) );
+    }
+
+    @Test
+    public void shouldRespondWithMetadataToDiscardAll() throws Throwable
+    {
+        // When
+        negotiateBoltV3();
+        connection.send( util.chunk(
+                new RunMessage( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
+                DiscardAllMessage.INSTANCE ) );
+
+        // Then
+        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
+        assertThat( connection, util.eventuallyReceives(
+                msgSuccess( allOf( entryFieldsMatcher, hasKey( "tx_id" ), hasKey( "result_available_after" ) ) ),
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), hasKey( "bookmark" ) ) ) ) );
     }
 
     @Test
@@ -180,7 +197,7 @@ public class BoltV3TransportIT
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ) ) ),
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), not( hasKey( "bookmark" ) ) ) ),
                 msgSuccess( allOf( hasKey( "bookmark" ) ) ) ) );
     }
 
@@ -204,25 +221,8 @@ public class BoltV3TransportIT
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ) ) ),
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), not( hasKey( "bookmark" ) ) ) ),
                 msgSuccess() ) );
-    }
-
-    @Test
-    public void shouldRespondWithMetadataToDiscardAll() throws Throwable
-    {
-        // When
-        negotiateBoltV3();
-        connection.send( util.chunk(
-                        new RunMessage( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
-                        DiscardAllMessage.INSTANCE ) );
-
-        // Then
-        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
-        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
-        assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "tx_id" ), hasKey( "result_available_after" ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test

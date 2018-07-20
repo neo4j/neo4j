@@ -117,14 +117,14 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
+    public Bookmark streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
     {
         before();
         try
         {
             ensureNoPendingTerminationNotice();
 
-            state.streamResult( ctx, resultConsumer );
+            return state.streamResult( ctx, spi, resultConsumer );
         }
         finally
         {
@@ -323,7 +323,8 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    void streamResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
+                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ThrowingConsumer<BoltResult,Exception> resultConsumer )
+                            throws Exception
                     {
                         assert ctx.currentResult != null;
 
@@ -331,6 +332,7 @@ public class TransactionStateMachine implements StatementProcessor
                         try
                         {
                             success = consumeResult( ctx, resultConsumer );
+                            return newestBookmark( spi );
                         }
                         finally
                         {
@@ -362,7 +364,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                     @Override
                     State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, Bookmark bookmark,
-                            Duration txTimeout, Map<String,Object> txMetadata )
+                            Duration ignored1, Map<String,Object> ignored2 )
                             throws KernelException
                     {
                         if ( statement.isEmpty() )
@@ -389,11 +391,12 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    void streamResult( MutableTransactionState ctx,
-                            ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
+                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ThrowingConsumer<BoltResult,Exception> resultConsumer )
+                            throws Exception
                     {
                         assert ctx.currentResult != null;
                         consumeResult( ctx, resultConsumer );
+                        return null; // Explict tx shall not get a bookmark in PULL_ALL or DISCARD_ALL
                     }
 
                     @Override
@@ -421,7 +424,8 @@ public class TransactionStateMachine implements StatementProcessor
                 Duration txTimeout, Map<String,Object> txMetadata )
                 throws KernelException;
 
-        abstract void streamResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception;
+        abstract Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ThrowingConsumer<BoltResult,Exception> resultConsumer )
+                throws Exception;
 
         abstract State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
 

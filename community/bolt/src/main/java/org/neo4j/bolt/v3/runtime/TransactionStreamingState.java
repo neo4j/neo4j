@@ -21,25 +21,19 @@ package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 
-/**
- * When STREAMING, additionally attach bookmark to PULL_ALL, DISCARD_ALL result
- */
-public class StreamingState extends AbstractStreamingState
+public class TransactionStreamingState extends AbstractStreamingState
 {
     @Override
     public String name()
     {
-        return "STREAMING";
+        return "TX_STREAMING";
     }
 
-    @Override
     protected BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws Throwable
     {
-        Bookmark bookmark = context.connectionState().getStatementProcessor().streamResult(
+        context.connectionState().getStatementProcessor().streamResult(
                 recordStream -> context.connectionState().getResponseHandler().onRecords( recordStream, pull ) );
-        bookmark.attachTo( context.connectionState() );
         return readyState;
     }
 }

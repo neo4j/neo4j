@@ -42,7 +42,7 @@ class RunMessageTest
     void shouldParseEmptyTransactionMetadataCorrectly() throws Throwable
     {
         // When
-        RunMessage message = new RunMessage("RETURN 1" );
+        RunMessage message = new RunMessage( "RETURN 1" );
 
         // Then
         assertNull( message.transactionMetadata() );

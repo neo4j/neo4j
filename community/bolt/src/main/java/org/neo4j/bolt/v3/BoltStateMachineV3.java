@@ -25,12 +25,13 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v1.runtime.InterruptedState;
-import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.DefunctState;
 import org.neo4j.bolt.v3.runtime.ExtraMetaDataConnectedState;
+import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v3.runtime.StreamingState;
 import org.neo4j.bolt.v3.runtime.TransactionReadyState;
+import org.neo4j.bolt.v3.runtime.TransactionStreamingState;
 
 public class BoltStateMachineV3 extends BoltStateMachineV1
 {
@@ -49,7 +50,7 @@ public class BoltStateMachineV3 extends BoltStateMachineV1
         InterruptedState interrupted = new InterruptedState();
         DefunctState defunct = new DefunctState();
         TransactionReadyState txReady = new TransactionReadyState();
-        StreamingState txStreaming = new StreamingState();
+        TransactionStreamingState txStreaming = new TransactionStreamingState();
 
         connected.setReadyState( ready );
         connected.setFailedState( defunct );
