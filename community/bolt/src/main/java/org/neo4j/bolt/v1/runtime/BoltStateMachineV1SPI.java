@@ -43,7 +43,7 @@ public class BoltStateMachineV1SPI implements BoltStateMachineSPI
     private final String version;
     private final TransactionStateMachineSPI transactionSpi;
 
-    BoltStateMachineV1SPI( BoltConnectionDescriptor connectionDescriptor, UsageData usageData, LogService logging,
+    public BoltStateMachineV1SPI( BoltConnectionDescriptor connectionDescriptor, UsageData usageData, LogService logging,
             Authentication authentication, TransactionStateMachineSPI transactionStateMachineSPI )
     {
         this.connectionDescriptor = connectionDescriptor;
