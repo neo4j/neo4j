@@ -33,12 +33,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpression
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CoerceToPredicate, NestedPlanExpression}
 import org.neo4j.cypher.operations.{CypherBoolean, CypherCoercions, CypherFunctions, CypherMath}
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual._
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.symbols.{CTAny, CTBoolean, CTDate, CTDateTime, CTDuration, CTFloat, CTGeometry, CTInteger, CTLocalDateTime, CTLocalTime, CTMap, CTNode, CTNumber, CTPath, CTPoint, CTRelationship, CTString, CTTime, ListType}
+import org.opencypher.v9_0.util.symbols.{CTAny, CTBoolean, CTDate, CTDateTime, CTDuration, CTFloat, CTGeometry, CTInteger, CTLocalDateTime, CTLocalTime, CTMap, CTNode, CTNumber, CTPath, CTPoint, CTRelationship, CTString, CTTime, CypherType, ListType}
 import org.opencypher.v9_0.util.{CypherTypeException, InternalException}
 
 /**
@@ -321,14 +323,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
               noValueCheck(e)(invokeStatic(method[CypherCoercions, MapValue, AnyValue, DbAccess]("asMapValue"), e.ir, DB_ACCESS)),
               nullable = false, e.fields)
 
-          case t: ListType if t.innerType == CTNode || t.innerType == CTRelationship =>
-            IntermediateExpression(
-              noValueCheck(e)(invokeStatic(method[CypherCoercions, ListValue, AnyValue]("asListValueFailOnPaths"), e.ir)),
-              nullable = false, e.fields)
+          case l: ListType  =>
+            val typ = asNeoType(l.innerType)
 
-          case _: ListType  =>
             IntermediateExpression(
-              noValueCheck(e)(invokeStatic(method[CypherCoercions, ListValue, AnyValue]("asListValueSupportPaths"), e.ir)),
+              noValueCheck(e)(invokeStatic(method[CypherCoercions, ListValue, AnyValue, AnyType, DbAccess]("asList"), e.ir, typ, DB_ACCESS)),
               nullable = false, e.fields)
 
           case CTBoolean =>
@@ -413,7 +412,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(
         block(
           condition(equal(loadField(f), constant(-1)))(
-            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKeyId"), constant(key)))),
         ternary(
         invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
                getLongAt(offset), loadField(f)), truthValue, falseValue)), nullable = false, Seq(f)))
@@ -428,7 +427,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(
         block(
           condition(equal(loadField(f), constant(-1)))(
-            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKeyId"), constant(key)))),
         invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("relationshipProperty"),
                   getLongAt(offset), loadField(f))), nullable = true, Seq(f)))
 
@@ -446,7 +445,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(
         block(
           condition(equal(loadField(f), constant(-1)))(
-            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKeyId"), constant(key)))),
         ternary(
         invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
                getLongAt(offset), loadField(f)),
@@ -1090,6 +1089,28 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           //stored in returnValue
           if (nullable) ternary(load(seenNull), noValue, load(returnValue)) else load(returnValue)): _*)
     IntermediateExpression(ir, nullable, expressions.foldLeft(Seq.empty[Field])((a,b) => a ++ b.fields))
+  }
+
+  private def asNeoType(ct: CypherType): IntermediateRepresentation = ct match {
+    case CTString => getStatic[Neo4jTypes, Neo4jTypes.TextType]("NTString")
+    case CTInteger => getStatic[Neo4jTypes, Neo4jTypes.IntegerType]("NTInteger")
+    case CTFloat => getStatic[Neo4jTypes, Neo4jTypes.FloatType]("NTFloat")
+    case CTNumber =>  getStatic[Neo4jTypes, Neo4jTypes.NumberType]("NTNumber")
+    case CTBoolean => getStatic[Neo4jTypes, Neo4jTypes.BooleanType]("NTBoolean")
+    case l: ListType => invokeStatic(method[Neo4jTypes , Neo4jTypes.ListType, AnyType]("NTList"), asNeoType(l.innerType))
+    case CTDateTime => getStatic[Neo4jTypes, Neo4jTypes.DateTimeType]("NTDateTime")
+    case CTLocalDateTime => getStatic[Neo4jTypes, Neo4jTypes.LocalDateTimeType]("NTLocalDateTime")
+    case CTDate => getStatic[Neo4jTypes, Neo4jTypes.DateType]("NTDate")
+    case CTTime => getStatic[Neo4jTypes, Neo4jTypes.TimeType]("NTTime")
+    case CTLocalTime => getStatic[Neo4jTypes, Neo4jTypes.LocalTimeType]("NTLocalTime")
+    case CTDuration =>getStatic[Neo4jTypes, Neo4jTypes.DurationType]("NTDuration")
+    case CTPoint => getStatic[Neo4jTypes, Neo4jTypes.PointType]("NTPoint")
+    case CTNode =>getStatic[Neo4jTypes, Neo4jTypes.NodeType]("NTNode")
+    case CTRelationship => getStatic[Neo4jTypes, Neo4jTypes.RelationshipType]("NTRelationship")
+    case CTPath => getStatic[Neo4jTypes, Neo4jTypes.PathType]("NTPath")
+    case CTGeometry => getStatic[Neo4jTypes, Neo4jTypes.GeometryType]("NTGeometry")
+    case CTMap =>getStatic[Neo4jTypes, Neo4jTypes.MapType]("NTMap")
+    case CTAny => getStatic[Neo4jTypes, Neo4jTypes.AnyType]("NTAny")
   }
 }
 
