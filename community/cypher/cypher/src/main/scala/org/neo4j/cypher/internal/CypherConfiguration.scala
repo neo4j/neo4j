@@ -43,7 +43,8 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.forbid_shortestpath_common_nodes),
       config.get(GraphDatabaseSettings.csv_legacy_quote_escaping),
       config.get(GraphDatabaseSettings.csv_buffer_size),
-      config.get(GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates)
+      config.get(GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates),
+      config.get(GraphDatabaseSettings.cypher_disable_compiled_expressions)
     )
   }
 
@@ -75,4 +76,5 @@ case class CypherConfiguration(version: CypherVersion,
                                errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                                legacyCsvQuoteEscaping: Boolean,
                                csvBufferSize: Int,
-                               planWithMinimumCardinalityEstimates: Boolean)
+                               planWithMinimumCardinalityEstimates: Boolean,
+                               disableCompiledExpressions: Boolean)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
@@ -30,25 +30,24 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.un
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.rewriting.rewriters._
-import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
-import org.opencypher.v9_0.util.attribution.{Attribute, Attributes}
-import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.opencypher.v9_0.util.{Cardinality, PropertyKeyId}
-import org.opencypher.v9_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProduceResult}
-
-import org.neo4j.csv.reader.Configuration
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.PatternExpression
+import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.parser.CypherParser
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
+import org.opencypher.v9_0.rewriting.rewriters._
+import org.opencypher.v9_0.util.attribution.{Attribute, Attributes}
 import org.opencypher.v9_0.util.helpers.fixedPoint
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.opencypher.v9_0.util.{Cardinality, PropertyKeyId}
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import scala.language.reflectiveCalls
@@ -73,7 +72,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     legacyCsvQuoteEscaping = false,
     csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = true
+    planWithMinimumCardinalityEstimates = true,
+    disableCompiledExpressions = false
   )
   val realConfig = new RealLogicalPlanningConfiguration(cypherCompilerConfig)
 

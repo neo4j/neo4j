@@ -21,18 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_5
 
 import java.time.Clock
 
-import org.opencypher.v9_0.util.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_5.phases.{PlannerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{CheckForUnresolvedTokens, ResolveTokens}
-import org.opencypher.v9_0.frontend.phases._
 import org.neo4j.cypher.internal.ir.v3_5.UnionQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlannerNameFor}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, _}
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.util.InputPosition
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                                     sequencer: String => RewriterStepSequencer,
@@ -107,4 +106,5 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       legacyCsvQuoteEscaping: Boolean,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
-                                      planWithMinimumCardinalityEstimates: Boolean)
+                                      planWithMinimumCardinalityEstimates: Boolean,
+                                      disableCompiledExpressions: Boolean)

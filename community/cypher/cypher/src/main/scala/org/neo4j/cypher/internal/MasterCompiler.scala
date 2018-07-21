@@ -70,7 +70,8 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
     legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
     csvBufferSize = config.csvBufferSize,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
-    planWithMinimumCardinalityEstimates = config.planWithMinimumCardinalityEstimates
+    planWithMinimumCardinalityEstimates = config.planWithMinimumCardinalityEstimates,
+    disableCompiledExpressions = config.disableCompiledExpressions
   )
 
   /**

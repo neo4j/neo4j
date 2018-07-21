@@ -73,7 +73,8 @@ object CypherReductionSupport {
     legacyCsvQuoteEscaping = false,
     csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
     nonIndexedLabelWarningThreshold = 0,
-    planWithMinimumCardinalityEstimates = true)
+    planWithMinimumCardinalityEstimates = true,
+    disableCompiledExpressions = true)
   private val kernelMonitors = new Monitors
   private val compiler = CypherPlanner(WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
     MasterCompiler.CLOCK, PlannerContextCreator)
@@ -193,7 +194,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     val runtime = CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, planningContext.config.useErrorsOverWarnings)
 
     val runtimeContextCreator = if (enterprise)
-      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, new SingleThreadedExecutor(1), NullLog.getInstance())
+      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, new SingleThreadedExecutor(1), NullLog.getInstance(), CypherReductionSupport.config)
      else
       CommunityRuntimeContextCreator
 

@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
@@ -41,14 +42,12 @@ import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.parser.CypherParser
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
 import org.opencypher.v9_0.rewriting.rewriters._
 import org.opencypher.v9_0.util.attribution.IdGen
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
-
-import org.neo4j.csv.reader.Configuration
 
 import scala.collection.mutable
 
@@ -233,7 +232,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     legacyCsvQuoteEscaping = false,
     csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = true
+    planWithMinimumCardinalityEstimates = true,
+    disableCompiledExpressions = false
   )
 
   def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {

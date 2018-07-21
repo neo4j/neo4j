@@ -98,7 +98,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       CypherCurrentCompiler(
         planner,
         EnterpriseRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
-        EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log),
+        EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log, config),
         kernelMonitors)
 
     } else
@@ -117,7 +117,8 @@ case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogg
                                     dispatcher: Dispatcher,
                                     log: Log,
                                     clock: Clock,
-                                    debugOptions: Set[String]
+                                    debugOptions: Set[String],
+                                    config: CypherPlannerConfiguration
                                    ) extends RuntimeContext
 
 /**
@@ -125,7 +126,8 @@ case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogg
   */
 case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery],
                                            dispatcher: Dispatcher,
-                                           log: Log)
+                                           log: Log,
+                                           config: CypherPlannerConfiguration)
   extends RuntimeContextCreator[EnterpriseRuntimeContext] {
 
   override def create(notificationLogger: InternalNotificationLogger,
@@ -141,5 +143,6 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                              dispatcher,
                              log,
                              clock,
-                             debugOptions)
+                             debugOptions,
+                             config: CypherPlannerConfiguration)
 }

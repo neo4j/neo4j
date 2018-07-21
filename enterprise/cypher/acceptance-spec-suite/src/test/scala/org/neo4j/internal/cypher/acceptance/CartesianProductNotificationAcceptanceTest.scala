@@ -126,7 +126,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     legacyCsvQuoteEscaping = false,
     csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
     nonIndexedLabelWarningThreshold = 10000L,
-    planWithMinimumCardinalityEstimates = false
+    planWithMinimumCardinalityEstimates = false,
+    disableCompiledExpressions = false
   )
   private lazy val monitors = WrappedMonitors(kernelMonitors)
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)

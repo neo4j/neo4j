@@ -228,6 +228,10 @@ public class GraphDatabaseSettings implements LoadableConfig
             "unsupported.cypher.runtime",
         optionsIgnoreCase( "INTERPRETED", "COMPILED", "SLOTTED" , "MORSEL", DEFAULT ), DEFAULT );
 
+    @Description( "Set this to specify the default runtime for the default language version." )
+    @Internal
+    public static final Setting<Boolean> cypher_disable_compiled_expressions = setting( "unsupported.cypher.disable_compiled_expressions", BOOLEAN, FALSE );
+
     @Description( "Enable tracing of compilation in cypher." )
     @Internal
     public static final Setting<Boolean> cypher_compiler_tracing = setting( "unsupported.cypher.compiler_tracing", BOOLEAN, FALSE );
