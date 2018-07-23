@@ -37,8 +37,6 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 @Service.Implementation( KernelExtensionFactory.class )
 public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory
 {
-    private static final int PRIORITY = 0; // TODO: Zero because should not be default yet.
-
     public GenericNativeIndexProviderFactory()
     {
         super( GenericNativeIndexProvider.KEY );
@@ -66,7 +64,7 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     public static GenericNativeIndexProvider create( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
             OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        int priority = adjustPriorityForConfig( PRIORITY, GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10, config );
+        int priority = GenericNativeIndexProvider.SCHEMA_INDEX.priority( config );
 
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == mode);

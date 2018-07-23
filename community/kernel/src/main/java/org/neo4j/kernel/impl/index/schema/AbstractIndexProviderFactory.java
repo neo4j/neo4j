@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -58,12 +57,6 @@ public abstract class AbstractIndexProviderFactory extends KernelExtensionFactor
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
         return internalCreate( pageCache, databaseDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
-    }
-
-    protected static int adjustPriorityForConfig( int basePriority, GraphDatabaseSettings.SchemaIndex target, Config config )
-    {
-        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
-        return target.providerIdentifier().equals( defaultSchemaProvider ) ? 100 : basePriority;
     }
 
     protected abstract Class loggingClass();

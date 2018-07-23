@@ -37,6 +37,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.BoltConnectorValidator;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
@@ -559,16 +560,18 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
-        NATIVE_GBPTREE10( "native-gbptree", "1.0" ),
-        NATIVE20( "lucene+native", "2.0" ),
-        NATIVE10( "lucene+native", "1.0" ),
-        LUCENE10( "lucene", "1.0" );
+        NATIVE_GBPTREE10( 0, "native-gbptree", "1.0" ), // TODO: Zero because should not be default yet.
+        NATIVE20( 3, "lucene+native", "2.0" ),
+        NATIVE10( 2, "lucene+native", "1.0" ),
+        LUCENE10( 1, "lucene", "1.0" );
 
+        private final int priority; // Higher is better
         private final String providerName;
         private final String providerVersion;
 
-        SchemaIndex( String providerName, String providerVersion )
+        SchemaIndex( int priority, String providerName, String providerVersion )
         {
+            this.priority = priority;
             this.providerName = providerName;
             this.providerVersion = providerVersion;
         }
@@ -586,6 +589,12 @@ public class GraphDatabaseSettings implements LoadableConfig
         public String providerVersion()
         {
             return providerVersion;
+        }
+
+        public int priority( Config config )
+        {
+            String configuredSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
+            return providerIdentifier().equals( configuredSchemaProvider ) ? 100 : priority;
         }
     }
 

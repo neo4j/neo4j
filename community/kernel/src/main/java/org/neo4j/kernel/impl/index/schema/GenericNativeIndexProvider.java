@@ -82,9 +82,9 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue>
 {
-    public static final String KEY = GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10.providerName();
-    public static final String VERSION = GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10.providerVersion();
-    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, VERSION );
+    public static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10;
+    public static final String KEY = SCHEMA_INDEX.providerName();
+    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, SCHEMA_INDEX.providerVersion() );
 
     // TODO implement
     public static final IndexCapability CAPABILITY = new IndexCapability()

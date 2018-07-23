@@ -43,10 +43,9 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 @Service.Implementation( KernelExtensionFactory.class )
 public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusionIndexProviderFactory
 {
-    public static final String KEY = GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName();
-    public static final String VERSION = GraphDatabaseSettings.SchemaIndex.NATIVE20.providerVersion();
-    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, VERSION );
-    private static final int PRIORITY = NativeLuceneFusionIndexProviderFactory10.PRIORITY + 1;
+    private static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE20;
+    public static final String KEY = SCHEMA_INDEX.providerName();
+    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, SCHEMA_INDEX.providerVersion() );
 
     public NativeLuceneFusionIndexProviderFactory20()
     {
@@ -84,7 +83,7 @@ public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusion
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        int priority = adjustPriorityForConfig( PRIORITY, GraphDatabaseSettings.SchemaIndex.NATIVE20, config );
+        int priority = SCHEMA_INDEX.priority( config );
         return new FusionIndexProvider( string, number, spatial, temporal, lucene, new FusionSlotSelector20(),
                 DESCRIPTOR, priority, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }

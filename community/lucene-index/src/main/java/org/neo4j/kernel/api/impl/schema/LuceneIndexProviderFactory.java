@@ -44,9 +44,9 @@ import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 @Service.Implementation( KernelExtensionFactory.class )
 public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory
 {
-    public static final String KEY = GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName();
-    public static final String VERSION = GraphDatabaseSettings.SchemaIndex.LUCENE10.providerVersion();
-    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( KEY, VERSION );
+    private static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.LUCENE10;
+    private static final String KEY = SCHEMA_INDEX.providerName();
+    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( KEY, SCHEMA_INDEX.providerVersion() );
 
     public LuceneIndexProviderFactory()
     {
@@ -87,7 +87,7 @@ public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory
         SpatialIndexProvider spatial =
                 IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
 
-        int priority = adjustPriorityForConfig( LuceneIndexProvider.PRIORITY, GraphDatabaseSettings.SchemaIndex.LUCENE10, config );
+        int priority = SCHEMA_INDEX.priority( config );
         return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSlotSelector00(),
                 PROVIDER_DESCRIPTOR, priority, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }

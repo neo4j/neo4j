@@ -48,8 +48,6 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class LuceneIndexProvider extends IndexProvider
 {
-    static final int PRIORITY = 1;
-
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;
     private final OperationalMode operationalMode;
@@ -60,7 +58,7 @@ public class LuceneIndexProvider extends IndexProvider
                                 IndexDirectoryStructure.Factory directoryStructureFactory, Monitor monitor, Config config,
                                 OperationalMode operationalMode )
     {
-        super( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR, PRIORITY, directoryStructureFactory );
+        super( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR, 0, directoryStructureFactory );
         this.monitor = monitor;
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
         this.fileSystem = fileSystem;
