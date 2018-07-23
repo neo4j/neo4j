@@ -103,8 +103,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
   override def createNode(): Node =
     proxySpi.newNodeProxy(writes().nodeCreate())
 
-  override def createRelationship(start: Node, end: Node, relType: String): Relationship =
-    start.createRelationshipTo(end, withName(relType))
+  override def createRelationship(start: Node, end: Node, relType: String): Relationship = start match {
+    case null => throw new IllegalArgumentException("Expected to find a node, but found instead: null")
+    case _ => start.createRelationshipTo(end, withName(relType))
+  }
 
   def createRelationship(start: Long, end: Long, relType: Int): Relationship = {
     val relId = writes().relationshipCreate(start, relType, end)
