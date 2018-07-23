@@ -38,7 +38,7 @@ import org.neo4j.values.virtual.MapValue
   * @tparam STATEMENT Type of AST statement used as key
   */
 class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
-                                               override val tracer: CacheTracer[Pair[STATEMENT, MapValue]],
+                                               override val tracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]],
                                                clock: Clock,
                                                divergence: StatsDivergenceCalculator,
                                                lastCommittedTxIdProvider: () => Long

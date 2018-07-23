@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.StringCacheMonitor
+import org.neo4j.cypher.internal.{ParameterTypeMap, StringCacheMonitor}
 import org.neo4j.graphdb.Label
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
@@ -41,6 +41,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "MATCH (n:Person) RETURN n"
     val profileQuery = s"PROFILE $query"
     val explainQuery = s"EXPLAIN $query"
+    val empty_parameters = "Map()"
 
     val modeCombinations = Table(
       ("firstQuery", "secondQuery"),
@@ -73,12 +74,78 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 3.5 $query",
-          s"cacheHit: CYPHER 3.5 $query",
-          s"cacheHit: CYPHER 3.5 $query")
+          s"cacheMiss: (CYPHER 3.5 $query, $empty_parameters)",
+          s"cacheHit: (CYPHER 3.5 $query, $empty_parameters)",
+          s"cacheHit: (CYPHER 3.5 $query, $empty_parameters)")
 
         actual should equal(expected)
     }
+  }
+
+  test("repeating query with same parameters should hit the cache") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN $n"
+    val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
+
+    graph.execute(query, params1).resultAsString()
+    graph.execute(query, params1).resultAsString()
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+
+    actual should equal(expected)
+  }
+
+  test("repeating query with same parameter types but different values should hit the cache") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN $n"
+    val params1: Map[String, AnyRef] = Map("n" -> Long.box(12))
+    val params2: Map[String, AnyRef] = Map("n" -> Long.box(42))
+    graph.execute(query, params1).resultAsString()
+    graph.execute(query, params2).resultAsString()
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+
+    actual should equal(expected)
+  }
+
+  test("repeating query with different parameters types should not hit the cache") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN $n"
+    val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
+    val params2: Map[String, AnyRef] = Map("n" -> "nope")
+
+    graph.execute(query, params1).resultAsString()
+    graph.execute(query, params2).resultAsString()
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheMiss: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.StringWrappingStringValue))",
+      s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.StringWrappingStringValue))")
+
+    actual should equal(expected)
+
   }
 
   private class LoggingStringCacheListener extends StringCacheMonitor {
@@ -94,15 +161,15 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheFlushDetected"
     }
 
-    override def cacheHit(key: Pair[String, MapValue]): Unit = {
+    override def cacheHit(key: Pair[String, ParameterTypeMap]): Unit = {
       log += s"cacheHit: $key"
     }
 
-    override def cacheMiss(key: Pair[String, MapValue]): Unit = {
+    override def cacheMiss(key: Pair[String, ParameterTypeMap]): Unit = {
       log += s"cacheMiss: $key"
     }
 
-    override def cacheDiscard(key: Pair[String, MapValue], ignored: String, secondsSinceReplan: Int): Unit = {
+    override def cacheDiscard(key: Pair[String, ParameterTypeMap], ignored: String, secondsSinceReplan: Int): Unit = {
       log += s"cacheDiscard: $key"
     }
   }

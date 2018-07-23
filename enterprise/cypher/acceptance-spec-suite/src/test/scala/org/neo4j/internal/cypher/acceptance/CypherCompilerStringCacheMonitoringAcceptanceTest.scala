@@ -25,12 +25,12 @@ package org.neo4j.internal.cypher.acceptance
 import org.hamcrest.Matchers
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.{ExecutionEngine, StringCacheMonitor}
+import org.neo4j.cypher.internal.{ExecutionEngine, ParameterTypeMap, StringCacheMonitor}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.logging.AssertableLogProvider
-import org.neo4j.values.virtual.{MapValue, VirtualValues}
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Map
 
@@ -41,11 +41,11 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
   }
 
   class CacheCounter(var counts: CacheCounts = CacheCounts()) extends StringCacheMonitor {
-    override def cacheMiss(key: Pair[String, MapValue]) {
+    override def cacheMiss(key: Pair[String, ParameterTypeMap]) {
       counts = counts.copy(misses = counts.misses + 1)
     }
 
-    override def cacheHit(key: Pair[String, MapValue]) {
+    override def cacheHit(key: Pair[String, ParameterTypeMap]) {
       counts = counts.copy(hits = counts.hits + 1)
     }
 
@@ -53,7 +53,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: Pair[String, MapValue], key2: String, secondsSinceReplan: Int) {
+    override def cacheDiscard(key: Pair[String, ParameterTypeMap], key2: String, secondsSinceReplan: Int) {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }

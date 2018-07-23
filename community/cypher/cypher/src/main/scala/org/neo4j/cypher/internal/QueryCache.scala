@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /**
   * The result of one cache lookup.
@@ -60,34 +62,21 @@ trait CacheTracer[QUERY_KEY] {
   * @param tracer Traces cache activity
   */
 class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EXECUTABLE_QUERY <: AnyRef](val maximumSize: Int,
-                                                                  val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
-                                                                  val tracer: CacheTracer[QUERY_KEY]) {
+                                                                                                          val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
+                                                                                                          val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
+  type Cache_Key = Pair[QUERY_REP, ParameterTypeMap]
 
-  val inner: Cache[QUERY_KEY, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, EXECUTABLE_QUERY]()
-  val parameterMapping: Cache[QUERY_REP, List[MapValue]] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_REP,List[MapValue]]()
+  val inner: Cache[Cache_Key, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[Cache_Key, EXECUTABLE_QUERY]()
 
   import QueryCache.NOT_PRESENT
 
-  /**
-    * TODO: Explain why this is used
-    * @param potentialQueryKey
-    * @return
-    */
 
-  private def getActualQueryKey(potentialQueryKey: QUERY_KEY): QUERY_KEY = {
-    val queryRep = potentialQueryKey.first()
-    val queryParams = potentialQueryKey.other()
-    val maybeParams = parameterMapping.getIfPresent(queryRep)
-
-    if (maybeParams != null) {
-      for (params <- maybeParams) {
-        if (Values.mapsEqualsOnValueTypes(params, queryParams)) {
-          // found! use old params so that key matches
-          return Pair.of(queryRep, params).asInstanceOf[QUERY_KEY]
-        }
-      }
+  private def extractParameterTypeMap(value: MapValue) = {
+    val resultMap = new ParameterTypeMap()
+    for( key <- value.keySet().iterator()) {
+      resultMap.put(key, value.get(key).getClass)
     }
-    potentialQueryKey
+    resultMap
   }
 
   /**
@@ -108,7 +97,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
     if (maximumSize == 0)
       CacheDisabled(compile())
     else {
-      val actualKey = getActualQueryKey(queryKey)
+      val actualKey = Pair.of(queryKey.first(), extractParameterTypeMap(queryKey.other()))
       inner.getIfPresent(actualKey) match {
         case NOT_PRESENT =>
           compileAndCache(actualKey, tc, compile, metaData)
@@ -119,22 +108,12 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
               hit(actualKey, executableQuery, metaData)
             case Stale(secondsSincePlan) =>
               tracer.queryCacheStale(actualKey, secondsSincePlan, metaData)
-              compileAndCacheForStale(actualKey, tc, compile, metaData)
+              compileAndCache(actualKey, tc, compile, metaData)
           }
       }
     }
   }
 
-  private def compileAndCacheForStale(queryKey: QUERY_KEY,
-                              tc: TransactionalContext,
-                              compile: () => EXECUTABLE_QUERY,
-                              metaData: String
-                             ): CacheLookup[EXECUTABLE_QUERY] = {
-    val oldList = parameterMapping.getIfPresent(queryKey.first()) // at this point it can't be null
-    val result = compileAndCache(queryKey,tc,compile,metaData)
-    parameterMapping.put(queryKey.first(), oldList ::: List(queryKey.other()))
-    result
-  }
 
   /**
     * Ensure this query is recompiled and put it in the cache.
@@ -143,28 +122,27 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
     * first. Regardless of who does it, this is treated as a cache miss, because it will
     * take a long time.
     */
-  private def compileAndCache(queryKey: QUERY_KEY,
+  private def compileAndCache(key: Cache_Key,
                         tc: TransactionalContext,
                         compile: () => EXECUTABLE_QUERY,
                         metaData: String
                        ): CacheLookup[EXECUTABLE_QUERY] = {
     val newExecutableQuery = compile()
-    inner.put(queryKey, newExecutableQuery)
-    parameterMapping.put(queryKey.first(), List(queryKey.other()))
-    miss(queryKey, newExecutableQuery, metaData)
+    inner.put(key, newExecutableQuery)
+    miss(key, newExecutableQuery, metaData)
   }
 
-  private def hit(queryKey: QUERY_KEY,
+  private def hit(key: Cache_Key,
                   executableQuery: EXECUTABLE_QUERY,
                   metaData: String) = {
-    tracer.queryCacheHit(queryKey, metaData)
+    tracer.queryCacheHit(key, metaData)
     CacheHit(executableQuery)
   }
 
-  private def miss(queryKey: QUERY_KEY,
+  private def miss(key: Cache_Key,
                    newExecutableQuery: EXECUTABLE_QUERY,
                    metaData: String) = {
-    tracer.queryCacheMiss(queryKey, metaData)
+    tracer.queryCacheMiss(key, metaData)
     CacheMiss(newExecutableQuery)
   }
 
@@ -177,8 +155,6 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
     val priorSize = inner.estimatedSize()
     inner.invalidateAll()
     inner.cleanUp()
-    parameterMapping.invalidateAll()
-    parameterMapping.cleanUp()
     tracer.queryCacheFlush(priorSize)
     priorSize
   }
@@ -186,4 +162,29 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EX
 
 object QueryCache {
   val NOT_PRESENT: ExecutableQuery = null
+}
+
+/*
+   The whole point of this class is to have a map that in addition to key equality, also checks its values for type equality
+ */
+class ParameterTypeMap extends mutable.HashMap[String, Class[_]] {
+  override def equals(that: Any): Boolean = {
+    if (!that.isInstanceOf[ParameterTypeMap])
+      return false
+
+    val other = that.asInstanceOf[ParameterTypeMap]
+
+    if ( this.size != other.size )
+      return false
+
+    for ( key <- this.keys )
+    {
+      val oneType = this (key)
+      val otherType = other(key)
+      if (!(oneType == otherType)) {
+        return false
+      }
+    }
+    true
+  }
 }

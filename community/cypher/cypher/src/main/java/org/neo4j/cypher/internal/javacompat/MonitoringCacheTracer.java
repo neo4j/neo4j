@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.cypher.internal.CacheTracer;
+import org.neo4j.cypher.internal.ParameterTypeMap;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.values.virtual.MapValue;
 
 /**
  * Adapter for passing CacheTraces into the Monitoring infrastructure.
  */
-public class MonitoringCacheTracer implements CacheTracer<Pair<String,MapValue>>
+public class MonitoringCacheTracer implements CacheTracer<Pair<String,ParameterTypeMap>>
 {
     private final StringCacheMonitor monitor;
 
@@ -37,19 +37,19 @@ public class MonitoringCacheTracer implements CacheTracer<Pair<String,MapValue>>
     }
 
     @Override
-    public void queryCacheHit( Pair<String,MapValue> queryKey, String metaData )
+    public void queryCacheHit( Pair<String,ParameterTypeMap> queryKey, String metaData )
     {
         monitor.cacheHit( queryKey );
     }
 
     @Override
-    public void queryCacheMiss( Pair<String,MapValue> queryKey, String metaData )
+    public void queryCacheMiss( Pair<String,ParameterTypeMap> queryKey, String metaData )
     {
         monitor.cacheMiss( queryKey );
     }
 
     @Override
-    public void queryCacheStale( Pair<String,MapValue> queryKey, int secondsSincePlan, String metaData )
+    public void queryCacheStale( Pair<String,ParameterTypeMap> queryKey, int secondsSincePlan, String metaData )
     {
         monitor.cacheDiscard( queryKey, metaData, secondsSincePlan );
     }

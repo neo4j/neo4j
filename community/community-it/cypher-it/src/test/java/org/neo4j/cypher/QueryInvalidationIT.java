@@ -28,11 +28,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.cypher.internal.ParameterTypeMap;
 import org.neo4j.cypher.internal.compatibility.CypherCacheHitMonitor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.DatabaseRule;
@@ -186,7 +188,7 @@ public class QueryInvalidationIT
         return ThreadLocalRandom.current().nextInt( max );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<String>
+    private static class TestMonitor implements CypherCacheHitMonitor<Pair<String,ParameterTypeMap>>
     {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
@@ -194,19 +196,19 @@ public class QueryInvalidationIT
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void cacheHit( String key )
+        public void cacheHit( Pair<String,ParameterTypeMap> key )
         {
             hits.incrementAndGet();
         }
 
         @Override
-        public void cacheMiss( String key )
+        public void cacheMiss( Pair<String,ParameterTypeMap> key )
         {
             misses.incrementAndGet();
         }
 
         @Override
-        public void cacheDiscard( String key, String ignored, int secondsSinceReplan )
+        public void cacheDiscard( Pair<String,ParameterTypeMap> key, String ignored, int secondsSinceReplan )
         {
             discards.incrementAndGet();
             waitTime.addAndGet( secondsSinceReplan );

@@ -153,7 +153,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         CacheableLogicalPlan(logicalPlanState, reusabilityState)
       }
 
-      val params= ValueConversion.asValues(preparedQuery.extractedParams())
+      val params = ValueConversion.asValues(preparedQuery.extractedParams())
       val cacheableLogicalPlan =
         if (preParsedQuery.debugOptions.isEmpty)
           planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), params),

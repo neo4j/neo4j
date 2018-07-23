@@ -35,7 +35,7 @@ import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
 
-trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, MapValue]]
+trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
 
 /**
   * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
@@ -44,7 +44,7 @@ trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, MapValue]]
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
-                      val cacheTracer: CacheTracer[Pair[String, MapValue]],
+                      val cacheTracer: CacheTracer[Pair[String, ParameterTypeMap]],
                       val config: CypherConfiguration,
                       val compatibilityFactory: CompilerFactory,
                       val logProvider: LogProvider,
@@ -63,7 +63,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
-    override def cacheDiscard(ignored: Pair[String, MapValue], query: String, secondsSinceReplan: Int) {
+    override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], query: String, secondsSinceReplan: Int) {
       log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $query")
     }
   })

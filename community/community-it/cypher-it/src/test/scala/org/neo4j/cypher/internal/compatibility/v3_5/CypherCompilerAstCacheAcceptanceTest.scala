@@ -23,15 +23,15 @@ import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, RuntimeContext}
+import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.cypher.internal.{CacheTracer, CommunityRuntimeFactory, PreParsedQuery}
+import org.neo4j.cypher.internal.{CacheTracer, CommunityRuntimeFactory, ParameterTypeMap, PreParsedQuery}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.logging.AssertableLogProvider.inLog
 import org.neo4j.logging.{AssertableLogProvider, Log, NullLog}
-import org.opencypher.v9_0.ast.Statement
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.util.DummyPosition
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -75,12 +75,12 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
   }
 
-  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends CacheTracer[Statement] {
-    override def queryCacheHit(key: Statement, metaData: String) {
+  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends CacheTracer[Pair[AnyRef,ParameterTypeMap]] {
+    override def queryCacheHit(key: Pair[AnyRef,ParameterTypeMap], metaData: String) {
       counts = counts.copy(hits = counts.hits + 1)
     }
 
-    override def queryCacheMiss(key: Statement, metaData: String) {
+    override def queryCacheMiss(key: Pair[AnyRef,ParameterTypeMap], metaData: String) {
       counts = counts.copy(misses = counts.misses + 1)
     }
 
@@ -88,7 +88,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def queryCacheStale(key: Statement, secondsSincePlan: Int, metaData: String): Unit = {
+    override def queryCacheStale(key: Pair[AnyRef,ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -105,10 +105,10 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     compiler.kernelMonitors.addMonitorListener(counter)
   }
 
-  private def runQuery(query: String, debugOptions: Set[String] = Set.empty): Unit = {
+  private def runQuery(query: String, debugOptions: Set[String] = Set.empty, params: scala.Predef.Map[String, Any] = Map.empty): Unit = {
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
-      val context = graph.transactionalContext(query = query -> Map.empty)
+      val context = graph.transactionalContext(query = query -> params)
       compiler.compile(PreParsedQuery(query, DummyPosition(0), query,
                                       isPeriodicCommit = false,
                                       CypherVersion.default,
@@ -259,5 +259,14 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("return 42", Set("debug"))
 
     counter.counts.hits should equal(0)
+  }
+
+  test("should not find query in cache with different parameter types") {
+    val map1: scala.Predef.Map[String, Any] = scala.Predef.Map("number" -> 42)
+    val map2: scala.Predef.Map[String, Any] = scala.Predef.Map("number" -> "nope")
+    runQuery("return $number", params = map1)
+    runQuery("return $number", params = map2)
+
+    counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1))
   }
 }
