@@ -159,7 +159,6 @@ import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 public class NeoStoreDataSource extends LifecycleAdapter
 {
-
     enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     {
         TRANSACTION_RANGE( "Transaction log:" )
@@ -217,8 +216,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
     }
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
-    private final boolean failOnCorruptedLogFiles = FeatureToggles.flag( NeoStoreDataSource.class,
-            "failOnCorruptedLogFiles", false );
 
     private final Monitors monitors;
     private final Tracers tracers;
@@ -270,6 +267,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private NeoStoreTransactionLogModule transactionLogModule;
     private NeoStoreKernelModule kernelModule;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+    private final boolean failOnCorruptedLogFiles;
 
     public NeoStoreDataSource( File databaseDirectory, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService, JobScheduler scheduler,
             TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver, TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory,
@@ -325,6 +323,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.pageCache = pageCache;
         this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
         this.collectionsFactorySupplier = collectionsFactorySupplier;
+        this.failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
     }
 
     // We do our own internal life management:

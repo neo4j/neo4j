@@ -618,6 +618,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Long> logical_log_rotation_threshold =
             buildSetting( "dbms.tx_log.rotation.size", BYTES, "250M" ).constraint( min( ByteUnit.mebiBytes( 1 ) ) ).build();
 
+    @Description( "If `true`, Neo4j will abort recovery if any errors are encountered in the logical log. Setting " +
+            "this to `false` will allow Neo4j to restore as much as possible from the corrupted log files and ignore " +
+            "the rest, but, the integrity of the database might be compromised." )
+    @Internal
+    public static final Setting<Boolean> fail_on_corrupted_log_files = setting("unsupported.dbms.tx_log.fail_on_corrupted_log_files", BOOLEAN, TRUE );
+
     @Description( "Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities." )
     @Internal

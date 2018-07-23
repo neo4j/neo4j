@@ -23,7 +23,6 @@ import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.api.map.primitive.ObjectLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 import org.hamcrest.Matchers;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,8 +42,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -81,7 +82,6 @@ import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.util.FeatureToggles;
 
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
@@ -116,12 +116,6 @@ public class RecoveryCorruptedTransactionLogIT
         logFiles = buildDefaultLogFiles();
     }
 
-    @After
-    public void tearDown()
-    {
-        FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", false );
-    }
-
     @Test
     public void evenTruncateNewerTransactionLogFile() throws IOException
     {
@@ -138,7 +132,7 @@ public class RecoveryCorruptedTransactionLogIT
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomBytes );
 
-        database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        database = startDbNoRecoveryOfCorruptedLogs();
         database.shutdown();
 
         assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
@@ -156,7 +150,6 @@ public class RecoveryCorruptedTransactionLogIT
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomPositiveBytes );
 
-        FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", true );
         expectedException.expectCause( new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
 
         database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
@@ -178,7 +171,7 @@ public class RecoveryCorruptedTransactionLogIT
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomBytes );
 
-        database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        database = startDbNoRecoveryOfCorruptedLogs();
         database.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
@@ -191,7 +184,7 @@ public class RecoveryCorruptedTransactionLogIT
     {
         addCorruptedCommandsToLastLogFile();
 
-        GraphDatabaseService recoveredDatabase = databaseFactory.newEmbeddedDatabase( storeDir );
+        GraphDatabaseService recoveredDatabase = startDbNoRecoveryOfCorruptedLogs();
         recoveredDatabase.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
@@ -212,7 +205,6 @@ public class RecoveryCorruptedTransactionLogIT
     {
         addCorruptedCommandsToLastLogFile();
 
-        FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", true );
         expectedException.expectCause( new RootCauseMatcher<>( NegativeArraySizeException.class ) );
 
         GraphDatabaseService recoveredDatabase = databaseFactory.newEmbeddedDatabase( storeDir );
@@ -241,7 +233,7 @@ public class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        database = startDbNoRecoveryOfCorruptedLogs();
         database.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
@@ -282,7 +274,7 @@ public class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        database = startDbNoRecoveryOfCorruptedLogs();
         database.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 3." );
@@ -320,7 +312,7 @@ public class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        database = startDbNoRecoveryOfCorruptedLogs();
         database.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 3." );
@@ -351,7 +343,7 @@ public class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        database = startDbNoRecoveryOfCorruptedLogs();
         database.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 5." );
@@ -430,7 +422,7 @@ public class RecoveryCorruptedTransactionLogIT
         assertThat( corruptedLogArchives.listFiles(), not( emptyArray() ) );
     }
 
-    private TransactionIdStore getTransactionIdStore( GraphDatabaseAPI database )
+    private static TransactionIdStore getTransactionIdStore( GraphDatabaseAPI database )
     {
         return database.getDependencyResolver().resolveDependency( TransactionIdStore.class );
     }
@@ -440,7 +432,7 @@ public class RecoveryCorruptedTransactionLogIT
         LogPosition checkpointPosition = null;
 
         LogFile transactionLogFile = logFiles.getLogFile();
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
         LogPosition startPosition = LogPosition.start( logFiles.getHighestLogVersion() );
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
@@ -524,12 +516,12 @@ public class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private ObjectLongMap<Class> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
+    private static ObjectLongMap<Class> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
     {
         LogFile transactionLogFile = logFiles.getLogFile();
 
         LogPosition fileStartPosition = new LogPosition( 0, LogHeader.LOG_HEADER_SIZE );
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
 
         MutableObjectLongMap<Class> multiset = new ObjectLongHashMap<>();
         try ( ReadableLogChannel fileReader = transactionLogFile.getReader( fileStartPosition ) )
@@ -551,18 +543,18 @@ public class RecoveryCorruptedTransactionLogIT
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
     }
 
-    private void generateTransactionsAndRotateWithCheckpoint( GraphDatabaseAPI database, int logFilesToGenerate )
+    private static void generateTransactionsAndRotateWithCheckpoint( GraphDatabaseAPI database, int logFilesToGenerate )
             throws IOException
     {
         generateTransactionsAndRotate( database, logFilesToGenerate, true );
     }
 
-    private void generateTransactionsAndRotate( GraphDatabaseAPI database, int logFilesToGenerate ) throws IOException
+    private static void generateTransactionsAndRotate( GraphDatabaseAPI database, int logFilesToGenerate ) throws IOException
     {
         generateTransactionsAndRotate( database, logFilesToGenerate, false );
     }
 
-    private void generateTransactionsAndRotate( GraphDatabaseAPI database, int logFilesToGenerate, boolean checkpoint )
+    private static void generateTransactionsAndRotate( GraphDatabaseAPI database, int logFilesToGenerate, boolean checkpoint )
             throws IOException
     {
         DependencyResolver resolver = database.getDependencyResolver();
@@ -579,7 +571,7 @@ public class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private void generateTransaction( GraphDatabaseAPI database )
+    private static void generateTransaction( GraphDatabaseAPI database )
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -590,6 +582,13 @@ public class RecoveryCorruptedTransactionLogIT
             startNode.createRelationshipTo( endNode, RelationshipType.withName( "connects" ) );
             transaction.success();
         }
+    }
+
+    private GraphDatabaseAPI startDbNoRecoveryOfCorruptedLogs()
+    {
+        return (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE )
+                .newGraphDatabase();
     }
 
     private static class CorruptedLogEntryWriter extends LogEntryWriter

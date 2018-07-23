@@ -22,7 +22,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.server.BlockingBootstrapper;
@@ -57,12 +56,20 @@ public class ArbiterEntryPoint
         }
     }
 
+    /**
+     * Used by the windows service wrapper
+     */
+    @SuppressWarnings( "unused" )
     public static void start( String[] args )
     {
         bootstrapper = new BlockingBootstrapper( new ArbiterBootstrapper() );
         System.exit( ServerBootstrapper.start( bootstrapper, args ) );
     }
 
+    /**
+     * Used by the windows service wrapper
+     */
+    @SuppressWarnings( "unused" )
     public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
     {
         if ( bootstrapper != null )
