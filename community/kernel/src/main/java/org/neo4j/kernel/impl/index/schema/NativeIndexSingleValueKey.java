@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -36,14 +37,7 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
     @Override
     void assertValidValue( int stateSlot, Value value )
     {
-        if ( stateSlot > 0 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( stateSlot < 0 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
+        stateSlot = Preconditions.requireExactlyOne( stateSlot );
         assertCorrectType( value );
     }
 

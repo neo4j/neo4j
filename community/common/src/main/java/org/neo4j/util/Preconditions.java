@@ -62,6 +62,22 @@ public final class Preconditions
     }
 
     /**
+     * Ensures that {@code value} is exactly one.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's equal to {@code 1}.
+     * @throws IllegalArgumentException if {@code value} is not 1
+     */
+    public static int requireExactlyOne( int value )
+    {
+        if ( value != 1 )
+        {
+            throw new IllegalArgumentException( "Expected long value equal to 1, got " + value );
+        }
+        return value;
+    }
+
+    /**
      * Ensures that {@code expression} is {@code true} or throws {@link IllegalStateException} otherwise.
      *
      * @param expression an expression for check

@@ -55,7 +55,7 @@ import static org.neo4j.kernel.impl.index.schema.GenericLayout.LOWEST_TYPE_BY_VA
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
-import static org.neo4j.kernel.impl.index.schema.StringIndexKey.unsignedByteArrayCompare;
+import static org.neo4j.kernel.impl.index.schema.StringIndexKey.lexicographicalUnsignedByteArrayCompare;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_FLAG;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_MASK;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.asZoneId;
@@ -607,7 +607,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             return 0;
         }
 
-        return unsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0,
+        return lexicographicalUnsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0,
                 booleanOf( this_long2 ) | booleanOf( that_long2 ) );
     }
 

@@ -138,10 +138,15 @@ class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
             return 0;
         }
 
-        return unsignedByteArrayCompare( bytes, bytesLength, other.bytes, other.bytesLength, ignoreLength | other.ignoreLength );
+        return lexicographicalUnsignedByteArrayCompare( bytes, bytesLength, other.bytes, other.bytesLength, ignoreLength | other.ignoreLength );
     }
 
-    public static int unsignedByteArrayCompare( byte[] a, int aLength, byte[] b, int bLength, boolean ignoreLength )
+    /**
+     * Compare arrays byte by byte, first byte is most significant.
+     * If arrays have different length and the longer array share all bytes with the shorter array, then the longer one is larger,
+     * unless ignoreLength is set to true in which case they are considered equal.
+     */
+    static int lexicographicalUnsignedByteArrayCompare( byte[] a, int aLength, byte[] b, int bLength, boolean ignoreLength )
     {
         assert a != null && b != null : "Null arrays not supported.";
 
