@@ -23,10 +23,12 @@
 package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+
+import org.neo4j.causalclustering.helpers.Buffers;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -34,6 +36,8 @@ import static org.junit.Assert.assertNull;
 
 public class ByteArrayChunkedEncoderTest
 {
+    @Rule
+    public final Buffers buffers = new Buffers();
     @Test
     public void shouldWriteToBufferInChunks() throws IOException
     {
@@ -41,19 +45,38 @@ public class ByteArrayChunkedEncoderTest
         byte[] readData = new byte[6];
         ByteArrayChunkedEncoder byteArraySerializer = new ByteArrayChunkedEncoder( data, 5 );
 
-        UnpooledByteBufAllocator allocator = UnpooledByteBufAllocator.DEFAULT;
-        ByteBuf buffer = byteArraySerializer.encodeChunk( allocator );
+        ByteBuf buffer = byteArraySerializer.encodeChunk( buffers );
         assertEquals( 6, buffer.readInt() );
         assertEquals( 1, buffer.readableBytes() );
         buffer.readBytes( readData, 0, 1 );
-        buffer.release();
 
-        buffer = byteArraySerializer.encodeChunk( allocator );
+        buffer = byteArraySerializer.encodeChunk( buffers );
         buffer.readBytes( readData, 1, buffer.readableBytes() );
         assertArrayEquals( data, readData );
         assertEquals( 0, buffer.readableBytes() );
-        buffer.release();
 
-        assertNull( byteArraySerializer.encodeChunk( allocator ) );
+        assertNull( byteArraySerializer.encodeChunk( buffers ) );
+    }
+
+    @Test
+    public void shouldHandleSmallByteBuf() throws IOException
+    {
+        byte[] data = new byte[1];
+
+        ByteBuf byteBuf = new ByteArrayChunkedEncoder( data ).encodeChunk( buffers );
+        assertEquals( 1, byteBuf.readInt() );
+        assertEquals( 1, byteBuf.readableBytes() );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void shouldThrowOnToSmallChunk()
+    {
+        new ByteArrayChunkedEncoder( new byte[1], 0 );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void shoudThrowOnEmprtContent()
+    {
+        new ByteArrayChunkedEncoder( new byte[0] );
     }
 }

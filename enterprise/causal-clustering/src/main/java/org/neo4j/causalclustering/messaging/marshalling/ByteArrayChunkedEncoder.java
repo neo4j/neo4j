@@ -27,6 +27,7 @@ import io.netty.buffer.ByteBufAllocator;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -39,6 +40,16 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
 
     ByteArrayChunkedEncoder( byte[] content, int chunkSize )
     {
+        Objects.requireNonNull( content, "content cannot be null" );
+        int minChunkSize = 5;
+        if ( content.length == 0 )
+        {
+            throw new IllegalArgumentException( "Content cannot be an empty array" );
+        }
+        if ( chunkSize < minChunkSize )
+        {
+            throw new IllegalArgumentException( "Illegal chunk size. Must be at least " + minChunkSize );
+        }
         inputStream = new ByteArrayInputStream( content );
         this.content = content;
         this.chunkSize = chunkSize;
@@ -56,14 +67,15 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
         {
             return null;
         }
-        int toWrite = Math.min( inputStream.available(), chunkSize );
+        int extraBytes = isFirst() ? Integer.BYTES : 0;
+        int toWrite = Math.min( inputStream.available() + extraBytes, chunkSize );
         ByteBuf buffer = allocator.buffer( toWrite );
         try
         {
-            if ( inputStream.available() == content.length )
+            if ( isFirst() )
             {
                 buffer.writeInt( content.length );
-                toWrite -= 4;
+                toWrite -= extraBytes;
             }
             buffer.writeBytes( inputStream, toWrite );
             return buffer;
@@ -73,6 +85,11 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
             buffer.release();
             throw t;
         }
+    }
+
+    private boolean isFirst()
+    {
+        return inputStream.available() == content.length;
     }
 
     @Override
