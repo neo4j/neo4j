@@ -50,8 +50,7 @@ public class ReadyState extends FailSafeBoltStateMachineState
     private BoltStateMachineState txReadyState;
 
     static final String FIELDS_KEY = "fields";
-    static final String FIRST_RECORD_AVAILABLE_KEY = "result_available_after";
-    private static final String TX_ID_KEY = "tx_id";
+    static final String FIRST_RECORD_AVAILABLE_KEY = "t_first";
 
     @Override
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
@@ -103,7 +102,6 @@ public class ReadyState extends FailSafeBoltStateMachineState
 
         context.connectionState().onMetadata( FIELDS_KEY, stringArray( statementMetadata.fieldNames() ) );
         context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
-        context.connectionState().onMetadata( TX_ID_KEY, Values.NO_VALUE ); //TODO return tx_id
 
         return streamingState;
     }
@@ -112,7 +110,6 @@ public class ReadyState extends FailSafeBoltStateMachineState
     {
         StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
         statementProcessor.beginTransaction( message.bookmark(), message.transactionTimeout(), message.transactionMetadata() );
-        context.connectionState().onMetadata( TX_ID_KEY, Values.NO_VALUE ); // TODO
         return txReadyState;
     }
 

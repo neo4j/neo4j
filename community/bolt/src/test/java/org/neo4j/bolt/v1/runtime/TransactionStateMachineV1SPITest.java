@@ -48,7 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-public class TransactionStateMachineSPITest
+public class TransactionStateMachineV1SPITest
 {
     @Rule
     public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
@@ -71,7 +71,7 @@ public class TransactionStateMachineSPITest
             return available;
         } );
 
-        TransactionStateMachineSPI txSpi = createTxSpi( txIdStore, txAwaitDuration, availabilityGuard, clock );
+        TransactionStateMachineV1SPI txSpi = createTxSpi( txIdStore, txAwaitDuration, availabilityGuard, clock );
 
         Future<Void> result = otherThread.execute( state ->
         {
@@ -96,7 +96,7 @@ public class TransactionStateMachineSPITest
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
 
-        TransactionStateMachineSPI txSpi = createTxSpi( txIdStore, Duration.ZERO, Clock.systemUTC() );
+        TransactionStateMachineV1SPI txSpi = createTxSpi( txIdStore, Duration.ZERO, Clock.systemUTC() );
 
         Future<Void> result = otherThread.execute( state ->
         {
@@ -114,14 +114,14 @@ public class TransactionStateMachineSPITest
         return txIdStore;
     }
 
-    private static TransactionStateMachineSPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
+    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
             Clock clock )
     {
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, NullLog.getInstance() );
         return createTxSpi( txIdStore, txAwaitDuration, availabilityGuard, clock );
     }
 
-    private static TransactionStateMachineSPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
+    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
             AvailabilityGuard availabilityGuard, Clock clock )
     {
         QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
@@ -139,6 +139,6 @@ public class TransactionStateMachineSPITest
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
 
-        return new TransactionStateMachineSPI( db, availabilityGuard, txAwaitDuration, clock );
+        return new TransactionStateMachineV1SPI( db, availabilityGuard, txAwaitDuration, clock );
     }
 }

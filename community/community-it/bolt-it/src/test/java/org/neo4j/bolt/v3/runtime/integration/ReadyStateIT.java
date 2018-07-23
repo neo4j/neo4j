@@ -74,8 +74,7 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
         assertTrue( response.hasMetadata( "fields" ) );
-        assertTrue( response.hasMetadata( "result_available_after") );
-        assertTrue( response.hasMetadata( "tx_id") );
+        assertTrue( response.hasMetadata( "t_first") );
         assertThat( machine.state(), instanceOf( StreamingState.class ) );
     }
 
@@ -93,7 +92,6 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
-        assertTrue( response.hasMetadata( "tx_id") );
         assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
     }
 

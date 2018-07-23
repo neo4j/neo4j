@@ -41,13 +41,13 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class CypherAdapterStream implements BoltResult
+public class CypherAdapterStream implements BoltResult
 {
     private final QueryResult delegate;
     private final String[] fieldNames;
     private final Clock clock;
 
-    CypherAdapterStream( QueryResult delegate, Clock clock )
+    public CypherAdapterStream( QueryResult delegate, Clock clock )
     {
         this.delegate = delegate;
         this.fieldNames = delegate.fieldNames();
@@ -75,7 +75,7 @@ class CypherAdapterStream implements BoltResult
             visitor.visit( row );
             return true;
         } );
-        visitor.addMetadata( "result_consumed_after", longValue( clock.millis() - start ) );
+        addRecordStreamingTime( visitor, clock.millis() - start );
         QueryExecutionType qt = delegate.executionType();
         visitor.addMetadata( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
 
@@ -96,6 +96,11 @@ class CypherAdapterStream implements BoltResult
         {
             visitor.addMetadata( "notifications", NotificationConverter.convert( notifications ) );
         }
+    }
+
+    protected void addRecordStreamingTime( Visitor visitor, long time )
+    {
+        visitor.addMetadata( "result_consumed_after", longValue( time ) );
     }
 
     @Override

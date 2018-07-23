@@ -74,8 +74,7 @@ class TransactionReadyStateIT extends BoltStateMachineStateTestBase
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertTrue( response.hasMetadata( "fields" ) );
-        assertTrue( response.hasMetadata( "result_available_after" ) );
-        assertFalse( response.hasMetadata( "tx_id" ) );
+        assertTrue( response.hasMetadata( "t_first" ) );
         assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) );
     }
 

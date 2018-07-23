@@ -74,7 +74,7 @@ class StreamingStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
         assertTrue( response.hasMetadata( "type" ) );
-        assertTrue( response.hasMetadata( "result_consumed_after" ) );
+        assertTrue( response.hasMetadata( "t_last" ) );
         assertTrue( response.hasMetadata( "bookmark" ) );
         assertThat( machine.state(), instanceOf( ReadyState.class ) );
     }

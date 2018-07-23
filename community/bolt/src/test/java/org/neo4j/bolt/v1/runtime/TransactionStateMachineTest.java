@@ -56,14 +56,14 @@ import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
 
 class TransactionStateMachineTest
 {
-    private TransactionStateMachineSPI stateMachineSPI;
+    private TransactionStateMachineV1SPI stateMachineSPI;
     private TransactionStateMachine.MutableTransactionState mutableState;
     private TransactionStateMachine stateMachine;
 
     @BeforeEach
     void createMocks()
     {
-        stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
         mutableState = mock(TransactionStateMachine.MutableTransactionState.class);
         stateMachine = new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, new FakeClock() );
     }
@@ -153,7 +153,7 @@ class TransactionStateMachineTest
     @Test
     void shouldStartWithAutoCommitState()
     {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
@@ -166,7 +166,7 @@ class TransactionStateMachineTest
     void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // We're in auto-commit state
@@ -188,7 +188,7 @@ class TransactionStateMachineTest
     void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // We're in auto-commit state
@@ -218,7 +218,7 @@ class TransactionStateMachineTest
     void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // start an explicit transaction
@@ -243,7 +243,7 @@ class TransactionStateMachineTest
     void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // start an explicit transaction
@@ -270,7 +270,7 @@ class TransactionStateMachineTest
     void shouldUnbindTxAfterRun() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
@@ -282,7 +282,7 @@ class TransactionStateMachineTest
     void shouldUnbindTxAfterStreamResult() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
@@ -298,7 +298,7 @@ class TransactionStateMachineTest
     void shouldThrowDuringRunIfPendingTerminationNoticeExists() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.ctx.pendingTerminationNotice = Status.Transaction.TransactionTimedOut;
@@ -313,7 +313,7 @@ class TransactionStateMachineTest
     void shouldThrowDuringStreamResultIfPendingTerminationNoticeExists() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
@@ -333,7 +333,7 @@ class TransactionStateMachineTest
     {
         KernelTransaction transaction = newTransaction();
         BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> stateMachine.run( "SOME STATEMENT", null ) );
@@ -348,7 +348,7 @@ class TransactionStateMachineTest
     void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception
     {
         KernelTransaction transaction = newTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
@@ -375,7 +375,7 @@ class TransactionStateMachineTest
     {
         KernelTransaction transaction = newTransaction();
         BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
@@ -398,7 +398,7 @@ class TransactionStateMachineTest
     void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Exception
     {
         KernelTransaction transaction = newTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.beginTransaction( null );
@@ -443,7 +443,7 @@ class TransactionStateMachineTest
         return transaction;
     }
 
-    private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineSPI stateMachineSPI )
+    private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineV1SPI stateMachineSPI )
     {
         return new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, new FakeClock() );
     }
@@ -453,10 +453,10 @@ class TransactionStateMachineTest
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
-    private static TransactionStateMachineSPI newTransactionStateMachineSPI( KernelTransaction transaction ) throws KernelException
+    private static TransactionStateMachineV1SPI newTransactionStateMachineSPI( KernelTransaction transaction ) throws KernelException
     {
         BoltResultHandle resultHandle = newResultHandle();
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
 
         when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
@@ -464,10 +464,10 @@ class TransactionStateMachineTest
         return stateMachineSPI;
     }
 
-    private static TransactionStateMachineSPI newTransactionStateMachineSPI( KernelTransaction transaction,
+    private static TransactionStateMachineV1SPI newTransactionStateMachineSPI( KernelTransaction transaction,
             BoltResultHandle resultHandle ) throws KernelException
     {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
 
         when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );

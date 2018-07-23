@@ -153,11 +153,11 @@ public class BoltV3TransportIT
         Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
         Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldMatcher, hasKey( "tx_id" ), hasKey( "result_available_after" ) ) ),
+                msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), hasKey( "bookmark" ) ) ) ) );
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), hasKey( "bookmark" ) ) ) ) );
     }
 
     @Test
@@ -173,8 +173,8 @@ public class BoltV3TransportIT
         Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
         Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "tx_id" ), hasKey( "result_available_after" ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), hasKey( "bookmark" ) ) ) ) );
+                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ),
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), hasKey( "bookmark" ) ) ) ) );
     }
 
     @Test
@@ -192,12 +192,12 @@ public class BoltV3TransportIT
         Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
         Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( hasKey( "tx_id" ) ) ),
-                msgSuccess( allOf( entryFieldMatcher, not( hasKey( "tx_id" ) ), hasKey( "result_available_after" ) ) ),
+                msgSuccess(),
+                msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), not( hasKey( "bookmark" ) ) ) ),
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), not( hasKey( "bookmark" ) ) ) ),
                 msgSuccess( allOf( hasKey( "bookmark" ) ) ) ) );
     }
 
@@ -216,12 +216,12 @@ public class BoltV3TransportIT
         Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
         Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( hasKey( "tx_id" ) ) ),
-                msgSuccess( allOf( entryFieldMatcher, not( hasKey( "tx_id" ) ), hasKey( "result_available_after" ) ) ),
+                msgSuccess(),
+                msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( allOf( entryTypeMatcher, hasKey( "result_consumed_after" ), not( hasKey( "bookmark" ) ) ) ),
+                msgSuccess( allOf( entryTypeMatcher, hasKey( "t_last" ), not( hasKey( "bookmark" ) ) ) ),
                 msgSuccess() ) );
     }
 
@@ -263,7 +263,7 @@ public class BoltV3TransportIT
 
         Matcher<Map<? extends String,?>> ageMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( ageMatcher, hasKey( "tx_id" ), hasKey( "result_available_after" ) ) ),
+                msgSuccess( allOf( ageMatcher, hasKey( "t_first" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
                 msgSuccess() ) );
 
@@ -275,7 +275,7 @@ public class BoltV3TransportIT
         // Then
         Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "tx_id" ), hasKey( "result_available_after" ) ) ),
+                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
                 msgSuccess()
         ) );
@@ -293,7 +293,7 @@ public class BoltV3TransportIT
         // Then
         Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey("tx_id"), hasKey( "result_available_after" ) ) ) ) );
+                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -320,7 +320,7 @@ public class BoltV3TransportIT
         // Then
         Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( allOf( entryFieldsMatcher, hasKey( "tx_id" ), hasKey( "result_available_after" ) ) ) ) );
+                msgSuccess( allOf( entryFieldsMatcher, hasKey( "t_first" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -360,7 +360,7 @@ public class BoltV3TransportIT
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
-                msgSuccess( allOf( typeMatcher, hasKey( "result_consumed_after" ) ) ) ) );
+                msgSuccess( allOf( typeMatcher, hasKey( "t_last" ) ) ) ) );
     }
 
     private byte[] bytes( int... ints )

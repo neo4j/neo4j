@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -55,7 +56,7 @@ import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
-public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.TransactionStateMachineSPI
+public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
@@ -67,7 +68,7 @@ public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.Transa
     private final Duration txAwaitDuration;
     private final Clock clock;
 
-    public TransactionStateMachineSPI( GraphDatabaseAPI db, AvailabilityGuard availabilityGuard, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, AvailabilityGuard availabilityGuard, Duration txAwaitDuration, Clock clock )
     {
         this.db = db;
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
@@ -127,50 +128,12 @@ public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.Transa
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 
-        return new BoltResultHandle()
-        {
+        return newBoltResultHandle( statement, params, transactionalContext );
+    }
 
-            @Override
-            public BoltResult start() throws KernelException
-            {
-                try
-                {
-                    Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext );
-                    if ( result instanceof QueryResultProvider )
-                    {
-                        return new CypherAdapterStream( ((QueryResultProvider) result).queryResult(), clock );
-                    }
-                    else
-                    {
-                        throw new IllegalStateException( format( "Unexpected query execution result. Expected to get instance of %s but was %s.",
-                                                                  QueryResultProvider.class.getName(), result.getClass().getName() ) );
-                    }
-                }
-                catch ( KernelException e )
-                {
-                    close( false );
-                    throw new QueryExecutionKernelException( e );
-                }
-                catch ( Throwable e )
-                {
-                    close( false );
-                    throw e;
-                }
-            }
-
-            @Override
-            public void close( boolean success )
-            {
-                transactionalContext.close( success );
-            }
-
-            @Override
-            public void terminate()
-            {
-                transactionalContext.terminate();
-            }
-
-        };
+    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, TransactionalContext transactionalContext )
+    {
+        return new BoltResultHandleV1( statement, params, transactionalContext );
     }
 
     private InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, Duration txTimeout, Map<String, Object> txMetadata )
@@ -202,5 +165,64 @@ public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.Transa
     {
         GraphDatabaseQueryService queryService = db.getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class );
         return Neo4jTransactionalContextFactory.create( queryService, locker );
+    }
+
+    public class BoltResultHandleV1 implements BoltResultHandle
+    {
+        private final String statement;
+        private final MapValue params;
+        private final TransactionalContext transactionalContext;
+
+        public BoltResultHandleV1( String statement, MapValue params, TransactionalContext transactionalContext )
+        {
+            this.statement = statement;
+            this.params = params;
+            this.transactionalContext = transactionalContext;
+        }
+
+        @Override
+        public BoltResult start() throws KernelException
+        {
+            try
+            {
+                Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext );
+                if ( result instanceof QueryResultProvider )
+                {
+                    return newBoltResult( (QueryResultProvider) result, clock );
+                }
+                else
+                {
+                    throw new IllegalStateException( format( "Unexpected query execution result. Expected to get instance of %s but was %s.",
+                                                              QueryResultProvider.class.getName(), result.getClass().getName() ) );
+                }
+            }
+            catch ( KernelException e )
+            {
+                close( false );
+                throw new QueryExecutionKernelException( e );
+            }
+            catch ( Throwable e )
+            {
+                close( false );
+                throw e;
+            }
+        }
+
+        protected BoltResult newBoltResult( QueryResultProvider result, Clock clock )
+        {
+            return new CypherAdapterStream( result.queryResult(), clock );
+        }
+
+        @Override
+        public void close( boolean success )
+        {
+            transactionalContext.close( success );
+        }
+
+        @Override
+        public void terminate()
+        {
+            transactionalContext.terminate();
+        }
     }
 }
