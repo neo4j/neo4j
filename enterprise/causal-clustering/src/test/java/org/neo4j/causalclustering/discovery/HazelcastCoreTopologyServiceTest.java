@@ -31,6 +31,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
@@ -56,7 +57,8 @@ public class HazelcastCoreTopologyServiceTest
                 NullLogProvider.getInstance(),
                 NullLogProvider.getInstance(),
                 hostnameResolver,
-                new TopologyServiceNoRetriesStrategy() );
+                new TopologyServiceNoRetriesStrategy(),
+                new Monitors() );
         service.start();
         service.stop();
     }
