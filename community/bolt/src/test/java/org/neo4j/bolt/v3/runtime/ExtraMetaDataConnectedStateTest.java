@@ -74,9 +74,7 @@ class ExtraMetaDataConnectedStateTest
         when( context.connectionState() ).thenReturn( connectionStateMock );
         when( context.connectionId() ).thenReturn( "connection-uuid" );
 
-        AuthenticationResult authResult = mock( AuthenticationResult.class );
-        when( authResult.credentialsExpired() ).thenReturn( true );
-        when( boltSpi.authenticate( meta ) ).thenReturn( authResult );
+        when( boltSpi.authenticate( meta ) ).thenReturn( AuthenticationResult.AUTH_DISABLED );
 
         // When
         BoltStateMachineState newState = state.process( helloMessage, context );
