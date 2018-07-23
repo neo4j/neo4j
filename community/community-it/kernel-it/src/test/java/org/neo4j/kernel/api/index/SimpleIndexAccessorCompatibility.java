@@ -206,7 +206,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         updateAndCommit( updates );
 
         // then
-        System.out.println( "Expected number of keys: " + valueSet1.size() );
         int propertyKeyId = descriptor.schema().getPropertyId();
         for ( NodeAndValue entry : valueSet1 )
         {

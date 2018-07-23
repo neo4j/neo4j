@@ -30,9 +30,9 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
 {
     private GenericKeyState[] states;
 
-    CompositeGenericKey( int length )
+    CompositeGenericKey( int slots )
     {
-        states = new GenericKeyState[length];
+        states = new GenericKeyState[slots];
         for ( int i = 0; i < states.length; i++ )
         {
             states[i] = new GenericKeyState();

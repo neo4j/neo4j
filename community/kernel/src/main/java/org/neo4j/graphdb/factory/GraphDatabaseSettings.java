@@ -580,12 +580,12 @@ public class GraphDatabaseSettings implements LoadableConfig
             "This improves read and write performance for non-composite indexed numbers. " +
             "lucene+native-2.0: Store strings in a native index and remaining value types like lucene+native-1.0. " +
             "This improves write performance for non-composite indexed strings. " +
-            "This version of the native string index has a value limit of 4046 bytes, such that byte-representation " +
+            "This version of the native string index has a value limit of 4047 bytes, such that byte-representation " +
             "of a string to index cannot be larger than that limit, or the transaction trying to index such a value will fail. " +
             "This version of the native string index also has reduced performance for CONTAINS and ENDS WITH queries, " +
             "due to resorting to index scan+filter internally. " +
             "native-gbptree-1.0: Store all value, including composite value, in native index. " +
-            "Just like lucene+native-2.0 there is a value size limit of 4047B. For composite indexes this limit is for all of the values in " +
+            "Just like lucene+native-2.0 there is a value size limit of 4047 bytes. For composite indexes this limit is for all of the values in " +
             "the indexed key combined. The same limitations for CONTAINS and ENDS WITH queries as for lucene+native-2.0 also applies" +
             "to native-gbptree-1.0." +
             "Native indexes generally has these benefits over Lucene:\n" +
