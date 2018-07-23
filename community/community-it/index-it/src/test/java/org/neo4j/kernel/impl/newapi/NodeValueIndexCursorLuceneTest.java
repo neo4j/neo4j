@@ -29,7 +29,7 @@ public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursor
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, LUCENE10.providerName() );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, LUCENE10.providerIdentifier() );
         return readTestSupport;
     }
 

@@ -50,6 +50,10 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DEFAULT;
@@ -567,7 +571,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             this.providerName = providerName;
         }
 
-        public String providerName()
+        public String providerIdentifier()
         {
             return providerName;
         }
@@ -595,8 +599,8 @@ public class GraphDatabaseSettings implements LoadableConfig
             "- Controllable memory usage, due to being bound by the page cache" )
             public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
-                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName(),
-                            SchemaIndex.NATIVE_GBPTREE10.providerName() ),
+                    optionsIgnoreCase( NATIVE20.providerIdentifier(), NATIVE10.providerIdentifier(), LUCENE10.providerIdentifier(),
+                            NATIVE_GBPTREE10.providerIdentifier() ),
                     null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )

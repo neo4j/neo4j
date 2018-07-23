@@ -91,7 +91,7 @@ public class NativeLuceneFusionIndexProviderFactory20 extends
 
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName().equals( defaultSchemaProvider ) )
+        if ( GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }

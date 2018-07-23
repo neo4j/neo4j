@@ -155,7 +155,7 @@ public class RecoveryCleanupIT
     public void nativeIndexMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         // given
-        setTestConfig( GraphDatabaseSettings.default_schema_provider, NATIVE20.providerName() );
+        setTestConfig( GraphDatabaseSettings.default_schema_provider, NATIVE20.providerIdentifier() );
         dirtyDatabase();
 
         // when

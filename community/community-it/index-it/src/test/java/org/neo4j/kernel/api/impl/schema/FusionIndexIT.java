@@ -50,7 +50,7 @@ public class FusionIndexIT
 {
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
 
     private File databaseDirectory;
     private final Label label = Label.label( "label" );

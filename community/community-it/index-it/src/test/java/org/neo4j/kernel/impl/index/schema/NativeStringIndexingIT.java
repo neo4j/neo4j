@@ -58,7 +58,7 @@ public class NativeStringIndexingIT
 
     @Rule
     public final DatabaseRule db = new EmbeddedDatabaseRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
     @Rule
     public final RandomRule random = new RandomRule();
 

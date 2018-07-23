@@ -127,7 +127,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 if ( value.equals( Settings.FALSE ) )
                 {
                     rawConfiguration.putIfAbsent( GraphDatabaseSettings.default_schema_provider.name(),
-                            GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
+                            GraphDatabaseSettings.SchemaIndex.LUCENE10.providerIdentifier() );
                 }
             }
         } );

@@ -108,7 +108,7 @@ public class LuceneIndexProviderFactory extends
 
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = LuceneIndexProvider.PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName().equals( defaultSchemaProvider ) )
+        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.providerIdentifier().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }

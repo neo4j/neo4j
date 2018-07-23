@@ -82,7 +82,7 @@ public class BatchInsertIndexProviderTest
     @Test
     public void batchInserterShouldUseConfiguredIndexProvider() throws Exception
     {
-        Map<String,String> config = stringMap( default_schema_provider.name(), schemaIndex.providerName() );
+        Map<String,String> config = stringMap( default_schema_provider.name(), schemaIndex.providerIdentifier() );
         BatchInserter inserter = newBatchInserter( config );
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
@@ -97,8 +97,8 @@ public class BatchInsertIndexProviderTest
             int labelId = tokenRead.nodeLabel( TestLabels.LABEL_ONE.name() );
             int propertyId = tokenRead.propertyKey( "key" );
             IndexReference index = schemaRead.index( labelId, propertyId );
-            assertTrue( unexpectedIndexProviderMessage( index ), schemaIndex.providerName().contains( index.providerKey() ) );
-            assertTrue( unexpectedIndexProviderMessage( index ), schemaIndex.providerName().contains( index.providerVersion() ) );
+            assertTrue( unexpectedIndexProviderMessage( index ), schemaIndex.providerIdentifier().contains( index.providerKey() ) );
+            assertTrue( unexpectedIndexProviderMessage( index ), schemaIndex.providerIdentifier().contains( index.providerVersion() ) );
             tx.success();
         }
         finally

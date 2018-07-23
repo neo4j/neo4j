@@ -121,7 +121,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
 
         // when
         newTransaction( AnonymousContext.full() );
-        callIndexProcedure( indexPattern( label, propKey ), GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+        callIndexProcedure( indexPattern( label, propKey ), GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
         commit();
 
         // then
@@ -196,7 +196,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         String pattern = indexPattern( label, propertyKey );
         try
         {
-            callIndexProcedure( pattern, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+            callIndexProcedure( pattern, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
             fail( "Should have failed" );
         }
         catch ( ProcedureException e )
@@ -270,7 +270,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         // when
         newTransaction( AnonymousContext.full() );
         String pattern = indexPattern( label, properties );
-        String specifiedProvider = NATIVE10.providerName();
+        String specifiedProvider = NATIVE10.providerIdentifier();
         RawIterator<Object[],ProcedureException> result = callIndexProcedure( pattern, specifiedProvider );
         // then
         assertThat( Arrays.asList( result.next() ), contains( pattern, specifiedProvider, expectedSuccessfulCreationStatus ) );
@@ -417,7 +417,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
     {
         newTransaction( AnonymousContext.full() );
         String pattern = indexPattern( label, properties );
-        String specifiedProvider = NATIVE10.providerName();
+        String specifiedProvider = NATIVE10.providerIdentifier();
         callIndexProcedure( pattern, specifiedProvider );
         commit();
     }

@@ -63,7 +63,7 @@ public class DefaultSchemaIndexConfigTest
     {
         // given
         GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
-                GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() ).newGraphDatabase();
+                GraphDatabaseSettings.SchemaIndex.LUCENE10.providerIdentifier() ).newGraphDatabase();
 
         // when
         createIndex( db );
@@ -77,7 +77,7 @@ public class DefaultSchemaIndexConfigTest
     {
         // given
         GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
-                GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() ).newGraphDatabase();
+                GraphDatabaseSettings.SchemaIndex.NATIVE10.providerIdentifier() ).newGraphDatabase();
 
         // when
         createIndex( db );
@@ -91,7 +91,7 @@ public class DefaultSchemaIndexConfigTest
     {
         // given
         GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
-                GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() ).newGraphDatabase();
+                GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() ).newGraphDatabase();
 
         // when
         createIndex( db );

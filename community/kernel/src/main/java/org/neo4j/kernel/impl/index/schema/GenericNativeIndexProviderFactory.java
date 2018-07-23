@@ -88,7 +88,7 @@ public class GenericNativeIndexProviderFactory extends KernelExtensionFactory<Ge
     {
         String selectedSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10.providerName().equals( selectedSchemaProvider ) )
+        if ( GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10.providerIdentifier().equals( selectedSchemaProvider ) )
         {
             priority = 100;
         }

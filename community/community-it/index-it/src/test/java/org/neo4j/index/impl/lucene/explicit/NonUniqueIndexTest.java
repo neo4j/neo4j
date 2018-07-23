@@ -177,12 +177,12 @@ public class NonUniqueIndexTest
     {
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
-        if ( LUCENE10.providerName().equals( defaultSchemaProvider ) )
+        if ( LUCENE10.providerIdentifier().equals( defaultSchemaProvider ) )
         {
             return LuceneIndexProviderFactory
                     .newInstance( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
         }
-        else if ( NATIVE10.providerName().equals( defaultSchemaProvider ) )
+        else if ( NATIVE10.providerIdentifier().equals( defaultSchemaProvider ) )
         {
             return NativeLuceneFusionIndexProviderFactory10
                     .create( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
