@@ -559,21 +559,33 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
-        NATIVE_GBPTREE10( "native-gbptree-1.0" ),
-        NATIVE20( "lucene+native-2.0" ),
-        NATIVE10( "lucene+native-1.0" ),
-        LUCENE10( "lucene-1.0" );
+        NATIVE_GBPTREE10( "native-gbptree", "1.0" ),
+        NATIVE20( "lucene+native", "2.0" ),
+        NATIVE10( "lucene+native", "1.0" ),
+        LUCENE10( "lucene", "1.0" );
 
         private final String providerName;
+        private final String providerVersion;
 
-        SchemaIndex( String providerName )
+        SchemaIndex( String providerName, String providerVersion )
         {
             this.providerName = providerName;
+            this.providerVersion = providerVersion;
         }
 
         public String providerIdentifier()
         {
+            return providerName + "-" + providerVersion;
+        }
+
+        public String providerName()
+        {
             return providerName;
+        }
+
+        public String providerVersion()
+        {
+            return providerVersion;
         }
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -81,8 +82,9 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue>
 {
-    public static final String KEY = "native-gbptree";
-    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
+    public static final String KEY = GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10.providerName();
+    public static final String VERSION = GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10.providerVersion();
+    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, VERSION );
 
     // TODO implement
     public static final IndexCapability CAPABILITY = new IndexCapability()

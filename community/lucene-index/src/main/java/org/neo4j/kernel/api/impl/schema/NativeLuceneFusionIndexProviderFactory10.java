@@ -48,8 +48,15 @@ import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 public class NativeLuceneFusionIndexProviderFactory10 extends
         NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory10.Dependencies>
 {
-    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
+    public static final String KEY = GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName();
+    public static final String VERSION = GraphDatabaseSettings.SchemaIndex.NATIVE10.providerVersion();
+    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, VERSION );
     static final int PRIORITY = LuceneIndexProvider.PRIORITY + 1;
+
+    public NativeLuceneFusionIndexProviderFactory10()
+    {
+        super( KEY );
+    }
 
     public interface Dependencies extends LuceneIndexProviderFactory.Dependencies
     {

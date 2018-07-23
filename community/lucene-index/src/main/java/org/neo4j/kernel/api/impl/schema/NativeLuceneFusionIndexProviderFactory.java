@@ -25,18 +25,15 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 abstract class NativeLuceneFusionIndexProviderFactory<DEPENDENCIES> extends KernelExtensionFactory<DEPENDENCIES>
 {
-    public static final String KEY = LuceneIndexProviderFactory.KEY + "+" + NumberIndexProvider.KEY;
-
-    NativeLuceneFusionIndexProviderFactory()
+    NativeLuceneFusionIndexProviderFactory( String key )
     {
-        super( ExtensionType.DATABASE, KEY );
+        super( ExtensionType.DATABASE, key );
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory, IndexProvider.Descriptor descriptor )
