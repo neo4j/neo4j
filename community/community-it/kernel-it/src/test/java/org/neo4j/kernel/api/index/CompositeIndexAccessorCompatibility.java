@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.hamcrest.Matchers;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collections;
 
@@ -31,12 +31,16 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static java.time.LocalDate.ofEpochDay;
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
@@ -47,6 +51,9 @@ import static org.neo4j.internal.kernel.api.IndexQuery.range;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
+import static org.neo4j.values.storable.Values.booleanArray;
+import static org.neo4j.values.storable.Values.longArray;
+import static org.neo4j.values.storable.Values.stringArray;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -65,60 +72,68 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexScanAndSeekExactWithExactByString() throws Exception
     {
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "a", "a" ),
-                add( 2L, descriptor.schema(), "b", "b" ),
-                add( 3L, descriptor.schema(), "a", "b" ) ) );
-
-        assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( exact( 0, "b" ), exact( 1, "b" ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, "a" ), exact( 1, "b" ) ), equalTo( singletonList( 3L ) ) );
-        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        testIndexScanAndSeekExactWithExact( "a", "b" );
     }
 
     @Test
     public void testIndexScanAndSeekExactWithExactByNumber() throws Exception
     {
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), 333, 333 ),
-                add( 2L, descriptor.schema(), 101, 101 ),
-                add( 3L, descriptor.schema(), 333, 101 ) ) );
-
-        assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( exact( 0, 101 ), exact( 1, 101 ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, 333 ), exact( 1, 101 ) ), equalTo( singletonList( 3L ) ) );
-        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        testIndexScanAndSeekExactWithExact( 333, 101 );
     }
 
     @Test
     public void testIndexScanAndSeekExactWithExactByBoolean() throws Exception
     {
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), true, true),
-                add( 2L, descriptor.schema(), false, false ),
-                add( 3L, descriptor.schema(), true, false ) ) );
-
-        assertThat( query( exact( 0, true ), exact( 1, true ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( exact( 0, false ), exact( 1, false ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, true ), exact( 1, false ) ), equalTo( singletonList( 3L ) ) );
-        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        testIndexScanAndSeekExactWithExact( true, false );
     }
 
     @Test
     public void testIndexScanAndSeekExactWithExactByTemporal() throws Exception
     {
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), epochDate( 303 ), epochDate( 303 ) ),
-                add( 2L, descriptor.schema(), epochDate( 101 ), epochDate( 101 ) ),
-                add( 3L, descriptor.schema(), epochDate( 303 ), epochDate( 101 ) ) ) );
-
-        assertThat( query( exact( 0, epochDate( 303 ) ), exact( 1, epochDate( 303 ) ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), exact( 1, epochDate( 101 ) ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), exact( 1, epochDate( 101 ) ) ), equalTo( singletonList( 3L ) ) );
-        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        testIndexScanAndSeekExactWithExact( epochDate( 303 ), epochDate( 101 ) );
     }
 
-    // TODO testIndexQuery_Exact_Exact_Array
+    @Test
+    public void testIndexScanAndSeekExactWithExactByStringArray() throws Exception
+    {
+        testIndexScanAndSeekExactWithExact( new String[]{"a", "c"}, new String[]{"b", "c"} );
+    }
+
+    @Test
+    public void testIndexScanAndSeekExactWithExactByNumberArray() throws Exception
+    {
+        testIndexScanAndSeekExactWithExact( new int[]{333, 900}, new int[]{101, 900} );
+    }
+
+    @Test
+    public void testIndexScanAndSeekExactWithExactByBooleanArray() throws Exception
+    {
+        testIndexScanAndSeekExactWithExact( new boolean[]{true, true}, new boolean[]{false, true} );
+    }
+
+    @Test
+    public void testIndexScanAndSeekExactWithExactByTemporalArray() throws Exception
+    {
+        testIndexScanAndSeekExactWithExact( dateArray( 333, 900 ), dateArray( 101, 900 ) );
+    }
+
+    private void testIndexScanAndSeekExactWithExact( Object a, Object b ) throws Exception
+    {
+        testIndexScanAndSeekExactWithExact( Values.of( a ), Values.of( b ) );
+    }
+
+    private void testIndexScanAndSeekExactWithExact( Value a, Value b ) throws Exception
+    {
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), a, a ),
+                add( 2L, descriptor.schema(), b, b ),
+                add( 3L, descriptor.schema(), a, b ) ) );
+
+        assertThat( query( exact( 0, a ), exact( 1, a ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, b ), exact( 1, b ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, a ), exact( 1, b ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+    }
 
     @Test
     public void testIndexScanAndSeekExactWithExactByPoint() throws Exception
@@ -153,138 +168,158 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByString() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "a", "Anabelle" ),
-                add( 2L, descriptor.schema(), "a", "Anna" ),
-                add( 3L, descriptor.schema(), "a", "Bob" ),
-                add( 4L, descriptor.schema(), "a", "Harriet" ),
-                add( 5L, descriptor.schema(), "a", "William" ),
-                add( 6L, descriptor.schema(), "b", "Anabelle" ),
-                add( 7L, descriptor.schema(), "b", "Anna" ),
-                add( 8L, descriptor.schema(), "b", "Bob" ),
-                add( 9L, descriptor.schema(), "b", "Harriet" ),
-                add( 10L, descriptor.schema(), "b", "William" ) ) );
-
-        assertThat( query( exact( 0, "a" ), range( 1, "Anna", true, "Harriet", false ) ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( query( exact( 0, "a" ), range( 1, "Harriet", true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( query( exact( 0, "a" ), range( 1, "Harriet", false, null, true ) ), equalTo( singletonList( 5L ) ) );
-        assertThat( query( exact( 0, "a" ), range( 1, "William", false, "Anna", true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, "a" ), range( 1, null, false, "Bob", false ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, "a" ), range( 1, null, true, "Bob", true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( exact( 0, "a" ), range( 1, (String)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( exact( 0, "a" ), range( 1, "Anabelle", false, "Anna", true ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, "a" ), range( 1, "Anabelle", false, "Bob", false ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, "Anna", true, "Harriet", false ) ), equalTo( asList( 7L, 8L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, "Harriet", true, null, false ) ), equalTo( asList( 9L, 10L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, "Harriet", false, null, true ) ), equalTo( singletonList( 10L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, "William", false, "Anna", true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, "b" ), range( 1, null, false, "Bob", false ) ), equalTo( asList( 6L, 7L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, null, true, "Bob", true ) ), equalTo( asList( 6L, 7L, 8L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, (String)null, true, null, true ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, "Anabelle", false, "Anna", true ) ), equalTo( singletonList( 7L ) ) );
-        assertThat( query( exact( 0, "b" ), range( 1, "Anabelle", false, "Bob", false ) ), equalTo( singletonList( 7L ) ) );
+        testIndexSeekExactWithRange( ValueGroup.TEXT, Values.of( "a" ), Values.of( "b" ),
+                Values.of( "Anabelle" ),
+                Values.of( "Anna" ),
+                Values.of( "Bob" ),
+                Values.of( "Harriet" ),
+                Values.of( "William" ) );
     }
 
     @Test
     public void testIndexSeekExactWithRangeByNumber() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), 303, 111 ),
-                add( 2L, descriptor.schema(), 303, 222 ),
-                add( 3L, descriptor.schema(), 303, 333 ),
-                add( 4L, descriptor.schema(), 303, 444 ),
-                add( 5L, descriptor.schema(), 303, 555 ),
-                add( 6L, descriptor.schema(), 101, 111 ),
-                add( 7L, descriptor.schema(), 101, 222 ),
-                add( 8L, descriptor.schema(), 101, 333 ),
-                add( 9L, descriptor.schema(), 101, 444 ),
-                add( 10L, descriptor.schema(), 101, 555 ) ) );
-
-        assertThat( query( exact( 0, 303 ), range( 1, 222, true, 444, false ) ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( query( exact( 0, 303 ), range( 1, 444, true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( query( exact( 0, 303 ), range( 1, 444, false, null, true ) ), equalTo( singletonList( 5L ) ) );
-        assertThat( query( exact( 0, 303 ), range( 1, 555, false, 222, true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, 303 ), range( 1, null, false, 333, false ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, 303 ), range( 1, null, true, 333, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( exact( 0, 303 ), range( 1, (String)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( exact( 0, 303 ), range( 1, 111, false, 222, true ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, 303 ), range( 1, 111, false, 333, false ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, 222, true, 444, false ) ), equalTo( asList( 7L, 8L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, 444, true, null, false ) ), equalTo( asList( 9L, 10L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, 444, false, null, true ) ), equalTo( singletonList( 10L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, 555, false, 222, true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, 101 ), range( 1, null, false, 333, false ) ), equalTo( asList( 6L, 7L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, null, true, 333, true ) ), equalTo( asList( 6L, 7L, 8L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, (String)null, true, null, true ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, 111, false, 222, true ) ), equalTo( singletonList( 7L ) ) );
-        assertThat( query( exact( 0, 101 ), range( 1, 111, false, 333, false ) ), equalTo( singletonList( 7L ) ) );
+        testIndexSeekExactWithRange( ValueGroup.NUMBER, Values.of( 303 ), Values.of( 101 ),
+                Values.of( 111 ),
+                Values.of( 222 ),
+                Values.of( 333 ),
+                Values.of( 444 ),
+                Values.of( 555 ) );
     }
 
     @Test
     public void testIndexSeekExactWithRangeByTemporal() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), epochDate( 303 ), epochDate( 111 ) ),
-                add( 2L, descriptor.schema(), epochDate( 303 ), epochDate( 222 ) ),
-                add( 3L, descriptor.schema(), epochDate( 303 ), epochDate( 333 ) ),
-                add( 4L, descriptor.schema(), epochDate( 303 ), epochDate( 444 ) ),
-                add( 5L, descriptor.schema(), epochDate( 303 ), epochDate( 555 ) ),
-                add( 6L, descriptor.schema(), epochDate( 101 ), epochDate( 111 ) ),
-                add( 7L, descriptor.schema(), epochDate( 101 ), epochDate( 222 ) ),
-                add( 8L, descriptor.schema(), epochDate( 101 ), epochDate( 333 ) ),
-                add( 9L, descriptor.schema(), epochDate( 101 ), epochDate( 444 ) ),
-                add( 10L, descriptor.schema(), epochDate( 101 ), epochDate( 555 ) ) ) );
-
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 222 ), true, epochDate( 444 ), false ) ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 444 ), true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 444 ), false, null, true ) ), equalTo( singletonList( 5L ) ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 555 ), false, epochDate( 222 ), true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, null, false, epochDate( 333 ), false ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, null, true, epochDate( 333 ), true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        // can't create range(null, null):
-        // assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, (DateValue) null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 111 ), false, epochDate( 222 ), true ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 111 ), false, epochDate( 333 ), false ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, epochDate( 222 ), true, epochDate( 444 ), false ) ), equalTo( asList( 7L, 8L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, epochDate( 444 ), true, null, false ) ), equalTo( asList( 9L, 10L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, epochDate( 444 ), false, null, true ) ), equalTo( singletonList( 10L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, epochDate( 555 ), false, epochDate( 222 ), true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, null, false, epochDate( 333 ), false ) ), equalTo( asList( 6L, 7L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, null, true, epochDate( 333 ), true ) ), equalTo( asList( 6L, 7L, 8L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, (String) null, true, null, true ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, epochDate( 111 ), false, epochDate( 222 ), true ) ), equalTo( singletonList( 7L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, epochDate( 111 ), false, epochDate( 333 ), false ) ), equalTo( singletonList( 7L ) ) );
+        testIndexSeekExactWithRange( ValueGroup.DATE, epochDate( 303 ), epochDate( 101 ),
+                epochDate( 111 ),
+                epochDate( 222 ),
+                epochDate( 333 ),
+                epochDate( 444 ),
+                epochDate( 555 ) );
     }
 
     @Test
     public void testIndexSeekExactWithRangeByBoolean() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
         Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
 
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), true, false ),
-                add( 2L, descriptor.schema(), true, true ),
-                add( 3L, descriptor.schema(), false, false ),
-                add( 4L, descriptor.schema(), false, true ) ) );
-
-        assertThat( query( exact( 0, true ), range( 1, BooleanValue.FALSE, true, BooleanValue.TRUE, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, true ), range( 1, BooleanValue.FALSE, false, BooleanValue.TRUE, true ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( exact( 0, true ), range( 1, BooleanValue.FALSE, true, BooleanValue.TRUE, false ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( exact( 0, true ), range( 1, BooleanValue.FALSE, false, BooleanValue.TRUE, false ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, true ), range( 1, null, true, BooleanValue.TRUE, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, true ), range( 1, BooleanValue.FALSE, true, null, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, true ), range( 1, BooleanValue.TRUE, true, BooleanValue.FALSE, true ) ), equalTo( EMPTY_LIST ) );
+        testIndexSeekExactWithRangeByBooleanType( ValueGroup.BOOLEAN_ARRAY, BooleanValue.TRUE, BooleanValue.FALSE,
+                BooleanValue.FALSE,
+                BooleanValue.TRUE );
     }
 
+    @Test
+    public void testIndexSeekExactWithRangeByStringArray() throws Exception
+    {
+        testIndexSeekExactWithRange( ValueGroup.TEXT_ARRAY, stringArray( "a", "c" ), stringArray( "b", "c" ),
+                stringArray( "Anabelle", "c" ),
+                stringArray( "Anna", "c" ),
+                stringArray( "Bob", "c" ),
+                stringArray( "Harriet", "c" ),
+                stringArray( "William", "c" )
+        );
+    }
+
+    @Test
+    public void testIndexSeekExactWithRangeByNumberArray() throws Exception
+    {
+        testIndexSeekExactWithRange( ValueGroup.NUMBER_ARRAY, longArray( new long[]{333, 9000} ), longArray( new long[]{101, 900} ),
+                longArray( new long[]{111, 900} ),
+                longArray( new long[]{222, 900} ),
+                longArray( new long[]{333, 900} ),
+                longArray( new long[]{444, 900} ),
+                longArray( new long[]{555, 900} )
+        );
+    }
+
+    @Test
+    public void testIndexSeekExactWithRangeByBooleanArray() throws Exception
+    {
+        testIndexSeekExactWithRange( ValueGroup.BOOLEAN_ARRAY, booleanArray( new boolean[]{true, true} ), booleanArray( new boolean[]{false, false} ),
+                booleanArray( new boolean[]{false, false} ),
+                booleanArray( new boolean[]{false, true} ),
+                booleanArray( new boolean[]{true, false} ),
+                booleanArray( new boolean[]{true, true} ),
+                booleanArray( new boolean[]{true, true, true} )
+        );
+    }
+
+    @Test
+    public void testIndexSeekExactWithRangeByTemporalArray() throws Exception
+    {
+        testIndexSeekExactWithRange( ValueGroup.DATE_ARRAY, dateArray( 303, 900 ), dateArray( 101, 900 ),
+                dateArray( 111, 900 ),
+                dateArray( 222, 900 ),
+                dateArray( 333, 900 ),
+                dateArray( 444, 900 ),
+                dateArray( 555, 900 ) );
+    }
+
+    // TODO testIndexQuery_Exact_Range_Array (spatial)
     // TODO testIndexQuery_Exact_Range_Spatial
-    // TODO testIndexQuery_Exact_Range_Array
+
+    private void testIndexSeekExactWithRange( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 )
+            throws Exception
+    {
+        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), base1, obj1 ),
+                add( 2L, descriptor.schema(), base1, obj2 ),
+                add( 3L, descriptor.schema(), base1, obj3 ),
+                add( 4L, descriptor.schema(), base1, obj4 ),
+                add( 5L, descriptor.schema(), base1, obj5 ),
+                add( 6L, descriptor.schema(), base2, obj1 ),
+                add( 7L, descriptor.schema(), base2, obj2 ),
+                add( 8L, descriptor.schema(), base2, obj3 ),
+                add( 9L, descriptor.schema(), base2, obj4 ),
+                add( 10L, descriptor.schema(), base2, obj5 ) ) );
+
+        assertThat( query( exact( 0, base1 ), range( 1, obj2, true, obj4, false ) ), equalTo( asList( 2L, 3L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj4, true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj4, false, null, true ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj5, false, obj2, true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( exact( 0, base1 ), range( 1, null, false, obj3, false ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, null, true, obj3, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj3, false ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj4, false ) ), equalTo( asList( 7L, 8L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj4, true, null, false ) ), equalTo( asList( 9L, 10L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj4, false, null, true ) ), equalTo( singletonList( 10L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj5, false, obj2, true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( exact( 0, base2 ), range( 1, null, false, obj3, false ) ), equalTo( asList( 6L, 7L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, null, true, obj3, true ) ), equalTo( asList( 6L, 7L, 8L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 7L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj3, false ) ), equalTo( singletonList( 7L ) ) );
+    }
+
+    private void testIndexSeekExactWithRangeByBooleanType( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2 ) throws Exception
+    {
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), base1, obj1 ),
+                add( 2L, descriptor.schema(), base1, obj2 ),
+                add( 3L, descriptor.schema(), base2, obj1 ),
+                add( 4L, descriptor.schema(), base2, obj2 ) ) );
+
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, obj2, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, obj2, false ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, false ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( exact( 0, base1 ), range( 1, null, true, obj2, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, null, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj2, true, obj1, true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, obj2, true ) ), equalTo( asList( 3L, 4L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 4L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, obj2, false ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, false ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( exact( 0, base2 ), range( 1, null, true, obj2, true ) ), equalTo( asList( 3L, 4L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, null, true ) ), equalTo( asList( 3L, 4L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ), equalTo( asList( 3L, 4L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj1, true ) ), equalTo( EMPTY_LIST ) );
+    }
 
     /* stringPrefix */
 
@@ -344,129 +379,94 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithExistsByString() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "a", 1 ),
-                add( 2L, descriptor.schema(), "b", "abv" ),
-                add( 3L, descriptor.schema(), "a", false ) ) );
-
-        assertThat( query( exact( 0, "a" ), exists( 1 ) ), equalTo( asList( 1L, 3L ) ) );
-        assertThat( query( exact( 0, "b" ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+        testIndexSeekExactWithExists( "a", "b" );
     }
 
     @Test
     public void testIndexSeekExactWithExistsByNumber() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), 303, 1 ),
-                add( 2L, descriptor.schema(), 101, "abv" ),
-                add( 3L, descriptor.schema(), 303, false ) ) );
-
-        assertThat( query( exact( 0, 303 ), exists( 1 ) ), equalTo( asList( 1L, 3L ) ) );
-        assertThat( query( exact( 0, 101 ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+        testIndexSeekExactWithExists( 303, 101 );
     }
 
     @Test
     public void testIndexSeekExactWithExistsByTemporal() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), epochDate( 303 ), 1 ),
-                add( 2L, descriptor.schema(), epochDate( 101 ), "abv" ),
-                add( 3L, descriptor.schema(), epochDate( 303 ) , false ) ) );
-
-        assertThat( query( exact( 0, epochDate( 303 ) ), exists( 1 ) ), equalTo( asList( 1L, 3L ) ) );
-        assertThat( query( exact( 0, epochDate( 101 ) ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+        testIndexSeekExactWithExists( epochDate( 303 ), epochDate( 101 ) );
     }
 
     @Test
     public void testIndexSeekExactWithExistsByBoolean() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), true, 1 ),
-                add( 2L, descriptor.schema(), false, "abv" ),
-                add( 3L, descriptor.schema(), true , false ) ) );
-
-        assertThat( query( exact( 0, true ), exists( 1 ) ), equalTo( asList( 1L, 3L ) ) );
-        assertThat( query( exact( 0, false ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+        testIndexSeekExactWithExists( true, false );
     }
 
-    // TODO testIndexSeekExactWithExistsByArray
+    @Test
+    public void testIndexSeekExactWithExistsByStringArray() throws Exception
+    {
+        testIndexSeekExactWithExists( new String[]{"a", "c"}, new String[]{"b", "c"} );
+    }
+
+    @Test
+    public void testIndexSeekExactWithExistsByNumberArray() throws Exception
+    {
+        testIndexSeekExactWithExists( new long[]{303, 900}, new long[]{101, 900} );
+    }
+
+    @Test
+    public void testIndexSeekExactWithExistsByBooleanArray() throws Exception
+    {
+        testIndexSeekExactWithExists( new boolean[]{true, true}, new boolean[]{false, true} );
+    }
+
+    @Test
+    public void testIndexSeekExactWithExistsByTemporalArray() throws Exception
+    {
+        testIndexSeekExactWithExists( dateArray( 303, 900 ), dateArray( 101, 900 ) );
+    }
+
+    // TODO testIndexSeekExactWithExistsByArray (spatial)
     // TODO testIndexSeekExactWithExistsBySpatial
+
+    private void testIndexSeekExactWithExists( Object a, Object b ) throws Exception
+    {
+        testIndexSeekExactWithExists( Values.of( a ), Values.of( b ) );
+    }
+
+    private void testIndexSeekExactWithExists( Value a, Value b ) throws Exception
+    {
+        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), a, Values.of( 1 ) ),
+                add( 2L, descriptor.schema(), b, Values.of( "abv" ) ),
+                add( 3L, descriptor.schema(), a, Values.of( false ) ) ) );
+
+        assertThat( query( exact( 0, a ), exists( 1 ) ), equalTo( asList( 1L, 3L ) ) );
+        assertThat( query( exact( 0, b ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+    }
+
+    /* testIndexSeekRangeWithExists */
 
     @Test
     public void testIndexSeekRangeWithExistsByString() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "Anabelle", 100 ),
-                add( 2L, descriptor.schema(), "Anna", "someString" ),
-                add( 3L, descriptor.schema(), "Bob", epochDate( 300 ) ),
-                add( 4L, descriptor.schema(), "Harriet", true ),
-                add( 5L, descriptor.schema(), "William", 42 ) ) );
-
-        assertThat( query( range( 0, "Anna", true, "Harriet", false ), exists( 1 ) ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( query( range( 0, "Harriet", true, null, false ), exists( 1 ) ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( query( range( 0, "Harriet", false, null, true ), exists( 1 ) ), equalTo( singletonList( 5L ) ) );
-        assertThat( query( range( 0, "William", false, "Anna", true ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( range( 0, null, false, "Bob", false ), exists( 1 ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( range( 0, null, true, "Bob", true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( range( 0, (String)null, true, null, true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( range( 0, "Anabelle", false, "Anna", true ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( range( 0, "Anabelle", false, "Bob", false ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+        testIndexSeekRangeWithExists( ValueGroup.TEXT, "Anabelle", "Anna", "Bob", "Harriet", "William" );
     }
 
     @Test
     public void testIndexSeekRangeWithExistsByNumber() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), -5, 100 ),
-                add( 2L, descriptor.schema(), 0, "someString" ),
-                add( 3L, descriptor.schema(), 5.5, epochDate( 300 ) ),
-                add( 4L, descriptor.schema(), 10.0, true ),
-                add( 5L, descriptor.schema(), 100.0, 42 ) ) );
-
-        assertThat( query( range( 0, 0, true, 10, true ), exists( 1 ) ), equalTo( asList( 2L, 3L, 4L ) ) );
-        assertThat( query( range( 0, 10, true, null, true ), exists( 1 ) ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( query( range( 0, 100, true, 0, true ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( range( 0, null, true, 5.5, true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( range( 0, (Number)null, true, null, true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( range( 0, -5, true, 0, true ), exists( 1 ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( range( 0, -5, true, 5.5, true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        testIndexSeekRangeWithExists( ValueGroup.NUMBER, -5, 0, 5.5, 10.0, 100.0 );
     }
 
     @Test
     public void testIndexSeekRangeWithExistsByTemporal() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-        Assume.assumeTrue( testSuite.supportsTemporal() );
-
         DateTimeValue d1 = datetime( 9999, 100, ZoneId.of( "+18:00" ) );
-        DateTimeValue d4 = datetime( 10000, 100, ZoneId.of( "UTC" ) );
-        DateTimeValue d5 = datetime( 10000, 100, ZoneId.of( "+01:00" ) );
-        DateTimeValue d6 = datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) );
-        DateTimeValue d7 = datetime( 10000, 100, ZoneId.of( "+03:00" ) );
-        DateTimeValue d8 = datetime( 10000, 101, ZoneId.of( "UTC" ) );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), d1, 100 ),
-                add( 4L, descriptor.schema(), d4, "someString" ),
-                add( 5L, descriptor.schema(), d5, true ),
-                add( 6L, descriptor.schema(), d6, epochDate( 200 ) ),
-                add( 7L, descriptor.schema(), d7, false ),
-                add( 8L, descriptor.schema(), d8, "anotherString" )
-        ) );
-
-        assertThat( query( range( 0, d4, true, d7, true ), exists( 1 ) ), Matchers.contains( 4L, 5L, 6L, 7L ) );
+        DateTimeValue d2 = datetime( 10000, 100, ZoneId.of( "UTC" ) );
+        DateTimeValue d3 = datetime( 10000, 100, ZoneId.of( "+01:00" ) );
+        DateTimeValue d4 = datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) );
+        DateTimeValue d5 = datetime( 10000, 100, ZoneId.of( "+03:00" ) );
+        testIndexSeekRangeWithExists( ValueGroup.DATE, d1, d2, d3, d4, d5  );
     }
 
     @Test
@@ -488,8 +488,78 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( range( 0, BooleanValue.TRUE, true, BooleanValue.FALSE, true ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
     }
 
-    // TODO testIndexSeekRangeWithExistsByArray
+    @Test
+    public void testIndexSeekRangeWithExistsByStringArray() throws Exception
+    {
+        testIndexSeekRangeWithExists( ValueGroup.TEXT_ARRAY,
+                new String[]{"Anabelle", "Anabelle"},
+                new String[]{"Anabelle", "Anablo"},
+                new String[]{"Anna", "Anabelle"},
+                new String[]{"Anna", "Anablo"},
+                new String[]{"Bob"} );
+    }
+
+    @Test
+    public void testIndexSeekRangeWithExistsByNumberArray() throws Exception
+    {
+        testIndexSeekRangeWithExists( ValueGroup.NUMBER_ARRAY,
+                new long[]{303, 303},
+                new long[]{303, 404},
+                new long[]{600, 303},
+                new long[]{600, 404},
+                new long[]{900} );
+    }
+
+    @Test
+    public void testIndexSeekRangeWithExistsByBooleanArray() throws Exception
+    {
+        testIndexSeekRangeWithExists( ValueGroup.NUMBER_ARRAY,
+                new boolean[]{false, false},
+                new boolean[]{false, true},
+                new boolean[]{true, false},
+                new boolean[]{true, true},
+                new boolean[]{true, true, false} );
+    }
+
+    @Test
+    public void testIndexSeekRangeWithExistsByTemporalArray() throws Exception
+    {
+        testIndexSeekRangeWithExists( ValueGroup.NUMBER_ARRAY,
+                dateArray( 303, 303 ),
+                dateArray( 303, 404 ),
+                dateArray( 404, 303 ),
+                dateArray( 404, 404 ),
+                dateArray( 404, 404, 303 ) );
+    }
+
+    // TODO testIndexSeekRangeWithExistsByArray (spatial
     // TODO testIndexSeekRangeWithExistsBySpatial
+
+    private void testIndexSeekRangeWithExists( ValueGroup valueGroup, Object obj1, Object obj2, Object obj3, Object obj4, Object obj5 ) throws Exception
+    {
+        testIndexSeekRangeWithExists( valueGroup, Values.of( obj1 ), Values.of( obj2 ), Values.of( obj3 ), Values.of( obj4 ), Values.of( obj5 ) );
+    }
+
+    private void testIndexSeekRangeWithExists( ValueGroup valueGroup, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 ) throws Exception
+    {
+        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), obj1, Values.of( 100 ) ),
+                add( 2L, descriptor.schema(), obj2, Values.of( "someString" ) ),
+                add( 3L, descriptor.schema(), obj3, Values.of( epochDate( 300 ) ) ),
+                add( 4L, descriptor.schema(), obj4, Values.of( true ) ),
+                add( 5L, descriptor.schema(), obj5, Values.of( 42 ) ) ) );
+
+        assertThat( query( range( 0, obj2, true, obj4, false ), exists( 1 ) ), equalTo( asList( 2L, 3L ) ) );
+        assertThat( query( range( 0, obj4, true, null, false ), exists( 1 ) ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( query( range( 0, obj4, false, null, true ), exists( 1 ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( range( 0, obj5, false, obj2, true ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 0, null, false, obj3, false ), exists( 1 ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 0, null, true, obj3, true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 0, valueGroup ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( range( 0, obj1, false, obj2, true ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( range( 0, obj1, false, obj3, false ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
+    }
 
     // This behaviour is expected by General indexes
 
@@ -504,47 +574,82 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         @Test
         public void testDuplicatesInIndexSeekByString() throws Exception
         {
-            updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a", "a" ),
-                    add( 2L, descriptor.schema(), "a", "a" ) ) );
-
-            assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+            Object value = "a";
+            testDuplicatesInIndexSeek( value );
         }
 
         @Test
         public void testDuplicatesInIndexSeekByNumber() throws Exception
         {
-            updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), 333, 333 ),
-                    add( 2L, descriptor.schema(), 333, 333 ) ) );
-
-            assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( asList( 1L, 2L ) ) );
+            testDuplicatesInIndexSeek( 333 );
         }
 
         @Test
         public void testDuplicatesInIndexSeekByPoint() throws Exception
         {
             Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
-            PointValue gps = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
-            updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), gps, gps ),
-                    add( 2L, descriptor.schema(), gps, gps ) ) );
-
-            assertThat( query( exact( 0, gps ), exact( 1, gps ) ), equalTo( asList( 1L, 2L ) ) );
+            testDuplicatesInIndexSeek( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 ) );
         }
 
         @Test
         public void testDuplicatesInIndexSeekByBoolean() throws Exception
         {
-            updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), true, false ),
-                    add( 2L, descriptor.schema(), true, false ) ) );
-
-            assertThat( query( exact( 0, true ), exact( 1, false ) ), equalTo( asList( 1L, 2L ) ) );
+            testDuplicatesInIndexSeek( true );
         }
 
-        // todo testDuplicatesInIndexSeekBySpatial
-        // todo testDuplicatesInIndexSeekByArray
+        @Test
+        public void testDuplicatesInIndexSeekByTemporal() throws Exception
+        {
+            testDuplicatesInIndexSeek( ofEpochDay( 303 ) );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByStringArray() throws Exception
+        {
+            testDuplicatesInIndexSeek( new String[]{"anabelle", "anabollo"} );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByNumberArray() throws Exception
+        {
+            testDuplicatesInIndexSeek( new long[]{303, 606} );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByBooleanArray() throws Exception
+        {
+            testDuplicatesInIndexSeek( new boolean[]{true, false} );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByTemporalArray() throws Exception
+        {
+            testDuplicatesInIndexSeek( dateArray(303, 606) );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByPointArray() throws Exception
+        {
+            Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
+            testDuplicatesInIndexSeek( Values.pointArray( new PointValue[]{
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 )
+            } ) );
+        }
+
+        private void testDuplicatesInIndexSeek( Object value ) throws Exception
+        {
+            testDuplicatesInIndexSeek( Values.of( value ) );
+        }
+
+        private void testDuplicatesInIndexSeek( Value value ) throws Exception
+        {
+            updateAndCommit( asList(
+                    add( 1L, descriptor.schema(), value, value ),
+                    add( 2L, descriptor.schema(), value, value ) ) );
+
+            assertThat( query( exact( 0, value ), exact( 1, value ) ), equalTo( asList( 1L, 2L ) ) );
+        }
     }
 
     // This behaviour is expected by Unique indexes
@@ -574,8 +679,23 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         }
     }
 
+    private static ArrayValue dateArray( int... epochDays )
+    {
+        LocalDate[] localDates = new LocalDate[epochDays.length];
+        for ( int i = 0; i < epochDays.length; i++ )
+        {
+            localDates[i] = ofEpochDay( epochDays[i] );
+        }
+        return Values.dateArray( localDates );
+    }
+
     private static IndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Object value1, Object value2 )
     {
-        return IndexEntryUpdate.add( nodeId, schema, Values.of( value1 ), Values.of( value2 ) );
+        return add( nodeId, schema, Values.of( value1 ), Values.of( value2 ) );
+    }
+
+    private static IndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Value value1, Value value2 )
+    {
+        return IndexEntryUpdate.add( nodeId, schema, value1, value2 );
     }
 }

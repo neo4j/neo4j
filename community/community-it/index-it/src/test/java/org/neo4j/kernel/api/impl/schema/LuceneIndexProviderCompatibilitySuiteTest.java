@@ -51,9 +51,4 @@ public class LuceneIndexProviderCompatibilitySuiteTest extends IndexProviderComp
         return true;
     }
 
-    @Override
-    public boolean supportsTemporal()
-    {
-        return true;
-    }
 }

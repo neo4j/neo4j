@@ -51,9 +51,4 @@ public class FusionIndexProvider10CompatibilitySuiteTest extends IndexProviderCo
         return true;
     }
 
-    @Override
-    public boolean supportsTemporal()
-    {
-        return true;
-    }
 }

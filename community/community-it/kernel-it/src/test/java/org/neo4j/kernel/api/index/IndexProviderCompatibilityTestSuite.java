@@ -72,8 +72,6 @@ public abstract class IndexProviderCompatibilityTestSuite
 
     public abstract boolean supportsSpatial();
 
-    public abstract boolean supportsTemporal();
-
     public boolean supportsGranularCompositeQueries()
     {
         return false;
@@ -112,7 +110,6 @@ public abstract class IndexProviderCompatibilityTestSuite
             this.descriptor = descriptor.withId( 17 );
             this.valueSet1 = allValues(
                     testSuite.supportsSpatial(),
-                    testSuite.supportsTemporal(),
                     Arrays.asList(
                             Values.of( "string1" ),
                             Values.of( 42 ),
@@ -184,7 +181,6 @@ public abstract class IndexProviderCompatibilityTestSuite
 
             this.valueSet2 = allValues(
                     testSuite.supportsSpatial(),
-                    testSuite.supportsTemporal(),
                     Arrays.asList( Values.of( "string2" ), Values.of( 1337 ), Values.of( false ),
                             Values.of( new char[]{'b', 'c'} ),
                             Values.of( new String[]{"someString1", "someString2"} ),
@@ -264,7 +260,6 @@ public abstract class IndexProviderCompatibilityTestSuite
         }
 
         private static List<NodeAndValue> allValues( boolean supportsSpatial,
-                                                     boolean supportsTemporal,
                                                      List<Value> common,
                                                      List<Value> temporal,
                                                      List<Value> spatial )
@@ -282,12 +277,9 @@ public abstract class IndexProviderCompatibilityTestSuite
                     result.add( new NodeAndValue( nodeIds++, value ) );
                 }
             }
-            if ( supportsTemporal )
+            for ( Value value : temporal )
             {
-                for ( Value value : temporal )
-                {
-                    result.add( new NodeAndValue( nodeIds++, value ) );
-                }
+                result.add( new NodeAndValue( nodeIds++, value ) );
             }
             return result;
         }

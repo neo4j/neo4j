@@ -161,8 +161,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     @Test
     public void testIndexRangeSeekByDateTimeWithSneakyZones() throws Exception
     {
-        Assume.assumeTrue( testSuite.supportsTemporal() );
-
         DateTimeValue d1 = datetime( 9999, 100, ZoneId.of( "+18:00" ) );
         DateTimeValue d4 = datetime( 10000, 100, ZoneId.of( "UTC" ) );
         DateTimeValue d5 = datetime( 10000, 100, ZoneId.of( "+01:00" ) );
@@ -306,7 +304,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByDateWithDuplicates() throws Exception
         {
-            Assume.assumeTrue( testSuite.supportsTemporal() );
             testIndexRangeSeekWithDuplicates( epochDate( 100 ),
                                               epochDate( 101 ),
                                               epochDate( 200 ),
@@ -316,7 +313,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByLocalDateTimeWithDuplicates() throws Exception
         {
-            Assume.assumeTrue( testSuite.supportsTemporal() );
             testIndexRangeSeekWithDuplicates( localDateTime( 1000, 10 ),
                                               localDateTime( 1000, 11 ),
                                               localDateTime( 2000, 10 ),
@@ -326,7 +322,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByDateTimeWithDuplicates() throws Exception
         {
-            Assume.assumeTrue( testSuite.supportsTemporal() );
             testIndexRangeSeekWithDuplicates( datetime( 1000, 10, UTC ),
                                               datetime( 1000, 11, UTC ),
                                               datetime( 2000, 10, UTC ),
@@ -336,7 +331,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByLocalTimeWithDuplicates() throws Exception
         {
-            Assume.assumeTrue( testSuite.supportsTemporal() );
             testIndexRangeSeekWithDuplicates( localTime( 1000 ),
                                               localTime( 1001 ),
                                               localTime( 2000 ),
@@ -346,7 +340,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByTimeWithDuplicates() throws Exception
         {
-            Assume.assumeTrue( testSuite.supportsTemporal() );
             testIndexRangeSeekWithDuplicates( time( 1000, UTC ),
                                               time( 1001, UTC ),
                                               time( 2000, UTC ),
@@ -356,7 +349,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByTimeWithZonesAndDuplicates() throws Exception
         {
-            Assume.assumeTrue( testSuite.supportsTemporal() );
             testIndexRangeSeekWithDuplicates( time( 20, 31, 53, 4, ZoneOffset.of("+17:02") ),
                                               time( 20, 31, 54, 3, ZoneOffset.of("+17:02") ),
                                               time( 19, 31, 54, 2, UTC ),
@@ -366,7 +358,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByDurationWithDuplicates() throws Exception
         {
-            Assume.assumeTrue( testSuite.supportsTemporal() );
             testIndexRangeSeekWithDuplicates( duration( 1, 1, 1, 1 ),
                                               duration( 1, 1, 1, 2 ),
                                               duration( 2, 1, 1, 1 ),

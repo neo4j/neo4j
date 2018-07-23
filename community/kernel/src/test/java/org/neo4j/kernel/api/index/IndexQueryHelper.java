@@ -32,7 +32,12 @@ public class IndexQueryHelper
 
     public static IndexQuery exact( int propertyKeyId, Object value )
     {
-        return IndexQuery.exact( propertyKeyId, Values.of( value ) );
+        return exact( propertyKeyId, Values.of( value ) );
+    }
+
+    public static IndexQuery exact( int propertyKeyId, Value value )
+    {
+        return IndexQuery.exact( propertyKeyId, value );
     }
 
     public static IndexEntryUpdate<SchemaDescriptor> add(

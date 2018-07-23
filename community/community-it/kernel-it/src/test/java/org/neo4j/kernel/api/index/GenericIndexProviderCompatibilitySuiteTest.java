@@ -52,12 +52,6 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     }
 
     @Override
-    public boolean supportsTemporal()
-    {
-        return true;
-    }
-
-    @Override
     public boolean supportsGranularCompositeQueries()
     {
         return true;
