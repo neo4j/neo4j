@@ -87,7 +87,7 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         }
     }
 
-    private void initFromForRange( RangePredicate<?> rangePredicate, StringIndexKey treeKeyFrom )
+    private static void initFromForRange( RangePredicate<?> rangePredicate, StringIndexKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
@@ -102,7 +102,7 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         }
     }
 
-    private void initToForRange( RangePredicate<?> rangePredicate, StringIndexKey treeKeyTo )
+    private static void initToForRange( RangePredicate<?> rangePredicate, StringIndexKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )

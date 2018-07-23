@@ -76,7 +76,7 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         return false;
     }
 
-    private void initToForRange( RangePredicate<?> rangePredicate, NumberIndexKey treeKeyTo )
+    private static void initToForRange( RangePredicate<?> rangePredicate, NumberIndexKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
@@ -91,7 +91,7 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         }
     }
 
-    private void initFromForRange( RangePredicate<?> rangePredicate, NumberIndexKey treeKeyFrom )
+    private static void initFromForRange( RangePredicate<?> rangePredicate, NumberIndexKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )

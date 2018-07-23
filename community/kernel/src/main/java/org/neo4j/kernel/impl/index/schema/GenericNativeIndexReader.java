@@ -103,7 +103,7 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
         return needsFiltering;
     }
 
-    private void initFromForRange( int stateSlot, RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyFrom )
+    private static void initFromForRange( int stateSlot, RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
@@ -117,7 +117,7 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
         }
     }
 
-    private void initToForRange( int stateSlot, RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyTo )
+    private static void initToForRange( int stateSlot, RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
