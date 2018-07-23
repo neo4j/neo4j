@@ -40,8 +40,8 @@ import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
-import org.neo4j.bolt.v3.runtime.StreamingState;
 import org.neo4j.bolt.v3.runtime.TransactionReadyState;
+import org.neo4j.bolt.v3.runtime.TransactionStreamingState;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -76,7 +76,7 @@ class TransactionReadyStateIT extends BoltStateMachineStateTestBase
         assertTrue( response.hasMetadata( "fields" ) );
         assertTrue( response.hasMetadata( "result_available_after" ) );
         assertFalse( response.hasMetadata( "tx_id" ) );
-        assertThat( machine.state(), instanceOf( StreamingState.class ) );
+        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) );
     }
 
     @Test

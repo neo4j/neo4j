@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoderTest.assertOriginalMessageEqualsToDecoded;
 import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.MapValue.EMPTY;
 
 class BeginMessageDecoderTest
 {
@@ -54,7 +54,7 @@ class BeginMessageDecoderTest
     void shouldDecodeBeginMessage() throws Exception
     {
         BeginMessage originalMessage =
-                new BeginMessage( VirtualValues.map( new String[]{"tx_metadata", "tx_timeout"}, new AnyValue[]{stringValue( "R" ), longValue( 10000 )} ) );
+                new BeginMessage( VirtualValues.map( new String[]{"tx_metadata", "tx_timeout"}, new AnyValue[]{EMPTY, longValue( 10000 )} ) );
         assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
     }
 }

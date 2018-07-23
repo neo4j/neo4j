@@ -23,8 +23,10 @@
 package org.neo4j.kernel.impl.query;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.PrettyPrinter;
@@ -98,6 +100,49 @@ class QueryLogFormatter
 
     static void formatMap( StringBuilder result, Map<String,Object> params )
     {
-        result.append( params.toString() );
+        formatMap( result, params, Collections.emptySet() );
+    }
+
+    static void formatMap( StringBuilder result, Map<String, Object> params, Collection<String> obfuscate )
+    {
+        result.append( '{' );
+        if ( params != null )
+        {
+            String sep = "";
+            for ( Map.Entry<String,Object> entry : params.entrySet() )
+            {
+                result
+                        .append( sep )
+                        .append( entry.getKey() )
+                        .append( ": " );
+
+                if ( obfuscate.contains( entry.getKey() ) )
+                {
+                    result.append( "******" );
+                }
+                else
+                {
+                    formatValue( result, entry.getValue() );
+                }
+                sep = ", ";
+            }
+        }
+        result.append( "}" );
+    }
+
+    private static void formatValue( StringBuilder result, Object value )
+    {
+        if ( value instanceof Map<?,?> )
+        {
+            formatMap( result, (Map<String, Object>) value, Collections.emptySet() );
+        }
+        else if ( value instanceof String )
+        {
+            result.append( '\'' ).append( value ).append( '\'' );
+        }
+        else
+        {
+            result.append( Strings.prettyPrint( value ) );
+        }
     }
 }
