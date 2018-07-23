@@ -23,17 +23,23 @@ import java.io.File;
 
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-abstract class NativeLuceneFusionIndexProviderFactory<DEPENDENCIES> extends KernelExtensionFactory<DEPENDENCIES>
+abstract class NativeLuceneFusionIndexProviderFactory extends AbstractIndexProviderFactory
 {
     NativeLuceneFusionIndexProviderFactory( String key )
     {
-        super( ExtensionType.DATABASE, key );
+        super( key );
+    }
+
+    @Override
+    protected Class loggingClass()
+    {
+        return FusionIndexProvider.class;
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory, IndexProvider.Descriptor descriptor )

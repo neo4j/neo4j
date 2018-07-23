@@ -28,7 +28,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -37,16 +36,12 @@ import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector10;
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class NativeLuceneFusionIndexProviderFactory10 extends
-        NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory10.Dependencies>
+public class NativeLuceneFusionIndexProviderFactory10 extends NativeLuceneFusionIndexProviderFactory
 {
     public static final String KEY = GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName();
     public static final String VERSION = GraphDatabaseSettings.SchemaIndex.NATIVE10.providerVersion();
@@ -58,24 +53,17 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
         super( KEY );
     }
 
-    public interface Dependencies extends LuceneIndexProviderFactory.Dependencies
+    @Override
+    protected String descriptorString()
     {
+        return DESCRIPTOR.toString();
     }
 
     @Override
-    public FusionIndexProvider newInstance( KernelContext context, Dependencies dependencies )
+    protected IndexProvider internalCreate( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
+            OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        PageCache pageCache = dependencies.pageCache();
-        File databaseDirectory = context.directory();
-        FileSystemAbstraction fs = dependencies.fileSystem();
-        Log log = dependencies.getLogService().getInternalLogProvider().getLog( FusionIndexProvider.class );
-        Monitors monitors = dependencies.monitors();
-        monitors.addMonitorListener( new LoggingMonitor( log ), DESCRIPTOR.toString() );
-        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, DESCRIPTOR.toString() );
-        Config config = dependencies.getConfig();
-        OperationalMode operationalMode = context.databaseInfo().operationalMode;
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        return create( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
     public static FusionIndexProvider create( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
@@ -94,12 +82,7 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
-        int priority = PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.NATIVE10.providerIdentifier().equals( defaultSchemaProvider ) )
-        {
-            priority = 100;
-        }
+        int priority = adjustPriorityForConfig( PRIORITY, GraphDatabaseSettings.SchemaIndex.NATIVE10, config );
         return new FusionIndexProvider( EMPTY, number, spatial, temporal, lucene, new FusionSlotSelector10(),
                 DESCRIPTOR, priority, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
