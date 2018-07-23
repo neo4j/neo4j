@@ -48,7 +48,7 @@ case class ExpandAllPipe(source: Pipe,
 
           case Values.NO_VALUE => None
 
-          case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
+          case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }
     }
   }
@@ -56,5 +56,5 @@ case class ExpandAllPipe(source: Pipe,
   def typeNames = types.names
 
   def getFromNode(row: ExecutionContext): AnyValue =
-    row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
+    row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at '$fromName' but found nothing"))
 }

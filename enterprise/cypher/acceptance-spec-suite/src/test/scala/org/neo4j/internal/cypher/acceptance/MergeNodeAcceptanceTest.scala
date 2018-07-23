@@ -97,7 +97,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
       """.stripMargin
 
     failWithError(Configs.AbsolutelyAll - Configs.Compiled - Configs.AllRulePlanners - Configs.Cost2_3, query, Seq(
-      "Expected to find a node at a but found instead: null",
+      "Expected to find a node at 'a' but found instead: null",
       "Expected to find a node at ref slot 0 but found instead: null",
       "Expected to find a node at a but found nothing Some(null)"))
   }

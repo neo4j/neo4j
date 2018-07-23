@@ -50,9 +50,9 @@ abstract class BaseCreateRelationshipPipe(src: Pipe, key: String, startNode: Str
   private def getNode(row: ExecutionContext, name: String): NodeValue =
     row.get(name) match {
       case Some(n: NodeValue) => n
-      case Some(Values.NO_VALUE) => throw new InternalException(s"Expected to find a node at $name but found instead: null")
-      case Some(x) => throw new InternalException(s"Expected to find a node at $name but found instead: $x")
-      case None => throw new InternalException(s"Expected to find a node at $name but found instead: null")
+      case Some(Values.NO_VALUE) => throw new InternalException(s"Expected to find a node at '$name' but found instead: null")
+      case Some(x) => throw new InternalException(s"Expected to find a node at '$name' but found instead: $x")
+      case None => throw new InternalException(s"Expected to find a node at '$name' but found instead: null")
     }
 
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long): Unit = {

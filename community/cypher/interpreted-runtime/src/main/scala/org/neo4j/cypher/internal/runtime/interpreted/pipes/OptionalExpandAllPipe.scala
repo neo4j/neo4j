@@ -57,7 +57,7 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
             Iterator(withNulls(row))
 
           case value =>
-            throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
+            throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }
     }
   }
@@ -66,5 +66,5 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
     row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
 
   def getFromNode(row: ExecutionContext): AnyValue =
-    row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
+    row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at '$fromName' but found nothing"))
 }
