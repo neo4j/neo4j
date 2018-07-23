@@ -31,8 +31,8 @@ import static java.lang.String.format;
 class DateIndexKey extends NativeIndexSingleValueKey<DateIndexKey>
 {
     static final int SIZE =
-            Long.BYTES + /* epochDay */
-            Long.BYTES;  /* entityId */
+            Long.BYTES +    /* epochDay */
+            ENTITY_ID_SIZE; /* entityId */
 
     long epochDay;
 

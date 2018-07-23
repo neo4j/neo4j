@@ -27,9 +27,6 @@ import org.neo4j.values.storable.ValueGroup;
 
 class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
 {
-    // TODO we have multiple places defining size of the entityId!!
-    private static final int ENTITY_ID_SIZE = Long.BYTES;
-
     private GenericKeyState[] states;
 
     CompositeGenericKey( int length )

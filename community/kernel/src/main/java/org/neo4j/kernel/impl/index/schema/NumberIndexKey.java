@@ -37,11 +37,9 @@ import static java.lang.String.format;
 class NumberIndexKey extends NativeIndexSingleValueKey<NumberIndexKey>
 {
     static final int SIZE =
-            Byte.BYTES + /* type of value */
-            Long.BYTES + /* raw value bits */
-
-            // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
-            Long.BYTES;  /* entityId */
+            Byte.BYTES +    /* type of value */
+            Long.BYTES +    /* raw value bits */
+            ENTITY_ID_SIZE; /* (Long.BYTES) entityId */
 
     byte type;
     long rawValueBits;

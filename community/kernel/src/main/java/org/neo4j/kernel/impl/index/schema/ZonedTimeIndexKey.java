@@ -39,7 +39,7 @@ class ZonedTimeIndexKey extends NativeIndexSingleValueKey<ZonedTimeIndexKey>
     static final int SIZE =
             Long.BYTES +    /* nanosOfDayUTC */
             Integer.BYTES + /* zoneOffsetSeconds */
-            Long.BYTES;     /* entityId */
+            ENTITY_ID_SIZE; /* entityId */
 
     long nanosOfDayUTC;
     int zoneOffsetSeconds;

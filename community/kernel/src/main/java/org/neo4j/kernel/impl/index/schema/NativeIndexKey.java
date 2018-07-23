@@ -26,6 +26,9 @@ import org.neo4j.values.storable.ValueGroup;
 
 abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException>
 {
+    // TODO this could use 6 bytes instead and have the highest 2 bits could be used for other meta info
+    static final int ENTITY_ID_SIZE = Long.BYTES;
+
     enum Inclusion
     {
         // Order of these is important, must be kept lower --> higher

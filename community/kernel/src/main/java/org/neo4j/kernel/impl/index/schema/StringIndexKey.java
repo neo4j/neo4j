@@ -35,8 +35,6 @@ import static java.lang.String.format;
  */
 class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
 {
-    static final int ENTITY_ID_SIZE = Long.BYTES;
-
     private boolean ignoreLength;
 
     // UTF-8 bytes, grows on demand. Actual length is dictated by bytesLength field.

@@ -45,7 +45,7 @@ class DurationIndexKey extends NativeIndexSingleValueKey<DurationIndexKey>
             Integer.BYTES + /* nanosOfSecond */
             Long.BYTES +    /* months */
             Long.BYTES +    /* days */
-            Long.BYTES;     /* entityId */
+            ENTITY_ID_SIZE; /* entityId */
 
     long totalAvgSeconds;
     int nanosOfSecond;

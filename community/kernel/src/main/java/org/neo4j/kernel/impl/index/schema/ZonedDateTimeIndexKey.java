@@ -45,7 +45,7 @@ class ZonedDateTimeIndexKey extends NativeIndexSingleValueKey<ZonedDateTimeIndex
             Long.BYTES +    /* epochSecond */
             Integer.BYTES + /* nanoOfSecond */
             Integer.BYTES + /* timeZone */
-            Long.BYTES;     /* entityId */
+            ENTITY_ID_SIZE; /* entityId */
 
     long epochSecondUTC;
     int nanoOfSecond;

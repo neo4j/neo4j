@@ -32,7 +32,7 @@ class LocalTimeIndexKey extends NativeIndexSingleValueKey<LocalTimeIndexKey>
 {
     static final int SIZE =
             Long.BYTES + /* nanoOfDay */
-            Long.BYTES;  /* entityId */
+            ENTITY_ID_SIZE;  /* entityId */
 
     long nanoOfDay;
 

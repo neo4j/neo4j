@@ -38,8 +38,8 @@ import static java.lang.String.format;
 class SpatialIndexKey extends NativeIndexSingleValueKey<SpatialIndexKey>
 {
     static final int SIZE =
-            Long.BYTES + /* raw value bits */
-            Long.BYTES;  /* entityId */
+            Long.BYTES +    /* raw value bits */
+            ENTITY_ID_SIZE; /* entityId */
 
     long rawValueBits;
     CoordinateReferenceSystem crs;
