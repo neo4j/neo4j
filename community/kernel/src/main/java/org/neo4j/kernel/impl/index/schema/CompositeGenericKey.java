@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Arrays;
 import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -63,7 +64,7 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     @Override
     String propertiesAsString()
     {
-        return "todo";
+        return Arrays.toString( asValues() );
     }
 
     @Override
