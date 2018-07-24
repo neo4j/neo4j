@@ -55,8 +55,8 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     }
 
     @Override
-    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
-            OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
+            Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
