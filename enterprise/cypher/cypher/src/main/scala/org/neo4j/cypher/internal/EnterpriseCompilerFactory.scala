@@ -87,6 +87,8 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       val morselSize: Int = settings.get(GraphDatabaseSettings.cypher_morsel_size)
       val workers: Int = settings.get(GraphDatabaseSettings.cypher_worker_count)
       val doSchedulerTracing = settings.get(GraphDatabaseSettings.enable_morsel_runtime_trace)
+      // There is one tracer per compiler right now --> multiple queries from same compiler can be getting traced simultaneously
+      // TODO only create one tracer to share between all compilers (3.4 & 3.5)
       val schedulerTracer =
         if (doSchedulerTracing)
           new DataPointSchedulerTracer(new ThreadSafeDataWriter(new CsvStdOutDataWriter))
