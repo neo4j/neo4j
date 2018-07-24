@@ -25,8 +25,68 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Represents a common group of jobs, defining how they should be scheduled.
  */
-public final class Group
+public enum Group
 {
+    // GENERAL DATABASE GROUPS.
+    /** Thread that schedules delayed or recurring tasks. */
+    TASK_SCHEDULER( "Scheduler" ),
+    /** Watch out for, and report, external manipulation of store files. */
+    FILE_WATCHER( "FileWatcher" ),
+    /** Monitor and report system-wide pauses, in case they lead to service interruption. */
+    VM_PAUSE_MONITOR( "VmPauseMonitor" ),
+    /** Rotates diagnostic text logs. */
+    TEXT_LOG_ROTATION( "TextLogRotation" ),
+    /** Checkpoint and store flush. */
+    CHECKPOINT( "CheckPoint" ),
+    /** Various little periodic tasks that need to be done on a regular basis to keep the store in good shape. */
+    STORAGE_MAINTENANCE( "StorageMaintenance" ),
+    /** Terminates kernel transactions that have timed out. */
+    TRANSACTION_TIMEOUT_MONITOR( "TransactionTimeoutMonitor" ),
+    /** Background index population. */
+    INDEX_POPULATION( "IndexPopulation" ),
+    /** Background index population */
+    INDEX_SAMPLING( "IndexSampling" ),
+    /** Thread pool for anyone who want some help doing file IO in parallel. */
+    FILE_IO_HELPER( "FileIOHelper" ),
+    NATIVE_SECURITY( "NativeSecurity" ),
+    METRICS_EVENT( "MetricsEvent" ),
+
+    // CYPHER.
+    /** Thread pool for parallel Cypher query execution. */
+    CYPHER_WORKER( "CypherWorker" ),
+
+    // BOLT.
+    /** Network IO threads for the Bolt protocol. */
+    BOLT_NETWORK_IO( "BoltNetworkIO" ),
+    /** Transaction processing threads for Bolt. */
+    BOLT_WORKER( "BoltWorker" ),
+
+    // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
+    RAFT_TIMER( "RaftTimer" ),
+    RAFT_LOG_PRUNING( "RaftLogPruning" ),
+    RAFT_BATCH_HANDLER( "RaftBatchHandler" ),
+    RAFT_READER_POOL_PRUNER( "RaftReaderPoolPruner" ),
+    TOPOLOGY_HEALTH( "HazelcastHealth" ),
+    TOPOLOGY_KEEP_ALIVE( "KeepAlive" ),
+    TOPOLOGY_REFRESH( "TopologyRefresh" ),
+    MEMBERSHIP_WAITER( "MembershipWaiter" ),
+    DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
+
+    // HA.
+    /** Push transactions from master to slaves */
+    MASTER_TRANSACTION_PUSHING( "TransactionPushing" ),
+    /** Rolls back idle transactions on the server. */
+    SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
+    /** Aborts idle slave lock sessions on the master. */
+    SLAVE_LOCKS_TIMEOUT( "SlaveLocksTimeout" ),
+    /** Pulls updates from the master. */
+    PULL_UPDATES( "PullUpdates" ),
+
+    // MISC.
+    /** UDC timed events. */
+    UDC( "UsageDataCollector" )
+    ;
+
     private final AtomicInteger threadCounter = new AtomicInteger();
     private final String name;
 
@@ -48,28 +108,5 @@ public final class Group
     public String threadName()
     {
         return "neo4j." + groupName() + "-" + threadCounter.incrementAndGet();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        Group group = (Group) o;
-
-        return name.equals( group.name );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return name.hashCode();
     }
 }

@@ -46,39 +46,39 @@ public interface JobScheduler extends Lifecycle
          * This group is used by the JobScheduler implementation itself, for the thread or threads that are in charge of the timely execution of delayed or
          * recurring tasks.
          */
-        public static final Group taskScheduler = new Group( "Scheduler" );
+        public static final Group taskScheduler = Group.TASK_SCHEDULER;
 
         /** Background index population */
-        public static final Group indexPopulation = new Group( "IndexPopulation" );
+        public static final Group indexPopulation = Group.INDEX_POPULATION;
 
         /** Push transactions from master to slaves */
-        public static final Group masterTransactionPushing = new Group( "TransactionPushing" );
+        public static final Group masterTransactionPushing = Group.MASTER_TRANSACTION_PUSHING;
 
         /**
          * Rolls back idle transactions on the server.
          */
-        public static final Group serverTransactionTimeout = new Group( "ServerTransactionTimeout" );
+        public static final Group serverTransactionTimeout = Group.SERVER_TRANSACTION_TIMEOUT;
 
         /**
          * Aborts idle slave lock sessions on the master.
          */
-        public static final Group slaveLocksTimeout = new Group( "SlaveLocksTimeout" );
+        public static final Group slaveLocksTimeout = Group.SLAVE_LOCKS_TIMEOUT;
 
         /**
          * Pulls updates from the master.
          */
-        public static final Group pullUpdates = new Group( "PullUpdates" );
+        public static final Group pullUpdates = Group.PULL_UPDATES;
 
         /**
          * Gathers approximated data about the underlying data store.
          */
-        public static final Group indexSampling = new Group( "IndexSampling" );
+        public static final Group indexSampling = Group.INDEX_SAMPLING;
         public static final Group indexSamplingController = indexSampling;
 
         /**
          * Rotates internal diagnostic logs
          */
-        public static final Group internalLogRotation = new Group( "InternalLogRotation" );
+        public static final Group internalLogRotation = Group.TEXT_LOG_ROTATION;
 
         /**
          * Rotates query logs
@@ -98,88 +98,88 @@ public interface JobScheduler extends Lifecycle
         /**
          * Checkpoint and store flush
          */
-        public static final Group checkPoint = new Group( "CheckPoint" );
+        public static final Group checkPoint = Group.CHECKPOINT;
 
         /**
          * Raft Log pruning
          */
-        public static final Group raftLogPruning = new Group( "RaftLogPruning" );
+        public static final Group raftLogPruning = Group.RAFT_LOG_PRUNING;
 
         /**
          * Raft timers.
          */
-        public static final Group raft = new Group( "RaftTimer" );
-        public static final Group raftBatchHandler = new Group( "RaftBatchHandler" );
-        public static final Group raftReaderPoolPruner = new Group( "RaftReaderPoolPruner" );
-        public static final Group topologyHealth = new Group( "HazelcastHealth" );
-        public static final Group topologyKeepAlive = new Group( "KeepAlive" );
-        public static final Group topologyRefresh = new Group( "TopologyRefresh" );
-        public static final Group membershipWaiter = new Group( "MembershipWaiter" );
+        public static final Group raft = Group.RAFT_TIMER;
+        public static final Group raftBatchHandler = Group.RAFT_BATCH_HANDLER;
+        public static final Group raftReaderPoolPruner = Group.RAFT_READER_POOL_PRUNER;
+        public static final Group topologyHealth = Group.TOPOLOGY_HEALTH;
+        public static final Group topologyKeepAlive = Group.TOPOLOGY_KEEP_ALIVE;
+        public static final Group topologyRefresh = Group.TOPOLOGY_REFRESH;
+        public static final Group membershipWaiter = Group.MEMBERSHIP_WAITER;
 
         /**
          * Network IO threads for the Bolt protocol.
          */
-        public static final Group boltNetworkIO = new Group( "BoltNetworkIO" );
+        public static final Group boltNetworkIO = Group.BOLT_NETWORK_IO;
 
         /**
          * Reporting thread for Metrics events
          */
-        public static final Group metricsEvent = new Group( "MetricsEvent" );
+        public static final Group metricsEvent = Group.METRICS_EVENT;
 
         /**
          * Snapshot downloader
          */
-        public static final Group downloadSnapshot = new Group( "DownloadSnapshot" );
+        public static final Group downloadSnapshot = Group.DOWNLOAD_SNAPSHOT;
 
         /**
          * UDC timed events.
          */
-        public static final Group udc = new Group( "UsageDataCollection" );
+        public static final Group udc = Group.UDC;
 
         /**
          * Storage maintenance.
          */
-        public static final Group storageMaintenance = new Group( "StorageMaintenance" );
+        public static final Group storageMaintenance = Group.STORAGE_MAINTENANCE;
 
         /**
          * Native security.
          */
-        public static final Group nativeSecurity = new Group( "NativeSecurity" );
+        public static final Group nativeSecurity = Group.NATIVE_SECURITY;
 
         /**
          * File watch service group
          */
-        public static final Group fileWatch = new Group( "FileWatcher" );
+        public static final Group fileWatch = Group.FILE_WATCHER;
 
         /**
          * Recovery cleanup.
          */
-        public static final Group recoveryCleanup = new Group( "RecoveryCleanup" );
+        public static final Group recoveryCleanup = storageMaintenance;
 
         /**
          * Kernel transaction timeout monitor.
          */
-        public static final Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor" );
+        public static final Group transactionTimeoutMonitor = Group.TRANSACTION_TIMEOUT_MONITOR;
 
         /**
          * Kernel transaction timeout monitor.
          */
-        public static final Group cypherWorker = new Group( "CypherWorker" );
+        public static final Group cypherWorker = Group.CYPHER_WORKER;
 
         /**
          * VM pause monitor
          */
-        public static final Group vmPauseMonitor = new Group( "VmPauseMonitor" );
+        public static final Group vmPauseMonitor = Group.VM_PAUSE_MONITOR;
 
         /**
          * IO helper threads for page cache and IO related stuff.
          */
-        public static final Group pageCacheIOHelper = new Group( "PageCacheIOHelper" );
+        public static final Group pageCacheIOHelper = Group.FILE_IO_HELPER;
 
         /**
          * Bolt scheduler worker
          */
-        public static final Group boltWorker = new Group( "BoltWorker" );
+        public static final Group boltWorker = Group.BOLT_WORKER;
 
         private Groups()
         {
