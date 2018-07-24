@@ -53,7 +53,7 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
         initValueAsLowest( valueGroup );
     }
 
-    abstract void initValueAsLowest( ValueGroup... valueGroups );
+    abstract void initValueAsLowest( ValueGroup valueGroups );
 
     @Override
     final void initValueAsHighest( int stateSlot, ValueGroup valueGroup )
@@ -61,7 +61,7 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
         initValueAsHighest( valueGroup );
     }
 
-    abstract void initValueAsHighest( ValueGroup... valueGroups );
+    abstract void initValueAsHighest( ValueGroup valueGroups );
 
     abstract Value assertCorrectType( Value value );
 

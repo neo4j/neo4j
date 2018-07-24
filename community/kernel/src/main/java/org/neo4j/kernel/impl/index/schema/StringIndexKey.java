@@ -81,13 +81,13 @@ class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup... valueGroups )
+    void initValueAsLowest( ValueGroup valueGroups )
     {
         bytes = null;
     }
 
     @Override
-    void initValueAsHighest( ValueGroup... valueGroups )
+    void initValueAsHighest( ValueGroup valueGroups )
     {
         bytes = null;
     }

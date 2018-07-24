@@ -62,13 +62,13 @@ class NumberIndexKey extends NativeIndexSingleValueKey<NumberIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup... valueGroups )
+    void initValueAsLowest( ValueGroup valueGroups )
     {
         writeFloatingPoint( Double.NEGATIVE_INFINITY );
     }
 
     @Override
-    void initValueAsHighest( ValueGroup... valueGroups )
+    void initValueAsHighest( ValueGroup valueGroups )
     {
         writeFloatingPoint( Double.POSITIVE_INFINITY );
     }

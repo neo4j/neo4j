@@ -45,14 +45,14 @@ class LocalDateTimeIndexKey extends NativeIndexSingleValueKey<LocalDateTimeIndex
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup... valueGroups )
+    public void initValueAsLowest( ValueGroup valueGroups )
     {
         epochSecond = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup... valueGroups )
+    public void initValueAsHighest( ValueGroup valueGroups )
     {
         epochSecond = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;

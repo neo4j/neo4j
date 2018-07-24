@@ -60,7 +60,7 @@ class DurationIndexKey extends NativeIndexSingleValueKey<DurationIndexKey>
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup... valueGroups )
+    public void initValueAsLowest( ValueGroup valueGroups )
     {
         totalAvgSeconds = Long.MIN_VALUE;
         nanosOfSecond = Integer.MIN_VALUE;
@@ -69,7 +69,7 @@ class DurationIndexKey extends NativeIndexSingleValueKey<DurationIndexKey>
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup... valueGroups )
+    public void initValueAsHighest( ValueGroup valueGroups )
     {
         totalAvgSeconds = Long.MAX_VALUE;
         nanosOfSecond = Integer.MAX_VALUE;

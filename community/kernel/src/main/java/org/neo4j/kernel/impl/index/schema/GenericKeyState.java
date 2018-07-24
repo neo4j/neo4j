@@ -781,7 +781,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private static void putText( PageCursor cursor, byte[] byteArray, long long0 )
     {
-        // TODO short/int weird asymmetry ey?
         cursor.putShort( (short) long0 );
         cursor.putBytes( byteArray, 0, (int) long0 );
     }
@@ -1592,7 +1591,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         long0 = length;
     }
 
-    private static byte[] ensureBigEnough( byte[] array, short targetLength )
+    private static byte[] ensureBigEnough( byte[] array, int targetLength )
     {
         return array == null || array.length < targetLength ? new byte[targetLength] : array;
     }

@@ -43,13 +43,13 @@ class LocalTimeIndexKey extends NativeIndexSingleValueKey<LocalTimeIndexKey>
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup... valueGroups )
+    public void initValueAsLowest( ValueGroup valueGroups )
     {
         nanoOfDay = Long.MIN_VALUE;
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup... valueGroups )
+    public void initValueAsHighest( ValueGroup valueGroups )
     {
         nanoOfDay = Long.MAX_VALUE;
     }

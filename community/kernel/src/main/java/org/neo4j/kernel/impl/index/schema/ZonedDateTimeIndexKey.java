@@ -61,7 +61,7 @@ class ZonedDateTimeIndexKey extends NativeIndexSingleValueKey<ZonedDateTimeIndex
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup... valueGroups )
+    public void initValueAsLowest( ValueGroup valueGroups )
     {
         epochSecondUTC = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
@@ -70,7 +70,7 @@ class ZonedDateTimeIndexKey extends NativeIndexSingleValueKey<ZonedDateTimeIndex
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup... valueGroups )
+    public void initValueAsHighest( ValueGroup valueGroups )
     {
         epochSecondUTC = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;

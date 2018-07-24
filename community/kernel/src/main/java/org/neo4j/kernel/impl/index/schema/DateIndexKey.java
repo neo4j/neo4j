@@ -43,13 +43,13 @@ class DateIndexKey extends NativeIndexSingleValueKey<DateIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup... valueGroups )
+    void initValueAsLowest( ValueGroup valueGroups )
     {
         epochDay = Long.MIN_VALUE;
     }
 
     @Override
-    void initValueAsHighest( ValueGroup... valueGroups )
+    void initValueAsHighest( ValueGroup valueGroups )
     {
         epochDay = Long.MAX_VALUE;
     }

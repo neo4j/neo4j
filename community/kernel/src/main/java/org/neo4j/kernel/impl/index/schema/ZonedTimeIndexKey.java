@@ -56,14 +56,14 @@ class ZonedTimeIndexKey extends NativeIndexSingleValueKey<ZonedTimeIndexKey>
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup... valueGroups )
+    public void initValueAsLowest( ValueGroup valueGroups )
     {
         nanosOfDayUTC = Long.MIN_VALUE;
         zoneOffsetSeconds = Integer.MIN_VALUE;
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup... valueGroups )
+    public void initValueAsHighest( ValueGroup valueGroups )
     {
         nanosOfDayUTC = Long.MAX_VALUE;
         zoneOffsetSeconds = Integer.MAX_VALUE;

@@ -62,7 +62,7 @@ class SpatialIndexKey extends NativeIndexSingleValueKey<SpatialIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup... valueGroups )
+    void initValueAsLowest( ValueGroup valueGroups )
     {
         double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
@@ -70,7 +70,7 @@ class SpatialIndexKey extends NativeIndexSingleValueKey<SpatialIndexKey>
     }
 
     @Override
-    void initValueAsHighest( ValueGroup... valueGroups )
+    void initValueAsHighest( ValueGroup valueGroups )
     {
         // These coordinates will generate the largest value on the spacial curve
         double[] limit = new double[crs.getDimension()];
