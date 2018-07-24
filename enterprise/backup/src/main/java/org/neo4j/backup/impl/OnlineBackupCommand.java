@@ -23,6 +23,7 @@
 package org.neo4j.backup.impl;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
