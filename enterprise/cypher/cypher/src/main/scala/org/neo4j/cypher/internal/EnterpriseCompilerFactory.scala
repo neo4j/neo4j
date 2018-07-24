@@ -40,7 +40,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
-import org.neo4j.scheduler.JobScheduler
+import org.neo4j.scheduler.{Group, JobScheduler}
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
 class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
@@ -90,7 +90,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
         else {
           val numberOfThreads = if (workers == 0) java.lang.Runtime.getRuntime.availableProcessors() else workers
           val jobScheduler = graph.getDependencyResolver.resolveDependency(classOf[JobScheduler])
-          val executorService = jobScheduler.workStealingExecutor(JobScheduler.Groups.cypherWorker, numberOfThreads)
+          val executorService = jobScheduler.workStealingExecutor(Group.CYPHER_WORKER, numberOfThreads)
 
           new ParallelDispatcher(morselSize, numberOfThreads, executorService)
         }

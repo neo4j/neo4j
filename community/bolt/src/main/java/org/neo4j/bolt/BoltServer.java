@@ -60,12 +60,12 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
-import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 
 public class BoltServer extends LifecycleAdapter
 {
@@ -127,7 +127,7 @@ public class BoltServer extends LifecycleAdapter
 
         if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
-            NettyServer server = new NettyServer( jobScheduler.threadFactory( boltNetworkIO ),
+            NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                     createConnectors( boltProtocolFactory, throttleGroup, log ), connectorPortRegister, userLog );
             life.add( server );
             log.info( "Bolt server loaded" );

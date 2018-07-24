@@ -33,10 +33,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobHandle;
-
-import static org.neo4j.scheduler.JobScheduler.Groups.downloadSnapshot;
 
 public class CoreStateDownloaderService extends LifecycleAdapter
 {
@@ -75,7 +74,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         {
             currentJob = new PersistentSnapshotDownloader( addressProvider, applicationProcess, downloader, log,
                     downloaderPauseStrategy, dbHealth, monitors );
-            jobHandle = jobScheduler.schedule( downloadSnapshot, currentJob );
+            jobHandle = jobScheduler.schedule( Group.DOWNLOAD_SNAPSHOT, currentJob );
             return Optional.of( jobHandle );
         }
         return Optional.of( jobHandle );

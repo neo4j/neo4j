@@ -81,6 +81,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Collections.singletonList;
@@ -265,7 +266,7 @@ public class SwitchToSlaveBranchThenCopyTest
 
         verify( updatePuller ).tryPullUpdates();
         verify( communicationLife ).add( pullerScheduler );
-        verify( jobScheduler ).scheduleRecurring( eq( JobScheduler.Groups.pullUpdates ), any( Runnable.class ),
+        verify( jobScheduler ).scheduleRecurring( eq( Group.PULL_UPDATES ), any( Runnable.class ),
                 eq( 10L ), eq( 10L ), eq( TimeUnit.MILLISECONDS ) );
     }
 

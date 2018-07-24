@@ -37,6 +37,7 @@ import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
@@ -72,7 +73,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                 int maxInternalLogArchives, JobScheduler jobScheduler )
         {
             return withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
-                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
+                    jobScheduler.executor( Group.TEXT_LOG_ROTATION ) );
         }
 
         public Builder withRotation( long internalLogRotationThreshold, long internalLogRotationDelay,

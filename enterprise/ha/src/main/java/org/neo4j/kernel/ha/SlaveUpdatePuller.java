@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.CancelListener;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -224,7 +225,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, CancelListener
         }
 
         shutdownLatch = new BinaryLatch();
-        JobHandle handle = jobScheduler.schedule( JobScheduler.Groups.pullUpdates, this );
+        JobHandle handle = jobScheduler.schedule( Group.PULL_UPDATES, this );
         handle.registerCancelListener( this );
     }
 

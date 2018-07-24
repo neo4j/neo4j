@@ -26,6 +26,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 public class IndexSamplingJobTracker
@@ -76,7 +77,7 @@ public class IndexSamplingJobTracker
             }
 
             executingJobs.add( indexId );
-            jobScheduler.schedule( JobScheduler.Groups.indexSampling, () ->
+            jobScheduler.schedule( Group.INDEX_SAMPLING, () ->
             {
                 try
                 {

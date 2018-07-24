@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.Group;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,7 +56,7 @@ public class TimerTest
             done.await();
         };
 
-        Timer timer = new Timer( () -> "test", scheduler, getInstance(), JobScheduler.Groups.raft, handler );
+        Timer timer = new Timer( () -> "test", scheduler, getInstance(), Group.RAFT_TIMER, handler );
         timer.set( new FixedTimeout( 0, SECONDS ) );
         invoked.await();
 

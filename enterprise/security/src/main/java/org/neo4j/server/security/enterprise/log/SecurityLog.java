@@ -37,6 +37,7 @@ import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
@@ -215,7 +216,7 @@ public class SecurityLog extends LifecycleAdapter implements Log
         try
         {
             return new SecurityLog( config, fileSystem,
-                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
+                    jobScheduler.executor( Group.TEXT_LOG_ROTATION ) );
         }
         catch ( IOException ioe )
         {

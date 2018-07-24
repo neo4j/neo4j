@@ -74,7 +74,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         workStealingExecutors = new ConcurrentHashMap<>( 1 );
         topLevelGroup = new TopLevelGroup();
         pools = new ThreadPoolManager( topLevelGroup );
-        ThreadFactory threadFactory = new GroupedDaemonThreadFactory( Groups.taskScheduler, topLevelGroup );
+        ThreadFactory threadFactory = new GroupedDaemonThreadFactory( Group.TASK_SCHEDULER, topLevelGroup );
         scheduler = new TimeBasedTaskScheduler( Clocks.nanoClock(), pools );
 
         // The scheduler thread runs at slightly elevated priority for timeliness, and is started in init().

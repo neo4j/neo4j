@@ -22,10 +22,9 @@ package org.neo4j.kernel.impl.api;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
-
-import static org.neo4j.scheduler.JobScheduler.Groups.transactionTimeoutMonitor;
 
 public class KernelTransactionMonitorScheduler extends LifecycleAdapter
 {
@@ -47,7 +46,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     {
         if ( checkIntervalMillis > 0 )
         {
-            monitorJobHandle = scheduler.scheduleRecurring( transactionTimeoutMonitor, kernelTransactionTimeoutMonitor,
+            monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, kernelTransactionTimeoutMonitor,
                     checkIntervalMillis, TimeUnit.MILLISECONDS );
         }
     }

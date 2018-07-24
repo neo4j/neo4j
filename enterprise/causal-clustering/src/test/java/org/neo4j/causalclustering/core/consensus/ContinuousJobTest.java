@@ -31,12 +31,12 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.Group;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.scheduler.JobScheduler.Groups.raftBatchHandler;
 
 public class ContinuousJobTest
 {
@@ -51,7 +51,7 @@ public class ContinuousJobTest
         Runnable task = latch::countDown;
 
         ContinuousJob continuousJob =
-                new ContinuousJob( scheduler.threadFactory( raftBatchHandler ), task, NullLogProvider.getInstance() );
+                new ContinuousJob( scheduler.threadFactory( Group.RAFT_BATCH_HANDLER ), task, NullLogProvider.getInstance() );
 
         // when
         try ( Lifespan ignored = new Lifespan( scheduler, continuousJob ) )
@@ -74,7 +74,7 @@ public class ContinuousJobTest
         };
 
         ContinuousJob continuousJob =
-                new ContinuousJob( scheduler.threadFactory( raftBatchHandler ), task, NullLogProvider.getInstance() );
+                new ContinuousJob( scheduler.threadFactory( Group.RAFT_BATCH_HANDLER ), task, NullLogProvider.getInstance() );
 
         // when
         long startTime = System.currentTimeMillis();

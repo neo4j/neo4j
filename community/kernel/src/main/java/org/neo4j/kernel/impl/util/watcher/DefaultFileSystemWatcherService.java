@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util.watcher;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
@@ -47,7 +48,7 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     @Override
     public void init()
     {
-        fileWatchers = jobScheduler.threadFactory( JobScheduler.Groups.fileWatch );
+        fileWatchers = jobScheduler.threadFactory( Group.FILE_WATCHER );
     }
 
     @Override

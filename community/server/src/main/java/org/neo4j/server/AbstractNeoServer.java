@@ -53,6 +53,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
@@ -87,7 +88,6 @@ import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.scheduler.JobScheduler.Groups.serverTransactionTimeout;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
@@ -228,7 +228,7 @@ public abstract class AbstractNeoServer implements NeoServer
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
 
-        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, () ->
+        resolveDependency( JobScheduler.class ).scheduleRecurring( Group.SERVER_TRANSACTION_TIMEOUT, () ->
         {
             long maxAge = clock.millis() - timeoutMillis;
             transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );

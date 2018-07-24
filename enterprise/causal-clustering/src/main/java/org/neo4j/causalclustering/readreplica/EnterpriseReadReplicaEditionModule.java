@@ -134,7 +134,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.Group;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
@@ -324,7 +324,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         CheckPointerService checkPointerService =
                 new CheckPointerService( () -> localDatabase.dataSource().getDependencyResolver().resolveDependency( CheckPointer.class ),
-                        platformModule.jobScheduler, JobScheduler.Groups.checkPoint );
+                        platformModule.jobScheduler, Group.CHECKPOINT );
         RegularCatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, null, checkPointerService );

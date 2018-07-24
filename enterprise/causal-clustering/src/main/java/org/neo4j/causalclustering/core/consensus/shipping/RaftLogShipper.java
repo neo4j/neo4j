@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 
 import static java.lang.Long.max;
 import static java.lang.Long.min;
@@ -47,7 +48,6 @@ import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMod
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.CATCHUP;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Timeouts.RESEND;
-import static org.neo4j.scheduler.JobScheduler.Groups.raft;
 
 /// Optimizations
 // TODO: Have several outstanding batches in catchup mode, to bridge the latency gap.
@@ -338,7 +338,7 @@ public class RaftLogShipper
 
         if ( timer == null )
         {
-            timer = timerService.create( RESEND, raft, timeout -> onScheduledTimeoutExpiry() );
+            timer = timerService.create( RESEND, Group.RAFT_TIMER, timeout -> onScheduledTimeoutExpiry() );
         }
 
         timer.set( fixedTimeout( deltaMillis, MILLISECONDS ) );

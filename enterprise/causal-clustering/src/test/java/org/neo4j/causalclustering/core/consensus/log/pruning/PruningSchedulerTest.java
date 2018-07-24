@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -43,7 +44,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.scheduler.JobScheduler.Groups.raftLogPruning;
 
 public class PruningSchedulerTest
 {
@@ -63,7 +63,7 @@ public class PruningSchedulerTest
 
         // then
         assertNotNull( jobScheduler.getJob() );
-        verify( jobScheduler, times( 1 ) ).schedule( eq( raftLogPruning ), any( Runnable.class ),
+        verify( jobScheduler, times( 1 ) ).schedule( eq( Group.RAFT_LOG_PRUNING ), any( Runnable.class ),
                 eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
@@ -84,7 +84,7 @@ public class PruningSchedulerTest
         jobScheduler.runJob();
 
         // then
-        verify( jobScheduler, times( 2 ) ).schedule( eq( raftLogPruning ), any( Runnable.class ),
+        verify( jobScheduler, times( 2 ) ).schedule( eq( Group.RAFT_LOG_PRUNING ), any( Runnable.class ),
                 eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
         verify( logPruner, times( 1 ) ).prune();
         assertEquals( scheduledJob, jobScheduler.getJob() );

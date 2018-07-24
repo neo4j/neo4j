@@ -32,11 +32,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.scheduler.JobScheduler.Groups.slaveLocksTimeout;
 
 @RunWith( MockitoJUnitRunner.class )
 public class DefaultConversationSPITest
@@ -61,8 +61,8 @@ public class DefaultConversationSPITest
     public void testScheduleRecurringJob()
     {
         Runnable job = mock( Runnable.class );
-        conversationSpi.scheduleRecurringJob( slaveLocksTimeout, 0, job );
+        conversationSpi.scheduleRecurringJob( Group.SLAVE_LOCKS_TIMEOUT, 0, job );
 
-        verify( jobScheduler ).scheduleRecurring( slaveLocksTimeout, job, 0, TimeUnit.MILLISECONDS );
+        verify( jobScheduler ).scheduleRecurring( Group.SLAVE_LOCKS_TIMEOUT, job, 0, TimeUnit.MILLISECONDS );
     }
 }

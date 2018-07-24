@@ -21,12 +21,12 @@ package org.neo4j.udc;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.DAYS;
-import static org.neo4j.scheduler.JobScheduler.Groups.udc;
 
 /**
  * An in-memory storage location for usage metadata.
@@ -84,6 +84,6 @@ public class UsageData extends LifecycleAdapter
     @Override
     public void start()
     {
-        featureDecayJob = scheduler.schedule( udc, get( UsageDataKeys.features )::sweep, 1, DAYS );
+        featureDecayJob = scheduler.schedule( Group.UDC, get( UsageDataKeys.features )::sweep, 1, DAYS );
     }
 }

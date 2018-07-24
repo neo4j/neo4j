@@ -59,7 +59,7 @@ import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.Group;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_in_queue_max_batch;
@@ -170,7 +170,7 @@ class RaftServerModule
     private ComposableMessageHandler createBatchingHandler( Config config )
     {
         Function<Runnable,ContinuousJob> jobFactory = runnable -> new ContinuousJob(
-                platformModule.jobScheduler.threadFactory( JobScheduler.Groups.raftBatchHandler ), runnable,
+                platformModule.jobScheduler.threadFactory( Group.RAFT_BATCH_HANDLER ), runnable,
                 logProvider );
 
         BoundedPriorityQueue.Config inQueueConfig = new BoundedPriorityQueue.Config( config.get( raft_in_queue_size ),

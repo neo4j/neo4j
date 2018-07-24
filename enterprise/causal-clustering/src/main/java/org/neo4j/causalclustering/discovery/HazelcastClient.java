@@ -35,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.SafeLifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -180,8 +181,8 @@ public class HazelcastClient extends SafeLifecycle implements TopologyService
     @Override
     public void start0()
     {
-        keepAliveJob = scheduler.scheduleRecurring( JobScheduler.Groups.topologyKeepAlive, timeToLive / 3, this::keepReadReplicaAlive );
-        refreshTopologyJob = scheduler.scheduleRecurring( JobScheduler.Groups.topologyRefresh, refreshPeriod, () -> {
+        keepAliveJob = scheduler.scheduleRecurring( Group.TOPOLOGY_KEEP_ALIVE, timeToLive / 3, this::keepReadReplicaAlive );
+        refreshTopologyJob = scheduler.scheduleRecurring( Group.TOPOLOGY_REFRESH, refreshPeriod, () -> {
             this.refreshTopology();
             this.refreshRoles();
         } );

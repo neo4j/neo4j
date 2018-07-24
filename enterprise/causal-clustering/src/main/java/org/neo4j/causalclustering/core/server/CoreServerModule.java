@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -183,7 +184,7 @@ public class CoreServerModule
 
         CheckPointerService checkPointerService =
                 new CheckPointerService( () -> localDatabase.dataSource().getDependencyResolver().resolveDependency( CheckPointer.class ), jobScheduler,
-                        JobScheduler.Groups.checkPoint );
+                        Group.CHECKPOINT );
         CatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, snapshotService, checkPointerService );

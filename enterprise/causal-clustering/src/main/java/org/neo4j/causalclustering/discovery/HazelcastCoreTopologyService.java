@@ -55,6 +55,7 @@ import org.neo4j.helpers.SocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -186,7 +187,7 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
             {
                 return;
             }
-            refreshJob = scheduler.scheduleRecurring( JobScheduler.Groups.topologyRefresh, refreshPeriod,
+            refreshJob = scheduler.scheduleRecurring( Group.TOPOLOGY_REFRESH, refreshPeriod,
                     HazelcastCoreTopologyService.this::refreshTopology );
             log.info( "Cluster discovery service started" );
         } );
@@ -297,7 +298,7 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
         logConnectionInfo( initialMembers );
         c.addListenerConfig( new ListenerConfig( new OurMembershipListener() ) );
 
-        JobHandle logJob = scheduler.schedule( JobScheduler.Groups.topologyHealth, HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
+        JobHandle logJob = scheduler.schedule( Group.TOPOLOGY_HEALTH, HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
                 () -> log.warn( "The server has not been able to connect in a timely fashion to the " +
                                 "cluster. Please consult the logs for more details. Rebooting the server may " +
                                 "solve the problem." ) );

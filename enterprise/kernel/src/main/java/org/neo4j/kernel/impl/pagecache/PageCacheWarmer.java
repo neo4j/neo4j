@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
@@ -308,7 +309,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     {
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( IO_PARALLELISM * 4 );
         RejectedExecutionHandler rejectionPolicy = new ThreadPoolExecutor.CallerRunsPolicy();
-        ThreadFactory threadFactory = scheduler.threadFactory( JobScheduler.Groups.pageCacheIOHelper );
+        ThreadFactory threadFactory = scheduler.threadFactory( Group.FILE_IO_HELPER );
         return new ThreadPoolExecutor(
                 0, IO_PARALLELISM, 10, TimeUnit.SECONDS, workQueue,
                 threadFactory, rejectionPolicy );

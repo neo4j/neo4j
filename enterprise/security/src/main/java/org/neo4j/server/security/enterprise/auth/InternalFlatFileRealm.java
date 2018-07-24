@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -151,8 +152,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     protected void scheduleNextFileReload()
     {
-        reloadJobHandle = jobScheduler.schedule(
-                JobScheduler.Groups.nativeSecurity,
+        reloadJobHandle = jobScheduler.schedule( Group.NATIVE_SECURITY,
                 this::readFilesFromDisk,
                 10, TimeUnit.SECONDS );
     }

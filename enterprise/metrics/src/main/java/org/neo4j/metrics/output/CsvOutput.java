@@ -43,6 +43,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.metrics.MetricsSettings;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
@@ -126,7 +127,7 @@ public class CsvOutput implements Lifecycle, EventReporter
             try
             {
                 return new RotatingFileOutputStreamSupplier( fileSystem, file, rotationThreshold, 0, maxArchives,
-                        scheduler.executor( JobScheduler.Groups.metricsLogRotations ), listener );
+                        scheduler.executor( Group.TEXT_LOG_ROTATION ), listener );
             }
             catch ( IOException e )
             {

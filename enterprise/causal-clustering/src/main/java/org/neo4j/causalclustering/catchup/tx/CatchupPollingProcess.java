@@ -52,7 +52,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler.Groups;
+import org.neo4j.scheduler.Group;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -130,7 +130,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     public synchronized void start()
     {
         state = TX_PULLING;
-        timer = timerService.create( TX_PULLER_TIMER, Groups.pullUpdates, timeout -> onTimeout() );
+        timer = timerService.create( TX_PULLER_TIMER, Group.PULL_UPDATES, timeout -> onTimeout() );
         timer.set( fixedTimeout( txPullIntervalMillis, MILLISECONDS ) );
         dbHealth = databaseHealthSupplier.get();
         upToDateFuture = new CompletableFuture<>();

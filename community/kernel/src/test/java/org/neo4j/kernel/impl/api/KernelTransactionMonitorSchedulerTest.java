@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.mockito.Mockito.mock;
@@ -41,7 +42,7 @@ public class KernelTransactionMonitorSchedulerTest
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler(1);
         transactionMonitorScheduler.start();
 
-        verify( scheduler).scheduleRecurring( JobScheduler.Groups.transactionTimeoutMonitor, transactionTimeoutMonitor, 1, TimeUnit
+        verify( scheduler).scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, transactionTimeoutMonitor, 1, TimeUnit
                 .MILLISECONDS  );
     }
 

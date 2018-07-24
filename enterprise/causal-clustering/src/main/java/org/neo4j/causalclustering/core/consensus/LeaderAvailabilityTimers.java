@@ -32,7 +32,7 @@ import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler.Groups;
+import org.neo4j.scheduler.Group;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
@@ -71,10 +71,10 @@ class LeaderAvailabilityTimers
 
     synchronized void start( ThrowingConsumer<Clock, Exception> electionAction, ThrowingConsumer<Clock, Exception> heartbeatAction )
     {
-        this.electionTimer = timerService.create( Timeouts.ELECTION, Groups.raft, renewing( electionAction) );
+        this.electionTimer = timerService.create( Timeouts.ELECTION, Group.RAFT_TIMER, renewing( electionAction) );
         this.electionTimer.set( uniformRandomTimeout( electionTimeout, electionTimeout * 2, MILLISECONDS ) );
 
-        this.heartbeatTimer = timerService.create( Timeouts.HEARTBEAT, Groups.raft, renewing( heartbeatAction ) );
+        this.heartbeatTimer = timerService.create( Timeouts.HEARTBEAT, Group.RAFT_TIMER, renewing( heartbeatAction ) );
         this.heartbeatTimer.set( fixedTimeout( heartbeatInterval, MILLISECONDS ) );
 
         lastElectionRenewalMillis = clock.millis();

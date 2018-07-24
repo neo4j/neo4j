@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -182,7 +183,7 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
         counter.incrementAndGet();
         long lastEventTime = clock.nanos() - startTimeNanos;
         accumulatedTotalTimeNanos.addAndGet( lastEventTime );
-        jobScheduler.schedule( JobScheduler.Groups.metricsEvent, () ->
+        jobScheduler.schedule( Group.METRICS_EVENT, () ->
         {
             long millis = TimeUnit.NANOSECONDS.toMillis( lastEventTime );
             monitor.lastLogRotationEventDuration( millis );

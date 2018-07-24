@@ -30,12 +30,12 @@ import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobHandle;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
-import static org.neo4j.scheduler.JobScheduler.Groups.indexSamplingController;
 
 public class IndexSamplingController
 {
@@ -212,7 +212,7 @@ public class IndexSamplingController
         if ( backgroundSampling )
         {
             Runnable samplingRunner = () -> sampleIndexes( BACKGROUND_REBUILD_UPDATED );
-            backgroundSamplingHandle = scheduler.scheduleRecurring( indexSamplingController, samplingRunner, 10, SECONDS );
+            backgroundSamplingHandle = scheduler.scheduleRecurring( Group.INDEX_SAMPLING, samplingRunner, 10, SECONDS );
         }
     }
 

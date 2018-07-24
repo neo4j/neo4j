@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadFactory;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.util.concurrent.Futures.failedFuture;
@@ -86,7 +87,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
     public void start()
     {
         threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, true,
-                new NameAppendingThreadFactory( connector, scheduler.threadFactory( JobScheduler.Groups.boltWorker ) ) );
+                new NameAppendingThreadFactory( connector, scheduler.threadFactory( Group.BOLT_WORKER ) ) );
     }
 
     @Override

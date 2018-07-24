@@ -54,7 +54,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.Group;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -88,7 +88,7 @@ class TestCatchupServer extends Server
         StoreId storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(), kernelStoreId.getUpgradeTime(),
                 kernelStoreId.getUpgradeId() );
 
-        CheckPointerService checkPointerService = new CheckPointerService( checkPointer, new CentralJobScheduler(), JobScheduler.Groups.checkPoint );
+        CheckPointerService checkPointerService = new CheckPointerService( checkPointer, new CentralJobScheduler(), Group.CHECKPOINT );
         RegularCatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( new Monitors(), logProvider,
                 () -> storeId, dataSource, availability, fileSystem, null, checkPointerService );
 

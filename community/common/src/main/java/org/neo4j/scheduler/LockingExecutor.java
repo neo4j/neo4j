@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LockingExecutor implements Executor
 {
     private final JobScheduler jobScheduler;
-    private final JobScheduler.Group group;
+    private final Group group;
     private final AtomicBoolean latch = new AtomicBoolean( false );
 
-    public LockingExecutor( JobScheduler jobScheduler, JobScheduler.Group group )
+    public LockingExecutor( JobScheduler jobScheduler, Group group )
     {
         this.jobScheduler = jobScheduler;
         this.group = group;

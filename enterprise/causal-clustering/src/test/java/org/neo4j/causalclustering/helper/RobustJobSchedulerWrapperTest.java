@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
@@ -39,8 +40,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.scheduler.JobScheduler.Groups.topologyHealth;
-import static org.neo4j.scheduler.JobScheduler.Groups.topologyRefresh;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class RobustJobSchedulerWrapperTest
@@ -70,7 +69,7 @@ public class RobustJobSchedulerWrapperTest
         IllegalStateException e = new IllegalStateException();
 
         // when
-        JobHandle jobHandle = robustWrapper.schedule( topologyHealth, 100, () ->
+        JobHandle jobHandle = robustWrapper.schedule( Group.TOPOLOGY_HEALTH, 100, () ->
         {
             count.incrementAndGet();
             throw e;
@@ -93,7 +92,7 @@ public class RobustJobSchedulerWrapperTest
 
         // when
         int nRuns = 100;
-        JobHandle jobHandle = robustWrapper.scheduleRecurring( topologyRefresh, 1, () ->
+        JobHandle jobHandle = robustWrapper.scheduleRecurring( Group.TOPOLOGY_REFRESH, 1, () ->
         {
             if ( count.get() < nRuns )
             {
@@ -118,7 +117,7 @@ public class RobustJobSchedulerWrapperTest
         Error e = new Error();
 
         // when
-        JobHandle jobHandle = robustWrapper.scheduleRecurring( topologyRefresh, 1, () ->
+        JobHandle jobHandle = robustWrapper.scheduleRecurring( Group.TOPOLOGY_REFRESH, 1, () ->
         {
             count.incrementAndGet();
             throw e;

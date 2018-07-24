@@ -33,9 +33,8 @@ import java.util.concurrent.FutureTask;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.master.Slave;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
-
-import static org.neo4j.scheduler.JobScheduler.Groups.masterTransactionPushing;
 
 public class CommitPusher
 {
@@ -131,7 +130,7 @@ public class CommitPusher
             pullUpdateQueues.put( slave.getServerId(), queue );
 
             final BlockingQueue<PullUpdateFuture> finalQueue = queue;
-            scheduler.schedule( masterTransactionPushing, new Runnable()
+            scheduler.schedule( Group.MASTER_TRANSACTION_PUSHING, new Runnable()
             {
                 List<PullUpdateFuture> currentPulls = new ArrayList<>();
 

@@ -28,10 +28,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AvailabilityGuard.AvailabilityListener;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
-
-import static org.neo4j.scheduler.JobScheduler.Groups.pageCacheIOHelper;
 
 class WarmupAvailabilityListener implements AvailabilityListener
 {
@@ -63,7 +62,7 @@ class WarmupAvailabilityListener implements AvailabilityListener
     public synchronized void available()
     {
         available = true;
-        jobHandle = scheduler.schedule( pageCacheIOHelper, this::startWarmup );
+        jobHandle = scheduler.schedule( Group.FILE_IO_HELPER, this::startWarmup );
     }
 
     private void startWarmup()
@@ -92,8 +91,7 @@ class WarmupAvailabilityListener implements AvailabilityListener
             return;
         }
         long frequencyMillis = config.get( GraphDatabaseSettings.pagecache_warmup_profiling_interval ).toMillis();
-        jobHandle = scheduler.scheduleRecurring(
-                pageCacheIOHelper, this::doProfile, frequencyMillis, TimeUnit.MILLISECONDS );
+        jobHandle = scheduler.scheduleRecurring( Group.FILE_IO_HELPER, this::doProfile, frequencyMillis, TimeUnit.MILLISECONDS );
     }
 
     private void doProfile()

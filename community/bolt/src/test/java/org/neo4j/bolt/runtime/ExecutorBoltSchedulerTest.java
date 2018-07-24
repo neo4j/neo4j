@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -99,7 +100,7 @@ public class ExecutorBoltSchedulerTest
 
         scheduler.start();
 
-        verify( jobScheduler ).threadFactory( JobScheduler.Groups.boltWorker );
+        verify( jobScheduler ).threadFactory( Group.BOLT_WORKER );
         verify( mockExecutorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), anyBoolean(), any( ThreadFactory.class ) );
     }
 

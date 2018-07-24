@@ -33,6 +33,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -91,8 +92,7 @@ public class MembershipWaiter
 
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
-        JobHandle jobHandle = jobScheduler.schedule(
-                JobScheduler.Groups.membershipWaiter,
+        JobHandle jobHandle = jobScheduler.schedule( Group.MEMBERSHIP_WAITER,
                 evaluator, currentCatchupDelayInMs, MILLISECONDS );
 
         catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
@@ -133,7 +133,7 @@ public class MembershipWaiter
             {
                 currentCatchupDelayInMs += SECONDS.toMillis( 1 );
                 long longerDelay = currentCatchupDelayInMs < maxCatchupLag ? currentCatchupDelayInMs : maxCatchupLag;
-                jobScheduler.schedule( JobScheduler.Groups.membershipWaiter, this,
+                jobScheduler.schedule( Group.MEMBERSHIP_WAITER, this,
                         longerDelay, MILLISECONDS );
             }
         }

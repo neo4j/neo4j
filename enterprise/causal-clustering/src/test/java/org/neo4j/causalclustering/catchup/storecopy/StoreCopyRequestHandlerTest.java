@@ -51,6 +51,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
@@ -72,7 +74,7 @@ public class StoreCopyRequestHandlerTest
     private CatchupServerProtocol catchupServerProtocol;
     private JobScheduler jobScheduler = new FakeSingleThreadedJobScheduler();
     private CheckPointerService checkPointerService =
-            new CheckPointerService( () -> checkPointer, jobScheduler, JobScheduler.Groups.checkPoint );
+            new CheckPointerService( () -> checkPointer, jobScheduler, Group.CHECKPOINT );
 
     @Before
     public void setup()

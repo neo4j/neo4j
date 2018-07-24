@@ -25,9 +25,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
-
-import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
 
 /**
  * Collects recovery cleanup work to be performed and schedule them one by one in {@link #start()}}.
@@ -87,7 +86,7 @@ public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter imple
 
     private void scheduleJobs()
     {
-        jobScheduler.schedule( recoveryCleanup, allJobs() );
+        jobScheduler.schedule( Group.STORAGE_MAINTENANCE, allJobs() );
     }
 
     private Runnable allJobs()

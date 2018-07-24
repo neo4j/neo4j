@@ -24,13 +24,12 @@ package org.neo4j.kernel.ha;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.scheduler.JobScheduler.Groups.pullUpdates;
 
 /**
  * This scheduler is part of slave lifecycle that will schedule periodic pulling on slave switch
@@ -60,7 +59,7 @@ public class UpdatePullerScheduler extends LifecycleAdapter
     {
         if ( pullIntervalMillis > 0 )
         {
-            intervalJobHandle = scheduler.scheduleRecurring( pullUpdates, () ->
+            intervalJobHandle = scheduler.scheduleRecurring( Group.PULL_UPDATES, () ->
             {
                 try
                 {
