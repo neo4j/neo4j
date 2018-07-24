@@ -71,12 +71,6 @@ object CRS {
 
 object Points {
   def fromMap(map: collection.Map[String, Any]): Point = {
-    val allowedKeys = Set("x", "y", "longitude", "latitude", "crs")
-    map.keys.foreach { k =>
-      if (!allowedKeys.contains(k)) {
-        throw new InvalidArgumentException(String.format("Unknown key '%s' for creating new point", k))
-      }
-    }
     if (map.contains("x") && map.contains("y")) {
       val x = safeToDouble(map("x"))
       val y = safeToDouble(map("y"))
