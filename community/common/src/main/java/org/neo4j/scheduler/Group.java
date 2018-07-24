@@ -19,7 +19,8 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.Objects;
+import java.util.OptionalInt;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,7 +30,7 @@ public enum Group
 {
     // GENERAL DATABASE GROUPS.
     /** Thread that schedules delayed or recurring tasks. */
-    TASK_SCHEDULER( "Scheduler" ),
+    TASK_SCHEDULER( "Scheduler", ExecutorServiceFactory.singleThread() ),
     /** Watch out for, and report, external manipulation of store files. */
     FILE_WATCHER( "FileWatcher" ),
     /** Monitor and report system-wide pauses, in case they lead to service interruption. */
@@ -53,7 +54,7 @@ public enum Group
 
     // CYPHER.
     /** Thread pool for parallel Cypher query execution. */
-    CYPHER_WORKER( "CypherWorker" ),
+    CYPHER_WORKER( "CypherWorker", ExecutorServiceFactory.workStealing() ),
 
     // BOLT.
     /** Network IO threads for the Bolt protocol. */
@@ -87,15 +88,26 @@ public enum Group
     UDC( "UsageDataCollector" )
     ;
 
-    private final AtomicInteger threadCounter = new AtomicInteger();
     private final String name;
+    private final ExecutorServiceFactory executorServiceFactory;
+    private final AtomicInteger threadCounter;
+
+    Group( String name, ExecutorServiceFactory executorServiceFactory )
+    {
+        this.name = name;
+        this.executorServiceFactory = executorServiceFactory;
+        threadCounter = new AtomicInteger();
+    }
 
     Group( String name )
     {
-        Objects.requireNonNull( name, "Group name cannot be null." );
-        this.name = name;
+        this( name, ExecutorServiceFactory.cached() );
     }
 
+    /**
+     * The slightly more human-readable name of the group. Useful for naming {@link ThreadGroup thread groups}, and also used as a component in the
+     * {@link #threadName() thread names}.
+     */
     public String groupName()
     {
         return name;
@@ -108,5 +120,10 @@ public enum Group
     public String threadName()
     {
         return "neo4j." + groupName() + "-" + threadCounter.incrementAndGet();
+    }
+
+    public ExecutorService buildExecutorService( SchedulerThreadFactory factory, OptionalInt threadCount )
+    {
+        return executorServiceFactory.build( factory, threadCount );
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,7 +40,7 @@ final class ThreadPool
     ThreadPool( Group group, ThreadGroup parentThreadGroup )
     {
         threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
-        executor = Executors.newCachedThreadPool( threadFactory );
+        executor = group.buildExecutorService( threadFactory, OptionalInt.empty() );
         registry = new ConcurrentHashMap<>();
     }
 
@@ -89,7 +90,7 @@ final class ThreadPool
         }
     }
 
-    public InterruptedException getShutdownException()
+    InterruptedException getShutdownException()
     {
         return shutdownInterrupted;
     }
