@@ -30,10 +30,10 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -51,12 +51,12 @@ import static org.neo4j.graphdb.Label.label;
 public class ClusterCompressionIT
 {
     @Parameterized.Parameter
-    public ModifierProtocols modifierProtocol;
+    public Protocol.ModifierProtocol modifierProtocol;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> params()
+    public static Collection<Protocol.ModifierProtocol> params()
     {
-        return Arrays.stream( ModifierProtocols.values() ).map( mp -> new Object[]{mp} ).collect( Collectors.toList() );
+        return Arrays.asList( ModifierProtocols.values() );
     }
 
     @Rule
