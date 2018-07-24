@@ -43,6 +43,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 @Description( "Construct a Duration value." )
 class DurationFunction implements CallableUserFunction
@@ -71,15 +72,23 @@ class DurationFunction implements CallableUserFunction
     }
 
     @Override
-    public DurationValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
+    public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
     {
-        if ( input != null && input.length == 1 )
+        if ( input == null )
         {
-            if ( input[0] instanceof TextValue )
+            return NO_VALUE;
+        }
+        else if ( input.length == 1 )
+        {
+            if ( input[0] == NO_VALUE || input[0] == null )
+            {
+                return NO_VALUE;
+            }
+            else if ( input[0] instanceof TextValue )
             {
                 return DurationValue.parse( (TextValue) input[0] );
             }
-            if ( input[0] instanceof MapValue )
+            else if ( input[0] instanceof MapValue )
             {
                 MapValue map = (MapValue) input[0];
                 return DurationValue.build( map );
@@ -139,7 +148,11 @@ class DurationFunction implements CallableUserFunction
         @Override
         public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
         {
-            if ( input != null && input.length == 2 )
+            if ( input == null || (input.length == 2 && (input[0] == NO_VALUE || input[0] == null) || input[1] == NO_VALUE || input[1] == null) )
+            {
+                return NO_VALUE;
+            }
+            else if ( input.length == 2 )
             {
                 if ( input[0] instanceof TemporalValue && input[1] instanceof TemporalValue )
                 {

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -41,9 +42,9 @@ import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.singletonList;
@@ -55,6 +56,10 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public abstract class TemporalFunction<T extends AnyValue> implements CallableUserFunction
 {
+    private static final String DEFAULT_TEMPORAL_ARGUMENT = "DEFAULT_TEMPORAL_ARGUMENT";
+    private static final TextValue DEFAULT_TEMPORAL_ARGUMENT_VALUE = Values.stringValue( DEFAULT_TEMPORAL_ARGUMENT );
+    private static final DefaultParameterValue DEFAULT_PARAMETER_VALUE = new DefaultParameterValue( DEFAULT_TEMPORAL_ARGUMENT, Neo4jTypes.NTAny );
+
     public static void registerTemporalFunctions( Procedures procedures, ProcedureConfig procedureConfig ) throws ProcedureException
     {
         Supplier<ZoneId> defaultZone = procedureConfig::getDefaultTemporalTimeZone;
@@ -84,8 +89,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
     protected abstract T truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone );
 
-    private static final List<FieldSignature> INPUT_SIGNATURE = singletonList( inputField(
-            "input", Neo4jTypes.NTAny, nullValue( Neo4jTypes.NTAny ) ) );
+    private static final List<FieldSignature> INPUT_SIGNATURE = singletonList( inputField( "input", Neo4jTypes.NTAny, DEFAULT_PARAMETER_VALUE ) );
     private static final String[] ALLOWED = {};
 
     private final UserFunctionSignature signature;
@@ -118,28 +122,6 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         return function.getSimpleName().replace( "Function", "" );
     }
 
-    static int anInt( String name, AnyValue value )
-    {
-        if ( value instanceof IntegralValue )
-        {
-            long v = ((IntegralValue) value).longValue();
-            if ( v <= Integer.MAX_VALUE && v >= Integer.MIN_VALUE )
-            {
-                return (int) v;
-            }
-        }
-        throw new IllegalArgumentException( name + " should be an int, not: " + value );
-    }
-
-    static String aString( String name, AnyValue value )
-    {
-        if ( value instanceof TextValue )
-        {
-            return ((TextValue) value).stringValue();
-        }
-        throw new IllegalArgumentException( name + " should be a string, not: " + value );
-    }
-
     void registerMore( Procedures procedures ) throws ProcedureException
     {
         // Empty by default
@@ -152,9 +134,13 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     }
 
     @Override
-    public final T apply( Context ctx, AnyValue[] input ) throws ProcedureException
+    public final AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
     {
-        if ( input == null || input.length == 0 || input[0] == NO_VALUE || input[0] == null )
+        if ( input == null || (input.length > 0 && (input[0] == NO_VALUE || input[0] == null)) )
+        {
+            return NO_VALUE;
+        }
+        else if ( input.length == 0 || input[0].equals( DEFAULT_TEMPORAL_ARGUMENT_VALUE ) )
         {
             return now( ctx.get( DEFAULT_CLOCK ), null, defaultZone );
         }
@@ -220,13 +206,12 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         }
 
         @Override
-        public abstract T apply( Context ctx, AnyValue[] input ) throws ProcedureException;
+        public abstract AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException;
     }
 
     private static class Now<T extends AnyValue> extends SubFunction<T>
     {
-        private static final List<FieldSignature> SIGNATURE = singletonList( inputField(
-                "timezone", Neo4jTypes.NTAny, nullValue( Neo4jTypes.NTAny ) ) );
+        private static final List<FieldSignature> SIGNATURE = singletonList( inputField( "timezone", Neo4jTypes.NTAny, DEFAULT_PARAMETER_VALUE ) );
         private final Key<Clock> key;
 
         Now( TemporalFunction<T> function, String clock )
@@ -251,10 +236,13 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         }
 
         @Override
-        public T apply( Context ctx, AnyValue[] input ) throws ProcedureException
+        public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
         {
-            if ( input == null || input.length == 0 ||
-                    ((input[0] == NO_VALUE || input[0] == null) && input.length == 1) )
+            if ( input == null || (input.length > 0 && (input[0] == NO_VALUE || input[0] == null)) )
+            {
+                return NO_VALUE;
+            }
+            else if ( input.length == 0 || input[0].equals( DEFAULT_TEMPORAL_ARGUMENT_VALUE ) )
             {
                 return function.now( ctx.get( key ), null, function.defaultZone );
             }

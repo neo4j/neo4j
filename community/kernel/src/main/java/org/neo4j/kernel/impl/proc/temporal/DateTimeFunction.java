@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -96,8 +97,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         private static final String DESCRIPTION =
                 "Create a DateTime given the seconds and nanoseconds since the start of the epoch.";
         private static final List<FieldSignature> SIGNATURE = Arrays.asList(
-                inputField( "seconds", Neo4jTypes.NTAny ),
-                inputField( "nanoseconds", Neo4jTypes.NTAny ) );
+                inputField( "seconds", Neo4jTypes.NTNumber ),
+                inputField( "nanoseconds", Neo4jTypes.NTNumber ) );
         private final UserFunctionSignature signature;
 
         private FromEpoch()
@@ -135,8 +136,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
     {
         private static final String DESCRIPTION =
                 "Create a DateTime given the milliseconds since the start of the epoch.";
-        private static final List<FieldSignature> SIGNATURE = Arrays.asList(
-                inputField( "milliseconds", Neo4jTypes.NTAny ) );
+        private static final List<FieldSignature> SIGNATURE = Collections.singletonList( inputField( "milliseconds", Neo4jTypes.NTNumber ) );
         private final UserFunctionSignature signature;
 
         private FromEpochMillis()
