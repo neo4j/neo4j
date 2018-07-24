@@ -43,10 +43,10 @@ import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
-  def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
-  CypherCurrentCompiler[RuntimeContext] = {
-    val config = CypherPlannerConfiguration(
+  private def plannerConfig(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
+                            clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
+  CypherPlannerConfiguration = {
+    CypherPlannerConfiguration(
       queryCacheSize,
       StatsDivergenceCalculator.divergenceNoDecayCalculator(statsDivergenceThreshold, queryPlanTTL),
       useErrorsOverWarnings = false,
@@ -59,6 +59,10 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true
     )
+  }
+
+  private def createCompiler(config: CypherPlannerConfiguration, clock: Clock = Clock.systemUTC(),
+                             log: Log = NullLog.getInstance): CypherCurrentCompiler[RuntimeContext] = {
     val planner = Cypher35Planner(config,
       clock,
       kernelMonitors,
@@ -69,7 +73,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     createCompiler(planner, config)
   }
 
-  def createCompiler(planner: CypherPlanner, config: CypherPlannerConfiguration):
+  private def createCompiler(planner: CypherPlanner, config: CypherPlannerConfiguration):
   CypherCurrentCompiler[RuntimeContext] = {
     CypherCurrentCompiler(
       planner,
@@ -110,21 +114,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     counter = new CacheCounter()
-    compiler = createCompiler()
+    compiler = createCompiler(plannerConfig())
 
-    val config3_4 = CypherPlannerConfiguration(
-      128,
-      StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
-      useErrorsOverWarnings = false,
-      idpMaxTableSize = 128,
-      idpIterationDuration = 1000,
-      errorIfShortestPathFallbackUsedAtRuntime = false,
-      errorIfShortestPathHasCommonNodesAtRuntime = true,
-      legacyCsvQuoteEscaping = false,
-      csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
-      nonIndexedLabelWarningThreshold = 10000L,
-      planWithMinimumCardinalityEstimates = true
-    )
+    val config3_4 = plannerConfig()
     val planner3_4 = Cypher34Planner(config3_4,
       Clock.systemUTC(),
       kernelMonitors,
@@ -139,13 +131,14 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   }
 
-  private def runQuery(query: String, debugOptions: Set[String] = Set.empty, params: scala.Predef.Map[String, AnyRef] = Map.empty, compiler: CypherCurrentCompiler[RuntimeContext] = compiler): Unit = {
+  private def runQuery(query: String, debugOptions: Set[String] = Set.empty, params: scala.Predef.Map[String, AnyRef] = Map.empty,
+                       cypherCompiler: CypherCurrentCompiler[RuntimeContext] = compiler): Unit = {
     import collection.JavaConverters._
 
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(query = query -> params)
-      compiler.compile(PreParsedQuery(query, DummyPosition(0), query,
+      cypherCompiler.compile(PreParsedQuery(query, DummyPosition(0), query,
         isPeriodicCommit = false,
         CypherVersion.default,
         CypherExecutionMode.default,
@@ -230,7 +223,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CacheCounter()
-    compiler = createCompiler(queryPlanTTL = 0, clock = clock)
+    compiler = createCompiler(plannerConfig(queryPlanTTL = 0, clock = clock))
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
 
@@ -250,7 +243,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CacheCounter()
-    compiler = createCompiler(queryPlanTTL = 0, clock = clock)
+    compiler = createCompiler(plannerConfig(queryPlanTTL = 0, clock = clock))
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person) return n"
 
@@ -273,7 +266,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val logProvider = new AssertableLogProvider()
     val logName = "testlog"
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(logName))
+    compiler = createCompiler(plannerConfig(queryPlanTTL = 0, clock = clock), log = logProvider.getLog(logName))
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
@@ -309,8 +302,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should find query in cache with different parameter types in 3.4") {
     val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
     val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> "nope")
-    runQuery("return $number", params = map1, compiler = compiler3_4)
-    runQuery("return $number", params = map2, compiler = compiler3_4)
+    runQuery("return $number", params = map1, cypherCompiler = compiler3_4)
+    runQuery("return $number", params = map2, cypherCompiler = compiler3_4)
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }

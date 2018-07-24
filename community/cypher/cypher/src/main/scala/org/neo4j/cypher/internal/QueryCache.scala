@@ -61,9 +61,8 @@ trait CacheTracer[QUERY_KEY] {
   * @param stalenessCaller Decided whether CachedExecutionPlans are stale
   * @param tracer Traces cache activity
   */
-class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: AnyRef](val maximumSize: Int,
-                                                                                                          val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
-                                                                                                          val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
+class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: AnyRef](
+    val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
 
   val inner: Cache[QUERY_KEY, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, EXECUTABLE_QUERY]()
 
@@ -103,7 +102,6 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
     }
   }
 
-
   /**
     * Ensure this query is recompiled and put it in the cache.
     *
@@ -111,27 +109,27 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
     * first. Regardless of who does it, this is treated as a cache miss, because it will
     * take a long time.
     */
-  private def compileAndCache(key: QUERY_KEY,
+  private def compileAndCache(queryKey: QUERY_KEY,
                         tc: TransactionalContext,
                         compile: () => EXECUTABLE_QUERY,
                         metaData: String
                        ): CacheLookup[EXECUTABLE_QUERY] = {
     val newExecutableQuery = compile()
-    inner.put(key, newExecutableQuery)
-    miss(key, newExecutableQuery, metaData)
+    inner.put(queryKey, newExecutableQuery)
+    miss(queryKey, newExecutableQuery, metaData)
   }
 
-  private def hit(key: QUERY_KEY,
+  private def hit(queryKey: QUERY_KEY,
                   executableQuery: EXECUTABLE_QUERY,
                   metaData: String) = {
-    tracer.queryCacheHit(key, metaData)
+    tracer.queryCacheHit(queryKey, metaData)
     CacheHit(executableQuery)
   }
 
-  private def miss(key: QUERY_KEY,
+  private def miss(queryKey: QUERY_KEY,
                    newExecutableQuery: EXECUTABLE_QUERY,
                    metaData: String) = {
-    tracer.queryCacheMiss(key, metaData)
+    tracer.queryCacheMiss(queryKey, metaData)
     CacheMiss(newExecutableQuery)
   }
 
