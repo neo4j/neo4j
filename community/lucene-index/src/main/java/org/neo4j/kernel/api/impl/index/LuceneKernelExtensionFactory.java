@@ -51,7 +51,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return new LuceneKernelExtension(
-                context.storeDir(),
+                context.contextDirectory(),
                 dependencies.getConfig(),
                 dependencies::getIndexStore,
                 dependencies.fileSystem(),

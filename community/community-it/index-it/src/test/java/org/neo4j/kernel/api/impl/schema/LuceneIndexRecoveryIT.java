@@ -306,7 +306,6 @@ public class LuceneIndexRecoveryIT
         }
     }
 
-    // Creates a lucene index factory with the shared in-memory directory
     private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
@@ -315,7 +314,7 @@ public class LuceneIndexRecoveryIT
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.contextDirectory() ),
                         IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
@@ -338,7 +337,7 @@ public class LuceneIndexRecoveryIT
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.contextDirectory() ),
                         IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override

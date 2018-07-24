@@ -79,7 +79,7 @@ public class LuceneIndexProviderFactory extends
     public IndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
-        File storeDir = context.storeDir();
+        File databaseDirectory = context.contextDirectory();
         FileSystemAbstraction fs = dependencies.fileSystem();
         Monitors monitors = dependencies.monitors();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( LuceneIndexProvider.class );
@@ -88,17 +88,17 @@ public class LuceneIndexProviderFactory extends
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        return newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        return newInstance( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
-    public static FusionIndexProvider newInstance( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
+    public static FusionIndexProvider newInstance( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
             IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
         boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
-        IndexDirectoryStructure.Factory luceneDirStructure = directoriesByProviderKey( storeDir );
-        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
+        IndexDirectoryStructure.Factory luceneDirStructure = directoriesByProviderKey( databaseDirectory );
+        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
 
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, luceneDirStructure, monitor, config, operationalMode );
         TemporalIndexProvider temporal =
@@ -113,11 +113,11 @@ public class LuceneIndexProviderFactory extends
             priority = 100;
         }
         return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSlotSelector00(),
-                PROVIDER_DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
+                PROVIDER_DESCRIPTOR, priority, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
-    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
     {
-        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir, PROVIDER_DESCRIPTOR );
+        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( databaseDirectory, PROVIDER_DESCRIPTOR );
     }
 }

@@ -557,15 +557,15 @@ public class SchemaIndexHaIT
         public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps )
         {
             PageCache pageCache = deps.pageCache();
-            File storeDir = context.storeDir();
+            File databaseDirectory = context.contextDirectory();
             DefaultFileSystemAbstraction fs = fileSystemRule.get();
             IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
             Config config = deps.config();
             OperationalMode operationalMode = context.databaseInfo().operationalMode;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
 
-            FusionIndexProvider fusionIndexProvider =
-                    NativeLuceneFusionIndexProviderFactory20.create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+            FusionIndexProvider fusionIndexProvider = NativeLuceneFusionIndexProviderFactory20.create( pageCache, databaseDirectory, fs, monitor,
+                    config, operationalMode, recoveryCleanupWorkCollector );
 
             if ( injectLatchPredicate.test( deps.db() ) )
             {

@@ -21,14 +21,30 @@ package org.neo4j.kernel.impl.spi;
 
 import java.io.File;
 
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 
 public interface KernelContext
 {
+    /**
+     * @return store directory for {@link ExtensionType#GLOBAL} extensions and
+     * particular database directory if extension is per {@link ExtensionType#DATABASE}.
+     * @deprecated Please use {@link #contextDirectory()} instead.
+     */
+    @Deprecated
     File storeDir();
 
     DatabaseInfo databaseInfo();
 
     DependencySatisfier dependencySatisfier();
+
+    /**
+     * @return store directory for {@link ExtensionType#GLOBAL} extensions and
+     * particular database directory if extension is per {@link ExtensionType#DATABASE}.
+     */
+    default File contextDirectory()
+    {
+        return storeDir();
+    }
 }

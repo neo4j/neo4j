@@ -83,7 +83,7 @@ public class CsvOutput implements Lifecycle, EventReporter
         }
         Long rotationThreshold = config.get( MetricsSettings.csvRotationThreshold );
         Integer maxArchives = config.get( MetricsSettings.csvMaxArchives );
-        outputPath = absoluteFileOrRelativeTo( kernelContext.storeDir(), configuredPath );
+        outputPath = absoluteFileOrRelativeTo( kernelContext.contextDirectory(), configuredPath );
         csvReporter = RotatableCsvReporter.forRegistry( registry )
                 .convertRatesTo( TimeUnit.SECONDS )
                 .convertDurationsTo( TimeUnit.MILLISECONDS )

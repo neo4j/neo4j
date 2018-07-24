@@ -59,7 +59,7 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
     public FusionIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
-        File storeDir = context.storeDir();
+        File databaseDirectory = context.contextDirectory();
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( FusionIndexProvider.class );
         Monitors monitors = dependencies.monitors();
@@ -68,14 +68,14 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        return create( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
-    public static FusionIndexProvider create( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
+    public static FusionIndexProvider create( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
                                                    IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
                                                    RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
+        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
         boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
 
@@ -94,11 +94,11 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
             priority = 100;
         }
         return new FusionIndexProvider( EMPTY, number, spatial, temporal, lucene, new FusionSlotSelector10(),
-                DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
+                DESCRIPTOR, priority, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
-    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
     {
-        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir, DESCRIPTOR );
+        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
     }
 }

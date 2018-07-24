@@ -26,21 +26,22 @@ import org.neo4j.kernel.impl.util.DependencySatisfier;
 
 public class SimpleKernelContext implements KernelContext
 {
-    private final File storeDir;
+    private final File contextDirectory;
     private final DatabaseInfo databaseInfo;
     private final DependencySatisfier satisfier;
 
-    public SimpleKernelContext( File storeDir, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
+    public SimpleKernelContext( File contextDirectory, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
     {
-        this.storeDir = storeDir;
+        this.contextDirectory = contextDirectory;
         this.databaseInfo = databaseInfo;
         this.satisfier = satisfier;
     }
 
     @Override
+    @Deprecated
     public File storeDir()
     {
-        return storeDir;
+        return contextDirectory;
     }
 
     @Override
