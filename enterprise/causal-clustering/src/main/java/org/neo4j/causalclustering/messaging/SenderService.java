@@ -38,7 +38,7 @@ import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -53,7 +53,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private final ReadWriteLock serviceLock = new ReentrantReadWriteLock();
     private final Log log;
 
-    private JobScheduler.JobHandle jobHandle;
+    private JobHandle jobHandle;
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
     private NioEventLoopGroup eventLoopGroup;

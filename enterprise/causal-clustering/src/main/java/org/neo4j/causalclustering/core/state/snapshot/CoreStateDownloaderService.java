@@ -34,7 +34,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.scheduler.JobHandle;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.downloadSnapshot;
 

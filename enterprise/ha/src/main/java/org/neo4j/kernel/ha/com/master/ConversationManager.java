@@ -30,7 +30,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.function.Factory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
@@ -65,7 +65,7 @@ public class ConversationManager extends LifecycleAdapter
     };
 
     TimedRepository<RequestContext,Conversation> conversations;
-    private JobScheduler.JobHandle staleReaperJob;
+    private JobHandle staleReaperJob;
 
     /**
      * Build conversation manager with default values for activity check interval and timeout addition.

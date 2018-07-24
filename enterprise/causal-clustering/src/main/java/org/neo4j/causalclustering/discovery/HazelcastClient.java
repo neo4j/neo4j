@@ -35,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.SafeLifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Collections.emptyMap;
@@ -65,8 +66,8 @@ public class HazelcastClient extends SafeLifecycle implements TopologyService
     //TODO: Work out error handling in case cluster hosts change their dbName unexpectedly
     private final String dbName;
 
-    private JobScheduler.JobHandle keepAliveJob;
-    private JobScheduler.JobHandle refreshTopologyJob;
+    private JobHandle keepAliveJob;
+    private JobHandle refreshTopologyJob;
 
     /* cached data updated during each refresh */
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;

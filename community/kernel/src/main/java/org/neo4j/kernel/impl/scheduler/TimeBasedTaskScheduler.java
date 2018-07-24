@@ -24,8 +24,8 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.scheduler.JobScheduler.Group;
-import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.time.SystemNanoClock;
 
 final class TimeBasedTaskScheduler implements Runnable

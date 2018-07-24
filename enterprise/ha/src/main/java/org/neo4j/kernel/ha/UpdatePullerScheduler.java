@@ -24,6 +24,7 @@ package org.neo4j.kernel.ha;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -43,7 +44,7 @@ public class UpdatePullerScheduler extends LifecycleAdapter
     private final Log log;
     private final UpdatePuller updatePuller;
     private final long pullIntervalMillis;
-    private JobScheduler.JobHandle intervalJobHandle;
+    private JobHandle intervalJobHandle;
 
     public UpdatePullerScheduler( JobScheduler scheduler, LogProvider logProvider, UpdatePuller updatePullingThread,
             long pullIntervalMillis )

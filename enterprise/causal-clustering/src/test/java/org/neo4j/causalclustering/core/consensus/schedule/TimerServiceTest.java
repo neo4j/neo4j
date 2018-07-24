@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.FakeClockJobScheduler;
 
@@ -48,7 +49,7 @@ import static org.neo4j.causalclustering.core.consensus.schedule.TimerServiceTes
 
 public class TimerServiceTest
 {
-    private final JobScheduler.Group group = JobScheduler.Groups.raft;
+    private final Group group = JobScheduler.Groups.raft;
 
     private final TimeoutHandler handlerA = mock( TimeoutHandler.class );
     private final TimeoutHandler handlerB = mock( TimeoutHandler.class );

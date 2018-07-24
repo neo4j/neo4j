@@ -34,8 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.Thread.sleep;
@@ -91,7 +90,7 @@ public class CentralJobSchedulerTest
         // Given
         long period = 2;
         life.start();
-        JobScheduler.JobHandle jobHandle =
+        JobHandle jobHandle =
                 scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
         awaitFirstInvocation();
 

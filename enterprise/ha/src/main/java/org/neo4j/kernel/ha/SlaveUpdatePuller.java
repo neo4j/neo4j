@@ -45,8 +45,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.System.currentTimeMillis;
@@ -116,7 +117,7 @@ import static java.lang.System.currentTimeMillis;
  *
  * @see org.neo4j.kernel.ha.UpdatePuller
  */
-public class SlaveUpdatePuller implements Runnable, UpdatePuller, JobScheduler.CancelListener
+public class SlaveUpdatePuller implements Runnable, UpdatePuller, CancelListener
 {
     public interface Monitor
     {

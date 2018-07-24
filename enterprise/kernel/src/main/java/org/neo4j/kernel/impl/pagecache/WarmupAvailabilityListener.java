@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AvailabilityGuard.AvailabilityListener;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.pageCacheIOHelper;
@@ -46,7 +47,7 @@ class WarmupAvailabilityListener implements AvailabilityListener
     // started yet, since we don't propagate an interrupt. This is why we check the `available` field in the
     // `scheduleProfile` method.
     private volatile boolean available;
-    private JobScheduler.JobHandle jobHandle; // Guarded by `this`.
+    private JobHandle jobHandle; // Guarded by `this`.
 
     WarmupAvailabilityListener( JobScheduler scheduler, PageCacheWarmer pageCacheWarmer,
                                 Config config, Log log, PageCacheWarmerMonitor monitor )

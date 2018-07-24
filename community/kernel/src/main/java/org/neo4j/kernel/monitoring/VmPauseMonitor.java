@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.max;

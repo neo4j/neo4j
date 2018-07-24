@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
@@ -54,7 +55,7 @@ public class TimerService
      * @param handler The handler invoked on a timeout.
      * @return The deactivated timer.
      */
-    public synchronized Timer create( TimerName name, JobScheduler.Group group, TimeoutHandler handler )
+    public synchronized Timer create( TimerName name, Group group, TimeoutHandler handler )
     {
         Timer timer = new Timer( name, scheduler, log, group, handler );
         timers.add( timer );

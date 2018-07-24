@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.ListSnapshot;
@@ -89,7 +90,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final boolean authenticationEnabled;
     private final boolean authorizationEnabled;
     private final JobScheduler jobScheduler;
-    private volatile JobScheduler.JobHandle reloadJobHandle;
+    private volatile JobHandle reloadJobHandle;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,

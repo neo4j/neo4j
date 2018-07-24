@@ -37,6 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -76,7 +77,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
     private State state;
     private final ReaderPool readerPool;
-    private JobScheduler.JobHandle readerPoolPruner;
+    private JobHandle readerPoolPruner;
 
     public SegmentedRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
             ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, int readerPoolSize, Clock clock,

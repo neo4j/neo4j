@@ -35,7 +35,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -58,25 +59,25 @@ public class ConversationManagerTest
     @Test
     public void testStart()
     {
-        JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
+        JobHandle reaperJobHandle = mock( JobHandle.class );
         when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
-        when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
+        when( conversationSPI.scheduleRecurringJob( any( Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
 
         conversationManager.start();
 
         assertNotNull( conversationManager.conversations );
-        verify( conversationSPI ).scheduleRecurringJob(any( JobScheduler.Group.class ), any( Long.class ),
+        verify( conversationSPI ).scheduleRecurringJob(any( Group.class ), any( Long.class ),
                 any( Runnable.class ) );
     }
 
     @Test
     public void testStop()
     {
-        JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
+        JobHandle reaperJobHandle = mock( JobHandle.class );
         when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
-        when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
+        when( conversationSPI.scheduleRecurringJob( any( Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
 

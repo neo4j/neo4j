@@ -24,14 +24,14 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.Group;
 
 final class GroupedDaemonThreadFactory implements ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory
 {
-    private final JobScheduler.Group group;
+    private final Group group;
     private final ThreadGroup threadGroup;
 
-    GroupedDaemonThreadFactory( JobScheduler.Group group, ThreadGroup parentThreadGroup )
+    GroupedDaemonThreadFactory( Group group, ThreadGroup parentThreadGroup )
     {
         this.group = group;
         threadGroup = new ThreadGroup( parentThreadGroup, group.name() );

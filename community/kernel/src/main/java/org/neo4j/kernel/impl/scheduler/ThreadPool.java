@@ -26,8 +26,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 
 final class ThreadPool
 {
@@ -36,7 +36,7 @@ final class ThreadPool
     private final ConcurrentHashMap<Object,Future<?>> registry;
     private InterruptedException shutdownInterrupted;
 
-    ThreadPool( JobScheduler.Group group, ThreadGroup parentThreadGroup )
+    ThreadPool( Group group, ThreadGroup parentThreadGroup )
     {
         threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
         executor = Executors.newCachedThreadPool( threadFactory );

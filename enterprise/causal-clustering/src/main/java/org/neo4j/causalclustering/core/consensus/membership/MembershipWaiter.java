@@ -33,6 +33,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -90,7 +91,7 @@ public class MembershipWaiter
 
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
-        JobScheduler.JobHandle jobHandle = jobScheduler.schedule(
+        JobHandle jobHandle = jobScheduler.schedule(
                 JobScheduler.Groups.membershipWaiter,
                 evaluator, currentCatchupDelayInMs, MILLISECONDS );
 

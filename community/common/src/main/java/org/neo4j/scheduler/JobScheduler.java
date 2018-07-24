@@ -19,15 +19,11 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.Objects;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -37,58 +33,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface JobScheduler extends Lifecycle
 {
-    /**
-     * Represents a common group of jobs, defining how they should be scheduled.
-     */
-    final class Group
-    {
-        private final AtomicInteger threadCounter = new AtomicInteger();
-        private final String name;
-
-        private Group( String name )
-        {
-            Objects.requireNonNull( name, "Group name cannot be null." );
-            this.name = name;
-        }
-
-        public String name()
-        {
-            return name;
-        }
-
-        /**
-         * Name a new thread. This method may or may not be used, it is up to the scheduling strategy to decide
-         * to honor this.
-         */
-        public String threadName()
-        {
-            return "neo4j." + name() + "-" + threadCounter.incrementAndGet();
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-
-            Group group = (Group) o;
-
-            return name.equals( group.name );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return name.hashCode();
-        }
-    }
-
     /**
      * This is an exhaustive list of job types that run in the database. It should be expanded as needed for new groups
      * of jobs.
@@ -240,31 +184,6 @@ public interface JobScheduler extends Lifecycle
         private Groups()
         {
         }
-    }
-
-    interface JobHandle
-    {
-        void cancel( boolean mayInterruptIfRunning );
-
-        void waitTermination() throws InterruptedException, ExecutionException, CancellationException;
-
-        default void registerCancelListener( CancelListener listener )
-        {
-            throw new UnsupportedOperationException( "Unsupported in this implementation" );
-        }
-    }
-
-    /**
-     * Gets notified about calls to {@link JobHandle#cancel(boolean)}.
-     */
-    interface CancelListener
-    {
-        /**
-         * Notification that {@link JobHandle#cancel(boolean)} was called.
-         *
-         * @param mayInterruptIfRunning argument from {@link JobHandle#cancel(boolean)} call.
-         */
-        void cancelled( boolean mayInterruptIfRunning );
     }
 
     /**

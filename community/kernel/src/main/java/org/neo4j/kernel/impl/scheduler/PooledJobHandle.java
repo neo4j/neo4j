@@ -25,14 +25,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.CancelListener;
+import org.neo4j.scheduler.JobHandle;
 
-final class PooledJobHandle implements JobScheduler.JobHandle
+final class PooledJobHandle implements JobHandle
 {
     private final Future<?> future;
     private final Object registryKey;
     private final ConcurrentHashMap<Object,Future<?>> registry;
-    private final List<JobScheduler.CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
+    private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
     PooledJobHandle( Future<?> future, Object registryKey, ConcurrentHashMap<Object,Future<?>> registry )
     {
@@ -45,7 +46,7 @@ final class PooledJobHandle implements JobScheduler.JobHandle
     public void cancel( boolean mayInterruptIfRunning )
     {
         future.cancel( mayInterruptIfRunning );
-        for ( JobScheduler.CancelListener cancelListener : cancelListeners )
+        for ( CancelListener cancelListener : cancelListeners )
         {
             cancelListener.cancelled( mayInterruptIfRunning );
         }
@@ -59,7 +60,7 @@ final class PooledJobHandle implements JobScheduler.JobHandle
     }
 
     @Override
-    public void registerCancelListener( JobScheduler.CancelListener listener )
+    public void registerCancelListener( CancelListener listener )
     {
         cancelListeners.add( listener );
     }

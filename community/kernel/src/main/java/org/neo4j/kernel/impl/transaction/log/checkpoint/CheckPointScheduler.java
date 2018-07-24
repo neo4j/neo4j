@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.FeatureToggles;
 
@@ -106,7 +107,7 @@ public class CheckPointScheduler extends LifecycleAdapter
         }
     };
 
-    private volatile JobScheduler.JobHandle handle;
+    private volatile JobHandle handle;
     private volatile boolean stopped;
     private volatile boolean checkPointing;
     private final BooleanSupplier checkPointingCondition = new BooleanSupplier()

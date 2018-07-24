@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobSchedulerAdapter;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;

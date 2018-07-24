@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.identity.BoundState;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.kernel.lifecycle.SafeLifecycle;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobHandle;
 
 public class CoreLife extends SafeLifecycle
 {
@@ -84,7 +84,7 @@ public class CoreLife extends SafeLifecycle
         else
         {
             snapshotService.awaitState();
-            Optional<JobScheduler.JobHandle> downloadJob = downloadService.downloadJob();
+            Optional<JobHandle> downloadJob = downloadService.downloadJob();
             if ( downloadJob.isPresent() )
             {
                 downloadJob.get().waitTermination();

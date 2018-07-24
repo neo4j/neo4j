@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobHandle;
 
 public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>>
 {
@@ -64,7 +64,7 @@ public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.
             ConsensusOutcome outcome = raftMachine.handle( wrappedMessage.message() );
             if ( outcome.needsFreshSnapshot() )
             {
-                Optional<JobScheduler.JobHandle> downloadJob = downloadService.scheduleDownload( catchupAddressProvider );
+                Optional<JobHandle> downloadJob = downloadService.scheduleDownload( catchupAddressProvider );
                 if ( downloadJob.isPresent() )
                 {
                     downloadJob.get().waitTermination();

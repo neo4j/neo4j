@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.FakeClock;
 
@@ -173,7 +174,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         throw new UnsupportedOperationException();
     }
 
-    class JobHandle implements JobScheduler.JobHandle
+    class JobHandle implements org.neo4j.scheduler.JobHandle
     {
         private final long id = jobIdGen.incrementAndGet();
         private final Runnable runnable;

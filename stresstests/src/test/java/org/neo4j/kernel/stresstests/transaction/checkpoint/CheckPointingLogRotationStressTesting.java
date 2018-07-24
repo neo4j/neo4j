@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransactionTracer;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobSchedulerAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;

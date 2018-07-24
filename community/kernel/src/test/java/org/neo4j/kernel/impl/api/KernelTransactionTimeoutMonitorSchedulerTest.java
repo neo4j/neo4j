@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +44,7 @@ public class KernelTransactionTimeoutMonitorSchedulerTest
     @Test
     public void startJobTransactionMonitor()
     {
-        JobScheduler.JobHandle jobHandle = Mockito.mock( JobScheduler.JobHandle.class );
+        JobHandle jobHandle = Mockito.mock( JobHandle.class );
         when( jobScheduler.scheduleRecurring( eq(transactionTimeoutMonitor), eq( transactionMonitor), anyLong(),
                 any(TimeUnit.class) )).thenReturn( jobHandle );
 

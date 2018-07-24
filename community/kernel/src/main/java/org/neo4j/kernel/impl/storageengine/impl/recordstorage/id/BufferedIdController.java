@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
@@ -36,7 +37,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
 {
     private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
-    private JobScheduler.JobHandle jobHandle;
+    private JobHandle jobHandle;
 
     public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler )
     {

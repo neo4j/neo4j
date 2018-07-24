@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.transactionTimeoutMonitor;
@@ -31,7 +32,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     private final KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor;
     private final JobScheduler scheduler;
     private final long checkIntervalMillis;
-    private JobScheduler.JobHandle monitorJobHandle;
+    private JobHandle monitorJobHandle;
 
     public KernelTransactionMonitorScheduler( KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor,
             JobScheduler scheduler, long checkIntervalMillis )

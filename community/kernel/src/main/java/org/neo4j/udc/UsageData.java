@@ -21,6 +21,7 @@ package org.neo4j.udc;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -39,7 +40,7 @@ public class UsageData extends LifecycleAdapter
 {
     private final ConcurrentHashMap<UsageDataKey, Object> store = new ConcurrentHashMap<>();
     private final JobScheduler scheduler;
-    private JobScheduler.JobHandle featureDecayJob;
+    private JobHandle featureDecayJob;
 
     public UsageData( JobScheduler scheduler )
     {

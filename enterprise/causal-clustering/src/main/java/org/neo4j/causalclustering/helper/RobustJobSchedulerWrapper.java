@@ -24,6 +24,8 @@ package org.neo4j.causalclustering.helper;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,12 +48,12 @@ public class RobustJobSchedulerWrapper
         this.log = log;
     }
 
-    public JobScheduler.JobHandle schedule( JobScheduler.Group group, long delayMillis, ThrowingAction<Exception> action )
+    public JobHandle schedule( Group group, long delayMillis, ThrowingAction<Exception> action )
     {
         return delegate.schedule( group, () -> withErrorHandling( action ), delayMillis, MILLISECONDS );
     }
 
-    public JobScheduler.JobHandle scheduleRecurring( JobScheduler.Group group, long periodMillis, ThrowingAction<Exception> action )
+    public JobHandle scheduleRecurring( Group group, long periodMillis, ThrowingAction<Exception> action )
     {
         return delegate.scheduleRecurring( group, () -> withErrorHandling( action ), periodMillis, MILLISECONDS );
     }

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 public class CountingTimerService extends TimerService
@@ -38,7 +39,7 @@ public class CountingTimerService extends TimerService
     }
 
     @Override
-    public Timer create( TimerName name, JobScheduler.Group group, TimeoutHandler handler )
+    public Timer create( TimerName name, Group group, TimeoutHandler handler )
     {
         TimeoutHandler countingHandler = timer -> {
             long count = counts.getOrDefault( name.name(), 0L );
