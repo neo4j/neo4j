@@ -63,8 +63,6 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
-    public static final int MAX_KEY_SIZE = DynamicSizeUtil.MAX_TWO_BYTE_KEY_SIZE;
-
     static final byte FORMAT_IDENTIFIER = 3;
     static final byte FORMAT_VERSION = 0;
 
@@ -103,7 +101,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         super( pageSize, layout );
         totalSpace = pageSize - HEADER_LENGTH_DYNAMIC;
         halfSpace = totalSpace / 2;
-        keyValueSizeCap = totalSpace / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
+        keyValueSizeCap = keyValueSizeCapFromPageSize( pageSize );
 
         if ( keyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP )
         {
@@ -112,6 +110,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
                             "with current page size of %dB. We require this cap to be at least %dB.",
                     LEAST_NUMBER_OF_ENTRIES_PER_PAGE, keyValueSizeCap, pageSize, Long.SIZE );
         }
+    }
+
+    // public for test
+    public static int keyValueSizeCapFromPageSize( int pageSize )
+    {
+        return (pageSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
     }
 
     @Override
@@ -350,6 +354,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         cursor.setOffset( childOffset( pos ) );
         writeChild( cursor, child, stableGeneration, unstableGeneration );
+    }
+
+    @Override
+    public int keyValueSizeCap()
+    {
+        return keyValueSizeCap;
     }
 
     @Override
@@ -904,6 +914,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private void moveKeysAndChildren( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count,
             boolean includeLeftMostChild )
     {
+        if ( count == 0 && !includeLeftMostChild )
+        {
+            // Nothing to move
+            return;
+        }
+
         // All children
         // This will also copy key offsets but those will be overwritten below.
         int childFromOffset = includeLeftMostChild ? childOffset( fromPos ) : childOffset( fromPos + 1 );
