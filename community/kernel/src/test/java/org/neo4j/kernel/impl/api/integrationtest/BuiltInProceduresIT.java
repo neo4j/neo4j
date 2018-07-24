@@ -148,8 +148,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.schema", "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " +
                                                    "OF " +
                                                    "RELATIONSHIP?)", "Show the schema of the data.", "READ"} ),
-                equalTo( new Object[]{"db.propertySchema",
-                        "db.propertySchema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
+                equalTo( new Object[]{"okapi.schema",
+                        "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
                                 "cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
                         "Show the derived property schema of the data in tabular form.",
                         "READ"} ),

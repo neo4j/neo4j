@@ -229,8 +229,8 @@ public class BuiltInProceduresTest
                         "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
                 record( "db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID",
                         "Schedule resampling of all outdated indexes.", "READ" ),
-                record( "db.propertySchema",
-                        "db.propertySchema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
+                record( "okapi.schema",
+                        "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
                                 "cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
                         "Show the derived property schema of the data in tabular form.", "READ" ),
                 record( "db.schema",
