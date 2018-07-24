@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_5
 
 import java.time.Clock
+import java.util.function.BiFunction
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.runSafely
@@ -38,6 +39,8 @@ import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.Statement
 import org.opencypher.v9_0.expressions.Parameter
 import org.opencypher.v9_0.frontend.PlannerName
@@ -106,7 +109,8 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
                             preParsingNotifications: Set[Notification],
-                            transactionalContext: TransactionalContext
+                            transactionalContext: TransactionalContext,
+                            params: MapValue
                            ): LogicalPlanResult = {
 
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
@@ -153,10 +157,14 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         CacheableLogicalPlan(logicalPlanState, reusabilityState)
       }
 
-      val params = ValueConversion.asValues(preparedQuery.extractedParams())
+      // Filter the parameters to retain only those that are actually used in the query
+      val filteredParams = params.filter(new BiFunction[String, AnyValue, java.lang.Boolean] {
+        override def apply(name: String, value: AnyValue): java.lang.Boolean = queryParamNames.contains(name)
+      })
+
       val cacheableLogicalPlan =
         if (preParsedQuery.debugOptions.isEmpty)
-          planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), params),
+          planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
                                            transactionalContext,
                                            createPlan,
                                            syntacticQuery.queryText).executableQuery
@@ -166,7 +174,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
-        params,
+        ValueConversion.asValues(preparedQuery.extractedParams()),
         cacheableLogicalPlan.reusability,
         context)
     }

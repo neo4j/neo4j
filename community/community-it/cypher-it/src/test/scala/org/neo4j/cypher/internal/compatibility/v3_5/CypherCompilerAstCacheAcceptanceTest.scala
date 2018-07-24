@@ -23,13 +23,16 @@ import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, RuntimeContext}
+import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
+import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, CypherPlanner, RuntimeContext}
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.cypher.internal.{CacheTracer, CommunityRuntimeFactory, ParameterTypeMap, PreParsedQuery}
+import org.neo4j.cypher.internal.{CacheTracer, CommunityRuntimeFactory, PreParsedQuery}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.collection.Pair
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider.inLog
 import org.neo4j.logging.{AssertableLogProvider, Log, NullLog}
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
@@ -43,7 +46,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
                      clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
   CypherCurrentCompiler[RuntimeContext] = {
-
     val config = CypherPlannerConfiguration(
       queryCacheSize,
       StatsDivergenceCalculator.divergenceNoDecayCalculator(statsDivergenceThreshold, queryPlanTTL),
@@ -57,14 +59,20 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true
     )
+    val planner = Cypher35Planner(config,
+      clock,
+      kernelMonitors,
+      log,
+      cypher.CypherPlannerOption.default,
+      CypherUpdateStrategy.default,
+      () => 1)
+    createCompiler(planner, config)
+  }
+
+  def createCompiler(planner: CypherPlanner, config: CypherPlannerConfiguration):
+  CypherCurrentCompiler[RuntimeContext] = {
     CypherCurrentCompiler(
-      Cypher35Planner(config,
-                      clock,
-                      kernelMonitors,
-                      log,
-                      cypher.CypherPlannerOption.default,
-                      CypherUpdateStrategy.default,
-                      () => 1),
+      planner,
       CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
       CommunityRuntimeContextCreator,
       kernelMonitors)
@@ -75,12 +83,12 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
   }
 
-  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends CacheTracer[Pair[AnyRef,ParameterTypeMap]] {
-    override def queryCacheHit(key: Pair[AnyRef,ParameterTypeMap], metaData: String) {
+  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
+    override def queryCacheHit(key: Pair[AnyRef, ParameterTypeMap], metaData: String) {
       counts = counts.copy(hits = counts.hits + 1)
     }
 
-    override def queryCacheMiss(key: Pair[AnyRef,ParameterTypeMap], metaData: String) {
+    override def queryCacheMiss(key: Pair[AnyRef, ParameterTypeMap], metaData: String) {
       counts = counts.copy(misses = counts.misses + 1)
     }
 
@@ -88,7 +96,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def queryCacheStale(key: Pair[AnyRef,ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit = {
+    override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -97,27 +105,55 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   var counter: CacheCounter = _
   var compiler: CypherCurrentCompiler[RuntimeContext] = _
+  var compiler3_4: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     counter = new CacheCounter()
     compiler = createCompiler()
-    compiler.kernelMonitors.addMonitorListener(counter)
+
+    val config3_4 = CypherPlannerConfiguration(
+      128,
+      StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
+      useErrorsOverWarnings = false,
+      idpMaxTableSize = 128,
+      idpIterationDuration = 1000,
+      errorIfShortestPathFallbackUsedAtRuntime = false,
+      errorIfShortestPathHasCommonNodesAtRuntime = true,
+      legacyCsvQuoteEscaping = false,
+      csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
+      nonIndexedLabelWarningThreshold = 10000L,
+      planWithMinimumCardinalityEstimates = true
+    )
+    val planner3_4 = Cypher34Planner(config3_4,
+      Clock.systemUTC(),
+      kernelMonitors,
+      NullLog.getInstance,
+      cypher.CypherPlannerOption.default,
+      CypherUpdateStrategy.default,
+      () => 1)
+
+    compiler3_4 = createCompiler(planner3_4, config3_4)
+
+    kernelMonitors.addMonitorListener(counter)
+
   }
 
-  private def runQuery(query: String, debugOptions: Set[String] = Set.empty, params: scala.Predef.Map[String, Any] = Map.empty): Unit = {
+  private def runQuery(query: String, debugOptions: Set[String] = Set.empty, params: scala.Predef.Map[String, AnyRef] = Map.empty, compiler: CypherCurrentCompiler[RuntimeContext] = compiler): Unit = {
+    import collection.JavaConverters._
+
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(query = query -> params)
       compiler.compile(PreParsedQuery(query, DummyPosition(0), query,
-                                      isPeriodicCommit = false,
-                                      CypherVersion.default,
-                                      CypherExecutionMode.default,
-                                      CypherPlannerOption.default,
-                                      CypherRuntimeOption.default,
-                                      CypherUpdateStrategy.default,
-                                      debugOptions),
-                                  noTracing, Set.empty, context)
+        isPeriodicCommit = false,
+        CypherVersion.default,
+        CypherExecutionMode.default,
+        CypherPlannerOption.default,
+        CypherRuntimeOption.default,
+        CypherUpdateStrategy.default,
+        debugOptions),
+        noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
       context.close(true)
     }
   }
@@ -250,7 +286,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // then
     logProvider.assertExactly(
-      inLog(logName).info( s"Discarded stale query from the query cache after 0 seconds: $query" )
+      inLog(logName).info(s"Discarded stale query from the query cache after 0 seconds: $query")
     )
   }
 
@@ -262,11 +298,38 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should not find query in cache with different parameter types") {
-    val map1: scala.Predef.Map[String, Any] = scala.Predef.Map("number" -> 42)
-    val map2: scala.Predef.Map[String, Any] = scala.Predef.Map("number" -> "nope")
+    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
+    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> "nope")
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1))
+  }
+
+  test("should find query in cache with different parameter types in 3.4") {
+    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
+    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> "nope")
+    runQuery("return $number", params = map1, compiler = compiler3_4)
+    runQuery("return $number", params = map2, compiler = compiler3_4)
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+  }
+
+  test("should find query in cache with same parameter types") {
+    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
+    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(43))
+    runQuery("return $number", params = map1)
+    runQuery("return $number", params = map2)
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+  }
+
+  test("should find query in cache with same parameter types, ignoring unused parameters") {
+    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42), "foo" -> "bar")
+    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(43), "bar" -> new Integer(10))
+    runQuery("return $number", params = map1)
+    runQuery("return $number", params = map2)
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
 }

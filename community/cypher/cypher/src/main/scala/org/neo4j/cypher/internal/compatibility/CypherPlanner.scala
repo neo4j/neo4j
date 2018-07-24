@@ -46,7 +46,8 @@ trait CypherPlanner {
   def parseAndPlan(preParsedQuery: PreParsedQuery,
                    tracer: CompilationPhaseTracer,
                    preParsingNotifications: Set[org.neo4j.graphdb.Notification],
-                   transactionalContext: TransactionalContext
+                   transactionalContext: TransactionalContext,
+                   params: MapValue
                   ): LogicalPlanResult
 
   def name: PlannerName

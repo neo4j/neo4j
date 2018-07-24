@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.cypher.internal.CacheTracer;
-import org.neo4j.cypher.internal.ParameterTypeMap;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.helpers.collection.Pair;
 
 /**
  * Adapter for passing CacheTraces into the Monitoring infrastructure.
  */
-public class MonitoringCacheTracer implements CacheTracer<Pair<String,ParameterTypeMap>>
+public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.collection.immutable.Map<String, Class<?>>>>
 {
     private final StringCacheMonitor monitor;
 
@@ -37,19 +36,19 @@ public class MonitoringCacheTracer implements CacheTracer<Pair<String,ParameterT
     }
 
     @Override
-    public void queryCacheHit( Pair<String,ParameterTypeMap> queryKey, String metaData )
+    public void queryCacheHit( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, String metaData )
     {
         monitor.cacheHit( queryKey );
     }
 
     @Override
-    public void queryCacheMiss( Pair<String,ParameterTypeMap> queryKey, String metaData )
+    public void queryCacheMiss( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, String metaData )
     {
         monitor.cacheMiss( queryKey );
     }
 
     @Override
-    public void queryCacheStale( Pair<String,ParameterTypeMap> queryKey, int secondsSincePlan, String metaData )
+    public void queryCacheStale( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, int secondsSincePlan, String metaData )
     {
         monitor.cacheDiscard( queryKey, metaData, secondsSincePlan );
     }

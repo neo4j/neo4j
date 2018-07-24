@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.exceptionHandler.runSafely
+import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v3_5.ExceptionTranslatingQueryContext
-import org.neo4j.cypher.{CypherException, CypherExecutionMode}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_5}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.{CypherException, CypherExecutionMode}
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -69,10 +69,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[Notification],
-                       transactionalContext: TransactionalContext): ExecutableQuery = {
+                       transactionalContext: TransactionalContext,
+                       params: MapValue): ExecutableQuery = {
 
     val logicalPlanResult =
-      planner.parseAndPlan(preParsedQuery, tracer, preParsingNotifications, transactionalContext)
+      planner.parseAndPlan(preParsedQuery, tracer, preParsingNotifications, transactionalContext, params)
 
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan

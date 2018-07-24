@@ -31,6 +31,7 @@ import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
+import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.util.{InputPosition, SyntaxException => InternalSyntaxException}
 
@@ -91,7 +92,8 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
     */
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
-              transactionalContext: TransactionalContext
+              transactionalContext: TransactionalContext,
+              params: MapValue
              ): ExecutableQuery = {
 
     var notifications = Set.newBuilder[org.neo4j.graphdb.Notification]
@@ -114,11 +116,11 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
       * @param preParsedQuery the query to compile
       * @return the compiled query
       */
-    def innerCompile(preParsedQuery: PreParsedQuery): ExecutableQuery = {
+    def innerCompile(preParsedQuery: PreParsedQuery, params: MapValue): ExecutableQuery = {
 
       if ((preParsedQuery.version == CypherVersion.v3_4 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
         notifications += rulePlannerUnavailableFallbackNotification(preParsedQuery.offset)
-        innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1))
+        innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1), params)
 
       } else if (preParsedQuery.version == CypherVersion.v3_5) {
         val compiler3_5 = compilerLibrary.selectCompiler(preParsedQuery.version,
@@ -128,20 +130,20 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
                                                          compilerConfig)
 
         try {
-          compiler3_5.compile(preParsedQuery, tracer, notifications.result(), transactionalContext)
+          compiler3_5.compile(preParsedQuery, tracer, notifications.result(), transactionalContext, params)
         } catch {
           case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
             notifications += createUniqueNotification(ex3_5, inputPosition)
             assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
-            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted))
+            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), params)
 
           case ex: SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
             val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
             notifications += createStartUnavailableNotification(ex3_5, inputPosition)
             notifications += createStartDeprecatedNotification(ex3_5, inputPosition)
             assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
-            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted))
+            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), params)
         }
 
       } else {
@@ -152,12 +154,12 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
                                                       preParsedQuery.updateStrategy,
                                                       compilerConfig)
 
-        compiler.compile(preParsedQuery, tracer, notifications.result(), transactionalContext)
+        compiler.compile(preParsedQuery, tracer, notifications.result(), transactionalContext, params)
       }
     }
 
     // Do the compilation
-    innerCompile(preParsedQuery)
+    innerCompile(preParsedQuery, params)
   }
 
   private def createStartUnavailableNotification(ex: InternalSyntaxException, inputPosition: InputPosition) = {

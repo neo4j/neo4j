@@ -51,6 +51,7 @@ import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger => RecordingNotificationLoggerv3_5}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
@@ -117,7 +118,8 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
                             preParsingNotifications: Set[Notification],
-                            transactionalContext: TransactionalContext
+                            transactionalContext: TransactionalContext,
+                            params: MapValue
                            ): LogicalPlanResult = {
 
     val inputPositionV3_4 = as3_4(preParsedQuery.offset)
@@ -206,10 +208,12 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
         CacheableLogicalPlan(logicalPlanStatev3_5, reusabilityState)
       }
 
-      val params = ValueConversion.asValues(preparedQuery.extractedParams())
+      // 3.4 does not produce different plans for different parameter types.
+      // Therefore, we always use an empty map as ParameterTypeMap
+
       val cacheableLogicalPlan =
         if (preParsedQuery.debugOptions.isEmpty)
-          planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), params),
+          planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), Map.empty),
                                            transactionalContext,
                                            createPlan,
                                            syntacticQuery.queryText).executableQuery
@@ -222,7 +226,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
       LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
-        params,
+        ValueConversion.asValues(preparedQuery.extractedParams()),
         cacheableLogicalPlan.reusability,
         contextv3_5)
     }

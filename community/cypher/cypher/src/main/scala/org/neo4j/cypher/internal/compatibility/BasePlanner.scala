@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v3_5.{WrappedMonitors => WrappedMonitorsv3_5}
 import org.neo4j.cypher.internal.compiler.v3_5._

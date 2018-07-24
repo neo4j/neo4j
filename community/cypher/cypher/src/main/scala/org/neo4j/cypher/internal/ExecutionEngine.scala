@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.tracing.CompilationTracer
@@ -73,8 +74,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                                              config.statsDivergenceCalculator,
                                              lastCommittedTxIdProvider,
                                              planReusabilitiy)
-  private val queryCache: QueryCache[String,Pair[String, MapValue], ExecutableQuery] =
-    new QueryCache[String, Pair[String, MapValue], ExecutableQuery](config.queryCacheSize, planStalenessCaller, cacheTracer)
+  private val queryCache: QueryCache[String,Pair[String, ParameterTypeMap], ExecutableQuery] =
+    new QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val masterCompiler: MasterCompiler =
     new MasterCompiler(queryService, kernelMonitors, config, logProvider, new CompilerLibrary(compatibilityFactory))
@@ -119,7 +120,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                            tracer: QueryCompilationEvent,
                            params: MapValue
                           ): ExecutableQuery = {
-    val cacheKey = Pair.of(preParsedQuery.statementWithVersionAndPlanner, params)
+    val cacheKey = Pair.of(preParsedQuery.statementWithVersionAndPlanner, QueryCache.extractParameterTypeMap(params))
 
     // create transaction and query context
     val tc = context.getOrBeginNewIfClosed()
@@ -132,7 +133,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val schemaToken = schemaHelper.readSchemaToken(tc)
         val cacheLookup = queryCache.computeIfAbsentOrStale(cacheKey,
                                                             tc,
-                                                            () => masterCompiler.compile(preParsedQuery, tracer, tc),
+                                                            () => masterCompiler.compile(preParsedQuery, tracer, tc, params),
                                                             preParsedQuery.rawStatement)
         cacheLookup match {
           case _: CacheHit[_] |

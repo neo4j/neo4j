@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherException
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 
 /**
@@ -42,6 +43,7 @@ trait Compiler {
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
               preParsingNotifications: Set[org.neo4j.graphdb.Notification],
-              transactionalContext: TransactionalContext
+              transactionalContext: TransactionalContext,
+              params: MapValue
              ): ExecutableQuery
 }

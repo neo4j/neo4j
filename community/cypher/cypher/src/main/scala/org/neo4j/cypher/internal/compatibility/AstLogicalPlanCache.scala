@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.helpers.collection.Pair
-import org.neo4j.values.virtual.MapValue
 
 /**
   * Cache which stores logical plans indexed by an AST statement.
@@ -42,7 +42,7 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
                                                clock: Clock,
                                                divergence: StatsDivergenceCalculator,
                                                lastCommittedTxIdProvider: () => Long
-) extends QueryCache[STATEMENT,Pair[STATEMENT,MapValue], CacheableLogicalPlan](maximumSize,
+) extends QueryCache[STATEMENT,Pair[STATEMENT,ParameterTypeMap], CacheableLogicalPlan](maximumSize,
                                                   AstLogicalPlanCache.stalenessCaller(clock, divergence, lastCommittedTxIdProvider),
                                                   tracer)
 object AstLogicalPlanCache {

@@ -21,7 +21,8 @@ package org.neo4j.cypher
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.neo4j.cypher.internal.{ParameterTypeMap, StringCacheMonitor}
+import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.helpers.collection.Pair
 
 class PlanCacheMetricsMonitor extends StringCacheMonitor {

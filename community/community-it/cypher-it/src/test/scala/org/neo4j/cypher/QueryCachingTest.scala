@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.{ParameterTypeMap, StringCacheMonitor}
+import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.graphdb.Label
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -145,7 +146,6 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.StringWrappingStringValue))")
 
     actual should equal(expected)
-
   }
 
   private class LoggingStringCacheListener extends StringCacheMonitor {
