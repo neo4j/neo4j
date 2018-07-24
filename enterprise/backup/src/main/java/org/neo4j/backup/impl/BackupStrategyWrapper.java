@@ -25,7 +25,6 @@ package org.neo4j.backup.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
@@ -150,7 +149,6 @@ class BackupStrategyWrapper
 
         if ( BackupStageOutcome.SUCCESS.equals( state.getState() ) )
         {
-            config.augment( GraphDatabaseSettings.active_database, temporaryFullBackupLocation.getFileName().toString() ); // TODO: Refactor
             backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, config );
             if ( aBackupAlreadyExisted )
             {

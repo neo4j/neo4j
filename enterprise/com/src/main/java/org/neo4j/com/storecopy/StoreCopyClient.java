@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -169,8 +170,15 @@ public class StoreCopyClient
     private void recoverDatabase( File tempStore )
     {
         monitor.startRecoveringStore();
+        File storeDir = tempStore.getParentFile();
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
+        // as soon as recovery will be extracted we will not gonna need this
+        File lockFile = new File( storeDir, StoreLocker.STORE_LOCK_FILENAME );
+        if ( lockFile.exists() )
+        {
+            FileUtils.deleteFile( lockFile );
+        }
         monitor.finishRecoveringStore();
     }
 

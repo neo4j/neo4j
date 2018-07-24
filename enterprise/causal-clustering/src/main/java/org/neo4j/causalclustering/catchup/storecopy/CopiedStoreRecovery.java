@@ -27,12 +27,14 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLogProvider;
 
@@ -71,6 +73,12 @@ public class CopiedStoreRecovery extends LifecycleAdapter
         {
             GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
             graphDatabaseService.shutdown();
+            // as soon as recovery will be extracted we will not gonna need this
+            File lockFile = new File( tempStore, StoreLocker.STORE_LOCK_FILENAME );
+            if ( lockFile.exists() )
+            {
+                FileUtils.deleteFile( lockFile );
+            }
         }
         catch ( Exception e )
         {

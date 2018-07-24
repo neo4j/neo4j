@@ -22,14 +22,17 @@
  */
 package org.neo4j.backup.impl;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 
 import static org.neo4j.backup.impl.BackupProtocolService.startTemporaryDb;
 
@@ -39,8 +42,15 @@ class BackupRecoveryService
     {
         Map<String,String> configParams = config.getRaw();
         configParams.put( GraphDatabaseSettings.logical_logs_location.name(), databaseDirectory.toString() );
+        configParams.put( GraphDatabaseSettings.active_database.name(), databaseDirectory.getFileName().toString() );
         configParams.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
         GraphDatabaseAPI targetDb = startTemporaryDb( databaseDirectory.getParent(), pageCache, configParams );
         targetDb.shutdown();
+        // as soon as recovery will be extracted we will not gonna need this
+        File lockFile = new File( databaseDirectory.getParent().toFile(), StoreLocker.STORE_LOCK_FILENAME );
+        if ( lockFile.exists() )
+        {
+            FileUtils.deleteFile( lockFile );
+        }
     }
 }
