@@ -84,7 +84,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         Duration txAwaitDuration = Duration.ofMillis( bookmarkReadyTimeout );
         TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV1SPI( db, availabilityGuard, txAwaitDuration, clock );
 
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, connectionTracker, transactionSPI );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
     }
 
@@ -94,7 +94,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         Duration txAwaitDuration = Duration.ofMillis( bookmarkReadyTimeout );
         TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV3SPI( db, availabilityGuard, txAwaitDuration, clock );
 
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, connectionTracker, transactionSPI );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );
     }
 }
