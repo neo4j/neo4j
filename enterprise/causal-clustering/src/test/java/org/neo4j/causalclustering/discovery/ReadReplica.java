@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
@@ -111,7 +111,7 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
         this.discoveryServiceFactory = discoveryServiceFactory;
         File dataDirectory = new File( neo4jHome, "data" );
         databasesDirectory = new File( dataDirectory, "databases" );
-        defaultDatabaseDirectory = new File( databasesDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
+        defaultDatabaseDirectory = new File( databasesDirectory, DatabaseManager.DEFAULT_DATABASE_NAME );
 
         //noinspection ResultOfMethodCallIgnored
         defaultDatabaseDirectory.mkdirs();

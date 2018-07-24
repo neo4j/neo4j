@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.com.Response;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
@@ -118,7 +118,7 @@ public class StoreCopyClient
     {
         // Create a temp directory (or clean if present)
         File tempStoreDirectory = new File( databaseDirectory, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
-        File tempDatabaseDirectory = new File( tempStoreDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File tempDatabaseDirectory = new File( tempStoreDirectory, DatabaseManager.DEFAULT_DATABASE_NAME );
         try
         {
             cleanDirectory( tempStoreDirectory );

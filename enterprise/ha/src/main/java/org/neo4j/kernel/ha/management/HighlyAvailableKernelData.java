@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.management.ClusterDatabaseInfo;
@@ -46,11 +46,11 @@ public class HighlyAvailableKernelData extends KernelData
     private final ClusterMembers memberInfo;
     private final ClusterDatabaseInfoProvider memberInfoProvider;
 
-    public HighlyAvailableKernelData( GraphDatabaseAPI db, ClusterMembers memberInfo,
+    public HighlyAvailableKernelData( DataSourceManager dataSourceManager, ClusterMembers memberInfo,
             ClusterDatabaseInfoProvider databaseInfo, FileSystemAbstraction fileSystem, PageCache pageCache,
             File storeDir, Config config )
     {
-        super( fileSystem, pageCache, storeDir, config, db );
+        super( fileSystem, pageCache, storeDir, config, dataSourceManager );
         this.memberInfo = memberInfo;
         this.memberInfoProvider = databaseInfo;
     }

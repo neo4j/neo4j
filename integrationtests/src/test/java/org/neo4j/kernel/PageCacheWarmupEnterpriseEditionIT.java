@@ -33,12 +33,12 @@ import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.DatabaseRule;
@@ -183,11 +183,11 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         FileUtils.deleteRecursively( databaseDir );
         Path homePath = data.toPath().getParent();
         File dumpDir = testDirectory.cleanDirectory( "dump-dir" );
-        adminTool.execute( homePath, homePath, "dump", "--database=" + DataSourceManager.DEFAULT_DATABASE_NAME, "--to=" + dumpDir );
+        adminTool.execute( homePath, homePath, "dump", "--database=" + DatabaseManager.DEFAULT_DATABASE_NAME, "--to=" + dumpDir );
 
         FileUtils.deleteRecursively( graphdb );
         File dumpFile = new File( dumpDir, "graph.db.dump" );
-        adminTool.execute( homePath, homePath, "load", "--database=" + DataSourceManager.DEFAULT_DATABASE_NAME, "--from=" + dumpFile );
+        adminTool.execute( homePath, homePath, "load", "--database=" + DatabaseManager.DEFAULT_DATABASE_NAME, "--from=" + dumpFile );
         FileUtils.copyRecursively( graphdb, databaseDir );
         FileUtils.deleteRecursively( graphdb );
 

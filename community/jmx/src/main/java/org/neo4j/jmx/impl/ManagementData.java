@@ -21,10 +21,9 @@ package org.neo4j.jmx.impl;
 
 import javax.management.ObjectName;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.internal.KernelData;
 
-public final class ManagementData extends DependencyResolver.Adapter
+public final class ManagementData
 {
     private final KernelData kernel;
     private final ManagementSupport support;
@@ -40,6 +39,11 @@ public final class ManagementData extends DependencyResolver.Adapter
     public KernelData getKernelData()
     {
         return kernel;
+    }
+
+    public <T> T resolveDependency( Class<T> clazz )
+    {
+        return kernel.getDataSourceManager().getDataSource().getDependencyResolver().resolveDependency( clazz );
     }
 
     ObjectName getObjectName( String... extraNaming )
@@ -59,11 +63,5 @@ public final class ManagementData extends DependencyResolver.Adapter
         {
             throw new IllegalStateException( implClass + " does not implement " + provider.beanInterface );
         }
-    }
-
-    @Override
-    public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-    {
-        return getKernelData().graphDatabase().getDependencyResolver().resolveDependency( type, selector );
     }
 }

@@ -36,7 +36,6 @@ import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -123,10 +122,9 @@ public class CommitContentionTest
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                    GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
             {
-                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies )
                 {
                     @Override
                     protected TransactionStats createTransactionStats()

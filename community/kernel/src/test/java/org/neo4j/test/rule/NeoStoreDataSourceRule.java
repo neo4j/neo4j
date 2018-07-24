@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -144,12 +146,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 RecoveryCleanupWorkCollector.IMMEDIATE,
                 new BufferedIdController(
                         new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ), jobScheduler ),
-                DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(), file -> EMPTY_WATCHER );
+                DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(), file -> EMPTY_WATCHER,
+                new GraphDatabaseFacade(), Iterables.empty() );
         return dataSource;
     }
 
-    private <T> T dependency( Dependencies dependencies, Class<T> type,
-            Function<DependencyResolver,T> defaultSupplier )
+    private static <T> T dependency( Dependencies dependencies, Class<T> type, Function<DependencyResolver,T> defaultSupplier )
     {
         try
         {

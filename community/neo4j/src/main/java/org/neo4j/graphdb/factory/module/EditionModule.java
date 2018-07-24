@@ -24,6 +24,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -43,6 +45,7 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -62,6 +65,7 @@ import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.Logger;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -159,6 +163,12 @@ public abstract class EditionModule
     }
 
     public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );
+
+    public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, PlatformModule platform, EditionModule edition,
+            Procedures procedures, Logger msgLog )
+    {
+        return new DefaultDatabaseManager( platform, edition, procedures, msgLog, graphDatabaseFacade );
+    }
 
     protected static SecurityModule setupSecurityModule( PlatformModule platformModule, Log log, Procedures procedures,
             String key )

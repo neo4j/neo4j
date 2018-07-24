@@ -35,7 +35,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.management.BranchedStore;
@@ -75,7 +76,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
     private static boolean isHA( ManagementData management )
     {
-        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
+        return OperationalMode.ha == management.resolveDependency( DatabaseInfo.class ).operationalMode;
     }
 
     private static class BranchedStoreImpl extends Neo4jMBean implements BranchedStore

@@ -41,8 +41,8 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertFalse;
@@ -73,7 +73,7 @@ public class CoreStateDownloaderTest
     private final AdvertisedSocketAddress remoteAddress = new AdvertisedSocketAddress( "remoteAddress", 1234 );
     private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( remoteAddress );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
-    private final File databaseDirectory = new File( DataSourceManager.DEFAULT_DATABASE_NAME );
+    private final File databaseDirectory = new File( DatabaseManager.DEFAULT_DATABASE_NAME );
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachines,

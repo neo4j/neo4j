@@ -111,7 +111,6 @@ import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -174,8 +173,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         watcherServiceFactory = dir -> createFileSystemWatcherService( fileSystem, dir, logging, platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherServiceFactory );
 
-        GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
-
         lockManager = dependencies.satisfyDependency( new ReadReplicaLockManager() );
 
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
@@ -192,7 +189,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
 
-        life.add( dependencies.satisfyDependency( new KernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
+        life.add( dependencies.satisfyDependency( new KernelData( fileSystem, pageCache, storeDir, config, platformModule.dataSourceManager ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 

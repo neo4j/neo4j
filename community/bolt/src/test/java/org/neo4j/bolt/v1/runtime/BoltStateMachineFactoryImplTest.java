@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Clock;
+import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachine;
@@ -32,12 +33,13 @@ import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.udc.UsageData;
@@ -57,7 +59,7 @@ class BoltStateMachineFactoryImplTest
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
-    void shouldCreateBoltStateMachinesV1( long protocolVersion ) throws Throwable
+    void shouldCreateBoltStateMachinesV1( long protocolVersion )
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
@@ -68,7 +70,7 @@ class BoltStateMachineFactoryImplTest
     }
 
     @Test
-    void shouldCreateBoltStateMachinesV3() throws Throwable
+    void shouldCreateBoltStateMachinesV3()
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
@@ -80,7 +82,7 @@ class BoltStateMachineFactoryImplTest
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {999, -1} )
-    void shouldThrowExceptionIfVersionIsUnknown( long protocolVersion ) throws Throwable
+    void shouldThrowExceptionIfVersionIsUnknown( long protocolVersion )
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
@@ -93,20 +95,22 @@ class BoltStateMachineFactoryImplTest
         return newBoltFactory( newDbMock() );
     }
 
-    private static BoltStateMachineFactoryImpl newBoltFactory( GraphDatabaseAPI db )
+    private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager databaseManager )
     {
-        return new BoltStateMachineFactoryImpl( db, new UsageData( new OnDemandJobScheduler() ), new AvailabilityGuard( CLOCK, NullLog.getInstance() ),
-                mock( Authentication.class ), CLOCK, Config.defaults(), NullLogService.getInstance() );
+        return new BoltStateMachineFactoryImpl( databaseManager, new UsageData( new OnDemandJobScheduler() ),
+                new AvailabilityGuard( CLOCK, NullLog.getInstance() ), mock( Authentication.class ), CLOCK, Config.defaults(), NullLogService.getInstance() );
     }
 
-    private static GraphDatabaseAPI newDbMock()
+    private static DatabaseManager newDbMock()
     {
-        GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
+        GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
-        return db;
+        DatabaseManager databaseManager = mock( DatabaseManager.class );
+        when( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( db ) );
+        return databaseManager;
     }
 }

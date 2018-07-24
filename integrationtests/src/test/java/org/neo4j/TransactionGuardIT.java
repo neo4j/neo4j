@@ -751,10 +751,9 @@ public class TransactionGuardIT
             } );
         }
         @Override
-        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                GraphDatabaseFacade graphDatabaseFacade )
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
         {
-            return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+            return new PlatformModule( storeDir, config, databaseInfo, dependencies )
             {
                 @Override
                 protected SystemNanoClock createClock()

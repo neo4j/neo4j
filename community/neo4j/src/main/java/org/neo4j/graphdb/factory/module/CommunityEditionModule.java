@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -67,7 +66,6 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.udc.UsageData;
@@ -97,8 +95,6 @@ public class CommunityEditionModule extends EditionModule
 
         this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
-        GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
-
         dependencies.satisfyDependency(
                 SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
 
@@ -117,7 +113,7 @@ public class CommunityEditionModule extends EditionModule
                 new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
 
-        dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
+        dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, storeDir, config, life, dataSourceManager ) );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 
@@ -208,9 +204,9 @@ public class CommunityEditionModule extends EditionModule
     }
 
     private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-            Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
+            Config config, LifeSupport life, DataSourceManager dataSourceManager )
     {
-        return life.add( new KernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
+        return life.add( new KernelData( fileSystem, pageCache, storeDir, config, dataSourceManager ) );
     }
 
     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,

@@ -71,7 +71,7 @@ public final class StoreFileBean extends ManagementBeanProvider
 
             fs = management.getKernelData().getFilesystemAbstraction();
 
-            DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
+            DataSourceManager dataSourceManager = management.getKernelData().getDataSourceManager();
             dataSourceManager.addListener( new DataSourceManager.Listener()
             {
                 @Override

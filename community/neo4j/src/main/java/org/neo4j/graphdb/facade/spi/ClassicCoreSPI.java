@@ -78,7 +78,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
+            return dataSource.neoStoreDataSource.getExecutionEngine().executeQuery( query, parameters, transactionalContext );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -143,7 +143,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public GraphDatabaseQueryService queryService()
     {
-        return platform.dependencies.resolveDependency( GraphDatabaseQueryService.class );
+        return resolver().resolveDependency( GraphDatabaseQueryService.class );
     }
 
     @Override

@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -249,7 +249,7 @@ public class FileWatchIT
         while ( !modificationListener.awaitModificationNotification() );
         fileWatcher.removeFileWatchEventListener( modificationListener );
 
-        String storeDirectoryName = DataSourceManager.DEFAULT_DATABASE_NAME;
+        String storeDirectoryName = DatabaseManager.DEFAULT_DATABASE_NAME;
         DeletionLatchEventListener eventListener = new DeletionLatchEventListener( storeDirectoryName );
         fileWatcher.addFileWatchEventListener( eventListener );
         FileUtils.deleteRecursively( storeDir );

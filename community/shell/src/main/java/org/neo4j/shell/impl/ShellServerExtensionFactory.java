@@ -21,6 +21,7 @@ package org.neo4j.shell.impl;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -40,7 +41,7 @@ public final class ShellServerExtensionFactory extends KernelExtensionFactory<Sh
 
     public ShellServerExtensionFactory()
     {
-        super( KEY );
+        super( ExtensionType.DATABASE, KEY );
     }
 
     @Override

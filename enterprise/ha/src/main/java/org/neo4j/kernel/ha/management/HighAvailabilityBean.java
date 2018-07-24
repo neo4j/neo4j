@@ -29,8 +29,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 
@@ -64,23 +65,26 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
 
     private static boolean isHA( ManagementData management )
     {
-        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
+        return OperationalMode.ha == management.resolveDependency( DatabaseInfo.class ).operationalMode;
     }
 
     private static class HighAvailabilityImpl extends Neo4jMBean implements HighAvailability
     {
+        private final ManagementData managementData;
         private final HighlyAvailableKernelData kernelData;
 
         HighAvailabilityImpl( ManagementData management )
                 throws NotCompliantMBeanException
         {
             super( management );
+            this.managementData = management;
             this.kernelData = (HighlyAvailableKernelData) management.getKernelData();
         }
 
         HighAvailabilityImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
+            this.managementData = management;
             this.kernelData = (HighlyAvailableKernelData) management.getKernelData();
         }
 
@@ -133,10 +137,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             long time = System.currentTimeMillis();
             try
             {
-                kernelData.graphDatabase()
-                        .getDependencyResolver()
-                        .resolveDependency( UpdatePuller.class )
-                        .pullUpdates();
+                managementData.resolveDependency( UpdatePuller.class ).pullUpdates();
             }
             catch ( Exception e )
             {

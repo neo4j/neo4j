@@ -29,7 +29,6 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.MemoryMapping;
 import org.neo4j.management.WindowPoolInfo;
 
@@ -65,7 +64,7 @@ public final class MemoryMappingBean extends ManagementBeanProvider
 
         private NeoStoreDataSource neoDataSource( ManagementData management )
         {
-            return management.resolveDependency( DataSourceManager.class ).getDataSource();
+            return management.getKernelData().getDataSourceManager().getDataSource();
         }
 
         MemoryMappingImpl( ManagementData management, boolean isMxBean )

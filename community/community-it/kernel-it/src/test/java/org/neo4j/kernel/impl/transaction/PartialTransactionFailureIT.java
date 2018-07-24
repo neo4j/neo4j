@@ -43,7 +43,6 @@ import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -83,10 +82,9 @@ public class PartialTransactionFailureIT
                 new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                            GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
                     {
-                        return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, config, databaseInfo, dependencies )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

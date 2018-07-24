@@ -44,10 +44,10 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -124,7 +124,7 @@ public class UnbindFromClusterCommandTest
         try
         {
             // when
-            command.execute( databaseNameParameter( DataSourceManager.DEFAULT_DATABASE_NAME ) );
+            command.execute( databaseNameParameter( DatabaseManager.DEFAULT_DATABASE_NAME ) );
             fail();
         }
         catch ( CommandFailed e )
@@ -164,7 +164,7 @@ public class UnbindFromClusterCommandTest
         try
         {
             // when
-            command.execute( databaseNameParameter( DataSourceManager.DEFAULT_DATABASE_NAME ) );
+            command.execute( databaseNameParameter( DatabaseManager.DEFAULT_DATABASE_NAME ) );
         }
         catch ( CommandFailed e )
         {

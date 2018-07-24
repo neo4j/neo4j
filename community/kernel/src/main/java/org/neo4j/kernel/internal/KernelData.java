@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
@@ -41,15 +42,15 @@ public class KernelData extends LifecycleAdapter
     private final FileSystemAbstraction fs;
     private final File storeDir;
     private final Config configuration;
-    private final GraphDatabaseAPI graphDatabaseAPI;
+    private final DataSourceManager dataSourceManager;
 
-    public KernelData( FileSystemAbstraction fs, PageCache pageCache, File storeDir, Config configuration, GraphDatabaseAPI databaseAPI )
+    public KernelData( FileSystemAbstraction fs, PageCache pageCache, File storeDir, Config configuration, DataSourceManager dataSourceManager )
     {
         this.pageCache = pageCache;
         this.fs = fs;
         this.storeDir = storeDir;
         this.configuration = configuration;
-        this.graphDatabaseAPI = databaseAPI;
+        this.dataSourceManager = dataSourceManager;
         this.instanceId = newInstance( this );
     }
 
@@ -83,9 +84,9 @@ public class KernelData extends LifecycleAdapter
         return fs;
     }
 
-    public GraphDatabaseAPI graphDatabase()
+    public DataSourceManager getDataSourceManager()
     {
-        return graphDatabaseAPI;
+        return dataSourceManager;
     }
 
     @Override

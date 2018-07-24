@@ -127,9 +127,9 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -420,7 +420,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency(
                 createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeDir,
-                        config, platformModule.graphDatabaseFacade, life ) );
+                        config, platformModule.dataSourceManager, life ) );
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
@@ -464,10 +464,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
-    private static KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config, GraphDatabaseAPI graphAPI,
-            LifeSupport life )
+    private static KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config,
+            DataSourceManager dataSourceManager, LifeSupport life )
     {
-        KernelData kernelData = new KernelData( fileSystem, pageCache, storeDir, config, graphAPI );
+        KernelData kernelData = new KernelData( fileSystem, pageCache, storeDir, config, dataSourceManager );
         return life.add( kernelData );
     }
 

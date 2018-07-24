@@ -54,7 +54,7 @@ public class ReportsBean extends ManagementBeanProvider
         ReportsImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
-            graphDatabaseAPI = management.getKernelData().graphDatabase();
+            graphDatabaseAPI = management.resolveDependency( GraphDatabaseAPI.class );
         }
 
         @Override

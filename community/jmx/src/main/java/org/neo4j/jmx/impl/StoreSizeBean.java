@@ -94,7 +94,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             fs = management.getKernelData().getFilesystemAbstraction();
             databasePath = resolveStorePath( management );
 
-            DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
+            DataSourceManager dataSourceManager = management.getKernelData().getDataSourceManager();
             dataSourceManager.addListener( new DataSourceManager.Listener()
             {
                 @Override

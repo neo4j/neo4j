@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -77,6 +78,8 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -160,6 +163,7 @@ import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 public class NeoStoreDataSource extends LifecycleAdapter
 {
+
     enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     {
         TRANSACTION_RANGE( "Transaction log:" )
@@ -265,10 +269,13 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final AccessCapability accessCapability;
 
     private StorageEngine storageEngine;
+    private QueryExecutionEngine executionEngine;
     private NeoStoreTransactionLogModule transactionLogModule;
     private NeoStoreKernelModule kernelModule;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
+    private final GraphDatabaseFacade facade;
+    private final Iterable<QueryEngineProvider> engineProviders;
     private final boolean failOnCorruptedLogFiles;
 
     public NeoStoreDataSource( File databaseDirectory, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService, JobScheduler scheduler,
@@ -281,7 +288,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IdController idController, DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-            Function<File,FileSystemWatcherService> watcherServiceFactory )
+            Function<File,FileSystemWatcherService> watcherServiceFactory, GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
     {
         this.databaseDirectory = databaseDirectory;
         this.config = config;
@@ -321,7 +328,9 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.versionContextSupplier = versionContextSupplier;
         this.kernelExtensionFactories = kernelExtensionFactories;
         this.watcherServiceFactory = watcherServiceFactory;
-        msgLog = logProvider.getLog( getClass() );
+        this.facade = facade;
+        this.engineProviders = engineProviders;
+        this.msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = pageCache;
@@ -339,6 +348,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies = new Dependencies( dependencyResolver );
         dataSourceDependencies.satisfyDependency( monitors );
         dataSourceDependencies.satisfyDependency( tokenHolders );
+        dataSourceDependencies.satisfyDependency( facade );
 
         life = new LifeSupport();
         life.add( initializeExtensions( dataSourceDependencies ) );
@@ -433,6 +443,8 @@ public class NeoStoreDataSource extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
             dataSourceDependencies.satisfyDependency( explicitIndexProvider );
+
+            executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
         }
         catch ( Throwable e )
         {
@@ -764,6 +776,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public boolean isReadOnly()
     {
         return readOnly;
+    }
+
+    public QueryExecutionEngine getExecutionEngine()
+    {
+        return executionEngine;
     }
 
     public InwardKernel getKernel()

@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 
@@ -58,11 +57,10 @@ public class AdversarialPageCacheGraphDatabaseFactory
                 {
 
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Config config,
-                            Dependencies dependencies, GraphDatabaseFacade facade )
+                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
                     {
                         config.augment( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
-                        return new PlatformModule( storeDir, config, databaseInfo, dependencies, facade )
+                        return new PlatformModule( storeDir, config, databaseInfo, dependencies )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

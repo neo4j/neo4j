@@ -42,11 +42,11 @@ import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -86,8 +86,6 @@ public class PlatformModule
 
     public final Monitors monitors;
 
-    public final GraphDatabaseFacade graphDatabaseFacade;
-
     public final org.neo4j.kernel.impl.util.Dependencies dependencies;
 
     public final LogService logging;
@@ -112,6 +110,7 @@ public class PlatformModule
 
     public final GlobalKernelExtensions globalKernelExtensions;
     public final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+    public final Iterable<QueryEngineProvider> engineProviders;
 
     public final URLAccessRule urlAccessRule;
 
@@ -134,7 +133,7 @@ public class PlatformModule
     public final ConnectorPortRegister connectorPortRegister;
 
     public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
-            GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
+            GraphDatabaseFacadeFactory.Dependencies externalDependencies )
     {
         this.databaseInfo = databaseInfo;
         this.dataSourceManager = new DataSourceManager();
@@ -144,7 +143,6 @@ public class PlatformModule
         clock = dependencies.satisfyDependency( createClock() );
 
         life = dependencies.satisfyDependency( createLife() );
-        this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );
 
         // SPI - provided services
         config.augmentDefaults( GraphDatabaseSettings.neo4j_home, providedStoreDir.getAbsolutePath() );
@@ -207,6 +205,7 @@ public class PlatformModule
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
         kernelExtensionFactories = externalDependencies.kernelExtensions();
+        engineProviders = externalDependencies.executionEngines();
         globalKernelExtensions = dependencies.satisfyDependency(
                 new GlobalKernelExtensions( new SimpleKernelContext( storeDir, databaseInfo, dependencies ), kernelExtensionFactories, dependencies,
                         UnsatisfiedDependencyStrategies.fail() ) );

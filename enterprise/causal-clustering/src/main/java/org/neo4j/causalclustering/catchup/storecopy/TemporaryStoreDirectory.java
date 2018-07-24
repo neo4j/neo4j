@@ -25,11 +25,11 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 public class TemporaryStoreDirectory implements AutoCloseable
 {
@@ -43,7 +43,7 @@ public class TemporaryStoreDirectory implements AutoCloseable
     public TemporaryStoreDirectory( FileSystemAbstraction fs, PageCache pageCache, File parent ) throws IOException
     {
         this.tempStoreDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
-        this.tempDatabaseDirectory = new File( tempStoreDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        this.tempDatabaseDirectory = new File( tempStoreDir, DatabaseManager.DEFAULT_DATABASE_NAME );
         storeFiles = new StoreFiles( fs, pageCache, ( directory, name ) -> true );
         tempLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( tempDatabaseDirectory, fs ).build();
         storeFiles.delete( tempStoreDir, tempLogFiles );

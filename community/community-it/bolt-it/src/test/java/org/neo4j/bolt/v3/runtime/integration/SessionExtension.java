@@ -23,13 +23,10 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URL;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
@@ -37,16 +34,16 @@ import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.v1.BoltProtocolV1;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
@@ -55,17 +52,12 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
     private GraphDatabaseAPI gdb;
     private BoltStateMachineFactoryImpl boltFactory;
-    private LinkedList<BoltStateMachine> runningMachines = new LinkedList<>();
+    private List<BoltStateMachine> runningMachines = new ArrayList<>();
     private boolean authEnabled;
 
     private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
         return new BasicAuthentication( authManager, userManagerSupplier );
-    }
-
-    BoltStateMachine newMachine( BoltChannel boltChannel )
-    {
-        return newMachine( BoltProtocolV1.VERSION, boltChannel );
     }
 
     public BoltStateMachine newMachine( long version, BoltChannel boltChannel )
@@ -79,35 +71,8 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         return machine;
     }
 
-    SessionExtension withAuthEnabled( boolean authEnabled )
-    {
-        this.authEnabled = authEnabled;
-        return this;
-    }
-
-    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
-    {
-        File tmpFile = File.createTempFile( prefix, suffix, null );
-        tmpFile.deleteOnExit();
-        try ( PrintWriter out = new PrintWriter( tmpFile ) )
-        {
-            out.println( contents);
-        }
-        return tmpFile.toURI().toURL();
-    }
-
-    public GraphDatabaseAPI graph()
-    {
-        return gdb;
-    }
-
-    public long lastClosedTxId()
-    {
-        return gdb.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
-    }
-
     @Override
-    public void beforeEach( ExtensionContext extensionContext ) throws Exception
+    public void beforeEach( ExtensionContext extensionContext )
     {
         Map<Setting<?>,String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
@@ -116,7 +81,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );
         boltFactory = new BoltStateMachineFactoryImpl(
-                gdb,
+                resolver.resolveDependency( DatabaseManager.class ),
                 new UsageData( null ),
                 resolver.resolveDependency( AvailabilityGuard.class ),
                 authentication,
@@ -127,13 +92,13 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     }
 
     @Override
-    public void afterEach( ExtensionContext extensionContext ) throws Exception
+    public void afterEach( ExtensionContext extensionContext )
     {
         try
         {
             if ( runningMachines != null )
             {
-                runningMachines.forEach( BoltStateMachine::close );
+                IOUtils.closeAll( runningMachines );
             }
         }
         catch ( Throwable e )

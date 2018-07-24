@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -1128,6 +1129,7 @@ public class AllStoreHolder extends Read
     {
         BasicContext ctx = new BasicContext();
         ctx.put( Context.KERNEL_TRANSACTION, ktx );
+        ctx.put( Context.DATABASE_API, dataSourceDependencies.resolveDependency( GraphDatabaseAPI.class ) );
         ctx.put( Context.DEPENDENCY_RESOLVER, dataSourceDependencies );
         ctx.put( Context.THREAD, Thread.currentThread() );
         ClockContext clocks = ktx.clocks();
@@ -1138,7 +1140,7 @@ public class AllStoreHolder extends Read
         return ctx;
     }
 
-    private void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
+    private static void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
     {
         if ( index == IndexReference.NO_INDEX )
         {

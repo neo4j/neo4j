@@ -30,13 +30,11 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 public class AuthProceduresTest extends KernelIntegrationTest
 {
-    private final Dependencies dependencyResolver = new Dependencies();
     @Rule
     public ExpectedException exception = ExpectedException.none();
 

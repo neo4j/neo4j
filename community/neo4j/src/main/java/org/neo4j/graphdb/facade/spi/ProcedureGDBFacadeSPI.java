@@ -99,7 +99,7 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc );
+            return sourceModule.neoStoreDataSource.getExecutionEngine().executeQuery( query, parameters, tc );
         }
         catch ( QueryExecutionKernelException e )
         {

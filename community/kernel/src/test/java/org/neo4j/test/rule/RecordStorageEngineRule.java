@@ -22,6 +22,7 @@ package org.neo4j.test.rule;
 import java.io.File;
 import java.util.function.Function;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -144,7 +144,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private DatabaseHealth databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
-        private File storeDirectory = new File( DataSourceManager.DEFAULT_DATABASE_NAME );
+        private File storeDirectory = new File( DatabaseManager.DEFAULT_DATABASE_NAME );
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexProvider indexProvider = IndexProvider.EMPTY;

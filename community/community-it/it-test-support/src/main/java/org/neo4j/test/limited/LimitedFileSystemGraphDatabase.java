@@ -29,7 +29,6 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
@@ -48,9 +47,9 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
         new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade facade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
             {
-                return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies, facade )
+                return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()

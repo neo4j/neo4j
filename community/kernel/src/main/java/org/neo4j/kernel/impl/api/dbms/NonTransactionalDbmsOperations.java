@@ -28,7 +28,9 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+import static org.neo4j.kernel.api.proc.Context.DATABASE_API;
 import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
@@ -58,11 +60,12 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
         return procedures.callProcedure( ctx, id, input, resourceTracker );
     }
 
-    private BasicContext createContext( SecurityContext securityContext, DependencyResolver dependencyResolver )
+    private static BasicContext createContext( SecurityContext securityContext, DependencyResolver dependencyResolver )
     {
         BasicContext ctx = new BasicContext();
         ctx.put( SECURITY_CONTEXT, securityContext );
         ctx.put( DEPENDENCY_RESOLVER, dependencyResolver );
+        ctx.put( DATABASE_API, dependencyResolver.resolveDependency( GraphDatabaseAPI.class ) );
         return ctx;
     }
 }

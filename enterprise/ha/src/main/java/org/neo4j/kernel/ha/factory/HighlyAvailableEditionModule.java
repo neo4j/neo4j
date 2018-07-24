@@ -55,6 +55,7 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -149,6 +150,7 @@ import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -174,7 +176,6 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -228,7 +229,7 @@ public class HighlyAvailableEditionModule
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
-        File databaseDirectory = new File( platformModule.storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File databaseDirectory = new File( platformModule.storeDir, DatabaseManager.DEFAULT_DATABASE_NAME );
         life.add( new BranchedDataMigrator( databaseDirectory ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( Master.class );
@@ -426,7 +427,7 @@ public class HighlyAvailableEditionModule
                 masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory, editionIdGeneratorFactory, databaseDirectory );
 
         final Factory<MasterImpl.SPI> masterSPIFactory =
-                () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
+                () -> new DefaultMasterImplSPI( resolveDatabaseDependency( dependencies, GraphDatabaseFacade.class ), platformModule.fileSystem,
                         platformModule.monitors,
                         tokenHolders, this.idGeneratorFactory,
                         resolveDatabaseDependency( dependencies, TransactionCommitProcess.class ),
@@ -516,7 +517,7 @@ public class HighlyAvailableEditionModule
         tokenHoldersSupplier = () -> tokenHolders;
 
         dependencies.satisfyDependency(
-                createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
+                createKernelData( config, platformModule.dataSourceManager, members, fs, platformModule.pageCache,
                         storeDir, lastUpdateTime, lastTxIdGetter, life ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
@@ -769,13 +770,13 @@ public class HighlyAvailableEditionModule
         return labelIdCreator;
     }
 
-    private static KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members, FileSystemAbstraction fs, PageCache pageCache,
-            File storeDir, LastUpdateTime lastUpdateTime, LastTxIdGetter txIdGetter, LifeSupport life )
+    private static KernelData createKernelData( Config config, DataSourceManager dataSourceManager, ClusterMembers members, FileSystemAbstraction fs,
+            PageCache pageCache, File storeDir, LastUpdateTime lastUpdateTime, LastTxIdGetter txIdGetter, LifeSupport life )
     {
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider( members,
                 txIdGetter,
                 lastUpdateTime );
-        return life.add( new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, pageCache, storeDir, config ) );
+        return life.add( new HighlyAvailableKernelData( dataSourceManager, members, databaseInfo, fs, pageCache, storeDir, config ) );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, final DependencyResolver dependencyResolver,

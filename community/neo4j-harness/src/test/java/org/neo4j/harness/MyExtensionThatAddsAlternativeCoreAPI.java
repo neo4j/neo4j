@@ -19,6 +19,7 @@
  */
 package org.neo4j.harness;
 
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -37,7 +38,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
 {
     public MyExtensionThatAddsAlternativeCoreAPI()
     {
-        super( "my-ext" );
+        super( ExtensionType.DATABASE, "my-ext" );
     }
 
     @Override

@@ -72,7 +72,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     private final TransactionCommitProcess transactionCommitProcess;
     private final CheckPointer checkPointer;
 
-    public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb,
+    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb,
                                  FileSystemAbstraction fileSystemAbstraction,
                                  Monitors monitors,
                                  TokenHolders tokenHolders,

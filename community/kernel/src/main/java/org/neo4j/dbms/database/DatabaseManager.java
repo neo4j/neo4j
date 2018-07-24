@@ -17,26 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms;
+package org.neo4j.dbms.database;
 
-import org.junit.jupiter.api.Test;
+import java.util.Optional;
 
-import java.io.File;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-
-class DatabaseManagementSystemSettingsTest
+public interface DatabaseManager extends Lifecycle
 {
-    @Test
-    void shouldPutDatabaseDirectoriesIntoDataDatabases()
-    {
-        Config config = Config.defaults( GraphDatabaseSettings.data_directory, "the-data-directory" );
-        assertThat( config.get( GraphDatabaseSettings.database_path ),
-                equalTo( new File( "the-data-directory/databases/" + DatabaseManager.DEFAULT_DATABASE_NAME ) ) );
-    }
+    String DEFAULT_DATABASE_NAME = "graph.db";
+
+    Optional<GraphDatabaseFacade> getDatabaseFacade( String name );
+
+    GraphDatabaseFacade createDatabase( String name );
+
+    /**
+     * Shutdown database with specified name.
+     * @param name database name to shutdown
+     */
+    void shutdownDatabase( String name );
 }

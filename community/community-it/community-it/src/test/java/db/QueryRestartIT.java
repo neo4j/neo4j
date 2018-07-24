@@ -49,7 +49,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -218,10 +217,9 @@ public class QueryRestartIT
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                GraphDatabaseFacade graphDatabaseFacade )
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
         {
-            return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+            return new PlatformModule( storeDir, config, databaseInfo, dependencies )
             {
                 @Override
                 protected VersionContextSupplier createCursorContextSupplier( Config config )

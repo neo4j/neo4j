@@ -29,6 +29,7 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
@@ -82,7 +82,7 @@ public class RecordFormatSelectorTest
     public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fileSystemRule );
 
     private final FileSystemAbstraction fs = fileSystemRule.get();
-    private final File databaseDirectory = new File( DataSourceManager.DEFAULT_DATABASE_NAME );
+    private final File databaseDirectory = new File( DatabaseManager.DEFAULT_DATABASE_NAME );
 
     @Test
     public void defaultFormatTest()

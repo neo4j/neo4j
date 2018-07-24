@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.management.NotCompliantMBeanException;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
@@ -62,9 +61,8 @@ public class DiagnosticsBean extends ManagementBeanProvider
         DiagnosticsImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            DependencyResolver resolver = management.getKernelData().graphDatabase().getDependencyResolver();
-            config = resolver.resolveDependency( Config.class );
-            this.diagnostics = resolver.resolveDependency( DiagnosticsManager.class );
+            config = management.resolveDependency( Config.class );
+            this.diagnostics = management.resolveDependency( DiagnosticsManager.class);
         }
 
         @Override

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
@@ -43,10 +44,8 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -265,31 +264,26 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                GraphDatabaseFacade graphDatabaseFacade )
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
         {
-            config.augment( GraphDatabaseSettings.database_path, new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME ).getAbsolutePath() );
+            config.augment( GraphDatabaseSettings.database_path, new File( storeDir, DatabaseManager.DEFAULT_DATABASE_NAME ).getAbsolutePath() );
             if ( impermanent )
             {
                 config.augment( ephemeral, TRUE );
-                return new ImpermanentTestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade,
-                        this.databaseInfo );
+                return new ImpermanentTestDatabasePlatformModule( storeDir, config, dependencies, this.databaseInfo );
             }
             else
             {
-                return new TestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade,
-                        this.databaseInfo );
+                return new TestDatabasePlatformModule( storeDir, config, dependencies, this.databaseInfo );
             }
         }
 
         class TestDatabasePlatformModule extends PlatformModule
         {
 
-            TestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies,
-                    GraphDatabaseFacade graphDatabaseFacade, DatabaseInfo databaseInfo )
+            TestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies, DatabaseInfo databaseInfo )
             {
-                super( storeDir, config, databaseInfo, dependencies,
-                        graphDatabaseFacade );
+                super( storeDir, config, databaseInfo, dependencies );
             }
 
             @Override
@@ -337,10 +331,9 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         private class ImpermanentTestDatabasePlatformModule extends TestDatabasePlatformModule
         {
 
-            ImpermanentTestDatabasePlatformModule( File storeDir, Config config,
-                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade, DatabaseInfo databaseInfo )
+            ImpermanentTestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies, DatabaseInfo databaseInfo )
             {
-                super( storeDir, config, dependencies, graphDatabaseFacade, databaseInfo );
+                super( storeDir, config, dependencies, databaseInfo );
             }
 
             @Override

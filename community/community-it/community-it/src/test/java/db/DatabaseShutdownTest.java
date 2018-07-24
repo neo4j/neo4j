@@ -19,71 +19,54 @@
  */
 package db;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.DataSourceModule;
-import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DatabaseShutdownTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, } )
+class DatabaseShutdownTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory =
-            TestDirectory.testDirectory( getClass(), fs.get() );
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails() throws Exception
+    void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
-        TestGraphDatabaseFactoryWithFailingPageCacheFlush factory =
-                new TestGraphDatabaseFactoryWithFailingPageCacheFlush();
-
-        try
-        {
-            factory.newEmbeddedDatabase( testDirectory.databaseDir() ).shutdown();
-            fail( "Should have thrown" );
-        }
-        catch ( LifecycleException ex )
-        {
-            assertEquals( LifecycleStatus.SHUTDOWN, factory.getNeoStoreDataSourceStatus() );
-        }
+        TestGraphDatabaseFactoryWithFailingPageCacheFlush factory = new TestGraphDatabaseFactoryWithFailingPageCacheFlush();
+        assertThrows(LifecycleException.class, () -> factory.newEmbeddedDatabase( testDirectory.storeDir() ).shutdown() );
+        assertEquals( LifecycleStatus.SHUTDOWN, factory.getNeoStoreDataSourceStatus() );
     }
 
     private static class TestGraphDatabaseFactoryWithFailingPageCacheFlush extends TestGraphDatabaseFactory
     {
-        private NeoStoreDataSource neoStoreDataSource;
+        private LifeSupport life;
 
         @Override
         protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
@@ -91,27 +74,17 @@ public class DatabaseShutdownTest
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
-                @Override
-                protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
-                        Supplier<QueryExecutionEngine> queryEngine, Procedures procedures )
-                {
-                    DataSourceModule dataSource = new DataSourceModule( platformModule, editionModule, queryEngine, procedures );
-                    neoStoreDataSource = dataSource.neoStoreDataSource;
-                    return dataSource;
-                }
 
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Config config,
-                        Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
                 {
-                    return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+                    PlatformModule platformModule = new PlatformModule( storeDir, config, databaseInfo, dependencies )
                     {
                         @Override
-                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,
-                                Tracers tracers, VersionContextSupplier versionContextSupplier )
+                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
+                                VersionContextSupplier versionContextSupplier )
                         {
-                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers,
-                                    versionContextSupplier );
+                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, versionContextSupplier );
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override
@@ -123,15 +96,14 @@ public class DatabaseShutdownTest
                             };
                         }
                     };
+                    life = platformModule.life;
+                    return platformModule;
                 }
             }.newFacade( storeDir, config, dependencies );
         }
 
-        LifecycleStatus getNeoStoreDataSourceStatus() throws NoSuchFieldException, IllegalAccessException
+        LifecycleStatus getNeoStoreDataSourceStatus()
         {
-            Field f = neoStoreDataSource.getClass().getDeclaredField( "life" );
-            f.setAccessible( true );
-            LifeSupport life = (LifeSupport) f.get( neoStoreDataSource );
             return life.getStatus();
         }
     }

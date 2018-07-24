@@ -118,7 +118,7 @@ public class StoreSizeBeanTest
         dataSourceManager.start();
 
         // Create bean
-        KernelData kernelData = new KernelData( fs, mock( PageCache.class ), storeDir, Config.defaults(), db );
+        KernelData kernelData = new KernelData( fs, mock( PageCache.class ), storeDir, Config.defaults(), dataSourceManager );
         ManagementData data = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
         storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
     }

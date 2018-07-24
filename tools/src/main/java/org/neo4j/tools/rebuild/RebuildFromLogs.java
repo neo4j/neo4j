@@ -35,6 +35,7 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.cursor.IOCursor;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
@@ -65,7 +66,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 
@@ -164,7 +164,7 @@ class RebuildFromLogs
             }
 
             // set last tx id in neostore otherwise the db is not usable
-            File targetDatabase = new File( target, DataSourceManager.DEFAULT_DATABASE_NAME );
+            File targetDatabase = new File( target, DatabaseManager.DEFAULT_DATABASE_NAME );
             MetaDataStore.setRecord( pageCache, new File( targetDatabase, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
 

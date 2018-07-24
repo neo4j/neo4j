@@ -30,6 +30,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -72,16 +73,19 @@ public class BackupHaIT
         DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
         HighlyAvailableGraphDatabase hagdb = cluster.getAllMembers().iterator().next();
         HostnamePort address = cluster.getBackupAddress(hagdb);
+        String databaseName = "basic";
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( address.toString(),
-                backupPath, "basic" ) ) );
+                backupPath, databaseName ) ) );
 
         // Add some new data
         DbRepresentation afterChange = createSomeData( cluster.getMaster() );
         cluster.sync();
 
         // Verify that backed up database can be started and compare representation
-        Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupPath, "basic" ), config );
+        Config config = Config.builder()
+                .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .withSetting( GraphDatabaseSettings.active_database, databaseName ).build();
+        DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, config );
         assertEquals( beforeChange, backupRepresentation );
         assertNotEquals( backupRepresentation, afterChange );
     }
@@ -97,28 +101,31 @@ public class BackupHaIT
 
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
+            String databaseName = "anyinstance";
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( address.toString(),
-                    backupPath, "anyinstance" ) ) );
+                    backupPath, databaseName ) ) );
 
             // Add some new data
             DbRepresentation afterChange = createSomeData( cluster.getMaster() );
             cluster.sync();
 
             // Verify that old data is back
-            Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-            DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupPath, "anyinstance" ), config );
+            Config config = Config.builder()
+                    .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                    .withSetting( GraphDatabaseSettings.active_database, databaseName ).build();
+            DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, config );
             assertEquals( beforeChange, backupRepresentation );
             assertNotEquals( backupRepresentation, afterChange );
         }
     }
 
-    private static String[] backupArguments( String from, File backupDir, String name )
+    private static String[] backupArguments( String from, File backupDir, String databaseName )
     {
         List<String> args = new ArrayList<>();
         args.add( "--from=" + from );
         args.add( "--cc-report-dir=" + backupDir );
         args.add( "--backup-dir=" + backupDir );
-        args.add( "--name=" + name );
+        args.add( "--name=" + databaseName );
         return args.toArray( new String[args.size()] );
     }
 }

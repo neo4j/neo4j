@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
@@ -69,8 +67,6 @@ public class DataSourceModule
 
     public final Supplier<InwardKernel> kernelAPI;
 
-    public final Supplier<QueryExecutionEngine> queryExecutor;
-
     public final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     public final TransactionEventHandlers transactionEventHandlers;
@@ -81,21 +77,19 @@ public class DataSourceModule
 
     public final TokenHolders tokenHolders;
 
-    public DataSourceModule( final PlatformModule platformModule, EditionModule editionModule,
-            Supplier<QueryExecutionEngine> queryExecutionEngineSupplier, Procedures procedures )
+    public DataSourceModule( String databaseName, final PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
+            GraphDatabaseFacade graphDatabaseFacade )
     {
         final Dependencies deps = platformModule.dependencies;
         Config config = platformModule.config;
         LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
-        final GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         tokenHolders = editionModule.tokenHoldersSupplier.get();
 
-        File databaseDirectory = new File( platformModule.storeDir, config.get( GraphDatabaseSettings.active_database ) );
+        File databaseDirectory = new File( platformModule.storeDir, databaseName );
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
-        this.queryExecutor = queryExecutionEngineSupplier;
         Monitors monitors = new Monitors( platformModule.monitors );
 
         threadToTransactionBridge = deps.satisfyDependency( new ThreadToStatementContextBridge( platformModule.availabilityGuard ) );
@@ -104,7 +98,6 @@ public class DataSourceModule
 
         diagnosticsManager.prependProvider( config );
 
-        // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
@@ -165,7 +158,9 @@ public class DataSourceModule
                 platformModule.versionContextSupplier,
                 platformModule.collectionsFactorySupplier,
                 platformModule.kernelExtensionFactories,
-                editionModule.watcherServiceFactory ) );
+                editionModule.watcherServiceFactory,
+                graphDatabaseFacade,
+                platformModule.engineProviders ) );
 
         dataSourceManager.register( neoStoreDataSource );
 

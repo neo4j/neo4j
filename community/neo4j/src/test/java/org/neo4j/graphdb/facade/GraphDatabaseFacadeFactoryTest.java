@@ -26,17 +26,13 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.function.Supplier;
 
-import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -59,11 +55,10 @@ import static org.mockito.Mockito.when;
 class GraphDatabaseFacadeFactoryTest
 {
     @Inject
-    private TestDirectory dir;
+    private TestDirectory testDirectory;
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
-    private final GraphDatabaseFacadeFactory.Dependencies deps =
-            mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
+    private final GraphDatabaseFacadeFactory.Dependencies deps = mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
 
     @BeforeEach
     void setup()
@@ -75,10 +70,10 @@ class GraphDatabaseFacadeFactoryTest
     void shouldThrowAppropriateExceptionIfStartFails()
     {
         RuntimeException startupError = new RuntimeException();
-
         GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
-        RuntimeException exception = assertThrows( RuntimeException.class, () -> db.initFacade( dir.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
-        assertEquals( startupError, Exceptions.rootCause( exception ) );
+        RuntimeException startException =
+                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
+        assertEquals( startupError, Exceptions.rootCause( startException ) );
     }
 
     @Test
@@ -89,12 +84,12 @@ class GraphDatabaseFacadeFactoryTest
 
         GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
         doThrow( shutdownError ).when( mockFacade ).shutdown();
+        RuntimeException initException =
+                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
 
-        RuntimeException exception =
-                assertThrows( RuntimeException.class, () -> db.initFacade( dir.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
-        assertTrue( exception.getMessage().startsWith( "Error starting " ) );
-        assertEquals( startupError, exception.getCause() );
-        assertEquals( shutdownError, exception.getSuppressed()[0] );
+        assertTrue( initException.getMessage().startsWith( "Error starting " ) );
+        assertEquals( startupError, initException.getCause() );
+        assertEquals( shutdownError, initException.getSuppressed()[0] );
     }
 
     private static GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
@@ -103,14 +98,13 @@ class GraphDatabaseFacadeFactoryTest
                 p -> mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ) )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config,
-                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
                 doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies )
                 {
                     @Override
                     public LifeSupport createLife()
@@ -118,13 +112,6 @@ class GraphDatabaseFacadeFactoryTest
                         return lifeMock;
                     }
                 };
-            }
-
-            @Override
-            protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
-                    Supplier<QueryExecutionEngine> queryExecutionEngineSupplier, Procedures procedures )
-            {
-                return mock( DataSourceModule.class );
             }
         };
     }

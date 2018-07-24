@@ -36,6 +36,7 @@ import java.io.PrintStream;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -275,7 +275,7 @@ public class RestoreDatabaseCommandIT
                             "%n" +
                             "options:%n" +
                             "  --from=<backup-directory>   Path to backup to restore from.%n" +
-                            "  --database=<name>           Name of database. [default:" + DataSourceManager.DEFAULT_DATABASE_NAME + "]%n" +
+                            "  --database=<name>           Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --force=<true|false>        If an existing database should be replaced.%n" +
                             "                              [default:false]%n" ),
                     baos.toString() );

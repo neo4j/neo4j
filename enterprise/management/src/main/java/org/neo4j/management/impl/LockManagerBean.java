@@ -68,8 +68,7 @@ public final class LockManagerBean extends ManagementBeanProvider
         {
             try
             {
-                return management.getKernelData().graphDatabase().getDependencyResolver()
-                        .resolveDependency( Locks.class );
+                return management.resolveDependency( Locks.class );
             }
             catch ( Throwable e )
             {

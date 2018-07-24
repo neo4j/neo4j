@@ -77,7 +77,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -439,10 +438,9 @@ public class RecoveryIT
                                 TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
                                 {
                                     @Override
-                                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                                            GraphDatabaseFacade graphDatabaseFacade )
+                                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
                                     {
-                                        PlatformModule platform = super.createPlatform( storeDir, config, dependencies, graphDatabaseFacade );
+                                        PlatformModule platform = super.createPlatform( storeDir, config, dependencies );
                                         // nice way of getting the page cache dependency before db is created, huh?
                                         pageCache.set( platform.pageCache );
                                         return platform;

@@ -29,6 +29,8 @@ import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.BoltSchedulerProvider;
+import org.neo4j.bolt.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
@@ -41,8 +43,7 @@ import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.runtime.BoltStateMachineFactory;
-import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -71,7 +71,7 @@ import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 public class BoltServer extends LifecycleAdapter
 {
     // platform dependencies
-    private final GraphDatabaseAPI db;
+    private final DatabaseManager databaseManager;
     private final FileSystemAbstraction fs;
     private final JobScheduler jobScheduler;
     private final AvailabilityGuard availabilityGuard;
@@ -88,11 +88,11 @@ public class BoltServer extends LifecycleAdapter
 
     private final LifeSupport life = new LifeSupport();
 
-    public BoltServer( GraphDatabaseAPI db, FileSystemAbstraction fs, JobScheduler jobScheduler, AvailabilityGuard availabilityGuard,
+    public BoltServer( DatabaseManager databaseManager, FileSystemAbstraction fs, JobScheduler jobScheduler, AvailabilityGuard availabilityGuard,
             ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, UsageData usageData, Config config,
             Clock clock, Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {
-        this.db = db;
+        this.databaseManager = databaseManager;
         this.fs = fs;
         this.jobScheduler = jobScheduler;
         this.availabilityGuard = availabilityGuard;
@@ -235,6 +235,6 @@ public class BoltServer extends LifecycleAdapter
 
     private BoltStateMachineFactory createBoltFactory( Authentication authentication, Clock clock )
     {
-        return new BoltStateMachineFactoryImpl( db, usageData, availabilityGuard, authentication, clock, config, logService );
+        return new BoltStateMachineFactoryImpl( databaseManager, usageData, availabilityGuard, authentication, clock, config, logService );
     }
 }

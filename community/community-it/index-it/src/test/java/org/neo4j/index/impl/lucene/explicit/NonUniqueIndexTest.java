@@ -47,7 +47,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -114,10 +113,9 @@ public class NonUniqueIndexTest
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                    GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
             {
-                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies )
                 {
                     @Override
                     protected CentralJobScheduler createJobScheduler()

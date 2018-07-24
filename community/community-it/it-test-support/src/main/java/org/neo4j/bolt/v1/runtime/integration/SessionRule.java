@@ -38,6 +38,7 @@ import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.v1.BoltProtocolV1;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -70,10 +71,11 @@ public class SessionRule implements TestRule
                 config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 DependencyResolver resolver = gdb.getDependencyResolver();
+                DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
                 Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                         resolver.resolveDependency( UserManagerSupplier.class ) );
                 boltFactory = new BoltStateMachineFactoryImpl(
-                                        gdb,
+                                        databaseManager,
                                         new UsageData( null ),
                                         resolver.resolveDependency( AvailabilityGuard.class ),
                                         authentication,
@@ -105,7 +107,7 @@ public class SessionRule implements TestRule
         };
     }
 
-    private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
+    private static Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
         return new BasicAuthentication( authManager, userManagerSupplier );
     }

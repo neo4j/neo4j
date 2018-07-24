@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -76,6 +77,7 @@ public abstract class KernelIntegrationTest
 
     private Transaction transaction;
     private DbmsOperations dbmsOperations;
+    protected DependencyResolver dependencyResolver;
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
@@ -165,15 +167,17 @@ public abstract class KernelIntegrationTest
     protected void startDb()
     {
         db = (GraphDatabaseAPI) createGraphDatabase();
-        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        dbmsOperations = db.getDependencyResolver().resolveDependency( DbmsOperations.class );
+        dependencyResolver = db.getDependencyResolver();
+        kernel = dependencyResolver.resolveDependency( Kernel.class );
+        indexingService = dependencyResolver.resolveDependency( IndexingService.class );
+        statementContextSupplier = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
+        dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
     }
 
     protected GraphDatabaseService createGraphDatabase()
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = createGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
+        GraphDatabaseBuilder graphDatabaseBuilder = createGraphDatabaseFactory()
+                .setFileSystem( fileSystemRule.get() )
                 .newEmbeddedDatabaseBuilder( testDir.storeDir() );
         return configure( graphDatabaseBuilder ).newGraphDatabase();
     }
@@ -278,7 +282,7 @@ public abstract class KernelIntegrationTest
         return result;
     }
 
-    int countRelationships( Transaction transaction )
+    static int countRelationships( Transaction transaction )
     {
         int result = 0;
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor() )

@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -96,11 +95,9 @@ public class KernelTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,  factory )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                        GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
                 {
-                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies,
-                            graphDatabaseFacade );
+                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies );
                 }
             }.initFacade( storeDir, params, dependencies, this );
         }

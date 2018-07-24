@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.LongStream;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -261,7 +261,7 @@ public class OnlineBackupCommandHaIT
         // then
         String output = suppressOutput.getOutputVoice().toString();
         String legacyImplementationDetail = "temp-copy";
-        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail, DataSourceManager.DEFAULT_DATABASE_NAME ).toString();
+        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail, DatabaseManager.DEFAULT_DATABASE_NAME ).toString();
         assertTrue( output.contains( "Start receiving store files" ) );
         assertTrue( output.contains( "Finish receiving store files" ) );
         String tested = Paths.get( location, "neostore.nodestore.db.labels" ).toString();

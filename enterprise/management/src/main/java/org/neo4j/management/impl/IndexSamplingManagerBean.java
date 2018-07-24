@@ -87,8 +87,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
     private static StoreAccess access( ManagementData management )
     {
         StoreAccess access = new StoreAccess();
-        management.getKernelData().graphDatabase().getDependencyResolver().resolveDependency( DataSourceManager.class )
-                .addListener( access );
+        management.getKernelData().getDataSourceManager().addListener( access );
         return access;
     }
 

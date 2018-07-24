@@ -45,6 +45,7 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -302,7 +303,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
         {
-            super( "harness" );
+            super( ExtensionType.DATABASE, "harness" );
             this.userProcs = userProcs;
         }
 
