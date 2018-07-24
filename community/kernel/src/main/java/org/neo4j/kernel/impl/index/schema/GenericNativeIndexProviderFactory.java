@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory
+public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory<GenericNativeIndexProviderFactory.Dependencies>
 {
     public GenericNativeIndexProviderFactory()
     {
@@ -69,5 +69,9 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == mode);
         return new GenericNativeIndexProvider( priority, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+    }
+
+    public interface Dependencies extends AbstractIndexProviderFactory.Dependencies
+    {
     }
 }

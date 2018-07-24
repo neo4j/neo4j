@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
@@ -41,7 +42,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector20;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusionIndexProviderFactory
+public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory20.Dependencies>
 {
     private static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE20;
     public static final String KEY = SCHEMA_INDEX.providerName();
@@ -91,5 +92,9 @@ public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusion
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
     {
         return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
+    }
+
+    public interface Dependencies extends AbstractIndexProviderFactory.Dependencies
+    {
     }
 }

@@ -42,7 +42,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory
+public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory<LuceneIndexProviderFactory.Dependencies>
 {
     private static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.LUCENE10;
     private static final String KEY = SCHEMA_INDEX.providerName();
@@ -95,5 +95,9 @@ public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory
     private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
     {
         return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( databaseDirectory, PROVIDER_DESCRIPTOR );
+    }
+
+    public interface Dependencies extends AbstractIndexProviderFactory.Dependencies
+    {
     }
 }

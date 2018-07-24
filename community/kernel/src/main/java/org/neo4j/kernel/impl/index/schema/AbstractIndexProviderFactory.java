@@ -36,7 +36,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
-public abstract class AbstractIndexProviderFactory extends KernelExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
+public abstract class AbstractIndexProviderFactory<DEPENDENCIES extends AbstractIndexProviderFactory.Dependencies> extends KernelExtensionFactory<DEPENDENCIES>
 {
     protected AbstractIndexProviderFactory( String key )
     {
