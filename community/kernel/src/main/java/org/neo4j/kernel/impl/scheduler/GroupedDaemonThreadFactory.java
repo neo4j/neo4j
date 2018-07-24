@@ -34,7 +34,7 @@ final class GroupedDaemonThreadFactory implements ThreadFactory, ForkJoinPool.Fo
     GroupedDaemonThreadFactory( Group group, ThreadGroup parentThreadGroup )
     {
         this.group = group;
-        threadGroup = new ThreadGroup( parentThreadGroup, group.name() );
+        threadGroup = new ThreadGroup( parentThreadGroup, group.groupName() );
     }
 
     @Override

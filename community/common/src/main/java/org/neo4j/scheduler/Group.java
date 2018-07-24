@@ -36,7 +36,7 @@ public final class Group
         this.name = name;
     }
 
-    public String name()
+    public String groupName()
     {
         return name;
     }
@@ -47,7 +47,7 @@ public final class Group
      */
     public String threadName()
     {
-        return "neo4j." + name() + "-" + threadCounter.incrementAndGet();
+        return "neo4j." + groupName() + "-" + threadCounter.incrementAndGet();
     }
 
     @Override
