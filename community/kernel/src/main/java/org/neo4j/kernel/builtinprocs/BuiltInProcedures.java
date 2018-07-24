@@ -194,7 +194,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Procedure( name = "db.propertySchema", mode = Mode.READ )
+    @Procedure( name = "okapi.schema", mode = Mode.READ )
     @Description( "Show the derived property schema of the data in tabular form." )
     public Stream<SchemaInfoResult> propertySchema()
     {

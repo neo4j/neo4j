@@ -72,7 +72,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -106,7 +106,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains(
@@ -122,12 +122,12 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Node1: ({prop1:"Test", prop2: 12, prop3: true})
         // Node2: ({prop1:"Test", prop2: 1.5, prop3: "Test"})
-        // Node3: ()
+        // Node3: ({prop1:"Test"})
 
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId1 = transaction.dataWrite().nodeCreate();
         long nodeId2 = transaction.dataWrite().nodeCreate();
-        transaction.dataWrite().nodeCreate();  // Node3
+        long nodeId3 = transaction.dataWrite().nodeCreate();
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
         int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
@@ -137,15 +137,16 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         transaction.dataWrite().nodeSetProperty( nodeId2, prop2, Values.floatValue( 1.5f ) );
         transaction.dataWrite().nodeSetProperty( nodeId1, prop3, Values.booleanValue( true ) );
         transaction.dataWrite().nodeSetProperty( nodeId2, prop3, Values.stringValue("Test") );
+        transaction.dataWrite().nodeSetProperty( nodeId3, prop1, Values.stringValue("Test") );
         commit();
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop1", Arrays.asList( "String" ), false} ),
                 equalTo( new Object[]{"Node", Arrays.asList(), "prop2", Arrays.asList( "Integer", "Float" ), true} ),
                 equalTo( new Object[]{"Node", Arrays.asList(), "prop3", Arrays.asList( "String", "Boolean" ), true} ) ) );
 
@@ -179,7 +180,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -217,7 +218,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -251,12 +252,48 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), false} ),
                 equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} ) ) );
+
+        //printStream( stream );
+    }
+
+    @Test
+    public void testSchemaWithRelationshipWithoutProperties() throws Throwable
+    {
+        // Given
+
+        // Node1: ()
+        // Rel1: (node1)-[:R{prop1:"Test", prop2: 12, prop3: true}]->(node1)
+        // Rel2: (node1)-[:R]->(node1)
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId1 = transaction.dataWrite().nodeCreate();
+        int typeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+        long relId1 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
+        transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );  // Rel2
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+        int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop2, Values.intValue( 12 ) );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop3, Values.booleanValue( true ) );
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", Arrays.asList( "Integer" ), true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", Arrays.asList( "Boolean" ), true} ) ) );
 
         //printStream( stream );
     }
@@ -269,14 +306,14 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Node1: ()
         // Rel1: (node1)-[:R{prop1:"Test", prop2: 12, prop3: true}]->(node1)
         // Rel2: (node1)-[:R{prop1:"Test", prop2: 1.5, prop3: "Test"}]->(node1)
-        // Rel3: (node1)-[:R]->(node1)
+        // Rel3: (node1)-[:R{prop1:"Test"}]->(node1)
 
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId1 = transaction.dataWrite().nodeCreate();
         int typeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
         long relId1 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
         long relId2 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
-        transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 ); // Rel3
+        long relId3 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
         int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
@@ -286,16 +323,17 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         transaction.dataWrite().relationshipSetProperty( relId2, prop2, Values.floatValue( 1.5f ) );
         transaction.dataWrite().relationshipSetProperty( relId1, prop3, Values.booleanValue( true ) );
         transaction.dataWrite().relationshipSetProperty( relId2, prop3, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId3, prop1, Values.stringValue("Test") );
         commit();
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), false} ),
                 equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", Arrays.asList( "Integer", "Float" ), true} ),
                 equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", Arrays.asList( "String", "Boolean" ), true} ) ) );
 
@@ -332,7 +370,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -386,7 +424,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(

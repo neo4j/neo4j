@@ -233,8 +233,8 @@ public class BuiltInProceduresTest
                 record( "db.schema",
                         "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Show the schema of the data.", "READ" ),
-                record( "db.propertySchema",
-                        "db.propertySchema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?," +
+                record( "okapi.schema",
+                        "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?," +
                                 " cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
                         "Show the derived property schema of the data in tabular form.", "READ" ),
                 record( "db.index.explicit.searchNodes",
