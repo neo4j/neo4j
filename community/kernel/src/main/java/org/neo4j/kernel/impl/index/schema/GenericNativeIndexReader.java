@@ -54,11 +54,6 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
     @Override
     void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
     {
-        if ( predicates.length != 1 )
-        {
-            throw new UnsupportedOperationException();
-        }
-
         CapabilityValidator.validateQuery( GenericNativeIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
