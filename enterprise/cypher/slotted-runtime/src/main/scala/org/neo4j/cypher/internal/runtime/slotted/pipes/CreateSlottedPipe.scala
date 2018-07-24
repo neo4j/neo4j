@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.opencypher.v9_0.util.InvalidSemanticsException
+import org.opencypher.v9_0.util.{InternalException, InvalidSemanticsException}
 import org.opencypher.v9_0.util.attribution.Id
 
 /**
@@ -51,6 +51,13 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
     val startNodeId = command.startNodeIdGetter(context)
     val endNodeId = command.endNodeIdGetter(context)
     val typeId = command.relType.typ(state.query)
+
+    if (startNodeId == -1) {
+      throw new InternalException(s"Expected to find a node, but found instead: null")
+    }
+    if (endNodeId == -1) {
+      throw new InternalException(s"Expected to find a node, but found instead: null")
+    }
     val relationship = state.query.createRelationship(startNodeId, endNodeId, typeId)
     command.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
     relationship.id

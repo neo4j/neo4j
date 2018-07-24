@@ -121,10 +121,10 @@ trait CachingExpandInto {
 
   @inline
   protected def getRowNode(row: ExecutionContext, col: String): AnyValue = {
-    row.getOrElse(col, throw new InternalException(s"Expected to find a node at $col but found nothing")) match {
+    row.getOrElse(col, throw new InternalException(s"Expected to find a node at '$col' but found nothing")) match {
       case n: NodeValue => n
       case NO_VALUE    => NO_VALUE
-      case value   => throw new InternalException(s"Expected to find a node at $col but found $value instead")
+      case value   => throw new InternalException(s"Expected to find a node at '$col' but found $value instead")
     }
   }
 

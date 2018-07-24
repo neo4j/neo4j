@@ -111,7 +111,7 @@ case class VarLengthExpandPipe(source: Pipe,
             else
               Iterator(row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE))
 
-          case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
+          case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }
       }
     }
@@ -128,5 +128,5 @@ case class VarLengthExpandPipe(source: Pipe,
     }
 
   def fetchFromContext(row: ExecutionContext, state: QueryState, name: String): Any =
-    row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
+    row.getOrElse(name, throw new InternalException(s"Expected to find a node at '$name' but found nothing"))
 }
