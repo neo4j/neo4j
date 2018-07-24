@@ -416,4 +416,27 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     ))
   }
 
+  test("should correctly evaluate pattern expression in predicate of pattern comprehension inside other expression") {
+    val setup =
+      """
+        |CREATE (a:A {foo: 'a1'}),
+        |       (a)-[:X]->(:B {foo:'b1'}),
+        |       (a)-[:X]->(:B {foo:'b2'})-[:X]->(:C)
+      """.stripMargin
+
+    val query =
+      """
+        |MATCH (a:A) WHERE a.foo = 'a1'
+        |RETURN size([ (a)-->(b:B)
+        |         WHERE (b)-->(:C)
+        |         | b.foo ]) as arraySize
+      """.stripMargin
+
+    graph.execute(setup)
+
+    val res = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    // If the (b)-->(:C) does not get correctly evaluated, this will be two instead
+    res.toList should equal(List(Map("arraySize" -> 1)))
+  }
+
 }

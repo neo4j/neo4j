@@ -106,8 +106,8 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
       // Any other expression, that might contain an inner PatternExpression
       case (planAcc, (key, inExpression)) =>
         val expression = solveUsingGetDegree(inExpression)
-        val (firstStepPlan, firstStepExpression) = patternExpressionSolver.rewriteInnerExpressions(planAcc, expression)
-        val (newPlan, newExpression) = patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression)
+        val (firstStepPlan, firstStepExpression) = patternComprehensionSolver.rewriteInnerExpressions(planAcc, expression)
+        val (newPlan, newExpression) = patternExpressionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression)
 
         newProjections += (key -> newExpression)
         newPlan
