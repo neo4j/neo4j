@@ -30,7 +30,7 @@ public enum Group
 {
     // GENERAL DATABASE GROUPS.
     /** Thread that schedules delayed or recurring tasks. */
-    TASK_SCHEDULER( "Scheduler", ExecutorServiceFactory.singleThread() ),
+    TASK_SCHEDULER( "Scheduler", ExecutorServiceFactory.unschedulable() ),
     /** Watch out for, and report, external manipulation of store files. */
     FILE_WATCHER( "FileWatcher" ),
     /** Monitor and report system-wide pauses, in case they lead to service interruption. */
@@ -124,6 +124,6 @@ public enum Group
 
     public ExecutorService buildExecutorService( SchedulerThreadFactory factory, OptionalInt threadCount )
     {
-        return executorServiceFactory.build( factory, threadCount );
+        return executorServiceFactory.build( this, factory, threadCount );
     }
 }

@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +53,9 @@ import static org.junit.Assert.fail;
 
 public class CentralJobSchedulerTest
 {
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     private final AtomicInteger invocations = new AtomicInteger();
     private final LifeSupport life = new LifeSupport();
     private final CentralJobScheduler scheduler = life.add( new CentralJobScheduler() );
@@ -61,6 +66,14 @@ public class CentralJobSchedulerTest
     public void stopScheduler()
     {
         life.shutdown();
+    }
+
+    @Test
+    public void taskSchedulerGroupMustNotBeDirectlySchedulable()
+    {
+        life.start();
+        expectedException.expect( IllegalArgumentException.class );
+        scheduler.schedule( Group.TASK_SCHEDULER, () -> fail( "This task should not have been executed." ) );
     }
 
     // Tests schedules a recurring job to run 5 times with 100ms in between.

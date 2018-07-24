@@ -30,24 +30,28 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 interface ExecutorServiceFactory
 {
-    ExecutorService build( SchedulerThreadFactory factory, OptionalInt threadCount );
+    ExecutorService build( Group group, SchedulerThreadFactory factory, OptionalInt threadCount );
+
+    static ExecutorServiceFactory unschedulable()
+    {
+        return ( group, factory, threadCount ) ->
+        {
+            throw new IllegalArgumentException( "Tasks cannot be scheduled directly to the " + group.groupName() + " group." );
+        };
+    }
 
     static ExecutorServiceFactory singleThread()
     {
-        return ( factory, threadCount ) -> newSingleThreadExecutor( factory );
+        return ( group, factory, threadCount ) -> newSingleThreadExecutor( factory );
     }
 
     static ExecutorServiceFactory cached()
     {
-        return ( factory, threadCount ) ->
+        return ( group, factory, threadCount ) ->
         {
             if ( threadCount.isPresent() )
             {
                 int threadCountAsInt = threadCount.getAsInt();
-                if ( threadCountAsInt == 1 )
-                {
-                    return newSingleThreadExecutor( factory );
-                }
                 return newFixedThreadPool( threadCountAsInt, factory );
             }
             return newCachedThreadPool( factory );
@@ -56,6 +60,6 @@ interface ExecutorServiceFactory
 
     static ExecutorServiceFactory workStealing()
     {
-        return ( factory, threadCount ) -> new ForkJoinPool( threadCount.orElse( getRuntime().availableProcessors() ), factory, null, false );
+        return ( group, factory, threadCount ) -> new ForkJoinPool( threadCount.orElse( getRuntime().availableProcessors() ), factory, null, false );
     }
 }

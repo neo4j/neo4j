@@ -91,7 +91,7 @@ public class TimeBasedTaskSchedulerTest
     @Test
     public void mustDelayExecution() throws Exception
     {
-        JobHandle handle = scheduler.submit( Group.TASK_SCHEDULER, counter::incrementAndGet, 100, 0 );
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, counter::incrementAndGet, 100, 0 );
         scheduler.tick();
         assertThat( counter.get(), is( 0 ) );
         clock.forward( 99, TimeUnit.NANOSECONDS );
@@ -106,8 +106,8 @@ public class TimeBasedTaskSchedulerTest
     @Test
     public void mustOnlyScheduleTasksThatAreDue() throws Exception
     {
-        JobHandle handle1 = scheduler.submit( Group.TASK_SCHEDULER, () -> counter.addAndGet( 10 ), 100, 0 );
-        JobHandle handle2 = scheduler.submit( Group.TASK_SCHEDULER, () -> counter.addAndGet( 100 ), 200, 0 );
+        JobHandle handle1 = scheduler.submit( Group.STORAGE_MAINTENANCE, () -> counter.addAndGet( 10 ), 100, 0 );
+        JobHandle handle2 = scheduler.submit( Group.STORAGE_MAINTENANCE, () -> counter.addAndGet( 100 ), 200, 0 );
         scheduler.tick();
         assertThat( counter.get(), is( 0 ) );
         clock.forward( 199, TimeUnit.NANOSECONDS );
@@ -123,7 +123,7 @@ public class TimeBasedTaskSchedulerTest
     @Test
     public void mustNotRescheduleDelayedTasks() throws Exception
     {
-        JobHandle handle = scheduler.submit( Group.TASK_SCHEDULER, counter::incrementAndGet, 100, 0 );
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, counter::incrementAndGet, 100, 0 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         handle.waitTermination();
@@ -131,14 +131,14 @@ public class TimeBasedTaskSchedulerTest
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         handle.waitTermination();
-        pools.getThreadPool( Group.TASK_SCHEDULER ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 
     @Test
     public void mustRescheduleRecurringTasks() throws Exception
     {
-        scheduler.submit( Group.TASK_SCHEDULER, semaphore::release, 100, 100 );
+        scheduler.submit( Group.STORAGE_MAINTENANCE, semaphore::release, 100, 100 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         assertSemaphoreAcquire();
@@ -155,7 +155,7 @@ public class TimeBasedTaskSchedulerTest
             semaphore.release();
             throw new RuntimeException( "boom" );
         };
-        JobHandle handle = scheduler.submit( Group.TASK_SCHEDULER, runnable, 100, 100 );
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 100, 100 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         assertSemaphoreAcquire();
@@ -181,14 +181,14 @@ public class TimeBasedTaskSchedulerTest
             counter.incrementAndGet();
             semaphore.acquireUninterruptibly();
         };
-        scheduler.submit( Group.TASK_SCHEDULER, runnable, 100, 100 );
+        scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 100, 100 );
         for ( int i = 0; i < 4; i++ )
         {
             scheduler.tick();
             clock.forward( 100, TimeUnit.NANOSECONDS );
         }
         semaphore.release( Integer.MAX_VALUE );
-        pools.getThreadPool( Group.TASK_SCHEDULER ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 
@@ -198,8 +198,8 @@ public class TimeBasedTaskSchedulerTest
         BinaryLatch latch = new BinaryLatch();
         Runnable longRunning = latch::await;
         Runnable shortRunning = semaphore::release;
-        scheduler.submit( Group.TASK_SCHEDULER, longRunning, 100, 100 );
-        scheduler.submit( Group.TASK_SCHEDULER, shortRunning, 100, 100 );
+        scheduler.submit( Group.STORAGE_MAINTENANCE, longRunning, 100, 100 );
+        scheduler.submit( Group.STORAGE_MAINTENANCE, shortRunning, 100, 100 );
         for ( int i = 0; i < 4; i++ )
         {
             clock.forward( 100, TimeUnit.NANOSECONDS );
@@ -213,14 +213,14 @@ public class TimeBasedTaskSchedulerTest
     public void delayedTasksMustNotRunIfCancelledFirst() throws Exception
     {
         List<Boolean> cancelListener = new ArrayList<>();
-        JobHandle handle = scheduler.submit( Group.TASK_SCHEDULER, counter::incrementAndGet, 100, 0 );
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, counter::incrementAndGet, 100, 0 );
         handle.registerCancelListener( cancelListener::add );
         clock.forward( 90, TimeUnit.NANOSECONDS );
         scheduler.tick();
         handle.cancel( false );
         clock.forward( 10, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        pools.getThreadPool( Group.TASK_SCHEDULER ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 0 ) );
         assertThat( cancelListener, contains( Boolean.FALSE ) );
         try
@@ -243,7 +243,7 @@ public class TimeBasedTaskSchedulerTest
             counter.incrementAndGet();
             semaphore.release();
         };
-        JobHandle handle = scheduler.submit( Group.TASK_SCHEDULER, recurring, 100, 100 );
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, recurring, 100, 100 );
         handle.registerCancelListener( cancelListener::add );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
@@ -256,7 +256,7 @@ public class TimeBasedTaskSchedulerTest
         scheduler.tick();
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        pools.getThreadPool( Group.TASK_SCHEDULER ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 2 ) );
         assertThat( cancelListener, contains( Boolean.TRUE ) );
     }
@@ -269,7 +269,7 @@ public class TimeBasedTaskSchedulerTest
             counter.incrementAndGet();
             semaphore.acquireUninterruptibly();
         };
-        JobHandle handle = scheduler.submit( Group.TASK_SCHEDULER, recurring, 100, 100 );
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, recurring, 100, 100 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         while ( counter.get() < 1 )
