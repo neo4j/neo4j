@@ -259,7 +259,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     }
     /* </copyFrom> */
 
-    Value assertCorrectType( Value value )
+    static Value assertCorrectType( Value value )
     {
         if ( Values.isGeometryValue( value ) )
         {
@@ -932,7 +932,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return true;
     }
 
-    private ArrayType numberArrayTypeOf( byte numberType )
+    private static ArrayType numberArrayTypeOf( byte numberType )
     {
         switch ( numberType )
         {
@@ -980,11 +980,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private boolean setArrayLengthWhenReading( PageCursor cursor )
     {
         arrayLength = cursor.getInt();
-        if ( arrayLength < 0 || arrayLength >= BIGGEST_REASONABLE_ARRAY_LENGTH )
-        {
-            return false;
-        }
-        return true;
+        return arrayLength >= 0 && arrayLength < BIGGEST_REASONABLE_ARRAY_LENGTH;
     }
 
     private boolean readNumber( PageCursor cursor )
@@ -1635,7 +1631,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return byteArray == null ? NO_VALUE : Values.utf8Value( byteArray, 0, (int) long0 );
     }
 
-    private String textAsValueRaw( byte[] byteArray, long long0 )
+    private static String textAsValueRaw( byte[] byteArray, long long0 )
     {
         return byteArray == null ? null : UTF8.decode( byteArray, 0, (int) long0 );
     }
