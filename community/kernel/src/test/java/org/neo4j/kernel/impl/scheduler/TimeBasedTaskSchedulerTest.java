@@ -31,7 +31,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.scheduler.JobScheduler.Group;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
 import org.neo4j.time.FakeClock;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -40,6 +39,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.scheduler.JobScheduler.Groups.taskScheduler;
 
 public class TimeBasedTaskSchedulerTest
 {
@@ -48,7 +48,6 @@ public class TimeBasedTaskSchedulerTest
     private TimeBasedTaskScheduler scheduler;
     private AtomicInteger counter;
     private Semaphore semaphore;
-    private Group group;
 
     @Before
     public void setUp()
@@ -58,7 +57,6 @@ public class TimeBasedTaskSchedulerTest
         scheduler = new TimeBasedTaskScheduler( clock, pools );
         counter = new AtomicInteger();
         semaphore = new Semaphore( 0 );
-        group = new Group( "test" );
     }
 
     @After
@@ -93,7 +91,7 @@ public class TimeBasedTaskSchedulerTest
     @Test
     public void mustDelayExecution() throws Exception
     {
-        JobHandle handle = scheduler.submit( group, counter::incrementAndGet, 100, 0 );
+        JobHandle handle = scheduler.submit( taskScheduler, counter::incrementAndGet, 100, 0 );
         scheduler.tick();
         assertThat( counter.get(), is( 0 ) );
         clock.forward( 99, TimeUnit.NANOSECONDS );
@@ -108,8 +106,8 @@ public class TimeBasedTaskSchedulerTest
     @Test
     public void mustOnlyScheduleTasksThatAreDue() throws Exception
     {
-        JobHandle handle1 = scheduler.submit( group, () -> counter.addAndGet( 10 ), 100, 0 );
-        JobHandle handle2 = scheduler.submit( group, () -> counter.addAndGet( 100 ), 200, 0 );
+        JobHandle handle1 = scheduler.submit( taskScheduler, () -> counter.addAndGet( 10 ), 100, 0 );
+        JobHandle handle2 = scheduler.submit( taskScheduler, () -> counter.addAndGet( 100 ), 200, 0 );
         scheduler.tick();
         assertThat( counter.get(), is( 0 ) );
         clock.forward( 199, TimeUnit.NANOSECONDS );
@@ -125,7 +123,7 @@ public class TimeBasedTaskSchedulerTest
     @Test
     public void mustNotRescheduleDelayedTasks() throws Exception
     {
-        JobHandle handle = scheduler.submit( group, counter::incrementAndGet, 100, 0 );
+        JobHandle handle = scheduler.submit( taskScheduler, counter::incrementAndGet, 100, 0 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         handle.waitTermination();
@@ -133,14 +131,14 @@ public class TimeBasedTaskSchedulerTest
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         handle.waitTermination();
-        pools.getThreadPool( group ).shutDown();
+        pools.getThreadPool( taskScheduler ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 
     @Test
     public void mustRescheduleRecurringTasks() throws Exception
     {
-        scheduler.submit( group, semaphore::release, 100, 100 );
+        scheduler.submit( taskScheduler, semaphore::release, 100, 100 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         assertSemaphoreAcquire();
@@ -157,7 +155,7 @@ public class TimeBasedTaskSchedulerTest
             semaphore.release();
             throw new RuntimeException( "boom" );
         };
-        JobHandle handle = scheduler.submit( group, runnable, 100, 100 );
+        JobHandle handle = scheduler.submit( taskScheduler, runnable, 100, 100 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         assertSemaphoreAcquire();
@@ -183,14 +181,14 @@ public class TimeBasedTaskSchedulerTest
             counter.incrementAndGet();
             semaphore.acquireUninterruptibly();
         };
-        scheduler.submit( group, runnable, 100, 100 );
+        scheduler.submit( taskScheduler, runnable, 100, 100 );
         for ( int i = 0; i < 4; i++ )
         {
             scheduler.tick();
             clock.forward( 100, TimeUnit.NANOSECONDS );
         }
         semaphore.release( Integer.MAX_VALUE );
-        pools.getThreadPool( group ).shutDown();
+        pools.getThreadPool( taskScheduler ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 
@@ -200,8 +198,8 @@ public class TimeBasedTaskSchedulerTest
         BinaryLatch latch = new BinaryLatch();
         Runnable longRunning = latch::await;
         Runnable shortRunning = semaphore::release;
-        scheduler.submit( group, longRunning, 100, 100 );
-        scheduler.submit( group, shortRunning, 100, 100 );
+        scheduler.submit( taskScheduler, longRunning, 100, 100 );
+        scheduler.submit( taskScheduler, shortRunning, 100, 100 );
         for ( int i = 0; i < 4; i++ )
         {
             clock.forward( 100, TimeUnit.NANOSECONDS );
@@ -215,14 +213,14 @@ public class TimeBasedTaskSchedulerTest
     public void delayedTasksMustNotRunIfCancelledFirst() throws Exception
     {
         List<Boolean> cancelListener = new ArrayList<>();
-        JobHandle handle = scheduler.submit( group, counter::incrementAndGet, 100, 0 );
+        JobHandle handle = scheduler.submit( taskScheduler, counter::incrementAndGet, 100, 0 );
         handle.registerCancelListener( cancelListener::add );
         clock.forward( 90, TimeUnit.NANOSECONDS );
         scheduler.tick();
         handle.cancel( false );
         clock.forward( 10, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        pools.getThreadPool( group ).shutDown();
+        pools.getThreadPool( taskScheduler ).shutDown();
         assertThat( counter.get(), is( 0 ) );
         assertThat( cancelListener, contains( Boolean.FALSE ) );
         try
@@ -245,7 +243,7 @@ public class TimeBasedTaskSchedulerTest
             counter.incrementAndGet();
             semaphore.release();
         };
-        JobHandle handle = scheduler.submit( group, recurring, 100, 100 );
+        JobHandle handle = scheduler.submit( taskScheduler, recurring, 100, 100 );
         handle.registerCancelListener( cancelListener::add );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
@@ -258,7 +256,7 @@ public class TimeBasedTaskSchedulerTest
         scheduler.tick();
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        pools.getThreadPool( group ).shutDown();
+        pools.getThreadPool( taskScheduler ).shutDown();
         assertThat( counter.get(), is( 2 ) );
         assertThat( cancelListener, contains( Boolean.TRUE ) );
     }
@@ -271,7 +269,7 @@ public class TimeBasedTaskSchedulerTest
             counter.incrementAndGet();
             semaphore.acquireUninterruptibly();
         };
-        JobHandle handle = scheduler.submit( group, recurring, 100, 100 );
+        JobHandle handle = scheduler.submit( taskScheduler, recurring, 100, 100 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         while ( counter.get() < 1 )

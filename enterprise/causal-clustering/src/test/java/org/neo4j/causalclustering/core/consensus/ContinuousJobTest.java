@@ -31,17 +31,16 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.scheduler.JobScheduler.Group;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.scheduler.JobScheduler.Groups.raftBatchHandler;
 
 public class ContinuousJobTest
 {
     private static final long DEFAULT_TIMEOUT_MS = 15_000;
-    private final Group jobGroup = new Group( "test" );
     private final CentralJobScheduler scheduler = new CentralJobScheduler();
 
     @Test
@@ -52,7 +51,7 @@ public class ContinuousJobTest
         Runnable task = latch::countDown;
 
         ContinuousJob continuousJob =
-                new ContinuousJob( scheduler.threadFactory( jobGroup ), task, NullLogProvider.getInstance() );
+                new ContinuousJob( scheduler.threadFactory( raftBatchHandler ), task, NullLogProvider.getInstance() );
 
         // when
         try ( Lifespan ignored = new Lifespan( scheduler, continuousJob ) )
@@ -75,7 +74,7 @@ public class ContinuousJobTest
         };
 
         ContinuousJob continuousJob =
-                new ContinuousJob( scheduler.threadFactory( jobGroup ), task, NullLogProvider.getInstance() );
+                new ContinuousJob( scheduler.threadFactory( raftBatchHandler ), task, NullLogProvider.getInstance() );
 
         // when
         long startTime = System.currentTimeMillis();

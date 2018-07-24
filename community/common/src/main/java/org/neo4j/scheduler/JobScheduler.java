@@ -45,7 +45,7 @@ public interface JobScheduler extends Lifecycle
         private final AtomicInteger threadCounter = new AtomicInteger();
         private final String name;
 
-        public Group( String name )
+        private Group( String name )
         {
             Objects.requireNonNull( name, "Group name cannot be null." );
             this.name = name;
@@ -98,6 +98,12 @@ public interface JobScheduler extends Lifecycle
      */
     class Groups
     {
+        /**
+         * This group is used by the JobScheduler implementation itself, for the thread or threads that are in charge of the timely execution of delayed or
+         * recurring tasks.
+         */
+        public static final Group taskScheduler = new Group( "Scheduler" );
+
         /** Background index population */
         public static final Group indexPopulation = new Group( "IndexPopulation" );
 
@@ -122,8 +128,8 @@ public interface JobScheduler extends Lifecycle
         /**
          * Gathers approximated data about the underlying data store.
          */
-        public static final Group indexSamplingController = new Group( "IndexSamplingController" );
         public static final Group indexSampling = new Group( "IndexSampling" );
+        public static final Group indexSamplingController = indexSampling;
 
         /**
          * Rotates internal diagnostic logs
@@ -133,17 +139,17 @@ public interface JobScheduler extends Lifecycle
         /**
          * Rotates query logs
          */
-        public static final Group queryLogRotation = new Group( "queryLogRotation" );
+        public static final Group queryLogRotation = internalLogRotation;
 
         /**
          * Rotates bolt message logs
          */
-        public static final Group boltLogRotation = new Group( "BoltLogRotation" );
+        public static final Group boltLogRotation = internalLogRotation;
 
         /**
          * Rotates metrics csv files
          */
-        public static final Group metricsLogRotations = new Group( "MetricsLogRotations" );
+        public static final Group metricsLogRotations = internalLogRotation;
 
         /**
          * Checkpoint and store flush
@@ -154,6 +160,17 @@ public interface JobScheduler extends Lifecycle
          * Raft Log pruning
          */
         public static final Group raftLogPruning = new Group( "RaftLogPruning" );
+
+        /**
+         * Raft timers.
+         */
+        public static final Group raft = new Group( "RaftTimer" );
+        public static final Group raftBatchHandler = new Group( "RaftBatchHandler" );
+        public static final Group raftReaderPoolPruner = new Group( "RaftReaderPoolPruner" );
+        public static final Group topologyHealth = new Group( "HazelcastHealth" );
+        public static final Group topologyKeepAlive = new Group( "KeepAlive" );
+        public static final Group topologyRefresh = new Group( "TopologyRefresh" );
+        public static final Group membershipWaiter = new Group( "MembershipWaiter" );
 
         /**
          * Network IO threads for the Bolt protocol.
@@ -168,7 +185,7 @@ public interface JobScheduler extends Lifecycle
         /**
          * Snapshot downloader
          */
-        public static final Group downloadSnapshot = new JobScheduler.Group( "DownloadSnapshot" );
+        public static final Group downloadSnapshot = new Group( "DownloadSnapshot" );
 
         /**
          * UDC timed events.
@@ -179,11 +196,6 @@ public interface JobScheduler extends Lifecycle
          * Storage maintenance.
          */
         public static final Group storageMaintenance = new Group( "StorageMaintenance" );
-
-        /**
-         * Raft timers.
-         */
-        public static final Group raft = new Group( "RaftTimer" );
 
         /**
          * Native security.
@@ -223,7 +235,7 @@ public interface JobScheduler extends Lifecycle
         /**
          * Bolt scheduler worker
          */
-        public static Group boltWorker = new Group( "BoltWorker" );
+        public static final Group boltWorker = new Group( "BoltWorker" );
 
         private Groups()
         {

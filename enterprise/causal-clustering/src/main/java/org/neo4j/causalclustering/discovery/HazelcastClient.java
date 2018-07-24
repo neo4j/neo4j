@@ -179,8 +179,8 @@ public class HazelcastClient extends SafeLifecycle implements TopologyService
     @Override
     public void start0()
     {
-        keepAliveJob = scheduler.scheduleRecurring( "KeepAlive", timeToLive / 3, this::keepReadReplicaAlive );
-        refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, () -> {
+        keepAliveJob = scheduler.scheduleRecurring( JobScheduler.Groups.topologyKeepAlive, timeToLive / 3, this::keepReadReplicaAlive );
+        refreshTopologyJob = scheduler.scheduleRecurring( JobScheduler.Groups.topologyRefresh, refreshPeriod, () -> {
             this.refreshTopology();
             this.refreshRoles();
         } );

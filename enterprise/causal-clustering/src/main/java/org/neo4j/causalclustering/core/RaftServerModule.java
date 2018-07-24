@@ -170,7 +170,7 @@ class RaftServerModule
     private ComposableMessageHandler createBatchingHandler( Config config )
     {
         Function<Runnable,ContinuousJob> jobFactory = runnable -> new ContinuousJob(
-                platformModule.jobScheduler.threadFactory( new JobScheduler.Group( "raft-batch-handler" ) ), runnable,
+                platformModule.jobScheduler.threadFactory( JobScheduler.Groups.raftBatchHandler ), runnable,
                 logProvider );
 
         BoundedPriorityQueue.Config inQueueConfig = new BoundedPriorityQueue.Config( config.get( raft_in_queue_size ),

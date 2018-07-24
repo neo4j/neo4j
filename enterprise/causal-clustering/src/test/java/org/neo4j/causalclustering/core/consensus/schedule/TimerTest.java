@@ -46,7 +46,6 @@ public class TimerTest
     {
         // given
         CentralJobScheduler scheduler = lifeRule.add( new CentralJobScheduler() );
-        JobScheduler.Group group = new JobScheduler.Group( "test" );
 
         BinaryLatch invoked = new BinaryLatch();
         BinaryLatch done = new BinaryLatch();
@@ -57,7 +56,7 @@ public class TimerTest
             done.await();
         };
 
-        Timer timer = new Timer( () -> "test", scheduler, getInstance(), group, handler );
+        Timer timer = new Timer( () -> "test", scheduler, getInstance(), JobScheduler.Groups.raft, handler );
         timer.set( new FixedTimeout( 0, SECONDS ) );
         invoked.await();
 

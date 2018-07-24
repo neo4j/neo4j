@@ -118,7 +118,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
             rotateSegment( state.appendIndex, state.appendIndex, state.terms.latest() );
         }
 
-        readerPoolPruner = scheduler.scheduleRecurring( new JobScheduler.Group( "reader-pool-pruner" ),
+        readerPoolPruner = scheduler.scheduleRecurring( JobScheduler.Groups.raftReaderPoolPruner,
                 () -> readerPool.prune( READER_POOL_MAX_AGE, MINUTES ), READER_POOL_MAX_AGE, READER_POOL_MAX_AGE, MINUTES );
     }
 

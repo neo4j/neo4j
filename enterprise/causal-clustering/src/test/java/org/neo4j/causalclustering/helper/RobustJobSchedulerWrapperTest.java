@@ -39,6 +39,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.scheduler.JobScheduler.Groups.topologyHealth;
+import static org.neo4j.scheduler.JobScheduler.Groups.topologyRefresh;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class RobustJobSchedulerWrapperTest
@@ -68,12 +70,11 @@ public class RobustJobSchedulerWrapperTest
         IllegalStateException e = new IllegalStateException();
 
         // when
-        JobHandle jobHandle = robustWrapper.schedule( "JobName", 100, () ->
-                {
-                    count.incrementAndGet();
-                    throw e;
-                }
-        );
+        JobHandle jobHandle = robustWrapper.schedule( topologyHealth, 100, () ->
+        {
+            count.incrementAndGet();
+            throw e;
+        } );
 
         // then
         assertEventually( "run count", count::get, Matchers.equalTo( 1 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
@@ -92,18 +93,17 @@ public class RobustJobSchedulerWrapperTest
 
         // when
         int nRuns = 100;
-        JobHandle jobHandle = robustWrapper.scheduleRecurring( "JobName", 1, () ->
-                {
-                    if ( count.get() < nRuns )
-                    {
-                        count.incrementAndGet();
-                        throw e;
-                    }
-                }
-        );
+        JobHandle jobHandle = robustWrapper.scheduleRecurring( topologyRefresh, 1, () ->
+        {
+            if ( count.get() < nRuns )
+            {
+                count.incrementAndGet();
+                throw e;
+            }
+        } );
 
         // then
-        assertEventually( "run count", count::get, Matchers.equalTo( nRuns ), DEFAULT_TIMEOUT_MS , MILLISECONDS );
+        assertEventually( "run count", count::get, Matchers.equalTo( nRuns ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
         jobHandle.cancel( true );
         verify( log, timeout( DEFAULT_TIMEOUT_MS ).times( nRuns ) ).warn( "Uncaught exception", e );
     }
@@ -118,18 +118,17 @@ public class RobustJobSchedulerWrapperTest
         Error e = new Error();
 
         // when
-        JobHandle jobHandle = robustWrapper.scheduleRecurring( "JobName", 1, () ->
-                {
-                    count.incrementAndGet();
-                    throw e;
-                }
-        );
+        JobHandle jobHandle = robustWrapper.scheduleRecurring( topologyRefresh, 1, () ->
+        {
+            count.incrementAndGet();
+            throw e;
+        } );
 
         // when
         Thread.sleep( 50 ); // should not keep increasing during this time
 
         // then
-        assertEventually( "run count", count::get, Matchers.equalTo( 1 ), DEFAULT_TIMEOUT_MS , MILLISECONDS );
+        assertEventually( "run count", count::get, Matchers.equalTo( 1 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
         jobHandle.cancel( true );
         verify( log, timeout( DEFAULT_TIMEOUT_MS ).times( 1 ) ).error( "Uncaught error rethrown", e );
     }

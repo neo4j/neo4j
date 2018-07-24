@@ -46,16 +46,14 @@ public class RobustJobSchedulerWrapper
         this.log = log;
     }
 
-    public JobScheduler.JobHandle schedule( String name, long delayMillis, ThrowingAction<Exception> action )
+    public JobScheduler.JobHandle schedule( JobScheduler.Group group, long delayMillis, ThrowingAction<Exception> action )
     {
-        return delegate.schedule( new JobScheduler.Group( name ),
-                () -> withErrorHandling( action ), delayMillis, MILLISECONDS );
+        return delegate.schedule( group, () -> withErrorHandling( action ), delayMillis, MILLISECONDS );
     }
 
-    public JobScheduler.JobHandle scheduleRecurring( String name, long periodMillis, ThrowingAction<Exception> action )
+    public JobScheduler.JobHandle scheduleRecurring( JobScheduler.Group group, long periodMillis, ThrowingAction<Exception> action )
     {
-        return delegate.scheduleRecurring( new JobScheduler.Group( name ),
-                () -> withErrorHandling( action ), periodMillis, MILLISECONDS );
+        return delegate.scheduleRecurring( group, () -> withErrorHandling( action ), periodMillis, MILLISECONDS );
     }
 
     /**

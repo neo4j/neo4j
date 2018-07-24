@@ -48,7 +48,7 @@ import static org.neo4j.causalclustering.core.consensus.schedule.TimerServiceTes
 
 public class TimerServiceTest
 {
-    private final JobScheduler.Group group = new JobScheduler.Group( "Test" );
+    private final JobScheduler.Group group = JobScheduler.Groups.raft;
 
     private final TimeoutHandler handlerA = mock( TimeoutHandler.class );
     private final TimeoutHandler handlerB = mock( TimeoutHandler.class );

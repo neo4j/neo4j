@@ -127,7 +127,7 @@ public class CentralJobSchedulerTest
 
         long time = System.nanoTime();
 
-        scheduler.schedule( new JobScheduler.Group( "group" ), () ->
+        scheduler.schedule( indexPopulation, () ->
         {
             runTime.set( System.nanoTime() );
             latch.countDown();
@@ -144,7 +144,6 @@ public class CentralJobSchedulerTest
         life.start();
 
         List<JobHandle> handles = new ArrayList<>( 30 );
-        JobScheduler.Group group = new JobScheduler.Group( "test" );
         AtomicLong startedCounter = new AtomicLong();
         BinaryLatch blockLatch = new BinaryLatch();
         Runnable task = () ->
@@ -155,15 +154,15 @@ public class CentralJobSchedulerTest
 
         for ( int i = 0; i < 10; i++ )
         {
-            handles.add( scheduler.schedule( group, task, 0, TimeUnit.MILLISECONDS ) );
+            handles.add( scheduler.schedule( indexPopulation, task, 0, TimeUnit.MILLISECONDS ) );
         }
         for ( int i = 0; i < 10; i++ )
         {
-            handles.add( scheduler.scheduleRecurring( group, task, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
+            handles.add( scheduler.scheduleRecurring( indexPopulation, task, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
         }
         for ( int i = 0; i < 10; i++ )
         {
-            handles.add( scheduler.scheduleRecurring( group, task, 0, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
+            handles.add( scheduler.scheduleRecurring( indexPopulation, task, 0, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
         }
 
         long deadline = TimeUnit.SECONDS.toNanos( 10 ) + System.nanoTime();

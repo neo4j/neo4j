@@ -91,7 +91,7 @@ public class MembershipWaiter
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
         JobScheduler.JobHandle jobHandle = jobScheduler.schedule(
-                new JobScheduler.Group( getClass().toString() ),
+                JobScheduler.Groups.membershipWaiter,
                 evaluator, currentCatchupDelayInMs, MILLISECONDS );
 
         catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
@@ -132,7 +132,7 @@ public class MembershipWaiter
             {
                 currentCatchupDelayInMs += SECONDS.toMillis( 1 );
                 long longerDelay = currentCatchupDelayInMs < maxCatchupLag ? currentCatchupDelayInMs : maxCatchupLag;
-                jobScheduler.schedule( new JobScheduler.Group( MembershipWaiter.class.toString() ), this,
+                jobScheduler.schedule( JobScheduler.Groups.membershipWaiter, this,
                         longerDelay, MILLISECONDS );
             }
         }
