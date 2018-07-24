@@ -67,8 +67,6 @@ public class SslNegotiationTest
     @Parameterized.Parameter
     public TestSetup setup;
 
-    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
-
     private SecureServer server;
     private SecureClient client;
 

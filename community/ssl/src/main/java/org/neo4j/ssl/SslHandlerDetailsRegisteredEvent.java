@@ -19,12 +19,12 @@
  */
 package org.neo4j.ssl;
 
-class SslHandlerReplacedEvent
+class SslHandlerDetailsRegisteredEvent
 {
     final String cipherSuite;
     final String protocol;
 
-    SslHandlerReplacedEvent( String cipherSuite, String protocol )
+    SslHandlerDetailsRegisteredEvent( String cipherSuite, String protocol )
     {
         this.cipherSuite = cipherSuite;
         this.protocol = protocol;

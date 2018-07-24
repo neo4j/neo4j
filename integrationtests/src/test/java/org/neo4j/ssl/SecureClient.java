@@ -169,11 +169,13 @@ public class SecureClient
                     @Override
                     public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
                     {
-                        if ( evt instanceof SslHandlerReplacedEvent )
+                        if ( evt instanceof SslHandlerDetailsRegisteredEvent )
                         {
-                            SslHandlerReplacedEvent sslHandlerReplacedEvent = (SslHandlerReplacedEvent) evt;
-                            protocol = sslHandlerReplacedEvent.protocol;
-                            ciphers = sslHandlerReplacedEvent.cipherSuite;
+                            SslHandlerDetailsRegisteredEvent sslHandlerDetailsRegisteredEvent = (SslHandlerDetailsRegisteredEvent) evt;
+                            protocol = sslHandlerDetailsRegisteredEvent.protocol;
+                            ciphers = sslHandlerDetailsRegisteredEvent.cipherSuite;
+                            handshakeFuture.complete( ctx.channel() ); // We complete the handshake here since it will also signify that the correct
+                            // information has been carried
                             return;
                         }
                         if ( evt instanceof SslHandshakeCompletionEvent )
@@ -183,10 +185,7 @@ public class SecureClient
                             {
                                 handshakeFuture.completeExceptionally( handshakeEvent.cause() );
                             }
-                            else
-                            {
-                                handshakeFuture.complete( ctx.channel() );
-                            }
+                            // We do not complete if no error, that will be handled by the funky SslHandlerReplacedEvent
                         }
                     }
                 } );

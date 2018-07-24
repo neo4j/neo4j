@@ -22,10 +22,12 @@ package org.neo4j.ssl;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -69,7 +71,6 @@ public class OnConnectSslHandler extends ChannelDuplexHandler
     {
         SslHandler sslHandler = createSslHandler( ctx, (InetSocketAddress) remoteAddress );
         replaceSelfWith( sslHandler );
-        fireHandlerReplaced( ctx, sslHandler );
         ctx.connect( remoteAddress, localAddress, promise );
     }
 
@@ -82,20 +83,7 @@ public class OnConnectSslHandler extends ChannelDuplexHandler
             SslHandler sslHandler = createSslHandler( ctx, (InetSocketAddress) ctx.channel().remoteAddress() );
             replaceSelfWith( sslHandler );
             sslHandler.handlerAdded( ctx );
-            fireHandlerReplaced( ctx, sslHandler );
         }
-    }
-
-    /**
-     * An event that is used for testing
-     * @param ctx the channel context
-     * @param sslHandler the newly created sslHandler
-     */
-    private void fireHandlerReplaced( ChannelHandlerContext ctx, SslHandler sslHandler )
-    {
-        String ciphers = sslHandler.engine().getSession().getCipherSuite();
-        String protocols = sslHandler.engine().getSession().getProtocol();
-        ctx.fireUserEventTriggered( new SslHandlerReplacedEvent( ciphers, protocols ) );
     }
 
     @Override
@@ -119,6 +107,7 @@ public class OnConnectSslHandler extends ChannelDuplexHandler
                 .findFirst()
                 .orElseThrow( () -> new IllegalStateException( "This handler has no name" ) );
         pipeline.replace( this, myName, sslHandler );
+        pipeline.addAfter( myName, "handshakeCompletionSslDetailsHandler", new HandshakeCompletionSslDetailsHandler() );
     }
 
     private SslHandler createSslHandler( ChannelHandlerContext ctx, InetSocketAddress inetSocketAddress )
@@ -130,5 +119,31 @@ public class OnConnectSslHandler extends ChannelDuplexHandler
         }
         // Don't need to set tls versions since that is set up from the context
         return new SslHandler( sslEngine );
+    }
+
+    /**
+     * Ssl protocol details are negotiated after handshake is complete.
+     * Some tests rely on having these ssl details available.
+     * Having this adapter exposes those details to the tests.
+     */
+    private class HandshakeCompletionSslDetailsHandler extends ChannelInboundHandlerAdapter
+    {
+        @Override
+        public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
+        {
+            if ( evt instanceof SslHandshakeCompletionEvent )
+            {
+                SslHandshakeCompletionEvent sslHandshakeEvent = (SslHandshakeCompletionEvent) evt;
+                if ( sslHandshakeEvent.cause() == null )
+                {
+                    SslHandler sslHandler = ctx.pipeline().get( SslHandler.class );
+                    String ciphers = sslHandler.engine().getSession().getCipherSuite();
+                    String protocols = sslHandler.engine().getSession().getProtocol();
+
+                    ctx.fireUserEventTriggered( new SslHandlerDetailsRegisteredEvent( ciphers, protocols ) );
+                }
+            }
+            ctx.fireUserEventTriggered( evt );
+        }
     }
 }
