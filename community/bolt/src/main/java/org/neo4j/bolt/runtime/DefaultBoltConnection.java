@@ -283,11 +283,21 @@ public class DefaultBoltConnection implements BoltConnection
         {
             machine.terminate();
 
-            // Enqueue an empty job for close to be handled linearly
-            enqueueInternal( ignore ->
+            try
             {
+                // Enqueue an empty job for close to be handled linearly
+                // This is for already executing connections
+                enqueueInternal( ignore ->
+                {
 
-            } );
+                } );
+            }
+            catch ( RejectedExecutionException ex )
+            {
+                // If enqueue fails with RejectedExecutionException, this connection
+                // is not executing, so we can directly call close()
+                close();
+            }
         }
     }
 
