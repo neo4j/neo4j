@@ -84,7 +84,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private static final int SIZE_NUMBER_TYPE =     Byte.BYTES;     /* type of value */
     private static final int SIZE_NUMBER =          Long.BYTES;     /* raw value bits */
     private static final int SIZE_ARRAY_LENGTH =    Integer.BYTES;
-    // TODO figure out in a future-proof way
     private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / Integer.SIZE;
 
     private static final long TRUE = 1;
@@ -116,7 +115,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private byte[] byteArray;
 
     // for array values
-    // TODO for arrays we have the ability to serialize the values more compact
     private long[] long0Array;
     private long[] long1Array;
     private long[] long2Array;
@@ -233,7 +231,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
                 break;
             case TEXT_ARRAY:
                 copyTextArrayFrom( key );
-                // todo long1 (bytesDereferenced), long2 (ignoreLength), long3 (isHighest) may or may not be needed. Tests will show
                 break;
             case BOOLEAN_ARRAY:
                 copyBooleanArrayFrom( key );
@@ -245,8 +242,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             default:
                 throw new IllegalStateException( "Expected an array type but was " + type );
             }
-            // Todo Continue here. Currently lots of IndexProviderCompatibilityTestSuite fails due to arrays not being properly initialized
-            // Todo 2. Make sure array are always initialized properly...
         }
     }
 
@@ -1389,8 +1384,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     @Override
     public void endArray() throws RuntimeException
-    {
-        // TODO do something here?
+    {   // no-op
     }
 
     private void initializeTypeFromArrayType( ArrayType arrayType )
@@ -1675,7 +1669,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         {
             return TimeValue.timeRaw( long0, ZoneOffset.ofTotalSeconds( (int) long1 ) );
         }
-        // TODO Getting here means that after a proper read this value is plain wrong... shouldn't something be thrown instead?
+        // TODO Getting here means that after a proper read this value is plain wrong... shouldn't something be thrown instead? Yes and same for TimeZones
         return null;
     }
 
