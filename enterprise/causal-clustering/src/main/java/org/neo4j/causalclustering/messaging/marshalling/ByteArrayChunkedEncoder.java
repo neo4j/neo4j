@@ -36,7 +36,7 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
     private static final int CHUNK_SIZE = 8 * 1024;
     private final byte[] content;
     private final int chunkSize;
-    private int pos = 0;
+    private int pos;
 
     ByteArrayChunkedEncoder( byte[] content, int chunkSize )
     {
