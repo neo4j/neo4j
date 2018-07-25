@@ -43,9 +43,8 @@ import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
-  private def plannerConfig(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                            clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
-  CypherPlannerConfiguration = {
+  private def plannerConfig(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5,
+                            queryPlanTTL: Long = 1000): CypherPlannerConfiguration = {
     CypherPlannerConfiguration(
       queryCacheSize,
       StatsDivergenceCalculator.divergenceNoDecayCalculator(statsDivergenceThreshold, queryPlanTTL),
@@ -223,7 +222,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CacheCounter()
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0, clock = clock))
+    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
 
@@ -243,7 +242,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CacheCounter()
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0, clock = clock))
+    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person) return n"
 
@@ -265,8 +264,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val logProvider = new AssertableLogProvider()
     val logName = "testlog"
-    val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0, clock = clock), log = logProvider.getLog(logName))
+    val clock: Clock = Clock.fixed(Instant.ofEpochMilli(10000L), ZoneOffset.UTC)
+    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock, log = logProvider.getLog(logName))
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
