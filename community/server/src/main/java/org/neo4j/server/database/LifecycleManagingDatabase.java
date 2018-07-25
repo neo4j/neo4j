@@ -35,7 +35,7 @@ import org.neo4j.logging.Log;
 public class LifecycleManagingDatabase implements Database
 {
     static final String CYPHER_WARMUP_QUERY =
-            "MATCH (a:` Arbitrary label name that really doesn't matter `) RETURN a LIMIT 0";
+            "MATCH (a:` This query is just used to load the cypher compiler during warmup. Please ignore `) RETURN a LIMIT 0";
 
     public interface GraphFactory
     {
