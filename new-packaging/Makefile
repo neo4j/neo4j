@@ -9,11 +9,7 @@ TARBALL_C := neo4j-community-$(VERSION)-unix.tar.gz
 TARBALL_E := neo4j-enterprise-$(VERSION)-unix.tar.gz
 ARTIFACTS := ../packaging/standalone/target
 TARBALLS := $(ARTIFACTS)/$(TARBALL_C) $(ARTIFACTS)/$(TARBALL_E)
-COMMUNITY_LICENSE := ../community/LICENSE.txt
-COMMUNITY_POM := ../community/pom.xml
-CYPHER_SHELL := ../packaging/standalone/src/main/distribution/cypher-shell
 OUT := out
-SHELL_SCRIPTS := ../packaging/standalone/src/main/distribution/shell-scripts/bin
 
 COMMON_FILES := $(shell find src/common -type f)
 RPM_FILES := $(shell find src/rpm -type f)
