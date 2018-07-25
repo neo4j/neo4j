@@ -171,8 +171,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         this.accessCapability = new ReadOnly();
 
-        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging, platformModule.jobScheduler, fileWatcherFileNameFilter() );
-        dependencies.satisfyDependencies( watcherService );
+        watcherServiceFactory = dir -> createFileSystemWatcherService( fileSystem, dir, logging, platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherServiceFactory );
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
@@ -264,8 +264,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LocalDatabase localDatabase =
                 new LocalDatabase( databaseDirectory, storeFiles, logFiles, platformModule.dataSourceManager,
-                        databaseHealthSupplier,
-                        watcherService, platformModule.availabilityGuard, logProvider );
+                        databaseHealthSupplier, platformModule.availabilityGuard, logProvider );
 
         Supplier<TransactionCommitProcess> writableCommitProcess = () -> new TransactionRepresentationCommitProcess(
                 localDatabase.dataSource().getDependencyResolver().resolveDependency( TransactionAppender.class ),

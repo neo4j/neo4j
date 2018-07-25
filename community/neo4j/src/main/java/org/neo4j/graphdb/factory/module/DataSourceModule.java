@@ -164,7 +164,8 @@ public class DataSourceModule
                 platformModule.databaseInfo,
                 platformModule.versionContextSupplier,
                 platformModule.collectionsFactorySupplier,
-                platformModule.kernelExtensionFactories ) );
+                platformModule.kernelExtensionFactories,
+                editionModule.watcherServiceFactory ) );
 
         dataSourceManager.register( neoStoreDataSource );
 

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -124,6 +125,7 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
@@ -152,7 +154,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
@@ -267,6 +268,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private NeoStoreTransactionLogModule transactionLogModule;
     private NeoStoreKernelModule kernelModule;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+    private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final boolean failOnCorruptedLogFiles;
 
     public NeoStoreDataSource( File databaseDirectory, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService, JobScheduler scheduler,
@@ -278,7 +280,8 @@ public class NeoStoreDataSource extends LifecycleAdapter
             Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock,
             AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IdController idController, DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories )
+            CollectionsFactorySupplier collectionsFactorySupplier, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
+            Function<File,FileSystemWatcherService> watcherServiceFactory )
     {
         this.databaseDirectory = databaseDirectory;
         this.config = config;
@@ -317,6 +320,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.databaseInfo = databaseInfo;
         this.versionContextSupplier = versionContextSupplier;
         this.kernelExtensionFactories = kernelExtensionFactories;
+        this.watcherServiceFactory = watcherServiceFactory;
         msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = commitProcessFactory;
@@ -341,6 +345,10 @@ public class NeoStoreDataSource extends LifecycleAdapter
         life.add( recoveryCleanupWorkCollector );
         dataSourceDependencies.satisfyDependency( lockService );
         life.add( indexConfigStore );
+
+        FileSystemWatcherService watcherService = watcherServiceFactory.apply( databaseDirectory );
+        life.add( watcherService );
+        dataSourceDependencies.satisfyDependency( watcherService );
 
         life.add( Lifecycles.multiple( explicitIndexProvider.allIndexProviders() ) );
 

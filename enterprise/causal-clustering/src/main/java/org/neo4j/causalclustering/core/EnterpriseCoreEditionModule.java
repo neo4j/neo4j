@@ -228,16 +228,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+        watcherServiceFactory = directory -> createFileSystemWatcherService( fileSystem, directory, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );
-        dependencies.satisfyDependencies( watcherService );
+        dependencies.satisfyDependencies( watcherServiceFactory );
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseDirectory );
         LocalDatabase localDatabase = new LocalDatabase( databaseDirectory,
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 logFiles,
                 platformModule.dataSourceManager,
                 databaseHealthSupplier,
-                watcherService,
                 platformModule.availabilityGuard,
                 logProvider );
 

@@ -44,7 +44,7 @@ public interface FileWatcher extends Closeable
      * Register provided directory in list of resources that we would like to watch and receive status modification
      * updates
      * @param file directory to be monitored for updates
-     * @return
+     * @return closable resource that represent watched file
      * @throws IOException
      */
     WatchedResource watch( File file ) throws IOException;

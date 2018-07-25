@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -106,7 +107,7 @@ public abstract class EditionModule
 
     public IdReuseEligibility eligibleForIdReuse;
 
-    public FileSystemWatcherService watcherService;
+    public Function<File, FileSystemWatcherService> watcherServiceFactory;
 
     public IdController idController;
 
@@ -116,16 +117,16 @@ public abstract class EditionModule
 
     public NetworkConnectionTracker connectionTracker;
 
-    protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
+    protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
             LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
     {
         try
         {
             RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );
             watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging, fileNameFilter ) );
-            watcher.watch( storeDir );
-            // register to watch store dir parent folder to see when store dir removed
-            watcher.watch( storeDir.getParentFile() );
+            watcher.watch( databaseDirectory );
+            // register to watch database dir parent folder to see when database dir removed
+            watcher.watch( databaseDirectory.getParentFile() );
             return new DefaultFileSystemWatcherService( jobScheduler, watcher );
         }
         catch ( Exception e )

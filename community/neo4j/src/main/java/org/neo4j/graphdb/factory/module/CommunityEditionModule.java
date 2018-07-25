@@ -92,10 +92,8 @@ public class CommunityEditionModule extends EditionModule
         LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
 
-        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+        watcherServiceFactory = databaseDir -> createFileSystemWatcherService( fileSystem, databaseDir, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );
-        dependencies.satisfyDependencies( watcherService );
-        life.add( watcherService );
 
         this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
