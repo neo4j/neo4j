@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -105,6 +103,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -215,7 +214,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 versionContextSupplier );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
-        this.userMetaData = new HashMap<>();
+        this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
         DefaultCursors cursors = new DefaultCursors( storageReader );
         AllStoreHolder allStoreHolder =
@@ -944,7 +943,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             hooksState = null;
             closeListeners.clear();
             reuseCount++;
-            userMetaData = Collections.emptyMap();
+            userMetaData = emptyMap();
             userTransactionId = 0;
             statistics.reset();
             operations.release();

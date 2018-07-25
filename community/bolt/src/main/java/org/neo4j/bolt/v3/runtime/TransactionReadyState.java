@@ -102,15 +102,10 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
 
     private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws Exception
     {
-        appendBookmarkInResponse( context );
-        return readyState;
-    }
-
-    static void appendBookmarkInResponse( StateMachineContext context ) throws KernelException
-    {
         StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
         Bookmark bookmark = statementProcessor.commitTransaction();
         bookmark.attachTo( context.connectionState() );
+        return readyState;
     }
 
     private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws Exception

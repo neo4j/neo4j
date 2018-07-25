@@ -30,9 +30,9 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.bolt.v3.messaging.request.BeginMessage.parseBookmark;
-import static org.neo4j.bolt.v3.messaging.request.BeginMessage.parseTransactionMetadata;
-import static org.neo4j.bolt.v3.messaging.request.BeginMessage.parseTransactionTimeout;
+import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseBookmark;
+import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionMetadata;
+import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionTimeout;
 
 public class RunMessage implements RequestMessage
 {

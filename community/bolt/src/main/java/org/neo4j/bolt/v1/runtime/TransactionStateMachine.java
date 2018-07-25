@@ -44,6 +44,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 public class TransactionStateMachine implements StatementProcessor
 {
     final TransactionStateMachineSPI spi;
@@ -367,6 +369,9 @@ public class TransactionStateMachine implements StatementProcessor
                             Duration ignored1, Map<String,Object> ignored2 )
                             throws KernelException
                     {
+                        checkState( ignored1 == null, "Explicit Transaction should not run with tx_timeout" );
+                        checkState( ignored2 == null, "Explicit Transaction should not run with tx_metadata" );
+
                         if ( statement.isEmpty() )
                         {
                             statement = ctx.lastStatement;
