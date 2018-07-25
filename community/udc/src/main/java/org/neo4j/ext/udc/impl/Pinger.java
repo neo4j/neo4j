@@ -50,11 +50,11 @@ class Pinger
 
         StringBuilder uri = new StringBuilder( "http://" + address + "/" + "?" );
 
-        for ( String key : usageDataMap.keySet() )
+        for ( Map.Entry<String,String> entry : usageDataMap.entrySet() )
         {
-            uri.append( key );
+            uri.append( entry.getKey() );
             uri.append( "=" );
-            uri.append( URLEncoder.encode( usageDataMap.get( key ), StandardCharsets.UTF_8.name() ) );
+            uri.append( URLEncoder.encode( entry.getValue(), StandardCharsets.UTF_8.name() ) );
             uri.append( "+" );
         }
 

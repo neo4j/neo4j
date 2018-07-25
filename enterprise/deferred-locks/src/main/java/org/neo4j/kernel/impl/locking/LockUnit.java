@@ -109,10 +109,10 @@ public class LockUnit implements Comparable<LockUnit>, ActiveLock
     public int compareTo( LockUnit o )
     {
         // Exclusive locks go first to minimize amount of potential deadlocks
-        int exclusiveCompare = Boolean.compare( exclusive, o.exclusive );
+        int exclusiveCompare = Boolean.compare( o.exclusive, exclusive );
         if ( exclusiveCompare != 0 )
         {
-            return -exclusiveCompare;
+            return exclusiveCompare;
         }
 
         // Then shared/exclusive locks are compared by resourceTypeId and then by resourceId

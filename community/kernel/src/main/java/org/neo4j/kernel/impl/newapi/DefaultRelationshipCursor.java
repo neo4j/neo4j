@@ -28,7 +28,6 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
 {
     private boolean hasChanges;
     private boolean checkHasChanges;
-    private PropertyCursor propertyCursor;
     final DefaultCursors pool;
     Read read;
 

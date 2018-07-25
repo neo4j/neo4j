@@ -57,7 +57,7 @@ public final class CompiledHelpers
     {
         if ( !ctx.contains( name ) )
         {
-            throw new NotFoundException( String.format( "Unknown variable `%s`." ) );
+            throw new NotFoundException( String.format( "Unknown variable `%s`.", name ) );
         }
         return ctx.apply( name );
     }
