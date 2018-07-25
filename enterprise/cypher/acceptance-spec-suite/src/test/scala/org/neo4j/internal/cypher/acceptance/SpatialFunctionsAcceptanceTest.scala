@@ -57,13 +57,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     )
   }
 
-  test("point function should throw on unrecognized map entry") {
-    val exception = intercept[InvalidArgumentException] (
-      executeWithAllPlanners("RETURN point({x: 2, y:3, a: 4}) as point")
-    )
-    exception.getMessage should be("Unknown key 'a' for creating new point")
-  }
-
   test("point function should work with integer arguments") {
     val result = executeWithAllPlanners("RETURN point({x: 2, y: 4}) as point")
     result should useProjectionWith("Point")
