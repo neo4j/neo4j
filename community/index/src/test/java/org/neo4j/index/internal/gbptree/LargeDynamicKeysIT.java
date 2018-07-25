@@ -56,7 +56,7 @@ public class LargeDynamicKeysIT
     {
         Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout();
         try ( GBPTree<RawBytes,RawBytes> index = createIndex( layout );
-              Writer<RawBytes,RawBytes> writer = index.writer())
+              Writer<RawBytes,RawBytes> writer = index.writer() )
         {
             RawBytes emptyValue = layout.newValue();
             emptyValue.bytes = new byte[0];

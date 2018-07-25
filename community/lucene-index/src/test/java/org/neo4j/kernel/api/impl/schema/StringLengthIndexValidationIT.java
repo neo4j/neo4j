@@ -88,7 +88,8 @@ public class StringLengthIndexValidationIT
         catch ( IllegalArgumentException e )
         {
             assertThat( e.getMessage(), Matchers.containsString( String.format(
-                    "Property value bytes length: %d is longer than %d, which is maximum supported length of indexed property value", keySizeLimit + 1, keySizeLimit ) ) );
+                    "Property value bytes length: %d is longer than %d, which is maximum supported length of indexed property value",
+                    keySizeLimit + 1, keySizeLimit ) ) );
         }
     }
 
