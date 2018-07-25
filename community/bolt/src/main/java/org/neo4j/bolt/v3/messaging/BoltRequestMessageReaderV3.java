@@ -35,6 +35,7 @@ import org.neo4j.bolt.v1.messaging.decoder.PullAllMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;
+import org.neo4j.bolt.v3.messaging.decoder.GoodbyeMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RollbackMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder;
@@ -66,7 +67,8 @@ public class BoltRequestMessageReaderV3 extends BoltRequestMessageReader
                 new BeginMessageDecoder( defaultHandler ),
                 new CommitMessageDecoder( resultHandler ),
                 new RollbackMessageDecoder( resultHandler ),
-                new ResetMessageDecoder( connection, defaultHandler, messageLogger )
+                new ResetMessageDecoder( connection, defaultHandler, messageLogger ),
+                new GoodbyeMessageDecoder( connection, defaultHandler )
         );
     }
 

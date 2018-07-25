@@ -35,17 +35,18 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v1.runtime.InterruptedState;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.FailedState;
+import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v3.runtime.StreamingState;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -56,6 +57,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
 class StreamingStateIT extends BoltStateMachineStateTestBase
@@ -148,12 +150,13 @@ class StreamingStateIT extends BoltStateMachineStateTestBase
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
-        assertThat( machine.state(), instanceOf( StreamingState.class ) );
+        assertNull( machine.state() );
     }
 
     private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
     {
-        return Stream.of( newHelloMessage(), new RunMessage( "any string" ), new BeginMessage(), ROLLBACK_MESSAGE, COMMIT_MESSAGE, ResetMessage.INSTANCE );
+        return Stream.of( newHelloMessage(), new RunMessage( "any string" ), new BeginMessage(), ROLLBACK_MESSAGE, COMMIT_MESSAGE, ResetMessage.INSTANCE,
+                GOODBYE_MESSAGE );
     }
 
     private static Stream<RequestMessage> pullAllDiscardAllMessages()

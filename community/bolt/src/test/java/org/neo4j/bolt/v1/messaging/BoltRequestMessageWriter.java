@@ -30,6 +30,7 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.bolt.v3.messaging.request.GoodbyeMessage;
 import org.neo4j.kernel.impl.util.ValueUtils;
 
 public class BoltRequestMessageWriter
@@ -67,11 +68,27 @@ public class BoltRequestMessageWriter
         {
             writePullAll();
         }
+        else if ( message instanceof GoodbyeMessage )
+        {
+            writeGoodbye();
+        }
         else
         {
             throw new IllegalArgumentException( "Unknown message: " + message );
         }
         return this;
+    }
+
+    private void writeGoodbye()
+    {
+        try
+        {
+            packer.packStructHeader( 0, GoodbyeMessage.SIGNATURE );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     private void writeInit( InitMessage message )

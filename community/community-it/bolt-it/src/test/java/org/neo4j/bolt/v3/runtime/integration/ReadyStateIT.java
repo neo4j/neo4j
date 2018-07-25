@@ -33,12 +33,11 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v1.runtime.InterruptedState;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.FailedState;
-import org.neo4j.bolt.v3.runtime.ReadyState;
+import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.StreamingState;
 import org.neo4j.bolt.v3.runtime.TransactionReadyState;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,6 +54,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
 class ReadyStateIT extends BoltStateMachineStateTestBase
@@ -172,12 +173,12 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
-        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+        assertNull( machine.state() );
     }
 
     private static Stream<RequestMessage> illegalV3Messages()
     {
-        return Stream.of( newHelloMessage(), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, COMMIT_MESSAGE, ROLLBACK_MESSAGE );
+        return Stream.of( newHelloMessage(), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, COMMIT_MESSAGE, ROLLBACK_MESSAGE, GOODBYE_MESSAGE );
     }
 
     private static Stream<RequestMessage> illegalV2Messages()

@@ -20,12 +20,10 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
@@ -41,28 +39,22 @@ import static org.neo4j.values.storable.Values.stringArray;
 public class TransactionReadyState extends FailSafeBoltStateMachineState
 {
     private BoltStateMachineState streamingState;
-    private BoltStateMachineState interruptedState;
     private BoltStateMachineState readyState;
 
     @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
     {
-        assertInitialized();
         if ( message instanceof RunMessage )
         {
-            return processMessage( context, () -> processRunMessage( (RunMessage) message, context ) );
+            return processRunMessage( (RunMessage) message, context );
         }
         if ( message instanceof CommitMessage )
         {
-            return processMessage( context, () -> processCommitMessage( context ) );
+            return processCommitMessage( context );
         }
         if ( message instanceof RollbackMessage )
         {
-            return processMessage( context, () -> processRollbackMessage( context ) );
-        }
-        if ( message instanceof InterruptSignal )
-        {
-            return interruptedState;
+            return processRollbackMessage( context );
         }
         return null;
     }
@@ -76,11 +68,6 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
     public void setTransactionStreamingState( BoltStateMachineState streamingState )
     {
         this.streamingState = streamingState;
-    }
-
-    public void setInterruptedState( BoltStateMachineState interruptedState )
-    {
-        this.interruptedState = interruptedState;
     }
 
     public void setReadyState( BoltStateMachineState readyState )
@@ -115,11 +102,11 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
         return readyState;
     }
 
-    private void assertInitialized()
+    @Override
+    protected void assertInitialized()
     {
         checkState( streamingState != null, "Streaming state not set" );
-        checkState( interruptedState != null, "Interrupted state not set" );
         checkState( readyState != null, "Ready state not set" );
-        checkState( failedState != null, "Failed state not set" );
+        super.assertInitialized();
     }
 }

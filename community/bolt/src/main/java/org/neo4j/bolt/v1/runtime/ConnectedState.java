@@ -23,14 +23,11 @@ import java.util.Map;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
-import org.neo4j.values.storable.Values;
 
+import static org.neo4j.bolt.v1.runtime.BoltAuthenticationResult.processAuthentication;
 import static org.neo4j.util.Preconditions.checkState;
 
 /**
@@ -51,7 +48,18 @@ public class ConnectedState implements BoltStateMachineState
         assertInitialized();
         if ( message instanceof InitMessage )
         {
-            return processInitMessage( (InitMessage) message, context );
+            InitMessage initMessage = (InitMessage) message;
+            String userAgent = initMessage.userAgent();
+            Map<String,Object> authToken = initMessage.authToken();
+
+            if ( processAuthentication( userAgent, authToken, context ) )
+            {
+                return readyState;
+            }
+            else
+            {
+                return failedState;
+            }
         }
         return null;
     }
@@ -70,43 +78,6 @@ public class ConnectedState implements BoltStateMachineState
     public void setFailedState( BoltStateMachineState failedState )
     {
         this.failedState = failedState;
-    }
-
-    private BoltStateMachineState processInitMessage( InitMessage message, StateMachineContext context ) throws BoltConnectionFatality
-    {
-        String userAgent = message.userAgent();
-        Map<String,Object> authToken = message.authToken();
-
-        try
-        {
-            AuthenticationResult authResult = context.boltSpi().authenticate( authToken );
-            String username = authResult.getLoginContext().subject().username();
-            context.authenticatedAsUser( username );
-
-            StatementProcessor statementProcessor = newStatementProcessor( username, userAgent, authResult, context );
-            context.connectionState().setStatementProcessor( statementProcessor );
-
-            if ( authResult.credentialsExpired() )
-            {
-                context.connectionState().onMetadata( "credentials_expired", Values.TRUE );
-            }
-            context.connectionState().onMetadata( "server", Values.stringValue( context.boltSpi().version() ) );
-            context.boltSpi().udcRegisterClient( userAgent );
-
-            return readyState;
-        }
-        catch ( Throwable t )
-        {
-            context.handleFailure( t, true );
-            return failedState;
-        }
-    }
-
-    private static StatementProcessor newStatementProcessor( String username, String userAgent, AuthenticationResult authResult, StateMachineContext context )
-    {
-        TransactionStateMachine statementProcessor = new TransactionStateMachine( context.boltSpi().transactionSpi(), authResult, context.clock() );
-        statementProcessor.setQuerySource( new BoltQuerySource( username, userAgent, context.boltSpi().connectionDescriptor() ) );
-        return statementProcessor;
     }
 
     private void assertInitialized()

@@ -20,16 +20,13 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.util.Preconditions.checkState;
@@ -46,27 +43,21 @@ import static org.neo4j.values.storable.Values.stringArray;
 public class ReadyState extends FailSafeBoltStateMachineState
 {
     private BoltStateMachineState streamingState;
-    private BoltStateMachineState interruptedState;
     private BoltStateMachineState txReadyState;
 
     static final String FIELDS_KEY = "fields";
     static final String FIRST_RECORD_AVAILABLE_KEY = "t_first";
 
     @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
     {
-        assertInitialized();
         if ( message instanceof RunMessage )
         {
-            return processMessage( context, () -> processRunMessage( (RunMessage) message, context ) );
+            return processRunMessage( (RunMessage) message, context );
         }
         if ( message instanceof BeginMessage )
         {
-            return processMessage( context, () -> processBeginMessage( (BeginMessage) message, context ) );
-        }
-        if ( message instanceof InterruptSignal )
-        {
-            return interruptedState;
+            return processBeginMessage( (BeginMessage) message, context );
         }
         return null;
     }
@@ -80,11 +71,6 @@ public class ReadyState extends FailSafeBoltStateMachineState
     public void setStreamingState( BoltStateMachineState streamingState )
     {
         this.streamingState = streamingState;
-    }
-
-    public void setInterruptedState( BoltStateMachineState interruptedState )
-    {
-        this.interruptedState = interruptedState;
     }
 
     public void setTransactionReadyState( BoltStateMachineState txReadyState )
@@ -113,12 +99,12 @@ public class ReadyState extends FailSafeBoltStateMachineState
         return txReadyState;
     }
 
-    private void assertInitialized()
+    @Override
+    protected void assertInitialized()
     {
         checkState( streamingState != null, "Streaming state not set" );
-        checkState( interruptedState != null, "Interrupted state not set" );
-        checkState( failedState != null, "Failed state not set" );
         checkState( txReadyState != null, "TransactionReady state not set" );
+        super.assertInitialized();
     }
 
 }

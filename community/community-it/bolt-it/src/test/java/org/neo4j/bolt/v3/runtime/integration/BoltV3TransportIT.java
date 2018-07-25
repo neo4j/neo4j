@@ -21,17 +21,10 @@ package org.neo4j.bolt.v3.runtime.integration;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,17 +33,9 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -66,62 +51,22 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
-import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newMessageEncoder;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-@RunWith( Parameterized.class )
-public class BoltV3TransportIT
+public class BoltV3TransportIT extends BoltV3TransportBase
 {
-    private static final String USER_AGENT = "TestClient/3.0";
-
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> settings.put( auth_enabled.name(), "false" ) );
-
-    @Parameter
-    public Class<? extends TransportConnection> connectionClass;
-
-    private HostnamePort address;
-    private TransportConnection connection;
-    private TransportTestUtil util;
-
-    @Parameters( name = "{0}" )
-    public static List<Class<? extends TransportConnection>> transports()
-    {
-        return asList( SocketConnection.class, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
-    }
-
-    @Before
-    public void setUp() throws Exception
-    {
-        address = server.lookupDefaultConnector();
-        connection = connectionClass.newInstance();
-        util = new TransportTestUtil( newNeo4jPack(), newMessageEncoder() );
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        if ( connection != null )
-        {
-            connection.disconnect();
-        }
-    }
-
     @Test
     public void shouldNegotiateProtocolV3() throws Exception
     {
@@ -525,16 +470,6 @@ public class BoltV3TransportIT
         connection.send( util.chunk( 32, runMessage( metadata ) ) );
 
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
-    }
-
-    private void negotiateBoltV3() throws Exception
-    {
-        connection.connect( address )
-                .send( util.acceptedVersions( 3, 0, 0, 0 ) )
-                .send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
-
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
     private byte[] beginMessage( Map<String,Object> metadata ) throws IOException

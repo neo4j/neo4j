@@ -31,9 +31,9 @@ import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v1.runtime.ConnectedState;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
@@ -44,11 +44,13 @@ import org.neo4j.kernel.internal.Version;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachineV1SPI.BOLT_SERVER_VERSION_PREFIX;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
 class ConnectedStateIT extends BoltStateMachineStateTestBase
@@ -95,13 +97,13 @@ class ConnectedStateIT extends BoltStateMachineStateTestBase
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
-        assertThat( machine.state(), instanceOf( ConnectedState.class ) );
+        assertNull( machine.state() );
     }
 
     private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
     {
         return Stream.of( new RunMessage( "RETURN 1", EMPTY_PARAMS, EMPTY_PARAMS ), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new BeginMessage(),
-                COMMIT_MESSAGE, ROLLBACK_MESSAGE, ResetMessage.INSTANCE );
+                COMMIT_MESSAGE, ROLLBACK_MESSAGE, InterruptSignal.INSTANCE, ResetMessage.INSTANCE, GOODBYE_MESSAGE );
     }
 
     private static Stream<RequestMessage> illegalV2Messages()

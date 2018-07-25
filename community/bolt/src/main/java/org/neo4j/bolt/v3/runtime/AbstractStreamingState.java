@@ -20,11 +20,9 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
-import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 
 import static org.neo4j.util.Preconditions.checkState;
@@ -37,23 +35,17 @@ import static org.neo4j.util.Preconditions.checkState;
 public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState
 {
     protected BoltStateMachineState readyState;
-    private BoltStateMachineState interruptedState;
 
     @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
-        assertInitialized();
         if ( message instanceof PullAllMessage )
         {
-            return processPullAllMessage( context );
+            return processStreamResultMessage( true, context );
         }
         if ( message instanceof DiscardAllMessage )
         {
-            return processDiscardAllMessage( context );
-        }
-        if ( message instanceof InterruptSignal )
-        {
-            return interruptedState;
+            return processStreamResultMessage( false, context );
         }
         return null;
     }
@@ -63,27 +55,12 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
         this.readyState = readyState;
     }
 
-    public void setInterruptedState( BoltStateMachineState interruptedState )
-    {
-        this.interruptedState = interruptedState;
-    }
-
-    private BoltStateMachineState processPullAllMessage( StateMachineContext context ) throws BoltConnectionFatality
-    {
-        return processMessage( context, () -> processStreamResultMessage( true, context ) );
-    }
-
-    private BoltStateMachineState processDiscardAllMessage( StateMachineContext context ) throws BoltConnectionFatality
-    {
-        return processMessage( context, () -> processStreamResultMessage( false, context ) );
-    }
-
     abstract BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws Throwable;
 
-    private void assertInitialized()
+    @Override
+    protected void assertInitialized()
     {
         checkState( readyState != null, "Ready state not set" );
-        checkState( interruptedState != null, "Interrupted state not set" );
-        checkState( failedState != null, "Failed state not set" );
+        super.assertInitialized();
     }
 }

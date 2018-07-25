@@ -28,7 +28,6 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.v1.runtime.ConnectedState;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.values.storable.StringValue;
 
@@ -44,7 +43,7 @@ import static org.neo4j.kernel.api.security.AuthToken.CREDENTIALS;
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ExtraMetaDataConnectedStateTest
+class ConnectedStateTest
 {
     @Test
     void shouldAddServerVersionMetadataOnHelloMessage() throws Exception
@@ -55,16 +54,14 @@ class ExtraMetaDataConnectedStateTest
         HelloMessage helloMessage = new HelloMessage( meta );
 
         // setup state machine
-        ConnectedState state = new ExtraMetaDataConnectedState();
+        ConnectedState state = new ConnectedState();
         BoltStateMachineState readyState = mock( BoltStateMachineState.class );
-        BoltStateMachineState failedState = mock( BoltStateMachineState.class );
 
         StateMachineContext context = mock( StateMachineContext.class );
         BoltStateMachineSPI boltSpi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
         MutableConnectionState connectionState = new MutableConnectionState();
 
         state.setReadyState( readyState );
-        state.setFailedState( failedState );
 
         when( context.boltSpi() ).thenReturn( boltSpi );
         when( context.connectionState() ).thenReturn( connectionState );

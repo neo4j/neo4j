@@ -24,56 +24,58 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
-import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 
 import static org.neo4j.util.Preconditions.checkState;
 
-public abstract class FailSafeBoltStateMachineState implements BoltStateMachineState
+/**
+ * If the state machine has been INTERRUPTED then a RESET message
+ * has entered the queue and is waiting to be processed. The initial
+ * interrupt forces the current statement to stop and all subsequent
+ * requests to be IGNORED until the RESET itself is processed.
+ */
+public class InterruptedState implements BoltStateMachineState
 {
-    private BoltStateMachineState failedState;
-    private BoltStateMachineState interruptedState;
+    private BoltStateMachineState readyState;
 
     @Override
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         assertInitialized();
-
         if ( message instanceof InterruptSignal )
         {
-            return interruptedState;
+            return this;
         }
-
-        try
+        if ( message instanceof ResetMessage )
         {
-            return processUnsafe( message, context );
+            if ( context.connectionState().decrementInterruptCounter() > 0 )
+            {
+                context.connectionState().markIgnored();
+                return this;
+            }
+            boolean success = context.resetMachine();
+            return success ? readyState : null;
         }
-        catch ( AuthorizationExpiredException e )
+        else
         {
-            context.handleFailure( e, true );
-            return failedState;
-        }
-        catch ( Throwable t )
-        {
-            context.handleFailure( t, false );
-            return failedState;
+            context.connectionState().markIgnored();
+            return this;
         }
     }
 
-    public void setFailedState( BoltStateMachineState failedState )
+    @Override
+    public String name()
     {
-        this.failedState = failedState;
+        return "INTERRUPTED";
     }
 
-    public void setInterruptedState( BoltStateMachineState interruptedState )
+    public void setReadyState( BoltStateMachineState readyState )
     {
-        this.interruptedState = interruptedState;
+        this.readyState = readyState;
     }
 
-    protected void assertInitialized()
+    private void assertInitialized()
     {
-        checkState( failedState != null, "Failed state not set" );
-        checkState( interruptedState != null, "Interrupted state not set" );
+        checkState( readyState != null, "Ready state not set" );
     }
-
-    protected abstract BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable;
 }

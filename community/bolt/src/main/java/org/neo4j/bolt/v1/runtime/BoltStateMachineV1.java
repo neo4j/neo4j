@@ -61,7 +61,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
     private final String id;
     private final BoltChannel boltChannel;
     private final BoltStateMachineSPI spi;
-    private final MutableConnectionState connectionState;
+    protected final MutableConnectionState connectionState;
     private final StateMachineContext context;
 
     private BoltStateMachineState state;
@@ -88,7 +88,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
         {
             if ( message.safeToProcessInAnyState() || connectionState.canProcessMessage() )
             {
-                state = nextState( message, context );
+                nextState( message, context );
             }
         }
         finally
@@ -105,12 +105,12 @@ public class BoltStateMachineV1 implements BoltStateMachine
         }
         else if ( connectionState.isInterrupted() )
         {
-            state = nextState( InterruptSignal.INSTANCE, context );
+            nextState( InterruptSignal.INSTANCE, context );
         }
         connectionState.setResponseHandler( handler );
     }
 
-    private void after()
+    protected void after()
     {
         if ( connectionState.getResponseHandler() != null )
         {
@@ -137,16 +137,16 @@ public class BoltStateMachineV1 implements BoltStateMachine
         }
     }
 
-    private BoltStateMachineState nextState( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    private void nextState( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
-        BoltStateMachineState newState = state.process( message, context );
-        if ( newState == null )
+        BoltStateMachineState preState = state;
+        state = state.process( message, context );
+        if ( state == null )
         {
-            String msg = "Message '" + message + "' cannot be handled by a session in the " + state.name() + " state.";
+            String msg = "Message '" + message + "' cannot be handled by a session in the " + preState.name() + " state.";
             fail( Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
-        return newState;
     }
 
     @Override

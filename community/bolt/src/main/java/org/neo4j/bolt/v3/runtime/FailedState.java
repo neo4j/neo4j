@@ -26,7 +26,7 @@ import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.bolt.v3.messaging.request.RunMessage;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -57,26 +57,24 @@ public class FailedState implements BoltStateMachineState
         return null;
     }
 
+    public void setInterruptedState( BoltStateMachineState interruptedState )
+    {
+        this.interruptedState = interruptedState;
+    }
+
+    protected void assertInitialized()
+    {
+        checkState( interruptedState != null, "Interrupted state not set" );
+    }
+
     @Override
     public String name()
     {
         return "FAILED";
     }
 
-    public void setInterruptedState( BoltStateMachineState interruptedState )
-    {
-        this.interruptedState = interruptedState;
-    }
-
-    private void assertInitialized()
-    {
-        checkState( interruptedState != null, "Interrupted state not set" );
-    }
-
     private static boolean shouldIgnore( RequestMessage message )
     {
-        return message instanceof RunMessage ||
-               message instanceof PullAllMessage ||
-               message instanceof DiscardAllMessage;
+        return message instanceof RunMessage || message instanceof PullAllMessage || message instanceof DiscardAllMessage;
     }
 }

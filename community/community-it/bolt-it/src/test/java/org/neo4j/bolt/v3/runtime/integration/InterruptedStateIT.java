@@ -34,9 +34,9 @@ import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.bolt.v1.runtime.InterruptedState;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
+import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -45,6 +45,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
 class InterruptedStateIT extends BoltStateMachineStateTestBase
@@ -130,6 +131,6 @@ class InterruptedStateIT extends BoltStateMachineStateTestBase
     private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
     {
         return Stream.of( newHelloMessage(), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new BeginMessage(), COMMIT_MESSAGE, ROLLBACK_MESSAGE,
-                new RunMessage( "A cypher query" ) );
+                new RunMessage( "A cypher query" ), GOODBYE_MESSAGE );
     }
 }

@@ -19,13 +19,17 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import java.util.Map;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.runtime.ConnectedState;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.values.storable.Values;
+
+import static org.neo4j.bolt.v1.runtime.BoltAuthenticationResult.processAuthentication;
+import static org.neo4j.util.Preconditions.checkState;
 
 /**
  * Following the socket connection and a small handshake exchange to
@@ -34,19 +38,48 @@ import org.neo4j.values.storable.Values;
  * correctly authorised HELLO into the READY state. Any other action
  * results in disconnection.
  */
-public class ExtraMetaDataConnectedState extends ConnectedState
+public class ConnectedState implements BoltStateMachineState
 {
     private static final String CONNECTION_ID_KEY = "connection_id";
+
+    private BoltStateMachineState readyState;
 
     @Override
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
+        assertInitialized();
         if ( message instanceof HelloMessage )
         {
-            BoltStateMachineState processResult = super.process( message, context );
-            context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.stringValue( context.connectionId() ) );
-            return processResult;
+            HelloMessage helloMessage = (HelloMessage) message;
+            String userAgent = helloMessage.userAgent();
+            Map<String,Object> authToken = helloMessage.authToken();
+
+            if ( processAuthentication( userAgent, authToken, context ) )
+            {
+                context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.stringValue( context.connectionId() ) );
+                return readyState;
+            }
+            else
+            {
+                return null;
+            }
         }
         return null;
+    }
+
+    @Override
+    public String name()
+    {
+        return "CONNECTED";
+    }
+
+    public void setReadyState( BoltStateMachineState readyState )
+    {
+        this.readyState = readyState;
+    }
+
+    private void assertInitialized()
+    {
+        checkState( readyState != null, "Ready state not set" );
     }
 }

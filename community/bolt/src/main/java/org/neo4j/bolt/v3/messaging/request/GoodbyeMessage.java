@@ -17,27 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime;
+package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.runtime.BoltStateMachine;
 
 /**
- * This is a place holder for the states that require a failed state but the state machine shall be terminated.
+ * On decoding of a {@link GoodbyeMessage}, we immediately stop whatever the connection is doing and shut down this connection.
+ * As the {@link BoltStateMachine} with this connection will also shut down at the same time,
+ * this message will actually NEVER be handled by {@link BoltStateMachine}.
  */
-public class DefunctState implements BoltStateMachineState
+public class GoodbyeMessage implements RequestMessage
 {
-    @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    public static final byte SIGNATURE = 0x02;
+    public static final GoodbyeMessage GOODBYE_MESSAGE = new GoodbyeMessage();
+
+    private GoodbyeMessage()
     {
-        return null;
+        // left empty on purpose
     }
 
     @Override
-    public String name()
+    public boolean safeToProcessInAnyState()
     {
-        return "DEFUNCT";
+        return true;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "GOODBYE";
     }
 }
