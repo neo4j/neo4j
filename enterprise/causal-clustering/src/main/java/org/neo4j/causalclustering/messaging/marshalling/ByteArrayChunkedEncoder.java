@@ -25,18 +25,18 @@ package org.neo4j.causalclustering.messaging.marshalling;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public class ByteArrayChunkedEncoder implements ChunkedEncoder
 {
     private static final int CHUNK_SIZE = 8 * 1024;
     private final byte[] content;
-    private final ByteArrayInputStream inputStream;
     private final int chunkSize;
+    private int pos = 0;
 
     ByteArrayChunkedEncoder( byte[] content, int chunkSize )
     {
@@ -50,7 +50,6 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
         {
             throw new IllegalArgumentException( "Illegal chunk size. Must be at least " + minChunkSize );
         }
-        inputStream = new ByteArrayInputStream( content );
         this.content = content;
         this.chunkSize = chunkSize;
     }
@@ -61,14 +60,14 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
     }
 
     @Override
-    public ByteBuf encodeChunk( ByteBufAllocator allocator ) throws IOException
+    public ByteBuf encodeChunk( ByteBufAllocator allocator )
     {
         if ( isEndOfInput() )
         {
             return null;
         }
         int extraBytes = isFirst() ? Integer.BYTES : 0;
-        int toWrite = Math.min( inputStream.available() + extraBytes, chunkSize );
+        int toWrite = Math.min( available() + extraBytes, chunkSize );
         ByteBuf buffer = allocator.buffer( toWrite );
         try
         {
@@ -77,7 +76,8 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
                 buffer.writeInt( content.length );
                 toWrite -= extraBytes;
             }
-            buffer.writeBytes( inputStream, toWrite );
+            buffer.writeBytes( content, pos, toWrite );
+            pos += toWrite;
             return buffer;
         }
         catch ( Throwable t )
@@ -87,15 +87,20 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
         }
     }
 
+    private int available()
+    {
+        return content.length - pos;
+    }
+
     private boolean isFirst()
     {
-        return inputStream.available() == content.length;
+        return pos == 0;
     }
 
     @Override
     public boolean isEndOfInput()
     {
-        return inputStream.available() == 0;
+        return pos == content.length;
     }
 
     @Override
