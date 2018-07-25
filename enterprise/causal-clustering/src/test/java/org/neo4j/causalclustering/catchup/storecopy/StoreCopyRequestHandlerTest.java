@@ -28,9 +28,16 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
+import org.neo4j.causalclustering.catchup.CheckPointerService;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.StoreCopyRequest;
@@ -44,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.junit.Assert.assertEquals;
@@ -59,10 +67,13 @@ public class StoreCopyRequestHandlerTest
     private final DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
     private final NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
-    private final CheckPointer checkPointer = new FakeCheckPointer();
+    private final FakeCheckPointer checkPointer = new FakeCheckPointer();
     private final PageCache pageCache = mock( PageCache.class );
     private EmbeddedChannel embeddedChannel;
     private CatchupServerProtocol catchupServerProtocol;
+    private JobScheduler jobScheduler = new FakeSingleThreadedJobScheduler();
+    private CheckPointerService checkPointerService =
+            new CheckPointerService( () -> checkPointer, jobScheduler, JobScheduler.Groups.checkPoint );
 
     @Before
     public void setup()
@@ -70,7 +81,7 @@ public class StoreCopyRequestHandlerTest
         catchupServerProtocol = new CatchupServerProtocol();
         catchupServerProtocol.expect( CatchupServerProtocol.State.GET_STORE_FILE );
         StoreCopyRequestHandler storeCopyRequestHandler =
-                new NiceStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, () -> checkPointer, new StoreFileStreamingProtocol(),
+                new NiceStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, checkPointerService, new StoreFileStreamingProtocol(),
                         pageCache, fileSystemAbstraction, NullLogProvider.getInstance() );
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
         embeddedChannel = new EmbeddedChannel( storeCopyRequestHandler );
@@ -122,10 +133,10 @@ public class StoreCopyRequestHandlerTest
     }
 
     @Test
-    public void shoulResetProtoclAndGiveErrorIfFilesThrowException()
+    public void shouldResetProtocolAndGiveErrorIfFilesThrowException()
     {
         EmbeddedChannel alternativeChannel = new EmbeddedChannel(
-                new EvilStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, () -> checkPointer, new StoreFileStreamingProtocol(),
+                new EvilStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, checkPointerService, new StoreFileStreamingProtocol(),
                         pageCache, fileSystemAbstraction, NullLogProvider.getInstance() ) );
         try
         {
@@ -134,7 +145,7 @@ public class StoreCopyRequestHandlerTest
         }
         catch ( IllegalStateException ignore )
         {
-
+            // do nothing
         }
         assertEquals( ResponseMessageType.STORE_COPY_FINISHED, alternativeChannel.readOutbound() );
         StoreCopyFinishedResponse expectedResponse = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.E_UNKNOWN );
@@ -143,13 +154,38 @@ public class StoreCopyRequestHandlerTest
         assertTrue( catchupServerProtocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) );
     }
 
+    @Test
+    public void transactionsTooFarBehindStartCheckpointAsynchronously() throws IOException
+    {
+        // given checkpoint will fail if performed
+        checkPointer._tryCheckPoint = Optional.empty();
+
+        // when
+        try
+        {
+            embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 123 ) );
+            fail();
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( "FakeCheckPointer", e.getMessage() );
+        }
+
+        // then should have received error message
+        assertEquals( ResponseMessageType.STORE_COPY_FINISHED, embeddedChannel.readOutbound() );
+
+        // and should have failed on async
+        assertEquals( 1, checkPointer.invocationCounter.get() );
+        assertEquals( 1, checkPointer.failCounter.get() );
+    }
+
     private class NiceStoreCopyRequestHandler extends StoreCopyRequestHandler<StoreCopyRequest>
     {
         private NiceStoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                CheckPointerService checkPointerService, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
                 FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+            super( protocol, dataSource, checkPointerService, storeFileStreamingProtocol, pageCache, fs, logProvider );
         }
 
         @Override
@@ -162,10 +198,10 @@ public class StoreCopyRequestHandlerTest
     private class EvilStoreCopyRequestHandler extends StoreCopyRequestHandler<StoreCopyRequest>
     {
         private EvilStoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                CheckPointerService checkPointerService, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
                 FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+            super( protocol, dataSource, checkPointerService, storeFileStreamingProtocol, pageCache, fs, logProvider );
         }
 
         @Override
@@ -177,28 +213,126 @@ public class StoreCopyRequestHandlerTest
 
     private class FakeCheckPointer implements CheckPointer
     {
+        Optional<Long> _checkPointIfNeeded = Optional.of( 1L );
+        Optional<Long> _tryCheckPoint = Optional.of( 1L );
+        Optional<Long> _forceCheckPoint = Optional.of( 1L );
+        Optional<Long> _lastCheckPointedTransactionId = Optional.of( 1L );
+        Supplier<RuntimeException> exceptionIfEmpty = () -> new RuntimeException( "FakeCheckPointer" );
+        AtomicInteger invocationCounter = new AtomicInteger();
+        AtomicInteger failCounter = new AtomicInteger();
+
         @Override
         public long checkPointIfNeeded( TriggerInfo triggerInfo )
         {
-            return 1;
+            incrementInvocationCounter( _checkPointIfNeeded );
+            return _checkPointIfNeeded.orElseThrow( exceptionIfEmpty );
         }
 
         @Override
         public long tryCheckPoint( TriggerInfo triggerInfo )
         {
-            return 1;
+            incrementInvocationCounter( _tryCheckPoint );
+            return _tryCheckPoint.orElseThrow( exceptionIfEmpty );
         }
 
         @Override
         public long forceCheckPoint( TriggerInfo triggerInfo )
         {
-            return 1;
+            incrementInvocationCounter( _forceCheckPoint );
+            return _forceCheckPoint.orElseThrow( exceptionIfEmpty );
         }
 
         @Override
         public long lastCheckPointedTransactionId()
         {
-            return 1;
+            incrementInvocationCounter( _lastCheckPointedTransactionId );
+            return _lastCheckPointedTransactionId.orElseThrow( exceptionIfEmpty );
+        }
+
+        private void incrementInvocationCounter( Optional<Long> variable )
+        {
+            if ( variable.isPresent() )
+            {
+                invocationCounter.getAndIncrement();
+                return;
+            }
+            failCounter.getAndIncrement();
+        }
+    }
+
+    class FakeSingleThreadedJobScheduler implements JobScheduler
+    {
+        @Override
+        public void setTopLevelGroupName( String name )
+        {
+            // do nothing
+        }
+
+        @Override
+        public Executor executor( Group group )
+        {
+            throw new RuntimeException( "Unimplemented" );
+        }
+
+        @Override
+        public ExecutorService workStealingExecutor( Group group, int parallelism )
+        {
+            throw new RuntimeException( "Unimplemented" );
+        }
+
+        @Override
+        public ThreadFactory threadFactory( Group group )
+        {
+            throw new RuntimeException( "Unimplemented" );
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable job )
+        {
+            job.run();
+            return mock( JobHandle.class );
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+        {
+            throw new RuntimeException( "Unimplemented" );
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
+        {
+            throw new RuntimeException( "Unimplemented" );
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+        {
+            throw new RuntimeException( "Unimplemented" );
+        }
+
+        @Override
+        public void init() throws Throwable
+        {
+            // do nothing
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+            // do nothing
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+            // do nothing
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+            // do nothing
         }
     }
 }
