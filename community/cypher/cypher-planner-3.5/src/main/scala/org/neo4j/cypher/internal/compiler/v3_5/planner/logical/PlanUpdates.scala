@@ -100,24 +100,34 @@ case object PlanUpdates
       case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern, context)
 
       //SET n.prop = 42
-      case pattern: SetNodePropertyPattern =>
-        context.logicalPlanProducer.planSetNodeProperty(source, pattern, context)
+      case pattern@SetNodePropertyPattern(_, _, expression) =>
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, context, solveds, cardinalities)
+        val updatedPattern = pattern.copy(expression = newExpression)
+        context.logicalPlanProducer.planSetNodeProperty(updatedSource, updatedPattern, pattern, context)
 
       //SET r.prop = 42
-      case pattern: SetRelationshipPropertyPattern =>
-        context.logicalPlanProducer.planSetRelationshipProperty(source, pattern, context)
+      case pattern@SetRelationshipPropertyPattern(_, _ , expression) =>
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, context, solveds, cardinalities)
+        val updatedPattern = pattern.copy(expression = newExpression)
+        context.logicalPlanProducer.planSetRelationshipProperty(updatedSource, updatedPattern, pattern, context)
 
       //SET x.prop = 42
-      case pattern: SetPropertyPattern =>
-        context.logicalPlanProducer.planSetProperty(source, pattern, context)
+      case pattern@SetPropertyPattern(_, _, expression) =>
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, context, solveds, cardinalities)
+        val updatedPattern = pattern.copy(expression = newExpression)
+        context.logicalPlanProducer.planSetProperty(updatedSource, updatedPattern, pattern, context)
 
-      //SET n.prop += {}
-      case pattern: SetNodePropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern, context)
+      //SET n += {p1: ..., p2: ...}
+      case pattern@SetNodePropertiesFromMapPattern(_, expression, _) =>
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, context, solveds, cardinalities)
+        val updatedPattern = pattern.copy(expression = newExpression)
+        context.logicalPlanProducer.planSetNodePropertiesFromMap(updatedSource, updatedPattern, pattern, context)
 
-      //SET r.prop += {}
-      case pattern: SetRelationshipPropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, context)
+      //SET r += {p1: ..., p2: ...}
+      case pattern@SetRelationshipPropertiesFromMapPattern(_, expression, _) =>
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, context, solveds, cardinalities)
+        val updatedPattern = pattern.copy(expression = newExpression)
+        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(updatedSource, updatedPattern, pattern, context)
 
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern, context)

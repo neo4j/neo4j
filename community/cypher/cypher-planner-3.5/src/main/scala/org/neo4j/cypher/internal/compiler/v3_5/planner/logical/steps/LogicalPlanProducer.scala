@@ -630,40 +630,40 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(SetLabels(inner, pattern.idName, pattern.labels), solved, context)
   }
 
-  def planSetNodeProperty(inner: LogicalPlan, pattern: SetNodePropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
+  def planSetNodeProperty(inner: LogicalPlan, patternToPlan: SetNodePropertyPattern, solvedPattern: SetNodePropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(solvedPattern))
 
-    annotate(SetNodeProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
+    annotate(SetNodeProperty(inner, patternToPlan.idName, patternToPlan.propertyKey, patternToPlan.expression), solved, context)
   }
 
   def planSetNodePropertiesFromMap(inner: LogicalPlan,
-                                   pattern: SetNodePropertiesFromMapPattern, context: LogicalPlanningContext): LogicalPlan = {
+                                   patternToPlan: SetNodePropertiesFromMapPattern, solvedPattern: SetNodePropertiesFromMapPattern, context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(solvedPattern))
 
-    annotate(SetNodePropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps), solved, context)
+    annotate(SetNodePropertiesFromMap(inner, patternToPlan.idName, patternToPlan.expression, patternToPlan.removeOtherProps), solved, context)
   }
 
-  def planSetRelationshipProperty(inner: LogicalPlan, pattern: SetRelationshipPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
+  def planSetRelationshipProperty(inner: LogicalPlan, patternToPlan: SetRelationshipPropertyPattern, solvedPattern: SetRelationshipPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(solvedPattern))
 
-    annotate(SetRelationshipProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
+    annotate(SetRelationshipProperty(inner, patternToPlan.idName, patternToPlan.propertyKey, patternToPlan.expression), solved, context)
   }
 
   def planSetRelationshipPropertiesFromMap(inner: LogicalPlan,
-                                           pattern: SetRelationshipPropertiesFromMapPattern, context: LogicalPlanningContext): LogicalPlan = {
+                                           patternToPlan: SetRelationshipPropertiesFromMapPattern, solvedPattern: SetRelationshipPropertiesFromMapPattern, context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(solvedPattern))
 
-    annotate(SetRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps), solved, context)
+    annotate(SetRelationshipPropertiesFromMap(inner, patternToPlan.idName, patternToPlan.expression, patternToPlan.removeOtherProps), solved, context)
   }
 
-  def planSetProperty(inner: LogicalPlan, pattern: SetPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
+  def planSetProperty(inner: LogicalPlan, patternToPlan: SetPropertyPattern, solvedPattern: SetPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(solvedPattern))
 
-    annotate(SetProperty(inner, pattern.entityExpression, pattern.propertyKeyName, pattern.expression), solved, context)
+    annotate(SetProperty(inner, patternToPlan.entityExpression, patternToPlan.propertyKeyName, patternToPlan.expression), solved, context)
   }
 
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
