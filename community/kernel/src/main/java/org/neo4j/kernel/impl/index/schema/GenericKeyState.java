@@ -781,8 +781,9 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private static void putText( PageCursor cursor, byte[] byteArray, long long0 )
     {
-        cursor.putShort( (short) long0 );
-        cursor.putBytes( byteArray, 0, (int) long0 );
+        short length = (short) long0;
+        cursor.putShort( length );
+        cursor.putBytes( byteArray, 0, length );
     }
 
     private static void putDuration( PageCursor cursor, long long0, long long1, long long2, long long3 )

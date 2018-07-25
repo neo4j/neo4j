@@ -31,7 +31,6 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
 
     enum Inclusion
     {
-        // Order of these is important, must be kept lower --> higher
         LOW,
         NEUTRAL,
         HIGH;
