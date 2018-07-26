@@ -47,7 +47,7 @@ public class ClusterCommercialSettingsIT
         }
         catch ( Exception e )
         {
-            AssertionError cause = (AssertionError) e.getCause();
+            IllegalArgumentException cause = (IllegalArgumentException) e.getCause();
             Assert.assertThat( cause.getMessage(), containsString( CausalClusteringSettings.ssl_policy.name() ) );
         }
     }

@@ -67,6 +67,9 @@ public class VoidPipelineWrapperFactory implements DuplexPipelineWrapperFactory
 
     private static void verifyNoEncryption( Config config, Setting<String> policyName )
     {
-        assert config.get( policyName ) == null : "Unexpected SSL policy " + policyName;
+        if ( config.get( policyName ) != null )
+        {
+            throw new IllegalArgumentException( "Unexpected SSL policy " + policyName );
+        }
     }
 }

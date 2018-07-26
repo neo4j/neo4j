@@ -92,7 +92,10 @@ public interface FileMoveAction
             public void move( File toDir, CopyOption... copyOptions ) throws IOException
             {
                 copyViaFileSystem( sourceFile, sourceDirectory ).move( toDir, copyOptions );
-                assert sourceFile.delete() : sourceFile;
+                if ( !sourceFile.delete() )
+                {
+                    throw new IOException( "Unable to delete source file after copying " + sourceFile );
+                }
             }
 
             @Override

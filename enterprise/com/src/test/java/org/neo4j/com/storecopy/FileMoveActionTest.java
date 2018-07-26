@@ -33,8 +33,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
@@ -45,14 +44,16 @@ public class FileMoveActionTest
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     private FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
-    private Config config = Config.defaults();
 
     @Test
     public void pageCacheFilesMovedDoNotLeaveOriginal() throws IOException
     {
         // given
-        PageCache pageCache = aPageCache();
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
 
         // and
         File pageCacheFile = testDirectory.file( "page-cache-file" );
@@ -117,10 +118,5 @@ public class FileMoveActionTest
         // then
         assertTrue( targetFile.exists() );
         assertTrue( sourceFile.exists() );
-    }
-
-    private PageCache aPageCache()
-    {
-        return ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
     }
 }
