@@ -314,7 +314,7 @@ public class LuceneIndexRecoveryIT
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.contextDirectory() ),
+                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ),
                         IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
@@ -337,7 +337,7 @@ public class LuceneIndexRecoveryIT
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.contextDirectory() ),
+                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ),
                         IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override

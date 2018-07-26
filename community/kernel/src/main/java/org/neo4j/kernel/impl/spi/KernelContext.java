@@ -30,7 +30,7 @@ public interface KernelContext
     /**
      * @return store directory for {@link ExtensionType#GLOBAL} extensions and
      * particular database directory if extension is per {@link ExtensionType#DATABASE}.
-     * @deprecated Please use {@link #contextDirectory()} instead.
+     * @deprecated Please use {@link #directory()} instead.
      */
     @Deprecated
     File storeDir();
@@ -43,7 +43,7 @@ public interface KernelContext
      * @return store directory for {@link ExtensionType#GLOBAL} extensions and
      * particular database directory if extension is per {@link ExtensionType#DATABASE}.
      */
-    default File contextDirectory()
+    default File directory()
     {
         return storeDir();
     }

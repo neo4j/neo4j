@@ -79,7 +79,7 @@ public class LuceneIndexProviderFactory extends
     public IndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
-        File databaseDirectory = context.contextDirectory();
+        File databaseDirectory = context.directory();
         FileSystemAbstraction fs = dependencies.fileSystem();
         Monitors monitors = dependencies.monitors();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( LuceneIndexProvider.class );

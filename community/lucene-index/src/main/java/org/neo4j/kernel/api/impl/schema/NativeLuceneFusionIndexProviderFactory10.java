@@ -59,7 +59,7 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
     public FusionIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
-        File databaseDirectory = context.contextDirectory();
+        File databaseDirectory = context.directory();
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( FusionIndexProvider.class );
         Monitors monitors = dependencies.monitors();

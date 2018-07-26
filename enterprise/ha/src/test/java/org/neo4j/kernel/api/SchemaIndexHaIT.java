@@ -557,7 +557,7 @@ public class SchemaIndexHaIT
         public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps )
         {
             PageCache pageCache = deps.pageCache();
-            File databaseDirectory = context.contextDirectory();
+            File databaseDirectory = context.directory();
             DefaultFileSystemAbstraction fs = fileSystemRule.get();
             IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
             Config config = deps.config();
