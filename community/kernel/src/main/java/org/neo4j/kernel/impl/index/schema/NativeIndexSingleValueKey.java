@@ -37,7 +37,8 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
     @Override
     void assertValidValue( int stateSlot, Value value )
     {
-        stateSlot = Preconditions.requireExactlyOne( stateSlot );
+        //noinspection ResultOfMethodCallIgnored
+        Preconditions.requireExactlyZero( stateSlot );
         assertCorrectType( value );
     }
 

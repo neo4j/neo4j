@@ -62,17 +62,17 @@ public final class Preconditions
     }
 
     /**
-     * Ensures that {@code value} is exactly one.
+     * Ensures that {@code value} is exactly zero.
      *
      * @param value a value for check
-     * @return {@code value} if it's equal to {@code 1}.
-     * @throws IllegalArgumentException if {@code value} is not 1
+     * @return {@code value} if it's equal to {@code 0}.
+     * @throws IllegalArgumentException if {@code value} is not 0
      */
-    public static int requireExactlyOne( int value )
+    public static int requireExactlyZero( int value )
     {
-        if ( value != 1 )
+        if ( value != 0 )
         {
-            throw new IllegalArgumentException( "Expected long value equal to 1, got " + value );
+            throw new IllegalArgumentException( "Expected long value equal to 0, got " + value );
         }
         return value;
     }
