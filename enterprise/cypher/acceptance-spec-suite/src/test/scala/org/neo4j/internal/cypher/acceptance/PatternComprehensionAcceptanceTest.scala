@@ -491,4 +491,30 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
     result.toList should equal(List(Map("c" -> node2), Map("c" -> node3)))
   }
+
+  test("should correctly evaluate pattern expression in predicate of pattern comprehension inside other expression") {
+    val setup =
+      """
+        |CREATE (a:A {foo: 'a1'}),
+        |       (a)-[:X]->(:B {foo:'b1'}),
+        |       (a)-[:X]->(:B {foo:'b2'})-[:X]->(:C)
+      """.stripMargin
+
+    val query =
+      """
+        |MATCH (a:A) WHERE a.foo = 'a1'
+        |RETURN size([ (a)-->(b:B)
+        |         WHERE (b)-->(:C)
+        |         | b.foo ]) as arraySize
+      """.stripMargin
+
+    graph.execute(setup)
+
+    val res = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query,
+      // TODO remove this for 3.3 after depending on 3.3.7
+      expectedDifferentResults = Configs.Version3_3 + Configs.Version3_1)
+    // If the (b)-->(:C) does not get correctly evaluated, this will be two instead
+    res.toList should equal(List(Map("arraySize" -> 1)))
+  }
+
 }
