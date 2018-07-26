@@ -244,6 +244,11 @@ public class RandomRule implements TestRule
         return randoms.nextValue();
     }
 
+    public Value nextValue( RandomValues.Types type )
+    {
+        return randoms.nextValue( type );
+    }
+
     // ============================
     // Other utility methods
     // ============================

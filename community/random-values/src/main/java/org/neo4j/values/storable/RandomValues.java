@@ -61,7 +61,7 @@ import static org.neo4j.values.storable.Values.shortValue;
 public class RandomValues
 {
 
-    enum Types
+    public enum Types
     {
         BOOLEAN,
         BYTE,
@@ -655,7 +655,21 @@ public class RandomValues
      */
     public Value nextValue()
     {
-        Types type = nextType();
+        return nextValue( nextType() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link Value} of given type
+     * <p>
+     * The length of strings will be governed by {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()} and
+     * the length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link Value} of given type
+     */
+    public Value nextValue( Types type )
+    {
         switch ( type )
         {
         case BOOLEAN:
@@ -1257,7 +1271,9 @@ public class RandomValues
      */
     public PointValue nextCartesianPoint()
     {
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian, generator.nextDouble(), generator.nextDouble() );
+        double x = randomCartesianCoordinate();
+        double y = randomCartesianCoordinate();
+        return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
     }
 
     /**
@@ -1267,8 +1283,10 @@ public class RandomValues
      */
     public PointValue nextCartesian3DPoint()
     {
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, generator.nextDouble(),
-                generator.nextDouble(), generator.nextDouble() );
+        double x = randomCartesianCoordinate();
+        double y = randomCartesianCoordinate();
+        double z = randomCartesianCoordinate();
+        return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, x, y, z );
     }
 
     /**
@@ -1278,8 +1296,8 @@ public class RandomValues
      */
     public PointValue nextGeographicPoint()
     {
-        double longitude = generator.nextDouble() * 360.0 - 180.0;
-        double latitude = generator.nextDouble() * 180.0 - 90.0;
+        double longitude = randomLongitude();
+        double latitude = randomLatitude();
         return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
     }
 
@@ -1290,10 +1308,36 @@ public class RandomValues
      */
     public PointValue nextGeographic3DPoint()
     {
-        double longitude = generator.nextDouble() * 360.0 - 180.0;
-        double latitude = generator.nextDouble() * 180.0 - 90.0;
-        return Values.pointValue( CoordinateReferenceSystem.WGS84_3D, longitude, latitude,
-                generator.nextDouble() * 10000 );
+        double longitude = randomLongitude();
+        double latitude = randomLatitude();
+        double z = randomCartesianCoordinate();
+        return Values.pointValue( CoordinateReferenceSystem.WGS84_3D, longitude, latitude, z );
+    }
+
+    private double randomLatitude()
+    {
+        double spatialDefaultMinLatitude = -90;
+        double spatialDefaultMaxLatitude = 90;
+        return doubleBetween( spatialDefaultMinLatitude, spatialDefaultMaxLatitude );
+    }
+
+    private double randomLongitude()
+    {
+        double spatialDefaultMinLongitude = -180;
+        double spatialDefaultMaxLongitude = 180;
+        return doubleBetween( spatialDefaultMinLongitude, spatialDefaultMaxLongitude );
+    }
+
+    private double randomCartesianCoordinate()
+    {
+        double spatialDefaultMinExtent = -1000000;
+        double spatialDefaultMaxExtent = 1000000;
+        return doubleBetween( spatialDefaultMinExtent, spatialDefaultMaxExtent );
+    }
+
+    private double doubleBetween( double min, double max )
+    {
+        return generator.nextDouble() * (max - min) + min;
     }
 
     /**
