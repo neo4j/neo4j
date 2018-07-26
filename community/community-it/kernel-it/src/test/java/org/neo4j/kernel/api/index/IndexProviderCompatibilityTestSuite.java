@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -42,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -64,7 +66,8 @@ import org.neo4j.values.storable.Values;
         SimpleIndexAccessorCompatibility.Unique.class,
         CompositeIndexAccessorCompatibility.General.class,
         CompositeIndexAccessorCompatibility.Unique.class,
-        UniqueConstraintCompatibility.class
+        UniqueConstraintCompatibility.class,
+        SimpleRandomizedIndexAccessorCompatibility.General.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
@@ -90,8 +93,11 @@ public abstract class IndexProviderCompatibilityTestSuite
 
     public abstract static class Compatibility
     {
+        private final PageCacheAndDependenciesRule pageCacheAndDependenciesRule;
+        final RandomRule random;
+
         @Rule
-        public final PageCacheAndDependenciesRule pageCacheAndDependenciesRule;
+        public RuleChain ruleChain;
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
@@ -233,6 +239,8 @@ public abstract class IndexProviderCompatibilityTestSuite
                     ) );
 
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
+            random = new RandomRule();
+            ruleChain = RuleChain.outerRule( pageCacheAndDependenciesRule ).around( random );
         }
 
         void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception

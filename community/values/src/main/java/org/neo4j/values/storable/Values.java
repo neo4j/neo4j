@@ -119,9 +119,19 @@ public final class Values
         return value instanceof PointValue;
     }
 
+    public static boolean isGeometryArray( Value value )
+    {
+        return value instanceof PointArray;
+    }
+
     public static boolean isTemporalValue( Value value )
     {
         return value instanceof TemporalValue || value instanceof DurationValue;
+    }
+
+    public static boolean isTemporalArray( Value value )
+    {
+        return value instanceof TemporalArray || value instanceof DurationArray;
     }
 
     public static double coerceToDouble( Value value )
