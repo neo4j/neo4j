@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -636,7 +637,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         indexService.apply( directIndexUpdates );
                     }
                 }
-                catch ( IOException | IndexEntryConflictException e )
+                catch ( UncheckedIOException | IndexEntryConflictException e )
                 {
                     throw new RuntimeException( e );
                 }
