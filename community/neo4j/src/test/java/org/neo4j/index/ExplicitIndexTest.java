@@ -20,8 +20,8 @@
 package org.neo4j.index;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,43 +29,50 @@ import java.util.Map;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import static java.time.Duration.ofMillis;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ExplicitIndexTest
+@ExtendWith( TestDirectoryExtension.class )
+class ExplicitIndexTest
 {
     private static final long TEST_TIMEOUT = 80_000;
 
-    @Rule
-    public TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
-    @Test( timeout = TEST_TIMEOUT )
-    public void explicitIndexPopulationWithBunchOfFields() throws Exception
+    @Test
+    void explicitIndexPopulationWithBunchOfFields()
     {
-        BatchInserter batchNode = BatchInserters.inserter( directory.databaseDir() );
-        LuceneBatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( batchNode );
-        try
+        assertTimeout( ofMillis( TEST_TIMEOUT ), () ->
         {
-            BatchInserterIndex batchIndex = provider.nodeIndex( "node_auto_index",
-                    stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
-
-            Map<String,Object> properties = new HashMap<>();
-            for ( int i = 0; i < 2000; i++ )
+            BatchInserter batchNode = BatchInserters.inserter( directory.databaseDir() );
+            LuceneBatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( batchNode );
+            try
             {
-                properties.put( Integer.toString( i ), RandomStringUtils.randomAlphabetic( 200 ) );
-            }
+                BatchInserterIndex batchIndex = provider.nodeIndex( "node_auto_index", stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
 
-            long node = batchNode.createNode( properties, Label.label( "NODE" ) );
-            batchIndex.add( node, properties );
-        }
-        finally
-        {
-            provider.shutdown();
-            batchNode.shutdown();
-        }
+                Map<String,Object> properties = new HashMap<>();
+                for ( int i = 0; i < 2000; i++ )
+                {
+                    properties.put( Integer.toString( i ), RandomStringUtils.randomAlphabetic( 200 ) );
+                }
+
+                long node = batchNode.createNode( properties, Label.label( "NODE" ) );
+                batchIndex.add( node, properties );
+            }
+            finally
+            {
+                provider.shutdown();
+                batchNode.shutdown();
+            }
+        } );
     }
 }

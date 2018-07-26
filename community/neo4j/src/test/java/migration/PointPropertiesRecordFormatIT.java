@@ -19,8 +19,8 @@
  */
 package migration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
@@ -35,40 +35,44 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.PointValue;
 
 import static migration.RecordFormatMigrationIT.startDatabaseWithFormat;
 import static migration.RecordFormatMigrationIT.startNonUpgradableDatabaseWithFormat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.Values.pointValue;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class PointPropertiesRecordFormatIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void failToCreatePointOnOldDatabase()
+    void failToCreatePointOnOldDatabase()
     {
         File storeDir = testDirectory.storeDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
-        try ( Transaction transaction = nonUpgradedStore.beginTx() )
+        TransactionFailureException exception = assertThrows( TransactionFailureException.class, () ->
         {
-            Node node = nonUpgradedStore.createNode();
-            node.setProperty( "a", pointValue( Cartesian, 1.0, 2.0 ) );
-            transaction.success();
-        }
-        catch ( TransactionFailureException e )
-        {
-            assertEquals( "Current record format does not support POINT_PROPERTIES. Please upgrade your store " +
-                    "to the format that support requested capability.", Exceptions.rootCause( e ).getMessage() );
-        }
+            try ( Transaction transaction = nonUpgradedStore.beginTx() )
+            {
+                Node node = nonUpgradedStore.createNode();
+                node.setProperty( "a", pointValue( Cartesian, 1.0, 2.0 ) );
+                transaction.success();
+            }
+        } );
+        assertEquals( "Current record format does not support POINT_PROPERTIES. Please upgrade your store to the format that support requested capability.",
+                Exceptions.rootCause( exception ).getMessage() );
         nonUpgradedStore.shutdown();
 
         GraphDatabaseService restartedOldFormatDatabase = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
@@ -82,22 +86,22 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void failToCreatePointArrayOnOldDatabase()
+    void failToCreatePointArrayOnOldDatabase()
     {
         File storeDir = testDirectory.storeDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
         PointValue point = pointValue( Cartesian, 1.0, 2.0 );
-        try ( Transaction transaction = nonUpgradedStore.beginTx() )
+        TransactionFailureException exception = assertThrows( TransactionFailureException.class, () ->
         {
-            Node node = nonUpgradedStore.createNode();
-            node.setProperty( "a", new PointValue[]{point, point} );
-            transaction.success();
-        }
-        catch ( TransactionFailureException e )
-        {
-            assertEquals( "Current record format does not support POINT_PROPERTIES. Please upgrade your store " +
-                    "to the format that support requested capability.", Exceptions.rootCause( e ).getMessage() );
-        }
+            try ( Transaction transaction = nonUpgradedStore.beginTx() )
+            {
+                Node node = nonUpgradedStore.createNode();
+                node.setProperty( "a", new PointValue[]{point, point} );
+                transaction.success();
+            }
+        } );
+        assertEquals( "Current record format does not support POINT_PROPERTIES. Please upgrade your store to the format that support requested capability.",
+                Exceptions.rootCause( exception ).getMessage() );
         nonUpgradedStore.shutdown();
 
         GraphDatabaseService restartedOldFormatDatabase = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
@@ -111,7 +115,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void createPointPropertyOnLatestDatabase()
+    void createPointPropertyOnLatestDatabase()
     {
         File storeDir = testDirectory.storeDir();
         Label pointNode = Label.label( "PointNode" );
@@ -136,7 +140,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void createPointArrayPropertyOnLatestDatabase()
+    void createPointArrayPropertyOnLatestDatabase()
     {
         File storeDir = testDirectory.storeDir();
         Label pointNode = Label.label( "PointNode" );
@@ -166,7 +170,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void failToOpenStoreWithPointPropertyUsingOldFormat()
+    void failToOpenStoreWithPointPropertyUsingOldFormat()
     {
         File storeDir = testDirectory.storeDir();
         GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_4.NAME );
@@ -178,13 +182,7 @@ public class PointPropertiesRecordFormatIT
         }
         database.shutdown();
 
-        try
-        {
-            startDatabaseWithFormat( storeDir, StandardV3_2.NAME );
-        }
-        catch ( Throwable t )
-        {
-            assertSame( StoreUpgrader.AttemptedDowngradeException.class, Exceptions.rootCause( t ).getClass() );
-        }
+        Throwable throwable = assertThrows( Throwable.class, () -> startDatabaseWithFormat( storeDir, StandardV3_2.NAME ) );
+        assertSame( StoreUpgrader.AttemptedDowngradeException.class, Exceptions.rootCause( throwable ).getClass() );
     }
 }

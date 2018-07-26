@@ -19,10 +19,9 @@
  */
 package org.neo4j.graphdb.facade;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -41,12 +40,14 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
@@ -54,70 +55,49 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class GraphDatabaseFacadeFactoryTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class GraphDatabaseFacadeFactoryTest
 {
-
-    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory( fileSystemRule.get() );
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( dir ).around( fileSystemRule );
+    @Inject
+    private TestDirectory dir;
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =
             mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         when( deps.monitors() ).thenReturn( new Monitors() );
     }
 
     @Test
-    public void shouldThrowAppropriateExceptionIfStartFails()
+    void shouldThrowAppropriateExceptionIfStartFails()
     {
-        // Given
         RuntimeException startupError = new RuntimeException();
 
         GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
-        try
-        {
-            // When
-            db.initFacade( dir.storeDir(), Collections.emptyMap(), deps, mockFacade );
-            fail( "Should have thrown " + RuntimeException.class );
-        }
-        catch ( RuntimeException exception )
-        {
-            // Then
-            assertEquals( startupError, Exceptions.rootCause( exception ) );
-        }
+        RuntimeException exception = assertThrows( RuntimeException.class, () -> db.initFacade( dir.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
+        assertEquals( startupError, Exceptions.rootCause( exception ) );
     }
 
     @Test
-    public void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail()
+    void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail()
     {
-        // Given
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
         GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
         doThrow( shutdownError ).when( mockFacade ).shutdown();
-        try
-        {
-            // When
-            db.initFacade( dir.storeDir(), Collections.emptyMap(), deps, mockFacade );
-            fail( "Should have thrown " + RuntimeException.class );
-        }
-        catch ( RuntimeException exception )
-        {
-            // Then
-            assertTrue( exception.getMessage().startsWith( "Error starting " ) );
-            assertEquals( startupError, exception.getCause() );
-            assertEquals( shutdownError, exception.getSuppressed()[0] );
-        }
+
+        RuntimeException exception =
+                assertThrows( RuntimeException.class, () -> db.initFacade( dir.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
+        assertTrue( exception.getMessage().startsWith( "Error starting " ) );
+        assertEquals( startupError, exception.getCause() );
+        assertEquals( shutdownError, exception.getSuppressed()[0] );
     }
 
-    private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
+    private static GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
     {
         return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN,
                 p -> mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ) )

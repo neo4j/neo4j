@@ -19,20 +19,20 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
 import org.neo4j.kernel.DummyExtensionFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterables.count;
 
-public class GraphDatabaseFactoryStateTest
+class GraphDatabaseFactoryStateTest
 {
     @Test
-    public void mustBeAbleToRemoveAddedKernelExtensions()
+    void mustBeAbleToRemoveAddedKernelExtensions()
     {
         DummyExtensionFactory extensionFactory = new DummyExtensionFactory();
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();

@@ -19,9 +19,9 @@
  */
 package migration;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,18 +59,21 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
-public class StartOldDbOn3_4AndCreateFusionIndexIT
+@ExtendWith( TestDirectoryExtension.class )
+class StartOldDbOn3_4AndCreateFusionIndexIT
 {
     private static final String ZIP_FILE_3_2 = "3_2-db.zip";
     private static final String ZIP_FILE_3_3 = "3_3-db.zip";
@@ -81,21 +84,21 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
 
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
-    @Ignore( "Here as reference for how 3.2 db was created" )
+    @Disabled( "Here as reference for how 3.2 db was created" )
     @Test
-    public void create3_2Database() throws Exception
+    void create3_2Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         createIndexDataAndShutdown( db, LABEL_LUCENE_10 );
     }
 
-    @Ignore( "Here as reference for how 3.3 db was created" )
+    @Disabled( "Here as reference for how 3.3 db was created" )
     @Test
-    public void create3_3Database() throws Exception
+    void create3_3Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
@@ -112,7 +115,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     }
 
     @Test
-    public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
         unzip( getClass(), ZIP_FILE_3_2, directory.databaseDir() );
@@ -171,7 +174,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     }
 
     @Test
-    public void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
         unzip( getClass(), ZIP_FILE_3_3, directory.databaseDir() );
@@ -249,14 +252,15 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
 
     private void verifyInitialState( IndexRecoveryTracker indexRecoveryTracker, int expectedNumberOfIndexes, InternalIndexState expectedInitialState )
     {
-        assertEquals( "exactly " + expectedNumberOfIndexes + " indexes ", expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size() );
+        assertEquals( expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size(), "exactly " + expectedNumberOfIndexes + " indexes " );
         for ( InternalIndexState actualInitialState : indexRecoveryTracker.initialStateMap.values() )
         {
-            assertEquals( "initial state is online, don't do recovery", expectedInitialState, actualInitialState );
+            assertEquals( expectedInitialState, actualInitialState, "initial state is online, don't do recovery" );
         }
     }
 
-    private void verifyExpectedProvider( GraphDatabaseAPI db, Label label, IndexProvider.Descriptor expectedDescriptor ) throws TransactionFailureException
+    private static void verifyExpectedProvider( GraphDatabaseAPI db, Label label, IndexProvider.Descriptor expectedDescriptor )
+            throws TransactionFailureException
     {
         try ( Transaction tx = db.beginTx();
               KernelTransaction kernelTransaction =
@@ -277,13 +281,13 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private void assertIndexHasExpectedProvider( IndexProvider.Descriptor expectedDescriptor, IndexReference index )
+    private static void assertIndexHasExpectedProvider( IndexProvider.Descriptor expectedDescriptor, IndexReference index )
     {
-        assertEquals( "same key", expectedDescriptor.getKey(), index.providerKey() );
-        assertEquals( "same version", expectedDescriptor.getVersion(), index.providerVersion() );
+        assertEquals( expectedDescriptor.getKey(), index.providerKey(), "same key" );
+        assertEquals( expectedDescriptor.getVersion(), index.providerVersion(), "same version" );
     }
 
-    private void createIndexDataAndShutdown( GraphDatabaseService db, Label label )
+    private static void createIndexDataAndShutdown( GraphDatabaseService db, Label label )
     {
         try
         {
@@ -295,7 +299,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private File tempStoreDirectory() throws IOException
+    private static File tempStoreDirectory() throws IOException
     {
         File file = File.createTempFile( "create-db", "neo4j" );
         File storeDir = new File( file.getAbsoluteFile().getParentFile(), file.getName() );
@@ -303,7 +307,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         return storeDir;
     }
 
-    private void createIndexesAndData( GraphDatabaseService db, Label label )
+    private static void createIndexesAndData( GraphDatabaseService db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -320,7 +324,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         createData( db, label );
     }
 
-    private void createData( GraphDatabaseService db, Label label )
+    private static void createData( GraphDatabaseService db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -338,7 +342,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private void createSpatialAndTemporalData( GraphDatabaseAPI db, Label label )
+    private static void createSpatialAndTemporalData( GraphDatabaseAPI db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -358,13 +362,13 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private void additionalUpdates( GraphDatabaseAPI db, Label label )
+    private static void additionalUpdates( GraphDatabaseAPI db, Label label )
     {
         createData( db, label );
         createSpatialAndTemporalData( db, label );
     }
 
-    private void verifyIndexes( GraphDatabaseAPI db, Label label ) throws Exception
+    private static void verifyIndexes( GraphDatabaseAPI db, Label label ) throws Exception
     {
         assertTrue( hasIndex( db, label, KEY1 ) );
         assertEquals( 100, countIndexedNodes( db, label, KEY1 ) );
@@ -373,7 +377,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         assertEquals( 34, countIndexedNodes( db, label, KEY1, KEY2 ) );
     }
 
-    private void verifyAfterAdditionalUpdate( GraphDatabaseAPI db, Label label ) throws Exception
+    private static void verifyAfterAdditionalUpdate( GraphDatabaseAPI db, Label label ) throws Exception
     {
         assertTrue( hasIndex( db, label, KEY1 ) );
         assertEquals( 300, countIndexedNodes( db, label, KEY1 ) );
@@ -382,7 +386,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         assertEquals( 102, countIndexedNodes( db, label, KEY1, KEY2 ) );
     }
 
-    private int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
+    private static int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -416,7 +420,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private boolean hasIndex( GraphDatabaseService db, Label label, String... keys )
+    private static boolean hasIndex( GraphDatabaseService db, Label label, String... keys )
     {
         try ( Transaction tx = db.beginTx() )
         {

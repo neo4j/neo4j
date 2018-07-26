@@ -22,12 +22,10 @@ package schema;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 
@@ -39,36 +37,37 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-
-public class IndexValuesValidationTest
+@ExtendWith( TestDirectoryExtension.class )
+class IndexValuesValidationTest
 {
+    @Inject
+    private TestDirectory directory;
 
-    @ClassRule
-    public static final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    private GraphDatabaseService database;
 
-    private static GraphDatabaseService database;
-
-    @BeforeClass
-    public static void setUp()
+    @BeforeEach
+    void setUp()
     {
         database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.storeDir() );
     }
 
-    @AfterClass
-    public static void tearDown()
+    @AfterEach
+    void tearDown()
     {
         database.shutdown();
     }
 
     @Test
-    public void validateIndexedNodeProperties()
+    void validateIndexedNodeProperties()
     {
         Label label = Label.label( "indexedNodePropertiesTestLabel" );
         String propertyName = "indexedNodePropertyName";
@@ -80,19 +79,20 @@ public class IndexValuesValidationTest
             database.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
         }
 
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( containsString( "Property value bytes length: 32767 is longer than" ) );
-
-        try ( Transaction transaction = database.beginTx() )
+        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class, () ->
         {
-            Node node = database.createNode( label );
-            node.setProperty( propertyName, StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 ) );
-            transaction.success();
-        }
+            try ( Transaction transaction = database.beginTx() )
+            {
+                Node node = database.createNode( label );
+                node.setProperty( propertyName, StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 ) );
+                transaction.success();
+            }
+        } );
+        assertThat( argumentException.getMessage(), startsWith( "Property value bytes length: 32767 is longer than" ) );
     }
 
     @Test
-    public void validateNodePropertiesOnPopulation()
+    void validateNodePropertiesOnPopulation()
     {
         Label label = Label.label( "populationTestNodeLabel" );
         String propertyName = "populationTestPropertyName";
@@ -123,7 +123,7 @@ public class IndexValuesValidationTest
     }
 
     @Test
-    public void validateExplicitIndexedNodeProperties()
+    void validateExplicitIndexedNodeProperties()
     {
         Label label = Label.label( "explicitIndexedNodePropertiesTestLabel" );
         String propertyName = "explicitIndexedNodeProperties";
@@ -137,21 +137,22 @@ public class IndexValuesValidationTest
             transaction.success();
         }
 
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Property value bytes length: 32767 is longer than 32766, " +
-                "which is maximum supported length of indexed property value." );
-        try ( Transaction transaction = database.beginTx() )
+        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class, () ->
         {
-            Node node = database.createNode( label );
-            String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
-            database.index().forNodes( explicitIndexedNodeIndex )
-                    .add( node, propertyName, longValue );
-            transaction.success();
-        }
+            try ( Transaction transaction = database.beginTx() )
+            {
+                Node node = database.createNode( label );
+                String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
+                database.index().forNodes( explicitIndexedNodeIndex ).add( node, propertyName, longValue );
+                transaction.success();
+            }
+        } );
+        assertEquals( "Property value bytes length: 32767 is longer than 32766, which is maximum supported length of indexed property value.",
+                argumentException.getMessage() );
     }
 
     @Test
-    public void validateExplicitIndexedRelationshipProperties()
+    void validateExplicitIndexedRelationshipProperties()
     {
         Label label = Label.label( "explicitIndexedRelationshipPropertiesTestLabel" );
         String propertyName = "explicitIndexedRelationshipProperties";
@@ -168,19 +169,20 @@ public class IndexValuesValidationTest
             transaction.success();
         }
 
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Property value bytes length: 32767 is longer than 32766, " +
-                "which is maximum supported length of indexed property value." );
-        try ( Transaction transaction = database.beginTx() )
+        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class, () ->
         {
-            Node source = database.createNode( label );
-            Node destination = database.createNode( label );
-            Relationship relationship = source.createRelationshipTo( destination, indexType );
-            String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
-            database.index().forRelationships( explicitIndexedRelationshipIndex )
-                    .add( relationship, propertyName, longValue );
-            transaction.success();
-        }
+            try ( Transaction transaction = database.beginTx() )
+            {
+                Node source = database.createNode( label );
+                Node destination = database.createNode( label );
+                Relationship relationship = source.createRelationshipTo( destination, indexType );
+                String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
+                database.index().forRelationships( explicitIndexedRelationshipIndex ).add( relationship, propertyName, longValue );
+                transaction.success();
+            }
+        } );
+        assertEquals( "Property value bytes length: 32767 is longer than 32766, which is maximum supported length of indexed property value.",
+                argumentException.getMessage() );
     }
 
     private IndexDefinition createIndex( Label label, String propertyName )

@@ -19,27 +19,21 @@
  */
 package org.neo4j.graphdb.factory.module;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.Log;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public class EditionModuleTest
+class EditionModuleTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
+    void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
     {
-        // Expect
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Failed to load security module with key 'non-existent-security-module'" );
-
-        // When
-        EditionModule.setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" );
+        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class,
+                () -> EditionModule.setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" ) );
+        assertEquals( "Failed to load security module with key 'non-existent-security-module'.", argumentException.getMessage() );
     }
 }

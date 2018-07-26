@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.HashMap;
@@ -30,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -47,21 +44,17 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
-public class GraphDatabaseFacadeTest
+class GraphDatabaseFacadeTest
 {
     private final GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, RETURNS_DEEP_STUBS );
     private final GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
-        EditionModule editionModule = mock( EditionModule.class );
         Statement statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
 
@@ -76,7 +69,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void beginTransactionWithCustomTimeout()
+    void beginTransactionWithCustomTimeout()
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 
@@ -84,7 +77,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void beginTransaction()
+    void beginTransaction()
     {
         graphDatabaseFacade.beginTx();
 
@@ -93,7 +86,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout()
+    void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout()
     {
         graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
         verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
@@ -105,7 +98,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void executeQueryStartDefaultTransaction()
+    void executeQueryStartDefaultTransaction()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
