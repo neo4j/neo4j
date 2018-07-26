@@ -60,6 +60,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
@@ -689,7 +690,7 @@ public class IndexPopulationJobTest
     private IndexPopulator indexPopulator( IndexDescriptor descriptor )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( IndexProvider.class );
+        IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
         return indexProvider.getPopulator( descriptor.withId( 21 ), samplingConfig );
     }
 
