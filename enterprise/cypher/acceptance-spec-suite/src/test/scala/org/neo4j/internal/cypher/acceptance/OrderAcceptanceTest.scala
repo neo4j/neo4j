@@ -397,7 +397,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         ))
   }
 
-  test("Should fail when accessing undefinded variable after WITH ORDER BY") {
+  test("Should fail when accessing undefined variable after WITH ORDER BY") {
     failWithError(Configs.AbsolutelyAll, "MATCH (a) WITH a.name AS n ORDER BY a.foo RETURN a.x",
                             errorType = Seq("SyntaxException"))
   }

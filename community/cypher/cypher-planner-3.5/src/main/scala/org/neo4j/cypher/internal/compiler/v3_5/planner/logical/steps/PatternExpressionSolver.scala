@@ -255,7 +255,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](
     val innerPlan = innerContext.strategy.plan(qg, innerContext, solveds, cardinalities)
     val collectionName = FreshIdNameGenerator.name(expr.position)
     val projectedPath = projectionCreator(namedExpr)
-    val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), innerContext, solveds, cardinalities)
+    val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), innerContext, solveds, cardinalities)
     PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
   }
 
