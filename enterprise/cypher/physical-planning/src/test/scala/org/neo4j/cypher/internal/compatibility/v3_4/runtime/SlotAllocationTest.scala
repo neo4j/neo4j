@@ -25,7 +25,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_4.VarPatternLength
 import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -876,5 +876,41 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     )
 
     allocations(foreach.id) shouldBe theSameInstanceAs(lhsSlots)
+  }
+
+  test("Should fallback on pattern expression") {
+    // given
+    val nbls = NodeByLabelScan(x, LABEL, Set.empty)
+    val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(None, Seq(), None)(pos),
+      RelationshipPattern(None, Seq(), None, None, SemanticDirection.BOTH)(pos),
+      NodePattern(None, Seq(), None)(pos)
+    )(pos))(pos))
+    val filter = Selection(Seq(patternExpression), nbls)
+
+    // then
+    a[SlotAllocationFailed] should be thrownBy {
+      // when
+      SlotAllocation.allocateSlots(filter, SemanticTable())
+    }
+  }
+
+  test("Should fallback on pattern comprehension") {
+    // given
+    val nbls = NodeByLabelScan(x, LABEL, Set.empty)
+    val relPattern = RelationshipsPattern(RelationshipChain(
+      NodePattern(None, Seq(), None)(pos),
+      RelationshipPattern(None, Seq(), None, None, SemanticDirection.BOTH)(pos),
+      NodePattern(None, Seq(), None)(pos)
+    )(pos))(pos)
+    val projectionExpression = Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos)
+    val patternComprehension = PatternComprehension(None, relPattern, None, projectionExpression)(pos)
+
+    val filter = Selection(Seq(patternComprehension), nbls)
+    // then
+    a[SlotAllocationFailed] should be thrownBy {
+      // when
+      SlotAllocation.allocateSlots(filter, SemanticTable())
+    }
   }
 }
