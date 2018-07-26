@@ -279,10 +279,14 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         case CHAR:
         case SHORT_STRING:
             return ValueGroup.TEXT;
+        case TEMPORAL:
+        case GEOMETRY:
         case SHORT_ARRAY:
         case ARRAY:
+            // value read is needed to get correct value group since type is not fine grained enough to match all ValueGroups
+            return propertyValue().valueGroup();
         default:
-            throw new UnsupportedOperationException( "not implemented" );
+            throw new UnsupportedOperationException( type.name() + " not implemented" );
         }
     }
 

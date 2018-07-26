@@ -19,16 +19,20 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.arrayContaining;
@@ -80,9 +84,11 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
 
     private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
             floatProp, doubleProp, trueProp, falseProp, charProp, emptyStringProp, shortStringProp, longStringProp,
-            utf8Prop, smallArray, bigArray, allProps;
+            utf8Prop, smallArray, bigArray, pointProp, dateProp, allProps;
 
     private static String chinese = "造Unicode之";
+    private static Value pointValue = Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 20 );
+    private static Value dateValue = Values.temporalValue( LocalDate.of( 2018, 7, 26 ) );
 
     protected boolean supportsBigProperties()
     {
@@ -114,8 +120,11 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             longStringProp = createNodeWithProperty( graphDb, "longStringProp", LONG_STRING );
             utf8Prop = createNodeWithProperty( graphDb, "utf8Prop", chinese );
 
-            smallArray = createNodeWithProperty( graphDb, "smallArray", new int[] {1, 2, 3, 4} );
-            bigArray = createNodeWithProperty( graphDb, "bigArray", new String[] {LONG_STRING} );
+            smallArray = createNodeWithProperty( graphDb, "smallArray", new int[]{1, 2, 3, 4} );
+            bigArray = createNodeWithProperty( graphDb, "bigArray", new String[]{LONG_STRING} );
+
+            pointProp = createNodeWithProperty( graphDb, "pointProp", pointValue );
+            dateProp = createNodeWithProperty( graphDb, "dateProp", dateValue );
 
             Node all = graphDb.createNode();
             // first property record
@@ -143,9 +152,12 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
 
             if ( supportsBigProperties() )
             {
-                all.setProperty( "smallArray", new int[] {1, 2, 3, 4} );
-                all.setProperty( "bigArray", new String[] {LONG_STRING} );
+                all.setProperty( "smallArray", new int[]{1, 2, 3, 4} );
+                all.setProperty( "bigArray", new String[]{LONG_STRING} );
             }
+
+            all.setProperty( "pointProp", pointValue );
+            all.setProperty( "dateProp", dateProp );
 
             allProps = all.getId();
 
@@ -164,8 +176,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     public void shouldNotAccessNonExistentProperties()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor(); PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
             read.singleNode( bare, node );
@@ -185,36 +196,37 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     @Test
     public void shouldAccessSingleProperty()
     {
-        assertAccessSingleProperty( byteProp, Values.of( (byte) 13 ) );
-        assertAccessSingleProperty( shortProp, Values.of( (short) 13 ) );
-        assertAccessSingleProperty( intProp, Values.of( 13 ) );
-        assertAccessSingleProperty( inlineLongProp, Values.of( 13L ) );
-        assertAccessSingleProperty( longProp, Values.of( Long.MAX_VALUE ) );
-        assertAccessSingleProperty( floatProp, Values.of( 13.0f ) );
-        assertAccessSingleProperty( doubleProp, Values.of( 13.0 ) );
-        assertAccessSingleProperty( trueProp, Values.of( true ) );
-        assertAccessSingleProperty( falseProp, Values.of( false ) );
-        assertAccessSingleProperty( charProp, Values.of( 'x' ) );
-        assertAccessSingleProperty( emptyStringProp, Values.of( "" ) );
-        assertAccessSingleProperty( shortStringProp, Values.of( "hello" ) );
+        assertAccessSingleProperty( byteProp, Values.of( (byte) 13 ), ValueGroup.NUMBER );
+        assertAccessSingleProperty( shortProp, Values.of( (short) 13 ), ValueGroup.NUMBER );
+        assertAccessSingleProperty( intProp, Values.of( 13 ), ValueGroup.NUMBER );
+        assertAccessSingleProperty( inlineLongProp, Values.of( 13L ), ValueGroup.NUMBER );
+        assertAccessSingleProperty( longProp, Values.of( Long.MAX_VALUE ), ValueGroup.NUMBER );
+        assertAccessSingleProperty( floatProp, Values.of( 13.0f ), ValueGroup.NUMBER );
+        assertAccessSingleProperty( doubleProp, Values.of( 13.0 ), ValueGroup.NUMBER );
+        assertAccessSingleProperty( trueProp, Values.of( true ), ValueGroup.BOOLEAN );
+        assertAccessSingleProperty( falseProp, Values.of( false ), ValueGroup.BOOLEAN );
+        assertAccessSingleProperty( charProp, Values.of( 'x' ), ValueGroup.TEXT );
+        assertAccessSingleProperty( emptyStringProp, Values.of( "" ), ValueGroup.TEXT );
+        assertAccessSingleProperty( shortStringProp, Values.of( "hello" ), ValueGroup.TEXT );
         if ( supportsBigProperties() )
         {
-            assertAccessSingleProperty( longStringProp, Values.of( LONG_STRING ) );
+            assertAccessSingleProperty( longStringProp, Values.of( LONG_STRING ), ValueGroup.TEXT );
         }
-        assertAccessSingleProperty( utf8Prop, Values.of( chinese ) );
+        assertAccessSingleProperty( utf8Prop, Values.of( chinese ), ValueGroup.TEXT );
         if ( supportsBigProperties() )
         {
-            assertAccessSingleProperty( smallArray, Values.of( new int[] {1, 2, 3, 4} ) );
-            assertAccessSingleProperty( bigArray, Values.of( new String[] {LONG_STRING} ) );
+            assertAccessSingleProperty( smallArray, Values.of( new int[]{1, 2, 3, 4} ), ValueGroup.NUMBER_ARRAY );
+            assertAccessSingleProperty( bigArray, Values.of( new String[]{LONG_STRING} ), ValueGroup.TEXT_ARRAY );
         }
+        assertAccessSingleProperty( pointProp, Values.of( pointValue ), ValueGroup.GEOMETRY );
+        assertAccessSingleProperty( dateProp, Values.of( dateValue ), ValueGroup.DATE );
     }
 
     @Test
     public void shouldAccessAllNodeProperties()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor(); PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
             read.singleNode( allProps, node );
@@ -247,16 +259,17 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
                 assertThat( "smallArray", values, hasItem( intArray( 1, 2, 3, 4 ) ) );
                 assertThat( "bigArray", values, hasItem( arrayContaining( LONG_STRING ) ) );
             }
-            int expected = supportsBigProperties() ? 16 : 13;
+            assertTrue( "pointProp", values.contains( pointValue ) );
+
+            int expected = supportsBigProperties() ? 18 : 15;
             assertEquals( "number of values", expected, values.size() );
         }
     }
 
-    private void assertAccessSingleProperty( long nodeId, Object expectedValue )
+    private void assertAccessSingleProperty( long nodeId, Object expectedValue, ValueGroup expectedValueType )
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor();
-              PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor(); PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
             read.singleNode( nodeId, node );
@@ -266,6 +279,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             node.properties( props );
             assertTrue( "has properties by direct method", props.next() );
             assertEquals( "correct value", expectedValue, props.propertyValue() );
+            assertEquals( "correct value type ", expectedValueType, props.propertyType() );
             assertFalse( "single property", props.next() );
 
             read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
