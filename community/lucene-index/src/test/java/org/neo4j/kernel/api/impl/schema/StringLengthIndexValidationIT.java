@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,20 +88,15 @@ public class StringLengthIndexValidationIT
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(), Matchers.containsString( String.format(
-                    "Property value bytes length: %d is longer than %d, which is maximum supported length of indexed property value",
-                    keySizeLimit + 1, keySizeLimit ) ) );
+            assertThat( e.getMessage(),
+                    Matchers.containsString( "Property value size is to large for index. Please see index documentation for limitations." ) );
         }
     }
 
-    private String getString( int stringSize )
+    // Each char in string need to fit in one byte
+    private String getString( int byteArraySize )
     {
-        StringBuilder buf = new StringBuilder();
-        for ( int i = 0; i < stringSize; i++ )
-        {
-            buf.append( "0" );
-        }
-        return buf.toString();
+        return RandomStringUtils.randomAlphabetic( byteArraySize );
     }
 
     private void createIndex()

@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.IndexTextValueLengthValidator;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -60,7 +59,7 @@ public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringS
     @Override
     protected void afterTreeInstantiation( GBPTree<StringSchemaKey,NativeSchemaValue> tree )
     {
-        validator = new IndexTextValueLengthValidator( tree.keyValueSizeCap() - StringSchemaKey.ENTITY_ID_SIZE );
+        validator = new NativeIndexKeyLengthValidator<>( tree.keyValueSizeCap(), layout );
     }
 
     @Override

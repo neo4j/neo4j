@@ -24,6 +24,7 @@ import java.util.StringJoiner;
 
 import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_KEY_SIZE;
@@ -112,7 +113,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
-    // public for test
+    @VisibleForTesting
     public static int keyValueSizeCapFromPageSize( int pageSize )
     {
         return (pageSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
