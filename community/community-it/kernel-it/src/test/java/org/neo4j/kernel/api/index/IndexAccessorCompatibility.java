@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,7 +55,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     }
 
     @After
-    public void after() throws IOException
+    public void after()
     {
         accessor.drop();
         accessor.close();
@@ -86,8 +85,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         LongIterator results( IndexReader reader ) throws Exception;
     }
 
-    void updateAndCommit( List<IndexEntryUpdate<?>> updates )
-            throws IOException, IndexEntryConflictException
+    void updateAndCommit( List<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
