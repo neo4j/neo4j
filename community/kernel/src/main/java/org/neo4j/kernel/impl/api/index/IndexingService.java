@@ -29,6 +29,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -336,7 +337,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         state = State.RUNNING;
     }
 
-    public void populateIndexesOfAllTypes( MutableLongObjectMap<StoreIndexDescriptor> rebuildingDescriptors, IndexMap indexMap )
+    private void populateIndexesOfAllTypes( MutableLongObjectMap<StoreIndexDescriptor> rebuildingDescriptors, IndexMap indexMap )
     {
         Map<EntityType,MutableLongObjectMap<StoreIndexDescriptor>> rebuildingDescriptorsByType = new HashMap<>();
         for ( StoreIndexDescriptor descriptor : rebuildingDescriptors )
@@ -486,11 +487,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
      * {@link #start()}.
      *
      * @param updates {@link IndexUpdates} to apply.
-     * @throws IOException potentially thrown from index updating.
+     * @throws UncheckedIOException potentially thrown from index updating.
      * @throws IndexEntryConflictException potentially thrown from index updating.
      */
     @Override
-    public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
+    public void apply( IndexUpdates updates ) throws IndexEntryConflictException
     {
         if ( state == State.NOT_STARTED )
         {
@@ -509,8 +510,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    private void apply( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates, IndexUpdateMode updateMode )
-            throws IOException, IndexEntryConflictException
+    private void apply( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates, IndexUpdateMode updateMode ) throws IndexEntryConflictException
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
@@ -565,8 +565,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         populationStarter.startPopulation();
     }
 
-    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<SchemaDescriptor> indexUpdate )
-            throws IOException, IndexEntryConflictException
+    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<SchemaDescriptor> indexUpdate ) throws IndexEntryConflictException
     {
         IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
         if ( updater != null )

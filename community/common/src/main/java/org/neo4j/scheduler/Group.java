@@ -45,8 +45,10 @@ public enum Group
     TRANSACTION_TIMEOUT_MONITOR( "TransactionTimeoutMonitor" ),
     /** Background index population. */
     INDEX_POPULATION( "IndexPopulation" ),
-    /** Background index population */
+    /** Background index sampling */
     INDEX_SAMPLING( "IndexSampling" ),
+    /** Background index update applier, for eventually consistent indexes. */
+    INDEX_UPDATING( "IndexUpdating", ExecutorServiceFactory.singleThread() ), // Single-threaded to serialise updates with opening/closing/flushing of indexes.
     /** Thread pool for anyone who want some help doing file IO in parallel. */
     FILE_IO_HELPER( "FileIOHelper" ),
     NATIVE_SECURITY( "NativeSecurity" ),
