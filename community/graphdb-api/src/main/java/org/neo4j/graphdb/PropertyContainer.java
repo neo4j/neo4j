@@ -58,8 +58,11 @@ public interface PropertyContainer
 
     /**
      * Returns the property value associated with the given key. The value is of
-     * one of the valid property types, i.e. a Java primitive, a {@link String
-     * String} or an array of any of the valid types.
+     * one of the valid property types, i.e. a Java primitive,
+     * a {@link String String}, a {@link org.neo4j.graphdb.spatial.Point Point},
+     * a valid temporal type, or an array of any of the valid types.
+     * See the {@link #setProperty(String, Object)} setProperty}
+     * method for a full list of known types.
      * <p>
      * If there's no property associated with <code>key</code> an unchecked
      * exception is raised. The idiomatic way to avoid an exception for an
@@ -76,8 +79,11 @@ public interface PropertyContainer
 
     /**
      * Returns the property value associated with the given key, or a default
-     * value. The value is of one of the valid property types, i.e. a Java
-     * primitive, a {@link String String} or an array of any of the valid types.
+     * value. The value is of one of the valid property types, i.e. a Java primitive,
+     * a {@link String String}, a {@link org.neo4j.graphdb.spatial.Point Point},
+     * a valid temporal type, or an array of any of the valid types.
+     * See the {@link #setProperty(String, Object)} setProperty}
+     * method for a full list of known types.
      *
      * @param key the property key
      * @param defaultValue the default value that will be returned if no
@@ -99,6 +105,21 @@ public interface PropertyContainer
      * <li><code>double</code> or <code>double[]</code></li>
      * <li><code>char</code> or <code>char[]</code></li>
      * <li><code>java.lang.String</code> or <code>String[]</code></li>
+     * <li><code>org.neo4j.graphdb.spatial.Point</code> or <code>Point[]</code></li>
+     * <li><code>java.time.LocalDate</code> or <code>LocalDate[]</code></li>
+     * <li><code>java.time.OffsetTime</code> or <code>OffsetTime[]</code></li>
+     * <li><code>java.time.LocalTime</code> or <code>LocalTime[]</code></li>
+     * <li><code>java.time.ZonedDateTime</code> or <code>ZonedDateTime[]</code>.
+     * It is also possible to use <code>java.time.OffsetDateTime</code> and it will
+     * be converted to a <code>ZonedDateTime</code> internally.
+     * </li>
+     * <li><code>java.time.LocalDateTime</code> or <code>LocalDateTime[]</code></li>
+     * <li><code>java.time.temporal.TemporalAmount</code> or <code>TemporalAmount[]</code>.
+     * There are two concrete implementations of this interface, <code>java.time.Duration</code>
+     * and <code>java.time.Period</code> which will be converted to a single Neo4j <code>Duration</code>
+     * type. This means the loss of type information, so properties of this type, when read back using
+     * <code>getProperty</code> will be only of type <code>java.time.temporal.TemporalAmount</code>.
+     * </li>
      * </ul>
      * <p>
      * This means that <code>null</code> is not an accepted property value.
