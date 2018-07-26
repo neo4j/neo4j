@@ -24,8 +24,8 @@ import java.math.RoundingMode
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
 import org.neo4j.cypher.internal.ir.v3_5.Selections
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics._
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.v3_5.logical.plans.PrefixRange
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
@@ -145,7 +145,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            val descriptor = IndexDescriptor(labelId, propertyKeyId)
+            val descriptor = IndexDescriptor(labelId, Seq(propertyKeyId))
             val selectivities: Option[Selectivity] = stats.indexSelectivity(descriptor)
             selectivities
 
@@ -239,7 +239,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            val descriptor = IndexDescriptor(labelId, propertyKeyId)
+            val descriptor = IndexDescriptor(labelId, Seq(propertyKeyId))
             val selectivity: Option[Selectivity] = stats.indexPropertyExistsSelectivity(descriptor)
             selectivity
 

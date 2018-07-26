@@ -24,16 +24,16 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
+import org.neo4j.values.virtual.NodeValue
+import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
-import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
-import org.neo4j.values.virtual.NodeValue
 
 class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
-  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  private val descriptor = IndexDescriptor(label.nameId, Seq(propertyKey.nameId))
   private val node = nodeValue(11)
 
   private def nodeValue(id: Long) = {

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.spi
 
 import org.neo4j.cypher.internal.planner.v3_5.spi._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 import scala.language.reflectiveCalls
 
@@ -29,7 +29,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
   private val label2 = LabelId(2)
   private val label4 = LabelId(4)
-  private val index = IndexDescriptor(LabelId(0), PropertyKeyId(3))
+  private val index = IndexDescriptor(LabelId(0), Seq(PropertyKeyId(3)))
 
   test("records queries and its observed values") {
     val snapshot = new MutableGraphStatisticsSnapshot()

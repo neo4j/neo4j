@@ -108,8 +108,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       private def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
         if (config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
-            semanticTable.resolvedLabelNames(labelName).id,
-            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
+            semanticTable.resolvedLabelNames(labelName),
+            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_))
           ))
         else
           None
@@ -117,8 +117,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       private def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
-            semanticTable.resolvedLabelNames(labelName).id,
-            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
+            semanticTable.resolvedLabelNames(labelName),
+            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_))
           ))
         else
           None

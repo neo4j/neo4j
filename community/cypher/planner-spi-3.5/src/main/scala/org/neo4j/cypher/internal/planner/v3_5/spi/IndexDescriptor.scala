@@ -19,26 +19,45 @@
  */
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.{OrderCapability, ValueCapability}
+import org.opencypher.v9_0.util.symbols.CypherType
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 sealed trait IndexLimitation
 case object SlowContains extends IndexLimitation
 
+sealed trait IndexOrderCapability
+case object BothAscDescIndexOrder extends IndexOrderCapability
+case object AscIndexOrder extends IndexOrderCapability
+case object DescIndexOrder extends IndexOrderCapability
+case object NoIndexOrder extends IndexOrderCapability
+
 object IndexDescriptor {
+  /**
+    * Given the actual types of properties (one for a single-property index and multiple for a composite index)
+    * can this index guarantee ordered retrieval?
+    */
+  type OrderCapability = Seq[CypherType] => IndexOrderCapability
+  val noOrderCapability: OrderCapability = _ => NoIndexOrder
+
+  /**
+    * Given the actual types of properties (one for a single-property index and multiple for a composite index)
+    * does the index provide the actual values?
+    */
+  type ValueCapability = Seq[CypherType] => Seq[Boolean]
+  val noValueCapability: ValueCapability = s => s.map(_ => false)
+
   def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)))
-  def apply(label: Int, property: Int, limitations: Set[IndexLimitation]): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)), limitations)
-
-  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.map(PropertyKeyId))
-  def apply(label: Int, properties: Seq[Int], limitations: Set[IndexLimitation]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.map(PropertyKeyId), limitations)
-
-  def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Seq(property))
-  def apply(label: LabelId, property: PropertyKeyId, limitations: Set[IndexLimitation]): IndexDescriptor = IndexDescriptor(label, Seq(property), limitations)
 
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray
 }
 
-case class IndexDescriptor(label: LabelId, properties: Seq[PropertyKeyId], limitations: Set[IndexLimitation] = Set.empty[IndexLimitation]) {
-  def isComposite: Boolean = properties.length > 1
+case class IndexDescriptor(label: LabelId,
+                           properties: Seq[PropertyKeyId],
+                           limitations: Set[IndexLimitation] = Set.empty[IndexLimitation],
+                           orderCapability: OrderCapability = IndexDescriptor.noOrderCapability,
+                           valueCapability: ValueCapability = IndexDescriptor.noValueCapability) {
+  val isComposite: Boolean = properties.length > 1
 
-  def property: PropertyKeyId = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties(0)
+  def property: PropertyKeyId = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties.head
 }

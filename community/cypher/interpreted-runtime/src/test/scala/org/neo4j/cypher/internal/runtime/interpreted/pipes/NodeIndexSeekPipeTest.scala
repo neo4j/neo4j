@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
-import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.opencypher.v9_0.util.{CypherTypeException, LabelId, PropertyKeyId}
-import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.NodeValue
+import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.opencypher.v9_0.util.{CypherTypeException, LabelId, PropertyKeyId}
 
 class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
 
@@ -41,7 +41,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
   private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   private val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
   private val propertyKeys = propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11))
-  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.map(_.nameId.id))
+  private val descriptor = IndexDescriptor(label.nameId, propertyKey.map(_.nameId))
   private val node = nodeValue(1)
   private val node2 = nodeValue(2)
 

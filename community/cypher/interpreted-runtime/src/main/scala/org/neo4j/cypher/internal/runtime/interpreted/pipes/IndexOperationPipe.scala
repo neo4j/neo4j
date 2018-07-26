@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
-import org.opencypher.v9_0.util.SyntaxException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{CreateIndex, DropIndex, IndexOperation}
 import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, SyntaxException}
 
 case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = Id.INVALID_ID) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
@@ -34,11 +34,11 @@ case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = Id.INVALID_I
     indexOp match {
       case CreateIndex(_, propertyKeys, _) =>
         val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
-        queryContext.addIndexRule(IndexDescriptor(labelId, propertyKeyIds))
+        queryContext.addIndexRule(IndexDescriptor(LabelId(labelId), propertyKeyIds.map(PropertyKeyId)))
 
       case DropIndex(_, propertyKeys, _) =>
         val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
-        queryContext.dropIndexRule(IndexDescriptor(labelId, propertyKeyIds))
+        queryContext.dropIndexRule(IndexDescriptor(LabelId(labelId), propertyKeyIds.map(PropertyKeyId)))
 
       case _ =>
         throw new UnsupportedOperationException("Unknown IndexOperation encountered")

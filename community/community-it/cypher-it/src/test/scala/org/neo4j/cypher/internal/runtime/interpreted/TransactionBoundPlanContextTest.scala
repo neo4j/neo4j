@@ -33,7 +33,7 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.frontend.phases.devNullLogger
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId}
+import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
@@ -136,8 +136,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val prop1id = planContext.getPropertyKeyId("prop")
     val prop2id = planContext.getPropertyKeyId("prop2")
     planContext.indexesGetForLabel(l1id).toSet should equal(Set(
-      IndexDescriptor(l1id, prop1id, Set[IndexLimitation](SlowContains)),
-      IndexDescriptor(l1id, prop2id, Set[IndexLimitation](SlowContains))
+      IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)), Set[IndexLimitation](SlowContains)),
+      IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
     ))
   }
 
@@ -161,7 +161,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val l1id = planContext.getLabelId("L1")
     val prop2id = planContext.getPropertyKeyId("prop2")
     planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
-      IndexDescriptor(l1id, prop2id, Set[IndexLimitation](SlowContains))
+      IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
     ))
   }
 

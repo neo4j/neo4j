@@ -20,18 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality
 
 import org.mockito.Mockito.when
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util._
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util._
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val index = IndexDescriptor(LabelId(0), PropertyKeyId(0))
+  val index = IndexDescriptor(LabelId(0), Seq(PropertyKeyId(0)))
 
   test("Should consider parameter expressions when calculating index selectivity") {
     implicit val semanticTable = SemanticTable()

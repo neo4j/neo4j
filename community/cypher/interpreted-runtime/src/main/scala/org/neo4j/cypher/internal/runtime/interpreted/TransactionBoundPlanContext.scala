@@ -22,18 +22,21 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.v3_5.spi._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
+import org.neo4j.values.storable.ValueCategory
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.CypherExecutionException
 import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.{CypherExecutionException, LabelId, PropertyKeyId, symbols => types}
 
 import scala.collection.JavaConverters._
 
@@ -84,12 +87,52 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
     tc.schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE =>
-        reference match {
-          case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.schema().getEntityTokenIds()(0), cir.schema().getPropertyIds, cir.limitations().map(kernelToCypher).toSet))
-          case _ => Some(IndexDescriptor(reference.schema().getEntityTokenIds()(0), reference.properties()))
+        val label = LabelId(reference.schema().getEntityTokenIds()(0))
+        val properties = reference.properties().map(PropertyKeyId)
+        val limitations = reference.limitations().map(kernelToCypher).toSet
+        val orderCapability: OrderCapability = tps => {
+           reference.orderCapability(tps.map(typeToValueCategory): _*) match {
+            case Array() => NoIndexOrder
+            case Array(api.IndexOrder.ASCENDING, api.IndexOrder.DESCENDING) => BothAscDescIndexOrder
+            case Array(api.IndexOrder.DESCENDING, api.IndexOrder.ASCENDING) => BothAscDescIndexOrder
+            case Array(api.IndexOrder.ASCENDING) => AscIndexOrder
+            case Array(api.IndexOrder.DESCENDING) => DescIndexOrder
+            case _ => NoIndexOrder
+          }
         }
+        val valueCapability: ValueCapability = tps => {
+          reference.valueCapability(tps.map(typeToValueCategory): _*) match {
+              // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
+            case api.IndexValueCapability.YES => tps.map(_ => true)
+            case api.IndexValueCapability.PARTIAL => tps.map(_ => false)
+            case api.IndexValueCapability.NO => tps.map(_ => false)
+          }
+        }
+        Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability))
       case _ => None
     }
+
+  /**
+    * Translate a Cypher Type to a ValueCategory that IndexReference can handle
+    */
+  private def typeToValueCategory(in: CypherType): ValueCategory = in match {
+    case _: types.IntegerType |
+         _: types.FloatType =>
+      ValueCategory.NUMBER
+
+    case _: types.StringType =>
+      ValueCategory.TEXT
+
+    case _: types.GeometryType | _: types.PointType =>
+      ValueCategory.GEOMETRY
+
+    case _: types.DateTimeType | _: types.LocalDateTimeType | _: types.DateType | _: types.TimeType | _: types.LocalTimeType | _: types.DurationType =>
+      ValueCategory.TEMPORAL
+
+    // For everything else, we don't know
+    case _ =>
+      ValueCategory.UNKNOWN
+  }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
    try {
