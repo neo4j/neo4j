@@ -17,33 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.storable.TextValue;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.impl.api.AbstractIndexKeyLengthValidator;
 import org.neo4j.values.storable.Value;
 
-/**
- * Validates {@link TextValue text values} so that they are within a certain length, byte-wise.
- */
-public class IndexTextValueLengthValidator extends AbstractIndexKeyLengthValidator
+public class NativeIndexKeyLengthValidator<KEY extends NativeIndexKey,VALUE extends NativeIndexValue> extends AbstractIndexKeyLengthValidator
 {
-    IndexTextValueLengthValidator( int maxByteLength )
+    private final Layout<KEY,VALUE> layout;
+
+    NativeIndexKeyLengthValidator( int maxByteLength, Layout<KEY,VALUE> layout )
     {
         super( maxByteLength );
+        this.layout = layout;
     }
 
     @Override
     protected int indexKeyLength( Value value )
     {
-        return ((TextValue)value).stringValue().getBytes().length;
-    }
-
-    public void validate( byte[] encodedValue )
-    {
-        if ( encodedValue == null )
-        {
-            throw new IllegalArgumentException( "Null value" );
-        }
-        validateLength( encodedValue.length );
+        KEY key = layout.newKey();
+        key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
+        return layout.keySize( key );
     }
 }

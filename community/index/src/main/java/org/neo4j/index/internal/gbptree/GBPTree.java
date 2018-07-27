@@ -1368,4 +1368,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         return dirtyOnStartup;
     }
+
+    /**
+     * Total size limit for key and value.
+     * This limit includes storage overhead that is specific to key implementation for example entity id or meta data about type.
+     * @return Total size limit for key and value or {@link TreeNode#NO_KEY_VALUE_SIZE_CAP} if no such value exists.
+     */
+    public int keyValueSizeCap()
+    {
+        return bTreeNode.keyValueSizeCap();
+    }
 }

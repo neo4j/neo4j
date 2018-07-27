@@ -64,6 +64,11 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector );
+        afterTreeInstantiation( tree );
+    }
+
+    protected void afterTreeInstantiation( GBPTree<KEY,VALUE> tree )
+    {   // no-op per default
     }
 
     private GBPTree.Monitor treeMonitor( )

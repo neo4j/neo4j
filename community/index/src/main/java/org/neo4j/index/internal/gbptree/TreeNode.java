@@ -64,6 +64,8 @@ abstract class TreeNode<KEY,VALUE>
     static final byte INTERNAL_FLAG = 0;
     static final long NO_NODE_FLAG = 0;
 
+    static final int NO_KEY_VALUE_SIZE_CAP = -1;
+
     final Layout<KEY,VALUE> layout;
     final int pageSize;
 
@@ -211,7 +213,6 @@ abstract class TreeNode<KEY,VALUE>
      * @param baseOffset Offset to slot in logical position 0.
      * @param slotSize Size of one single slot.
      */
-
     static void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int totalSlotCount, int baseOffset,
             int slotSize )
     {
@@ -273,6 +274,11 @@ abstract class TreeNode<KEY,VALUE>
     }
 
     // HELPERS
+
+    public int keyValueSizeCap()
+    {
+        return NO_KEY_VALUE_SIZE_CAP;
+    }
 
     abstract boolean reasonableKeyCount( int keyCount );
 

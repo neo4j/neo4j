@@ -42,6 +42,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -88,7 +89,7 @@ class IndexValuesValidationTest
                 transaction.success();
             }
         } );
-        assertThat( argumentException.getMessage(), startsWith( "Property value bytes length: 32767 is longer than" ) );
+        assertThat( argumentException.getMessage(), equalTo( "Property value size is too large for index. Please see index documentation for limitations." ) );
     }
 
     @Test
@@ -147,7 +148,7 @@ class IndexValuesValidationTest
                 transaction.success();
             }
         } );
-        assertEquals( "Property value bytes length: 32767 is longer than 32766, which is maximum supported length of indexed property value.",
+        assertEquals( "Property value size is too large for index. Please see index documentation for limitations.",
                 argumentException.getMessage() );
     }
 
@@ -181,7 +182,7 @@ class IndexValuesValidationTest
                 transaction.success();
             }
         } );
-        assertEquals( "Property value bytes length: 32767 is longer than 32766, which is maximum supported length of indexed property value.",
+        assertEquals( "Property value size is too large for index. Please see index documentation for limitations.",
                 argumentException.getMessage() );
     }
 

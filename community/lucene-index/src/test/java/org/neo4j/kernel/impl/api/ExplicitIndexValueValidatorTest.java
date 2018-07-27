@@ -45,7 +45,7 @@ class ExplicitIndexValueValidatorTest
     {
         int length = MAX_TERM_LENGTH * 2;
         IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> INSTANCE.validate( RandomStringUtils.randomAlphabetic( length ) ) );
-        assertThat( iae.getMessage(), containsString( length + " is longer than " + MAX_TERM_LENGTH ) );
+        assertThat( iae.getMessage(), containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
     }
 
     @Test

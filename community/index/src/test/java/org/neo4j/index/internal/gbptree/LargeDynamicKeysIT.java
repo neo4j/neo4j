@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
@@ -39,6 +40,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class LargeDynamicKeysIT
 {
@@ -49,15 +51,33 @@ public class LargeDynamicKeysIT
     public final RandomRule random = new RandomRule();
 
     @Test
+    public void mustStayCorrectWhenInsertingValuesOfIncreasingLength() throws IOException
+    {
+        Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout();
+        try ( GBPTree<RawBytes,RawBytes> index = createIndex( layout );
+              Writer<RawBytes,RawBytes> writer = index.writer() )
+        {
+            RawBytes emptyValue = layout.newValue();
+            emptyValue.bytes = new byte[0];
+            for ( int keySize = 1; keySize < index.keyValueSizeCap(); keySize++ )
+            {
+                RawBytes key = layout.newKey();
+                key.bytes = new byte[keySize];
+                writer.put( key, emptyValue );
+            }
+        }
+    }
+
+    @Test
     public void shouldWriteAndReadKeysOfSizesCloseToTheLimits() throws IOException
     {
         // given
-        try ( GBPTree<RawBytes,RawBytes> tree =
-                new GBPTreeBuilder<>( storage.pageCache(), storage.directory().file( "index" ), new SimpleByteArrayLayout() ).build() )
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex( new SimpleByteArrayLayout() ) )
         {
             // when
             Set<String> generatedStrings = new HashSet<>();
             List<Pair<RawBytes,RawBytes>> entries = new ArrayList<>();
+            int keyValueSizeCap = tree.keyValueSizeCap();
             try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
             {
                 for ( int i = 0; i < 1_000; i++ )
@@ -71,7 +91,8 @@ public class LargeDynamicKeysIT
                     String string;
                     do
                     {
-                        string = random.nextAlphaNumericString( 3_000, 4_043 );
+                        int keySizeCap = keyValueSizeCap - value.bytes.length;
+                        string = random.nextAlphaNumericString( keySizeCap - 1000, keySizeCap );
                     }
                     while ( !generatedStrings.add( string ) );
                     RawBytes key = new RawBytes();
@@ -95,5 +116,12 @@ public class LargeDynamicKeysIT
                 }
             }
         }
+    }
+
+    private GBPTree<RawBytes,RawBytes> createIndex( Layout<RawBytes,RawBytes> layout ) throws IOException
+    {
+        // some random padding
+        PageCache pageCache = storage.pageCacheRule().getPageCache( storage.fileSystem(), config().withAccessChecks( true ) );
+        return new GBPTreeBuilder<>( pageCache, storage.directory().file( "index" ), layout ).build();
     }
 }

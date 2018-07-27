@@ -120,7 +120,7 @@ public class NativeStringIndexingIT
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "Property value bytes length: " + length + " is longer than" ) );
+            assertThat( e.getMessage(), containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
         }
     }
 
@@ -188,7 +188,7 @@ public class NativeStringIndexingIT
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "Property value bytes length: " + length + " is longer than" ) );
+            assertThat( e.getMessage(), containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
         }
     }
 
