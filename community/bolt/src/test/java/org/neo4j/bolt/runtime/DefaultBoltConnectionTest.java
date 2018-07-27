@@ -24,10 +24,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltServer;
@@ -52,6 +54,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -244,16 +247,31 @@ public class DefaultBoltConnectionTest
         connection.stop();
 
         verify( stateMachine ).markForTermination();
+        verify( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
     }
 
     @Test
-    public void stopShouldCloseStateMachine()
+    public void stopShouldCloseStateMachineOnProcessNextBatch()
     {
         BoltConnection connection = newConnection();
 
         connection.stop();
 
         connection.processNextBatch();
+
+        verify( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
+        verify( stateMachine ).markForTermination();
+        verify( stateMachine ).close();
+    }
+
+    @Test
+    public void stopShouldCloseStateMachineIfEnqueueThrowsRejectedExecutionException()
+    {
+        BoltConnection connection = newConnection();
+
+        doThrow( new RejectedExecutionException() ).when( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
+
+        connection.stop();
 
         verify( stateMachine ).markForTermination();
         verify( stateMachine ).close();
