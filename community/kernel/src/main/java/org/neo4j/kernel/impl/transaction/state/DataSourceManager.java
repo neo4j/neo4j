@@ -67,10 +67,14 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     public void register( NeoStoreDataSource dataSource )
     {
-        this.dataSource = dataSource;
-        if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
+        //TODO: temp workaround for multiple listeners
+        if ( this.dataSource == null )
         {
-            dsRegistrationListeners.notify( listener -> listener.registered( dataSource ) );
+            this.dataSource = dataSource;
+            if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
+            {
+                dsRegistrationListeners.notify( listener -> listener.registered( dataSource ) );
+            }
         }
     }
 
