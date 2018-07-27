@@ -89,7 +89,7 @@ public class StringLengthIndexValidationIT
         catch ( IllegalArgumentException e )
         {
             assertThat( e.getMessage(),
-                    Matchers.containsString( "Property value size is to large for index. Please see index documentation for limitations." ) );
+                    Matchers.containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
         }
     }
 

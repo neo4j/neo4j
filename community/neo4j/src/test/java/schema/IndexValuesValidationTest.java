@@ -81,7 +81,7 @@ public class IndexValuesValidationTest
         }
 
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( containsString( "Property value bytes length: 32767 is longer than" ) );
+        expectedException.expectMessage( containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
 
         try ( Transaction transaction = database.beginTx() )
         {
@@ -138,8 +138,7 @@ public class IndexValuesValidationTest
         }
 
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Property value bytes length: 32767 is longer than 32766, " +
-                "which is maximum supported length of indexed property value." );
+        expectedException.expectMessage( "Property value size is too large for index. Please see index documentation for limitations." );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode( label );
@@ -169,8 +168,7 @@ public class IndexValuesValidationTest
         }
 
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Property value bytes length: 32767 is longer than 32766, " +
-                "which is maximum supported length of indexed property value." );
+        expectedException.expectMessage( "Property value size is too large for index. Please see index documentation for limitations." );
         try ( Transaction transaction = database.beginTx() )
         {
             Node source = database.createNode( label );

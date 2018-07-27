@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,10 +34,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TestLabels;
@@ -125,7 +119,7 @@ public class NativeStringIndexingIT
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "Property value bytes length: " + length + " is longer than" ) );
+            assertThat( e.getMessage(), containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
         }
     }
 
@@ -192,7 +186,7 @@ public class NativeStringIndexingIT
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "Property value bytes length: " + length + " is longer than" ) );
+            assertThat( e.getMessage(), containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
         }
     }
 
