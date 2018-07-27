@@ -27,8 +27,37 @@ import java.util.Map;
  * <p>
  * Properties are key-value pairs. The keys are always strings. Valid property
  * value types are all the Java primitives (<code>int</code>, <code>byte</code>,
- * <code>float</code>, etc), <code>java.lang.String</code>s and arrays of
- * primitives and Strings.
+ * <code>float</code>, etc), <code>java.lang.String</code>s, the new <em>Spatial</em>
+ * and <em>Temporal</em> types and arrays of any of these.
+ * <p>
+ * The complete list of currently supported property types is:
+ * <ul>
+ * <li><code>boolean</code></li>
+ * <li><code>byte</code></li>
+ * <li><code>short</code></li>
+ * <li><code>int</code></li>
+ * <li><code>long</code></li>
+ * <li><code>float</code></li>
+ * <li><code>double</code></li>
+ * <li><code>char</code></li>
+ * <li><code>java.lang.String</code></li>
+ * <li><code>org.neo4j.graphdb.spatial.Point</code></li>
+ * <li><code>java.time.LocalDate</code></li>
+ * <li><code>java.time.OffsetTime</code></li>
+ * <li><code>java.time.LocalTime</code></li>
+ * <li><code>java.time.ZonedDateTime</code><br>
+ * <div style="padding-left: 20pt;">It is also possible to use <code>java.time.OffsetDateTime</code> and it will
+ * be converted to a <code>ZonedDateTime</code> internally.</div>
+ * </li>
+ * <li><code>java.time.LocalDateTime</code></li>
+ * <li><code>java.time.temporal.TemporalAmount</code><br>
+ * <div style="padding-left: 20pt;">There are two concrete implementations of this interface, <code>java.time.Duration</code>
+ * and <code>java.time.Period</code> which will be converted to a single Neo4j <code>Duration</code>
+ * type. This means loss of type information, so properties of this type, when read back using
+ * {@link #getProperty(String) getProperty} will be only of type <code>java.time.temporal.TemporalAmount</code>.</div>
+ * </li>
+ * <li>Arrays of any of the above types, for example <code>int[]</code>, <code>String[]</code> or <code>LocalTime[]</code></li>
+ * </ul>
  * <p>
  * <b>Please note</b> that Neo4j does NOT accept arbitrary objects as property
  * values. {@link #setProperty(String, Object) setProperty()} takes a
@@ -61,8 +90,8 @@ public interface PropertyContainer
      * one of the valid property types, i.e. a Java primitive,
      * a {@link String String}, a {@link org.neo4j.graphdb.spatial.Point Point},
      * a valid temporal type, or an array of any of the valid types.
-     * See the {@link #setProperty(String, Object)} setProperty}
-     * method for a full list of known types.
+     * See the {@link PropertyContainer the class description}
+     * for a full list of known types.
      * <p>
      * If there's no property associated with <code>key</code> an unchecked
      * exception is raised. The idiomatic way to avoid an exception for an
@@ -82,8 +111,8 @@ public interface PropertyContainer
      * value. The value is of one of the valid property types, i.e. a Java primitive,
      * a {@link String String}, a {@link org.neo4j.graphdb.spatial.Point Point},
      * a valid temporal type, or an array of any of the valid types.
-     * See the {@link #setProperty(String, Object)} setProperty}
-     * method for a full list of known types.
+     * See the {@link PropertyContainer the class description}
+     * for a full list of known types.
      *
      * @param key the property key
      * @param defaultValue the default value that will be returned if no
@@ -94,33 +123,11 @@ public interface PropertyContainer
 
     /**
      * Sets the property value for the given key to <code>value</code>. The
-     * property value must be one of the valid property types, i.e:
-     * <ul>
-     * <li><code>boolean</code> or <code>boolean[]</code></li>
-     * <li><code>byte</code> or <code>byte[]</code></li>
-     * <li><code>short</code> or <code>short[]</code></li>
-     * <li><code>int</code> or <code>int[]</code></li>
-     * <li><code>long</code> or <code>long[]</code></li>
-     * <li><code>float</code> or <code>float[]</code></li>
-     * <li><code>double</code> or <code>double[]</code></li>
-     * <li><code>char</code> or <code>char[]</code></li>
-     * <li><code>java.lang.String</code> or <code>String[]</code></li>
-     * <li><code>org.neo4j.graphdb.spatial.Point</code> or <code>Point[]</code></li>
-     * <li><code>java.time.LocalDate</code> or <code>LocalDate[]</code></li>
-     * <li><code>java.time.OffsetTime</code> or <code>OffsetTime[]</code></li>
-     * <li><code>java.time.LocalTime</code> or <code>LocalTime[]</code></li>
-     * <li><code>java.time.ZonedDateTime</code> or <code>ZonedDateTime[]</code>.
-     * It is also possible to use <code>java.time.OffsetDateTime</code> and it will
-     * be converted to a <code>ZonedDateTime</code> internally.
-     * </li>
-     * <li><code>java.time.LocalDateTime</code> or <code>LocalDateTime[]</code></li>
-     * <li><code>java.time.temporal.TemporalAmount</code> or <code>TemporalAmount[]</code>.
-     * There are two concrete implementations of this interface, <code>java.time.Duration</code>
-     * and <code>java.time.Period</code> which will be converted to a single Neo4j <code>Duration</code>
-     * type. This means the loss of type information, so properties of this type, when read back using
-     * <code>getProperty</code> will be only of type <code>java.time.temporal.TemporalAmount</code>.
-     * </li>
-     * </ul>
+     * property value must be one of the valid property types, i.e. a Java primitive,
+     * a {@link String String}, a {@link org.neo4j.graphdb.spatial.Point Point},
+     * a valid temporal type, or an array of any of the valid types.
+     * See the {@link PropertyContainer the class description}
+     * for a full list of known types.
      * <p>
      * This means that <code>null</code> is not an accepted property value.
      *
