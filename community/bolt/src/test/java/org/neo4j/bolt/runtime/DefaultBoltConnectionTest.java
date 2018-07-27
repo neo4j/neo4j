@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import com.sun.org.apache.xpath.internal.Arg;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Before;
