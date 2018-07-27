@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -740,12 +739,6 @@ public class LabelsAcceptanceTest
             {
                 return new GraphDatabaseBuilder.DatabaseCreator()
                 {
-                    @Override
-                    public GraphDatabaseService newDatabase( Map<String,String> config )
-                    {
-                        return newDatabase( Config.defaults( config ) );
-                    }
-
                     @Override
                     public GraphDatabaseService newDatabase( @Nonnull Config config )
                     {

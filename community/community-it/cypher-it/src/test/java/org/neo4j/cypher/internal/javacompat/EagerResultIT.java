@@ -30,7 +30,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.LongSupplier;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -284,12 +283,6 @@ public class EagerResultIT
         {
             return new GraphDatabaseBuilder.DatabaseCreator()
             {
-                @Override
-                public GraphDatabaseService newDatabase( Map<String,String> config )
-                {
-                    return newDatabase( Config.defaults( config ) );
-                }
-
                 @Override
                 public GraphDatabaseService newDatabase( Config config )
                 {

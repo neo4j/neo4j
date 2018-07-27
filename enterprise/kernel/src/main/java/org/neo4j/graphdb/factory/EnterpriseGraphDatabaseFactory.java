@@ -23,7 +23,6 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.configuration.Config;
@@ -45,12 +44,6 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
-            @Override
-            public GraphDatabaseService newDatabase( Map<String,String> config )
-            {
-                return newDatabase( Config.defaults( config ) );
-            }
-
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {

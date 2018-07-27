@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Map;
 import java.util.function.LongSupplier;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -192,12 +191,6 @@ public class QueryRestartIT
         {
             return new GraphDatabaseBuilder.DatabaseCreator()
             {
-                @Override
-                public GraphDatabaseService newDatabase( Map<String,String> config )
-                {
-                    return newDatabase( Config.defaults( config ) );
-                }
-
                 @Override
                 public GraphDatabaseService newDatabase( Config config )
                 {

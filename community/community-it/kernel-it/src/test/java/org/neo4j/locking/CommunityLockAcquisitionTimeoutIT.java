@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
-import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -229,12 +228,6 @@ public class CommunityLockAcquisitionTimeoutIT
         {
             return new GraphDatabaseBuilder.DatabaseCreator()
             {
-                @Override
-                public GraphDatabaseService newDatabase( Map<String,String> config )
-                {
-                    return newDatabase( Config.defaults( config ) );
-                }
-
                 @Override
                 public GraphDatabaseService newDatabase( Config config )
                 {

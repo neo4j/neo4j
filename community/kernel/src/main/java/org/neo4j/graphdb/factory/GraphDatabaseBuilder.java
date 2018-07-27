@@ -53,7 +53,10 @@ public class GraphDatabaseBuilder
          * @deprecated this method will go away in 4.0. See {@link #newDatabase(Config)} instead.
          */
         @Deprecated
-        GraphDatabaseService newDatabase( Map<String,String> config );
+        default GraphDatabaseService newDatabase( Map<String,String> config )
+        {
+            return newDatabase( Config.defaults( config ) );
+        }
 
         /**
          * @param config initial configuration for the database.

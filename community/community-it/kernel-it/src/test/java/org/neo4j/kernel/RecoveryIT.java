@@ -426,11 +426,6 @@ public class RecoveryIT
                     {
                         return new GraphDatabaseBuilder.DatabaseCreator()
                         {
-                            @Override
-                            public GraphDatabaseService newDatabase( Map<String,String> config )
-                            {
-                                return newDatabase( Config.defaults( config ) );
-                            }
 
                             @Override
                             public GraphDatabaseService newDatabase( @Nonnull Config config )

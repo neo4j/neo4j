@@ -661,8 +661,7 @@ public class TransactionGuardIT
     private class GuardingServerBuilder extends EnterpriseServerBuilder
     {
         private GraphDatabaseFacade graphDatabaseFacade;
-        final LifecycleManagingDatabase.GraphFactory PRECREATED_FACADE_FACTORY =
-                ( config, dependencies ) -> graphDatabaseFacade;
+        final LifecycleManagingDatabase.GraphFactory PRECREATED_FACADE_FACTORY = ( config, dependencies ) -> graphDatabaseFacade;
 
         GuardingServerBuilder( GraphDatabaseFacade graphDatabaseAPI )
         {
@@ -703,12 +702,6 @@ public class TransactionGuardIT
         {
             return new GraphDatabaseBuilder.DatabaseCreator()
             {
-                @Override
-                public GraphDatabaseService newDatabase( Map<String,String> config )
-                {
-                    return newDatabase( Config.defaults( config ) );
-                }
-
                 @Override
                 public GraphDatabaseService newDatabase( Config config )
                 {
