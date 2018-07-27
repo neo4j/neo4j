@@ -148,6 +148,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     }
 
     // todo is this simple lowest approach viable? Probably not when including arrays
+    // todo not for arrays most likely
     void initValueAsLowest( ValueGroup valueGroup )
     {
         type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
@@ -164,6 +165,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     }
 
     // todo is this simple highest approach viable? Probably not when including arrays
+    // todo not for arrays most likely
     void initValueAsHighest( ValueGroup valueGroup )
     {
         type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
@@ -199,9 +201,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     /* <copyFrom> */
     void copyFrom( GenericKeyState key )
     {
-        this.type = key.type;
-        this.inclusion = key.inclusion;
-        this.isArray = key.isArray;
+        copyMetaFrom( key );
         if ( !key.isArray )
         {
             this.long0 = key.long0;
@@ -217,37 +217,43 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             switch ( key.type )
             {
             case ZONED_DATE_TIME_ARRAY:
-                copyZonedDateTimeArrayFrom( key );
+                copyZonedDateTimeArrayFrom( key, key.arrayLength );
                 break;
             case LOCAL_DATE_TIME_ARRAY:
-                copyLocalDateTimeArrayFrom( key );
+                copyLocalDateTimeArrayFrom( key, key.arrayLength );
                 break;
             case DATE_ARRAY:
-                copyDateArrayFrom( key );
+                copyDateArrayFrom( key, key.arrayLength );
                 break;
             case ZONED_TIME_ARRAY:
-                copyZonedTimeArrayFrom( key );
+                copyZonedTimeArrayFrom( key, key.arrayLength );
                 break;
             case LOCAL_TIME_ARRAY:
-                copyLocalTimeArrayFrom( key );
+                copyLocalTimeArrayFrom( key, key.arrayLength );
                 break;
             case DURATION_ARRAY:
-                copyDurationArrayFrom( key );
+                copyDurationArrayFrom( key, key.arrayLength );
                 break;
             case TEXT_ARRAY:
-                copyTextArrayFrom( key );
+                copyTextArrayFrom( key, key.arrayLength );
                 break;
             case BOOLEAN_ARRAY:
-                copyBooleanArrayFrom( key );
+                copyBooleanArrayFrom( key, key.arrayLength );
                 break;
             case NUMBER_ARRAY:
-                copyNumberArrayFrom( key );
-                this.long1 = key.long1;
+                copyNumberArrayFrom( key, key.arrayLength );
                 break;
             default:
                 throw new IllegalStateException( "Expected an array type but was " + type );
             }
         }
+    }
+
+    private void copyMetaFrom( GenericKeyState key )
+    {
+        this.type = key.type;
+        this.inclusion = key.inclusion;
+        this.isArray = key.isArray;
     }
 
     private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
@@ -281,6 +287,14 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     int compareValueTo( GenericKeyState other )
     {
+        if ( type == null )
+        {
+            return -1;
+        }
+        else if ( other == null || other.type == null )
+        {
+            return 1;
+        }
         int typeComparison = GenericLayout.TYPE_COMPARATOR.compare( type, other.type );
         if ( typeComparison != 0 )
         {
@@ -295,6 +309,104 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
         return inclusion.compareTo( other.inclusion );
     }
+
+    /* <minimalSplitter> */
+    public static void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    {
+        into.clear();
+        into.copyMetaFrom( right );
+        switch ( right.type )
+        {
+        case TEXT:
+            minimalSplitterText( left, right, into );
+            break;
+        case ZONED_DATE_TIME_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareZonedDateTime(
+                    o1.long0Array[i], o1.long1Array[i], o1.long2Array[i], o1.long3Array[i],
+                    o2.long0Array[i], o2.long1Array[i], o2.long2Array[i], o2.long3Array[i] ),
+                    GenericKeyState::copyZonedDateTimeArrayFrom );
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareLocalDateTime(
+                    o1.long0Array[i], o1.long1Array[i],
+                    o2.long0Array[i], o2.long1Array[i] ),
+                    GenericKeyState::copyLocalDateTimeArrayFrom );
+            break;
+        case DATE_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareDate(
+                    o1.long0Array[i],
+                    o2.long0Array[i] ),
+                    GenericKeyState::copyDateArrayFrom );
+            break;
+        case ZONED_TIME_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareZonedTime(
+                    o1.long0Array[i], o1.long1Array[i],
+                    o2.long0Array[i], o2.long1Array[i] ),
+                    GenericKeyState::copyZonedTimeArrayFrom );
+            break;
+        case LOCAL_TIME_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareLocalTime(
+                    o1.long0Array[i],
+                    o2.long0Array[i] ),
+                    GenericKeyState::copyLocalTimeArrayFrom );
+            break;
+        case DURATION_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareDuration(
+                    o1.long0Array[i], o1.long1Array[i], o1.long2Array[i], o1.long3Array[i],
+                    o2.long0Array[i], o2.long1Array[i], o2.long2Array[i], o2.long3Array[i] ),
+                    GenericKeyState::copyDurationArrayFrom );
+            break;
+        case TEXT_ARRAY:
+            // todo continue here! Nested minimal splitter for array of text
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareText(
+                    o1.byteArrayArray[i], o1.long0Array[i], o1.long2, o1.long3,
+                    o2.byteArrayArray[i], o2.long0Array[i], o2.long2, o2.long3 ),
+                    GenericKeyState::copyTextArrayFrom );
+            break;
+        case BOOLEAN_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareBoolean(
+                    o1.long0Array[i],
+                    o2.long0Array[i] ),
+                    GenericKeyState::copyBooleanArrayFrom );
+            break;
+        case NUMBER_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareNumber(
+                    o1.long0Array[i], o1.long1,
+                    o2.long0Array[i], o2.long1 ),
+                    GenericKeyState::copyNumberArrayFrom );
+            break;
+        default:
+            // if not text or array, just copy from 'right'
+            into.copyFrom( right );
+        }
+    }
+
+    private static void minimalSplitterArray( GenericKeyState left, GenericKeyState right, GenericKeyState into,
+            ArrayElementComparator comparator, ArrayCopier arrayCopier )
+    {
+        int index = 0;
+        if ( left.type == right.type )
+        {
+            int compare = 0;
+            int length = min( left.arrayLength, right.arrayLength );
+            for ( ; compare == 0 && index < length; index++ )
+            {
+                compare = comparator.compare( left, right, index );
+            }
+        }
+        arrayCopier.copyArray( into, right, index );
+    }
+
+    private static void minimalSplitterText( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    {
+        int length = 0;
+        if ( left.type == Type.TEXT )
+        {
+            length = StringLayout.firstPosToDiffer( left.byteArray, (int) left.long0, right.byteArray, (int) right.long0 );
+        }
+        into.writeUTF8( right.byteArray, 0, length );
+    }
+    /* </minimalSplitter> */
 
     /* <size> */
     int size()
@@ -561,16 +673,16 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private int compareArrays( GenericKeyState that, ArrayElementComparator comparator )
     {
-        int i = 0;
-        int x = 0;
+        int index = 0;
+        int compare = 0;
         int length = min( this.arrayLength, that.arrayLength );
 
-        for ( ; x == 0 && i < length; i++ )
+        for ( ; compare == 0 && index < length; index++ )
         {
-            x = comparator.compare( this, that, i );
+            compare = comparator.compare( this, that, index );
         }
 
-        return x == 0 ? this.arrayLength - that.arrayLength : x;
+        return compare == 0 ? Integer.compare( this.arrayLength, that.arrayLength ) : compare;
     }
 
     private static int compareNumber(
@@ -892,7 +1004,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case NUMBER_ARRAY:
             return readNumberArray( cursor );
         default:
-            throw new IllegalArgumentException( "Unknown type " + type );
+            return false;
         }
     }
 
@@ -1005,7 +1117,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     {
         // For performance reasons cannot be redirected to writeString, due to byte[] reuse
         short bytesLength = cursor.getShort();
-        if ( bytesLength <= 0 || bytesLength > maxSize )
+        if ( bytesLength < 0 || bytesLength > maxSize )
         {
             return false;
         }
@@ -1283,25 +1395,38 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     public void writeString( String value ) throws RuntimeException
     {
         byte[] encoded = UTF8.encode( value );
-        if ( !isArray )
-        {
-            type = Type.TEXT;
-            byteArray = encoded;
-            long0 = encoded.length;
-        }
-        else
-        {
-            byteArrayArray[currentArrayOffset] = encoded;
-            long0Array[currentArrayOffset] = encoded.length;
-            currentArrayOffset++;
-        }
-        long1 = FALSE;
+        writeStringBytes( encoded );
     }
 
     @Override
     public void writeString( char value ) throws RuntimeException
     {
         writeString( String.valueOf( value ) );
+    }
+
+    @Override
+    public void writeUTF8( byte[] bytes, int offset, int length ) throws RuntimeException
+    {
+        byte[] dest = new byte[length];
+        System.arraycopy( bytes, offset, dest, 0, length );
+        writeStringBytes( dest );
+    }
+
+    private void writeStringBytes( byte[] bytes )
+    {
+        if ( !isArray )
+        {
+            type = Type.TEXT;
+            byteArray = bytes;
+            long0 = bytes.length;
+        }
+        else
+        {
+            byteArrayArray[currentArrayOffset] = bytes;
+            long0Array[currentArrayOffset] = bytes.length;
+            currentArrayOffset++;
+        }
+        long1 = FALSE;
     }
 
     @Override
@@ -1347,9 +1472,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
     {
         initializeTypeFromArrayType( arrayType );
-        isArray = true;
-        arrayLength = size;
-        currentArrayOffset = 0;
         switch ( type )
         {
         case ZONED_DATE_TIME_ARRAY:
@@ -1380,7 +1502,15 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             initializeNumberArray( size );
             break;
         default:
+            throw new UnsupportedOperationException( "Unknown type " + type );
         }
+    }
+
+    private void initializeArrayMeta( int size )
+    {
+        isArray = true;
+        arrayLength = size;
+        currentArrayOffset = 0;
     }
 
     @Override
@@ -1452,17 +1582,20 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private void initializeNumberArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         // plain long1 for number type
     }
 
     private void initializeBooleanArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeTextArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         byteArrayArray = ensureBigEnough( byteArrayArray, size );
         // long1 (bytesDereferenced) - Not needed because we never leak bytes from string array
@@ -1472,6 +1605,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private void initializeDurationArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
         long2Array = ensureBigEnough( long2Array, size );
@@ -1480,28 +1614,33 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private void initializeLocalTimeArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeZonedTimeArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
     }
 
     private void initializeDateArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeLocalDateTimeArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
     }
 
     private void initializeZonedDateTimeArray( int size )
     {
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
         long2Array = ensureBigEnough( long2Array, size );
@@ -1511,26 +1650,27 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     /* </write> */
 
     /* <copyFrom.helpers> */
-    private void copyNumberArrayFrom( GenericKeyState key )
+    private void copyNumberArrayFrom( GenericKeyState key, int length )
     {
-        initializeNumberArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
+        initializeNumberArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
+        this.long1 = key.long1;
     }
 
-    private void copyBooleanArrayFrom( GenericKeyState key )
+    private void copyBooleanArrayFrom( GenericKeyState key, int length )
     {
-        initializeBooleanArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
+        initializeBooleanArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
     }
 
-    private void copyTextArrayFrom( GenericKeyState key )
+    private void copyTextArrayFrom( GenericKeyState key, int length )
     {
-        initializeTextArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
+        initializeTextArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
         this.long1 = FALSE;
         this.long2 = key.long2;
         this.long3 = key.long3;
-        for ( int i = 0; i < key.arrayLength; i++ )
+        for ( int i = 0; i < length; i++ )
         {
             short targetLength = (short) key.long0Array[i];
             this.byteArrayArray[i] = ensureBigEnough( this.byteArrayArray[i], targetLength );
@@ -1538,48 +1678,48 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    private void copyDurationArrayFrom( GenericKeyState key )
+    private void copyDurationArrayFrom( GenericKeyState key, int length )
     {
-        initializeDurationArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
-        System.arraycopy( key.long1Array, 0, this.long1Array, 0, key.arrayLength );
-        System.arraycopy( key.long2Array, 0, this.long2Array, 0, key.arrayLength );
-        System.arraycopy( key.long3Array, 0, this.long3Array, 0, key.arrayLength );
+        initializeDurationArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
+        System.arraycopy( key.long1Array, 0, this.long1Array, 0, length );
+        System.arraycopy( key.long2Array, 0, this.long2Array, 0, length );
+        System.arraycopy( key.long3Array, 0, this.long3Array, 0, length );
     }
 
-    private void copyLocalTimeArrayFrom( GenericKeyState key )
+    private void copyLocalTimeArrayFrom( GenericKeyState key, int length )
     {
-        initializeLocalTimeArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
+        initializeLocalTimeArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
     }
 
-    private void copyZonedTimeArrayFrom( GenericKeyState key )
+    private void copyZonedTimeArrayFrom( GenericKeyState key, int length )
     {
-        initializeZonedTimeArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
-        System.arraycopy( key.long1Array, 0, this.long1Array, 0, key.arrayLength );
+        initializeZonedTimeArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
+        System.arraycopy( key.long1Array, 0, this.long1Array, 0, length );
     }
 
-    private void copyDateArrayFrom( GenericKeyState key )
+    private void copyDateArrayFrom( GenericKeyState key, int length )
     {
-        initializeDateArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
+        initializeDateArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
     }
 
-    private void copyLocalDateTimeArrayFrom( GenericKeyState key )
+    private void copyLocalDateTimeArrayFrom( GenericKeyState key, int length )
     {
-        initializeLocalDateTimeArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
-        System.arraycopy( key.long1Array, 0, this.long1Array, 0, key.arrayLength );
+        initializeLocalDateTimeArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
+        System.arraycopy( key.long1Array, 0, this.long1Array, 0, length );
     }
 
-    private void copyZonedDateTimeArrayFrom( GenericKeyState key )
+    private void copyZonedDateTimeArrayFrom( GenericKeyState key, int length )
     {
-        initializeZonedDateTimeArray( key.arrayLength );
-        System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
-        System.arraycopy( key.long1Array, 0, this.long1Array, 0, key.arrayLength );
-        System.arraycopy( key.long2Array, 0, this.long2Array, 0, key.arrayLength );
-        System.arraycopy( key.long3Array, 0, this.long3Array, 0, key.arrayLength );
+        initializeZonedDateTimeArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
+        System.arraycopy( key.long1Array, 0, this.long1Array, 0, length );
+        System.arraycopy( key.long2Array, 0, this.long2Array, 0, length );
+        System.arraycopy( key.long3Array, 0, this.long3Array, 0, length );
     }
     /* </copyFrom.helpers> */
 
@@ -1719,7 +1859,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     @Override
     public String toString()
     {
-        return String.format( "GenericKeyState[%s]", asValue().toString() );
+        return asValue().toString();
     }
 
     @FunctionalInterface
@@ -1738,6 +1878,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     interface ArrayElementValueFactory<T>
     {
         T from( int i );
+    }
+
+    @FunctionalInterface
+    interface ArrayCopier
+    {
+        void copyArray( GenericKeyState into, GenericKeyState from, int length );
     }
     /* </helpers> */
 }

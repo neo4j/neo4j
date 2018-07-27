@@ -86,18 +86,24 @@ class StringLayout extends IndexLayout<StringIndexKey>
     @Override
     public void minimalSplitter( StringIndexKey left, StringIndexKey right, StringIndexKey into )
     {
-        int maxLength = Math.min( left.bytesLength, right.bytesLength );
+        int targetLength = firstPosToDiffer( left.bytes, left.bytesLength, right.bytes, right.bytesLength );
+        into.copyFrom( right, targetLength );
+    }
+
+    static int firstPosToDiffer( byte[] leftBytes, int leftLength, byte[] rightBytes, int rightLength )
+    {
+        int maxLength = Math.min( leftLength, rightLength );
         int targetLength = 0;
         for ( ; targetLength < maxLength; targetLength++ )
         {
-            if ( left.bytes[targetLength] != right.bytes[targetLength] )
+            if ( leftBytes[targetLength] != rightBytes[targetLength] )
             {
                 // Convert to length from array index
                 targetLength++;
                 break;
             }
         }
-        into.copyFrom( right, targetLength );
+        return targetLength;
     }
 
     @Override

@@ -192,11 +192,36 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner( ",", getClass().getSimpleName() + "[", "]" );
+        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
         for ( GenericKeyState state : states )
         {
             joiner.add( state.toString() );
         }
         return joiner.toString();
+    }
+
+    public static void minimalSplitter( CompositeGenericKey left, CompositeGenericKey right, CompositeGenericKey into )
+    {
+        int firstStateToDiffer = 0;
+        int compare = 0;
+        while ( compare == 0 && firstStateToDiffer < right.states.length )
+        {
+            GenericKeyState leftState = left.states[firstStateToDiffer];
+            GenericKeyState rightState = right.states[firstStateToDiffer];
+            firstStateToDiffer++;
+            compare = leftState.compareValueTo( rightState );
+        }
+        firstStateToDiffer--; // Rewind last increment
+        for ( int i = 0; i < firstStateToDiffer; i++ )
+        {
+            into.states[i].copyFrom( right.states[i] );
+        }
+        GenericKeyState.minimalSplitter( left.states[firstStateToDiffer], right.states[firstStateToDiffer], into.states[firstStateToDiffer] );
+        for ( int i = firstStateToDiffer + 1; i < into.states.length; i++ )
+        {
+            into.states[i].initializeToDummyValue();
+        }
+        into.setCompareId( right.getCompareId() );
+        into.setEntityId( right.getEntityId() );
     }
 }

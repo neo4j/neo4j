@@ -129,4 +129,10 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
     {
         return false;
     }
+
+    @Override
+    public void minimalSplitter( CompositeGenericKey left, CompositeGenericKey right, CompositeGenericKey into )
+    {
+        CompositeGenericKey.minimalSplitter( left, right, into );
+    }
 }
