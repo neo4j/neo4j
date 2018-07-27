@@ -28,7 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -38,7 +38,7 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE_GBPTREE10.providerIdentifier() ) );
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE_BTREE10.providerIdentifier() ) );
         OperationalMode mode = OperationalMode.single;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
         return GenericNativeIndexProviderFactory.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );

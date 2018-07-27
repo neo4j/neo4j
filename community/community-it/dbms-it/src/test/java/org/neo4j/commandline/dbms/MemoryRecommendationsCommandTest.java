@@ -244,7 +244,7 @@ public class MemoryRecommendationsCommandTest
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
             // todo: remove this if-statement when native_gbptree10 supports spatial
-            if ( schemaIndex == SchemaIndex.NATIVE_GBPTREE10 )
+            if ( schemaIndex == SchemaIndex.NATIVE_BTREE10 )
             {
                 continue;
             }

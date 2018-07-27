@@ -54,7 +54,7 @@ import org.neo4j.logging.LogTimeZone;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_GBPTREE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DEFAULT;
@@ -560,7 +560,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
-        NATIVE_GBPTREE10( 0, "native-gbptree", "1.0" ), // TODO: Zero because should not be default yet.
+        NATIVE_BTREE10( 0, "native-btree", "1.0" ), // TODO: Zero because should not be default yet.
         NATIVE20( 3, "lucene+native", "2.0" ),
         NATIVE10( 2, "lucene+native", "1.0" ),
         LUCENE10( 1, "lucene", "1.0" );
@@ -609,10 +609,10 @@ public class GraphDatabaseSettings implements LoadableConfig
             "of a string to index cannot be larger than that limit, or the transaction trying to index such a value will fail. " +
             "This version of the native string index also has reduced performance for CONTAINS and ENDS WITH queries, " +
             "due to resorting to index scan+filter internally. " +
-            "native-gbptree-1.0: Store all value, including composite value, in native index. " +
+            "native-btree-1.0: Store all value, including composite value, in native index. " +
             "Just like lucene+native-2.0 there is a value size limit of 4047 bytes. For composite indexes this limit is for all of the values in " +
             "the indexed key combined. The same limitations for CONTAINS and ENDS WITH queries as for lucene+native-2.0 also applies" +
-            "to native-gbptree-1.0." +
+            "to native-btree-1.0." +
             "Native indexes generally has these benefits over Lucene:\n" +
             "- Faster writes\n" +
             "- Less garbage and heap presence\n" +
@@ -621,7 +621,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
                     optionsIgnoreCase( NATIVE20.providerIdentifier(), NATIVE10.providerIdentifier(), LUCENE10.providerIdentifier(),
-                            NATIVE_GBPTREE10.providerIdentifier() ),
+                            NATIVE_BTREE10.providerIdentifier() ),
                     null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
