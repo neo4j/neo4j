@@ -107,8 +107,29 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     @Override
     public void minimalSplitter( RawBytes left, RawBytes right, RawBytes into )
     {
-        // Minimal splitter will always be the first 8B
-        copyKey( right, into, Long.BYTES );
+        long leftSeed = keySeed( left );
+        long rightSeed = keySeed( right );
+        if ( leftSeed != rightSeed )
+        {
+            // Minimal splitter is first 8B (seed)
+            copyKey( right, into, Long.BYTES );
+        }
+        else
+        {
+            // They had the same seed. Need to look at entire array
+            int maxLength = Math.min( left.bytes.length, right.bytes.length );
+            int targetLength = 0;
+            for ( ; targetLength < maxLength; targetLength++ )
+            {
+                if ( left.bytes[targetLength] != right.bytes[targetLength] )
+                {
+                    // Convert to length from array index
+                    targetLength++;
+                    break;
+                }
+            }
+            copyKey( right, into, targetLength );
+        }
     }
 
     @Override
