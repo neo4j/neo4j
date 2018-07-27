@@ -41,56 +41,47 @@ non-zero = an error occured
 This function is private to the powershell module
 
 #>
-Function Update-Neo4jServer
+function Update-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Medium')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Medium')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
+    [pscustomobject]$Neo4jServer
   )
 
-  Begin
+  begin
   {
   }
 
-  Process
+  process
   {
-    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-
-    $result = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
-    if ($result -ne $null)
+    $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+    $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
+    if ($Found)
     {
       $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerUpdate
       if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
 
-      Write-Verbose "Update installed Neo4j service with command line $($prunsrv.cmd) $($prunsrv.args)"
-      $stdError = New-Neo4jTempFile -Prefix 'stderr'
-      Write-Verbose $prunsrv
-      $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home -RedirectStandardError $stdError)
-      Write-Verbose "Returned exit code $($result.ExitCode)"
+      Write-Verbose "Updating installed Neo4j service"
+      $result = Invoke-ExternalCommand -Command $prunsrv.cmd -CommandArgs $prunsrv.args
 
       # Process the output
-      if ($result.ExitCode -eq 0) {
+      if ($result.exitCode -eq 0) {
         Write-Host "Neo4j service updated"
       } else {
         Write-Host "Neo4j service did not update"
         # Write out STDERR if it did not update
-        Get-Content -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
-          Write-Host $_
-        }
+        Write-Host $result.capturedOutput
       }
 
-      # Remove the temp file
-      If (Test-Path -Path $stdError) { Remove-Item -Path $stdError -Force | Out-Null }
-
-      Write-Output $result.ExitCode
+      Write-Output $result.exitCode
     } else {
-      Write-Host "Service update failed - service '$Name' not found"
+      Write-Host "Service update failed - service '$ServiceName' not found"
       Write-Output 1
     }
   }
 
-  End
+  end
   {
   }
 }

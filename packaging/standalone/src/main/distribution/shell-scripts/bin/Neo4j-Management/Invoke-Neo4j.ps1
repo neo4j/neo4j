@@ -48,19 +48,19 @@ non-zero = an error occured
 Only supported on version 3.x Neo4j Community and Enterprise Edition databases
 
 #>
-Function Invoke-Neo4j
+function Invoke-Neo4j
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$false,Position=0)]
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $false,ValueFromPipeline = $false,Position = 0)]
     [string]$Command = ''
   )
 
-  Begin
+  begin
   {
   }
 
-  Process
+  process
   {
     try
     {
@@ -68,10 +68,10 @@ Function Invoke-Neo4j
 
       # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME environment variable or a parent directory of this script
       $Neo4jHome = Get-Neo4jEnv 'NEO4J_HOME'
-      if ( ($Neo4jHome -eq $null) -or (-not (Test-Path -Path $Neo4jHome)) ) {
+      if (($Neo4jHome -eq $null) -or (-not (Test-Path -Path $Neo4jHome))) {
         $Neo4jHome = Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent
       }
-      if ($Neo4jHome -eq $null) { throw "Could not determine the Neo4j home Directory.  Set the NEO4J_HOME environment variable and retry" }  
+      if ($Neo4jHome -eq $null) { throw "Could not determine the Neo4j home Directory.  Set the NEO4J_HOME environment variable and retry" }
       Write-Verbose "Neo4j Root is '$Neo4jHome'"
 
       $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jHome -ErrorAction Stop
@@ -80,68 +80,63 @@ Function Invoke-Neo4j
       Write-Verbose "Neo4j Version is '$($thisServer.ServerVersion)'"
       Write-Verbose "Neo4j Database Mode is '$($thisServer.DatabaseMode)'"
 
-      # Check if we have administrative rights; If the current user's token contains the Administrators Group SID (S-1-5-32-544)
-      if (-not [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")) {
-        Write-Warning "This command does not appear to be running with administrative rights.  Some commands may fail e.g. Start/Stop"
-      }
-
       switch ($Command.Trim().ToLower())
       {
         "help" {
           Write-Host $HelpText
-          Return 0
+          return 0
         }
         "console" {
           Write-Verbose "Console command specified"
-          Return [int](Start-Neo4jServer -Console -Neo4jServer $thisServer -ErrorAction Stop)
+          return [int](Start-Neo4jServer -Console -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "start" {
           Write-Verbose "Start command specified"
-          Return [int](Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
+          return [int](Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "stop" {
           Write-Verbose "Stop command specified"
-          Return [int](Stop-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+          return [int](Stop-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "restart" {
           Write-Verbose "Restart command specified"
 
           $result = (Stop-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
-          if ($result -ne 0) { Return $result}
-          Return (Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
+          if ($result -ne 0) { return $result }
+          return (Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "status" {
           Write-Verbose "Status command specified"
-          Return [int](Get-Neo4jStatus -Neo4jServer $thisServer -ErrorAction Stop)
+          return [int](Get-Neo4jStatus -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "install-service" {
           Write-Verbose "Install command specified"
-          Return [int](Install-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+          return [int](Install-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "uninstall-service" {
           Write-Verbose "Uninstall command specified"
-          Return [int](Uninstall-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+          return [int](Uninstall-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "update-service" {
           Write-Verbose "Update command specified"
-          Return [int](Update-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+          return [int](Update-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         default {
-          if ($Command -ne '') { Write-StdErr "Unknown command $Command" }
-          Write-StdErr $HelpText
-          Return 1
+          if ($Command -ne '') { Write-Host "Unknown command $Command" }
+          Write-Host $HelpText
+          return 1
         }
       }
       # Should not get here!
-      Return 2
+      return 2
     }
     catch {
       Write-Error $_
-      Return 1
+      return 1
     }
   }
-  
-  End
+
+  end
   {
   }
 }

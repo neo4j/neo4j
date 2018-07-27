@@ -40,42 +40,42 @@ The name of the Windows Service or $null if it could not be determined
 This function is private to the powershell module
 
 #>
-Function Get-Neo4jWindowsServiceName
+function Get-Neo4jWindowsServiceName
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
+    [pscustomobject]$Neo4jServer
   )
-  
-  Begin
+
+  begin
   {
   }
-  
-  Process {
+
+  process {
     $ServiceName = ''
     # Try neo4j.conf first, but then fallback to neo4j-wrapper.conf for backwards compatibility reasons
     $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.windows_service_name' -Neo4jServer $Neo4jServer)
     if ($setting -ne $null) {
-      $ServiceName = $setting.Value
+      $ServiceName = $setting.value
     } else {
       $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.windows_service_name' -Neo4jServer $Neo4jServer)
-      if ($setting -ne $null) { $ServiceName = $setting.Value }
+      if ($setting -ne $null) { $ServiceName = $setting.value }
     }
 
     if ($ServiceName -eq '')
     {
-      Throw 'Could not find the Windows Service Name for Neo4j (dbms.windows_service_name in neo4j.conf)'
+      throw 'Could not find the Windows Service Name for Neo4j (dbms.windows_service_name in neo4j.conf)'
       return $null
     }
-    else 
+    else
     {
       Write-Verbose "Neo4j Windows Service Name is $ServiceName"
       Write-Output $ServiceName.Trim()
-    }  
+    }
   }
-  
-  End
+
+  end
   {
   }
 }

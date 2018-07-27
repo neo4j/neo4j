@@ -36,38 +36,38 @@ non-zero = an error occured
 Only supported on version 3.x Neo4j Community and Enterprise Edition databases
 
 #>
-Function Invoke-Neo4jImport
+function Invoke-Neo4jImport
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $false,ValueFromRemainingArguments = $true)]
     [object[]]$CommandArgs = @()
   )
-  
-  Begin
+
+  begin
   {
   }
-  
-  Process
+
+  process
   {
     # The powershell command line interpreter converts comma delimited strings into a System.Object[] array
     # Search the CommandArgs array and convert anything that's System.Object[] back to a string type
-    for($index = 0; $index -lt $CommandArgs.Length; $index++) {
-      if ($CommandArgs[$index].GetType().ToString() -eq 'System.Object[]') {
-        [string]$CommandArgs[$index] = $CommandArgs[$index] -join ',' 
+    for ($index = 0; $index -lt $CommandArgs.Length; $index++) {
+      if ($CommandArgs[$index] -is [array]) {
+        [string]$CommandArgs[$index] = $CommandArgs[$index] -join ','
       }
     }
 
     try {
-      Return [int](Invoke-Neo4jUtility -Command 'Import' -CommandArgs $CommandArgs -ErrorAction 'Stop')      
+      return [int](Invoke-Neo4jUtility -Command 'Import' -CommandArgs $CommandArgs -ErrorAction 'Stop')
     }
     catch {
       Write-Error $_
-      Return 1
+      return 1
     }
   }
-  
-  End
+
+  end
   {
   }
 }

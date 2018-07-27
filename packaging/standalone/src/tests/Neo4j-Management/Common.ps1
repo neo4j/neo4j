@@ -1,3 +1,21 @@
+# Copyright (c) 2002-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 $DebugPreference = "SilentlyContinue"
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Definition
@@ -7,7 +25,7 @@ $src = Resolve-Path -Path "$($here)\..\..\main\distribution\shell-scripts\bin\Ne
 $global:mockServiceName = 'neo4j'
 $global:mockNeo4jHome = 'TestDrive:\Neo4j'
 
-Function global:New-MockJavaHome() {
+function global:New-MockJavaHome () {
   $javaHome = "TestDrive:\JavaHome"
 
   New-Item $javaHome -ItemType Directory | Out-Null
@@ -22,19 +40,19 @@ Function global:New-MockJavaHome() {
   return $javaHome
 }
 
-Function global:New-InvalidNeo4jInstall($ServerType = 'Enterprise', $ServerVersion = '99.99', $DatabaseMode = '') {
+function global:New-InvalidNeo4jInstall ($ServerType = 'Enterprise',$ServerVersion = '99.99',$DatabaseMode = '') {
   $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-    'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-    'ConfDir' = 'TestDrive:\some-dir-that-doesnt-exist\conf';
-    'LogDir' = 'TestDrive:\some-dir-that-doesnt-exist\logs';
-    'ServerVersion' = $ServerVersion;
-    'ServerType' = $ServerType;
-    'DatabaseMode' = $DatabaseMode;
-  })
+      'Home' = 'TestDrive:\some-dir-that-doesnt-exist';
+      'ConfDir' = 'TestDrive:\some-dir-that-doesnt-exist\conf';
+      'LogDir' = 'TestDrive:\some-dir-that-doesnt-exist\logs';
+      'ServerVersion' = $ServerVersion;
+      'ServerType' = $ServerType;
+      'DatabaseMode' = $DatabaseMode;
+    })
   return $serverObject
 }
 
-Function global:New-MockNeo4jInstall(
+function global:New-MockNeo4jInstall (
   $IncludeFiles = $true,
   $RootDir = $global:mockNeo4jHome,
   $ServerType = 'Community',
@@ -42,7 +60,7 @@ Function global:New-MockNeo4jInstall(
   $DatabaseMode = '',
   $WindowsService = $global:mockServiceName,
   $NeoConfSettings = @()
-  ) {
+) {
   # Creates a skeleton directory and file structure of a Neo4j Installation
   New-Item $RootDir -ItemType Directory | Out-Null
   New-Item "$RootDir\lib" -ItemType Directory | Out-Null
@@ -74,12 +92,12 @@ Function global:New-MockNeo4jInstall(
   }
 
   $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-    'Home' = $RootDir;
-    'ConfDir' = "$RootDir\conf";
-    'LogDir' = (Join-Path -Path $RootDir -ChildPath 'logs');
-    'ServerVersion' = $ServerVersion;
-    'ServerType' = $ServerType;
-    'DatabaseMode' = $DatabaseMode;
-  })
+      'Home' = $RootDir;
+      'ConfDir' = "$RootDir\conf";
+      'LogDir' = (Join-Path -Path $RootDir -ChildPath 'logs');
+      'ServerVersion' = $ServerVersion;
+      'ServerType' = $ServerType;
+      'DatabaseMode' = $DatabaseMode;
+    })
   return $serverObject
 }

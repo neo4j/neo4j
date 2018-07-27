@@ -43,26 +43,26 @@ Value of the environment variable
 This function is private to the powershell module
 
 #>
-Function Set-Neo4jEnv
+function Set-Neo4jEnv
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false,Position=0)]
-    [String]$Name
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $false,Position = 0)]
+    [string]$Name
 
-    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,Position=1)]
-    [String]$Value
+    ,[Parameter(Mandatory = $true,ValueFromPipeline = $false,Position = 1)]
+    [string]$Value
   )
 
-  Begin
+  begin
   {
   }
 
-  Process {
-    [Environment]::SetEnvironmentVariable($Name, $Value, "Process")
+  process {
+    Set-Item -Path Env:$Name -Value $Value
   }
 
-  End
+  end
   {
   }
 }

@@ -43,26 +43,26 @@ Variable doesn't exist
 This function is private to the powershell module
 
 #>
-Function Get-Neo4jEnv
+function Get-Neo4jEnv
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false,Position=0)]
-    [String]$Name
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $false,Position = 0)]
+    [string]$Name
   )
-  
-  Begin
+
+  begin
   {
   }
-  
-  Process {
+
+  process {
     Get-ChildItem -Path Env: |
-      Where-Object { $_.Name.ToUpper() -eq $Name.ToUpper() } |
-      Select-Object -First 1 |
-      ForEach-Object { $_.Value }      
+    Where-Object { $_.Name.ToUpper() -eq $Name.ToUpper() } |
+    Select-Object -First 1 |
+    ForEach-Object { $_.value }
   }
-  
-  End
+
+  end
   {
   }
 }

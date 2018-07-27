@@ -41,19 +41,19 @@ System.Int32
 This function is private to the powershell module
 
 #>
-Function Get-Neo4jStatus
+function Get-Neo4jStatus
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
+    [pscustomobject]$Neo4jServer
   )
-  
-  Begin
+
+  begin
   {
   }
-  
-  Process {
+
+  process {
     $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
     $neoService = $null
     try {
@@ -63,7 +63,7 @@ Function Get-Neo4jStatus
       Write-Host "The Neo4j Windows Service '$ServiceName' is not installed"
       return 3
     }
-    
+
     if ($neoService.Status -eq 'Running') {
       Write-Host "Neo4j is running"
       return 0
@@ -73,8 +73,8 @@ Function Get-Neo4jStatus
       return 3
     }
   }
-  
-  End
+
+  end
   {
   }
 }

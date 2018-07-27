@@ -37,17 +37,17 @@ System.String[]
 This function is private to the powershell module
 
 #>
-Function Merge-Neo4jJavaSettings
+function Merge-Neo4jJavaSettings
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low',DefaultParameterSetName='Default')]
-  param (
-    [Parameter(Mandatory=$true)]
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low',DefaultParameterSetName = 'Default')]
+  param(
+    [Parameter(Mandatory = $true)]
     [AllowEmptyCollection()]
-    [Array]$Source
+    [array]$Source
 
-    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInstallInvoke')]
+    ,[Parameter(Mandatory = $true,ValueFromPipeline = $false,ParameterSetName = 'ServerInstallInvoke')]
     [AllowEmptyCollection()]
-    [Array]$Additional
+    [array]$Additional
   )
 
   $SettingNameRegEx = '^(?:-D|-XX:[+-]?)([^=]+)(?:$|=.+$)'
@@ -71,7 +71,7 @@ Function Merge-Neo4jJavaSettings
 
       $oldValue = $null
       $SettingOutput.GetEnumerator() | ForEach-Object -Process {
-        if ($_.Value -eq $thisSettingName) { $oldValue = $_.Key}
+        if ($_.value -eq $thisSettingName) { $oldValue = $_.Key }
       }
 
       if ($oldValue -eq $null) {

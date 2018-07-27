@@ -41,55 +41,47 @@ non-zero = an error occured
 This function is private to the powershell module
 
 #>
-Function Install-Neo4jServer
+function Install-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Medium')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Medium')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
+    [pscustomobject]$Neo4jServer
   )
-  
-  Begin
+
+  begin
   {
   }
 
-  Process
+  process
   {
-    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-
-    $result = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
-    if ($result -eq $null)
+    $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+    $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
+    if (-not $Found)
     {
       $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerInstall
       if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
 
-      Write-Verbose "Installing Neo4j as a service with command line $($prunsrv.cmd) $($prunsrv.args)"
-      $stdError = New-Neo4jTempFile -Prefix 'stderr'
-      $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home -RedirectStandardError $stdError)
-      Write-Verbose "Returned exit code $($result.ExitCode)"
+      Write-Verbose "Installing Neo4j as a service"
+      $result = Invoke-ExternalCommand -Command $prunsrv.cmd -CommandArgs $prunsrv.args
 
       # Process the output
-      if ($result.ExitCode -eq 0) {
+      if ($result.exitCode -eq 0) {
         Write-Host "Neo4j service installed"
       } else {
         Write-Host "Neo4j service did not install"
         # Write out STDERR if it did not install
-        Get-Content -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
-          Write-Host $_
-        }
+        Write-Host $result.capturedOutput
       }
 
-      # Remove the temp file
-      If (Test-Path -Path $stdError) { Remove-Item -Path $stdError -Force | Out-Null }
-
-      Write-Output $result.ExitCode
+      Write-Output $result.exitCode
     } else {
       Write-Verbose "Service already installed"
       Write-Output 0
-    }    
+    }
   }
-  
-  End
+
+  end
   {
   }
 }

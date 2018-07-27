@@ -1,7 +1,25 @@
+# Copyright (c) 2002-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
+$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.",".")
 $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
-. $common
+.$common
 
 Import-Module "$src\Neo4j-Management.psm1"
 
@@ -30,7 +48,7 @@ InModuleScope Neo4j-Management {
 
       It "ignore the missing file" {
         $result.Name | Should Be "setting"
-        $result.Value | Should Be "value"
+        $result.value | Should Be "value"
       }
     }
 
@@ -54,9 +72,9 @@ InModuleScope Neo4j-Management {
       $result | ForEach-Object -Process {
         $setting = $_
         switch ($setting.Name) {
-          'setting1' { $neo4jServerProperties = ($setting.ConfigurationFile -eq 'neo4j.conf') -and ($setting.IsDefault -eq $false) -and ($setting.Value -eq 'value1') }
-          'setting2' { $neo4jWrapper =          ($setting.ConfigurationFile -eq 'neo4j-wrapper.conf') -and ($setting.IsDefault -eq $false) -and ($setting.Value -eq 'value2') }
-          default { $unknownSetting = $true}
+          'setting1' { $neo4jServerProperties = ($setting.ConfigurationFile -eq 'neo4j.conf') -and ($setting.IsDefault -eq $false) -and ($setting.value -eq 'value1') }
+          'setting2' { $neo4jWrapper = ($setting.ConfigurationFile -eq 'neo4j-wrapper.conf') -and ($setting.IsDefault -eq $false) -and ($setting.value -eq 'value2') }
+          default { $unknownSetting = $true }
         }
       }
 
@@ -95,17 +113,17 @@ InModuleScope Neo4j-Management {
         ($singleSetting -ne $null) | Should Be $true
       }
       It "returns a string for single settings" {
-        $singleSetting.Value.GetType().ToString() | Should Be "System.String"
+        $singleSetting.value.GetType().ToString() | Should Be "System.String"
       }
 
       It "returns multiple settings" {
         ($multiSetting -ne $null) | Should Be $true
       }
       It "returns an object array for multiple settings" {
-        $multiSetting.Value.GetType().ToString() | Should Be "System.Object[]"
+        $multiSetting.value.GetType().ToString() | Should Be "System.Object[]"
       }
       It "returns an object array for multiple settings with the correct size" {
-        $multiSetting.Value.Count | Should Be 3
+        $multiSetting.value.Count | Should Be 3
       }
     }
   }
