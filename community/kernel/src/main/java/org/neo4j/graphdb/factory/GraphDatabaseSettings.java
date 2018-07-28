@@ -118,10 +118,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> data_directory = pathSetting( "dbms.directories.data", "data" );
 
     @Internal
+    public static final Setting<File> databases_root_path = derivedSetting( "unsupported.dbms.directories.databases.root",
+            data_directory,  data -> new File( data, "databases" ), PATH );
+
+    @Internal
     public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
-            data_directory, active_database,
-            ( data, current ) -> new File( new File( data, "databases" ), current ),
-            PATH );
+            databases_root_path, active_database, ( data, current ) -> new File( data, current ), PATH );
 
     @Title( "Read only database" )
     @Description( "Only allow read operations from this Neo4j instance. " +
