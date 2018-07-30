@@ -67,7 +67,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         IntermediateExpression(
           noValueCheck(l, r)(
             invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("multiply"), l.ir, r.ir)
-          ), l.nullable || r.nullable, l.fields ++ r.fields)
+          ), l.nullable || r.nullable, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case Add(lhs, rhs) =>
@@ -77,7 +77,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         IntermediateExpression(
           noValueCheck(l, r)(
             invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("add"), l.ir, r.ir)
-          ), l.nullable || r.nullable, l.fields ++ r.fields)
+          ), l.nullable || r.nullable, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case Subtract(lhs, rhs) =>
@@ -87,32 +87,34 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         IntermediateExpression(
           noValueCheck(l, r)(
             invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"), l.ir, r.ir)
-          ), l.nullable || r.nullable, l.fields ++ r.fields)
+          ), l.nullable || r.nullable, l.fields ++ r.fields, l.variables ++ r.variables)
 
       }
 
     //literals
     case d: DoubleLiteral => Some(IntermediateExpression(
-      invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)), nullable = false, Seq.empty))
+      invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)), nullable = false, Seq.empty, Set.empty))
     case i: IntegerLiteral => Some(IntermediateExpression(
-      invokeStatic(method[Values, LongValue, Long]("longValue"), constant(i.value)), nullable = false, Seq.empty))
+      invokeStatic(method[Values, LongValue, Long]("longValue"), constant(i.value)), nullable = false, Seq.empty, Set.empty))
     case s: expressions.StringLiteral => Some(IntermediateExpression(
-      invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)), nullable = false, Seq.empty) )
-    case _: Null => Some(IntermediateExpression(noValue, nullable = true, Seq.empty))
-    case _: True => Some(IntermediateExpression(truthValue, nullable = false, Seq.empty))
-    case _: False => Some(IntermediateExpression(falseValue, nullable = false, Seq.empty))
+      invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)), nullable = false, Seq.empty, Set.empty) )
+    case _: Null => Some(IntermediateExpression(noValue, nullable = true, Seq.empty, Set.empty))
+    case _: True => Some(IntermediateExpression(truthValue, nullable = false, Seq.empty, Set.empty))
+    case _: False => Some(IntermediateExpression(falseValue, nullable = false, Seq.empty, Set.empty))
     case ListLiteral(args) =>
       val in = args.flatMap(compile)
       if (in.size < args.size) None
       else {
         val fields: Seq[Field] = in.foldLeft(Seq.empty[Field])((a, b) => a ++ b.fields)
+        val variables: Set[LocalVariable] = in.foldLeft(Set.empty[LocalVariable])((a, b) => a ++ b.variables)
         Some(IntermediateExpression(
-          invokeStatic(method[VirtualValues, ListValue, Array[AnyValue]]("list"), arrayOf(in.map(_.ir):_*)), nullable = false, fields))
+          invokeStatic(method[VirtualValues, ListValue, Array[AnyValue]]("list"), arrayOf(in.map(_.ir):_*)),
+          nullable = false, fields, variables))
       }
     case Variable(name) =>
       Some(IntermediateExpression(
         invokeStatic(method[CompiledHelpers, AnyValue, ExecutionContext, String]("loadVariable"), load("context"),
-                     constant(name)), nullable = true, Seq.empty))
+                     constant(name)), nullable = true, Seq.empty, Set.empty))
 
     //boolean operators
     case Or(lhs, rhs) =>
@@ -131,7 +133,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       }
 
       for (e <- compiled) yield e match {
-        case Nil => IntermediateExpression(truthValue, nullable = false, Seq.empty) //this will not really happen because of rewriters etc
+        case Nil => IntermediateExpression(truthValue, nullable = false, Seq.empty, Set.empty) //this will not really happen because of rewriters etc
         case (a, isPredicate) :: Nil  => if (isPredicate) a else coerceToPredicate(a)
         case list =>
           val coerced = list.map {
@@ -149,7 +151,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         val right = if (isPredicate(rhs)) r else coerceToPredicate(r)
         IntermediateExpression(
           noValueCheck(left, right)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), left.ir, right.ir)),
-                               left.nullable | right.nullable, l.fields ++ r.fields)
+                               left.nullable | right.nullable, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case And(lhs, rhs) =>
@@ -168,7 +170,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         }
 
       for (e <- compiled) yield e match {
-        case Nil => IntermediateExpression(truthValue, nullable = false, Seq.empty) //this will not really happen because of rewriters etc
+        case Nil => IntermediateExpression(truthValue, nullable = false, Seq.empty, Set.empty) //this will not really happen because of rewriters etc
         case (a, isPredicate) :: Nil  => if (isPredicate) a else coerceToPredicate(a)
         case list =>
           val coerced = list.map {
@@ -182,21 +184,21 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       compile(arg).map(a => {
         val in = if (isPredicate(arg)) a else coerceToPredicate(a)
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), in.ir)), in.nullable, in.fields, in.variables)
       })
 
     case Equals(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
       } yield IntermediateExpression(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l.ir, r.ir),
-                l.nullable | r.nullable, l.fields ++ r.fields)
+                l.nullable | r.nullable, l.fields ++ r.fields, l.variables ++ r.variables)
 
 
     case NotEquals(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
       } yield IntermediateExpression(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l.ir, r.ir),
-        l.nullable | r.nullable, l.fields ++ r.fields)
+        l.nullable | r.nullable, l.fields ++ r.fields, l.variables ++ r.variables)
 
     case CoerceToPredicate(inner) => compile(inner).map(coerceToPredicate)
 
@@ -210,7 +212,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
               condition(isNull(loadField(f)))(
                 setField(f,invokeStatic(method[regex.Pattern, regex.Pattern, String]("compile"), constant(name)))),
               invokeStatic(method[CypherBoolean, Value, AnyValue, regex.Pattern]("regex"), e.ir, loadField(f)))),
-                                 nullable = true, Seq(f))
+                                 nullable = true, e.fields :+ f, e.variables)
         }
 
       case _ =>
@@ -218,7 +220,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
              r <- compile(rhs)
         } yield IntermediateExpression(
           noValueCheck(r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("regex"), l.ir, r.ir)),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
     }
 
     case StartsWith(lhs, rhs) =>
@@ -226,7 +228,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             r <- compile(rhs)} yield {
         IntermediateExpression(
           invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("startsWith"), l.ir, r.ir),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case EndsWith(lhs, rhs) =>
@@ -234,7 +236,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- compile(rhs)} yield {
         IntermediateExpression(
           invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("endsWith"), l.ir, r.ir),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case Contains(lhs, rhs) =>
@@ -242,19 +244,19 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- compile(rhs)} yield {
         IntermediateExpression(
           invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("contains"), l.ir, r.ir),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case expressions.IsNull(test) =>
       for (e <- compile(test)) yield {
         IntermediateExpression(
-          ternary(equal(e.ir, noValue), truthValue, falseValue), nullable = false, e.fields)
+          ternary(equal(e.ir, noValue), truthValue, falseValue), nullable = false, e.fields, e.variables)
       }
 
     case expressions.IsNotNull(test) =>
       for (e <- compile(test)) yield {
         IntermediateExpression(
-          ternary(notEqual(e.ir, noValue), truthValue, falseValue), nullable = false, e.fields)
+          ternary(notEqual(e.ir, noValue), truthValue, falseValue), nullable = false, e.fields, e.variables)
       }
 
     case LessThan(lhs, rhs) =>
@@ -262,7 +264,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- compile(rhs)} yield {
         IntermediateExpression(
           noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("lessThan"), l.ir, r.ir)),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case LessThanOrEqual(lhs, rhs) =>
@@ -270,7 +272,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- compile(rhs)} yield {
         IntermediateExpression(
           noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("lessThanOrEqual"), l.ir, r.ir)),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case GreaterThan(lhs, rhs) =>
@@ -278,7 +280,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- compile(rhs)} yield {
         IntermediateExpression(
           noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("greaterThan"), l.ir, r.ir)),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     case GreaterThanOrEqual(lhs, rhs) =>
@@ -286,7 +288,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- compile(rhs)} yield {
         IntermediateExpression(
           noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("greaterThanOrEqual"), l.ir, r.ir)),
-          nullable = true, l.fields ++ r.fields)
+          nullable = true, l.fields ++ r.fields, l.variables ++ r.variables)
       }
 
     // misc
@@ -297,79 +299,79 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           case CTString =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, TextValue, AnyValue]("asTextValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTNode =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, NodeValue, AnyValue]("asNodeValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTRelationship =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, RelationshipValue, AnyValue]("asRelationshipValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTPath =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, PathValue, AnyValue]("asPathValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTInteger =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, IntegralValue, AnyValue]("asIntegralValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTFloat =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, FloatingPointValue, AnyValue]("asFloatingPointValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTMap =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, MapValue, AnyValue, DbAccess]("asMapValue"), e.ir, DB_ACCESS)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
 
           case l: ListType  =>
             val typ = asNeoType(l.innerType)
 
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, ListValue, AnyValue, AnyType, DbAccess]("asList"), e.ir, typ, DB_ACCESS)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
 
           case CTBoolean =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, BooleanValue, AnyValue]("asBooleanValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTNumber =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, NumberValue, AnyValue]("asNumberValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTPoint =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, PointValue, AnyValue]("asPointValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTGeometry =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, PointValue, AnyValue]("asPointValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTDate =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, DateValue, AnyValue]("asDateValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTLocalTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, LocalTimeValue, AnyValue]("asLocalTimeValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, TimeValue, AnyValue]("asTimeValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTLocalDateTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, LocalDateTimeValue, AnyValue]("asLocalDateTimeValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTDateTime =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, DateTimeValue, AnyValue]("asDateTimeValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case CTDuration =>
             IntermediateExpression(
               noValueCheck(e)(invokeStatic(method[CypherCoercions, DurationValue, AnyValue]("asDurationValue"), e.ir)),
-              e.nullable, e.fields)
+              e.nullable, e.fields, e.variables)
           case _ =>  throw new CypherTypeException(s"Can't coerce to $typ")
         }
       }
@@ -380,16 +382,19 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            idx <- compile(index)
       } yield IntermediateExpression(
         noValueCheck(c, idx)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue, AnyValue, DbAccess]("containerIndex"),
-                                     c.ir, idx.ir, DB_ACCESS)), nullable = true, c.fields ++ idx.fields)
+                                     c.ir, idx.ir, DB_ACCESS)), nullable = true, c.fields ++ idx.fields, c.variables ++ idx.variables)
 
     case Parameter(name, _) => //TODO parameters that are autogenerated from literals should have nullable = false
-      Some(IntermediateExpression(invoke(load("params"), method[MapValue, AnyValue, String]("get"),
-                                         constant(name)), nullable = true, Seq.empty))
+      val parameterVariable = s"parameter_$name"
+      val local = variable[AnyValue](parameterVariable,
+                                     invoke(load("params"), method[MapValue, AnyValue, String]("get"),
+                                            constant(name)))
+      Some(IntermediateExpression(load(parameterVariable), nullable = true, Seq.empty, Set(local)))
 
     case NodeProperty(offset, token, _) =>
       Some(IntermediateExpression(
         invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("nodeProperty"),
-                  getLongAt(offset), constant(token)), nullable = true, Seq.empty))
+                  getLongAt(offset), constant(token)), nullable = true, Seq.empty, Set.empty))
 
     case NodePropertyLate(offset, key, _) =>
       val f = field[Int](nextVariableName(), constant(-1))
@@ -398,14 +403,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           condition(equal(loadField(f), constant(-1)))(
             setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKey"), constant(key)))),
           invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("nodeProperty"),
-                 getLongAt(offset), loadField(f))), nullable = true, Seq(f)))
+                 getLongAt(offset), loadField(f))), nullable = true, Seq(f), Set.empty))
 
     case NodePropertyExists(offset, token, _) =>
       Some(
         IntermediateExpression(
           ternary(
           invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
-                 getLongAt(offset), constant(token)), truthValue, falseValue), nullable = false, Seq.empty))
+                 getLongAt(offset), constant(token)), truthValue, falseValue), nullable = false, Seq.empty, Set.empty))
 
     case NodePropertyExistsLate(offset, key, _) =>
       val f = field[Int](nextVariableName(), constant(-1))
@@ -415,12 +420,12 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKey"), constant(key)))),
         ternary(
         invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
-               getLongAt(offset), loadField(f)), truthValue, falseValue)), nullable = false, Seq(f)))
+               getLongAt(offset), loadField(f)), truthValue, falseValue)), nullable = false, Seq(f), Set.empty))
 
     case RelationshipProperty(offset, token, _) =>
       Some(IntermediateExpression(
         invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("relationshipProperty"),
-                  getLongAt(offset), constant(token)), nullable = true, Seq.empty))
+                  getLongAt(offset), constant(token)), nullable = true, Seq.empty, Set.empty))
 
     case RelationshipPropertyLate(offset, key, _) =>
       val f = field[Int](nextVariableName(), constant(-1))
@@ -429,7 +434,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           condition(equal(loadField(f), constant(-1)))(
             setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("propertyKey"), constant(key)))),
         invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("relationshipProperty"),
-                  getLongAt(offset), loadField(f))), nullable = true, Seq(f)))
+                  getLongAt(offset), loadField(f))), nullable = true, Seq(f), Set.empty))
 
     case RelationshipPropertyExists(offset, token, _) =>
       Some(IntermediateExpression(
@@ -437,7 +442,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
                  getLongAt(offset), constant(token)),
           truthValue,
-          falseValue), nullable = false, Seq.empty)
+          falseValue), nullable = false, Seq.empty, Set.empty)
       )
 
     case RelationshipPropertyExistsLate(offset, key, _) =>
@@ -450,17 +455,17 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
                getLongAt(offset), loadField(f)),
         truthValue,
-        falseValue)), nullable = false, Seq(f)))
+        falseValue)), nullable = false, Seq(f), Set.empty))
 
     case NodeFromSlot(offset, name) =>
       Some(IntermediateExpression(
         invoke(DB_ACCESS, method[DbAccess, NodeValue, Long]("nodeById"), getLongAt(offset)),
-        nullable = slots.get(name).forall(_.nullable), Seq.empty))
+        nullable = slots.get(name).forall(_.nullable), Seq.empty, Set.empty))
 
     case RelationshipFromSlot(offset, name) =>
       Some(IntermediateExpression(
         invoke(DB_ACCESS, method[DbAccess, RelationshipValue, Long]("relationshipById"),
-                  getLongAt(offset)), nullable = slots.get(name).forall(_.nullable), Seq.empty))
+                  getLongAt(offset)), nullable = slots.get(name).forall(_.nullable), Seq.empty, Set.empty))
 
     case GetDegreePrimitive(offset, typ, dir) =>
       val methodName = dir match {
@@ -474,7 +479,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             IntermediateExpression(
               invokeStatic(method[Values, IntValue, Int]("intValue"),
                            invoke(DB_ACCESS, method[DbAccess, Int, Long](methodName), getLongAt(offset))),
-              nullable = false, Seq.empty))
+              nullable = false, Seq.empty, Set.empty))
 
         case Some(t) =>
           val f = field[Int](nextVariableName(), constant(-1))
@@ -485,16 +490,16 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                   setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("relationshipType"), constant(t)))),
                 invokeStatic(method[Values, IntValue, Int]("intValue"),
                            invoke(DB_ACCESS, method[DbAccess, Int, Long, Int](methodName),
-                                  getLongAt(offset), loadField(f)))), nullable = false, Seq(f)))
+                                  getLongAt(offset), loadField(f)))), nullable = false, Seq(f), Set.empty))
       }
 
     //slotted operations
     case ReferenceFromSlot(offset, name) =>
-      Some(IntermediateExpression(getRefAt(offset), slots.get(name).forall(_.nullable), Seq.empty))
+      Some(IntermediateExpression(getRefAt(offset), slots.get(name).forall(_.nullable), Seq.empty, Set.empty))
 
     case IdFromSlot(offset) =>
       Some(IntermediateExpression(invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset)),
-                                  nullable = false, Seq.empty))
+                                  nullable = false, Seq.empty, Set.empty))
 
     case PrimitiveEquals(lhs, rhs) =>
       for {l <- compile(lhs)
@@ -502,26 +507,26 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       } yield
         IntermediateExpression(
           ternary(invoke(l.ir, method[AnyValue, Boolean, AnyRef]("equals"), r.ir), truthValue, falseValue),
-          nullable = false, l.fields ++ r.fields)
+          nullable = false, l.fields ++ r.fields, l.variables ++ r.variables)
 
     case NullCheck(offset, inner) =>
       compile(inner).map(i =>
                            IntermediateExpression(
                              ternary(equal(getLongAt(offset), constant(-1L)), noValue, i.ir),
-                             nullable = true, i.fields))
+                             nullable = true, i.fields, i.variables))
 
     case NullCheckVariable(offset, inner) =>
       compile(inner).map(i => IntermediateExpression(ternary(equal(getLongAt(offset), constant(-1L)), noValue, i.ir),
-                                                  nullable = true, i.fields))
+                                                  nullable = true, i.fields, i.variables))
 
     case NullCheckProperty(offset, inner) =>
       compile(inner).map(i =>
                            IntermediateExpression(ternary(equal(getLongAt(offset), constant(-1L)), noValue, i.ir),
-                                                      nullable = true, i.fields))
+                                                      nullable = true, i.fields, i.variables))
 
     case IsPrimitiveNull(offset) =>
       Some(IntermediateExpression(ternary(equal(getLongAt(offset), constant(-1L)), truthValue, falseValue),
-                                  nullable = false, Seq.empty))
+                                  nullable = false, Seq.empty, Set.empty))
 
     case _ => None
   }
@@ -529,81 +534,83 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
   def compileFunction(c: FunctionInvocation): Option[IntermediateExpression] = c.function match {
     case functions.Acos =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("acos"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("acos"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Cos =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cos"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cos"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Cot =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cot"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cot"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Asin =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("asin"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("asin"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Haversin =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("haversin"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("haversin"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Sin =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sin"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sin"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Atan =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("atan"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("atan"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Atan2 =>
       for {y <- compile(c.args(0))
            x <- compile(c.args(1))
       } yield {
         IntermediateExpression(
           noValueCheck(y, x)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue, AnyValue]("atan2"), y.ir, x.ir)),
-          y.nullable || x.nullable, y.fields ++ x.fields)
+          y.nullable || x.nullable, y.fields ++ x.fields, y.variables ++ x.variables)
       }
     case functions.Tan =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("tan"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("tan"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Round =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("round"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("round"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Rand =>
       Some(IntermediateExpression(invokeStatic(method[CypherFunctions, DoubleValue]("rand")),
-                                  nullable = false, Seq.empty))
+                                  nullable = false, Seq.empty, Set.empty))
     case functions.Abs =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, NumberValue, AnyValue]("abs"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, NumberValue, AnyValue]("abs"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Ceil =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("ceil"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("ceil"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Floor =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("floor"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("floor"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Degrees =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toDegrees"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toDegrees"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Exp =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("exp"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("exp"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Log =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Log10 =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log10"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log10"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Radians =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toRadians"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toRadians"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Sign =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, LongValue, AnyValue]("signum"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, LongValue, AnyValue]("signum"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Sqrt =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sqrt"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sqrt"), in.ir)), in.nullable, in.fields, in.variables))
     case functions.Range =>
       for {start <- compile(c.args(0))
            end <- compile(c.args(1))
            step <- compile(c.args(2))
       } yield IntermediateExpression(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue, AnyValue]("range"),
-                                                  start.ir, end.ir, step.ir), nullable = false, start.fields ++ end.fields ++ step.fields)
+                                                  start.ir, end.ir, step.ir), nullable = false,
+                                     start.fields ++ end.fields ++ step.fields,
+                                     start.variables ++ end.variables ++ step.variables)
 
-    case functions.Pi => Some(IntermediateExpression(getStatic[Values, DoubleValue]("PI"), nullable = false, Seq.empty))
-    case functions.E => Some(IntermediateExpression(getStatic[Values, DoubleValue]("E"), nullable = false, Seq.empty))
+    case functions.Pi => Some(IntermediateExpression(getStatic[Values, DoubleValue]("PI"), nullable = false, Seq.empty, Set.empty))
+    case functions.E => Some(IntermediateExpression(getStatic[Values, DoubleValue]("E"), nullable = false, Seq.empty, Set.empty))
 
     case functions.Coalesce =>
       val args = c.args.flatMap(compile)
@@ -634,7 +641,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                           loop(args.toList),
                           load(tempVariable))
 
-        Some(IntermediateExpression(repr, args.exists(_.nullable), args.foldLeft(Seq.empty[Field])((a,b) => a ++ b.fields)))
+        Some(IntermediateExpression(repr, args.exists(_.nullable), args.foldLeft(Seq.empty[Field])((a,b) => a ++ b.fields),
+                                    args.foldLeft(Set.empty[LocalVariable])((a,b) => a ++ b.variables)))
       }
 
     case functions.Distance =>
@@ -643,26 +651,26 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       } yield {
         IntermediateExpression(
           invokeStatic(method[CypherFunctions, Value, AnyValue, AnyValue]("distance"), p1.ir, p2.ir), nullable = true,
-          p1.fields ++ p2.fields)
+          p1.fields ++ p2.fields,  p1.variables ++ p2.variables)
       }
 
     case functions.StartNode =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, NodeValue, AnyValue, DbAccess]("startNode"), in.ir,
-                                      DB_ACCESS)), in.nullable, in.fields))
+                                      DB_ACCESS)), in.nullable, in.fields, in.variables))
 
     case functions.EndNode =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, NodeValue, AnyValue, DbAccess]("endNode"), in.ir,
-                                      DB_ACCESS)), in.nullable, in.fields))
+                                      DB_ACCESS)), in.nullable, in.fields, in.variables))
 
     case functions.Nodes =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("nodes"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("nodes"), in.ir)), in.nullable, in.fields, in.variables))
 
     case functions.Relationships =>
       compile(c.args.head).map(in => IntermediateExpression(
-        noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("relationships"), in.ir)), in.nullable, in.fields))
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("relationships"), in.ir)), in.nullable, in.fields, in.variables))
 
     case functions.Exists =>
       c.arguments.head match {
@@ -671,7 +679,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             noValueCheck(in)(
               invokeStatic(method[CypherFunctions, BooleanValue, String, AnyValue, DbAccess]("propertyExists"),
                            constant(property.propertyKey.name),
-                           in.ir, DB_ACCESS )), in.nullable, in.fields))
+                           in.ir, DB_ACCESS )), in.nullable, in.fields, in.variables))
         case _: PatternExpression => None//TODO
         case _: NestedPipeExpression => None//TODO?
         case _: NestedPlanExpression => None//TODO
@@ -681,28 +689,28 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     case functions.Head =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue]("head"), in.ir)),
-        nullable = true, in.fields))
+        nullable = true, in.fields, in.variables))
 
     case functions.Id =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, LongValue, AnyValue]("id"), in.ir)),
-        nullable = in.nullable, in.fields))
+        nullable = in.nullable, in.fields, in.variables))
 
     case functions.Labels =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue, DbAccess]("labels"), in.ir,
                                       DB_ACCESS)),
-        nullable = in.nullable, in.fields))
+        nullable = in.nullable, in.fields, in.variables))
 
     case functions.Type =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("type"), in.ir)),
-        nullable = in.nullable, in.fields))
+        nullable = in.nullable, in.fields, in.variables))
 
     case functions.Last =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue]("last"), in.ir)),
-        nullable = true, in.fields))
+        nullable = true, in.fields, in.variables))
 
     case functions.Left =>
       for {in <- compile(c.args(0))
@@ -710,25 +718,25 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       } yield {
         IntermediateExpression(
           noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue]("left"),
-                                        in.ir, endPos.ir)), in.nullable, in.fields)
+                                        in.ir, endPos.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.LTrim =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("ltrim"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("ltrim"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.RTrim =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("rtrim"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("rtrim"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Trim =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("trim"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("trim"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Replace =>
@@ -740,13 +748,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           noValueCheck(original, search, replaceWith)(
             invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue, AnyValue]("replace"),
                          original.ir, search.ir, replaceWith.ir)), original.nullable || search.nullable || replaceWith.nullable,
-          original.fields ++ search.fields ++ replaceWith.fields)
+          original.fields ++ search.fields ++ replaceWith.fields, original.variables ++ search.variables ++ replaceWith.variables)
       }
 
     case functions.Reverse =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue]("reverse"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue]("reverse"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Right =>
@@ -755,7 +763,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       } yield {
         IntermediateExpression(
           noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue]("right"),
-                                        in.ir, len.ir)), in.nullable, in.fields)
+                                        in.ir, len.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Split =>
@@ -765,8 +773,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         IntermediateExpression(
           noValueCheck(original, sep)(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue]("split"),
                                                    original.ir, sep.ir)),
-          original.nullable || sep.nullable,
-          original.fields ++ sep.fields)
+          original.nullable || sep.nullable, original.fields ++ sep.fields, original.variables ++ sep.variables)
       }
 
     case functions.Substring if c.args.size == 2 =>
@@ -775,7 +782,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       } yield {
         IntermediateExpression(
           noValueCheck(original)(invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue]("substring"),
-                                                   original.ir, start.ir)), original.nullable, original.fields ++ start.fields)
+                                                   original.ir, start.ir)), original.nullable,
+          original.fields ++ start.fields, original.variables ++ start.variables)
       }
 
     case functions.Substring  =>
@@ -786,83 +794,83 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         IntermediateExpression(
           noValueCheck(original)(invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue, AnyValue]("substring"),
                                               original.ir, start.ir, len.ir)),
-          original.nullable,
-          original.fields ++ start.fields ++ len.fields)
+          original.nullable, original.fields ++ start.fields ++ len.fields,
+          original.variables ++ start.variables ++ len.variables)
       }
 
     case functions.ToLower =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toLower"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toLower"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.ToUpper =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toUpper"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toUpper"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Point =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, Value, AnyValue, DbAccess]("point"), in.ir, DB_ACCESS)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, Value, AnyValue, DbAccess]("point"), in.ir, DB_ACCESS)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Keys =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue, DbAccess]("keys"), in.ir, DB_ACCESS)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue, DbAccess]("keys"), in.ir, DB_ACCESS)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Size =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, IntegralValue, AnyValue]("size"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, IntegralValue, AnyValue]("size"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Length =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, IntegralValue, AnyValue]("length"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, IntegralValue, AnyValue]("length"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Tail =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("tail"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("tail"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.ToBoolean =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
           noValueCheck(in)(invokeStatic(method[CypherFunctions, Value, AnyValue]("toBoolean"), in.ir)),
-          nullable = true, in.fields)
+          nullable = true, in.fields, in.variables)
       }
 
     case functions.ToFloat =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
           noValueCheck(in)(invokeStatic(method[CypherFunctions, Value, AnyValue]("toFloat"), in.ir)),
-          nullable = true, in.fields)
+          nullable = true, in.fields, in.variables)
       }
 
     case functions.ToInteger =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
           noValueCheck(in)(invokeStatic(method[CypherFunctions, Value, AnyValue]("toInteger"), in.ir)),
-          nullable = true, in.fields)
+          nullable = true, in.fields, in.variables)
       }
 
     case functions.ToString =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toString"), in.ir)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toString"), in.ir)), in.nullable, in.fields, in.variables)
       }
 
     case functions.Properties =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, MapValue, AnyValue, DbAccess]("properties"), in.ir, DB_ACCESS)), in.nullable, in.fields)
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, MapValue, AnyValue, DbAccess]("properties"), in.ir, DB_ACCESS)), in.nullable, in.fields, in.variables)
       }
 
     case _ => None
@@ -884,7 +892,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
   private def coerceToPredicate(e: IntermediateExpression) = IntermediateExpression(
     invokeStatic(method[CypherBoolean, Value, AnyValue]("coerceToBoolean"), e.ir),
-    nullable = e.nullable, e.fields)
+    nullable = e.nullable, e.fields, e.variables)
 
   /**
     * Ok AND and ANDS are complicated.  At the core we try to find a single `FALSE` if we find one there is no need to look
@@ -1088,7 +1096,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           //if we seen a null we should return null otherwise we return whatever currently
           //stored in returnValue
           if (nullable) ternary(load(seenNull), noValue, load(returnValue)) else load(returnValue)): _*)
-    IntermediateExpression(ir, nullable, expressions.foldLeft(Seq.empty[Field])((a,b) => a ++ b.fields))
+    IntermediateExpression(ir, nullable, expressions.foldLeft(Seq.empty[Field])((a,b) => a ++ b.fields),
+                           expressions.foldLeft(Set.empty[LocalVariable])((a,b) => a ++ b.variables))
   }
 
   private def asNeoType(ct: CypherType): IntermediateRepresentation = ct match {

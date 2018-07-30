@@ -76,6 +76,9 @@ object CodeGeneration {
         }
       }
       using(clazz.generate(COMPUTE_METHOD)) { block =>
+        expression.variables.foreach{ v =>
+          block.assign(v.typ, v.name, compileExpression(v.value, block))
+        }
         block.returns(compileExpression(expression.ir, block))
       }
       clazz.handle()
