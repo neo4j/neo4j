@@ -182,6 +182,7 @@ public class GraphDatabaseFacadeFactory
         platform.dependencies.satisfyDependency( databaseAvailability );
         platform.life.add( databaseAvailability );
         platform.life.add( new StartupWaiter( platform.availabilityGuard, edition.transactionStartTimeout ) );
+        platform.dependencies.satisfyDependency( edition.schemaWriteGuard );
         platform.life.setLast( platform.eventHandlers );
 
         edition.createDatabases( databaseManager, config );

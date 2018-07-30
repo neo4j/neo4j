@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -95,8 +94,6 @@ public class DataSourceModule
 
         PageCache pageCache = platformModule.pageCache;
 
-        SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
-
         DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
                 new DatabasePanicEventGenerator( platformModule.eventHandlers ) );
 
@@ -125,7 +122,7 @@ public class DataSourceModule
                 deps,
                 tokenHolders,
                 editionModule.statementLocksFactory,
-                schemaWriteGuard,
+                editionModule.schemaWriteGuard,
                 transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ),
                 fileSystem,

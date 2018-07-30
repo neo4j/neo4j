@@ -22,17 +22,19 @@ package org.neo4j.graphdb.facade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
 
+
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -52,6 +54,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class GraphDatabaseFacadeFactoryTest
@@ -72,7 +76,7 @@ class GraphDatabaseFacadeFactoryTest
     void shouldThrowAppropriateExceptionIfStartFails()
     {
         RuntimeException startupError = new RuntimeException();
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, mockFacade );
+        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
         RuntimeException startException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
         assertEquals( startupError, Exceptions.rootCause( startException ) );
@@ -84,7 +88,7 @@ class GraphDatabaseFacadeFactoryTest
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, mockFacade );
+        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
         doThrow( shutdownError ).when( mockFacade ).shutdown();
         RuntimeException initException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
@@ -94,16 +98,12 @@ class GraphDatabaseFacadeFactoryTest
         assertEquals( shutdownError, initException.getSuppressed()[0] );
     }
 
-    private static GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError, GraphDatabaseFacade facade )
+    private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
     {
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN, p ->
-        {
-            EditionModule editionModule = mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS );
-            DatabaseManager databaseManager = mock( DatabaseManager.class );
-            when( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( facade ) );
-            when( editionModule.createDatabaseManager( any(), any(), any(), any(), any() ) ).thenReturn( databaseManager );
-            return editionModule;
-        } )
+        PlatformModule platformModule = new PlatformModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
+        EditionModule editionModule = new CommunityEditionModule( platformModule );
+        editionModule.schemaWriteGuard = SchemaWriteGuard.ALLOW_ALL_WRITES;
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
