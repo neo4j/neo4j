@@ -27,7 +27,7 @@ import java.util.Map;
  * <p>
  * Properties are key-value pairs. The keys are always strings. Valid property
  * value types are all the Java primitives (<code>int</code>, <code>byte</code>,
- * <code>float</code>, etc), <code>java.lang.String</code>s, the new <em>Spatial</em>
+ * <code>float</code>, etc), <code>java.lang.String</code>s, the <em>Spatial</em>
  * and <em>Temporal</em> types and arrays of any of these.
  * <p>
  * The complete list of currently supported property types is:
