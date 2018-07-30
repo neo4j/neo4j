@@ -39,7 +39,6 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -53,11 +52,11 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     private final BooleanSupplier dataSourceAvailabilitySupplier;
     private final FileSystemAbstraction fs;
     private final CoreSnapshotService snapshotService;
-    private final Supplier<CheckPointer> checkPointerSupplier;
+    private final CheckPointerService checkPointerService;
 
     public RegularCatchupServerHandler( Monitors monitors, LogProvider logProvider, Supplier<StoreId> storeIdSupplier,
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier, FileSystemAbstraction fs,
-            CoreSnapshotService snapshotService, Supplier<CheckPointer> checkPointerSupplier )
+            CoreSnapshotService snapshotService, CheckPointerService checkPointerService )
     {
         this.monitors = monitors;
         this.logProvider = logProvider;
@@ -66,7 +65,7 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
         this.dataSourceAvailabilitySupplier = dataSourceAvailabilitySupplier;
         this.fs = fs;
         this.snapshotService = snapshotService;
-        this.checkPointerSupplier = checkPointerSupplier;
+        this.checkPointerService = checkPointerService;
     }
 
     @Override
@@ -91,14 +90,14 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     @Override
     public ChannelHandler getStoreFileRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new StoreCopyRequestHandler.GetStoreFileRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerSupplier,
+        return new StoreCopyRequestHandler.GetStoreFileRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerService,
                 new StoreFileStreamingProtocol(), fs, logProvider );
     }
 
     @Override
     public ChannelHandler getIndexSnapshotRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new StoreCopyRequestHandler.GetIndexSnapshotRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerSupplier,
+        return new StoreCopyRequestHandler.GetIndexSnapshotRequestHandler( catchupServerProtocol, dataSourceSupplier, checkPointerService,
                 new StoreFileStreamingProtocol(), fs, logProvider );
     }
 

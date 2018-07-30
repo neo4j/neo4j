@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerHandler;
+import org.neo4j.causalclustering.catchup.CheckPointerService;
 import org.neo4j.causalclustering.catchup.RegularCatchupServerHandler;
 import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
@@ -179,9 +180,12 @@ public class CoreServerModule
         ApplicationSupportedProtocols supportedCatchupProtocols = supportedProtocolCreator.createSupportedCatchupProtocol();
         Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
 
+        CheckPointerService checkPointerService =
+                new CheckPointerService( () -> localDatabase.dataSource().getDependencyResolver().resolveDependency( CheckPointer.class ), jobScheduler,
+                        JobScheduler.Groups.checkPoint );
         CatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, localDatabase::dataSource, localDatabase::isAvailable,
-                fileSystem, snapshotService, platformModule.dependencies.provideDependency( CheckPointer.class ) );
+                fileSystem, snapshotService, checkPointerService );
 
         catchupServer = new CatchupServerBuilder( catchupServerHandler )
                 .serverHandler( installedProtocolsHandler )

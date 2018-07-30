@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
+import org.neo4j.causalclustering.catchup.CheckPointerService;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.NeoStoreDataSource;
