@@ -109,7 +109,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -129,9 +128,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
-import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -150,7 +147,6 @@ import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
@@ -163,63 +159,6 @@ import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 public class NeoStoreDataSource extends LifecycleAdapter
 {
-
-    enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
-    {
-        TRANSACTION_RANGE( "Transaction log:" )
-                {
-                    @Override
-                    void dump( NeoStoreDataSource source, Logger log )
-                    {
-                        LogFiles logFiles = source.getDependencyResolver().resolveDependency( LogFiles.class );
-                        try
-                        {
-                            for ( long logVersion = logFiles.getLowestLogVersion();
-                                  logFiles.versionExists( logVersion ); logVersion++ )
-                            {
-                                if ( logFiles.hasAnyEntries( logVersion ) )
-                                {
-                                    LogHeader header = logFiles.extractHeader( logVersion );
-                                    long firstTransactionIdInThisLog = header.lastCommittedTxId + 1;
-                                    log.log( "Oldest transaction " + firstTransactionIdInThisLog +
-                                             " found in log with version " + logVersion );
-                                    return;
-                                }
-                            }
-                            log.log( "No transactions found in any log" );
-                        }
-                        catch ( IOException e )
-                        {   // It's fine, we just tried to be nice and log this. Failing is OK
-                            log.log( "Error trying to figure out oldest transaction in log" );
-                        }
-                    }
-                };
-
-        private final String message;
-
-        Diagnostics( String message )
-        {
-            this.message = message;
-        }
-
-        @Override
-        public void dumpDiagnostics( final NeoStoreDataSource source, DiagnosticsPhase phase, Logger logger )
-        {
-            if ( applicable( phase ) )
-            {
-                logger.log( message );
-                dump( source, logger );
-            }
-        }
-
-        boolean applicable( DiagnosticsPhase phase )
-        {
-            return phase.isInitialization() || phase.isExplicitlyRequested();
-        }
-
-        abstract void dump( NeoStoreDataSource source, Logger logger );
-    }
-
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
     private final Monitors monitors;
@@ -798,7 +737,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public void registerDiagnosticsWith( DiagnosticsManager manager )
     {
         storageEngine.registerDiagnostics( manager );
-        manager.registerAll( Diagnostics.class, this );
+        manager.registerAll( DataSourceDiagnostics.class, this );
     }
 
     public DependencyResolver getDependencyResolver()
@@ -855,13 +794,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return databaseName;
     }
 
-    // For test purposes only, not thread safe
-    @VisibleForTesting
-    public LifeSupport getLife()
-    {
-        return life;
-    }
-
     public AutoIndexing getAutoIndexing()
     {
         return autoIndexing;
@@ -870,5 +802,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public TransactionEventHandlers getTransactionEventHandlers()
     {
         return transactionEventHandlers;
+    }
+
+    @VisibleForTesting
+    public LifeSupport getLife()
+    {
+        return life;
     }
 }
