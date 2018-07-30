@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -152,6 +156,14 @@ abstract class Read implements TxStateHolder,
             IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
     {
+        Pair<Long,Iterable<Value>> pair = lockingNodeUniqueIndexSeek( index, Collections.emptyList(), predicates );
+        return pair.first();
+    }
+
+    @Override
+    public Pair<Long,Iterable<Value>> lockingNodeUniqueIndexSeek( IndexReference index, List<Integer> propertyIndicesWithValues,
+            IndexQuery.ExactPredicate... predicates ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
+    {
         assertIndexOnline( index );
         assertPredicatesMatchSchema( index, predicates );
 
@@ -183,7 +195,13 @@ abstract class Read implements TxStateHolder,
                 }
             }
 
-            return cursor.nodeReference();
+            List<Value> values = new ArrayList<>( propertyIndicesWithValues.size() );
+            for ( int offset : propertyIndicesWithValues )
+            {
+                values.add( cursor.propertyValue( offset ) );
+            }
+
+            return Pair.of( cursor.nodeReference(), values );
         }
     }
 

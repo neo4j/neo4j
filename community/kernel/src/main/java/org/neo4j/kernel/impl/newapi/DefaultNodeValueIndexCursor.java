@@ -53,6 +53,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private Value[] values;
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private LongSet removed = LongSets.immutable.empty();
+    // TODO This should not be set simply to true. The NodeIndexSeeker should dictate that, either on creation or on initialize
     private boolean needsValues;
     private final DefaultCursors pool;
 
@@ -134,6 +135,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( added.hasNext() )
         {
             this.node = added.next();
+            // TODO we need to get the values also for added nodes (from the TXState)!
             this.values = null;
             return true;
         }
@@ -291,7 +293,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void seekQuery( IndexDescriptor descriptor, IndexQuery[] query )
     {
-        needsValues = false;
+        needsValues = true;
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );
         if ( read.hasTxStateWithChanges() )
         {

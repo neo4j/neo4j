@@ -19,7 +19,11 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.List;
+
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.Value;
 
 /**
  * Defines the graph read operations of the Kernel.
@@ -53,6 +57,24 @@ public interface Read
      * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
      */
     long lockingNodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
+            throws KernelException;
+
+    /**
+     * Returns node id of node found in unique index or -1 if no node was found. Also returns the properties
+     * of the node that the index provides, at the indices indicated by `propertyIndicesWithValues`.
+     *
+     * Note that this is a very special method and should be use with caution. It has special locking semantics in
+     * order to facilitate unique creation of nodes. If a node is found; a shared lock for the index entry will be
+     * held whereas if no node is found we will hold onto an exclusive lock until the close of the transaction.
+     *
+     * @param index {@link IndexReference} referencing index to query.
+     *              {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
+     * @param propertyIndicesWithValues the indices of properties for which the index should retrieve values. This should be empty
+     * if the index cannot provide values, index 0 for a non-composite index, and more indices for a composite index.
+     * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
+     */
+    Pair<Long, Iterable<Value>> lockingNodeUniqueIndexSeek( IndexReference index, List<Integer> propertyIndicesWithValues,
+            IndexQuery.ExactPredicate... predicates )
             throws KernelException;
 
     /**

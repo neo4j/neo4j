@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import java.util.List;
+
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -32,6 +35,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.Value;
 
 public class StubRead implements Read
 {
@@ -44,6 +48,13 @@ public class StubRead implements Read
 
     @Override
     public long lockingNodeUniqueIndexSeek( IndexReference index,
+            IndexQuery.ExactPredicate... predicates ) throws KernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Pair<Long,Iterable<Value>> lockingNodeUniqueIndexSeek( IndexReference index, List<Integer> propertyIndicesWithValues,
             IndexQuery.ExactPredicate... predicates ) throws KernelException
     {
         throw new UnsupportedOperationException();

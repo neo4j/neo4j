@@ -22,6 +22,10 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Iterator;
+
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -37,6 +41,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
@@ -92,6 +97,28 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     }
 
     @Test
+    public void shouldFindMatchingNodeWithPropertyValue() throws Exception
+    {
+        // given
+        IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
+        Value value = Values.of( "value" );
+        long nodeId = createNodeWithValue( value );
+
+        // when looking for it
+        Read read = newTransaction().dataRead();
+        int propertyId = index.properties()[0];
+        Pair<Long, Iterable<Value>> result = read.lockingNodeUniqueIndexSeek( index, Collections.singletonList( 0 ), exact( propertyId, value ) );
+        long foundId = result.first();
+        Iterator<Value> propertyValues = result.other().iterator();
+        commit();
+
+        // then
+        assertEquals( "Created node was not found", nodeId, foundId );
+        assertEquals( "Created node had wrong property value", value, propertyValues.next() );
+        assertFalse( "Created node had too many property values", propertyValues.hasNext());
+    }
+
+    @Test
     public void shouldNotFindNonMatchingNode() throws Exception
     {
         // given
@@ -120,8 +147,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // when looking for it
         Transaction transaction = newTransaction();
         long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index,
-                exact( propertyId1, value1 ),
-                                                                exact( propertyId2, value2 ) );
+                exact( propertyId1, value1 ), exact( propertyId2, value2 ) );
         commit();
 
         // then
