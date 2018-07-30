@@ -70,7 +70,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       thisPlan + l + r
     }
 
-    val sortedPlans = input.toIndexedSeq.sorted(inputOrdering.reverse).map(projector)
+    val sortedPlans = input.toIndexedSeq.sorted(inputOrdering).map(projector).reverse
     val winner = sortedPlans.last
 
     val theseRows: immutable.Seq[Row] = sortedPlans.map { plan =>
