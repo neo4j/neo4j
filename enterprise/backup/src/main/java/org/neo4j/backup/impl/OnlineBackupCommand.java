@@ -30,6 +30,8 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 
+import static java.lang.String.format;
+
 class OnlineBackupCommand implements AdminCommand
 {
     private final OutsideWorld outsideWorld;
@@ -59,6 +61,7 @@ class OnlineBackupCommand implements AdminCommand
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         OnlineBackupContext onlineBackupContext = contextBuilder.createContext( args );
+        protocolWarn( onlineBackupContext );
         BackupSupportingClasses backupSupportingClasses =
                 backupSupportingClassesFactory.createSupportingClasses( onlineBackupContext.getConfig() );
 
@@ -80,7 +83,29 @@ class OnlineBackupCommand implements AdminCommand
     {
         if ( !outsideWorld.fileSystem().isDirectory( path.toFile() ) )
         {
-            throw new CommandFailed( String.format( "Directory '%s' does not exist.", path ) );
+            throw new CommandFailed( format( "Directory '%s' does not exist.", path ) );
+        }
+    }
+
+    private void protocolWarn( OnlineBackupContext onlineBackupContext )
+    {
+        SelectedBackupProtocol selectedBackupProtocol = onlineBackupContext.getRequiredArguments().getSelectedBackupProtocol();
+        if ( !SelectedBackupProtocol.ANY.equals( selectedBackupProtocol ) )
+        {
+            final String compatibleProducts;
+            switch ( selectedBackupProtocol )
+            {
+            case CATCHUP:
+                compatibleProducts = "causal clustering";
+                break;
+            case COMMON:
+                compatibleProducts = "HA and single";
+                break;
+            default:
+                throw new IllegalArgumentException( "Unhandled protocol " + selectedBackupProtocol );
+            }
+            outsideWorld.stdOutLine( format( "The selected protocol `%s` means that it is only compatible with %s instances", selectedBackupProtocol.getName(),
+                    compatibleProducts ) );
         }
     }
 }
