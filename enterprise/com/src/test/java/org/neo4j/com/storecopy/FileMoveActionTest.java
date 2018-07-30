@@ -27,9 +27,13 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.StandardOpenOption;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -41,13 +45,43 @@ public class FileMoveActionTest
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+
     @Test
     public void nonPageCacheFilesMovedDoNotLeaveOriginal() throws IOException
     {
         // given
         File baseDirectory = testDirectory.directory();
         File sourceDirectory = new File( baseDirectory, "source" );
-        File targetDirectory = new File( baseDirectory, "target" );
+        File targetDirectory = new File( baseDirectory, "destination" );
+        File sourceFile = new File( sourceDirectory, "theFileName" );
+        File targetFile = new File( targetDirectory, "theFileName" );
+        sourceFile.getParentFile().mkdirs();
+        targetDirectory.mkdirs();
+
+        // and sanity check
+        assertTrue( sourceFile.createNewFile() );
+        assertTrue( sourceFile.exists() );
+        assertFalse( targetFile.exists() );
+
+        // when
+        FileMoveAction.moveViaFileSystem( sourceFile, sourceDirectory ).move( targetDirectory );
+
+        // then
+        assertTrue( targetFile.exists() );
+        assertFalse( sourceFile.exists() );
+    }
+
+    @Test
+    public void nonPageCacheFilesCopiedLeaveOriginal() throws IOException
+    {
+        // given
+        File baseDirectory = testDirectory.directory();
+        File sourceDirectory = new File( baseDirectory, "source" );
+        File targetDirectory = new File( baseDirectory, "destination" );
         File sourceFile = new File( sourceDirectory, "theFileName" );
         File targetFile = new File( targetDirectory, "theFileName" );
         sourceFile.getParentFile().mkdirs();
@@ -63,6 +97,6 @@ public class FileMoveActionTest
 
         // then
         assertTrue( targetFile.exists() );
-        assertFalse( sourceFile.exists() );
+        assertTrue( sourceFile.exists() );
     }
 }

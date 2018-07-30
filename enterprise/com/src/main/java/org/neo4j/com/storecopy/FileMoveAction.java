@@ -47,13 +47,34 @@ public interface FileMoveAction
                 Path resolvedPath = toDir.toPath().resolve( relativePath );
                 Files.createDirectories( resolvedPath.getParent() );
                 Files.copy( originalPath, resolvedPath, copyOptions );
-                Files.delete( originalPath );
             }
 
             @Override
             public File file()
             {
                 return file;
+            }
+        };
+    }
+
+    static FileMoveAction moveViaFileSystem( File sourceFile, File sourceDirectory )
+    {
+        return new FileMoveAction()
+        {
+            @Override
+            public void move( File toDir, CopyOption... copyOptions ) throws IOException
+            {
+                copyViaFileSystem( sourceFile, sourceDirectory ).move( toDir, copyOptions );
+                if ( !sourceFile.delete() )
+                {
+                    throw new IOException( "Unable to delete source file after copying " + sourceFile );
+                }
+            }
+
+            @Override
+            public File file()
+            {
+                return sourceFile;
             }
         };
     }

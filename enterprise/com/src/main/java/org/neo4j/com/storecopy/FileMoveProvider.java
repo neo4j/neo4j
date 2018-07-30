@@ -141,11 +141,10 @@ public class FileMoveProvider
 
     /**
      * Some files are handled via page cache for CAPI flash, others are only used on the default file system. This
-     * contains the logic for handling files between
-     * the 2 systems
+     * contains the logic for handling files between the 2 systems
      */
     private FileMoveAction moveFileCorrectly( File fileToMove, File basePath )
     {
-        return FileMoveAction.copyViaFileSystem( fileToMove, basePath );
+        return FileMoveAction.moveViaFileSystem( fileToMove, basePath );
     }
 }

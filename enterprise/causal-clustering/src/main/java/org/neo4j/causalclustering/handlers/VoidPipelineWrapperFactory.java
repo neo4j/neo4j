@@ -54,12 +54,22 @@ public class VoidPipelineWrapperFactory implements DuplexPipelineWrapperFactory
     @Override
     public PipelineWrapper forServer( Config config, Dependencies dependencies, LogProvider logProvider, Setting<String> policyName )
     {
+        verifyNoEncryption( config, policyName );
         return VOID_WRAPPER;
     }
 
     @Override
     public PipelineWrapper forClient( Config config, Dependencies dependencies, LogProvider logProvider, Setting<String> policyName )
     {
+        verifyNoEncryption( config, policyName );
         return VOID_WRAPPER;
+    }
+
+    private static void verifyNoEncryption( Config config, Setting<String> policyName )
+    {
+        if ( config.get( policyName ) != null )
+        {
+            throw new IllegalArgumentException( "Unexpected SSL policy " + policyName );
+        }
     }
 }
