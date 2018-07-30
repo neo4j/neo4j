@@ -32,6 +32,12 @@ import org.neo4j.io.pagecache.PageCache;
 @FunctionalInterface
 public interface FileMoveAction
 {
+    /**
+     * Execute a file move, moving the prepared file to the given {@code toDir}.
+     * @param toDir The target directory of the move operation
+     * @param copyOptions
+     * @throws IOException
+     */
     void move( File toDir, CopyOption... copyOptions ) throws IOException;
 
     static FileMoveAction copyViaPageCache( File file, PageCache pageCache )
@@ -46,6 +52,14 @@ public interface FileMoveAction
         };
     }
 
+    /**
+     * Create a FileMoveAction through the file system for moving the {@code file} which is contained in {@code basePath}.
+     *   When executing the move action the {@param file} will be moved to the argument supplied to the {@link #move(File, CopyOption...)} call
+     *   as the argument
+     * @param file The file to move
+     * @param basePath The directory containing the file
+     * @return A FileMoveAction for the given file.
+     */
     static FileMoveAction copyViaFileSystem( File file, File basePath )
     {
         Path base = basePath.toPath();
@@ -54,7 +68,10 @@ public interface FileMoveAction
             Path originalPath = file.toPath();
             Path relativePath = base.relativize( originalPath );
             Path resolvedPath = toDir.toPath().resolve( relativePath );
-            Files.createDirectories( resolvedPath.getParent() );
+            if ( !Files.isSymbolicLink( resolvedPath.getParent() ) )
+            {
+                Files.createDirectories( resolvedPath.getParent() );
+            }
             Files.copy( originalPath, resolvedPath, copyOptions );
         };
     }
