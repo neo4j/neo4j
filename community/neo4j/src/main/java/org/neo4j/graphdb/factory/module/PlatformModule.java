@@ -41,6 +41,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -104,6 +105,7 @@ public class PlatformModule
     public final DiagnosticsManager diagnosticsManager;
 
     public final KernelEventHandlers eventHandlers;
+    public final DatabasePanicEventGenerator panicEventGenerator;
 
     public final Tracers tracers;
 
@@ -226,6 +228,7 @@ public class PlatformModule
         dependencies.satisfyDependency( connectorPortRegister );
 
         eventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
+        panicEventGenerator = new DatabasePanicEventGenerator( eventHandlers );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
     }

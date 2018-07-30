@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -94,22 +93,14 @@ public class DataSourceModule
 
         PageCache pageCache = platformModule.pageCache;
 
-        DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
-                new DatabasePanicEventGenerator( platformModule.eventHandlers ) );
-
-        DatabaseHealth databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
-                logging.getInternalLog( DatabaseHealth.class ) ) );
-
         autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
 
+        DatabaseHealth databaseHealth = new DatabaseHealth( platformModule.panicEventGenerator, logging.getInternalLog( DatabaseHealth.class ) );
         IndexConfigStore indexConfigStore = new IndexConfigStore( databaseDirectory, fileSystem );
-        deps.satisfyDependencies( indexConfigStore );
         DefaultExplicitIndexProvider explicitIndexProvider = new DefaultExplicitIndexProvider();
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-
         storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
-        deps.satisfyDependency( storeCopyCheckPointMutex );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
                 databaseName,

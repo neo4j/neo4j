@@ -349,10 +349,14 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public void start() throws IOException
     {
         dataSourceDependencies = new Dependencies( dependencyResolver );
+        dataSourceDependencies.satisfyDependency( this );
         dataSourceDependencies.satisfyDependency( monitors );
         dataSourceDependencies.satisfyDependency( tokenHolders );
         dataSourceDependencies.satisfyDependency( facade );
-        dataSourceDependencies.satisfyDependency( this );
+        dataSourceDependencies.satisfyDependency( indexConfigStore );
+        dataSourceDependencies.satisfyDependency( explicitIndexProvider );
+        dataSourceDependencies.satisfyDependency( databaseHealth );
+        dataSourceDependencies.satisfyDependency( storeCopyCheckPointMutex );
 
         life = new LifeSupport();
         dataSourceDependencies.satisfyDependency( explicitIndexProvider );
