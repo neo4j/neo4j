@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.QueryResultComparingIndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -137,7 +138,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // THEN
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
-            try ( IndexReader reader = accessor.newReader() )
+            try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 LongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
@@ -194,7 +195,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             }
 
             // THEN
-            try ( IndexReader reader = accessor.newReader() )
+            try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( NodeAndValue entry : Iterables.concat( valueSet1, valueSet2 ) )
@@ -224,7 +225,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
-            try ( IndexReader reader = accessor.newReader() )
+            try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( NodeAndValue entry : values )
@@ -260,7 +261,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
             {
-                try ( IndexReader reader = accessor.newReader() )
+                try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
                 {
                     int propertyKeyId = descriptor.schema().getPropertyId();
                     for ( NodeAndValue entry : valueSet1 )

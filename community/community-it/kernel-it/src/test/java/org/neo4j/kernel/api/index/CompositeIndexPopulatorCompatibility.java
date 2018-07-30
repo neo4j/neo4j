@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.QueryResultComparingIndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -74,7 +75,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
             {
-                try ( IndexReader reader = accessor.newReader() )
+                try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
                 {
                     LongIterator nodes = reader.query( IndexQuery.exact( 1, "v1" ), IndexQuery.exact( 1, "v2" ) );
                     assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );

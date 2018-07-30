@@ -57,12 +57,12 @@ public class PrimitiveLongResourceCollections
         return new PrimitiveLongConcatingResourceIterator( primitiveLongResourceIterators );
     }
 
-    abstract static class PrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+    public abstract static class PrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
             implements PrimitiveLongResourceIterator
     {
         private Resource resource;
 
-        PrimitiveLongBaseResourceIterator( Resource resource )
+        public PrimitiveLongBaseResourceIterator( Resource resource )
         {
             this.resource = resource;
         }
