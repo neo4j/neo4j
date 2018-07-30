@@ -66,8 +66,13 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
     public TestGraphDatabaseFactory()
     {
+        this( NullLogProvider.getInstance() );
+    }
+
+    public TestGraphDatabaseFactory( LogProvider logProvider )
+    {
         super( new TestGraphDatabaseFactoryState() );
-        setUserLogProvider( NullLogProvider.getInstance() );
+        setUserLogProvider( logProvider );
     }
 
     public GraphDatabaseService newImpermanentDatabase()

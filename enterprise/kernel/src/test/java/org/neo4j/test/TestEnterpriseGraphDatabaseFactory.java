@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -45,6 +46,16 @@ import org.neo4j.logging.LogProvider;
  */
 public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
 {
+    public TestEnterpriseGraphDatabaseFactory()
+    {
+        super();
+    }
+
+    public TestEnterpriseGraphDatabaseFactory( LogProvider logProvider )
+    {
+        super( logProvider );
+    }
+
     @Override
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
                                                                           GraphDatabaseFactoryState state )

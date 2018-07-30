@@ -35,6 +35,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
@@ -42,12 +43,13 @@ import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static org.hamcrest.Matchers.any;
+import static org.hamcrest.CoreMatchers.any;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
@@ -284,20 +286,33 @@ public class DefaultBoltConnectionTest
     }
 
     @Test
+    public void shouldLogBoltConnectionAuthFatalityError()
+    {
+        BoltConnection connection = newConnection();
+        connection.enqueue( machine ->
+        {
+            throw new BoltConnectionAuthFatality( "auth failure", new AuthenticationException( Status.Security.Unauthorized, "inner error" ) );
+        } );
+        connection.processNextBatch();
+        verify( stateMachine ).close();
+        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).warn(
+                containsString( "inner error" ) ) );
+    }
+
+    @Test
     public void processNextBatchShouldCloseConnectionOnFatalAuthenticationError()
     {
         BoltConnection connection = newConnection();
 
         connection.enqueue( machine ->
         {
-            throw new BoltConnectionAuthFatality( "auth failure", new RuntimeException() );
+            throw new BoltConnectionAuthFatality( "auth failure", new RuntimeException( "inner error" ) );
         } );
 
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error( any( String.class ),
-                any( Throwable.class ) ) );
+        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).warn( any( String.class ) ) );
     }
 
     @Test
