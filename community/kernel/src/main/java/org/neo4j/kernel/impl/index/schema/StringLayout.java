@@ -68,6 +68,7 @@ class StringLayout extends IndexLayout<StringIndexKey>
         {
             into.setEntityId( Long.MIN_VALUE );
             into.setBytesLength( 0 );
+            cursor.setCursorException( format( "Reading string index key with an unexpected keySize:%d", keySize ) );
             return;
         }
         into.setEntityId( cursor.getLong() );

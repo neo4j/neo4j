@@ -26,6 +26,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static java.lang.String.format;
+
 class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
 {
     private GenericKeyState[] states;
@@ -48,7 +50,7 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     @Override
     void assertValidValue( int stateSlot, Value value )
     {
-        states[stateSlot].assertCorrectType( value );
+        GenericKeyState.assertCorrectType( value );
     }
 
     @Override
@@ -150,32 +152,35 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     {
         if ( keySize < ENTITY_ID_SIZE )
         {
-            initializeToDummyValue();
+            initializeToDummyValue( cursor, format( "keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
             return;
         }
 
         initialize( cursor.getLong() );
         int offset = cursor.getOffset();
+        int stateOffset = 0;
         for ( GenericKeyState state : states )
         {
             if ( !state.read( cursor, keySize ) )
             {
-                initializeToDummyValue();
+                initializeToDummyValue( cursor, format( "Unable to read state[%d] from offset:%d and keySize:%d", stateOffset, offset, keySize ) );
                 return;
             }
             int offsetAfterRead = cursor.getOffset();
             keySize -= offsetAfterRead - offset;
             offset = offsetAfterRead;
+            stateOffset++;
         }
     }
 
-    private void initializeToDummyValue()
+    private void initializeToDummyValue( PageCursor cursor, String reason )
     {
         setEntityId( Long.MIN_VALUE );
         for ( GenericKeyState state : states )
         {
             state.initializeToDummyValue();
         }
+        cursor.setCursorException( format( "Initializing key state to dummy value due to %s", reason ) );
     }
 
     @Override
