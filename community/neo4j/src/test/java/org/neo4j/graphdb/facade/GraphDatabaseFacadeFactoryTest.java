@@ -26,7 +26,9 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Optional;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.Exceptions;
@@ -70,7 +72,7 @@ class GraphDatabaseFacadeFactoryTest
     void shouldThrowAppropriateExceptionIfStartFails()
     {
         RuntimeException startupError = new RuntimeException();
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
+        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, mockFacade );
         RuntimeException startException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
         assertEquals( startupError, Exceptions.rootCause( startException ) );
@@ -82,7 +84,7 @@ class GraphDatabaseFacadeFactoryTest
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
+        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, mockFacade );
         doThrow( shutdownError ).when( mockFacade ).shutdown();
         RuntimeException initException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
@@ -92,10 +94,16 @@ class GraphDatabaseFacadeFactoryTest
         assertEquals( shutdownError, initException.getSuppressed()[0] );
     }
 
-    private static GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
+    private static GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError, GraphDatabaseFacade facade )
     {
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN,
-                p -> mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ) )
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN, p ->
+        {
+            EditionModule editionModule = mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS );
+            DatabaseManager databaseManager = mock( DatabaseManager.class );
+            when( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( facade ) );
+            when( editionModule.createDatabaseManager( any(), any(), any(), any(), any() ) ).thenReturn( databaseManager );
+            return editionModule;
+        } )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )

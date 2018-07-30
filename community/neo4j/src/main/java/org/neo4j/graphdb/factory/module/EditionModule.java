@@ -265,4 +265,9 @@ public abstract class EditionModule
     {
         return new DefaultIdController();
     }
+
+    public void createDatabases( DatabaseManager databaseManager, Config config )
+    {
+        databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
+    }
 }

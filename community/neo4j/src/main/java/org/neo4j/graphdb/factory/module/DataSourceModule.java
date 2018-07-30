@@ -113,7 +113,6 @@ public class DataSourceModule
         IndexConfigStore indexConfigStore = new IndexConfigStore( databaseDirectory, fileSystem );
         deps.satisfyDependencies( indexConfigStore );
         DefaultExplicitIndexProvider explicitIndexProvider = new DefaultExplicitIndexProvider();
-        deps.satisfyDependencies( explicitIndexProvider );
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
 
@@ -161,8 +160,6 @@ public class DataSourceModule
                 editionModule.watcherServiceFactory,
                 graphDatabaseFacade,
                 platformModule.engineProviders ) );
-
-        dataSourceManager.register( neoStoreDataSource );
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;

@@ -184,7 +184,9 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( new StartupWaiter( platform.availabilityGuard, edition.transactionStartTimeout ) );
         platform.life.setLast( platform.eventHandlers );
 
-        GraphDatabaseFacade databaseFacade = databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
+        edition.createDatabases( databaseManager, config );
+
+        GraphDatabaseFacade databaseFacade = databaseManager.getDatabaseFacade( config.get( GraphDatabaseSettings.active_database ) ).get();
 
         RuntimeException error = null;
         try

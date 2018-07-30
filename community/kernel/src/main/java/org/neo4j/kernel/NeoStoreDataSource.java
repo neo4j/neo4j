@@ -351,6 +351,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( facade );
 
         life = new LifeSupport();
+        dataSourceDependencies.satisfyDependency( explicitIndexProvider );
         life.add( initializeExtensions( dataSourceDependencies ) );
         life.add( recoveryCleanupWorkCollector );
         dataSourceDependencies.satisfyDependency( lockService );
@@ -442,7 +443,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
-            dataSourceDependencies.satisfyDependency( explicitIndexProvider );
 
             executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
         }

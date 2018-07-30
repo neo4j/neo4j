@@ -27,6 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -61,7 +62,7 @@ public class PageCacheWarmerKernelExtensionFactory
 
     public PageCacheWarmerKernelExtensionFactory()
     {
-        super( "pagecachewarmer" );
+        super( ExtensionType.DATABASE, "pagecachewarmer" );
     }
 
     @Override

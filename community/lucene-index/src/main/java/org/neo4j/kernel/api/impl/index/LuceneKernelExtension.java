@@ -32,17 +32,17 @@ import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 
 public class LuceneKernelExtension extends LifecycleAdapter
 {
-    private final File storeDir;
+    private final File databaseDirectory;
     private final Config config;
     private final Supplier<IndexConfigStore> indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final IndexProviders indexProviders;
     private final OperationalMode operationalMode;
 
-    public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
+    public LuceneKernelExtension( File databaseDirecytory, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders, OperationalMode operationalMode )
     {
-        this.storeDir = storeDir;
+        this.databaseDirectory = databaseDirecytory;
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -54,7 +54,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public void init()
     {
         LuceneIndexImplementation indexImplementation =
-                new LuceneIndexImplementation( storeDir, config, indexStore, fileSystemAbstraction, operationalMode );
+                new LuceneIndexImplementation( databaseDirectory, config, indexStore, fileSystemAbstraction, operationalMode );
         indexProviders.registerIndexProvider( LuceneIndexImplementation.SERVICE_NAME, indexImplementation );
     }
 

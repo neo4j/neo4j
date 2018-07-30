@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.Listeners;
@@ -45,7 +47,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     private LifeSupport life = new LifeSupport();
     private final Listeners<Listener> dsRegistrationListeners = new Listeners<>();
-    private NeoStoreDataSource dataSource;
+    private List<NeoStoreDataSource> dataSources = new ArrayList<>();
 
     public void addListener( Listener listener )
     {
@@ -53,10 +55,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
         {
             try
             {
-                if ( dataSource != null )
-                {
-                    listener.registered( dataSource );
-                }
+                dataSources.forEach( listener::registered );
             }
             catch ( Throwable t )
             {   // OK
@@ -67,34 +66,31 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     public void register( NeoStoreDataSource dataSource )
     {
-        //TODO: temp workaround for multiple listeners
-        if ( this.dataSource == null )
+        dataSources.add( dataSource );
+        if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
         {
-            this.dataSource = dataSource;
-            if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
-            {
-                dsRegistrationListeners.notify( listener -> listener.registered( dataSource ) );
-            }
+            life.add( dataSource );
+            dsRegistrationListeners.notify( listener -> listener.registered( dataSource ) );
         }
     }
 
     public void unregister( NeoStoreDataSource dataSource )
     {
-        this.dataSource = null;
+        dataSources.remove( dataSource );
         dsRegistrationListeners.notify( listener -> listener.unregistered( dataSource ) );
         life.remove( dataSource );
     }
 
     public NeoStoreDataSource getDataSource()
     {
-        return dataSource;
+        return dataSources.get( 0 );
     }
 
     @Override
     public void init()
     {
         life = new LifeSupport();
-        life.add( dataSource );
+        dataSources.forEach( life::add );
     }
 
     @Override
@@ -106,10 +102,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
         {
             try
             {
-                if ( dataSource != null )
-                {
-                    listener.registered( dataSource );
-                }
+                dataSources.forEach( listener::registered );
             }
             catch ( Throwable t )
             {   // OK
@@ -127,12 +120,12 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
     public void shutdown()
     {
         life.shutdown();
-        dataSource = null;
+        dataSources.clear();
     }
 
     @Override
     public Kernel get()
     {
-        return dataSource.getKernel();
+        return dataSources.get( 0 ).getKernel();
     }
 }
