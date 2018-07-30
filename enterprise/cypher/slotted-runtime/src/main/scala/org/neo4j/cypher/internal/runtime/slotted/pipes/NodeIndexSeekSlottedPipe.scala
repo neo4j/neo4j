@@ -24,30 +24,33 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
 import org.neo4j.internal.kernel.api.IndexReference
+import org.opencypher.v9_0.expressions.LabelToken
+import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,
-                                    propertyKeys: Seq[PropertyKeyToken],
+                                    properties: Seq[IndexedProperty],
                                     valueExpr: QueryExpression[Expression],
                                     indexMode: IndexSeekMode = IndexSeek,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
-                                   (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker {
+                                   (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker with IndexSlottedPipeWithValues {
 
-  private val offset = slots.getLongOffsetFor(ident)
+  override val offset: Int = slots.getLongOffsetFor(ident)
 
-  override val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
+  override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id).toArray
+
+  override val propertyIndicesWithValues: Seq[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  val propertyNamesWithValues: Seq[String] = propertyIndicesWithValues.map(offset => ident + "." + properties(offset).propertyKeyToken.name)
+  override val propertyOffsets: Seq[Int] = propertyNamesWithValues.map(name => slots.getReferenceOffsetFor(name))
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
     if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id, propertyIds:_*)
+      reference = context.indexReference(label.nameId.id, propertyIds: _*)
     }
     reference
   }
@@ -57,13 +60,8 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultNodes = indexSeek(state, indexReference, baseContext)
-    resultNodes.map { node =>
-      val context = SlottedExecutionContext(slots)
-      state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
-      context.setLongAt(offset, node.id)
-      context
-    }
+    val results = indexSeek(state, indexReference, propertyIndicesWithValues, baseContext)
+    createResultsFromTupleIterator(state, slots, results)
   }
 
 }

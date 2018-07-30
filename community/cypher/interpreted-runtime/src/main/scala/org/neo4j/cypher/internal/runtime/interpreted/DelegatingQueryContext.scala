@@ -127,8 +127,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexScanPrimitive(index: IndexReference): LongIterator = manyDbHits(inner.indexScanPrimitive(index))
 
-  override def indexScanByContains(index: IndexReference, value: String): scala.Iterator[NodeValue] =
-    manyDbHits(inner.indexScanByContains(index, value))
+  override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(Long, Seq[Value])] =
+    manyDbHits(inner.indexScanPrimitiveWithValues(index, propertyIndicesWithValues))
 
   override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): scala.Iterator[(NodeValue, Seq[Value])] =
     manyDbHits(inner.indexSeekByContains(index, propertyIndicesWithValues, value))

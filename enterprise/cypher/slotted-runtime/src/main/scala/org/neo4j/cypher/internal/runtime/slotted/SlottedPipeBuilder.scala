@@ -67,16 +67,17 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         AllNodesScanSlottedPipe(column, slots, argumentSize)(id)
 
       case NodeIndexScan(column, label, propertyKeys, _) =>
-        NodeIndexScanSlottedPipe(column, label, propertyKeys, slots, argumentSize)(id)
+        // TODO getValueFromIndex
+        NodeIndexScanSlottedPipe(column, label, propertyKeys, getValueFromIndex = false, slots, argumentSize)(id)
 
       case NodeIndexSeek(column, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekSlottedPipe(column, label, propertyKeys,
+        NodeIndexSeekSlottedPipe(column, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)),
           valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
 
       case NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekSlottedPipe(column, label, propertyKeys,
+        NodeIndexSeekSlottedPipe(column, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)),
           valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id = id)
 
       case NodeByLabelScan(column, label, _) =>

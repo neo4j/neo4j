@@ -337,11 +337,28 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue] =
-    seek(index, IndexQuery.stringContains(index.properties()(0), value))
+    override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(Long, Seq[Value])] = {
+      val nodeCursor = allocateAndTraceNodeValueIndexCursor()
+      reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
+      new CursorIterator[(Long, Seq[Value])] {
+        override protected def fetchNext(): (Long, Seq[Value]) =
+          if (nodeCursor.next()) {
+            val nodeRef = nodeCursor.nodeReference()
 
-  override def indexScanByEndsWith(index: IndexReference, value: String): Iterator[NodeValue] =
-    seek(index, IndexQuery.stringSuffix(index.properties()(0), value))
+            if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
+              // We were promised at plan time that we can get values everywhere, so this should never happen
+              throw new IllegalStateException("NodeCursor did unexpectedly not have values during index scan.")
+            }
+            // Get the actual property values for the requested indices
+            val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
+            (nodeRef, values)
+          } else {
+            null
+          }
+
+        override protected def close(): Unit = nodeCursor.close()
+      }
+    }
 
   override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])] =
     seek(index, propertyIndicesWithValues, IndexQuery.stringContains(index.properties()(0), value))

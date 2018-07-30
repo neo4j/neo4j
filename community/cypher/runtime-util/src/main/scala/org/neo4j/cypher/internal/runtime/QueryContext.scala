@@ -108,6 +108,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexScan(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(NodeValue, Seq[Value])]
 
+  def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(Long, Seq[Value])]
+
   def indexScanPrimitive(index: IndexReference): LongIterator
 
   def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], queries: Seq[IndexQuery.ExactPredicate]): Option[(NodeValue, Seq[Value])]

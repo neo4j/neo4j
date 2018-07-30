@@ -34,4 +34,10 @@ object PrimitiveLongHelper {
 
     override def next(): Long = f(in.next())
   }
+
+  def mapToPrimitive[T](in: Iterator[T], f: T => Long): LongIterator = new LongIterator {
+    override def hasNext: Boolean = in.hasNext
+
+    override def next(): Long = f(in.next())
+  }
 }

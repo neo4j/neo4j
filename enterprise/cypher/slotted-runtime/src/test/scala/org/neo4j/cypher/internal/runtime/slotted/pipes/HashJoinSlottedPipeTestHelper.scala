@@ -23,14 +23,14 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-object HashJoinSlottedPipeTestHelper extends CypherFunSuite {
+object HashJoinSlottedPipeTestHelper extends CypherFunSuite with SlottedPipeTestHelper {
 
   abstract class Row {
     val l: Longs
@@ -70,17 +70,5 @@ object HashJoinSlottedPipeTestHelper extends CypherFunSuite {
       }
     })
     p
-  }
-
-  def testableResult(list: Iterator[ExecutionContext], slots: SlotConfiguration): List[Map[String, Any]] = {
-    val list1 = list.toList
-    list1 map { in =>
-      val build = scala.collection.mutable.HashMap.empty[String, Any]
-      slots.foreachSlot {
-        case (column, LongSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
-        case (column, RefSlot(offset, _, _)) => build.put(column, in.getRefAt(offset))
-      }
-      build.toMap
-    }
   }
 }

@@ -25,19 +25,24 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.internal.kernel.api.IndexReference
+import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexScanSlottedPipe(ident: String,
                                     label: LabelToken,
                                     propertyKey: PropertyKeyToken,
+                                    getValueFromIndex: Boolean,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
                                    (val id: Id = Id.INVALID_ID)
-  extends Pipe {
+  extends Pipe with IndexSlottedPipeWithValues {
 
-  private val offset = slots.getLongOffsetFor(ident)
+  override val offset: Int = slots.getLongOffsetFor(ident)
+
+  override val propertyIndicesWithValues: Seq[Int] = if (getValueFromIndex) Seq(0) else Seq.empty
+  val propertyNamesWithValues: Seq[String] = if (getValueFromIndex) Seq(ident + "." + propertyKey.name) else Seq.empty
+  override val propertyOffsets: Seq[Int] = propertyNamesWithValues.map(name => slots.getReferenceOffsetFor(name))
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -49,13 +54,19 @@ case class NodeIndexScanSlottedPipe(ident: String,
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val nodes = state.query.indexScanPrimitive(reference(state.query))
-    PrimitiveLongHelper.map(nodes, { node =>
-      val context = SlottedExecutionContext(slots)
-      state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
-      context.setLongAt(offset, node)
-      context
-    })
+    if (propertyIndicesWithValues.isEmpty) {
+      val nodes = state.query.indexScanPrimitive(reference(state.query))
+      PrimitiveLongHelper.map(nodes, { node =>
+
+        val context = SlottedExecutionContext(slots)
+        state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
+        context.setLongAt(offset, node)
+        context
+      })
+    } else {
+      val results = state.query.indexScanPrimitiveWithValues(reference(state.query), propertyIndicesWithValues)
+      createResultsFromPrimitiveTupleIterator(state, slots, results)
+    }
   }
 
 }
