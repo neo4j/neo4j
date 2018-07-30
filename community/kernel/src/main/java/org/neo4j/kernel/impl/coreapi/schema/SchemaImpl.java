@@ -39,6 +39,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -73,12 +74,14 @@ import org.neo4j.kernel.api.schema.constraints.NodeExistenceConstraintDescriptor
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
@@ -86,6 +89,8 @@ import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
 public class SchemaImpl implements Schema
@@ -144,12 +149,35 @@ public class SchemaImpl implements Schema
     {
         try
         {
-            Label label = label( tokenRead.nodeLabelName( index.schema().getEntityTokenIds()[0] ) );
+            SchemaDescriptor schema = index.schema();
+            int[] entityTokenIds = schema.getEntityTokenIds();
+            Label[] labels = null;
+            RelationshipType[] relTypes = null;
+            switch ( schema.entityType() )
+            {
+            case NODE:
+                labels = new Label[entityTokenIds.length];
+                for ( int i = 0; i < labels.length; i++ )
+                {
+                    labels[i] = label( tokenRead.nodeLabelName( entityTokenIds[i] ) );
+                }
+                break;
+            case RELATIONSHIP:
+                relTypes = new RelationshipType[entityTokenIds.length];
+                for ( int i = 0; i < relTypes.length; i++ )
+                {
+                    relTypes[i] = withName( tokenRead.relationshipTypeName( entityTokenIds[i] ) );
+                }
+                break;
+            default:
+                throw new IllegalArgumentException( "Cannot create IndexDefinition for " + schema.entityType() + " entity-typed schema." );
+            }
+
             boolean constraintIndex = index.isUnique();
             String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenRead, index.properties() );
-            return new IndexDefinitionImpl( actions, label, propertyNames, constraintIndex );
+            return new IndexDefinitionImpl( actions, labels, relTypes, propertyNames, constraintIndex );
         }
-        catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new RuntimeException( e );
         }
@@ -240,9 +268,13 @@ public class SchemaImpl implements Schema
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
-            throw new NotFoundException( format( "No index for label %s on property %s",
-                    index.getLabel().name(), index.getPropertyKeys() ) );
+            throw newIndexNotFoundException( index, e );
         }
+    }
+
+    private NotFoundException newIndexNotFoundException( IndexDefinition index, KernelException e )
+    {
+        return new NotFoundException( "No index was found corresponding to " + index + ".", e );
     }
 
     @Override
@@ -258,8 +290,7 @@ public class SchemaImpl implements Schema
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
-            throw new NotFoundException( format( "No index for label %s on property %s", index.getLabel().name(),
-                    index.getPropertyKeys() ) );
+            throw newIndexNotFoundException( index, e );
         }
     }
 
@@ -275,8 +306,7 @@ public class SchemaImpl implements Schema
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
-            throw new NotFoundException( format( "No index for label %s on property %s",
-                    index.getLabel().name(), index.getPropertyKeys() ) );
+            throw newIndexNotFoundException( index, e );
         }
     }
 
@@ -335,14 +365,57 @@ public class SchemaImpl implements Schema
             IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
-        int labelId = tokenRead.nodeLabel( index.getLabel().name() );
         int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( tokenRead, index.getPropertyKeys() );
-        assertValidLabel( index.getLabel(), labelId );
         assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
-        IndexReference reference = schemaRead.index( labelId, propertyKeyIds );
+        SchemaDescriptor schema;
+
+        if ( index.isNodeIndex() )
+        {
+            int[] labels = new int[(int) Iterators.count( index.getLabels().iterator() )];
+            int i = 0;
+            for ( Label label : index.getLabels() )
+            {
+                labels[i] = tokenRead.nodeLabel( label.name() );
+                assertValidLabel( label, labels[i] );
+                i++;
+            }
+            if ( labels.length > 1 )
+            {
+                schema = multiToken( labels, EntityType.NODE, propertyKeyIds );
+            }
+            else
+            {
+                schema = forLabel( labels[0], propertyKeyIds );
+            }
+        }
+        else if ( index.isRelationshipIndex() )
+        {
+            int[] relTypes = new int[(int) Iterators.count( index.getRelationshipTypes().iterator() )];
+            int i = 0;
+            for ( RelationshipType relType : index.getRelationshipTypes() )
+            {
+                relTypes[i] = tokenRead.relationshipType( relType.name() );
+                assertValidRelationshipType( relType, relTypes[i] );
+                i++;
+            }
+            if ( relTypes.length > 1 )
+            {
+                schema = multiToken( relTypes, EntityType.RELATIONSHIP, propertyKeyIds );
+            }
+            else
+            {
+                schema = forRelType( relTypes[0], propertyKeyIds );
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException( "The given index is neither a node index, nor a relationship index: " + index + "." );
+        }
+
+        IndexReference reference = schemaRead.index( schema );
         if ( reference == IndexReference.NO_INDEX )
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, forLabel( labelId, propertyKeyIds ) );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, schema );
         }
 
         return reference;
@@ -352,7 +425,15 @@ public class SchemaImpl implements Schema
     {
         if ( labelId == TokenRead.NO_TOKEN )
         {
-            throw new NotFoundException( format( "Label %s not found", label.name() ) );
+            throw new NotFoundException( "Label " + label.name() + " not found" );
+        }
+    }
+
+    private static void assertValidRelationshipType( RelationshipType relationshipType, int labelId )
+    {
+        if ( labelId == TokenRead.NO_TOKEN )
+        {
+            throw new NotFoundException( "RelationshipType " + relationshipType.name() + " not found" );
         }
     }
 
@@ -362,8 +443,7 @@ public class SchemaImpl implements Schema
         {
             if ( propertyIds[i] == TokenRead.NO_TOKEN )
             {
-                throw new NotFoundException(
-                        format( "Property key %s not found", Iterables.asArray( String.class, properties )[i] ) );
+                throw new NotFoundException( "Property key " + Iterables.asArray( String.class, properties )[i] + " not found" );
             }
         }
     }
@@ -420,7 +500,7 @@ public class SchemaImpl implements Schema
         {
             RelationTypeSchemaDescriptor descriptor = (RelationTypeSchemaDescriptor) constraint.schema();
             return new RelationshipPropertyExistenceConstraintDefinition( actions,
-                    RelationshipType.withName( lookup.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
+                    withName( lookup.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
                     lookup.propertyKeyGetName( descriptor.getPropertyId() ) );
         }
         throw new IllegalArgumentException( "Unknown constraint " + constraint );

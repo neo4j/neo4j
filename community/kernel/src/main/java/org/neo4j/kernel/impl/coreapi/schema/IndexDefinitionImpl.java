@@ -23,23 +23,32 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.hashing.HashFunction;
 
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.joining;
 
 public class IndexDefinitionImpl implements IndexDefinition
 {
     private final InternalSchemaActions actions;
 
-    private final Label label;
+    private final Label[] labels;
+    private final RelationshipType[] relTypes;
     private final String[] propertyKeys;
     private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String[] propertyKeys,
-                                boolean constraintIndex )
+    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String[] propertyKeys, boolean constraintIndex ) // TODO remove this constructor
+    {
+        this( actions, new Label[]{label}, null, propertyKeys, constraintIndex );
+    }
+
+    public IndexDefinitionImpl( InternalSchemaActions actions, Label[] labels, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
-        this.label = label;
+        this.labels = labels;
+        this.relTypes = relTypes;
         this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;
 
@@ -50,7 +59,41 @@ public class IndexDefinitionImpl implements IndexDefinition
     public Label getLabel()
     {
         assertInUnterminatedTransaction();
-        return label;
+        assertIsNodeIndex();
+        if ( labels.length > 1 )
+        {
+            throw new IllegalStateException( "This is a multi-token index, which has more than one label. Call the getLabels() method instead." );
+        }
+        return labels[0];
+    }
+
+    @Override
+    public Iterable<Label> getLabels()
+    {
+        assertInUnterminatedTransaction();
+        assertIsNodeIndex();
+        return Arrays.asList( labels );
+    }
+
+    @Override
+    public RelationshipType getRelationshipType()
+    {
+        assertInUnterminatedTransaction();
+        assertIsRelationshipIndex();
+        if ( relTypes.length > 1 )
+        {
+            throw new IllegalStateException(
+                    "This is a multi-token index, which has more than one relationship type. " + "Call the getRelationshipTypes() method instead." );
+        }
+        return relTypes[0];
+    }
+
+    @Override
+    public Iterable<RelationshipType> getRelationshipTypes()
+    {
+        assertInUnterminatedTransaction();
+        assertIsRelationshipIndex();
+        return Arrays.asList( relTypes );
     }
 
     @Override
@@ -68,7 +111,7 @@ public class IndexDefinitionImpl implements IndexDefinition
      *
      * @return The array of property keys.
      */
-    public String[] getPropertyKeysArrayShared()
+    String[] getPropertyKeysArrayShared()
     {
         assertInUnterminatedTransaction();
         return propertyKeys;
@@ -85,8 +128,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         {
             if ( this.isConstraintIndex() )
             {
-                throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " +
-                                                 "instead drop the owning uniqueness constraint.", e );
+                throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " + "instead drop the owning uniqueness constraint.", e );
             }
             throw e;
         }
@@ -100,9 +142,58 @@ public class IndexDefinitionImpl implements IndexDefinition
     }
 
     @Override
+    public boolean isNodeIndex()
+    {
+        return labels != null;
+    }
+
+    @Override
+    public boolean isRelationshipIndex()
+    {
+        return relTypes != null;
+    }
+
+    @Override
+    public boolean isMultiTokenIndex()
+    {
+        return labels != null ? labels.length > 1 : relTypes.length > 1;
+    }
+
+    @Override
+    public boolean isCompositeIndex()
+    {
+        return propertyKeys.length > 1;
+    }
+
+    @Override
     public int hashCode()
     {
-        return 31 * label.name().hashCode() + Arrays.hashCode( propertyKeys );
+        HashFunction hf = HashFunction.incrementalXXH64();
+        long hash = hf.initialise( 31 );
+        if ( labels != null )
+        {
+            hash = hf.update( hash, 42 ); // labels-array specific discriminator.
+            hash = hf.update( hash, labels.length );
+            for ( Label label : labels )
+            {
+                hash = hf.update( hash, label.name().hashCode() );
+            }
+        }
+        if ( relTypes != null )
+        {
+            hash = hf.update( hash, 24 ); // relTypes-array specific discriminator.
+            hash = hf.update( hash, relTypes.length );
+            for ( RelationshipType relType : relTypes )
+            {
+                hash = hf.update( hash, relType.name().hashCode() );
+            }
+        }
+        hash = hf.update( hash, propertyKeys.length );
+        for ( String propertyKey : propertyKeys )
+        {
+            hash = hf.update( hash, propertyKey.hashCode() );
+        }
+        return hf.toInt( hash );
     }
 
     @Override
@@ -121,17 +212,81 @@ public class IndexDefinitionImpl implements IndexDefinition
             return false;
         }
         IndexDefinitionImpl other = (IndexDefinitionImpl) obj;
-        return label.name().equals( other.label.name() ) && Arrays.equals( propertyKeys, other.propertyKeys );
+        if ( labels != null )
+        {
+            if ( other.labels == null )
+            {
+                return false;
+            }
+            if ( labels.length != other.labels.length )
+            {
+                return false;
+            }
+            for ( int i = 0; i < labels.length; i++ )
+            {
+                if ( !labels[i].name().equals( other.labels[i].name() ) )
+                {
+                    return false;
+                }
+            }
+        }
+        if ( relTypes != null )
+        {
+            if ( other.relTypes == null )
+            {
+                return false;
+            }
+            if ( relTypes.length != other.relTypes.length )
+            {
+                return false;
+            }
+            for ( int i = 0; i < relTypes.length; i++ )
+            {
+                if ( !relTypes[i].name().equals( other.relTypes[i].name() ) )
+                {
+                    return false;
+                }
+            }
+        }
+        return Arrays.equals( propertyKeys, other.propertyKeys );
     }
 
     @Override
     public String toString()
     {
-        return "IndexDefinition[label:" + label + ", on:" + String.join( ",", propertyKeys ) + "]";
+        String entityTokenType;
+        String entityTokens;
+        if ( isNodeIndex() )
+        {
+            entityTokenType = labels.length > 1 ? "labels" : "label";
+            entityTokens = Arrays.stream( labels ).map( Label::name ).collect( joining( "," ) );
+        }
+        else
+        {
+            entityTokenType = relTypes.length > 1 ? "relationship types" : "relationship type";
+            entityTokens = Arrays.stream( relTypes ).map( RelationshipType::name ).collect( joining( "," ) );
+        }
+        return "IndexDefinition[" + entityTokenType + ":" + entityTokens + " on:" + String.join( ",", propertyKeys ) + "]";
     }
 
     private void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
+    }
+
+    private void assertIsNodeIndex()
+    {
+        if ( !isNodeIndex() )
+        {
+            throw new IllegalStateException( "This is not a node index." );
+        }
+    }
+
+    private void assertIsRelationshipIndex()
+    {
+        if ( !isRelationshipIndex() )
+        {
+            throw new IllegalStateException( "This is not a relationship index." );
+        }
     }
 }

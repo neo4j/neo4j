@@ -20,23 +20,66 @@
 package org.neo4j.graphdb.schema;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexManager;
 
 /**
- * Definition for an index
- *
+ * Definition for an index.
+ * <p>
  * NOTE: This is part of the index API introduced in Neo4j 2.0.
  * The explicit index API lives in {@link IndexManager}.
  */
 public interface IndexDefinition
 {
     /**
+     * Return the node label that this index applies to. Nodes with this label are indexed by this index.
+     * <p>
+     * Note that this assumes that this is a node index (that {@link #isNodeIndex()} returns {@code true}) and not a multi-token index
+     * (that {@link #isMultiTokenIndex()} returns {@code false}). If this is not the case, then an {@link IllegalStateException} is thrown.
+     *
      * @return the {@link Label label} this index definition is associated with.
      */
     Label getLabel();
 
     /**
+     * Return the set of node labels (in no particular order) that this index applies to. This method works for both {@link #isMultiTokenIndex() multi-token}
+     * indexes, and "single-token" indexes.
+     * <p>
+     * Note that this assumes that this is a node index (that {@link #isNodeIndex()} returns {@code true}). If this is not the case, then an
+     * {@link IllegalStateException} is thrown.
+     *
+     * @return the set of {@link Label labels} this index definition is associated with.
+     */
+    Iterable<Label> getLabels();
+
+    /**
+     * Return the relationship type that this index applies to. Relationships with this type are indexed by this index.
+     * <p>
+     * Note that this assumes that this is a relationship index (that {@link #isRelationshipIndex()} returns {@code true}) and not a multi-token index
+     * (that {@link #isMultiTokenIndex()} returns {@code false}). If this is not the case, then an {@link IllegalStateException} is thrown.
+     *
+     * @return the {@link RelationshipType relationship type} this index definition is associated with.
+     */
+    RelationshipType getRelationshipType();
+
+    /**
+     * Return the set of relationship types (in no particular order) that this index applies to. This method works for both
+     * {@link #isMultiTokenIndex() mult-token} indexes, and "single-token" indexes.
+     * <p>
+     * Note that this assumes that this is a relationship index (that {@link #isRelationshipIndex()} returns {@code true}). If thisk is not the case, then an
+     * {@link IllegalStateException} is thrown.
+     *
+     * @return the set of {@link RelationshipType relationship types} this index definition is associated with.
+     */
+    Iterable<RelationshipType> getRelationshipTypes();
+
+    /**
+     * Return the set of properties that are indexed by this index.
+     * <p>
+     * Most indexes will only have a single property, but {@link #isCompositeIndex() composite indexes} will have multiple properties.
+     *
      * @return the property keys this index was created on.
+     * @see #isCompositeIndex()
      */
     Iterable<String> getPropertyKeys();
 
@@ -50,4 +93,40 @@ public interface IndexDefinition
      * @return {@code true} if this index is created as a side effect of the creation of a uniqueness constraint.
      */
     boolean isConstraintIndex();
+
+    /**
+     * @return {@code true} if this index is indexing nodes, otherwise {@code false}.
+     */
+    boolean isNodeIndex();
+
+    /**
+     * @return {@code true} if this index is indexing relationships, otherwise {@code false}.
+     */
+    boolean isRelationshipIndex();
+
+    /**
+     * A multi-token index is an index that indexes nodes or relationships that have any or all of a given set of labels or relationship types, respectively.
+     * <p>
+     * For instance, a multi-token index could apply to all {@code Movie} and {@code Book} nodes that have a {@code description} property. A node or
+     * relationship do not need to have all of the labels or relationship types for it to be indexed. A node that has any of the given labels, or a relationship
+     * that has any of the given relationship types, will be a candidate for indexing, depending on their properties.
+     *
+     * @return {@code true} if this is a multi-token index.
+     */
+    boolean isMultiTokenIndex();
+
+    /**
+     * A composite index is an index that indexes nodes or relationships by more than one property.
+     * <p>
+     * For instance, a composite index for {@code PhoneNumber} nodes could be indexing the {@code country_code}, {@code area_code}, {@code prefix},
+     * and {@code line_number}.
+     *
+     * <strong>Note:</strong> it is index-implementation specific if a node or relationship must have all of the properties in order to be indexable,
+     * or if having any of the properties is enough for the given node or relationship to be indexed. For instance, {@code NODE KEY} constraint indexes
+     * require that all of the properties be present on a node before it will be included in the index, while a full-text index will index nodes or
+     * relationships that have any of the given properties.
+     *
+     * @return {@code true} if this is a composite index.
+     */
+    boolean isCompositeIndex();
 }
