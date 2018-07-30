@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import java.util.function.Supplier;
-
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -35,7 +34,7 @@ public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtension
 
         KernelData getKernel();
 
-        Supplier<NeoStoreDataSource> getNeoStoreDataSource();
+        DatabaseManager getDatabaseManager();
     }
 
     static final String EXTENSION_ID = "dummy";

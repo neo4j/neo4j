@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -75,7 +74,6 @@ public class DataSourceModule
     public DataSourceModule( String databaseName, final PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        final Dependencies deps = platformModule.dependencies;
         Config config = platformModule.config;
         LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
@@ -102,7 +100,7 @@ public class DataSourceModule
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
 
-        neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
+        neoStoreDataSource = new NeoStoreDataSource(
                 databaseName,
                 databaseDirectory,
                 config,
@@ -110,7 +108,7 @@ public class DataSourceModule
                 logging,
                 platformModule.jobScheduler,
                 tokenNameLookup,
-                deps,
+                platformModule.dependencies,
                 tokenHolders,
                 editionModule.statementLocksFactory,
                 editionModule.schemaWriteGuard,
@@ -143,7 +141,7 @@ public class DataSourceModule
                 platformModule.kernelExtensionFactories,
                 editionModule.watcherServiceFactory,
                 graphDatabaseFacade,
-                platformModule.engineProviders ) );
+                platformModule.engineProviders );
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;

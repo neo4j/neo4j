@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.GlobalKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
@@ -74,9 +75,9 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
             assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
                     graphdb.getDependencyResolver().resolveDependency( GlobalKernelExtensions.class ).resolveDependency(
                             DummyExtension.class ).getDependencies().getConfig() );
-            assertEquals( graphdb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ),
+            assertEquals( graphdb.getDependencyResolver().resolveDependency( DatabaseManager.class ),
                     graphdb.getDependencyResolver().resolveDependency( GlobalKernelExtensions.class ).resolveDependency(
-                            DummyExtension.class ).getDependencies().getNeoStoreDataSource().get() );
+                            DummyExtension.class ).getDependencies().getDatabaseManager() );
         }
         finally
         {
