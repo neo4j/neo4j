@@ -51,6 +51,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
 {
+    private static final int TOTAL_NODE_COUNT = 37;
     private static long strOne, strTwo1, strTwo2, strThree1, strThree2, strThree3;
     private static long boolTrue, num5, num6, num12a, num12b;
     private static long strOneNoLabel;
@@ -121,6 +122,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             date891 = nodeWithProp( graphDb, DateValue.date( 1989, 3, 24 ) ); // Purposely mix order
             date86 = nodeWithProp( graphDb, DateValue.date( 1986, 11, 18 ) );
             date892 = nodeWithProp( graphDb, DateValue.date( 1989, 3, 24 ) );
+            nodeWithProp( graphDb, new String[]{"first", "second", "third"} );
+            nodeWithProp( graphDb, new String[]{"fourth", "fifth", "sixth", "seventh"} );
 
             tx.success();
         }
@@ -494,6 +497,58 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    public void shouldPerformBooleanSearch() throws KernelException
+    {
+        // given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
+        IndexValueCapability capability = index.valueCapability( ValueCategory.REST );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            MutableLongSet uniqueIds = new LongHashSet();
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, false ) );
+
+            // then
+            assertFoundNodesAndValue( node, 1, uniqueIds, capability );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, true ) );
+
+            // then
+            assertFoundNodesAndValue( node, 1, uniqueIds, capability );
+        }
+    }
+
+    @Test
+    public void shouldPerformArraySearch() throws KernelException
+    {
+        // given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
+        IndexValueCapability capability = index.valueCapability( ValueCategory.REST );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            MutableLongSet uniqueIds = new LongHashSet();
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, new String[]{"first", "second", "third"} ) );
+
+            // then
+            assertFoundNodesAndValue( node, 1, uniqueIds, capability );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, new String[]{"fourth", "fifth", "sixth", "seventh"} ) );
+
+            // then
+            assertFoundNodesAndValue( node, 1, uniqueIds, capability );
+        }
+    }
+
+    @Test
     public void shouldPerformIndexScan() throws Exception
     {
         // given
@@ -510,7 +565,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
-            assertFoundNodesAndValue( node, 35, uniqueIds, wildcardCapability );
+            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability );
         }
     }
 
@@ -784,12 +839,12 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
-            assertFoundNodesAndValue( node, 35, uniqueIds, wildcardCapability );
+            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability );
 
             // then
             tx.dataWrite().nodeDelete( strOne );
             tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
-            assertFoundNodesAndValue( node, 34, uniqueIds, wildcardCapability );
+            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT - 1, uniqueIds, wildcardCapability );
         }
     }
 
