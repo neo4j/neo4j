@@ -89,7 +89,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public AutoIndexing autoIndexing()
     {
-        return dataSource.autoIndexing;
+        return dataSource.neoStoreDataSource.getAutoIndexing();
     }
 
     @Override
@@ -113,13 +113,13 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public <T> void registerTransactionEventHandler( TransactionEventHandler<T> handler )
     {
-        dataSource.transactionEventHandlers.registerTransactionEventHandler( handler );
+        dataSource.neoStoreDataSource.getTransactionEventHandlers().registerTransactionEventHandler( handler );
     }
 
     @Override
     public <T> void unregisterTransactionEventHandler( TransactionEventHandler<T> handler )
     {
-        dataSource.transactionEventHandlers.unregisterTransactionEventHandler( handler );
+        dataSource.neoStoreDataSource.getTransactionEventHandlers().unregisterTransactionEventHandler( handler );
     }
 
     @Override

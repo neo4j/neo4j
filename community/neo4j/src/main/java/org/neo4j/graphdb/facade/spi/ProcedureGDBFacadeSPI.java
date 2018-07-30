@@ -114,7 +114,7 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     @Override
     public AutoIndexing autoIndexing()
     {
-        return sourceModule.autoIndexing;
+        return sourceModule.neoStoreDataSource.getAutoIndexing();
     }
 
     @Override

@@ -279,67 +279,56 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final Iterable<QueryEngineProvider> engineProviders;
     private final boolean failOnCorruptedLogFiles;
 
-    public NeoStoreDataSource( String databaseName, File databaseDirectory, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService,
-            JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver, TokenHolders tokenHolders,
-            StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-            IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
-            LogFileCreationMonitor physicalLogMonitor, TransactionHeaderInformationFactory transactionHeaderInformationFactory,
-            CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing, IndexConfigStore indexConfigStore,
-            ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
-            Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock, AccessCapability accessCapability,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController,
-            DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
-            Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<File,FileSystemWatcherService> watcherServiceFactory,
-            GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
+    public NeoStoreDataSource( DatabaseCreationContext context )
     {
-        this.databaseName = databaseName;
-        this.databaseDirectory = databaseDirectory;
-        this.config = config;
-        this.idGeneratorFactory = idGeneratorFactory;
-        this.tokenNameLookup = tokenNameLookup;
-        this.dependencyResolver = dependencyResolver;
-        this.scheduler = scheduler;
-        this.logService = logService;
-        this.autoIndexing = autoIndexing;
-        this.indexConfigStore = indexConfigStore;
-        this.explicitIndexProvider = explicitIndexProvider;
-        this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
-        this.logProvider = logService.getInternalLogProvider();
-        this.tokenHolders = tokenHolders;
-        this.statementLocksFactory = statementLocksFactory;
-        this.schemaWriteGuard = schemaWriteGuard;
-        this.transactionEventHandlers = transactionEventHandlers;
-        this.indexingServiceMonitor = indexingServiceMonitor;
-        this.fs = fs;
-        this.transactionMonitor = transactionMonitor;
-        this.databaseHealth = databaseHealth;
-        this.physicalLogMonitor = physicalLogMonitor;
-        this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
-        this.constraintSemantics = constraintSemantics;
-        this.monitors = monitors;
-        this.tracers = tracers;
-        this.procedures = procedures;
-        this.ioLimiter = ioLimiter;
-        this.availabilityGuard = availabilityGuard;
-        this.clock = clock;
-        this.accessCapability = accessCapability;
-        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+        this.databaseName = context.getDatabaseName();
+        this.databaseDirectory = context.getDatabaseDirectory();
+        this.config = context.getConfig();
+        this.idGeneratorFactory = context.getIdGeneratorFactory();
+        this.tokenNameLookup = context.getTokenNameLookup();
+        this.dependencyResolver = context.getGlobalDependencies();
+        this.scheduler = context.getScheduler();
+        this.logService = context.getLogService();
+        this.autoIndexing = context.getAutoIndexing();
+        this.indexConfigStore = context.getIndexConfigStore();
+        this.explicitIndexProvider = context.getExplicitIndexProvider();
+        this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
+        this.logProvider = context.getLogService().getInternalLogProvider();
+        this.tokenHolders = context.getTokenHolders();
+        this.statementLocksFactory = context.getStatementLocksFactory();
+        this.schemaWriteGuard = context.getSchemaWriteGuard();
+        this.transactionEventHandlers = context.getTransactionEventHandlers();
+        this.indexingServiceMonitor = context.getIndexingServiceMonitor();
+        this.fs = context.getFs();
+        this.transactionMonitor = context.getTransactionMonitor();
+        this.databaseHealth = context.getDatabaseHealth();
+        this.physicalLogMonitor = context.getPhysicalLogMonitor();
+        this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
+        this.constraintSemantics = context.getConstraintSemantics();
+        this.monitors = context.getMonitors();
+        this.tracers = context.getTracers();
+        this.procedures = context.getProcedures();
+        this.ioLimiter = context.getIoLimiter();
+        this.availabilityGuard = context.getAvailabilityGuard();
+        this.clock = context.getClock();
+        this.accessCapability = context.getAccessCapability();
+        this.recoveryCleanupWorkCollector = context.getRecoveryCleanupWorkCollector();
 
-        readOnly = config.get( GraphDatabaseSettings.read_only );
-        this.idController = idController;
-        this.databaseInfo = databaseInfo;
-        this.versionContextSupplier = versionContextSupplier;
-        this.kernelExtensionFactories = kernelExtensionFactories;
-        this.watcherServiceFactory = watcherServiceFactory;
-        this.facade = facade;
-        this.engineProviders = engineProviders;
+        readOnly = context.getConfig().get( GraphDatabaseSettings.read_only );
+        this.idController = context.getIdController();
+        this.databaseInfo = context.getDatabaseInfo();
+        this.versionContextSupplier = context.getVersionContextSupplier();
+        this.kernelExtensionFactories = context.getKernelExtensionFactories();
+        this.watcherServiceFactory = context.getWatcherServiceFactory();
+        this.facade = context.getFacade();
+        this.engineProviders = context.getEngineProviders();
         this.msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
-        this.commitProcessFactory = commitProcessFactory;
-        this.pageCache = pageCache;
+        this.commitProcessFactory = context.getCommitProcessFactory();
+        this.pageCache = context.getPageCache();
         this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
-        this.collectionsFactorySupplier = collectionsFactorySupplier;
-        this.failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
+        this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
+        this.failOnCorruptedLogFiles = context.getConfig().get( GraphDatabaseSettings.fail_on_corrupted_log_files );
     }
 
     // We do our own internal life management:
@@ -871,5 +860,15 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public LifeSupport getLife()
     {
         return life;
+    }
+
+    public AutoIndexing getAutoIndexing()
+    {
+        return autoIndexing;
+    }
+
+    public TransactionEventHandlers getTransactionEventHandlers()
+    {
+        return transactionEventHandlers;
     }
 }

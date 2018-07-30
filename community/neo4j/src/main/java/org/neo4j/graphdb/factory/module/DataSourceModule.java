@@ -23,125 +23,34 @@ import java.io.File;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
-import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
-import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.TransactionEventHandlers;
-import org.neo4j.kernel.monitoring.Monitors;
 
-/**
- * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
- * remaining services not yet created by either the {@link PlatformModule} or {@link EditionModule}.
- * <p>
- * When creating new services, this would be the default place to put them, unless they need to go into the other
- * modules for any reason.
- */
 public class DataSourceModule
 {
     public final NeoStoreDataSource neoStoreDataSource;
 
     public final Supplier<InwardKernel> kernelAPI;
 
-    public final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
-
-    public final TransactionEventHandlers transactionEventHandlers;
-
     public final Supplier<StoreId> storeId;
-
-    public final AutoIndexing autoIndexing;
 
     public final TokenHolders tokenHolders;
 
     public DataSourceModule( String databaseName, final PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        Config config = platformModule.config;
-        LogService logging = platformModule.logging;
-        FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        DataSourceManager dataSourceManager = platformModule.dataSourceManager;
-
         tokenHolders = editionModule.tokenHoldersSupplier.get();
-
         File databaseDirectory = new File( platformModule.storeDir, databaseName );
-        DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
-        Monitors monitors = new Monitors( platformModule.monitors );
 
-        transactionEventHandlers = new TransactionEventHandlers( graphDatabaseFacade );
-
-        diagnosticsManager.prependProvider( config );
-
-        PageCache pageCache = platformModule.pageCache;
-
-        autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
-
-        DatabaseHealth databaseHealth = new DatabaseHealth( platformModule.panicEventGenerator, logging.getInternalLog( DatabaseHealth.class ) );
-        IndexConfigStore indexConfigStore = new IndexConfigStore( databaseDirectory, fileSystem );
-        DefaultExplicitIndexProvider explicitIndexProvider = new DefaultExplicitIndexProvider();
-
-        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
+        platformModule.diagnosticsManager.prependProvider( platformModule.config );
 
         neoStoreDataSource = new NeoStoreDataSource(
-                databaseName,
-                databaseDirectory,
-                config,
-                editionModule.idGeneratorFactory,
-                logging,
-                platformModule.jobScheduler,
-                tokenNameLookup,
-                platformModule.dependencies,
-                tokenHolders,
-                editionModule.statementLocksFactory,
-                editionModule.schemaWriteGuard,
-                transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ),
-                fileSystem,
-                platformModule.transactionMonitor,
-                databaseHealth,
-                monitors.newMonitor( LogFileCreationMonitor.class ),
-                editionModule.headerInformationFactory,
-                editionModule.commitProcessFactory,
-                autoIndexing,
-                indexConfigStore,
-                explicitIndexProvider,
-                pageCache,
-                editionModule.constraintSemantics,
-                monitors,
-                platformModule.tracers,
-                procedures,
-                editionModule.ioLimiter,
-                platformModule.availabilityGuard,
-                platformModule.clock,
-                editionModule.accessCapability,
-                storeCopyCheckPointMutex,
-                platformModule.recoveryCleanupWorkCollector,
-                editionModule.idController,
-                platformModule.databaseInfo,
-                platformModule.versionContextSupplier,
-                platformModule.collectionsFactorySupplier,
-                platformModule.kernelExtensionFactories,
-                editionModule.watcherServiceFactory,
-                graphDatabaseFacade,
-                platformModule.engineProviders );
+                new ModularDatabaseCreationContext( databaseName, databaseDirectory, platformModule, editionModule, procedures, graphDatabaseFacade, tokenHolders ) );
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
