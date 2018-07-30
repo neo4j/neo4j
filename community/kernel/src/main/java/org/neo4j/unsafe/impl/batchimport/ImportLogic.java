@@ -159,7 +159,6 @@ public class ImportLogic implements Closeable
     private NodeLabelsCache nodeLabelsCache;
     private long startTime;
     private InputCache inputCache;
-    private PageCacheArrayFactoryMonitor numberArrayFactoryMonitor;
     private NumberArrayFactory numberArrayFactory;
     private Collector badCollector;
     private IdMapper idMapper;
@@ -197,7 +196,7 @@ public class ImportLogic implements Closeable
         startTime = currentTimeMillis();
         inputCache = new InputCache( fileSystem, storeDir, recordFormats, toIntExact( mebiBytes( 1 ) ) );
         this.input = CachedInput.cacheAsNecessary( input, inputCache );
-        numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
+        PageCacheArrayFactoryMonitor numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
         numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
         badCollector = input.badCollector();
         // Some temporary caches and indexes in the import

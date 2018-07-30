@@ -44,7 +44,7 @@ public class ExecutionMonitors
     {
         ProgressRestoringMonitor monitor = new ProgressRestoringMonitor();
         return new MultiExecutionMonitor(
-                new HumanUnderstandableExecutionMonitor( System.out, NO_MONITOR, monitor ),
+                new HumanUnderstandableExecutionMonitor( NO_MONITOR, monitor ),
                 new OnDemandDetailsExecutionMonitor( System.out, in, monitor, jobScheduler ) );
     }
 

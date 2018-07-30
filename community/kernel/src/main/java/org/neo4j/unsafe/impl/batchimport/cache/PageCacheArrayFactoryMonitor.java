@@ -41,7 +41,7 @@ public class PageCacheArrayFactoryMonitor implements NumberArrayFactory.Monitor
             StringBuilder builder =
                     new StringBuilder( format( "Memory allocation of %s ended up in page cache, which may impact performance negatively", bytes( memory ) ) );
             attemptedAllocationFailures.forEach(
-                    failure -> builder.append( format( "%n%s: %s", failure.getFactory().toString(), failure.getFailure().toString() ) ) );
+                    failure -> builder.append( format( "%n%s: %s", failure.getFactory(), failure.getFailure() ) ) );
             failedFactoriesDescription.compareAndSet( null, builder.toString() );
         }
     }
@@ -57,16 +57,10 @@ public class PageCacheArrayFactoryMonitor implements NumberArrayFactory.Monitor
     public String pageCacheAllocationOrNull()
     {
         String failure = failedFactoriesDescription.get();
-        try
+        if ( failure != null )
         {
-            return failure;
+            failedFactoriesDescription.compareAndSet( failure, null );
         }
-        finally
-        {
-            if ( failure != null )
-            {
-                failedFactoriesDescription.compareAndSet( failure, null );
-            }
-        }
+        return failure;
     }
 }

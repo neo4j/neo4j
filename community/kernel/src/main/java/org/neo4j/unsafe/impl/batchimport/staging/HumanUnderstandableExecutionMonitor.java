@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.io.PrintStream;
 import java.util.TimeZone;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -91,7 +90,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private static final int DOT_GROUPS_PER_LINE = 5;
     private static final int PERCENTAGES_PER_LINE = 5;
 
-    private final PrintStream out;
     private final Monitor monitor;
     private final ExternalMonitor externalMonitor;
     private DependencyResolver dependencyResolver;
@@ -105,9 +103,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private ImportStage currentStage;
     private long lastReportTime;
 
-    HumanUnderstandableExecutionMonitor( PrintStream out, Monitor monitor, ExternalMonitor externalMonitor )
+    HumanUnderstandableExecutionMonitor( Monitor monitor, ExternalMonitor externalMonitor )
     {
-        this.out = out;
         this.monitor = monitor;
         this.externalMonitor = externalMonitor;
     }
@@ -135,7 +132,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                         relationshipsDiskUsage( estimates, neoStores ) +
                         estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() ),
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( biggestCacheMemory ) );
-        out.println();
+        System.out.println();
     }
 
     private static long baselineMemoryRequirement( BatchingNeoStores neoStores )
@@ -329,12 +326,12 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             if ( currentLine < line || currentDotOnLine == dotsPerLine() )
             {
                 int percentage = percentage( currentLine );
-                out.println( format( "%" + (4 - numberOfDigits( percentage )) + "s%s%% ∆%s", "", percentage, durationSinceLastReport() ) );
+                System.out.println( format( "%4d%% ∆%s", percentage, durationSinceLastReport() ) );
                 monitor.progress( currentStage, percentage );
                 currentLine++;
                 if ( currentLine == lines() )
                 {
-                    out.println();
+                    System.out.println();
                 }
                 currentDotOnLine = 0;
             }
@@ -350,11 +347,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         return duration( diff );
     }
 
-    private int numberOfDigits( int percentage )
-    {
-        return String.valueOf( percentage ).length();
-    }
-
     private static int percentage( int line )
     {
         return (line + 1) * PERCENTAGES_PER_LINE;
@@ -367,7 +359,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         {
             if ( current > 0 && current % DOT_GROUP_SIZE == 0 )
             {
-                out.print( ' ' );
+                System.out.print( ' ' );
             }
             char dotChar = '.';
             if ( newInternalStage )
@@ -375,7 +367,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 newInternalStage = false;
                 dotChar = '-';
             }
-            out.print( dotChar );
+            System.out.print( dotChar );
             current++;
 
             printPageCacheAllocationWarningIfUsed();
@@ -414,12 +406,12 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private void printStageHeader( String name, Object... data )
     {
-        out.println( name + " " + date( TimeZone.getDefault() ) );
+        System.out.println( name + " " + date( TimeZone.getDefault() ) );
         if ( data.length > 0 )
         {
             for ( int i = 0; i < data.length; )
             {
-                out.println( "  " + data[i++] + ": " + data[i++] );
+                System.out.println( "  " + data[i++] + ": " + data[i++] );
             }
         }
     }
@@ -434,8 +426,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     {
         endPrevious();
 
-        out.println();
-        out.println( "IMPORT DONE in " + duration( totalTimeMillis ) + ". " + additionalInformation );
+        System.out.println();
+        System.out.println( "IMPORT DONE in " + duration( totalTimeMillis ) + ". " + additionalInformation );
     }
 
     @Override

@@ -39,7 +39,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMon
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -69,7 +68,7 @@ public class HumanUnderstandableExecutionMonitorIT
     {
         // given
         CapturingMonitor progress = new CapturingMonitor();
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( System.out, progress, NO_EXTERNAL_MONITOR );
+        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress, NO_EXTERNAL_MONITOR );
         IdType idType = INTEGER;
         Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, Collector.EMPTY, random.seed(),
                 0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),

@@ -43,9 +43,10 @@ public class StringCollisionValues implements CollisionValues
     {
         // Let's have length (also chunk size) be divisible by PAGE_SIZE, such that our calculations below
         // works for all NumberArray implementations.
-        if ( length % PAGE_SIZE != 0 )
+        int remainder = (int) (length % PAGE_SIZE);
+        if ( remainder != 0 )
         {
-            length = ((length - 1) / PAGE_SIZE + 1) * PAGE_SIZE;
+            length += PAGE_SIZE - remainder;
         }
 
         chunkSize = max( length, PAGE_SIZE );
@@ -90,7 +91,8 @@ public class StringCollisionValues implements CollisionValues
     @Override
     public Object get( long offset )
     {
-        int length = (cache.getByte( offset++, 0 ) & 0xFF) | ((cache.getByte( offset++, 0 ) & 0xFF) << Byte.SIZE);
+        int length = cache.getByte( offset++, 0 ) & 0xFF;
+        length |= (cache.getByte( offset++, 0 ) & 0xFF) << Byte.SIZE;
         ByteArray array = cache.at( offset );
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; )

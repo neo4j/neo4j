@@ -19,6 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -73,9 +77,13 @@ public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoClose
         @Override
         public void close()
         {
-            for ( RecordProcessor<T> processor : processors )
+            try
             {
-                processor.close();
+                IOUtils.closeAll( processors );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
             }
         }
     }

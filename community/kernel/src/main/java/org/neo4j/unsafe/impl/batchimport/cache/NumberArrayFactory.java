@@ -55,10 +55,7 @@ public interface NumberArrayFactory
         void allocationSuccessful( long memory, NumberArrayFactory successfulFactory, Iterable<AllocationFailure> attemptedAllocationFailures );
     }
 
-    Monitor NO_MONITOR = ( memory, successfulFactory, attemptedAllocationFailures ) ->
-    {
-        // no-op
-    };
+    Monitor NO_MONITOR = ( memory, successfulFactory, attemptedAllocationFailures ) -> { /* no-op */ };
 
     /**
      * Puts arrays inside the heap.
