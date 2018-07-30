@@ -123,11 +123,11 @@ public class PlatformModule
 
     public final AvailabilityGuard availabilityGuard;
 
+    public final ThreadToStatementContextBridge threadToTransactionBridge;
+
     public final TransactionStats transactionMonitor;
 
     public final SystemNanoClock clock;
-
-    public final ThreadToStatementContextBridge threadToTransactionBridge;
 
     public final VersionContextSupplier versionContextSupplier;
 

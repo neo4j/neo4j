@@ -64,18 +64,9 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
             securityContext = context.get( Context.SECURITY_CONTEXT );
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
-        facade.init(
-            new ProcedureGDBFacadeSPI( dataSource,
-                dataSource.neoStoreDataSource.getDependencyResolver(),
-                availability,
-                urlValidator,
-                securityContext,
-                platform.threadToTransactionBridge
-            ),
-            platform.threadToTransactionBridge,
-            platform.config,
-            tokenHolders
-        );
+        ProcedureGDBFacadeSPI procedureGDBFacadeSPI = new ProcedureGDBFacadeSPI( dataSource, dataSource.neoStoreDataSource.getDependencyResolver(),
+                availability, urlValidator, securityContext, platform.threadToTransactionBridge );
+        facade.init( procedureGDBFacadeSPI, platform.threadToTransactionBridge, platform.config, tokenHolders );
         return facade;
     }
 }
