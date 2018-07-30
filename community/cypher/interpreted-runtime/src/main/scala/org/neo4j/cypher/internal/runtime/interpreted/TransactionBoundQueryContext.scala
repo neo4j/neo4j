@@ -81,7 +81,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   def createNewQueryContext(): QueryContext = {
-    val statementProvider : ThreadToStatementContextBridge = transactionalContext.
+    val statementProvider: ThreadToStatementContextBridge = transactionalContext.
       graph.
       getDependencyResolver.
       provideDependency(classOf[ThreadToStatementContextBridge]).
@@ -92,17 +92,21 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val context = transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
     val newTx = transactionalContext.graph.beginTransaction(context.transactionType, context.securityContext)
     val neo4jTransactionalContext = context.copyFrom(context.graph, statementProvider, locker, newTx,
-                                                     statementProvider.get(), query)
+      statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
 
   //We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.stableDataRead
+
   private def writes() = transactionalContext.dataWrite
+
   private lazy val nodeCursor = allocateAndTraceNodeCursor()
   private lazy val relationshipScanCursor = allocateAndTraceRelationshipScanCursor()
   private lazy val propertyCursor = allocateAndTracePropertyCursor()
+
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
+
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 
   lazy val withActiveRead: TransactionBoundQueryContext =
@@ -191,6 +195,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
       new CursorIterator[RelationshipValue] {
         override protected def close(): Unit = selectionCursor.close()
+
         override protected def fetchNext(): RelationshipValue =
           if (selectionCursor.next())
             fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference(),
@@ -220,7 +225,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def getRelationshipsCursor(node: Long, dir: SemanticDirection,
-                                               types: Option[Array[Int]]): RelationshipSelectionCursor = {
+                                      types: Option[Array[Int]]): RelationshipSelectionCursor = {
     val read = reads()
     val cursor = nodeCursor
     val cursors = transactionalContext.cursors
@@ -243,52 +248,78 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   val RANGE_SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
-                                    ValueGroup.TEXT,
-                                    ValueGroup.GEOMETRY,
-                                    ValueGroup.DATE,
-                                    ValueGroup.LOCAL_DATE_TIME,
-                                    ValueGroup.ZONED_DATE_TIME,
-                                    ValueGroup.LOCAL_TIME,
-                                    ValueGroup.ZONED_TIME,
-                                    ValueGroup.DURATION)
+    ValueGroup.TEXT,
+    ValueGroup.GEOMETRY,
+    ValueGroup.DATE,
+    ValueGroup.LOCAL_DATE_TIME,
+    ValueGroup.ZONED_DATE_TIME,
+    ValueGroup.LOCAL_TIME,
+    ValueGroup.ZONED_TIME,
+    ValueGroup.DURATION)
 
-  override def indexSeek(index: IndexReference, predicates: Seq[IndexQuery]): Iterator[NodeValue] = {
+  override def indexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], predicates: Seq[IndexQuery]): Iterator[(NodeValue, Seq[Value])] = {
 
     val impossiblePredicate =
       predicates.exists {
-        case p:IndexQuery.ExactPredicate => p.value() == Values.NO_VALUE
-        case p:IndexQuery =>
+        case p: IndexQuery.ExactPredicate => p.value() == Values.NO_VALUE
+        case p: IndexQuery =>
           !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
       }
 
     if (impossiblePredicate) Iterator.empty
-    else seek(index, predicates:_*)
+    else seek(index, propertyIndicesWithValues, predicates: _*)
   }
 
   override def indexReference(label: Int,
                               properties: Int*): IndexReference =
-    transactionalContext.kernelTransaction.schemaRead().index(label, properties:_*)
+    transactionalContext.kernelTransaction.schemaRead().index(label, properties: _*)
 
-  private def seek(index: IndexReference, query: IndexQuery*) = {
-    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query:_*)
-    new CursorIterator[NodeValue] {
-      override protected def fetchNext(): NodeValue = {
-        if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
-        else null
+  private def seek(index: IndexReference, propertyIndicesWithValues: Seq[Int], query: IndexQuery*): CursorIterator[(NodeValue, Seq[Value])] = {
+    val nodeCursor: NodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
+    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query: _*)
+    new CursorIterator[(NodeValue, Seq[Value])] {
+      override protected def fetchNext(): (NodeValue, Seq[Value]) = {
+        if (nodeCursor.next()) {
+          val nodeRef = nodeCursor.nodeReference()
+
+          if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
+            // We were promised at plan time that we can get values everywhere, so this should never happen
+            throw new IllegalStateException("NodeCursor did unexpectedly not have values during index seek.")
+          }
+          // Get the actual property values for the requested indices
+          val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
+          val node = fromNodeProxy(entityAccessor.newNodeProxy(nodeRef))
+          (node, values)
+        }
+        else {
+          null
+        }
       }
 
       override protected def close(): Unit = nodeCursor.close()
     }
   }
 
-  override def indexScan(index: IndexReference): Iterator[NodeValue] = {
+  override def indexScan(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(NodeValue, Seq[Value])] = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
     reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
-    new CursorIterator[NodeValue] {
-      override protected def fetchNext(): NodeValue = {
-        if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
-        else null
+    new CursorIterator[(NodeValue, Seq[Value])] {
+      override protected def fetchNext(): (NodeValue, Seq[Value]) = {
+        if (nodeCursor.next()) {
+          val nodeRef = nodeCursor.nodeReference()
+
+          if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
+            // We were promised at plan time that we can get values everywhere, so this should never happen
+            throw new IllegalStateException("NodeCursor did unexpectedly not have values during index scan.")
+          }
+          // Get the actual property values for the requested indices
+          val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
+          val node = fromNodeProxy(entityAccessor.newNodeProxy(nodeRef))
+          (node, values)
+        }
+        else {
+          null
+        }
       }
 
       override protected def close(): Unit = nodeCursor.close()
@@ -312,14 +343,27 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def indexScanByEndsWith(index: IndexReference, value: String): Iterator[NodeValue] =
     seek(index, IndexQuery.stringSuffix(index.properties()(0), value))
 
-  override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
+  override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])] =
+    seek(index, propertyIndicesWithValues, IndexQuery.stringContains(index.properties()(0), value))
+
+  override def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])] =
+    seek(index, propertyIndicesWithValues, IndexQuery.stringSuffix(index.properties()(0), value))
+
+  override def lockingUniqueIndexSeek(indexReference: IndexReference, propertyIndicesWithValues: Seq[Int], queries: Seq[IndexQuery.ExactPredicate]): Option[(NodeValue, Seq[Value])] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
     if (queries.exists(q => q.value() == Values.NO_VALUE))
       None
     else {
       val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.schema())
-      val nodeId = reads().lockingNodeUniqueIndexSeek(index, queries: _*)
-      if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
+      val pair = reads().lockingNodeUniqueIndexSeek(index, propertyIndicesWithValues.map(i => i:Integer).asJava, queries: _*)
+      val (nodeId, values) = (pair.first(), pair.other())
+      if (StatementConstants.NO_SUCH_NODE == nodeId) {
+        None
+      } else {
+        val nodeValue = nodeOps.getById(nodeId)
+        val valuesAsSeq = values.asScala.toSeq
+        Some((nodeValue, valuesAsSeq))
+      }
     }
   }
 
@@ -336,6 +380,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         if (cursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(cursor.nodeReference()))
         else null
       }
+
       override protected def close(): Unit = cursor.close()
     }
   }
@@ -344,7 +389,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeAsMap(id: Long): MapValue = {
     val nodes = nodeCursor
     reads().singleNode(id, nodes)
-    if (!nodes.next() ) VirtualValues.EMPTY_MAP
+    if (!nodes.next()) VirtualValues.EMPTY_MAP
     else {
       val props = propertyCursor
       val tokens = tokenRead
@@ -360,7 +405,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def relationshipAsMap(id: Long): MapValue = {
     val relationships = relationshipScanCursor
     reads().singleRelationship(id, relationships)
-    if (!relationships.next() ) VirtualValues.EMPTY_MAP
+    if (!relationships.next()) VirtualValues.EMPTY_MAP
     else {
       val props = propertyCursor
       val tokens = tokenRead
@@ -378,6 +423,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     reads().nodeLabelScan(id, cursor)
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
+
       override protected def close(): Unit = cursor.close()
     }
   }
@@ -436,7 +482,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   class NodeOperations extends BaseOperations[NodeValue] {
 
     override def delete(id: Long) {
-        writes().nodeDelete(id)
+      writes().nodeDelete(id)
     }
 
     override def propertyKeyIds(id: Long): Array[Int] = {
@@ -525,6 +571,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       reads().allNodesScan(nodeCursor)
       new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
+
         override protected def close(): Unit = nodeCursor.close()
       }
     }
@@ -547,7 +594,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   class RelationshipOperations extends BaseOperations[RelationshipValue] {
 
     override def delete(id: Long) {
-        writes().relationshipDelete(id)
+      writes().relationshipDelete(id)
     }
 
     override def propertyKeyIds(id: Long): Array[Int] = {
@@ -656,6 +703,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       reads().allRelationshipsScan(relCursor)
       new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (relCursor.next()) relCursor.relationshipReference() else -1L
+
         override protected def close(): Unit = relCursor.close()
       }
     }
@@ -705,13 +753,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         val indexReference = transactionalContext.kernelTransaction.schemaRead().index(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*)
         if (transactionalContext.kernelTransaction.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED)
           throw new FailedIndexException(indexReference.userDescription(tokenNameLookup))
-       IdempotentResult(indexReference, wasCreated = false)
+        IdempotentResult(indexReference, wasCreated = false)
     }
   }
 
   override def dropIndexRule(descriptor: IndexDescriptor): Unit =
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(
-      transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(descriptor.label, descriptor.properties.map(_.id):_*)
+      transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(descriptor.label, descriptor.properties.map(_.id): _*)
     )
 
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {
@@ -820,7 +868,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def lockNodes(nodeIds: Long*) =
-  nodeIds.sorted.foreach(transactionalContext.kernelTransaction.locks().acquireExclusiveNodeLock(_))
+    nodeIds.sorted.foreach(transactionalContext.kernelTransaction.locks().acquireExclusiveNodeLock(_))
 
   override def lockRelationships(relIds: Long*) =
     relIds.sorted
@@ -883,11 +931,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
     callProcedure(args,
-                  transactionalContext.dbmsOperations.procedureCallDbms(id,
-                                                                        _,
-                                                                        transactionalContext.graph.getDependencyResolver,
-                                                                        transactionalContext.securityContext,
-                                                                        transactionalContext.resourceTracker))
+      transactionalContext.dbmsOperations.procedureCallDbms(id,
+        _,
+        transactionalContext.graph.getDependencyResolver,
+        transactionalContext.securityContext,
+        transactionalContext.resourceTracker))
   }
 
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
@@ -924,11 +972,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     callProcedure(args,
-                  transactionalContext.dbmsOperations.procedureCallDbms(kn,
-                                                                        _,
-                                                                        transactionalContext.graph.getDependencyResolver,
-                                                                        transactionalContext.securityContext,
-                                                                        transactionalContext.resourceTracker))
+      transactionalContext.dbmsOperations.procedureCallDbms(kn,
+        _,
+        transactionalContext.graph.getDependencyResolver,
+        transactionalContext.securityContext,
+        transactionalContext.resourceTracker))
   }
 
   private def callProcedure(args: Seq[Any], call: KernelProcedureCall) = {
@@ -942,10 +990,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) = {
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().functionCallOverride(id, args.toArray)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().functionCall(id, args.toArray)
+    if (shouldElevate(allowed))
+      transactionalContext.tc.kernelTransaction().procedures().functionCallOverride(id, args.toArray)
+    else
+      transactionalContext.tc.kernelTransaction().procedures().functionCall(id, args.toArray)
   }
 
   override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) = {
@@ -1063,6 +1111,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     private var _next: T = fetchNext()
 
     protected def fetchNext(): T
+
     protected def close(): Unit
 
     override def hasNext: Boolean = _next != null
@@ -1076,13 +1125,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       val current = _next
       _next = fetchNext()
       if (!hasNext) {
-       close()
+        close()
       }
       current
     }
   }
 
   class RelationshipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator {
+
     import RelationshipCursorIterator.{NOT_INITIALIZED, NO_ID}
 
     private var _next = NOT_INITIALIZED

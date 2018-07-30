@@ -22,19 +22,22 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.IndexReference
+import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
-                             propertyKeys: Seq[PropertyKeyToken],
+                             properties: Seq[IndexedProperty],
                              valueExpr: QueryExpression[Expression],
                              indexMode: IndexSeekMode = IndexSeek)
-                            (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker {
+                            (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker with IndexPipeWithValues {
 
-  override val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
+  override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id).toArray
+
+  override val propertyIndicesWithValues: Seq[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  override val propertyNamesWithValues: Seq[String] = propertyIndicesWithValues.map(offset => ident + "." + properties(offset).propertyKeyToken.name)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -50,7 +53,10 @@ case class NodeIndexSeekPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultNodes = indexSeek(state, indexReference, baseContext)
-    resultNodes.map(node => executionContextFactory.copyWith(baseContext, ident, node))
+
+    val results = indexSeek(state, indexReference, propertyIndicesWithValues, baseContext)
+    createResultsFromTupleIterator(baseContext, results)
   }
 }
+
+case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: Boolean)

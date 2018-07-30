@@ -100,17 +100,17 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
-  def indexSeek(index: IndexReference, queries: Seq[IndexQuery]): Iterator[NodeValue]
+  def indexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], queries: Seq[IndexQuery]): Iterator[(NodeValue, Seq[Value])]
 
-  def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue]
+  def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])]
 
-  def indexScanByEndsWith(index: IndexReference, value: String): Iterator[NodeValue]
+  def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])]
 
-  def indexScan(index: IndexReference): Iterator[NodeValue]
+  def indexScan(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(NodeValue, Seq[Value])]
 
   def indexScanPrimitive(index: IndexReference): LongIterator
 
-  def lockingUniqueIndexSeek(index: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue]
+  def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], queries: Seq[IndexQuery.ExactPredicate]): Option[(NodeValue, Seq[Value])]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
@@ -145,7 +145,7 @@ trait QueryContext extends TokenContext with DbAccess {
   /**
    * This should not be used. We'll remove sooner (or later). Don't do it.
    */
-  def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
+  def withAnyOpenQueryContext[T](work: QueryContext => T): T
 
   /*
   This is an ugly hack to get multi threading to work

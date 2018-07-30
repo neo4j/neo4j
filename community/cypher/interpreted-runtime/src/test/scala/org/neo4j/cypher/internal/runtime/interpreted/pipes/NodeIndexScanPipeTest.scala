@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
+import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -33,7 +33,6 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
-  private val descriptor = IndexDescriptor(label.nameId, Seq(propertyKey.nameId))
   private val node = nodeValue(11)
 
   private def nodeValue(id: Long) = {
@@ -45,20 +44,36 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should return nodes found by index scan when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Iterator(node))
+      query = scanFor(Iterator((node, Seq.empty)))
     )
 
     // when
-    val pipe = NodeIndexScanPipe("n", label, propertyKey)()
+    val pipe = NodeIndexScanPipe("n", label, propertyKey, getValueFromIndex = false)()
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  private def scanFor(nodes: Iterator[NodeValue]): QueryContext = {
+  test("should use index provided values when available") {
+    // given
+    val queryState = QueryStateHelper.emptyWith(
+      query = scanFor(Iterator((node, Seq(Values.stringValue("hello")))))
+    )
+
+    // when
+    val pipe = NodeIndexScanPipe("n", label, propertyKey, getValueFromIndex = true)()
+    val result = pipe.createResults(queryState)
+
+    // then
+    result.toList should equal(List(
+      Map("n" -> node, "n." + propertyKey.name -> Values.stringValue("hello"))
+    ))
+  }
+
+  private def scanFor(nodes: Iterator[(NodeValue, Seq[Value])]): QueryContext = {
     val query = mock[QueryContext]
-    when(query.indexScan(any())).thenReturn(nodes)
+    when(query.indexScan(any(), any())).thenReturn(nodes)
     query
   }
 }

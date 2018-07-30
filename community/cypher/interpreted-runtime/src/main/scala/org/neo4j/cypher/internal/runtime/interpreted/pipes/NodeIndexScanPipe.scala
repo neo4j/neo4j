@@ -21,14 +21,19 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.internal.kernel.api.IndexReference
+import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
-                             propertyKey: PropertyKeyToken)
-                            (val id: Id = Id.INVALID_ID) extends Pipe {
+                             propertyKey: PropertyKeyToken,
+                             getValueFromIndex: Boolean)
+                            (val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
+
+  override val propertyIndicesWithValues: Seq[Int] = if (getValueFromIndex) Seq(0) else Seq.empty
+  override val propertyNamesWithValues: Seq[String] = if (getValueFromIndex) Seq(ident + "." + propertyKey.name) else Seq.empty
+
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -40,7 +45,7 @@ case class NodeIndexScanPipe(ident: String,
   }
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultNodes = state.query.indexScan(reference(state.query))
-    resultNodes.map(node => executionContextFactory.copyWith(baseContext, ident, node))
+    val results = state.query.indexScan(reference(state.query), propertyIndicesWithValues)
+    createResultsFromTupleIterator(baseContext, results)
   }
 }

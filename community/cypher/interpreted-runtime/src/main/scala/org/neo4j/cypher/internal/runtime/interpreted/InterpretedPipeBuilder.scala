@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
@@ -29,12 +28,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternCon
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.opencypher.v9_0.util.{Eagerly, InternalException}
-import org.opencypher.v9_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
+import org.opencypher.v9_0.util.{Eagerly, InternalException}
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -83,20 +83,21 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
 
       case NodeIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKeys, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        // TODO getValueFromIndex
+        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)), valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeUniqueIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKeys, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)), valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeIndexScan(ident, label, propertyKey, _) =>
-        NodeIndexScanPipe(ident, label, propertyKey)(id = id)
+        NodeIndexScanPipe(ident, label, propertyKey, getValueFromIndex = false)(id = id)
 
       case NodeIndexContainsScan(ident, label, propertyKey, valueExpr, _) =>
-        NodeIndexContainsScanPipe(ident, label, propertyKey, buildExpression(valueExpr))(id = id)
+        NodeIndexContainsScanPipe(ident, label, propertyKey, getValueFromIndex = false, buildExpression(valueExpr))(id = id)
 
       case NodeIndexEndsWithScan(ident, label, propertyKey, valueExpr, _) =>
-        NodeIndexEndsWithScanPipe(ident, label, propertyKey, buildExpression(valueExpr))(id = id)
+        NodeIndexEndsWithScanPipe(ident, label, propertyKey, getValueFromIndex = false, buildExpression(valueExpr))(id = id)
     }
   }
 
