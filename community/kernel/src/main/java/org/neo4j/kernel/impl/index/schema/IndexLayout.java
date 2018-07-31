@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-abstract class IndexLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapter<KEY,NativeIndexValue>
+abstract class IndexLayout<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends Layout.Adapter<KEY,VALUE>
 {
     private final long identifier;
     private final int majorVersion;
@@ -42,9 +42,9 @@ abstract class IndexLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapt
     }
 
     @Override
-    public NativeIndexValue newValue()
+    public VALUE newValue()
     {
-        return NativeIndexValue.INSTANCE;
+        return (VALUE) NativeIndexValue.INSTANCE;
     }
 
     @Override

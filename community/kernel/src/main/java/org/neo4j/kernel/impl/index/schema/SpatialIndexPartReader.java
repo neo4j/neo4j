@@ -29,7 +29,6 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
@@ -47,7 +46,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     private final SpatialLayout spatial;
     private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialIndexPartReader( GBPTree<SpatialIndexKey,VALUE> tree, Layout<SpatialIndexKey,VALUE> layout,
+    SpatialIndexPartReader( GBPTree<SpatialIndexKey,VALUE> tree, IndexLayout<SpatialIndexKey,VALUE> layout,
             IndexSamplingConfig samplingConfig, IndexDescriptor descriptor,
             SpaceFillingCurveConfiguration configuration )
     {

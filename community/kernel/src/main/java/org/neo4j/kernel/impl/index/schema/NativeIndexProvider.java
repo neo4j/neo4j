@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -63,7 +62,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         this.readOnly = readOnly;
     }
 
-    abstract Layout<KEY,VALUE> layout( StoreIndexDescriptor descriptor );
+    abstract IndexLayout<KEY,VALUE> layout( StoreIndexDescriptor descriptor );
 
     @Override
     public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -77,7 +76,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return newIndexPopulator( storeFile, layout( descriptor ), descriptor, samplingConfig );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, IndexLayout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig );
 
     @Override
@@ -87,7 +86,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return newIndexAccessor( storeFile, layout( descriptor ), descriptor, samplingConfig );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, IndexLayout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Override

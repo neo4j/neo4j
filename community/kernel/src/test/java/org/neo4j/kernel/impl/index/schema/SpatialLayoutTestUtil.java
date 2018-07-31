@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -69,7 +68,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,Native
     }
 
     @Override
-    Layout<SpatialIndexKey,NativeIndexValue> createLayout()
+    IndexLayout<SpatialIndexKey,NativeIndexValue> createLayout()
     {
         return new SpatialLayout( crs, curve );
     }

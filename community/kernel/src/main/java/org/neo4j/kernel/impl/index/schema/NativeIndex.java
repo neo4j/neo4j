@@ -25,7 +25,6 @@ import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -41,14 +40,14 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
 {
     final PageCache pageCache;
     final File storeFile;
-    final Layout<KEY,VALUE> layout;
+    final IndexLayout<KEY,VALUE> layout;
     final FileSystemAbstraction fileSystem;
     final IndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
 
-    NativeIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+    NativeIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor )
     {
         this.pageCache = pageCache;

@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for absolute times.
  */
-class ZonedTimeLayout extends IndexLayout<ZonedTimeIndexKey>
+class ZonedTimeLayout extends IndexLayout<ZonedTimeIndexKey,NativeIndexValue>
 {
     ZonedTimeLayout()
     {

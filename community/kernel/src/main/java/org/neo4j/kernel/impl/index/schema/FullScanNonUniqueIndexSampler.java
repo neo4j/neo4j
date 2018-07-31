@@ -25,9 +25,6 @@ import java.io.UncheckedIOException;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -41,15 +38,12 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE exten
         extends NonUniqueIndexSampler.Adapter
 {
     private final GBPTree<KEY,VALUE> gbpTree;
-    private final Layout<KEY,VALUE> layout;
-    private final IndexSamplingConfig samplingConfig;
+    private final IndexLayout<KEY,VALUE> layout;
 
-    FullScanNonUniqueIndexSampler( GBPTree<KEY,VALUE> gbpTree, Layout<KEY,VALUE> layout,
-            IndexSamplingConfig samplingConfig )
+    FullScanNonUniqueIndexSampler( GBPTree<KEY,VALUE> gbpTree, IndexLayout<KEY,VALUE> layout )
     {
         this.gbpTree = gbpTree;
         this.layout = layout;
-        this.samplingConfig = samplingConfig;
     }
 
     @Override
@@ -61,15 +55,33 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE exten
         KEY highest = layout.newKey();
         highest.initialize( Long.MAX_VALUE );
         highest.initValuesAsHighest();
+        KEY prev = layout.newKey();
         try ( RawCursor<Hit<KEY,VALUE>,IOException> seek = gbpTree.seek( lowest, highest ) )
         {
-            NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
-            while ( seek.next() )
+            long sampledValues = 0;
+            long uniqueValues = 0;
+
+            // Get the first one so that prev gets initialized
+            if ( seek.next() )
             {
-                Hit<KEY,VALUE> hit = seek.get();
-                sampler.include( hit.key().propertiesAsString() );
+                prev = layout.copyKey( seek.get().key(), prev );
+                sampledValues++;
+                uniqueValues++;
+
+                // Then do the rest
+                while ( seek.next() )
+                {
+                    Hit<KEY,VALUE> hit = seek.get();
+                    if ( layout.compareValue( prev, hit.key() ) != 0 )
+                    {
+                        uniqueValues++;
+                        layout.copyKey( hit.key(), prev );
+                    }
+                    // else this is a duplicate of the previous one
+                    sampledValues++;
+                }
             }
-            return sampler.result();
+            return new IndexSample( sampledValues, uniqueValues, sampledValues );
         }
         catch ( IOException e )
         {

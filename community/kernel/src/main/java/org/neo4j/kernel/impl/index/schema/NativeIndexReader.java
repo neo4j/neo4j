@@ -29,7 +29,6 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
@@ -46,12 +45,12 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         implements IndexReader
 {
     protected final IndexDescriptor descriptor;
-    final Layout<KEY,VALUE> layout;
+    final IndexLayout<KEY,VALUE> layout;
     final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
     private final GBPTree<KEY,VALUE> tree;
     private final IndexSamplingConfig samplingConfig;
 
-    NativeIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
+    NativeIndexReader( GBPTree<KEY,VALUE> tree, IndexLayout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig,
             IndexDescriptor descriptor )
     {
@@ -78,8 +77,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         // non-unique sampler which scans the index and counts (potentially duplicates, of which there will
         // be none in a unique index).
 
-        FullScanNonUniqueIndexSampler<KEY,VALUE> sampler =
-                new FullScanNonUniqueIndexSampler<>( tree, layout, samplingConfig );
+        FullScanNonUniqueIndexSampler<KEY,VALUE> sampler = new FullScanNonUniqueIndexSampler<>( tree, layout );
         return sampler::result;
     }
 

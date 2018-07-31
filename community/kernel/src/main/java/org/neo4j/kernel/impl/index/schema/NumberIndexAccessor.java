@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,7 +32,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 public class NumberIndexAccessor extends NativeIndexAccessor<NumberIndexKey,NativeIndexValue>
 {
-    NumberIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<NumberIndexKey,NativeIndexValue> layout,
+    NumberIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<NumberIndexKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {

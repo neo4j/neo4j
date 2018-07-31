@@ -27,7 +27,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 /**
  * {@link Layout} for PointValues.
  */
-class SpatialLayout extends IndexLayout<SpatialIndexKey>
+class SpatialLayout extends IndexLayout<SpatialIndexKey,NativeIndexValue>
 {
     private SpaceFillingCurve curve;
     CoordinateReferenceSystem crs;

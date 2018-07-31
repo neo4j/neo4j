@@ -26,7 +26,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -55,7 +54,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeIndexKey
     }
 
     @Override
-    Layout<ZonedDateTimeIndexKey,NativeIndexValue> createLayout()
+    IndexLayout<ZonedDateTimeIndexKey,NativeIndexValue> createLayout()
     {
         return new ZonedDateTimeLayout();
     }

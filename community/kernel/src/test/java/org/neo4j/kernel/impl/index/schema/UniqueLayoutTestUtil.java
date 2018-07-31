@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -41,7 +40,7 @@ class UniqueLayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE ext
     }
 
     @Override
-    Layout<KEY,VALUE> createLayout()
+    IndexLayout<KEY,VALUE> createLayout()
     {
         return delegate.createLayout();
     }

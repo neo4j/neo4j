@@ -27,8 +27,6 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Values;
@@ -51,9 +49,8 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
         IndexSample sample;
         try ( GBPTree<NumberIndexKey,NativeIndexValue> gbpTree = getTree() )
         {
-            IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             FullScanNonUniqueIndexSampler<NumberIndexKey,NativeIndexValue> sampler =
-                    new FullScanNonUniqueIndexSampler<>( gbpTree, layout, samplingConfig );
+                    new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
             sample = sampler.result();
         }
 

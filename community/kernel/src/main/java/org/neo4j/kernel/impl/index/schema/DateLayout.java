@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for dates.
  */
-class DateLayout extends IndexLayout<DateIndexKey>
+class DateLayout extends IndexLayout<DateIndexKey,NativeIndexValue>
 {
     DateLayout()
     {

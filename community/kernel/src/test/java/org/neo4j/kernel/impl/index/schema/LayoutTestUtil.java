@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -57,7 +56,7 @@ abstract class LayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE 
         this.indexDescriptor = indexDescriptor;
     }
 
-    abstract Layout<KEY,VALUE> createLayout();
+    abstract IndexLayout<KEY,VALUE> createLayout();
 
     abstract IndexEntryUpdate<IndexDescriptor>[] someUpdates();
 

@@ -69,7 +69,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
 
     StoreIndexDescriptor indexDescriptor;
     LayoutTestUtil<KEY,VALUE> layoutUtil;
-    Layout<KEY,VALUE> layout;
+    IndexLayout<KEY,VALUE> layout;
     private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;

@@ -24,7 +24,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -53,7 +52,7 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationIndexKey,Nati
     }
 
     @Override
-    Layout<DurationIndexKey,NativeIndexValue> createLayout()
+    IndexLayout<DurationIndexKey,NativeIndexValue> createLayout()
     {
         return new DurationLayout();
     }

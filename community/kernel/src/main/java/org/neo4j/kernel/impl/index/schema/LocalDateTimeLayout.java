@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for local date times.
  */
-class LocalDateTimeLayout extends IndexLayout<LocalDateTimeIndexKey>
+class LocalDateTimeLayout extends IndexLayout<LocalDateTimeIndexKey,NativeIndexValue>
 {
     LocalDateTimeLayout()
     {

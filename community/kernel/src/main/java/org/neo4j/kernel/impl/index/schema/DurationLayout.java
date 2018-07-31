@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for durations.
  */
-class DurationLayout extends IndexLayout<DurationIndexKey>
+class DurationLayout extends IndexLayout<DurationIndexKey,NativeIndexValue>
 {
     DurationLayout()
     {

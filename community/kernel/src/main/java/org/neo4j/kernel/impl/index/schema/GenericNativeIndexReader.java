@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
@@ -38,7 +37,7 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRA
 
 class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,NativeIndexValue>
 {
-    GenericNativeIndexReader( GBPTree<CompositeGenericKey,NativeIndexValue> tree, Layout<CompositeGenericKey,NativeIndexValue> layout,
+    GenericNativeIndexReader( GBPTree<CompositeGenericKey,NativeIndexValue> tree, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
             IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );

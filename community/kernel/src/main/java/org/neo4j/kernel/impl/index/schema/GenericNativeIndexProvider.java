@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -118,21 +117,21 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     }
 
     @Override
-    Layout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
+    IndexLayout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
     {
         int numberOfSlots = descriptor.properties().length;
         return new GenericLayout( numberOfSlots );
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexPopulator newIndexPopulator( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
         return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );

@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,9 +44,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -75,7 +72,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final KEY treeKey;
     private final VALUE treeValue;
     private final UniqueIndexSampler uniqueSampler;
-    private final NonUniqueIndexSampler nonUniqueSampler;
     final IndexSamplingConfig samplingConfig;
 
     private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> additionsWorkSync;
@@ -85,7 +81,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean dropped;
     private boolean closed;
 
-    NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+    NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
                                 StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor );
@@ -96,11 +92,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
         case GENERAL:
             uniqueSampler = null;
-            nonUniqueSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
             break;
         case UNIQUE:
             uniqueSampler = new UniqueIndexSampler();
-            nonUniqueSampler = null;
             break;
         default:
             throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
@@ -366,7 +360,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         switch ( descriptor.type() )
         {
         case GENERAL:
-            updateNonUniqueSample( update );
+            // Don't do anything here, we'll do a scan in the end instead
             break;
         case UNIQUE:
             updateUniqueSample( update );
@@ -393,33 +387,13 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         }
     }
 
-    private void updateNonUniqueSample( IndexEntryUpdate<?> update )
-    {
-        String encodedValues = SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() );
-        switch ( update.updateMode() )
-        {
-        case ADDED:
-            nonUniqueSampler.include( encodedValues );
-            break;
-        case REMOVED:
-            nonUniqueSampler.exclude( encodedValues );
-            break;
-        case CHANGED:
-            nonUniqueSampler.exclude( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.beforeValues() ) );
-            nonUniqueSampler.include( encodedValues );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unsupported update mode type:" + update.updateMode() );
-        }
-    }
-
     @Override
     public IndexSample sampleResult()
     {
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return nonUniqueSampler.result();
+            return new FullScanNonUniqueIndexSampler<>( tree, layout ).result();
         case UNIQUE:
             return uniqueSampler.result();
         default:

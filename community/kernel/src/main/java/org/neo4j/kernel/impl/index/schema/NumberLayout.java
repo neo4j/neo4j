@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-abstract class NumberLayout extends IndexLayout<NumberIndexKey>
+abstract class NumberLayout extends IndexLayout<NumberIndexKey,NativeIndexValue>
 {
     NumberLayout( long identifier, int majorVersion, int minorVersion )
     {

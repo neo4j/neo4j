@@ -30,7 +30,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -180,7 +179,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
 
     static class PartAccessor extends NativeIndexAccessor<SpatialIndexKey,NativeIndexValue>
     {
-        private final Layout<SpatialIndexKey,NativeIndexValue> layout;
+        private final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;
         private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration searchConfiguration;

@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -120,10 +119,10 @@ class TemporalIndexFiles
     static class FileLayout<KEY extends NativeIndexSingleValueKey<KEY>>
     {
         final File indexFile;
-        final Layout<KEY,NativeIndexValue> layout;
+        final IndexLayout<KEY,NativeIndexValue> layout;
         final ValueGroup valueGroup;
 
-        FileLayout( File indexFile, Layout<KEY,NativeIndexValue> layout, ValueGroup valueGroup )
+        FileLayout( File indexFile, IndexLayout<KEY,NativeIndexValue> layout, ValueGroup valueGroup )
         {
             this.indexFile = indexFile;
             this.layout = layout;

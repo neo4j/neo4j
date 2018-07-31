@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for absolute date times.
  */
-class ZonedDateTimeLayout extends IndexLayout<ZonedDateTimeIndexKey>
+class ZonedDateTimeLayout extends IndexLayout<ZonedDateTimeIndexKey,NativeIndexValue>
 {
     // A 1 signals a named time zone is stored, a 0 that an offset is stored
     static final int ZONE_ID_FLAG = 0x0100_0000;

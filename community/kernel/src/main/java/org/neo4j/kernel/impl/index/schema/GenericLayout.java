@@ -28,7 +28,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Comparator.comparing;
 
-class GenericLayout extends IndexLayout<CompositeGenericKey>
+class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
 {
     static final Comparator<Type> TYPE_COMPARATOR = comparing( t -> t.valueGroup );
     private final int numberOfSlots;

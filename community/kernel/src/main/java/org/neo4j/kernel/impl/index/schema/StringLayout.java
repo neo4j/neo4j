@@ -28,7 +28,7 @@ import static org.neo4j.kernel.impl.index.schema.StringIndexKey.ENTITY_ID_SIZE;
 /**
  * {@link Layout} for strings.
  */
-class StringLayout extends IndexLayout<StringIndexKey>
+class StringLayout extends IndexLayout<StringIndexKey,NativeIndexValue>
 {
     StringLayout()
     {

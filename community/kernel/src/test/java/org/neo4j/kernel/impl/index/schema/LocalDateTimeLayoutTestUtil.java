@@ -25,7 +25,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -52,7 +51,7 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeInd
     }
 
     @Override
-    Layout<LocalDateTimeIndexKey,NativeIndexValue> createLayout()
+    IndexLayout<LocalDateTimeIndexKey,NativeIndexValue> createLayout()
     {
         return new LocalDateTimeLayout();
     }

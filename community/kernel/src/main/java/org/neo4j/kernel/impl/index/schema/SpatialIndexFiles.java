@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -127,7 +126,7 @@ class SpatialIndexFiles
     {
         final SpaceFillingCurveSettings settings;
         final SpatialFile spatialFile;
-        final Layout<SpatialIndexKey,NativeIndexValue> layout;
+        final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;
 
         SpatialFileLayout( SpatialFile spatialFile, SpaceFillingCurveSettings settings )
         {
