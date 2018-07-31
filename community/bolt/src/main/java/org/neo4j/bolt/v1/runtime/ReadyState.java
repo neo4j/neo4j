@@ -30,7 +30,6 @@ import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v1.runtime.RunMessageChecker.isBegin;
@@ -118,7 +117,7 @@ public class ReadyState implements BoltStateMachineState
         }
     }
 
-    private static StatementMetadata processRunMessage( RunMessage message, StatementProcessor statementProcessor ) throws KernelException
+    private static StatementMetadata processRunMessage( RunMessage message, StatementProcessor statementProcessor ) throws Exception
     {
         if ( isBegin( message ) )
         {

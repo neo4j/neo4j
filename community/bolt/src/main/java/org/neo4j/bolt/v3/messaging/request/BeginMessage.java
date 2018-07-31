@@ -30,7 +30,6 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseBookmark;
 import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionMetadata;
 import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionTimeout;
 
@@ -51,7 +50,7 @@ public class BeginMessage implements RequestMessage
     public BeginMessage( MapValue meta ) throws BoltIOException
     {
         this.meta = requireNonNull( meta );
-        this.bookmark = parseBookmark( meta );
+        this.bookmark = Bookmark.fromParamsOrNull( meta );
         this.txTimeout = parseTransactionTimeout( meta );
         this.txMetadata = parseTransactionMetadata( meta );
     }
@@ -84,7 +83,7 @@ public class BeginMessage implements RequestMessage
             return false;
         }
         BeginMessage that = (BeginMessage) o;
-        return Objects.equals( meta, that.meta ) && Objects.equals( meta, that.meta );
+        return Objects.equals( meta, that.meta );
     }
 
     @Override

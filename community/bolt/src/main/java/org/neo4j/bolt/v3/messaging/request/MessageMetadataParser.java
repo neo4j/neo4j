@@ -24,11 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.AnyValue;
@@ -40,21 +38,13 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * The parsing methods in this class returns null if the specified key is not found in the input message metadata map.
  */
-class MessageMetadataParser
+final class MessageMetadataParser
 {
     private static final String TX_TIMEOUT_KEY = "tx_timeout";
     private static final String TX_META_DATA_KEY = "tx_metadata";
 
-    static Bookmark parseBookmark( MapValue meta ) throws BoltIOException
+    private MessageMetadataParser()
     {
-        try
-        {
-            return Bookmark.fromParamsOrNull( meta );
-        }
-        catch ( KernelException e )
-        {
-            throw new BoltIOException( Status.Request.InvalidFormat, e.getMessage(), e );
-        }
     }
 
     static Duration parseTransactionTimeout( MapValue meta ) throws BoltIOException
@@ -70,7 +60,7 @@ class MessageMetadataParser
         }
         else
         {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Expecting transaction timeout value to be a Long value, but got: " + anyValue );
+            throw new BoltIOException( Status.Request.Invalid, "Expecting transaction timeout value to be a Long value, but got: " + anyValue );
         }
     }
 
@@ -91,7 +81,7 @@ class MessageMetadataParser
         }
         else
         {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Expecting transaction metadata value to be a Map value, but got: " + anyValue );
+            throw new BoltIOException( Status.Request.Invalid, "Expecting transaction metadata value to be a Map value, but got: " + anyValue );
         }
     }
 

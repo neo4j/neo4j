@@ -22,8 +22,6 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 import java.util.Objects;
 
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -37,7 +35,7 @@ public class Bookmark
 {
     private static final String BOOKMARK_KEY = "bookmark";
     private static final String BOOKMARKS_KEY = "bookmarks";
-    private static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
+    static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
 
     private final long txId;
 
@@ -159,20 +157,5 @@ public class Bookmark
     public void attachTo( BoltResponseHandler state )
     {
         state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
-    }
-
-    static class BookmarkFormatException extends KernelException
-    {
-        BookmarkFormatException( String bookmarkString, NumberFormatException e )
-        {
-            super( Status.Transaction.InvalidBookmark, e, "Supplied bookmark [%s] does not conform to pattern %s; " +
-                    "unable to parse transaction id", bookmarkString, BOOKMARK_TX_PREFIX );
-        }
-
-        BookmarkFormatException( Object bookmarkObject )
-        {
-            super( Status.Transaction.InvalidBookmark, "Supplied bookmark [%s] does not conform to pattern %s",
-                    bookmarkObject, BOOKMARK_TX_PREFIX );
-        }
     }
 }

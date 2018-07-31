@@ -29,14 +29,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -52,7 +55,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 
@@ -78,8 +80,10 @@ import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 @RunWith( Parameterized.class )
 public class BoltV3TransportIT
@@ -386,7 +390,7 @@ public class BoltV3TransportIT
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
-                        new RunMessage( "RETURN {p}", ValueUtils.asMapValue( params ) ),
+                new RunMessage( "RETURN {p}", asMapValue( params ) ),
                         PullAllMessage.INSTANCE ) );
 
         // Then
@@ -428,7 +432,7 @@ public class BoltV3TransportIT
         negotiateBoltV3();
         Map<String,Object> txMetadata = map( "who-is-your-boss", "Molly-mostly-white" );
         Map<String,Object> msgMetadata = map( "tx_metadata", txMetadata );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        MapValue meta = asMapValue( msgMetadata );
 
         connection.send( util.chunk(
                 new BeginMessage( meta ),
@@ -453,13 +457,109 @@ public class BoltV3TransportIT
         connection.send( util.chunk( ROLLBACK_MESSAGE ) );
     }
 
+    @Test
+    public void shouldSendFailureMessageForBeginWithInvalidBookmark() throws Exception
+    {
+        negotiateBoltV3();
+        String bookmarkString = "Not a good bookmark for BEGIN";
+        Map<String,Object> metadata = map( "bookmarks", singletonList( bookmarkString ) );
+
+        connection.send( util.chunk( 32, beginMessage( metadata ) ) );
+
+        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Transaction.InvalidBookmark, bookmarkString ) ) );
+    }
+
+    @Test
+    public void shouldSendFailureMessageForBeginWithInvalidTransactionTimeout() throws Exception
+    {
+        negotiateBoltV3();
+        String txTimeout = "Tx timeout can't be a string for BEGIN";
+        Map<String,Object> metadata = map( "tx_timeout", txTimeout );
+
+        connection.send( util.chunk( 32, beginMessage( metadata ) ) );
+
+        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
+    }
+
+    @Test
+    public void shouldSendFailureMessageForBeginWithInvalidTransactionMetadata() throws Exception
+    {
+        negotiateBoltV3();
+        String txMetadata = "Tx metadata can't be a string for BEGIN";
+        Map<String,Object> metadata = map( "tx_metadata", txMetadata );
+
+        connection.send( util.chunk( 32, beginMessage( metadata ) ) );
+
+        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
+    }
+
+    @Test
+    public void shouldSendFailureMessageForRunWithInvalidBookmark() throws Exception
+    {
+        negotiateBoltV3();
+        String bookmarkString = "Not a good bookmark for RUN";
+        Map<String,Object> metadata = map( "bookmarks", singletonList( bookmarkString ) );
+
+        connection.send( util.chunk( 32, runMessage( metadata ) ) );
+
+        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Transaction.InvalidBookmark, bookmarkString ) ) );
+    }
+
+    @Test
+    public void shouldSendFailureMessageForRunWithInvalidTransactionTimeout() throws Exception
+    {
+        negotiateBoltV3();
+        String txTimeout = "Tx timeout can't be a string for RUN";
+        Map<String,Object> metadata = map( "tx_timeout", txTimeout );
+
+        connection.send( util.chunk( 32, runMessage( metadata ) ) );
+
+        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
+    }
+
+    @Test
+    public void shouldSendFailureMessageForRunWithInvalidTransactionMetadata() throws Exception
+    {
+        negotiateBoltV3();
+        String txMetadata = "Tx metadata can't be a string for RUN";
+        Map<String,Object> metadata = map( "tx_metadata", txMetadata );
+
+        connection.send( util.chunk( 32, runMessage( metadata ) ) );
+
+        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
+    }
+
     private void negotiateBoltV3() throws Exception
     {
         connection.connect( address )
                 .send( util.acceptedVersions( 3, 0, 0, 0 ) )
-                .send( util.chunk( new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) ) ) );
+                .send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+    }
+
+    private byte[] beginMessage( Map<String,Object> metadata ) throws IOException
+    {
+        PackedOutputArray out = new PackedOutputArray();
+        Neo4jPack.Packer packer = util.getNeo4jPack().newPacker( out );
+
+        packer.packStructHeader( 1, BeginMessage.SIGNATURE );
+        packer.pack( asMapValue( metadata ) );
+
+        return out.bytes();
+    }
+
+    private byte[] runMessage( Map<String,Object> metadata ) throws IOException
+    {
+        PackedOutputArray out = new PackedOutputArray();
+        Neo4jPack.Packer packer = util.getNeo4jPack().newPacker( out );
+
+        packer.packStructHeader( 3, RunMessage.SIGNATURE );
+        packer.pack( "RETURN 1" );
+        packer.pack( EMPTY_MAP );
+        packer.pack( asMapValue( metadata ) );
+
+        return out.bytes();
     }
 }
