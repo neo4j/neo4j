@@ -68,7 +68,7 @@ public class HumanUnderstandableExecutionMonitorIT
     {
         // given
         CapturingMonitor progress = new CapturingMonitor();
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( System.out, progress, NO_EXTERNAL_MONITOR );
+        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress, NO_EXTERNAL_MONITOR );
         IdType idType = INTEGER;
         Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, Collector.EMPTY, random.seed(),
                 0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),

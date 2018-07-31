@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 
@@ -124,7 +125,7 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
         factories.put( "OFF_HEAP", OFF_HEAP );
         factories.put( "AUTO_WITHOUT_PAGECACHE", AUTO_WITHOUT_PAGECACHE );
         factories.put( "CHUNKED_FIXED_SIZE", CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", auto( pageCache, dir, true ) );
+        factories.put( "autoWithPageCacheFallback", auto( pageCache, dir, true, NO_MONITOR ) );
         factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, dir ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {

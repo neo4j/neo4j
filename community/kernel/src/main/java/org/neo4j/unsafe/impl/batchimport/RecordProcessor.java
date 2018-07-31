@@ -19,6 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -26,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  *
  * @param <T>
  */
-public interface RecordProcessor<T extends AbstractBaseRecord>
+public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoCloseable
 {
     /**
      * Processes an item.
@@ -36,6 +40,9 @@ public interface RecordProcessor<T extends AbstractBaseRecord>
     boolean process( T item );
 
     void done();
+
+    @Override
+    void close();
 
     class Multiple<T extends AbstractBaseRecord> implements RecordProcessor<T>
     {
@@ -64,6 +71,19 @@ public interface RecordProcessor<T extends AbstractBaseRecord>
             for ( RecordProcessor<T> processor : processors )
             {
                 processor.done();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                IOUtils.closeAll( processors );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
             }
         }
     }

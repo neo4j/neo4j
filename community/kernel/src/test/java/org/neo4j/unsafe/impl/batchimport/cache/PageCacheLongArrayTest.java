@@ -65,7 +65,7 @@ public class PageCacheLongArrayTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File directory = dir.directory();
-        NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, directory, false );
+        NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, directory, false, NumberArrayFactory.NO_MONITOR );
         try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0 ) )
         {
             verifyBehaviour( array );

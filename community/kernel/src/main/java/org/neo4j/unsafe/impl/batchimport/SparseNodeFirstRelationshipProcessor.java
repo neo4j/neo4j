@@ -52,4 +52,9 @@ public class SparseNodeFirstRelationshipProcessor implements RecordProcessor<Nod
     public void done()
     {   // Nothing to do here
     }
+
+    @Override
+    public void close()
+    {   // Nothing to do here
+    }
 }

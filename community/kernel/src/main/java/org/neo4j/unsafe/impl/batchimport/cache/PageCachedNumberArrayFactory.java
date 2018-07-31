@@ -39,7 +39,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
     private final PageCache pageCache;
     private final File storeDir;
 
-    PageCachedNumberArrayFactory( PageCache pageCache, File storeDir )
+    public PageCachedNumberArrayFactory( PageCache pageCache, File storeDir )
     {
         Objects.requireNonNull( pageCache );
         this.pageCache = pageCache;

@@ -52,6 +52,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.cache.PageCacheArrayFactoryMonitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.CachedInput;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -196,7 +197,8 @@ public class ImportLogic implements Closeable
         startTime = currentTimeMillis();
         inputCache = new InputCache( fileSystem, storeDir, recordFormats, toIntExact( mebiBytes( 1 ) ) );
         this.input = CachedInput.cacheAsNecessary( input, inputCache );
-        numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap() );
+        PageCacheArrayFactoryMonitor numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
+        numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
         badCollector = input.badCollector();
         // Some temporary caches and indexes in the import
         idMapper = input.idMapper( numberArrayFactory );
@@ -209,7 +211,7 @@ public class ImportLogic implements Closeable
                 nodeRelationshipCache.memoryEstimation( inputEstimates.numberOfNodes() ),
                 idMapper.memoryEstimation( inputEstimates.numberOfNodes() ) );
 
-        dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache );
+        dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache, numberArrayFactoryMonitor );
 
         if ( neoStore.determineDoubleRelationshipRecordUnits( inputEstimates ) )
         {

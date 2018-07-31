@@ -79,4 +79,9 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
             counts.incrementNodeCount( i == anyLabel ? StatementConstants.ANY_LABEL : i, labelCounts[i] );
         }
     }
+
+    @Override
+    public void close()
+    {
+    }
 }
