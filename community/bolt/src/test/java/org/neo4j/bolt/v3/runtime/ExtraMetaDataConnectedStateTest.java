@@ -82,7 +82,6 @@ class ExtraMetaDataConnectedStateTest
         // Then
         assertEquals( readyState, newState );
         verify( connectionStateMock ).onMetadata( "server", stringValue( "42.42.42" ) );
-        verify( connectionStateMock ).onMetadata( "routing_table", stringValue( "dbms.cluster.routing.getRoutingTable" ) );
         verify( connectionStateMock ).onMetadata( eq( "connection_id" ), any( StringValue.class ) );
     }
 }

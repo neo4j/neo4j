@@ -36,8 +36,6 @@ import org.neo4j.values.storable.Values;
  */
 public class ExtraMetaDataConnectedState extends ConnectedState
 {
-    private static final String ROUTING_TABLE_VALUE = "dbms.cluster.routing.getRoutingTable";
-    private static final String ROUTING_TABLE_KEY = "routing_table";
     private static final String CONNECTION_ID_KEY = "connection_id";
 
     @Override
@@ -46,7 +44,6 @@ public class ExtraMetaDataConnectedState extends ConnectedState
         if ( message instanceof HelloMessage )
         {
             BoltStateMachineState processResult = super.process( message, context );
-            context.connectionState().onMetadata( ROUTING_TABLE_KEY, Values.stringValue( ROUTING_TABLE_VALUE ) );
             context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.stringValue( context.connectionId() ) );
             return processResult;
         }

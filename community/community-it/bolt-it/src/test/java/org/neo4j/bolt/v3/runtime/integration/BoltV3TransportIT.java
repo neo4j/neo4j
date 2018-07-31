@@ -51,7 +51,6 @@ import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -127,11 +126,10 @@ public class BoltV3TransportIT
     public void shouldNegotiateProtocolV3() throws Exception
     {
         connection.connect( address ).send( util.acceptedVersions( 3, 0, 0, 0 ) ).send(
-                util.chunk( new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) ) ) );
+                util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
-        Matcher<Map<? extends String,?>> entryRoutingTableMatcher = hasEntry( is( "routing_table" ), equalTo( "dbms.cluster.routing.getRoutingTable" ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess( allOf( hasKey( "server" ), hasKey( "connection_id" ), entryRoutingTableMatcher ) ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess( allOf( hasKey( "server" ), hasKey( "connection_id" ) ) ) ) );
     }
 
     @Test
@@ -139,7 +137,7 @@ public class BoltV3TransportIT
     {
         connection.connect( address )
                 .send( util.acceptedVersions( 3, 2, 1, 0 ) )
-                .send( util.chunk( new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) ) ) );
+                .send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
     }
