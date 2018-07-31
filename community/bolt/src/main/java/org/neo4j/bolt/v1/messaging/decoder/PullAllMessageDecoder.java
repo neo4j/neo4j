@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging.decoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -31,12 +30,10 @@ import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 public class PullAllMessageDecoder implements RequestMessageDecoder
 {
     private final BoltResponseHandler responseHandler;
-    private final BoltMessageLogger messageLogger;
 
-    public PullAllMessageDecoder( BoltResponseHandler responseHandler, BoltMessageLogger messageLogger )
+    public PullAllMessageDecoder( BoltResponseHandler responseHandler )
     {
         this.responseHandler = responseHandler;
-        this.messageLogger = messageLogger;
     }
 
     @Override
@@ -54,7 +51,6 @@ public class PullAllMessageDecoder implements RequestMessageDecoder
     @Override
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
-        messageLogger.logPullAll();
         return PullAllMessage.INSTANCE;
     }
 }

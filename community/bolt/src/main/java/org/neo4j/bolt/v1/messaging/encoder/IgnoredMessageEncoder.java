@@ -21,24 +21,19 @@ package org.neo4j.bolt.v1.messaging.encoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
 import org.neo4j.bolt.v1.messaging.response.IgnoredMessage;
 
 public class IgnoredMessageEncoder implements ResponseMessageEncoder<IgnoredMessage>
 {
-    private final BoltMessageLogger messageLogger;
-
-    public IgnoredMessageEncoder( BoltMessageLogger messageLogger )
+    public IgnoredMessageEncoder()
     {
-        this.messageLogger = messageLogger;
     }
 
     @Override
     public void encode( Neo4jPack.Packer packer, IgnoredMessage message ) throws IOException
     {
         packer.packStructHeader( 0, message.signature() );
-        messageLogger.logIgnored();
     }
 }

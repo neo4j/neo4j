@@ -21,19 +21,19 @@ package org.neo4j.bolt.v1.messaging.encoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
 import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.messaging.response.FatalFailureMessage;
+import org.neo4j.logging.Log;
 
 public class FailureMessageEncoder implements ResponseMessageEncoder<FailureMessage>
 {
-    private BoltMessageLogger messageLogger;
+    private final Log log;
 
-    public FailureMessageEncoder( BoltMessageLogger messageLogger )
+    public FailureMessageEncoder( Log log )
     {
-        this.messageLogger = messageLogger;
+        this.log = log;
     }
 
     @Override
@@ -41,7 +41,7 @@ public class FailureMessageEncoder implements ResponseMessageEncoder<FailureMess
     {
         if ( message instanceof FatalFailureMessage )
         {
-            messageLogger.serverError( "FATAL", message.status() );
+            log.debug( "Encoding a fatal failure message to send. Message: %s", message );
         }
         encodeFailure( message, packer );
     }
@@ -56,6 +56,5 @@ public class FailureMessageEncoder implements ResponseMessageEncoder<FailureMess
 
         packer.pack( "message" );
         packer.pack( message.message() );
-        messageLogger.logFailure( message.status() );
     }
 }

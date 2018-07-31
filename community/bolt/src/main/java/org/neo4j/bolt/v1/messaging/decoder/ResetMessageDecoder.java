@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging.decoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -33,13 +32,11 @@ public class ResetMessageDecoder implements RequestMessageDecoder
 {
     private final BoltConnection connection;
     private final BoltResponseHandler responseHandler;
-    private final BoltMessageLogger messageLogger;
 
-    public ResetMessageDecoder( BoltConnection connection, BoltResponseHandler responseHandler, BoltMessageLogger messageLogger )
+    public ResetMessageDecoder( BoltConnection connection, BoltResponseHandler responseHandler )
     {
         this.connection = connection;
         this.responseHandler = responseHandler;
-        this.messageLogger = messageLogger;
     }
 
     @Override
@@ -57,8 +54,6 @@ public class ResetMessageDecoder implements RequestMessageDecoder
     @Override
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
-        messageLogger.clientEvent( "INTERRUPT" );
-        messageLogger.logReset();
         connection.interrupt();
         return ResetMessage.INSTANCE;
     }

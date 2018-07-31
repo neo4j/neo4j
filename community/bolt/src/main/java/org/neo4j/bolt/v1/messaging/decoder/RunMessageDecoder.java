@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging.decoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -32,12 +31,10 @@ import org.neo4j.values.virtual.MapValue;
 public class RunMessageDecoder implements RequestMessageDecoder
 {
     private final BoltResponseHandler responseHandler;
-    private final BoltMessageLogger messageLogger;
 
-    public RunMessageDecoder( BoltResponseHandler responseHandler, BoltMessageLogger messageLogger )
+    public RunMessageDecoder( BoltResponseHandler responseHandler )
     {
         this.responseHandler = responseHandler;
-        this.messageLogger = messageLogger;
     }
 
     @Override
@@ -57,7 +54,6 @@ public class RunMessageDecoder implements RequestMessageDecoder
     {
         String statement = unpacker.unpackString();
         MapValue params = unpacker.unpackMap();
-        messageLogger.logRun();
         return new RunMessage( statement, params );
     }
 }

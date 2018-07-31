@@ -940,14 +940,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> default_advertised_address =
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
 
-    @Internal
-    public static final Setting<Boolean> bolt_logging_enabled = setting( "unsupported.dbms.logs.bolt.enabled",
-            BOOLEAN, FALSE );
-
-    @Internal
-    public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
-            GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
-
     @Description( "Whether to apply network level outbound network buffer based throttling" )
     @Internal
     public static final Setting<Boolean> bolt_outbound_buffer_throttle = setting( "unsupported.dbms.bolt.outbound_buffer_throttle", BOOLEAN, TRUE );

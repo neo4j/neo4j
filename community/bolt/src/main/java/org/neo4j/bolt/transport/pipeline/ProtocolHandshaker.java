@@ -24,13 +24,14 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.util.List;
+import java.util.ArrayList;
+
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static java.lang.String.format;
 
 public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 {
@@ -124,12 +125,6 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
-        // log insecure handshake to the bolt message log
-        if ( cause instanceof SecurityException )
-        {
-            boltChannel.log().serverError( "HANDSHAKE", "Insecure handshake" );
-        }
-
         log.error( "Fatal error occurred during protocol handshaking: " + ctx.channel(), cause );
         ctx.close();
     }
@@ -152,8 +147,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     {
         if ( handshakeBuffer.getInt( 0 ) != BOLT_MAGIC_PREAMBLE )
         {
-            boltChannel.log().clientError( "HANDSHAKE", "Invalid Bolt signature", () -> format( "0x%08X", handshakeBuffer.getInt( 0 ) ) );
-
+            log.debug( "Invalid Bolt handshake signature. Expected 0x%08X, but got: 0x%08X", BOLT_MAGIC_PREAMBLE, handshakeBuffer.getInt( 0 ) );
             return false;
         }
 
@@ -162,8 +156,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 
     private boolean performHandshake()
     {
-        boltChannel.log().clientEvent( "HANDSHAKE", () -> format( "0x%08X", BOLT_MAGIC_PREAMBLE ) );
-
+        List<Long> suggestions = new ArrayList<>();
         for ( int i = 0; i < 4; i++ )
         {
             final long suggestion = handshakeBuffer.getInt( (i + 1) * Integer.BYTES ) & 0xFFFFFFFFL;
@@ -171,15 +164,14 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
             protocol = boltProtocolFactory.create( suggestion, boltChannel );
             if ( protocol != null )
             {
-                boltChannel.log().serverEvent( "HANDSHAKE", () -> format( "0x%02X", suggestion ) );
-
                 break;
             }
+            suggestions.add( suggestion );
         }
 
         if ( protocol == null )
         {
-            boltChannel.log().serverError( "HANDSHAKE", "No applicable protocol" );
+            log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.", suggestions );
         }
 
         return protocol != null;

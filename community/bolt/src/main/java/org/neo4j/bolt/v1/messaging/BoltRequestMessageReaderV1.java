@@ -22,13 +22,12 @@ package org.neo4j.bolt.v1.messaging;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.messaging.decoder.AckFailureMessageDecoder;
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.decoder.DiscardAllMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.InitMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.PullAllMessageDecoder;
@@ -39,17 +38,14 @@ import org.neo4j.logging.Log;
 
 public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
 {
-    public BoltRequestMessageReaderV1( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
-            BoltMessageLogger messageLogger, LogService logService )
+    public BoltRequestMessageReaderV1( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, LogService logService )
     {
-        super( connection,
-                newSimpleResponseHandler( connection, responseMessageWriter, logService ),
-                buildDecoders( connection, responseMessageWriter, messageLogger, logService ),
-                messageLogger );
+        super( connection, newSimpleResponseHandler( connection, responseMessageWriter, logService ),
+                buildDecoders( connection, responseMessageWriter, logService ) );
     }
 
     private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
-            BoltMessageLogger messageLogger, LogService logService )
+            LogService logService )
     {
         BoltResponseHandler initHandler = newSimpleResponseHandler( connection, responseMessageWriter, logService );
         BoltResponseHandler runHandler = newSimpleResponseHandler( connection, responseMessageWriter, logService );
@@ -57,12 +53,12 @@ public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
         BoltResponseHandler defaultHandler = newSimpleResponseHandler( connection, responseMessageWriter, logService );
 
         return Arrays.asList(
-                new InitMessageDecoder( initHandler, messageLogger ),
-                new AckFailureMessageDecoder( defaultHandler, messageLogger ),
-                new ResetMessageDecoder( connection, defaultHandler, messageLogger ),
-                new RunMessageDecoder( runHandler, messageLogger ),
-                new DiscardAllMessageDecoder( resultHandler, messageLogger ),
-                new PullAllMessageDecoder( resultHandler, messageLogger )
+                new InitMessageDecoder( initHandler ),
+                new AckFailureMessageDecoder( defaultHandler ),
+                new ResetMessageDecoder( connection, defaultHandler ),
+                new RunMessageDecoder( runHandler ),
+                new DiscardAllMessageDecoder( resultHandler ),
+                new PullAllMessageDecoder( resultHandler )
         );
     }
 

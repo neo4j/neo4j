@@ -32,7 +32,6 @@ import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
@@ -198,7 +197,6 @@ public class FragmentedMessageDeliveryTest
     {
         BoltChannel boltChannel = mock( BoltChannel.class );
         when( boltChannel.rawChannel() ).thenReturn( rawChannel );
-        when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
         return boltChannel;
     }
 }

@@ -24,7 +24,6 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.messaging.response.IgnoredMessage;
@@ -192,6 +191,6 @@ public class BoltResponseMessageWriterV1Test
 
     private static BoltResponseMessageWriterV1 newWriter( PackOutput output, Neo4jPack.Packer packer )
     {
-        return new BoltResponseMessageWriterV1( out -> packer, output, NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
+        return new BoltResponseMessageWriterV1( out -> packer, output, NullLogService.getInstance() );
     }
 }

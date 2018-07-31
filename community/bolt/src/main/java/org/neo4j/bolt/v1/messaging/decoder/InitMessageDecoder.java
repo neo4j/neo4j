@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -34,12 +33,10 @@ import org.neo4j.values.virtual.MapValue;
 public class InitMessageDecoder implements RequestMessageDecoder
 {
     private final BoltResponseHandler responseHandler;
-    private final BoltMessageLogger messageLogger;
 
-    public InitMessageDecoder( BoltResponseHandler responseHandler, BoltMessageLogger messageLogger )
+    public InitMessageDecoder( BoltResponseHandler responseHandler )
     {
         this.responseHandler = responseHandler;
-        this.messageLogger = messageLogger;
     }
 
     @Override
@@ -59,7 +56,6 @@ public class InitMessageDecoder implements RequestMessageDecoder
     {
         String userAgent = unpacker.unpackString();
         Map<String,Object> authToken = readAuthToken( unpacker );
-        messageLogger.logInit( userAgent );
         return new InitMessage( userAgent, authToken );
     }
 

@@ -25,7 +25,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.LogProvider;
@@ -40,13 +39,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private final LogProvider logging;
-    private final BoltMessageLogging boltLogging;
     private final TransportThrottleGroup throttleGroup;
     private final BoltProtocolFactory boltProtocolFactory;
     private final NetworkConnectionTracker connectionTracker;
 
     public SocketTransport( String connector, ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
-            LogProvider logging, BoltMessageLogging boltLogging, TransportThrottleGroup throttleGroup,
+            LogProvider logging, TransportThrottleGroup throttleGroup,
             BoltProtocolFactory boltProtocolFactory, NetworkConnectionTracker connectionTracker )
     {
         this.connector = connector;
@@ -54,7 +52,6 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.logging = logging;
-        this.boltLogging = boltLogging;
         this.throttleGroup = throttleGroup;
         this.boltProtocolFactory = boltProtocolFactory;
         this.connectionTracker = connectionTracker;
@@ -96,6 +93,6 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
 
     private BoltChannel newBoltChannel( Channel ch )
     {
-        return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch, boltLogging.newLogger( ch ) );
+        return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch );
     }
 }

@@ -30,14 +30,13 @@ import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
-import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -81,6 +80,6 @@ public class BoltProtocolV1Test
 
     private static BoltChannel newBoltChannel( Channel rawChannel )
     {
-        return new BoltChannel( "bolt-1", "bolt", rawChannel, NullBoltMessageLogger.getInstance() );
+        return new BoltChannel( "bolt-1", "bolt", rawChannel );
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging.decoder;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
@@ -33,8 +32,7 @@ import static org.mockito.Mockito.mock;
 class DiscardAllMessageDecoderTest
 {
     private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final BoltMessageLogger messageLogger = mock( BoltMessageLogger.class );
-    private final RequestMessageDecoder decoder = new DiscardAllMessageDecoder( responseHandler, messageLogger );
+    private final RequestMessageDecoder decoder = new DiscardAllMessageDecoder( responseHandler );
 
     @Test
     void shouldReturnCorrectSignature()

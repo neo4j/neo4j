@@ -91,7 +91,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
     {
-        BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging, channel.log() );
-        return new BoltRequestMessageReaderV1( connection, responseWriter, channel.log(), logging );
+        BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging );
+        return new BoltRequestMessageReaderV1( connection, responseWriter, logging );
     }
 }

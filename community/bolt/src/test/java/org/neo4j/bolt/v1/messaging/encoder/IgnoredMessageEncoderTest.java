@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging.encoder;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.response.IgnoredMessage;
 
@@ -38,7 +37,7 @@ class IgnoredMessageEncoderTest
     {
         // Given
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        IgnoredMessageEncoder encoder = new IgnoredMessageEncoder( mock( BoltMessageLogger.class ) );
+        IgnoredMessageEncoder encoder = new IgnoredMessageEncoder();
 
         // When
         encoder.encode( packer, IGNORED_MESSAGE );

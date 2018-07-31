@@ -31,8 +31,6 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
-import org.neo4j.bolt.logging.BoltMessageLogger;
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -50,7 +48,6 @@ public class ProtocolHandshakerTest
 {
     private final Channel channel = mock( Channel.class );
     private final LogProvider logProvider = NullLogProvider.getInstance();
-    private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -271,7 +268,7 @@ public class ProtocolHandshakerTest
 
     private BoltChannel newBoltChannel()
     {
-        return new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
+        return new BoltChannel( "bolt-1", "bolt", channel );
     }
 
     private static BoltProtocol newBoltProtocol( long version )

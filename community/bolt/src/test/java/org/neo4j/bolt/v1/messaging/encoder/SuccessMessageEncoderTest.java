@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging.encoder;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
 import org.neo4j.values.virtual.MapValue;
@@ -38,7 +37,7 @@ class SuccessMessageEncoderTest
     {
         // Given
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        SuccessMessageEncoder encoder = new SuccessMessageEncoder( mock( BoltMessageLogger.class ) );
+        SuccessMessageEncoder encoder = new SuccessMessageEncoder();
 
         // When
         MapValue meta = mock( MapValue.class );

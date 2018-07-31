@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging.decoder;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -38,8 +37,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 class InitMessageDecoderTest
 {
     private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final BoltMessageLogger messageLogger = mock( BoltMessageLogger.class );
-    private final RequestMessageDecoder decoder = new InitMessageDecoder( responseHandler, messageLogger );
+    private final RequestMessageDecoder decoder = new InitMessageDecoder( responseHandler );
 
     @Test
     void shouldReturnCorrectSignature()

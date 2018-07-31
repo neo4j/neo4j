@@ -23,7 +23,6 @@ import io.netty.channel.Channel;
 
 import java.net.SocketAddress;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 
 /**
@@ -35,28 +34,20 @@ public class BoltChannel implements AutoCloseable, TrackedNetworkConnection, Bol
     private final long connectTime;
     private final String connector;
     private final Channel rawChannel;
-    private final BoltMessageLogger messageLogger;
 
     private volatile String user;
 
-    public BoltChannel( String id, String connector, Channel rawChannel, BoltMessageLogger messageLogger )
+    public BoltChannel( String id, String connector, Channel rawChannel )
     {
         this.id = id;
         this.connectTime = System.currentTimeMillis();
         this.connector = connector;
         this.rawChannel = rawChannel;
-        this.messageLogger = messageLogger;
-        messageLogger.serverEvent( "OPEN" );
     }
 
     public Channel rawChannel()
     {
         return rawChannel;
-    }
-
-    public BoltMessageLogger log()
-    {
-        return messageLogger;
     }
 
     @Override
@@ -107,7 +98,6 @@ public class BoltChannel implements AutoCloseable, TrackedNetworkConnection, Bol
         Channel rawChannel = rawChannel();
         if ( rawChannel.isOpen() )
         {
-            messageLogger.serverEvent( "CLOSE" );
             rawChannel.close().syncUninterruptibly();
         }
     }

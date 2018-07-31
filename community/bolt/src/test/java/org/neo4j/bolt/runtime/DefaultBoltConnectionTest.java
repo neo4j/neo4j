@@ -33,8 +33,6 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltServer;
-import org.neo4j.bolt.logging.BoltMessageLogger;
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.bolt.v1.packstream.PackOutput;
@@ -70,7 +68,6 @@ public class DefaultBoltConnectionTest
     private final BoltConnectionLifetimeListener connectionListener = mock( BoltConnectionLifetimeListener.class );
     private final BoltConnectionQueueMonitor queueMonitor = mock( BoltConnectionQueueMonitor.class );
     private final EmbeddedChannel channel = new EmbeddedChannel();
-    private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
 
     private BoltChannel boltChannel;
     private BoltStateMachine stateMachine;
@@ -81,7 +78,7 @@ public class DefaultBoltConnectionTest
     @Before
     public void setup()
     {
-        boltChannel = new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
+        boltChannel = new BoltChannel( "bolt-1", "bolt", channel );
         stateMachine = mock( BoltStateMachine.class );
         when( stateMachine.shouldStickOnThread() ).thenReturn( false );
         when( stateMachine.hasOpenStatement() ).thenReturn( false );

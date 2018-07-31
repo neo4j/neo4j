@@ -21,18 +21,14 @@ package org.neo4j.bolt.v1.messaging.encoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
 import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
 
 public class SuccessMessageEncoder implements ResponseMessageEncoder<SuccessMessage>
 {
-    private final BoltMessageLogger messageLogger;
-
-    public SuccessMessageEncoder( BoltMessageLogger messageLogger )
+    public SuccessMessageEncoder()
     {
-        this.messageLogger = messageLogger;
     }
 
     @Override
@@ -40,6 +36,5 @@ public class SuccessMessageEncoder implements ResponseMessageEncoder<SuccessMess
     {
         packer.packStructHeader( 1, message.signature() );
         packer.pack( message.meta() );
-        messageLogger.logSuccess( message::meta );
     }
 }

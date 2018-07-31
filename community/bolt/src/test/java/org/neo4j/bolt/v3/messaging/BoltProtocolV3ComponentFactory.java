@@ -21,7 +21,6 @@ package org.neo4j.bolt.v3.messaging;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.Neo4jPack;
@@ -56,8 +55,8 @@ public class BoltProtocolV3ComponentFactory
 
     public static BoltRequestMessageReader requestMessageReader( BoltStateMachine stateMachine )
     {
-        return new BoltRequestMessageReaderV3( new SynchronousBoltConnection( stateMachine ),
-                mock( BoltResponseMessageWriter.class ), NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
+        return new BoltRequestMessageReaderV3( new SynchronousBoltConnection( stateMachine ), mock( BoltResponseMessageWriter.class ),
+                NullLogService.getInstance() );
     }
 
     public static byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException

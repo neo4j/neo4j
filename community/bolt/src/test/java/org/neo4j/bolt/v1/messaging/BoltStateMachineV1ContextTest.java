@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
@@ -61,7 +60,7 @@ class BoltStateMachineV1ContextTest
 
     private static BoltStateMachineV1Context newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
     {
-        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ), NullBoltMessageLogger.getInstance() );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ) );
         return new BoltStateMachineV1Context( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
     }
 }

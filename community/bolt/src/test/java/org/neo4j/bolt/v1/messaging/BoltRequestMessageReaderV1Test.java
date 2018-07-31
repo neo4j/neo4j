@@ -21,13 +21,12 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
@@ -102,7 +101,7 @@ public class BoltRequestMessageReaderV1Test
 
     private static BoltRequestMessageReader newReader( BoltStateMachine stateMachine )
     {
-        return new BoltRequestMessageReaderV1( new SynchronousBoltConnection( stateMachine ),
-                mock( BoltResponseMessageWriter.class ), NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
+        return new BoltRequestMessageReaderV1( new SynchronousBoltConnection( stateMachine ), mock( BoltResponseMessageWriter.class ),
+                NullLogService.getInstance() );
     }
 }

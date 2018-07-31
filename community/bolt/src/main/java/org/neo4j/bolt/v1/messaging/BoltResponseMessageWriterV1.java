@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.Neo4jPack;
@@ -56,22 +55,21 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
     private final Log log;
     private final Map<Byte,ResponseMessageEncoder<ResponseMessage>> encoders;
 
-    public BoltResponseMessageWriterV1( PackProvider packerProvider, PackOutput output, LogService logService,
-            BoltMessageLogger messageLogger )
+    public BoltResponseMessageWriterV1( PackProvider packerProvider, PackOutput output, LogService logService )
     {
         this.output = output;
         this.packer = packerProvider.newPacker( output );
         this.log = logService.getInternalLog( getClass() );
-        this.encoders = registerEncoders( messageLogger );
+        this.encoders = registerEncoders();
     }
 
-    private Map<Byte,ResponseMessageEncoder<ResponseMessage>> registerEncoders( BoltMessageLogger messageLogger )
+    private Map<Byte,ResponseMessageEncoder<ResponseMessage>> registerEncoders()
     {
         Map<Byte,ResponseMessageEncoder<?>> encoders = new HashMap<>();
-        encoders.put( SuccessMessage.SIGNATURE, new SuccessMessageEncoder( messageLogger ) );
+        encoders.put( SuccessMessage.SIGNATURE, new SuccessMessageEncoder() );
         encoders.put( RecordMessage.SIGNATURE, new RecordMessageEncoder() );
-        encoders.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder( messageLogger ) );
-        encoders.put( FailureMessage.SIGNATURE, new FailureMessageEncoder( messageLogger ) );
+        encoders.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder() );
+        encoders.put( FailureMessage.SIGNATURE, new FailureMessageEncoder( log ) );
         return (Map)encoders;
     }
 

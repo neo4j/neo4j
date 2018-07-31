@@ -22,7 +22,6 @@ package org.neo4j.bolt.v3.messaging;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -45,16 +44,14 @@ import org.neo4j.logging.Log;
 public class BoltRequestMessageReaderV3 extends BoltRequestMessageReader
 {
     public BoltRequestMessageReaderV3( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
-            BoltMessageLogger messageLogger, LogService logService )
+            LogService logService )
     {
-        super( connection,
-                newSimpleResponseHandler( responseMessageWriter, connection, logService ),
-                buildDecoders( connection, responseMessageWriter, messageLogger, logService ),
-                messageLogger );
+        super( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
+                buildDecoders( connection, responseMessageWriter, logService ) );
     }
 
     private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
-            BoltMessageLogger messageLogger, LogService logService )
+            LogService logService )
     {
         BoltResponseHandler resultHandler = new ResultHandler( responseMessageWriter, connection, internalLog( logService ) );
         BoltResponseHandler defaultHandler = newSimpleResponseHandler( responseMessageWriter, connection, logService );
@@ -62,12 +59,12 @@ public class BoltRequestMessageReaderV3 extends BoltRequestMessageReader
         return Arrays.asList(
                 new HelloMessageDecoder( defaultHandler ),
                 new RunMessageDecoder( defaultHandler ),
-                new DiscardAllMessageDecoder( resultHandler, messageLogger ),
-                new PullAllMessageDecoder( resultHandler, messageLogger ),
+                new DiscardAllMessageDecoder( resultHandler ),
+                new PullAllMessageDecoder( resultHandler ),
                 new BeginMessageDecoder( defaultHandler ),
                 new CommitMessageDecoder( resultHandler ),
                 new RollbackMessageDecoder( resultHandler ),
-                new ResetMessageDecoder( connection, defaultHandler, messageLogger ),
+                new ResetMessageDecoder( connection, defaultHandler ),
                 new GoodbyeMessageDecoder( connection, defaultHandler )
         );
     }

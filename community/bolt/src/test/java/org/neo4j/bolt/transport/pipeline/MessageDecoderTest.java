@@ -37,16 +37,15 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReaderV1;
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
@@ -352,8 +351,7 @@ public class MessageDecoderTest
         BoltConnection connection = mock( BoltConnection.class );
         BoltResponseMessageWriter responseMessageHandler = mock( BoltResponseMessageWriter.class );
 
-        BoltRequestMessageReader requestMessageReader = new BoltRequestMessageReaderV1( connection, responseMessageHandler,
-                NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
+        BoltRequestMessageReader requestMessageReader = new BoltRequestMessageReaderV1( connection, responseMessageHandler, NullLogService.getInstance() );
 
         LogService logService = mock( LogService.class );
         Log log = mock( Log.class );
@@ -447,8 +445,7 @@ public class MessageDecoderTest
 
     private MessageDecoder newDecoder( BoltConnection connection )
     {
-        BoltRequestMessageReader reader = new BoltRequestMessageReaderV1( connection, mock( BoltResponseMessageWriter.class ),
-                NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
+        BoltRequestMessageReader reader = new BoltRequestMessageReaderV1( connection, mock( BoltResponseMessageWriter.class ), NullLogService.getInstance() );
         return new MessageDecoder( packerUnderTest::newUnpacker, reader, NullLogService.getInstance() );
     }
 

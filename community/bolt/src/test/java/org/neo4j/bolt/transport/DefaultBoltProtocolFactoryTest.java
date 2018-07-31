@@ -26,7 +26,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachine;
@@ -67,7 +66,7 @@ class DefaultBoltProtocolFactoryTest
     void shouldCreateBoltProtocol( long protocolVersion ) throws Throwable
     {
         EmbeddedChannel channel = new EmbeddedChannel();
-        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, NullBoltMessageLogger.getInstance() );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel );
 
         BoltStateMachineFactory stateMachineFactory = mock( BoltStateMachineFactory.class );
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );

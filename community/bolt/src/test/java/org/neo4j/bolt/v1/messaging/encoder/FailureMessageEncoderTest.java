@@ -21,12 +21,12 @@ package org.neo4j.bolt.v1.messaging.encoder;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.messaging.response.FatalFailureMessage;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,8 +45,8 @@ class FailureMessageEncoderTest
     {
         // Given
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        BoltMessageLogger logger = mock( BoltMessageLogger.class );
-        FailureMessageEncoder encoder = new FailureMessageEncoder( logger );
+        Log log = mock( Log.class );
+        FailureMessageEncoder encoder = new FailureMessageEncoder( log );
 
         // When
         QueryResult.Record value = mock( QueryResult.Record.class );
@@ -54,8 +54,7 @@ class FailureMessageEncoderTest
         encoder.encode( packer, new FailureMessage( Status.General.UnknownError, "I am an error message" ) );
 
         // Then
-        verify( logger, never() ).serverError( anyString(), any( Status.class ) );
-        verify( logger ).logFailure( Status.General.UnknownError );
+        verify( log, never() ).debug( anyString(), any( FailureMessage.class ) );
 
         verify( packer ).packStructHeader( anyInt(), eq( FailureMessage.SIGNATURE ) );
         verify( packer ).packMapHeader( 2 );
@@ -67,16 +66,16 @@ class FailureMessageEncoderTest
     void shouldLogErrorIfIsFatalError() throws Throwable
     {
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        BoltMessageLogger logger = mock( BoltMessageLogger.class );
-        FailureMessageEncoder encoder = new FailureMessageEncoder( logger );
+        Log log = mock( Log.class );
+        FailureMessageEncoder encoder = new FailureMessageEncoder( log );
 
         // When
         QueryResult.Record value = mock( QueryResult.Record.class );
         when( value.fields() ).thenReturn( new AnyValue[0] );
-        encoder.encode( packer, new FatalFailureMessage( Status.General.UnknownError, "I am an error message" ) );
+        FatalFailureMessage message = new FatalFailureMessage( Status.General.UnknownError, "I am an error message" );
+        encoder.encode( packer, message );
 
         // Then
-        verify( logger ).serverError( "FATAL", Status.General.UnknownError );
-        verify( logger ).logFailure( Status.General.UnknownError );
+        verify( log ).debug( "Encoding a fatal failure message to send. Message: %s", message );
     }
 }

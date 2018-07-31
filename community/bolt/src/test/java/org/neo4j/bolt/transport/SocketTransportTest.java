@@ -23,7 +23,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
@@ -84,8 +83,7 @@ class SocketTransportTest
 
     private static SocketTransport newSocketTransport( NetworkConnectionTracker connectionTracker, TransportThrottleGroup throttleGroup )
     {
-        return new SocketTransport( "bolt", new ListenSocketAddress( "localhost", 7687 ), null,
-                false, NullLogProvider.getInstance(), BoltMessageLogging.noop(), throttleGroup,
+        return new SocketTransport( "bolt", new ListenSocketAddress( "localhost", 7687 ), null, false, NullLogProvider.getInstance(), throttleGroup,
                 mock( BoltProtocolFactory.class ), connectionTracker );
     }
 }

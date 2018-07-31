@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageRecorder;
@@ -43,7 +43,6 @@ import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.messaging.response.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.response.RecordMessage;
-import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
@@ -309,8 +308,7 @@ public class MessageMatchers
     {
         RecordingByteChannel rawData = new RecordingByteChannel();
         BufferedChannelOutput output = new BufferedChannelOutput( rawData );
-        BoltResponseMessageWriterV1 writer = new BoltResponseMessageWriterV1( neo4jPack::newPacker, output,
-                NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
+        BoltResponseMessageWriterV1 writer = new BoltResponseMessageWriterV1( neo4jPack::newPacker, output, NullLogService.getInstance() );
 
         for ( ResponseMessage message : messages )
         {

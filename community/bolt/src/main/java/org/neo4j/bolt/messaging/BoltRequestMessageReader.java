@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Neo4jError;
@@ -40,15 +39,13 @@ public abstract class BoltRequestMessageReader
 {
     private final BoltConnection connection;
     private final BoltResponseHandler externalErrorResponseHandler;
-    private final BoltMessageLogger messageLogger;
     private final Map<Integer,RequestMessageDecoder> decoders;
 
     protected BoltRequestMessageReader( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler,
-            List<RequestMessageDecoder> decoders, BoltMessageLogger messageLogger )
+            List<RequestMessageDecoder> decoders )
     {
         this.connection = connection;
         this.externalErrorResponseHandler = externalErrorResponseHandler;
-        this.messageLogger = messageLogger;
         this.decoders = decoders.stream().collect( toMap( RequestMessageDecoder::signature, identity() ) );
     }
 
@@ -63,7 +60,6 @@ public abstract class BoltRequestMessageReader
             if ( e.causesFailureMessage() )
             {
                 Neo4jError error = Neo4jError.from( e );
-                messageLogger.clientEvent( "ERROR", error::message );
                 connection.enqueue( stateMachine -> stateMachine.handleExternalFailure( error, externalErrorResponseHandler ) );
             }
             else

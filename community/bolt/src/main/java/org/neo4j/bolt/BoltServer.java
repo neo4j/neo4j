@@ -25,7 +25,6 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.time.Clock;
 import java.util.Map;
 
-import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.BoltSchedulerProvider;
@@ -113,8 +112,6 @@ public class BoltServer extends LifecycleAdapter
         Log userLog = logService.getUserLog( BoltServer.class );
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
-        BoltMessageLogging boltLogging = BoltMessageLogging.create( fs, jobScheduler, config, log );
-        life.add( boltLogging );
 
         Authentication authentication = createAuthentication();
 
@@ -131,7 +128,7 @@ public class BoltServer extends LifecycleAdapter
         if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
             NettyServer server = new NettyServer( jobScheduler.threadFactory( boltNetworkIO ),
-                    createConnectors( boltProtocolFactory, throttleGroup, boltLogging, log ), connectorPortRegister, userLog );
+                    createConnectors( boltProtocolFactory, throttleGroup, log ), connectorPortRegister, userLog );
             life.add( server );
             log.info( "Bolt server loaded" );
         }
@@ -155,15 +152,15 @@ public class BoltServer extends LifecycleAdapter
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( BoltProtocolFactory boltProtocolFactory,
-            TransportThrottleGroup throttleGroup, BoltMessageLogging boltLogging, Log log )
+            TransportThrottleGroup throttleGroup, Log log )
     {
         return config.enabledBoltConnectors()
                 .stream()
-                .collect( toMap( identity(), connector -> createProtocolInitializer( connector, boltProtocolFactory, throttleGroup, boltLogging, log ) ) );
+                .collect( toMap( identity(), connector -> createProtocolInitializer( connector, boltProtocolFactory, throttleGroup, log ) ) );
     }
 
     private ProtocolInitializer createProtocolInitializer( BoltConnector connector, BoltProtocolFactory boltProtocolFactory,
-            TransportThrottleGroup throttleGroup, BoltMessageLogging boltLogging, Log log )
+            TransportThrottleGroup throttleGroup, Log log )
     {
         SslContext sslCtx;
         boolean requireEncryption;
@@ -199,7 +196,7 @@ public class BoltServer extends LifecycleAdapter
         }
 
         ListenSocketAddress listenAddress = config.get( connector.listen_address );
-        return new SocketTransport( connector.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
+        return new SocketTransport( connector.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
                 throttleGroup, boltProtocolFactory, connectionTracker );
     }
 

@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
@@ -124,7 +123,7 @@ class BoltRequestMessageReaderTest
     {
         TestBoltRequestMessageReader( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler, List<RequestMessageDecoder> decoders )
         {
-            super( connection, externalErrorResponseHandler, decoders, NullBoltMessageLogger.getInstance() );
+            super( connection, externalErrorResponseHandler, decoders );
         }
     }
 
