@@ -31,13 +31,17 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
+import org.neo4j.storageengine.api.txstate.NodeWithPropertyValues;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.values.storable.ValueTuple;
 
+import static org.eclipse.collections.impl.factory.Sets.unionAll;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
+import static org.neo4j.kernel.impl.api.state.TxStateTest.newSetWithValues;
 
 public class TxStateCompositeIndexTest
 {
@@ -59,9 +63,11 @@ public class TxStateCompositeIndexTest
     {
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1_2 );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
+        assertTrue( diffSets2.isEmpty() );
     }
 
     @Test
@@ -84,9 +90,11 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1_2 );
 
         // THEN
         assertEquals( asSet( 42L, 43L ), toSet( diffSets.getAdded() ) );
+        assertEquals( unionAll( newSetWithValues( 42L, "42value1", "42value2" ), newSetWithValues( 43L, "43value1", "43value2" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -99,7 +107,6 @@ public class TxStateCompositeIndexTest
         // WHEN
         LongDiffSets diffSets =
                 state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
-
         // THEN
         assertEquals( asSet( 43L ), toSet( diffSets.getAdded() ) );
     }
@@ -108,8 +115,8 @@ public class TxStateCompositeIndexTest
     public void shouldSeekWhenThereAreNewNumberNodes()
     {
         // GIVEN
-        modifyIndex( indexOn_1_1_2 ).addDefaultStringProperties( 42L, 43L );
-        modifyIndex( indexOn_1_2_3 ).addDefaultStringProperties( 44L );
+        modifyIndex( indexOn_1_1_2 ).addDefaultNumberEntries( 42L, 43L );
+        modifyIndex( indexOn_1_2_3 ).addDefaultNumberEntries( 44L );
 
         // WHEN
         LongDiffSets diffSets =
@@ -129,16 +136,19 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1_2 );
 
         // THEN
         assertEquals( asSet( 42L ), toSet( diffSets.getAdded() ) );
+        assertEquals( newSetWithValues( 42L, "42value1", "42value2" ), diffSets2.getAdded() );
         assertEquals( asSet( 44L ), toSet( diffSets.getRemoved() ) );
+        assertEquals( newSetWithValues( 44L, "44value1", "44value2" ), diffSets2.getRemoved() );
     }
 
     @Test
     public void shouldSeekWhenThereAreManyEntriesWithTheSameValues()
     {
-        // GIVEN
+        // GIVEN (note that 44 has the same properties as 43)
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
         state.indexDoUpdateEntry( indexOn_1_1_2.schema(), 44L, null,
                 getDefaultStringPropertyValues( 43L, indexOn_1_1_2.schema().getPropertyIds() ) );
@@ -205,7 +215,7 @@ public class TxStateCompositeIndexTest
 
         void removeDefaultStringEntries( long... nodeIds );
 
-        void addDefaultStringProperties( long... nodeIds );
+        void addDefaultNumberEntries( long... nodeIds );
     }
 
     private IndexUpdater modifyIndex( final IndexDescriptor descriptor )
@@ -225,7 +235,7 @@ public class TxStateCompositeIndexTest
             }
 
             @Override
-            public void addDefaultStringProperties( long... nodeIds )
+            public void addDefaultNumberEntries( long... nodeIds )
             {
                 Collection<Pair<Long,ValueTuple>> entries = new ArrayList<>( nodeIds.length );
                 for ( long nodeId : nodeIds )

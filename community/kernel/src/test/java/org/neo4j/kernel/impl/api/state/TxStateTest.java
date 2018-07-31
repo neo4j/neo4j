@@ -34,6 +34,7 @@ import org.junit.runners.Parameterized;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,6 +44,7 @@ import java.util.Set;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -50,12 +52,14 @@ import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
+import org.neo4j.storageengine.api.txstate.NodeWithPropertyValues;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
@@ -68,6 +72,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.eclipse.collections.impl.factory.Sets.unionAll;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -82,6 +87,7 @@ import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.values.storable.ValueGroup.TEXT;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+@SuppressWarnings( "unchecked" )
 @RunWith( Parameterized.class )
 public class TxStateTest
 {
@@ -108,36 +114,33 @@ public class TxStateTest
     @Parameters( name = "{0}" )
     public static List<CollectionsFactorySupplier> data()
     {
-        return asList(
-                new CollectionsFactorySupplier()
-                {
-                    @Override
-                    public CollectionsFactory create()
-                    {
-                        return CollectionsFactorySupplier.ON_HEAP.create();
-                    }
+        return asList( new CollectionsFactorySupplier()
+        {
+            @Override
+            public CollectionsFactory create()
+            {
+                return CollectionsFactorySupplier.ON_HEAP.create();
+            }
 
-                    @Override
-                    public String toString()
-                    {
-                        return "On heap";
-                    }
-                },
-                new CollectionsFactorySupplier()
-                {
-                    @Override
-                    public CollectionsFactory create()
-                    {
-                        return new OffHeapCollectionsFactory( BLOCK_ALLOCATOR );
-                    }
+            @Override
+            public String toString()
+            {
+                return "On heap";
+            }
+        }, new CollectionsFactorySupplier()
+        {
+            @Override
+            public CollectionsFactory create()
+            {
+                return new OffHeapCollectionsFactory( BLOCK_ALLOCATOR );
+            }
 
-                    @Override
-                    public String toString()
-                    {
-                        return "Off heap";
-                    }
-                }
-        );
+            @Override
+            public String toString()
+            {
+                return "Off heap";
+            }
+        } );
     }
 
     @AfterClass
@@ -251,8 +254,7 @@ public class TxStateTest
         state.indexDoAdd( indexOn_2_1 );
 
         // THEN
-        assertEquals( asSet( indexOn_1_1 ),
-                state.indexDiffSetsByLabel( indexOn_1_1.schema().keyId() ).getAdded() );
+        assertEquals( asSet( indexOn_1_1 ), state.indexDiffSetsByLabel( indexOn_1_1.schema().keyId() ).getAdded() );
     }
 
     @Test
@@ -274,9 +276,11 @@ public class TxStateTest
     {
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1 );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
+        assertTrue( diffSets2.isEmpty() );
     }
 
     @Test
@@ -288,9 +292,11 @@ public class TxStateTest
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1 );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "value42" ), newSetWithValues( 43L, "value43" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -307,6 +313,38 @@ public class TxStateTest
         assertEquals( newSetWith( 43L ), diffSets.getAdded() );
     }
 
+    @Test
+    public void shouldComputeIndexUpdatesForScanWhenThereAreNewNodesCreatedInTwoBatches()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 43L );
+
+        // WHEN
+        LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1 );
+
+        // THEN
+        assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "value42" ), newSetWithValues( 43L, "value43" ) ), diffSets2.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodesCreatedInTwoBatches()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 43L );
+
+        // WHEN
+        LongDiffSets diffSets = state.indexUpdatesForSeek( indexOn_1_1, ValueTuple.of( "value42" ) );
+
+        // THEN
+        assertEquals( newSetWith( 42L ), diffSets.getAdded() );
+    }
+
     //endregion
 
     //region range seek by number index update tests
@@ -319,11 +357,13 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 44L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 660 ), false, Values.of( 800 ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 660 ), false, Values.of( 800 ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 660 ), false, Values.of( 800 ), true );
 
         // THEN
         assertEquals( 0, diffSets.getAdded().size() );
+        assertEquals( 0, diffSets2.getAdded().size() );
     }
 
     @Test
@@ -334,11 +374,13 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 44L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 600 ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 600 ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 600 ), true );
 
         // THEN
         assertEquals( newSetWith( 43L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 43L, 550 ), diffSets2.getAdded() );
     }
 
     @Test
@@ -350,11 +392,12 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_1 ).withNumberProperties( singletonList( of( 43L, 550 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 600 ), true );
-
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 600 ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 600 ), true );
         // THEN
         assertEquals( newSetWith( 43L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 43L, 550 ), diffSets2.getAdded() );
     }
 
     @Test
@@ -362,16 +405,18 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 550 ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 550 ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 550 ), true );
 
         // THEN
         assertEquals( newSetWith( 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 43L, 510 ), newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ), newSetWithValues( 47L, 540 ),
+                newSetWithValues( 48L, 550 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -379,16 +424,18 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 550 ), false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 550 ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), true, Values.of( 550 ), false );
 
         // THEN
         assertEquals( newSetWith( 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 43L, 510 ), newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ), newSetWithValues( 47L, 540 ) ),
+                diffSets2.getAdded() );
     }
 
     @Test
@@ -396,16 +443,18 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), false, Values.of( 550 ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), false, Values.of( 550 ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), false, Values.of( 550 ), true );
 
         // THEN
         assertEquals( newSetWith( 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ), newSetWithValues( 47L, 540 ), newSetWithValues( 48L, 550 ) ),
+                diffSets2.getAdded() );
     }
 
     @Test
@@ -413,16 +462,17 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), false, Values.of( 550 ), false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), false, Values.of( 550 ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 510 ), false, Values.of( 550 ), false );
 
         // THEN
         assertEquals( newSetWith( 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ), newSetWithValues( 47L, 540 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -431,16 +481,18 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, false, Values.of( 550 ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, false, Values.of( 550 ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, false, Values.of( 550 ), true );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, 500 ), newSetWithValues( 43L, 510 ), newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ),
+                newSetWithValues( 47L, 540 ), newSetWithValues( 48L, 550 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -449,16 +501,18 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, Values.of( 550 ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, Values.of( 550 ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, Values.of( 550 ), true );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, 500 ), newSetWithValues( 43L, 510 ), newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ),
+                newSetWithValues( 47L, 540 ), newSetWithValues( 48L, 550 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -467,16 +521,18 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, false, Values.of( 550 ), false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, false, Values.of( 550 ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, false, Values.of( 550 ), false );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, 500 ), newSetWithValues( 43L, 510 ), newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ),
+                newSetWithValues( 47L, 540 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -485,16 +541,18 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, Values.of( 550 ), false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, Values.of( 550 ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, Values.of( 550 ), false );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, 500 ), newSetWithValues( 43L, 510 ), newSetWithValues( 44L, 520 ), newSetWithValues( 45L, 530 ),
+                newSetWithValues( 47L, 540 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -503,16 +561,17 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), true, NO_VALUE, true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), true, NO_VALUE, true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), true, NO_VALUE, true );
 
         // THEN
         assertEquals( newSetWith( 47L, 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 47L, 540 ), newSetWithValues( 48L, 550 ), newSetWithValues( 49L, 560 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -521,16 +580,17 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), true, NO_VALUE, false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), true, NO_VALUE, false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), true, NO_VALUE, false );
 
         // THEN
         assertEquals( newSetWith( 47L, 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 47L, 540 ), newSetWithValues( 48L, 550 ), newSetWithValues( 49L, 560 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -539,16 +599,17 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), false, NO_VALUE, true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), false, NO_VALUE, true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), false, NO_VALUE, true );
 
         // THEN
         assertEquals( newSetWith( 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 48L, 550 ), newSetWithValues( 49L, 560 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -557,16 +618,17 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
-                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ),
-                        of( 49L, 560 ) ) );
+                asList( of( 42L, 500 ), of( 43L, 510 ), of( 44L, 520 ), of( 45L, 530 ), of( 47L, 540 ), of( 48L, 550 ), of( 49L, 560 ) ) );
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), false, NO_VALUE, false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), false, NO_VALUE, false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, Values.of( 540 ), false, NO_VALUE, false );
 
         // THEN
         assertEquals( newSetWith( 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 48L, 550 ), newSetWithValues( 49L, 560 ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -578,11 +640,13 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withNumberProperties( singletonList( of( 46L, 520 ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, NO_VALUE, true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, NO_VALUE, true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, ValueGroup.NUMBER, NO_VALUE, true, NO_VALUE, true );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, 500 ), newSetWithValues( 43L, 510 ), newSetWithValues( 44L, 520 ) ), diffSets2.getAdded() );
     }
 
     //endregion
@@ -597,11 +661,13 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 44L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Cindy" ), false, Values.of( "William" ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Cindy" ), false, Values.of( "William" ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Cindy" ), false, Values.of( "William" ), true );
 
         // THEN
         assertEquals( 0, diffSets.getAdded().size() );
+        assertEquals( 0, diffSets2.getAdded().size() );
     }
 
     @Test
@@ -612,11 +678,13 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 44L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Cathy" ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Cathy" ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Cathy" ), true );
 
         // THEN
         assertEquals( newSetWith( 43L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 43L, "Barbara" ), diffSets2.getAdded() );
     }
 
     @Test
@@ -628,11 +696,13 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_1 ).withStringProperties( singletonList( of( 43L, "Barbara" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Cathy" ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Cathy" ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Cathy" ), true );
 
         // THEN
         assertEquals( newSetWith( 43L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 43L, "Barbara" ), diffSets2.getAdded() );
     }
 
     @Test
@@ -640,16 +710,19 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Arwen" ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Arwen" ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Arwen" ), true );
 
         // THEN
         assertEquals( newSetWith( 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 43L, "Amy" ), newSetWithValues( 44L, "Andreas" ), newSetWithValues( 45L, "Aristotle" ),
+                newSetWithValues( 47L, "Arthur" ), newSetWithValues( 48L, "Arwen" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -657,16 +730,19 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Arwen" ), false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Arwen" ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), true, Values.of( "Arwen" ), false );
 
         // THEN
         assertEquals( newSetWith( 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 43L, "Amy" ), newSetWithValues( 44L, "Andreas" ), newSetWithValues( 45L, "Aristotle" ),
+                newSetWithValues( 47L, "Arthur" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -674,16 +750,19 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), false, Values.of( "Arwen" ), true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), false, Values.of( "Arwen" ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), false, Values.of( "Arwen" ), true );
 
         // THEN
         assertEquals( newSetWith( 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 44L, "Andreas" ), newSetWithValues( 45L, "Aristotle" ), newSetWithValues( 47L, "Arthur" ),
+                newSetWithValues( 48L, "Arwen" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -691,16 +770,19 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), false, Values.of( "Arwen" ), false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), false, Values.of( "Arwen" ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Amy" ), false, Values.of( "Arwen" ), false );
 
         // THEN
         assertEquals( newSetWith( 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 44L, "Andreas" ), newSetWithValues( 45L, "Aristotle" ), newSetWithValues( 47L, "Arthur" ) ),
+                diffSets2.getAdded() );
     }
 
     @Test
@@ -709,16 +791,19 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, false, Values.of( "Arwen" ) , true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, false, Values.of( "Arwen" ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, false, Values.of( "Arwen" ), true );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "Agatha" ), newSetWithValues( 43L, "Amy" ), newSetWithValues( 44L, "Andreas" ),
+                newSetWithValues( 45L, "Aristotle" ), newSetWithValues( 47L, "Arthur" ), newSetWithValues( 48L, "Arwen" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -727,16 +812,19 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, Values.of( "Arwen" ) , true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, Values.of( "Arwen" ), true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, Values.of( "Arwen" ), true );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "Agatha" ), newSetWithValues( 43L, "Amy" ), newSetWithValues( 44L, "Andreas" ),
+                newSetWithValues( 45L, "Aristotle" ), newSetWithValues( 47L, "Arthur" ), newSetWithValues( 48L, "Arwen" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -745,16 +833,19 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, false, Values.of( "Arwen" ) , false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, false, Values.of( "Arwen" ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, false, Values.of( "Arwen" ), false );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "Agatha" ), newSetWithValues( 43L, "Amy" ), newSetWithValues( 44L, "Andreas" ),
+                newSetWithValues( 45L, "Aristotle" ), newSetWithValues( 47L, "Arthur" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -763,16 +854,19 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, Values.of( "Arwen" ) , false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, Values.of( "Arwen" ), false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, Values.of( "Arwen" ), false );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "Agatha" ), newSetWithValues( 43L, "Amy" ), newSetWithValues( 44L, "Andreas" ),
+                newSetWithValues( 45L, "Aristotle" ), newSetWithValues( 47L, "Arthur" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -781,16 +875,19 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), true, NO_VALUE, true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), true, NO_VALUE, true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), true, NO_VALUE, true );
 
         // THEN
         assertEquals( newSetWith( 47L, 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 47L, "Arthur" ), newSetWithValues( 48L, "Arwen" ), newSetWithValues( 49L, "Ashley" ) ),
+                diffSets2.getAdded() );
     }
 
     @Test
@@ -799,16 +896,19 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), true, NO_VALUE, false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), true, NO_VALUE, false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), true, NO_VALUE, false );
 
         // THEN
         assertEquals( newSetWith( 47L, 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 47L, "Arthur" ), newSetWithValues( 48L, "Arwen" ), newSetWithValues( 49L, "Ashley" ) ),
+                diffSets2.getAdded() );
     }
 
     @Test
@@ -817,16 +917,18 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), false, NO_VALUE, true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), false, NO_VALUE, true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), false, NO_VALUE, true );
 
         // THEN
         assertEquals( newSetWith( 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 48L, "Arwen" ), newSetWithValues( 49L, "Ashley" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -835,16 +937,18 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
-                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) ) );
+                asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ), of( 47L, "Arthur" ), of( 48L, "Arwen" ),
+                        of( 49L, "Ashley" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), false, NO_VALUE, false );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), false, NO_VALUE, false );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, Values.of( "Arthur" ), false, NO_VALUE, false );
 
         // THEN
         assertEquals( newSetWith( 48L, 49L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 48L, "Arwen" ), newSetWithValues( 49L, "Ashley" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -852,16 +956,153 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
-        addNodesToIndex( indexOn_1_1 )
-                .withStringProperties( asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ) ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties( asList( of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ) ) );
         addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, NO_VALUE, true );
+        LongDiffSets diffSets = state.indexUpdatesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, NO_VALUE, true );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeek( indexOn_1_1, TEXT, NO_VALUE, true, NO_VALUE, true );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L, 44L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "Agatha" ), newSetWithValues( 43L, "Amy" ), newSetWithValues( 44L, "Andreas" ) ), diffSets2.getAdded() );
+    }
+
+    //endregion
+
+    //region range seek by suffix or contains index update tests
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereAreNoMatchingNodes()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+
+        // WHEN
+        LongDiffSets diffSets =
+                state.indexUpdatesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "eulav" ) );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "eulav" ) );
+
+        // THEN
+        assertEquals( 0, diffSets.getAdded().size() );
+        assertEquals( 0, diffSets2.getAdded().size() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereAreNewNodesCreatedInOneBatch()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+
+        // WHEN
+        LongDiffSets diffSets =
+                state.indexUpdatesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "value" ) );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "value" ) );
+
+        // THEN
+        assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "value42" ), newSetWithValues( 43L, "value43" ) ), diffSets2.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekBySuffixWhenThereArePartiallyMatchingNewNodes()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+
+        // WHEN
+        LongDiffSets diffSets = state.indexUpdatesForSuffixOrContains( indexOn_1_1, IndexQuery.stringSuffix( indexOn_1_1.schema().getPropertyId(), "ella" ) );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForSuffixOrContains( indexOn_1_1, IndexQuery.stringSuffix( indexOn_1_1.schema().getPropertyId(), "ella" ) );
+
+        // THEN
+        assertEquals( newSetWith( 46L, 47L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 46L, "Barbarella" ), newSetWithValues( 47L, "Cinderella" ) ), diffSets2.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereArePartiallyMatchingNewNodes()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+
+        // WHEN
+        LongDiffSets diffSets =
+                state.indexUpdatesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "arbar" ) );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "arbar" ) );
+
+        // THEN
+        assertEquals( newSetWith( 45L, 46L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 45L, "Barbara" ), newSetWithValues( 46L, "Barbarella" ) ), diffSets2.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekBySuffixWhenThereArePartiallyMatchingLeadingNewNodes()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+
+        // WHEN
+        LongDiffSets diffSets = state.indexUpdatesForSuffixOrContains( indexOn_1_1, IndexQuery.stringSuffix( indexOn_1_1.schema().getPropertyId(), "ron" ) );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForSuffixOrContains( indexOn_1_1, IndexQuery.stringSuffix( indexOn_1_1.schema().getPropertyId(), "ron" ) );
+
+        // THEN
+        assertEquals( newSetWith( 40L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 40L, "Aaron" ), diffSets2.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereArePartiallyMatchingTrailingNewNodes()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+
+        // WHEN
+        LongDiffSets diffSets =
+                state.indexUpdatesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "inder" ) );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "inder" ) );
+
+        // THEN
+        assertEquals( newSetWith( 47L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 47L, "Cinderella" ), diffSets2.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereAreNewNodesCreatedInTwoBatches()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
+        addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 43L );
+
+        // WHEN
+        LongDiffSets diffSets =
+                state.indexUpdatesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "value4" ) );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+                state.indexUpdatesWithValuesForSuffixOrContains( indexOn_1_1, IndexQuery.stringContains( indexOn_1_1.schema().getPropertyId(), "value4" ) );
+
+        // THEN
+        assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "value42" ), newSetWithValues( 43L, "value43" ) ), diffSets2.getAdded() );
     }
 
     //endregion
@@ -877,9 +1118,11 @@ public class TxStateTest
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "eulav" );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeekByPrefix( indexOn_1_1, "eulav" );
 
         // THEN
         assertEquals( 0, diffSets.getAdded().size() );
+        assertEquals( 0, diffSets2.getAdded().size() );
     }
 
     @Test
@@ -891,9 +1134,11 @@ public class TxStateTest
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "value" );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeekByPrefix( indexOn_1_1, "value" );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "value42" ), newSetWithValues( 43L, "value43" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -901,16 +1146,17 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ),
-                        of( 44L, "Aristotle" ), of( 45L, "Barbara" ), of( 46L, "Barbarella" ),
-                        of( 47L, "Cinderella" ) ) );
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "And" );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeekByPrefix( indexOn_1_1, "And" );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "Andreas" ), newSetWithValues( 43L, "Andrea" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -918,16 +1164,17 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ),
-                        of( 44L, "Aristotle" ), of( 45L, "Barbara" ), of( 46L, "Barbarella" ),
-                        of( 47L, "Cinderella" ) ) );
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "Bar" );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeekByPrefix( indexOn_1_1, "Bar" );
 
         // THEN
         assertEquals( newSetWith( 45L, 46L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 45L, "Barbara" ), newSetWithValues( 46L, "Barbarella" ) ), diffSets2.getAdded() );
     }
 
     @Test
@@ -935,16 +1182,17 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ),
-                        of( 44L, "Aristotle" ), of( 45L, "Barbara" ), of( 46L, "Barbarella" ),
-                        of( 47L, "Cinderella" ) ) );
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "Aa" );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeekByPrefix( indexOn_1_1, "Aa" );
 
         // THEN
         assertEquals( newSetWith( 40L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 40L, "Aaron" ), diffSets2.getAdded() );
     }
 
     @Test
@@ -952,16 +1200,17 @@ public class TxStateTest
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
-                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ),
-                        of( 44L, "Aristotle" ), of( 45L, "Barbara" ), of( 46L, "Barbarella" ),
-                        of( 47L, "Cinderella" ) ) );
+                asList( of( 40L, "Aaron" ), of( 41L, "Agatha" ), of( 42L, "Andreas" ), of( 43L, "Andrea" ), of( 44L, "Aristotle" ), of( 45L, "Barbara" ),
+                        of( 46L, "Barbarella" ), of( 47L, "Cinderella" ) ) );
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "Ci" );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeekByPrefix( indexOn_1_1, "Ci" );
 
         // THEN
         assertEquals( newSetWith( 47L ), diffSets.getAdded() );
+        assertEquals( newSetWithValues( 47L, "Cinderella" ), diffSets2.getAdded() );
     }
 
     @Test
@@ -974,9 +1223,11 @@ public class TxStateTest
 
         // WHEN
         LongDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "value" );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForRangeSeekByPrefix( indexOn_1_1, "value" );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+        assertEquals( unionAll( newSetWithValues( 42L, "value42" ), newSetWithValues( 43L, "value43" ) ), diffSets2.getAdded() );
     }
 
     //endregion
@@ -1098,13 +1349,10 @@ public class TxStateTest
 
         // Then
         assertEquals( asSet( constraint1, constraint2 ), state.constraintsChangesForRelationshipType( 1 ).getAdded() );
-        assertEquals( singleton( constraint1 ),
-                state.constraintsChangesForSchema( constraint1.schema() ).getAdded() );
-        assertEquals( singleton( constraint2 ),
-                state.constraintsChangesForSchema( constraint2.schema() ).getAdded() );
+        assertEquals( singleton( constraint1 ), state.constraintsChangesForSchema( constraint1.schema() ).getAdded() );
+        assertEquals( singleton( constraint2 ), state.constraintsChangesForSchema( constraint2.schema() ).getAdded() );
         assertEquals( singleton( constraint3 ), state.constraintsChangesForRelationshipType( 3 ).getAdded() );
-        assertEquals( singleton( constraint3 ),
-                state.constraintsChangesForSchema( constraint3.schema() ).getAdded() );
+        assertEquals( singleton( constraint3 ), state.constraintsChangesForSchema( constraint3.schema() ).getAdded() );
     }
 
     @Test
@@ -1478,6 +1726,16 @@ public class TxStateTest
 
     //endregion
 
+    static Set<NodeWithPropertyValues> newSetWithValues( long nodeId, Object... values )
+    {
+        return singleton( new NodeWithPropertyValues( nodeId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) ) );
+    }
+
+    static Set<NodeWithPropertyValues> newSetWithValues( long nodeId, Value... values )
+    {
+        return singleton( new NodeWithPropertyValues( nodeId, values ) );
+    }
+
     abstract class VisitationOrder extends TxStateVisitor.Adapter
     {
         private final Set<String> visitMethods = new HashSet<>();
@@ -1598,8 +1856,7 @@ public class TxStateTest
                     state.nodeDoAddLabel( labelId, nodeId );
                     Value valueAfter = Values.of( entry.other() );
                     state.nodeDoAddProperty( nodeId, propertyKeyId, valueAfter );
-                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            ValueTuple.of( valueAfter ) );
+                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null, ValueTuple.of( valueAfter ) );
                 }
             }
         };

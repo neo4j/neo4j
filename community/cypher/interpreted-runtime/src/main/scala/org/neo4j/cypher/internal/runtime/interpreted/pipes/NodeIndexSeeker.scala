@@ -47,6 +47,7 @@ trait NodeIndexSeeker {
 
   // index seek
 
+  // TODO make case class of (NodeValue, Seq[Value]) and use Array instead of Seq
   protected def indexSeek(state: QueryState,
                           indexReference: IndexReference,
                           propertyIndicesWithValues: Seq[Int],

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeek
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
 import org.neo4j.internal.kernel.api._
+import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 
@@ -45,7 +46,8 @@ class NodeIndexSeekOperator(offset: Int,
     val read = context.transactionalContext.dataRead
     val queryState = new OldQueryState(context, resources = null, params = state.params)
     val indexReference = reference(context)
-    val nodeIterator = indexSeek(queryState, indexReference, currentRow)
+    // TODO
+    val nodeIterator = indexSeek(queryState, indexReference, Seq.empty, currentRow)
     new OTask(nodeIterator)
   }
 
@@ -60,7 +62,7 @@ class NodeIndexSeekOperator(offset: Int,
     reference
   }
 
-  class OTask(nodeIterator: Iterator[NodeValue]) extends ContinuableOperatorTask {
+  class OTask(nodeIterator: Iterator[(NodeValue, Seq[Value])]) extends ContinuableOperatorTask {
     override def operate(currentRow: MorselExecutionContext,
                          context: QueryContext,
                          state: QueryState): Unit = {
@@ -68,7 +70,8 @@ class NodeIndexSeekOperator(offset: Int,
       var processedRows = 0
       while (currentRow.hasMoreRows && nodeIterator.hasNext) {
 //        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-        currentRow.setLongAt(offset, nodeIterator.next().id())
+        currentRow.setLongAt(offset, nodeIterator.next()._1.id())
+        // TODO
         currentRow.moveToNextRow()
       }
 

@@ -109,7 +109,23 @@ public interface ReadableTransactionState
 
     LongDiffSets indexUpdatesForScan( IndexDescriptor index );
 
+    /**
+     * Returns the updates for a particular index as a DiffSets of both Node values and propertyValues.
+     *
+     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForScan(IndexDescriptor)} )}
+     * should be used instead.
+     */
+    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForScan( IndexDescriptor descriptor );
+
     LongDiffSets indexUpdatesForSuffixOrContains( IndexDescriptor index, IndexQuery query );
+
+    /**
+     * Returns the updates for a particular range as a DiffSets of both Node values and propertyValues.
+     *
+     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForSuffixOrContains(IndexDescriptor, IndexQuery)} )}
+     * should be used instead.
+     */
+    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForSuffixOrContains( IndexDescriptor descriptor, IndexQuery query );
 
     LongDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
@@ -117,7 +133,24 @@ public interface ReadableTransactionState
                                                             Value lower, boolean includeLower,
                                                             Value upper, boolean includeUpper );
 
+    /**
+     * Returns the updates for a particular range as a DiffSets of both Node values and propertyValues.
+     *
+     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForRangeSeek(IndexDescriptor, ValueGroup, Value, boolean, Value, boolean)}
+     * should be used instead.
+     */
+    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( IndexDescriptor descriptor, ValueGroup valueGroup, Value lower,
+            boolean includeLower, Value upper, boolean includeUpper );
+
     LongDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
+
+    /**
+     * Returns the updates for a particular range as a DiffSets of both Node values and propertyValues.
+     *
+     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForRangeSeekByPrefix(IndexDescriptor, String)} )}
+     * should be used instead.
+     */
+    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix );
 
     NodeState getNodeState( long id );
 

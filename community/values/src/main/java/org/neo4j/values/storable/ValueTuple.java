@@ -62,6 +62,14 @@ public class ValueTuple
         return values[offset];
     }
 
+    /**
+     * WARNING: this method does not create a defensive copy. Do not modify the returned array.
+     */
+    public Value[] getValues()
+    {
+        return values;
+    }
+
     @Override
     public boolean equals( Object o )
     {
