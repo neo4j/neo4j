@@ -37,13 +37,11 @@ public class MemberId implements Serializable
 {
     private static final long serialVersionUID = -984540169345015775L;
     private final UUID uuid;
-    private final String shortName;
 
     public MemberId( UUID uuid )
     {
         Objects.requireNonNull( uuid );
         this.uuid = uuid;
-        shortName = uuid.toString().substring( 0, 8 );
     }
 
     public UUID getUuid()
@@ -54,7 +52,7 @@ public class MemberId implements Serializable
     @Override
     public String toString()
     {
-        return format( "MemberId{%s}", shortName );
+        return format( "MemberId{%s}", uuid.toString().substring( 0, 8 ) );
     }
 
     @Override
