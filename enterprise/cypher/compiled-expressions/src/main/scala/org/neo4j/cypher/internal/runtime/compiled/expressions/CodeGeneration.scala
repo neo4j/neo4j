@@ -79,7 +79,13 @@ object CodeGeneration {
         expression.variables.foreach{ v =>
           block.assign(v.typ, v.name, compileExpression(v.value, block))
         }
-        block.returns(compileExpression(expression.ir, block))
+        val noValue = getStatic(staticField(classOf[Values], classOf[Value], "NO_VALUE"))
+        if (expression.nullCheck.nonEmpty) {
+          val test = expression.nullCheck.map(e => compileExpression(e, block))
+            .reduceLeft((acc, current) => Expression.or(acc, current))
+
+          block.returns(Expression.ternary(test, noValue, compileExpression(expression.ir, block)))
+        } else block.returns(compileExpression(expression.ir, block))
       }
       clazz.handle()
     }

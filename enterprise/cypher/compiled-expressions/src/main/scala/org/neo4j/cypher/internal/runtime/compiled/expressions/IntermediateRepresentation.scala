@@ -251,7 +251,8 @@ case class Method(owner: Class[_], output: Class[_], name: String, params: Class
   def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params: _*)
 }
 
-case class IntermediateExpression(ir: IntermediateRepresentation, nullable: Boolean, fields: Seq[Field], variables: Set[LocalVariable])
+case class IntermediateExpression(ir: IntermediateRepresentation, fields: Seq[Field],
+                                  variables: Set[LocalVariable], nullCheck: Set[IntermediateRepresentation])
 
 case class Field(typ: Class[_], name: String, initializer: Option[IntermediateRepresentation] = None)
 
@@ -339,15 +340,6 @@ object IntermediateRepresentation {
   def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanAnd(lhs, rhs)
 
   def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanOr(lhs, rhs)
-
-  def noValueCheck(args: IntermediateExpression*)(onNotNull: IntermediateRepresentation): IntermediateRepresentation = {
-    val nullableExpressions: Seq[IntermediateRepresentation] = args.filter(_.nullable).map(_.ir)
-    if (nullableExpressions.isEmpty) onNotNull
-    else {
-      val test = nullableExpressions.map(e => equal(e, noValue)).reduceLeft( (acc, current) => or(acc, current))
-      ternary(test, noValue, onNotNull)
-    }
-  }
 
   def isNull(test: IntermediateRepresentation): IntermediateRepresentation = IsNull(test)
 }
