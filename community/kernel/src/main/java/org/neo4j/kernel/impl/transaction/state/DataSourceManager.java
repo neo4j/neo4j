@@ -47,7 +47,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     private LifeSupport life = new LifeSupport();
     private final Listeners<Listener> dsRegistrationListeners = new Listeners<>();
-    private List<NeoStoreDataSource> dataSources = new ArrayList<>();
+    private final List<NeoStoreDataSource> dataSources = new ArrayList<>();
 
     public void addListener( Listener listener )
     {
