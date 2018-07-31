@@ -69,10 +69,7 @@ public class EncodeGroupsStepTest
         encoder.process( batch( new Group( 6, 35 ) ), catcher );
         encoder.process( batch( new Group( 7, 2 ) ), catcher );
         encoder.endOfUpstream();
-        while ( !encoder.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        encoder.awaitCompleted();
         encoder.close();
 
         // THEN

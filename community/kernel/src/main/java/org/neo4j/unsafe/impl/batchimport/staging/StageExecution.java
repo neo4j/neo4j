@@ -167,6 +167,7 @@ public class StageExecution implements StageControl, AutoCloseable
             for ( Step<?> step : pipeline )
             {
                 step.receivePanic( cause );
+                step.endOfUpstream();
             }
         }
         else

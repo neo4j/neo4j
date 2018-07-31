@@ -257,9 +257,6 @@ public class DeleteDuplicateNodesStepTest
     {
         step.start( 0 );
         step.receive( 0, null );
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
     }
 }

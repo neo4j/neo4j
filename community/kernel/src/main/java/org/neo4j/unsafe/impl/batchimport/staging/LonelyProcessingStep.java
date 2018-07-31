@@ -51,15 +51,12 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                 {
                     lastProcessingTimestamp = nanoTime();
                     process();
+                    endOfUpstream();
                 }
                 catch ( Throwable e )
                 {
                     // we need to update panic state before ending upstream and notifying executor that we completed
                     issuePanic( e );
-                }
-                finally
-                {
-                    endOfUpstream();
                 }
             }
             catch ( Throwable e )

@@ -45,6 +45,7 @@ public class SimpleStageControl implements StageControl
         for ( Step<?> step : steps )
         {
             step.receivePanic( cause );
+            step.endOfUpstream();
         }
     }
 

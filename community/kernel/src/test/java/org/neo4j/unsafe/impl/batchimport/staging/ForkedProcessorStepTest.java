@@ -61,10 +61,7 @@ public class ForkedProcessorStepTest
             step.receive( i, new Batch( processors ) );
         }
         step.endOfUpstream();
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
         step.close();
 
         // THEN
@@ -90,10 +87,7 @@ public class ForkedProcessorStepTest
             step.receive( i, new Batch( processors ) );
         }
         step.endOfUpstream();
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
         step.close();
 
         // THEN
@@ -121,10 +115,7 @@ public class ForkedProcessorStepTest
             step.receive( i, new Batch( processors ) );
         }
         step.endOfUpstream();
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
         step.close();
 
         // THEN
@@ -239,10 +230,7 @@ public class ForkedProcessorStepTest
             step.receive( ticket, batch );
         }
         step.endOfUpstream();
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
         step.close();
     }
 
@@ -269,10 +257,7 @@ public class ForkedProcessorStepTest
         control.steps( step );
 
         // THEN
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
         try
         {
             control.assertHealthy();
@@ -463,6 +448,12 @@ public class ForkedProcessorStepTest
         public boolean isCompleted()
         {
             return false;
+        }
+
+        @Override
+        public void awaitCompleted()
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override

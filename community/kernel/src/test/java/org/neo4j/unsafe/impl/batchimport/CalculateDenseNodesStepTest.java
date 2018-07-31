@@ -55,10 +55,7 @@ public class CalculateDenseNodesStepTest
                     relationship( id++, 4, 1 ) );
             step.receive( 0, batch );
             step.endOfUpstream();
-            while ( !step.isCompleted() )
-            {
-                // wait
-            }
+            step.awaitCompleted();
 
             // THEN
             verify( cache, times( 2 ) ).incrementCount( eq( 1L ) );

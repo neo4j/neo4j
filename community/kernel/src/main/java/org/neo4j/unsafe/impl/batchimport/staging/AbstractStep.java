@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -54,7 +55,7 @@ public abstract class AbstractStep<T> implements Step<T>
     protected volatile WorkSync<Downstream,SendDownstream> downstreamWorkSync;
     private volatile boolean endOfUpstream;
     protected volatile Throwable panic;
-    private volatile boolean completed;
+    private final CountDownLatch completed = new CountDownLatch( 1 );
     protected int orderingGuarantees;
 
     // Milliseconds awaiting downstream to process batches so that its queue size goes beyond the configured threshold
@@ -107,7 +108,6 @@ public abstract class AbstractStep<T> implements Step<T>
     public void receivePanic( Throwable cause )
     {
         this.panic = cause;
-        this.completed = true;
     }
 
     protected boolean stillWorking()
@@ -134,7 +134,13 @@ public abstract class AbstractStep<T> implements Step<T>
     @Override
     public boolean isCompleted()
     {
-        return completed;
+        return completed.getCount() == 0;
+    }
+
+    @Override
+    public void awaitCompleted() throws InterruptedException
+    {
+        completed.await();
     }
 
     protected void issuePanic( Throwable cause )
@@ -207,7 +213,7 @@ public abstract class AbstractStep<T> implements Step<T>
                         downstream.endOfUpstream();
                     }
                     endTime = currentTimeMillis();
-                    completed = true;
+                    completed.countDown();
                 }
             }
         }

@@ -35,7 +35,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 public class ProcessorStepTest
@@ -59,10 +58,7 @@ public class ProcessorStepTest
             step.receive( i, i );
         }
         step.endOfUpstream();
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
 
         // THEN
         assertEquals( batches, step.nextExpected.get() );
@@ -118,10 +114,7 @@ public class ProcessorStepTest
             step.receive( i, i );
         }
         step.endOfUpstream();
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
+        step.awaitCompleted();
 
         // THEN
         verify( control, times( batches ) ).recycle( any() );

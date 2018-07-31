@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
@@ -64,7 +65,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     private final Map<Key,ControlledStat> stats = new HashMap<>();
     private final int maxProcessors;
     private volatile int numberOfProcessors = 1;
-    private boolean completed;
+    private final CountDownLatch completed = new CountDownLatch( 1 );
 
     public ControlledStep( String name, int maxProcessors )
     {
@@ -131,7 +132,13 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     @Override
     public boolean isCompleted()
     {
-        return completed;
+        return completed.getCount() == 0;
+    }
+
+    @Override
+    public void awaitCompleted() throws InterruptedException
+    {
+        completed.await();
     }
 
     @Override
@@ -168,7 +175,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
 
     public void complete()
     {
-        completed = true;
+        completed.countDown();
     }
 
     private static class ControlledStat implements Stat

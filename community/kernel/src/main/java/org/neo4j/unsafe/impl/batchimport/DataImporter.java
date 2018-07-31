@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +52,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.unsafe.impl.batchimport.stats.Stats.longStat;
 
 /**
@@ -206,7 +206,7 @@ public class DataImporter
         private final Key[] keys = new Key[] {Keys.done_batches, Keys.avg_processing_time};
         private final Collection<StatsProvider> statsProviders = new ArrayList<>();
 
-        private volatile boolean completed;
+        private final CountDownLatch completed = new CountDownLatch( 1 );
 
         ControllableStep( String name, LongAdder progress, Configuration config, StatsProvider... additionalStatsProviders )
         {
@@ -220,7 +220,7 @@ public class DataImporter
 
         void markAsCompleted()
         {
-            this.completed = true;
+            this.completed.countDown();
         }
 
         @Override
@@ -248,7 +248,7 @@ public class DataImporter
         @Override
         public StepStats stats()
         {
-            return new StepStats( name, completed, statsProviders );
+            return new StepStats( name, !isCompleted(), statsProviders );
         }
 
         @Override
@@ -259,7 +259,13 @@ public class DataImporter
         @Override
         public boolean isCompleted()
         {
-            return completed;
+            return completed.getCount() == 0;
+        }
+
+        @Override
+        public void awaitCompleted() throws InterruptedException
+        {
+            completed.await();
         }
 
         @Override

@@ -44,12 +44,9 @@ public class LonelyProcessingStepTest
         stepsPipeline.add( faultyStep );
 
         faultyStep.receive( 1, null );
+        faultyStep.awaitCompleted();
 
-        while ( !faultyStep.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
-
+        assertTrue( faultyStep.endOfUpstreamCalled );
         assertTrue( "On upstream end step should be already on panic in case of exception",
                 faultyStep.isPanicOnEndUpstream() );
         assertTrue( faultyStep.isPanic() );
@@ -59,6 +56,7 @@ public class LonelyProcessingStepTest
 
     private class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
     {
+        private volatile boolean endOfUpstreamCalled;
         private volatile boolean panicOnEndUpstream;
 
         FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine )
@@ -76,6 +74,7 @@ public class LonelyProcessingStepTest
         @Override
         public void endOfUpstream()
         {
+            endOfUpstreamCalled = true;
             panicOnEndUpstream = isPanic();
             super.endOfUpstream();
         }
