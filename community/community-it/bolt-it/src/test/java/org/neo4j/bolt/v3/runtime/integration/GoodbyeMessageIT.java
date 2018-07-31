@@ -19,19 +19,24 @@
  */
 package org.neo4j.bolt.v3.runtime.integration;
 
-import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.function.Predicates;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -43,6 +48,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.serverImmediatelyDisconnects;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 
 public class GoodbyeMessageIT extends BoltV3TransportBase
@@ -90,6 +96,7 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
 
         // Then
         assertThat( connection, serverImmediatelyDisconnects() );
+        assertThat( server, eventuallyClosesTransaction() );
     }
 
     @Test
@@ -126,6 +133,7 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
 
         // Then
         assertThat( connection, serverImmediatelyDisconnects() );
+        assertThat( server, eventuallyClosesTransaction() );
     }
 
     @Test
@@ -138,11 +146,12 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         connection.send( util.chunk( new BeginMessage(), new RunMessage( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) ) );
         Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess( allOf( entryFieldMatcher, hasKey( "t_first" ) ) ) ) );
+
         // you shall be in the tx_streaming state now
         connection.send( util.chunk( GOODBYE_MESSAGE ) );
-
         // Then
         assertThat( connection, serverImmediatelyDisconnects() );
+        assertThat( server, eventuallyClosesTransaction() );
     }
 
     @Test
@@ -158,31 +167,36 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         assertThat( connection, serverImmediatelyDisconnects() );
     }
 
-    private static Matcher<TransportConnection> serverImmediatelyDisconnects()
+    private static Matcher<Neo4jWithSocket> eventuallyClosesTransaction()
     {
-        return new TypeSafeMatcher<TransportConnection>()
+        return new TypeSafeMatcher<Neo4jWithSocket>()
         {
             @Override
-            protected boolean matchesSafely( TransportConnection connection )
+            public void describeTo( org.hamcrest.Description description )
             {
+                description.appendText( "Eventually close all transactions" );
+            }
+
+            @Override
+            protected boolean matchesSafely( Neo4jWithSocket server )
+            {
+                BooleanSupplier condition = () -> getActiveTransactions( server ).size() == 0;
                 try
                 {
-                    connection.recv( 1 );
+                    Predicates.await( condition, 2, TimeUnit.SECONDS );
+                    return true;
                 }
                 catch ( Exception e )
                 {
-                    // take an IOException on send/receive as evidence of disconnection
-                    return e instanceof IOException;
+                    return false;
                 }
-                return false;
             }
 
-            @Override
-            public void describeTo( Description description )
+            private Set<KernelTransactionHandle> getActiveTransactions( Neo4jWithSocket server )
             {
-                description.appendText( "Eventually Disconnects" );
+                GraphDatabaseAPI gdb = (GraphDatabaseAPI) server.graphDatabaseService();
+                return gdb.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
             }
         };
     }
-
 }

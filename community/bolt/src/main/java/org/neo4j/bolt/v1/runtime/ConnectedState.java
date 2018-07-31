@@ -27,7 +27,7 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 
-import static org.neo4j.bolt.v1.runtime.BoltAuthenticationResult.processAuthentication;
+import static org.neo4j.bolt.v1.runtime.BoltAuthenticationHelper.processAuthentication;
 import static org.neo4j.util.Preconditions.checkState;
 
 /**

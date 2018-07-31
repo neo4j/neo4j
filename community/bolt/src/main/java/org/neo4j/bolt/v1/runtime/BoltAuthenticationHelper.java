@@ -25,15 +25,16 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.values.storable.Values;
 
-public class BoltAuthenticationResult
+public class BoltAuthenticationHelper
 {
     public static boolean processAuthentication( String userAgent, Map<String,Object> authToken, StateMachineContext context ) throws BoltConnectionFatality
     {
         try
         {
-            org.neo4j.bolt.security.auth.AuthenticationResult authResult = context.boltSpi().authenticate( authToken );
+            AuthenticationResult authResult = context.boltSpi().authenticate( authToken );
             String username = authResult.getLoginContext().subject().username();
             context.authenticatedAsUser( username );
 
@@ -56,7 +57,7 @@ public class BoltAuthenticationResult
         }
     }
 
-    private static StatementProcessor newStatementProcessor( String username, String userAgent, org.neo4j.bolt.security.auth.AuthenticationResult authResult,
+    private static StatementProcessor newStatementProcessor( String username, String userAgent, AuthenticationResult authResult,
             StateMachineContext context )
     {
         TransactionStateMachine statementProcessor = new TransactionStateMachine( context.boltSpi().transactionSpi(), authResult, context.clock() );

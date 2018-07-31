@@ -278,6 +278,33 @@ public class TransportTestUtil
         };
     }
 
+    public static Matcher<TransportConnection> serverImmediatelyDisconnects()
+    {
+        return new TypeSafeMatcher<TransportConnection>()
+        {
+            @Override
+            protected boolean matchesSafely( TransportConnection connection )
+            {
+                try
+                {
+                    connection.recv( 1 );
+                }
+                catch ( Exception e )
+                {
+                    // take an IOException on send/receive as evidence of disconnection
+                    return e instanceof IOException;
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "Eventually Disconnects" );
+            }
+        };
+    }
+
     public interface MessageEncoder
     {
         byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException;
