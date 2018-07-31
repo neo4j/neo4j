@@ -1,3 +1,8 @@
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehension with food"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions 2"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions 3"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions 4"
