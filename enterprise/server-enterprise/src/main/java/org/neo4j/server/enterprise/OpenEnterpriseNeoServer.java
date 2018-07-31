@@ -73,25 +73,25 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
 
     private static final GraphFactory HA_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.databases_root_path ).getParentFile();
+        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
         return new HighlyAvailableGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.databases_root_path ).getParentFile();
+        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
         return new EnterpriseGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory CORE_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.databases_root_path ).getParentFile();
+        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
         return new CoreGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.databases_root_path ).getParentFile();
+        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
         return new ReadReplicaGraphDatabase( storeDir, config, dependencies );
     };
 

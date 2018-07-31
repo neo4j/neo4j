@@ -550,7 +550,7 @@ public abstract class SwitchToSlave
             MoveAfterCopy moveAfterCopyWithLogging = ( moves, fromDirectory, toDirectory ) ->
             {
                 userLog.info( "Copied store from master to " + fromDirectory );
-                msgLog.info( "Starting post copy operation to move store from " + fromDirectory + " to " + storeDir );
+                msgLog.info( "Starting post copy operation to move store from " + fromDirectory + " to " + toDirectory );
                 moveAfterCopy.move( moves, fromDirectory, toDirectory );
             };
             storeCopyClient.copyStore(
