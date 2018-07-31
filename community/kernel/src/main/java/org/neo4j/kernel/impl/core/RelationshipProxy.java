@@ -187,18 +187,21 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public long getStartNodeId()
     {
+        spi.assertInUnterminatedTransaction();
         return sourceId();
     }
 
     @Override
     public long getEndNodeId()
     {
+        spi.assertInUnterminatedTransaction();
         return targetId();
     }
 
     @Override
     public long getOtherNodeId( long id )
     {
+        spi.assertInUnterminatedTransaction();
         long start = sourceId();
         long end = targetId();
         if ( start == id )

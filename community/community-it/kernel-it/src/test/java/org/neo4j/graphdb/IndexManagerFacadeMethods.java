@@ -26,91 +26,14 @@ import static java.util.Collections.unmodifiableCollection;
 
 public class IndexManagerFacadeMethods
 {
-    private static final FacadeMethod<IndexManager> EXISTS_FOR_NODES = new FacadeMethod<IndexManager>( "boolean " +
-            "existsForNodes( String indexName )" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            indexManager.existsForNodes( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<IndexManager> FOR_NODES = new FacadeMethod<IndexManager>( "Index<Node> forNodes" +
-            "( String indexName )" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            indexManager.forNodes( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<IndexManager> FOR_NODES_WITH_CONFIG = new FacadeMethod<IndexManager>(
-            "Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            indexManager.forNodes( "foo", null );
-        }
-    };
-
-    private static final FacadeMethod<IndexManager> NODE_INDEX_NAMES = new FacadeMethod<IndexManager>( "String[] " +
-            "nodeIndexNames()" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            for ( String indexName : indexManager.nodeIndexNames() )
-            {
-
-            }
-        }
-    };
-
-    private static final FacadeMethod<IndexManager> EXISTS_FOR_RELATIONSHIPS = new FacadeMethod<IndexManager>(
-            "boolean existsForRelationships( String indexName )" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            indexManager.existsForRelationships( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<IndexManager> FOR_RELATIONSHIPS = new FacadeMethod<IndexManager>(
-            "RelationshipIndex forRelationships( String indexName )" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            indexManager.forRelationships( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<IndexManager> FOR_RELATIONSHIPS_WITH_CONFIG = new FacadeMethod<IndexManager>(
-            "RelationshipIndex forRelationships( String indexName, Map<String, String> customConfiguration )" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            indexManager.forRelationships( "foo", null );
-        }
-    };
-
-    private static final FacadeMethod<IndexManager> RELATIONSHIP_INDEX_NAMES = new FacadeMethod<IndexManager>(
-            "String[] relationshipIndexNames()" )
-    {
-        @Override
-        public void call( IndexManager indexManager )
-        {
-            for ( String indexName : indexManager.relationshipIndexNames() )
-            {
-
-            }
-        }
-    };
+    private static final FacadeMethod<IndexManager> EXISTS_FOR_NODES = new FacadeMethod<>( "boolean existsForNodes( String indexName )", self -> self.existsForNodes( "foo" ) );
+    private static final FacadeMethod<IndexManager> FOR_NODES = new FacadeMethod<>( "Index<Node> forNodes( String indexName )", self -> self.forNodes( "foo" ) );
+    private static final FacadeMethod<IndexManager> FOR_NODES_WITH_CONFIG = new FacadeMethod<>( "Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )", self -> self.forNodes( "foo", null ) );
+    private static final FacadeMethod<IndexManager> NODE_INDEX_NAMES = new FacadeMethod<>( "String[] nodeIndexNames()", IndexManager::nodeIndexNames );
+    private static final FacadeMethod<IndexManager> EXISTS_FOR_RELATIONSHIPS = new FacadeMethod<>( "boolean existsForRelationships( String indexName )", self -> self.existsForRelationships( "foo" ) );
+    private static final FacadeMethod<IndexManager> FOR_RELATIONSHIPS = new FacadeMethod<>( "RelationshipIndex forRelationships( String indexName )", self -> self.forRelationships( "foo" ) );
+    private static final FacadeMethod<IndexManager> FOR_RELATIONSHIPS_WITH_CONFIG = new FacadeMethod<>( "RelationshipIndex forRelationships( String indexName, Map<String, String> customConfiguration )", self -> self.forRelationships( "foo", null ) );
+    private static final FacadeMethod<IndexManager> RELATIONSHIP_INDEX_NAMES = new FacadeMethod<>( "String[] relationshipIndexNames()", IndexManager::relationshipIndexNames );
 
     static final Iterable<FacadeMethod<IndexManager>> ALL_INDEX_MANAGER_FACADE_METHODS =
             unmodifiableCollection( asList(

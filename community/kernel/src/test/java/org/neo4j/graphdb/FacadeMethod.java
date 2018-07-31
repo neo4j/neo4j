@@ -19,20 +19,44 @@
  */
 package org.neo4j.graphdb;
 
-public abstract class FacadeMethod<T>
+import java.util.Iterator;
+import java.util.function.Consumer;
+
+import static org.junit.Assert.assertNotNull;
+
+public class FacadeMethod<T>
 {
     private final String methodSignature;
+    private final Consumer<T> callable;
 
-    public FacadeMethod( String methodSignature )
+    public FacadeMethod( String methodSignature, Consumer<T> callable )
     {
         this.methodSignature = methodSignature;
+        this.callable = callable;
     }
 
-    public abstract void call( T self );
+    public void call( T self )
+    {
+        callable.accept( self );
+    }
 
     @Override
     public String toString()
     {
         return methodSignature;
+    }
+
+    public static <T> void consume( Iterator<T> iterator )
+    {
+        Iterable<T> iterable = () -> iterator;
+        consume( iterable );
+    }
+
+    public static void consume( Iterable<?> iterable )
+    {
+        for ( Object o : iterable )
+        {
+            assertNotNull( o );
+        }
     }
 }

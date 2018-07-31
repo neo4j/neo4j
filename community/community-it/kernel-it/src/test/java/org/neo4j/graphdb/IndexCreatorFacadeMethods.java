@@ -26,25 +26,8 @@ import static java.util.Collections.unmodifiableCollection;
 
 public class IndexCreatorFacadeMethods
 {
-    private static final FacadeMethod<IndexCreator> ON =
-        new FacadeMethod<IndexCreator>( "IndexCreator on( String propertyKey )" )
-        {
-            @Override
-            public void call( IndexCreator self )
-            {
-                self.on( "property" );
-            }
-        };
-
-    private static final FacadeMethod<IndexCreator> CREATE =
-        new FacadeMethod<IndexCreator>( "IndexDefinition create()" )
-        {
-            @Override
-            public void call( IndexCreator self )
-            {
-                self.on( "property" );
-            }
-        };
+    private static final FacadeMethod<IndexCreator> ON = new FacadeMethod<>( "IndexCreator on( String propertyKey )", self -> self.on( "property" ) );
+    private static final FacadeMethod<IndexCreator> CREATE = new FacadeMethod<>( "IndexDefinition create()", IndexCreator::create );
 
     static final Iterable<FacadeMethod<IndexCreator>> ALL_INDEX_CREATOR_FACADE_METHODS =
         unmodifiableCollection( asList(

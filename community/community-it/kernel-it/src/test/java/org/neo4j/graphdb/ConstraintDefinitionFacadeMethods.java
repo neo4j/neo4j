@@ -27,55 +27,11 @@ import static java.util.Collections.unmodifiableCollection;
 
 public class ConstraintDefinitionFacadeMethods
 {
-    private static final FacadeMethod<ConstraintDefinition> GET_LABEL =
-            new FacadeMethod<ConstraintDefinition>( "Label getLabel()" )
-            {
-                @Override
-                public void call( ConstraintDefinition self )
-                {
-                    self.getLabel();
-                }
-            };
-
-    private static final FacadeMethod<ConstraintDefinition> GET_RELATIONSHIP_TYPE =
-            new FacadeMethod<ConstraintDefinition>( "RelationshipType getRelationshipType()" )
-            {
-                @Override
-                public void call( ConstraintDefinition self )
-                {
-                    self.getRelationshipType();
-                }
-            };
-
-    private static final FacadeMethod<ConstraintDefinition> DROP =
-            new FacadeMethod<ConstraintDefinition>( "void drop()" )
-            {
-                @Override
-                public void call( ConstraintDefinition self )
-                {
-                    self.drop();
-                }
-            };
-
-    private static final FacadeMethod<ConstraintDefinition> IS_CONSTRAINT_TYPE =
-            new FacadeMethod<ConstraintDefinition>( "boolean isConstraintType( ConstraintType type )" )
-            {
-                @Override
-                public void call( ConstraintDefinition self )
-                {
-                    self.isConstraintType( ConstraintType.UNIQUENESS );
-                }
-            };
-
-    private static final FacadeMethod<ConstraintDefinition> GET_PROPERTY_KEYS =
-            new FacadeMethod<ConstraintDefinition>( "Iterable<String> getPropertyKeys()" )
-            {
-                @Override
-                public void call( ConstraintDefinition self )
-                {
-                    self.getPropertyKeys();
-                }
-            };
+    private static final FacadeMethod<ConstraintDefinition> GET_LABEL = new FacadeMethod<>( "Label getLabel()", ConstraintDefinition::getLabel );
+    private static final FacadeMethod<ConstraintDefinition> GET_RELATIONSHIP_TYPE = new FacadeMethod<>( "RelationshipType getRelationshipType()", ConstraintDefinition::getRelationshipType );
+    private static final FacadeMethod<ConstraintDefinition> DROP = new FacadeMethod<>( "void drop()", ConstraintDefinition::drop );
+    private static final FacadeMethod<ConstraintDefinition> IS_CONSTRAINT_TYPE = new FacadeMethod<>( "boolean isConstraintType( ConstraintType type )", self -> self.isConstraintType( ConstraintType.UNIQUENESS ) );
+    private static final FacadeMethod<ConstraintDefinition> GET_PROPERTY_KEYS = new FacadeMethod<>( "Iterable<String> getPropertyKeys()", ConstraintDefinition::getPropertyKeys );
 
     static final Iterable<FacadeMethod<ConstraintDefinition>> ALL_CONSTRAINT_DEFINITION_FACADE_METHODS =
             unmodifiableCollection( asList(

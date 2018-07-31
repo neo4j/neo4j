@@ -21,8 +21,8 @@ package org.neo4j.graphdb;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
-import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.FacadeMethod.consume;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
@@ -33,230 +33,29 @@ public class NodeFacadeMethods
     private static final RelationshipType BAR = withName( "bar" );
     private static final Label QUUX = label( "quux" );
 
-    private static final FacadeMethod<Node> HAS_PROPERTY = new FacadeMethod<Node>( "boolean hasProperty( " +
-            "String key )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.hasProperty( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_PROPERTY = new FacadeMethod<Node>( "Object getProperty( String key )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.getProperty( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_PROPERTY_WITH_DEFAULT = new FacadeMethod<Node>( "Object getProperty( " +
-            "String key, Object defaultValue )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.getProperty( "foo", 42 );
-        }
-    };
-
-    private static final FacadeMethod<Node> SET_PROPERTY = new FacadeMethod<Node>( "void setProperty( String key, " +
-            "Object value )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.setProperty( "foo", 42 );
-        }
-    };
-
-    private static final FacadeMethod<Node> REMOVE_PROPERTY = new FacadeMethod<Node>(
-            "Object removeProperty( String key )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.removeProperty( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_PROPERTY_KEYS = new FacadeMethod<Node>(
-            "Iterable<String> getPropertyKeys()" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getPropertyKeys() );
-        }
-    };
-
-    private static final FacadeMethod<Node> DELETE = new FacadeMethod<Node>( "void delete()" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.delete();
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_RELATIONSHIPS = new FacadeMethod<Node>(
-            "Iterable<Relationship> getRelationships()" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getRelationships() );
-        }
-    };
-
-    private static final FacadeMethod<Node> HAS_RELATIONSHIP = new FacadeMethod<Node>( "boolean hasRelationship()" )
-
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.hasRelationship();
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_TYPE = new FacadeMethod<Node>(
-            "Iterable<Relationship> getRelationships( RelationshipType... types )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getRelationships( FOO, BAR ) );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_DIRECTION_AND_TYPES = new FacadeMethod<Node>(
-            "Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getRelationships( BOTH, FOO, BAR ) );
-        }
-    };
-
-    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_TYPE = new FacadeMethod<Node>( "boolean " +
-            "hasRelationship( RelationshipType... types )" )
-
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.hasRelationship( FOO );
-        }
-    };
-
-    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE = new FacadeMethod<Node>( "boolean " +
-            "hasRelationship( Direction direction, RelationshipType... types )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.hasRelationship( BOTH, FOO );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_DIRECTION = new FacadeMethod<Node>(
-            "Iterable<Relationship> getRelationships( Direction dir )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getRelationships( BOTH ) );
-        }
-    };
-
-    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_DIRECTION = new FacadeMethod<Node>( "boolean " +
-            "hasRelationship( Direction dir )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.hasRelationship( BOTH );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION = new FacadeMethod<Node>(
-            "Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getRelationships( FOO, BOTH ) );
-        }
-    };
-
-    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION = new FacadeMethod<Node>( "boolean " +
-            "hasRelationship( RelationshipType type, Direction dir )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.hasRelationship( FOO, BOTH );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_SINGLE_RELATIONSHIP = new FacadeMethod<Node>( "Relationship " +
-            "getSingleRelationship( RelationshipType type, Direction dir )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.getSingleRelationship( FOO, BOTH );
-        }
-    };
-
-    private static final FacadeMethod<Node> CREATE_RELATIONSHIP_TO = new FacadeMethod<Node>( "Relationship " +
-            "createRelationshipTo( Node otherNode, RelationshipType type )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.createRelationshipTo( node, FOO );
-        }
-    };
-
-    private static final FacadeMethod<Node> ADD_LABEL = new FacadeMethod<Node>( "void addLabel( Label label )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.addLabel( QUUX );
-        }
-    };
-
-    private static final FacadeMethod<Node> REMOVE_LABEL = new FacadeMethod<Node>( "void removeLabel( Label label )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.removeLabel( QUUX );
-        }
-    };
-
-    private static final FacadeMethod<Node> HAS_LABEL = new FacadeMethod<Node>( "boolean hasLabel( Label label )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            node.hasLabel( QUUX );
-        }
-    };
-
-    private static final FacadeMethod<Node> GET_LABELS = new FacadeMethod<Node>( "ResourceIterable<Label> getLabels()" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getLabels() );
-        }
-    };
+    private static final FacadeMethod<Node> HAS_PROPERTY = new FacadeMethod<>( "boolean hasProperty( String key )", n -> n.hasProperty( "foo" ) );
+    private static final FacadeMethod<Node> GET_PROPERTY = new FacadeMethod<>( "Object getProperty( String key )", n -> n.getProperty( "foo" ) );
+    private static final FacadeMethod<Node> GET_PROPERTY_WITH_DEFAULT = new FacadeMethod<>( "Object getProperty( String key, Object defaultValue )", n -> n.getProperty( "foo", 42 ) );
+    private static final FacadeMethod<Node> SET_PROPERTY = new FacadeMethod<>( "void setProperty( String key, Object value )", n -> n.setProperty( "foo", 42 ) );
+    private static final FacadeMethod<Node> REMOVE_PROPERTY = new FacadeMethod<>( "Object removeProperty( String key )", n -> n.removeProperty( "foo" ) );
+    private static final FacadeMethod<Node> GET_PROPERTY_KEYS = new FacadeMethod<>( "Iterable<String> getPropertyKeys()", n -> consume( n.getPropertyKeys() ) );
+    private static final FacadeMethod<Node> DELETE = new FacadeMethod<>( "void delete()", Node::delete );
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS = new FacadeMethod<>( "Iterable<Relationship> getRelationships()", n -> consume( n.getRelationships() ) );
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP = new FacadeMethod<>( "boolean hasRelationship()", Node::hasRelationship );
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_TYPE = new FacadeMethod<>( "Iterable<Relationship> getRelationships( RelationshipType... types )", n -> consume( n.getRelationships( FOO, BAR ) ) );
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_DIRECTION_AND_TYPES = new FacadeMethod<>( "Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )", n -> consume( n.getRelationships( BOTH, FOO, BAR ) ) );
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_TYPE = new FacadeMethod<>( "boolean hasRelationship( RelationshipType... types )", n -> n.hasRelationship( FOO ) );
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE = new FacadeMethod<>( "boolean hasRelationship( Direction direction, RelationshipType... types )", n -> n.hasRelationship( BOTH, FOO ) );
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_DIRECTION = new FacadeMethod<>( "Iterable<Relationship> getRelationships( Direction dir )", n -> consume( n.getRelationships( BOTH ) ) );
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_DIRECTION = new FacadeMethod<>( "boolean hasRelationship( Direction dir )", n -> n.hasRelationship( BOTH ) );
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION = new FacadeMethod<>( "Iterable<Relationship> getRelationships( RelationshipType type, Direction dir )", n -> consume( n.getRelationships( FOO, BOTH ) ) );
+    private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION = new FacadeMethod<>( "boolean hasRelationship( RelationshipType type, Direction dir )", n -> n.hasRelationship( FOO, BOTH ) );
+    private static final FacadeMethod<Node> GET_SINGLE_RELATIONSHIP = new FacadeMethod<>( "Relationship getSingleRelationship( RelationshipType type, Direction dir )", n -> n.getSingleRelationship( FOO, BOTH ) );
+    private static final FacadeMethod<Node> CREATE_RELATIONSHIP_TO = new FacadeMethod<>( "Relationship createRelationshipTo( Node otherNode, RelationshipType type )", n -> n.createRelationshipTo( n, FOO ) );
+    private static final FacadeMethod<Node> ADD_LABEL = new FacadeMethod<>( "void addLabel( Label label )", n -> n.addLabel( QUUX ) );
+    private static final FacadeMethod<Node> REMOVE_LABEL = new FacadeMethod<>( "void removeLabel( Label label )", n -> n.removeLabel( QUUX ) );
+    private static final FacadeMethod<Node> HAS_LABEL = new FacadeMethod<>( "boolean hasLabel( Label label )", n -> n.hasLabel( QUUX ) );
+    private static final FacadeMethod<Node> GET_LABELS = new FacadeMethod<>( "ResourceIterable<Label> getLabels()", n -> consume( n.getLabels() ) );
 
     static final Iterable<FacadeMethod<Node>> ALL_NODE_FACADE_METHODS = unmodifiableCollection( asList(
         HAS_PROPERTY,
@@ -284,13 +83,5 @@ public class NodeFacadeMethods
 
     private NodeFacadeMethods()
     {
-    }
-
-    private static void consume( Iterable<?> iterable )
-    {
-        for ( Object o : iterable )
-        {
-            assertNotNull( o );
-        }
     }
 }

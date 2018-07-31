@@ -26,53 +26,15 @@ import static java.util.Collections.unmodifiableCollection;
 
 public class IndexDefinitionFacadeMethods
 {
-    private static final FacadeMethod<IndexDefinition> GET_LABEL =
-        new FacadeMethod<IndexDefinition>( "Label getLabel()" )
-        {
-            @Override
-            public void call( IndexDefinition self )
-            {
-                self.getLabel();
-            }
-        };
-
+    private static final FacadeMethod<IndexDefinition> GET_LABEL = new FacadeMethod<>( "Label getLabel()", IndexDefinition::getLabel );
     private static final FacadeMethod<IndexDefinition> GET_PROPERTY_KEYS =
-        new FacadeMethod<IndexDefinition>( "Iterable<String> getPropertyKeys()" )
-        {
-            @Override
-            public void call( IndexDefinition self )
-            {
-                self.getPropertyKeys();
-            }
-        };
-
-    private static final FacadeMethod<IndexDefinition> DROP =
-        new FacadeMethod<IndexDefinition>( "void drop()" )
-        {
-            @Override
-            public void call( IndexDefinition self )
-            {
-                self.drop();
-            }
-        };
-
+            new FacadeMethod<>( "Iterable<String> getPropertyKeys()", IndexDefinition::getPropertyKeys );
+    private static final FacadeMethod<IndexDefinition> DROP = new FacadeMethod<>( "void drop()", IndexDefinition::drop );
     private static final FacadeMethod<IndexDefinition> IS_CONSTRAINT_INDEX =
-        new FacadeMethod<IndexDefinition>( "boolean isConstraintIndex()" )
-        {
-            @Override
-            public void call( IndexDefinition self )
-            {
-                self.isConstraintIndex();
-            }
-        };
+            new FacadeMethod<>( "boolean isConstraintIndex()", IndexDefinition::isConstraintIndex );
 
     static final Iterable<FacadeMethod<IndexDefinition>> ALL_INDEX_DEFINITION_FACADE_METHODS =
-        unmodifiableCollection( asList(
-            GET_LABEL,
-            GET_PROPERTY_KEYS,
-            DROP,
-            IS_CONSTRAINT_INDEX
-        ) );
+            unmodifiableCollection( asList( GET_LABEL, GET_PROPERTY_KEYS, DROP, IS_CONSTRAINT_INDEX ) );
 
     private IndexDefinitionFacadeMethods()
     {

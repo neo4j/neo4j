@@ -39,6 +39,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class SchemaImplTest
@@ -90,7 +91,7 @@ public class SchemaImplTest
         }
 
         // Get state and progress
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             Schema schema = db.schema();
             Schema.IndexState state;
@@ -107,7 +108,7 @@ public class SchemaImplTest
             }
             while ( state == Schema.IndexState.POPULATING );
 
-            assertTrue( state == Schema.IndexState.ONLINE );
+            assertSame( state, Schema.IndexState.ONLINE );
             assertEquals( 100.0f, progress.getCompletedPercentage(), 0.0f );
         }
     }

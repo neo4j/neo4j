@@ -21,146 +21,28 @@ package org.neo4j.graphdb;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.graphdb.FacadeMethod.consume;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 @SuppressWarnings( "UnusedDeclaration" )
 public class RelationshipFacadeMethods
 {
-    private static final FacadeMethod<Relationship> HAS_PROPERTY =
-        new FacadeMethod<Relationship>( "boolean hasProperty( String key )" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.hasProperty( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_PROPERTY =
-        new FacadeMethod<Relationship>( "Object getProperty( String key )" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.getProperty( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_PROPERTY_WITH_DEFAULT =
-        new FacadeMethod<Relationship>( "Object getProperty( String key, Object defaultValue )" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.getProperty( "foo", 42 );
-        }
-    };
-
-    private static final FacadeMethod<Relationship> SET_PROPERTY =
-        new FacadeMethod<Relationship>( "void setProperty( String key, Object value )" )
-
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.setProperty( "foo", 42 );
-        }
-    };
-
-    private static final FacadeMethod<Relationship> REMOVE_PROPERTY =
-        new FacadeMethod<Relationship>( "Object removeProperty( String key )" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.removeProperty( "foo" );
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_PROPERTY_KEYS =
-        new FacadeMethod<Relationship>( "Iterable<String> getPropertyKeys()" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            for ( String key : relationship.getPropertyKeys() )
-            {
-
-            }
-        }
-    };
-
-    private static final FacadeMethod<Relationship> DELETE = new FacadeMethod<Relationship>( "void delete()" )
-
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.delete();
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_START_NODE =
-        new FacadeMethod<Relationship>( "Node getStartNode()" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.getStartNode();
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_END_NODE = new FacadeMethod<Relationship>( "Node getEndNode()" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.getEndNode();
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_OTHER_NODE =
-        new FacadeMethod<Relationship>( "Node getOtherNode( Node node )" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.getOtherNode( null );
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_NODES = new FacadeMethod<Relationship>( "Node[] getNodes()" )
-    {
-        @SuppressWarnings( "UnusedDeclaration" )
-        @Override
-        public void call( Relationship relationship )
-        {
-            for ( Node node : relationship.getNodes() )
-            {
-
-            }
-        }
-    };
-
-    private static final FacadeMethod<Relationship> GET_TYPE =
-            new FacadeMethod<Relationship>( "RelationshipType getType()" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.getType();
-        }
-    };
-
-    private static final FacadeMethod<Relationship> IS_TYPE =
-        new FacadeMethod<Relationship>( "boolean isType( RelationshipType type )" )
-    {
-        @Override
-        public void call( Relationship relationship )
-        {
-            relationship.isType( withName( "foo" ) );
-        }
-    };
+    private static final FacadeMethod<Relationship> HAS_PROPERTY = new FacadeMethod<>( "boolean hasProperty( String key )", r -> r.hasProperty( "foo" ) );
+    private static final FacadeMethod<Relationship> GET_PROPERTY = new FacadeMethod<>( "Object getProperty( String key )", r -> r.getProperty( "foo" ) );
+    private static final FacadeMethod<Relationship> GET_PROPERTY_WITH_DEFAULT = new FacadeMethod<>( "Object getProperty( String key, Object defaultValue )", r -> r.getProperty( "foo", 42 ) );
+    private static final FacadeMethod<Relationship> SET_PROPERTY = new FacadeMethod<>( "void setProperty( String key, Object value )", r -> r.setProperty( "foo", 42 ) );
+    private static final FacadeMethod<Relationship> REMOVE_PROPERTY = new FacadeMethod<>( "Object removeProperty( String key )", r -> r.removeProperty( "foo" ) );
+    private static final FacadeMethod<Relationship> GET_PROPERTY_KEYS = new FacadeMethod<>( "Iterable<String> getPropertyKeys()", r -> consume( r.getPropertyKeys() ) );
+    private static final FacadeMethod<Relationship> DELETE = new FacadeMethod<>( "void delete()", Relationship::delete );
+    private static final FacadeMethod<Relationship> GET_START_NODE = new FacadeMethod<>( "Node getStartNode()", Relationship::getStartNode );
+    private static final FacadeMethod<Relationship> GET_START_NODE_ID = new FacadeMethod<>( "Node getStartNode()", Relationship::getStartNodeId );
+    private static final FacadeMethod<Relationship> GET_END_NODE = new FacadeMethod<>( "Node getEndNode()", Relationship::getEndNode );
+    private static final FacadeMethod<Relationship> GET_END_NODE_ID = new FacadeMethod<>( "Node getEndNode()", Relationship::getEndNodeId );
+    private static final FacadeMethod<Relationship> GET_OTHER_NODE = new FacadeMethod<>( "Node getOtherNode( Node node )", r -> r.getOtherNode( null ) );
+    private static final FacadeMethod<Relationship> GET_OTHER_NODE_ID = new FacadeMethod<>( "Node getOtherNode( Node node )", r -> r.getOtherNodeId( 42 ) );
+    private static final FacadeMethod<Relationship> GET_NODES = new FacadeMethod<>( "Node[] getNodes()", Relationship::getNodes );
+    private static final FacadeMethod<Relationship> GET_TYPE = new FacadeMethod<>( "RelationshipType getType()", Relationship::getType );
+    private static final FacadeMethod<Relationship> IS_TYPE = new FacadeMethod<>( "boolean isType( RelationshipType type )", r -> r.isType( withName( "foo" ) ) );
 
     static final Iterable<FacadeMethod<Relationship>> ALL_RELATIONSHIP_FACADE_METHODS = unmodifiableCollection( asList(
         HAS_PROPERTY,
@@ -173,6 +55,7 @@ public class RelationshipFacadeMethods
         GET_START_NODE,
         GET_END_NODE,
         GET_OTHER_NODE,
+        GET_OTHER_NODE_ID,
         GET_NODES,
         GET_TYPE,
         IS_TYPE
