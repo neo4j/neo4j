@@ -276,14 +276,14 @@ class ReflectiveProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
-                                Optional.empty(), new String[0], description, warning );
+                                Optional.empty(), new String[0], description, warning, procedure.eager() );
                 return new FailedLoadProcedure( signature );
             }
         }
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
-                        config.rolesFor( procName.toString() ), description, warning );
+                        config.rolesFor( procName.toString() ), description, warning, procedure.eager() );
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
