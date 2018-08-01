@@ -116,7 +116,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private int currentArrayOffset;
     private final IndexSpecificSpaceFillingCurveSettingsCache settings;
 
-    // spatial                long0 (rawValueBits), long1 (coordinate reference system tableId), long2 (coordinate reference system tableId)
+    // spatial                long0 (rawValueBits), long1 (coordinate reference system tableId), long2 (coordinate reference system code)
     // zoned date time:       long0 (epochSecondUTC), long1 (nanoOfSecond), long2 (zoneId), long3 (zoneOffsetSeconds)
     // local date time:       long0 (nanoOfSecond), long1 (epochSecond)
     // date:                  long0 (epochDay)
@@ -299,11 +299,15 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             this.long2 = key.long2;
             this.long3 = key.long3;
             this.copyByteArrayFromIfExists( key, (int) key.long0 );
+            this.crs = key.crs;
+            this.spaceFillingCurve = key.spaceFillingCurve;
         }
         else
         {
             switch ( key.type )
             {
+            case GEOMETRY_ARRAY:
+                copyGeometryArrayFrom( key, key.arrayLength );
             case ZONED_DATE_TIME_ARRAY:
                 copyZonedDateTimeArrayFrom( key, key.arrayLength );
                 break;
@@ -409,6 +413,12 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case TEXT:
             minimalSplitterText( left, right, into );
             break;
+        case GEOMETRY_ARRAY:
+            minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareGeometry(
+                    // intentional long1 and long2 - not the array versions
+                    o1.long0Array[i], o1.long1, o1.long2,
+                    o2.long0Array[i], o2.long1, o2.long2 ),
+                    GenericKeyState::copyGeometryArrayFrom );
         case ZONED_DATE_TIME_ARRAY:
             minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareZonedDateTime(
                     o1.long0Array[i], o1.long1Array[i], o1.long2Array[i], o1.long3Array[i],
@@ -598,6 +608,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         switch ( type )
         {
+        case GEOMETRY:
+            return geometryAsValue();
         case ZONED_DATE_TIME:
             return zonedDateTimeAsValue( long0, long1, long2, long3 );
         case LOCAL_DATE_TIME:
@@ -617,6 +629,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return booleanAsValue( long0 );
         case NUMBER:
             return numberAsValue( long0, long1 );
+
+        case GEOMETRY_ARRAY:
+            // TODO actually the existing spatial index stuff doesn't deserialize into Value instances for some reason, because it's lossy anyway?
+            return NO_VALUE;
         case ZONED_DATE_TIME_ARRAY:
             return Values.of( populateValueArray( new ZonedDateTime[arrayLength],
                     i -> zonedDateTimeAsValueRaw( long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) ) );
@@ -641,6 +657,12 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
+    }
+
+    private Value geometryAsValue()
+    {
+        // TODO actually the existing spatial index stuff doesn't deserialize into Value instances for some reason, because it's lossy anyway?
+        return NO_VALUE;
     }
 
     private Value numberArrayAsValue()
@@ -715,6 +737,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         switch ( type )
         {
+        case GEOMETRY:
+            return compareGeometry(
+                    this.long0, this.long1, this.long2,
+                    that.long0, that.long1, that.long2 );
         case ZONED_DATE_TIME:
             return compareZonedDateTime(
                     this.long0, this.long1, this.long2, this.long3,
@@ -751,6 +777,11 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return compareNumber(
                     this.long0, this.long1,
                     that.long0, that.long1 );
+
+        case GEOMETRY_ARRAY:
+            return compareArrays( that, ( o1, o2, i ) -> compareGeometry(
+                    o1.long0Array[i], o1.long1, o1.long2,
+                    o2.long0Array[i], o2.long1, o2.long2 ) );
         case ZONED_DATE_TIME_ARRAY:
             return compareArrays( that, ( o1, o2, i ) -> compareZonedDateTime(
                     o1.long0Array[i], o1.long1Array[i], o1.long2Array[i], o1.long3Array[i],
@@ -790,6 +821,25 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
+    }
+
+    private static int compareGeometry(
+            long this_long0, long this_long1, long this_long2,
+            long that_long0, long that_long1, long that_long2 )
+    {
+        int tableIdComparison = Integer.compare( (int) this_long1, (int) that_long1 );
+        if ( tableIdComparison != 0 )
+        {
+            return tableIdComparison;
+        }
+
+        int codeComparison = Integer.compare( (int) this_long2, (int) that_long2 );
+        if ( codeComparison != 0 )
+        {
+            return codeComparison;
+        }
+
+        return Long.compare( this_long0, that_long0 );
     }
 
     private int compareArrays( GenericKeyState that, ArrayElementComparator comparator )
@@ -940,6 +990,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         cursor.putByte( type.typeId );
         switch ( type )
         {
+        case GEOMETRY:
+            putGeometryCrs( cursor, long1, long2 );
+            putGeometry( cursor, long0 );
+            break;
         case ZONED_DATE_TIME:
             putZonedDateTime( cursor, long0, long1, long2, long3 );
             break;
@@ -967,6 +1021,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case NUMBER:
             putNumberIncludingType( cursor, long0, long1 );
             break;
+
+        case GEOMETRY_ARRAY:
+            putGeometryCrs( cursor, long1, long2 );
+            putArray( cursor, ( c, i ) -> putGeometry( c, long0Array[i] ) );
         case ZONED_DATE_TIME_ARRAY:
             putArray( cursor, ( c, i ) -> putZonedDateTime( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
             break;
@@ -1017,6 +1075,18 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         default:
             throw new IllegalArgumentException( "Unknown number type " + long1 );
         }
+    }
+
+    private void putGeometryCrs( PageCursor cursor, long long1, long long2 )
+    {
+        cursor.putInt( (int) long1 );
+        cursor.putInt( (int) long2 );
+    }
+
+    private void putGeometry( PageCursor cursor, long long0 )
+    {
+        putGeometryCrs( cursor, long1, long2 );
+        cursor.putLong( long0 );
     }
 
     private void putArray( PageCursor cursor, ArrayElementWriter writer )
@@ -1130,6 +1200,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         inclusion = NEUTRAL;
         switch ( type )
         {
+        case GEOMETRY:
+            return readGeometryCrs( cursor ) && readGeometry( cursor );
         case ZONED_DATE_TIME:
             return readZonedDateTime( cursor );
         case LOCAL_DATE_TIME:
@@ -1148,6 +1220,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return readBoolean( cursor );
         case NUMBER:
             return readNumber( cursor );
+
+        case GEOMETRY_ARRAY:
+            readGeometryCrs( cursor );
+            return readArray( cursor, ArrayType.POINT, this::readGeometry );
         case ZONED_DATE_TIME_ARRAY:
             return readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
         case LOCAL_DATE_TIME_ARRAY:
@@ -1170,6 +1246,19 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             setCursorException( cursor, "non-valid type, " + type );
             return false;
         }
+    }
+
+    private boolean readGeometry( PageCursor cursor )
+    {
+        long0 = cursor.getLong();
+        return true;
+    }
+
+    private boolean readGeometryCrs( PageCursor cursor )
+    {
+        long1 = cursor.getInt();
+        long2 = cursor.getInt();
+        return true;
     }
 
     private boolean readArray( PageCursor cursor, ArrayType type, ArrayElementReader reader )
@@ -1658,6 +1747,32 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         writeDurationWithTotalAvgSeconds( months, days, totalAvgSeconds, nanos );
     }
 
+    @Override
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
+    {
+        if ( !isArray )
+        {
+            updateCurve( crs );
+            type = Type.GEOMETRY;
+            long0 = spaceFillingCurve.derivedValueFor( coordinate );
+        }
+        else
+        {
+            assert this.crs == crs;
+            long0Array[currentArrayOffset] = spaceFillingCurve.derivedValueFor( coordinate );
+        }
+    }
+
+    private void updateCurve( CoordinateReferenceSystem crs )
+    {
+        if ( this.crs == null || this.crs != crs )
+        {
+            long1 = crs.getTable().getTableId();
+            long2 = crs.getCode();
+            spaceFillingCurve = settings.forCrs( (int) long1, (int) long2, true );
+        }
+    }
+
     private void writeDurationWithTotalAvgSeconds( long months, long days, long totalAvgSeconds, int nanos )
     {
         if ( !isArray )
@@ -1696,6 +1811,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         initializeTypeFromArrayType( arrayType );
         switch ( type )
         {
+        case GEOMETRY_ARRAY:
+            initializeGeometryArray( size );
+            break;
         case ZONED_DATE_TIME_ARRAY:
             initializeZonedDateTimeArray( size );
             break;
@@ -1779,7 +1897,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             type = Type.TEXT_ARRAY;
             break;
         case POINT:
-            throw new UnsupportedOperationException( "Not implemented yet" );
+            type = Type.GEOMETRY_ARRAY;
+            break;
         case ZONED_DATE_TIME:
             type = Type.ZONED_DATE_TIME_ARRAY;
             break;
@@ -1801,6 +1920,13 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         default:
             throw new IllegalArgumentException( "Unknown array type " + arrayType );
         }
+    }
+
+    private void initializeGeometryArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        // plain long1 for tableId
+        // plain long2 for code
     }
 
     private void initializeNumberArray( int size )
@@ -1892,6 +2018,14 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     /* </write> */
 
     /* <copyFrom.helpers> */
+    private void copyGeometryArrayFrom( GenericKeyState key, int length )
+    {
+        initializeGeometryArray( length );
+        System.arraycopy( key.long0Array, 0, this.long0Array, 0, length );
+        this.long1 = key.long1;
+        this.long2 = key.long2;
+    }
+
     private void copyNumberArrayFrom( GenericKeyState key, int length )
     {
         initializeNumberArray( length );
