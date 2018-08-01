@@ -96,6 +96,8 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
 
     public interface SettingVisitor
     {
+        void count( int count );
+
         void visit( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings );
     }
 }

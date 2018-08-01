@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSett
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 

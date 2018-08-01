@@ -65,14 +65,14 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILE
  * </dl>
  * </p>
  */
-public abstract class SpaceFillingCurveSettings
+public class SpaceFillingCurveSettings
 {
     private SpatialIndexType indexType = SpatialIndexType.SingleSpaceFillingCurve;
     int dimensions;
     int maxLevels;
     Envelope extents;
 
-    private SpaceFillingCurveSettings( int dimensions, Envelope extents, int maxLevels )
+    SpaceFillingCurveSettings( int dimensions, Envelope extents, int maxLevels )
     {
         this.dimensions = dimensions;
         this.extents = extents;
