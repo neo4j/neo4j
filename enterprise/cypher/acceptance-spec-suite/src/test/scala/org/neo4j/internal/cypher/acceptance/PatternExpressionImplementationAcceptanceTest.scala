@@ -408,7 +408,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set node properties") {
     setup()
 
-    executeWith(Configs.Interpreted - Configs.Version3_4 - Configs.Cost2_3,
+    executeWith(Configs.Interpreted - Configs.Cost2_3,
       "MATCH (n) SET n.friends = size((n)<--())",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -416,7 +416,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set relationship properties") {
     setup()
 
-    executeWith(Configs.Interpreted - Configs.Version3_4 - Configs.Cost2_3,
+    executeWith(Configs.Interpreted - Configs.Cost2_3,
       "MATCH (n)-[r]-() SET r.friends = size((n)<--())",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -424,7 +424,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set node/relationship properties") {
     setup()
 
-    executeWith(Configs.Interpreted - Configs.Version3_4 - Configs.Version2_3,
+    executeWith(Configs.Interpreted - Configs.Version2_3,
       "MATCH (n)-[r]-() UNWIND [n,r] AS x SET x.friends = size((n)<--())",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -432,7 +432,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set node properties from map") {
     setup()
 
-    executeWith(Configs.Interpreted - Configs.Version3_4 - Configs.Cost2_3,
+    executeWith(Configs.Interpreted - Configs.Cost2_3,
       "MATCH (n) SET n += {friends: size((n)<--())}",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -440,7 +440,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set relationship properties from map") {
     setup()
 
-    executeWith(Configs.Interpreted - Configs.Version3_4 - Configs.Cost2_3,
+    executeWith(Configs.Interpreted - Configs.Cost2_3,
       "MATCH (n)-[r]-() SET r += {friends: size((n)<--())}",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }

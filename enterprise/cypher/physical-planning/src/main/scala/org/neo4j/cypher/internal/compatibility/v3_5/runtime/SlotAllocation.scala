@@ -172,6 +172,15 @@ object SlotAllocation {
     val TRAVERSE_INTO_CHILDREN = Some((s: Accumulator) => s)
     val DO_NOT_TRAVERSE_INTO_CHILDREN = None
 
+    p.treeFind[Expression] {
+      case _: PatternExpression =>
+        true
+      case _: PatternComprehension =>
+        true
+    }.foreach { _ =>
+      throw new SlotAllocationFailed(s"Don't know how to handle $p")
+    }
+
     val result = p.treeFold[Accumulator](Accumulator(slots, doNotTraverseExpression = None)) {
       //-----------------------------------------------------
       // Logical plans
