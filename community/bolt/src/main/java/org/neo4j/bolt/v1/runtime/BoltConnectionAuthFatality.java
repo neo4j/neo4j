@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.runtime;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.logging.Log;
 
 import static java.util.Objects.requireNonNull;
 
@@ -29,30 +28,27 @@ import static java.util.Objects.requireNonNull;
  */
 public class BoltConnectionAuthFatality extends BoltConnectionFatality
 {
-    private final boolean loggable;
+    private final boolean isLoggable;
 
     public BoltConnectionAuthFatality( String message, Throwable cause )
     {
         this( message, cause, false );
     }
 
-    public BoltConnectionAuthFatality( String message, AuthenticationException cause )
+    public BoltConnectionAuthFatality( AuthenticationException cause )
     {
-        this( message, cause, true );
+        this( cause.getMessage(), cause, true );
     }
 
-    private BoltConnectionAuthFatality( String message, Throwable cause, boolean loggable )
+    private BoltConnectionAuthFatality( String message, Throwable cause, boolean isLoggable )
     {
         super( message, cause );
-        requireNonNull( cause );
-        this.loggable = loggable;
+        requireNonNull( message );
+        this.isLoggable = isLoggable;
     }
 
-    public void writeToLog( Log log )
+    public boolean isLoggable()
     {
-        if ( loggable )
-        {
-            log.warn( getCause().getMessage() );
-        }
+        return this.isLoggable;
     }
 }

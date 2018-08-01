@@ -219,7 +219,10 @@ public class DefaultBoltConnection implements BoltConnection
         catch ( BoltConnectionAuthFatality ex )
         {
             shouldClose.set( true );
-            ex.writeToLog( userLog );
+            if ( ex.isLoggable() )
+            {
+                userLog.warn( ex.getMessage() );
+            }
         }
         catch ( BoltProtocolBreachFatality ex )
         {

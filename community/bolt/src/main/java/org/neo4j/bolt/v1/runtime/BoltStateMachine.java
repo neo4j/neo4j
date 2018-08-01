@@ -740,7 +740,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             }
             if ( t instanceof AuthenticationException )
             {
-                throw new BoltConnectionAuthFatality( "Failed to process a bolt message", (AuthenticationException) t );
+                throw new BoltConnectionAuthFatality( (AuthenticationException) t );
             }
 
             throw new BoltConnectionFatality( "Failed to process a bolt message", t );

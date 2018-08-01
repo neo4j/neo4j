@@ -291,7 +291,7 @@ public class DefaultBoltConnectionTest
         BoltConnection connection = newConnection();
         connection.enqueue( machine ->
         {
-            throw new BoltConnectionAuthFatality( "auth failure", new AuthenticationException( Status.Security.Unauthorized, "inner error" ) );
+            throw new BoltConnectionAuthFatality( new AuthenticationException( Status.Security.Unauthorized, "inner error" ) );
         } );
         connection.processNextBatch();
         verify( stateMachine ).close();
