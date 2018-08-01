@@ -144,24 +144,28 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public boolean isNodeIndex()
     {
+        assertInUnterminatedTransaction();
         return labels != null;
     }
 
     @Override
     public boolean isRelationshipIndex()
     {
+        assertInUnterminatedTransaction();
         return relTypes != null;
     }
 
     @Override
     public boolean isMultiTokenIndex()
     {
+        assertInUnterminatedTransaction();
         return labels != null ? labels.length > 1 : relTypes.length > 1;
     }
 
     @Override
     public boolean isCompositeIndex()
     {
+        assertInUnterminatedTransaction();
         return propertyKeys.length > 1;
     }
 
