@@ -38,6 +38,7 @@ import org.neo4j.index.impl.lucene.explicit.LuceneUtil;
  * to turn off searching of modifications made inside a transaction,
  * to gain performance.
  */
+@Deprecated
 public class QueryContext
 {
     private final Object queryOrQueryObject;
@@ -46,6 +47,7 @@ public class QueryContext
     private boolean tradeCorrectnessForSpeed;
     private int topHits;
 
+    @Deprecated
     public QueryContext( Object queryOrQueryObject )
     {
         this.queryOrQueryObject = queryOrQueryObject;
@@ -54,6 +56,7 @@ public class QueryContext
     /**
      * @return the query (or query object) specified in the constructor.
      */
+    @Deprecated
     public Object getQueryOrQueryObject()
     {
         return queryOrQueryObject;
@@ -65,6 +68,7 @@ public class QueryContext
      * @param sorting The sorting to be used
      * @return A QueryContext with the sorting applied.
      */
+    @Deprecated
     public QueryContext sort( Sort sorting )
     {
         this.sorting = sorting;
@@ -78,6 +82,7 @@ public class QueryContext
      * @param additionalKeys Any additional keys to sort on.
      * @return A QueryContext with sorting added to it.
      */
+    @Deprecated
     public QueryContext sort( String key, String... additionalKeys )
     {
         SortField firstSortField = new SortedSetSortField( key, false );
@@ -99,6 +104,7 @@ public class QueryContext
      * @return a QueryContext with sorting by relevance, i.e. sorted after which
      * score each hit has.
      */
+    @Deprecated
     public QueryContext sortByScore()
     {
         return sort( Sort.RELEVANCE );
@@ -114,6 +120,7 @@ public class QueryContext
      * for lowest first (ascending), {@code false} for highest first (descending)
      * @return a QueryContext with sorting by numeric value.
      */
+    @Deprecated
     public QueryContext sortNumeric( String key, boolean reversed )
     {
         if ( !( queryOrQueryObject instanceof NumericRangeQuery ) )
@@ -146,6 +153,7 @@ public class QueryContext
      * @return the sorting set with one of the sort methods, f.ex
      * {@link #sort(Sort)} or {@link #sortByScore()}
      */
+    @Deprecated
     public Sort getSorting()
     {
         return this.sorting;
@@ -158,6 +166,7 @@ public class QueryContext
      * @param defaultOperator The new operator to use.
      * @return A QueryContext with the new default operator applied.
      */
+    @Deprecated
     public QueryContext defaultOperator( Operator defaultOperator )
     {
         this.defaultOperator = defaultOperator;
@@ -170,6 +179,7 @@ public class QueryContext
      * @return the default {@link Operator} specified with
      *         {@link #defaultOperator} or "OR" if none specified.
      */
+    @Deprecated
     public Operator getDefaultOperator()
     {
         return this.defaultOperator;
@@ -188,6 +198,7 @@ public class QueryContext
      * @return A QueryContext which doesn't necessarily include the latest
      * transaction modifications in the results, but may perform faster.
      */
+    @Deprecated
     public QueryContext tradeCorrectnessForSpeed()
     {
         this.tradeCorrectnessForSpeed = true;
@@ -199,6 +210,7 @@ public class QueryContext
      * the inclusion of transactional state in the results.
      * @return whether or not {@link #tradeCorrectnessForSpeed()} has been called.
      */
+    @Deprecated
     public boolean getTradeCorrectnessForSpeed()
     {
         return tradeCorrectnessForSpeed;
@@ -214,6 +226,7 @@ public class QueryContext
      * @param numberOfTopHits the maximum number of top hits to return.
      * @return A {@link QueryContext} with the number of top hits set.
      */
+    @Deprecated
     public QueryContext top( int numberOfTopHits )
     {
         this.topHits = numberOfTopHits;
@@ -225,6 +238,7 @@ public class QueryContext
      *
      * @return the top hits set with {@link #top(int)}.
      */
+    @Deprecated
     public int getTop()
     {
         return this.topHits;
@@ -244,6 +258,7 @@ public class QueryContext
      * @param to the high end of the range (inclusive)
      * @return a {@link QueryContext} to do numeric range queries with.
      */
+    @Deprecated
     public static QueryContext numericRange( String key, Number from, Number to )
     {
         return numericRange( key, from, to, true, true );
@@ -266,6 +281,7 @@ public class QueryContext
      * or not.
      * @return a {@link QueryContext} to do numeric range queries with.
      */
+    @Deprecated
     public static QueryContext numericRange( String key, Number from, Number to,
             boolean includeFrom, boolean includeTo )
     {

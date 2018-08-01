@@ -42,6 +42,7 @@ import org.neo4j.unsafe.batchinsert.internal.IndexConfigStoreProvider;
  * created and populated using {@link BatchInserterIndex}s from this provider
  * are compatible with {@link Index}s from {@link LuceneIndexImplementation}.
  */
+@Deprecated
 public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterIndexProvider
 {
     private final BatchInserter inserter;
@@ -49,6 +50,7 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
     final IndexConfigStore indexStore;
     private LuceneBatchInserterIndex.RelationshipLookup relationshipLookup;
 
+    @Deprecated
     public LuceneBatchInserterIndexProviderNewImpl( final BatchInserter inserter )
     {
         this.inserter = inserter;

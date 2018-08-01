@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Relationship;
 @Deprecated
 public interface RelationshipAutoIndexer extends AutoIndexer<Relationship>
 {
+    @Deprecated
     @Override
     ReadableRelationshipIndex getAutoIndex();
 }

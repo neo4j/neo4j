@@ -123,7 +123,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
-            databases_root_path, active_database, ( data, current ) -> new File( data, current ), PATH );
+            databases_root_path, active_database, File::new, PATH );
 
     @Title( "Read only database" )
     @Description( "Only allow read operations from this Neo4j instance. " +
@@ -624,7 +624,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "- Less garbage and heap presence\n" +
             "- Less CPU resources per operation\n" +
             "- Controllable memory usage, due to being bound by the page cache" )
-            public static final Setting<String> default_schema_provider =
+    public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
                     optionsIgnoreCase( NATIVE20.providerIdentifier(), NATIVE10.providerIdentifier(), LUCENE10.providerIdentifier(),
                             NATIVE_BTREE10.providerIdentifier() ),
@@ -915,6 +915,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> kill_query_verbose =
             setting( "dbms.procedures.kill_query_verbose", BOOLEAN, TRUE );
 
+    @Deprecated
     @Description( "Whether or not to release the exclusive schema lock is while building uniqueness constraints index" )
     @Internal
     public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(

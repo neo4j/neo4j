@@ -329,6 +329,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
     }
 
+    @Deprecated
     @Override
     public IndexManager index()
     {

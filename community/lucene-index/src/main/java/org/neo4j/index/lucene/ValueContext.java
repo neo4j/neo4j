@@ -23,11 +23,13 @@ package org.neo4j.index.lucene;
  * ValueContext allows you to give not just a value, but to give the value
  * some context to live in.
  */
+@Deprecated
 public class ValueContext
 {
     private final Object value;
     private boolean indexNumeric;
 
+    @Deprecated
     public ValueContext( Object value )
     {
         this.value = value;
@@ -36,6 +38,7 @@ public class ValueContext
     /**
      * @return the value object specified in the constructor.
      */
+    @Deprecated
     public Object getValue()
     {
         return value;
@@ -47,6 +50,7 @@ public class ValueContext
      *
      * @return a numeric ValueContext
      */
+    @Deprecated
     public ValueContext indexNumeric()
     {
         if ( !( this.value instanceof Number ) )
@@ -64,11 +68,13 @@ public class ValueContext
      *
      * @return the, by the user, intended value to index.
      */
+    @Deprecated
     public Object getCorrectValue()
     {
         return this.indexNumeric ? this.value : this.value.toString();
     }
 
+    @Deprecated
     @Override
     public String toString()
     {
@@ -81,6 +87,7 @@ public class ValueContext
      * @return A ValueContext that can be used with
      * {@link org.neo4j.graphdb.index.Index#add(org.neo4j.graphdb.PropertyContainer, String, Object)}
      */
+    @Deprecated
     public static ValueContext numeric( Number value )
     {
         return new ValueContext( value ).indexNumeric();

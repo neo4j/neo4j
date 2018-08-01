@@ -32,7 +32,9 @@ import org.neo4j.graphdb.Relationship;
  *
  * @author Mattias Persson
  *
+ * @deprecated This will be removed in 4.0.
  */
+@Deprecated
 public interface BatchInserterIndexProvider
 {
     /**
@@ -49,6 +51,7 @@ public interface BatchInserterIndexProvider
      * @return the {@link BatchInserterIndex} corresponding to the
      *         {@code indexName}.
      */
+    @Deprecated
     BatchInserterIndex nodeIndex( String indexName, Map<String, String> config );
 
     /**
@@ -65,6 +68,7 @@ public interface BatchInserterIndexProvider
      * @return the {@link BatchInserterIndex} corresponding to the
      *         {@code indexName}.
      */
+    @Deprecated
     BatchInserterIndex relationshipIndex( String indexName, Map<String, String> config );
 
     /**
@@ -73,5 +77,6 @@ public interface BatchInserterIndexProvider
      * {@link BatchInserter} there's no guaranteed that data added to indexes
      * will be persisted.
      */
+    @Deprecated
     void shutdown();
 }

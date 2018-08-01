@@ -31,13 +31,16 @@ import org.neo4j.graphdb.Relationship;
  * and {@link Relationship}s. An {@link IndexManager} is paired with a
  * {@link GraphDatabaseService} via {@link GraphDatabaseService#index()} so that
  * indexes can be accessed directly from the graph database.
+ * @deprecated The {@link IndexManager} based indexes will be removed in 4.0, please consider using schema indexes instead.
  */
+@Deprecated
 public interface IndexManager
 {
     /**
      * The configuration key to use for specifying which provider an index
      * will have, i.e. which implementation will be used to back that index.
      */
+    @Deprecated
     String PROVIDER = "provider";
 
     /**
@@ -48,6 +51,7 @@ public interface IndexManager
      * @return whether or not there exists a node index with the name
      * {@code indexName}.
      */
+    @Deprecated
     boolean existsForNodes( String indexName );
 
     /**
@@ -63,6 +67,7 @@ public interface IndexManager
      * @param indexName the name of the node index.
      * @return the {@link Index} corresponding to the {@code indexName}.
      */
+    @Deprecated
     Index<Node> forNodes( String indexName );
 
     /**
@@ -81,6 +86,7 @@ public interface IndexManager
      * only interpreted by the implementation represented by the provider.
      * @return a named {@link Index} for {@link Node}s
      */
+    @Deprecated
     Index<Node> forNodes( String indexName, Map<String, String> customConfiguration );
 
     /**
@@ -90,6 +96,7 @@ public interface IndexManager
      *
      * @return the names of all existing {@link Node} indexes.
      */
+    @Deprecated
     String[] nodeIndexNames();
 
     /**
@@ -100,6 +107,7 @@ public interface IndexManager
      * @return whether or not there exists a relationship index with the name
      * {@code indexName}.
      */
+    @Deprecated
     boolean existsForRelationships( String indexName );
 
     /**
@@ -115,6 +123,7 @@ public interface IndexManager
      * @param indexName the name of the node index.
      * @return the {@link Index} corresponding to the {@code indexName}.
      */
+    @Deprecated
     RelationshipIndex forRelationships( String indexName );
 
     /**
@@ -133,6 +142,7 @@ public interface IndexManager
      * only interpreted by the implementation represented by the provider.
      * @return a named {@link Index} for {@link Relationship}s
      */
+    @Deprecated
     RelationshipIndex forRelationships( String indexName,
             Map<String, String> customConfiguration );
 
@@ -143,6 +153,7 @@ public interface IndexManager
      *
      * @return the names of all existing {@link Relationship} indexes.
      */
+    @Deprecated
     String[] relationshipIndexNames();
 
     /**
@@ -154,6 +165,7 @@ public interface IndexManager
      * @param index the index to get the configuration for
      * @return configuration for the {@code index}.
      */
+    @Deprecated
     Map<String, String> getConfiguration( Index<? extends PropertyContainer> index );
 
     /**
@@ -171,6 +183,7 @@ public interface IndexManager
      * @param value the new value of the configuration parameter.
      * @return the overwritten value if any.
      */
+    @Deprecated
     String setConfiguration( Index<? extends PropertyContainer> index, String key, String value );
 
     /**
@@ -188,6 +201,7 @@ public interface IndexManager
      * @param key the configuration parameter key.
      * @return the removed value if any.
      */
+    @Deprecated
     String removeConfiguration( Index<? extends PropertyContainer> index, String key );
 
     /**

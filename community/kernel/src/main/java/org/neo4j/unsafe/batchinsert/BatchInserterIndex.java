@@ -37,7 +37,10 @@ import org.neo4j.graphdb.index.IndexHits;
  * {@link #query(Object)} a call to {@link #flush()} must be made prior to
  * calling such a method. This enables implementations more flexibility in
  * making for performance optimizations.
+ *
+ * @deprecated This will be removed in 4.0.
  */
+@Deprecated
 public interface BatchInserterIndex
 {
     /**
@@ -59,6 +62,7 @@ public interface BatchInserterIndex
      *            {@link Relationship}) to associate the key/value pairs with.
      * @param properties key/value pairs to index for {@code entity}.
      */
+    @Deprecated
     void add( long entityId, Map<String, Object> properties );
 
     /**
@@ -81,6 +85,7 @@ public interface BatchInserterIndex
      *            {@link Relationship}) to associate the key/value pairs with.
      * @param properties key/value pairs to index for {@code entity}.
      */
+    @Deprecated
     void updateOrAdd( long entityId, Map<String, Object> properties );
 
     /**
@@ -102,6 +107,7 @@ public interface BatchInserterIndex
      *         result set isn't looped through, {@link IndexHits#close()} must
      *         be called before disposing of the result.
      */
+    @Deprecated
     IndexHits<Long> get( String key, Object value );
 
     /**
@@ -123,6 +129,7 @@ public interface BatchInserterIndex
      * result set isn't looped through, {@link IndexHits#close()} must be
      * called before disposing of the result.
      */
+    @Deprecated
     IndexHits<Long> query( String key, Object queryOrQueryObject );
 
     /**
@@ -142,6 +149,7 @@ public interface BatchInserterIndex
      * result set isn't looped through, {@link IndexHits#close()} must be
      * called before disposing of the result.
      */
+    @Deprecated
     IndexHits<Long> query( Object queryOrQueryObject );
 
     /**
@@ -151,6 +159,7 @@ public interface BatchInserterIndex
      * {@link #updateOrAdd(long, Map)} will find previous indexing correctly
      * after a flush.
      */
+    @Deprecated
     void flush();
 
     /**
@@ -165,5 +174,6 @@ public interface BatchInserterIndex
      * @param key the key to set cache capacity for.
      * @param size the number of values to cache results for.
      */
+    @Deprecated
     void setCacheCapacity( String key, int size );
 }

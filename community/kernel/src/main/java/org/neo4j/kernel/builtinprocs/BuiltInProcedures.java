@@ -73,6 +73,7 @@ import static org.neo4j.procedure.Mode.WRITE;
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures
 {
+    public static final String EXPLICIT_INDEX_DEPRECATION = "This procedure is deprecated by the schema and full-text indexes, and will be removed in 4.0.";
     @Context
     public KernelTransaction tx;
 
@@ -252,8 +253,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Get node from explicit index. Replaces `START n=node:nodes(key = 'A')`" )
-    @Procedure( name = "db.index.explicit.seekNodes", mode = READ )
+    @Procedure( name = "db.index.explicit.seekNodes", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<NodeResult> nodeManualIndexSeek( @Name( "indexName" ) String explicitIndexName,
             @Name( "key" ) String key,
             @Name( "value" ) Object value )
@@ -274,8 +276,9 @@ public class BuiltInProcedures
 
     }
 
+    @Deprecated
     @Description( "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`" )
-    @Procedure( name = "db.index.explicit.searchNodes", mode = READ )
+    @Procedure( name = "db.index.explicit.searchNodes", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<WeightedNodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
             throws ProcedureException
@@ -293,8 +296,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Get relationship from explicit index. Replaces `START r=relationship:relIndex(key = 'A')`" )
-    @Procedure( name = "db.index.explicit.seekRelationships", mode = READ )
+    @Procedure( name = "db.index.explicit.seekRelationships", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<RelationshipResult> relationshipManualIndexSeek( @Name( "indexName" ) String manualIndexName,
             @Name( "key" ) String key,
             @Name( "value" ) Object value )
@@ -314,8 +318,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Search relationship in explicit index. Replaces `START r=relationship:relIndex('key:foo*')`" )
-    @Procedure( name = "db.index.explicit.searchRelationships", mode = READ )
+    @Procedure( name = "db.index.explicit.searchRelationships", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearch(
             @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
@@ -334,8 +339,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Search relationship in explicit index, starting at the node 'in'." )
-    @Procedure( name = "db.index.explicit.searchRelationshipsIn", mode = READ )
+    @Procedure( name = "db.index.explicit.searchRelationshipsIn", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundStartNode(
             @Name( "indexName" ) String indexName,
             @Name( "in" ) Node in,
@@ -356,8 +362,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Search relationship in explicit index, ending at the node 'out'." )
-    @Procedure( name = "db.index.explicit.searchRelationshipsOut", mode = READ )
+    @Procedure( name = "db.index.explicit.searchRelationshipsOut", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundEndNode(
             @Name( "indexName" ) String indexName,
             @Name( "out" ) Node out,
@@ -377,8 +384,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Search relationship in explicit index, starting at the node 'in' and ending at 'out'." )
-    @Procedure( name = "db.index.explicit.searchRelationshipsBetween", mode = READ )
+    @Procedure( name = "db.index.explicit.searchRelationshipsBetween", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundNodes(
             @Name( "indexName" ) String indexName,
             @Name( "in" ) Node in,
@@ -400,8 +408,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Get node from explicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`" )
-    @Procedure( name = "db.index.explicit.auto.seekNodes", mode = READ )
+    @Procedure( name = "db.index.explicit.auto.seekNodes", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<NodeResult> nodeAutoIndexSeek( @Name( "key" ) String key, @Name( "value" ) Object value )
     {
         try ( Statement ignore = tx.acquireStatement() )
@@ -417,8 +426,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Search nodes in explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
-    @Procedure( name = "db.index.explicit.auto.searchNodes", mode = READ )
+    @Procedure( name = "db.index.explicit.auto.searchNodes", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query )
     {
         try ( Statement ignore = tx.acquireStatement() )
@@ -435,9 +445,10 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Get relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index(key " +
                   "= 'A')`" )
-    @Procedure( name = "db.index.explicit.auto.seekRelationships", mode = READ )
+    @Procedure( name = "db.index.explicit.auto.seekRelationships", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<RelationshipResult> relationshipAutoIndexSeek( @Name( "key" ) String key,
             @Name( "value" ) Object value )
     {
@@ -455,10 +466,11 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description(
             "Search relationship in explicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
             "('key:foo*')`" )
-    @Procedure( name = "db.index.explicit.auto.searchRelationships", mode = READ )
+    @Procedure( name = "db.index.explicit.auto.searchRelationships", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<WeightedRelationshipResult> relationshipAutoIndexSearch( @Name( "query" ) Object query )
     {
         try ( Statement ignore = tx.acquireStatement() )
@@ -474,8 +486,9 @@ public class BuiltInProcedures
         }
     }
 
+    @Deprecated
     @Description( "Get or create a node explicit index - YIELD type,name,config" )
-    @Procedure( name = "db.index.explicit.forNodes", mode = WRITE )
+    @Procedure( name = "db.index.explicit.forNodes", mode = WRITE, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<ExplicitIndexInfo> nodeManualIndex( @Name( "indexName" ) String explicitIndexName,
             @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
@@ -492,8 +505,9 @@ public class BuiltInProcedures
         return Stream.of( new ExplicitIndexInfo( "NODE", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 
+    @Deprecated
     @Description( "Get or create a relationship explicit index - YIELD type,name,config" )
-    @Procedure( name = "db.index.explicit.forRelationships", mode = WRITE )
+    @Procedure( name = "db.index.explicit.forRelationships", mode = WRITE, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<ExplicitIndexInfo> relationshipManualIndex( @Name( "indexName" ) String explicitIndexName,
             @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
@@ -510,22 +524,25 @@ public class BuiltInProcedures
         return Stream.of( new ExplicitIndexInfo( "RELATIONSHIP", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 
+    @Deprecated
     @Description( "Check if a node explicit index exists" )
-    @Procedure( name = "db.index.explicit.existsForNodes", mode = READ )
+    @Procedure( name = "db.index.explicit.existsForNodes", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<BooleanResult> nodeManualIndexExists( @Name( "indexName" ) String explicitIndexName )
     {
         return Stream.of( new BooleanResult( graphDatabaseAPI.index().existsForNodes( explicitIndexName ) ) );
     }
 
+    @Deprecated
     @Description( "Check if a relationship explicit index exists" )
-    @Procedure( name = "db.index.explicit.existsForRelationships", mode = READ )
+    @Procedure( name = "db.index.explicit.existsForRelationships", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<BooleanResult> relationshipManualIndexExists( @Name( "indexName" ) String explicitIndexName )
     {
         return Stream.of( new BooleanResult( graphDatabaseAPI.index().existsForRelationships( explicitIndexName ) ) );
     }
 
+    @Deprecated
     @Description( "List all explicit indexes - YIELD type,name,config" )
-    @Procedure( name = "db.index.explicit.list", mode = READ )
+    @Procedure( name = "db.index.explicit.list", mode = READ, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<ExplicitIndexInfo> list()
     {
         IndexManager mgr = graphDatabaseAPI.index();
@@ -543,8 +560,9 @@ public class BuiltInProcedures
         return indexInfos.stream();
     }
 
+    @Deprecated
     @Description( "Remove an explicit index - YIELD type,name,config" )
-    @Procedure( name = "db.index.explicit.drop", mode = WRITE )
+    @Procedure( name = "db.index.explicit.drop", mode = WRITE, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<ExplicitIndexInfo> manualIndexDrop( @Name( "indexName" ) String explicitIndexName )
     {
         IndexManager mgr = graphDatabaseAPI.index();
@@ -564,8 +582,9 @@ public class BuiltInProcedures
         return results.stream();
     }
 
+    @Deprecated
     @Description( "Add a node to an explicit index based on a specified key and value" )
-    @Procedure( name = "db.index.explicit.addNode", mode = WRITE )
+    @Procedure( name = "db.index.explicit.addNode", mode = WRITE, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<BooleanResult> nodeManualIndexAdd( @Name( "indexName" ) String explicitIndexName,
             @Name( "node" ) Node node, @Name( "key" ) String key,
             @Name( "value" ) Object value )
@@ -575,8 +594,9 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
+    @Deprecated
     @Description( "Add a relationship to an explicit index based on a specified key and value" )
-    @Procedure( name = "db.index.explicit.addRelationship", mode = WRITE )
+    @Procedure( name = "db.index.explicit.addRelationship", mode = WRITE, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<BooleanResult> relationshipManualIndexAdd( @Name( "indexName" ) String explicitIndexName,
             @Name( "relationship" ) Relationship relationship,
             @Name( "key" ) String key, @Name( "value" ) Object value )
@@ -588,8 +608,9 @@ public class BuiltInProcedures
 
     private static final String DEFAULT_KEY = " <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]> ";
 
+    @Deprecated
     @Description( "Remove a node from an explicit index with an optional key" )
-    @Procedure( name = "db.index.explicit.removeNode", mode = WRITE )
+    @Procedure( name = "db.index.explicit.removeNode", mode = WRITE, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<BooleanResult> nodeManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
             @Name( "node" ) Node node, @Name( value = "key", defaultValue = DEFAULT_KEY ) String key )
     {
@@ -605,8 +626,9 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
+    @Deprecated
     @Description( "Remove a relationship from an explicit index with an optional key" )
-    @Procedure( name = "db.index.explicit.removeRelationship", mode = WRITE )
+    @Procedure( name = "db.index.explicit.removeRelationship", mode = WRITE, deprecatedBy = EXPLICIT_INDEX_DEPRECATION )
     public Stream<BooleanResult> relationshipManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
             @Name( "relationship" ) Relationship relationship,
             @Name( value = "key", defaultValue = DEFAULT_KEY ) String key )

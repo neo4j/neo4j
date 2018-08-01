@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Relationship;
  * Extends the ReadableRelationshipIndex and the Index interfaces
  * for completing the set of available types.
  */
+@Deprecated
 public interface RelationshipIndex extends ReadableRelationshipIndex,
         Index<Relationship>
 {

@@ -706,6 +706,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         return actual.index().relationshipIndexNames();
     }
 
+    @Deprecated
     @Override
     public IndexManager index()
     {

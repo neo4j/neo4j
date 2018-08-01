@@ -33,19 +33,24 @@ import org.neo4j.graphdb.index.IndexHits;
  * Please note that the timestamps don't need to represent actual points in
  * time, any <code>long</code> that identifies the indexed {@link Node} or
  * {@link Relationship} and defines its global order is fine.
+ *
+ * @deprecated This will be removed in a 4.0. Use schema indexes on date/time valued properties instead.
  */
+@Deprecated
 public interface TimelineIndex<T extends PropertyContainer>
 {
     /**
      * @return the last entity in the timeline, that is the entity with the highest
      * timestamp or {@code null} if the timeline is empty.
      */
+    @Deprecated
     T getLast();
 
     /**
      * @return the first entity in the timeline, that is the entity with the lowest
      * timestamp or {@code null} if the timeline is empty.
      */
+    @Deprecated
     T getFirst();
 
     /**
@@ -55,6 +60,7 @@ public interface TimelineIndex<T extends PropertyContainer>
      * @param entity the entity to remove from this timeline.
      * @param timestamp the timestamp this entity was added with.
      */
+    @Deprecated
     void remove( T entity, long timestamp );
 
     /**
@@ -63,6 +69,7 @@ public interface TimelineIndex<T extends PropertyContainer>
      * @param entity the entity to add to this timeline.
      * @param timestamp the timestamp to use.
      */
+    @Deprecated
     void add( T entity, long timestamp );
 
     /**
@@ -78,6 +85,7 @@ public interface TimelineIndex<T extends PropertyContainer>
      * @return all entities within the given boundaries in this timeline, ordered
      * by timestamp.
      */
+    @Deprecated
     IndexHits<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull, boolean reversed );
 
     /**
@@ -91,5 +99,6 @@ public interface TimelineIndex<T extends PropertyContainer>
      * @return all entities within the given boundaries in this timeline, ordered
      * by timestamp.
      */
+    @Deprecated
     IndexHits<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull );
 }

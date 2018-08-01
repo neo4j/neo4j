@@ -236,6 +236,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return getGraphDatabaseAPI().getNodeById( id );
     }
 
+    @Deprecated
     @Override
     public IndexManager index()
     {
