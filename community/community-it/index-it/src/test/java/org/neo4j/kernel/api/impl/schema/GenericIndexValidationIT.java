@@ -44,7 +44,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 public class GenericIndexValidationIT
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerIdentifier() );
+    public final DatabaseRule db = new EmbeddedDatabaseRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerIdentifier() );
 
     @Rule
     public final RandomRule random = new RandomRule();

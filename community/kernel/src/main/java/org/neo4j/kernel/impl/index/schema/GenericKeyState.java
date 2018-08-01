@@ -65,6 +65,11 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 {
+    /**
+     * This is the biggest size a static (as in non-dynamic, like string), non-array value can have.
+     */
+    static final int BIGGEST_STATIC_SIZE = Long.BYTES * 4; // long0, long1, long2, long3
+
     // TODO copy-pasted from individual keys
     // TODO also put this in Type enum
     private static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */

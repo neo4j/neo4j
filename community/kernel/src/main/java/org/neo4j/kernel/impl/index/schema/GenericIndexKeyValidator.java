@@ -30,6 +30,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.impl.index.schema.GenericKeyState.BIGGEST_STATIC_SIZE;
 
 /**
  * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link CompositeGenericKey}.
@@ -69,7 +70,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
      * @param values the value tuple to calculate some exaggerated worst-case size of.
      * @return the calculated worst-case size of the value tuple.
      */
-    private int worstCaseLength( Value[] values )
+    private static int worstCaseLength( Value[] values )
     {
         int length = Long.BYTES;
         for ( Value value : values )
@@ -82,7 +83,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
         return length;
     }
 
-    private int worstCaseLength( AnyValue value )
+    private static int worstCaseLength( AnyValue value )
     {
         if ( value.isSequenceValue() )
         {
@@ -101,12 +102,9 @@ class GenericIndexKeyValidator implements Validator<Value[]>
             case TEXT:
                 // For text, which is very dynamic in its nature do a worst-case off of number of characters in it
                 return ((TextValue) value).length() * 4;
-            case TEMPORAL:
-                // For temporal values we know that they won't be bigger than 4 longs
-                return Long.BYTES * 4;
             default:
-                // For all else we know that they are roughly a long worth of bytes, so make that 2
-                return Long.BYTES * 2;
+                // For all else then use the biggest possible value for a non-dynamic, non-array value a state can occupy
+                return BIGGEST_STATIC_SIZE;
             }
         }
     }

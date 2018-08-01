@@ -55,7 +55,7 @@ public class GenericIndexKeyValidatorTest
         // given
         Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
         doThrow( RuntimeException.class ).when( layout ).newKey();
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 100, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, layout );
 
         // when
         validator.validate( new Value[]{intValue( 10 ), epochDate( 100 ), stringValue( "abc" )} );
@@ -129,7 +129,7 @@ public class GenericIndexKeyValidatorTest
         assertThat( countNotOk, greaterThan( 0 ) );
     }
 
-    private int actualSize( Value[] tuple, CompositeGenericKey key )
+    private static int actualSize( Value[] tuple, CompositeGenericKey key )
     {
         key.initialize( 0 );
         for ( int i = 0; i < tuple.length; i++ )
