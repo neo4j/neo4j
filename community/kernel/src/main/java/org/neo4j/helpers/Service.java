@@ -119,7 +119,7 @@ public abstract class Service
      * Enabling this is useful for debugging why services aren't loaded where you would expect them to.
      */
     private static final boolean printServiceLoaderStackTraces =
-            flag( Service.class, "printServiceLoaderStackTraces", false );
+            flag( Service.class, "printServiceLoaderStackTraces", true );
 
     private final Set<String> keys;
 
@@ -194,8 +194,9 @@ public abstract class Service
      * @param type the type of the Service to load
      * @param key the key that identifies the desired implementation
      * @return the matching Service implementation
+     * @throws NoSuchElementException if no service could be loaded with the given key.
      */
-    public static <T extends Service> T load( Class<T> type, String key )
+    public static <T extends Service> T load( Class<T> type, String key ) throws NoSuchElementException
     {
         T service = loadSilently( type, key );
         if ( service == null )
@@ -225,6 +226,15 @@ public abstract class Service
             this.keys = new HashSet<>( Arrays.asList( altKeys ) );
             this.keys.add( key );
         }
+    }
+
+    /**
+     * A short-hand alternative to {@link #Service(String, String...)} where a single key is derived by lower-casing the non-qualified class-name of the
+     * Service implementation.
+     */
+    protected Service()
+    {
+        this.keys = Collections.singleton( getClass().getSimpleName().toLowerCase() );
     }
 
     @Override
