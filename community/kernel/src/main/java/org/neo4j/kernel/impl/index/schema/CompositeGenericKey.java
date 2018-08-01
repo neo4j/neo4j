@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -33,12 +34,12 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
 {
     private GenericKeyState[] states;
 
-    CompositeGenericKey( int slots )
+    CompositeGenericKey( int slots, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
     {
         states = new GenericKeyState[slots];
         for ( int i = 0; i < states.length; i++ )
         {
-            states[i] = new GenericKeyState();
+            states[i] = new GenericKeyState( spatialSettings );
         }
     }
 

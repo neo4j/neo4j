@@ -47,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GenericKeyStateCompareTest
 {
-
     @Test
     void compareGenericKeyState()
     {
@@ -121,7 +120,7 @@ class GenericKeyStateCompareTest
         List<GenericKeyState> states = new ArrayList<>();
         for ( Value value : allValues )
         {
-            GenericKeyState state = new GenericKeyState();
+            GenericKeyState state = new GenericKeyState( null ); // TODO <-- also do something with this one when spatial is supported
             state.writeValue( value, NativeIndexKey.Inclusion.NEUTRAL );
             states.add( state );
         }

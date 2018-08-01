@@ -78,7 +78,7 @@ public class SpatialIndexProvider extends IndexProvider
         return new ConfiguredSpaceFillingCurveSettingsCache( config );
     }
 
-    private static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
+    static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
     {
         int extraLevels = config.get( SpatialIndexSettings.space_filling_curve_extra_levels );
         double topThreshold = config.get( SpatialIndexSettings.space_filling_curve_top_threshold );

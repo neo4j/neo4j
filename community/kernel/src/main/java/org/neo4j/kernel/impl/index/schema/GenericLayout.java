@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Comparator.comparing;
@@ -31,32 +32,31 @@ import static java.util.Comparator.comparing;
 class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
 {
     static final Comparator<Type> TYPE_COMPARATOR = comparing( t -> t.valueGroup );
-    private final int numberOfSlots;
 
     // Order doesn't matter since it's each Type's ValueGroup that matters and will be used for comparison
     enum Type
     {
-        ZONED_DATE_TIME( ValueGroup.ZONED_DATE_TIME, (byte) 0 ),
-        LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME, (byte) 1 ),
-        DATE( ValueGroup.DATE, (byte) 2 ),
-        ZONED_TIME( ValueGroup.ZONED_TIME, (byte) 3 ),
-        LOCAL_TIME( ValueGroup.LOCAL_TIME, (byte) 4 ),
-        DURATION( ValueGroup.DURATION, (byte) 5 ),
-        TEXT( ValueGroup.TEXT, (byte) 6 ),
-        BOOLEAN( ValueGroup.BOOLEAN, (byte) 7 ),
-        NUMBER( ValueGroup.NUMBER, (byte) 8 ),
-        // TODO SPATIAL
+        GEOMETRY( ValueGroup.GEOMETRY, (byte) 0 ),
+        ZONED_DATE_TIME( ValueGroup.ZONED_DATE_TIME, (byte) 1 ),
+        LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME, (byte) 2 ),
+        DATE( ValueGroup.DATE, (byte) 3 ),
+        ZONED_TIME( ValueGroup.ZONED_TIME, (byte) 4 ),
+        LOCAL_TIME( ValueGroup.LOCAL_TIME, (byte) 5 ),
+        DURATION( ValueGroup.DURATION, (byte) 6 ),
+        TEXT( ValueGroup.TEXT, (byte) 7 ),
+        BOOLEAN( ValueGroup.BOOLEAN, (byte) 8 ),
+        NUMBER( ValueGroup.NUMBER, (byte) 9 ),
 
-        ZONED_DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, (byte) 9 ),
-        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, (byte) 10 ),
-        DATE_ARRAY( ValueGroup.DATE_ARRAY, (byte) 11 ),
-        ZONED_TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY, (byte) 12 ),
-        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY, (byte) 13 ),
-        DURATION_ARRAY( ValueGroup.DURATION_ARRAY, (byte) 14 ),
-        TEXT_ARRAY( ValueGroup.TEXT_ARRAY, (byte) 15 ),
-        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY, (byte) 16 ),
-        NUMBER_ARRAY( ValueGroup.NUMBER_ARRAY, (byte) 17 );
-        // TODO SPATIAL_ARRAY
+        GEOMETRY_ARRAY( ValueGroup.GEOMETRY_ARRAY, (byte) 10 ),
+        ZONED_DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, (byte) 11 ),
+        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, (byte) 12 ),
+        DATE_ARRAY( ValueGroup.DATE_ARRAY, (byte) 13 ),
+        ZONED_TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY, (byte) 14 ),
+        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY, (byte) 15 ),
+        DURATION_ARRAY( ValueGroup.DURATION_ARRAY, (byte) 16 ),
+        TEXT_ARRAY( ValueGroup.TEXT_ARRAY, (byte) 17 ),
+        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY, (byte) 18 ),
+        NUMBER_ARRAY( ValueGroup.NUMBER_ARRAY, (byte) 19 );
 
         private final ValueGroup valueGroup;
         final byte typeId;
@@ -85,16 +85,20 @@ class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
         }
     }
 
-    GenericLayout( int numberOfSlots )
+    private final int numberOfSlots;
+    private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
+
+    GenericLayout( int numberOfSlots, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
     {
         super( "NSIL", 0, 1 );
         this.numberOfSlots = numberOfSlots;
+        this.spatialSettings = spatialSettings;
     }
 
     @Override
     public CompositeGenericKey newKey()
     {
-        return new CompositeGenericKey( numberOfSlots );
+        return new CompositeGenericKey( numberOfSlots, spatialSettings );
     }
 
     @Override

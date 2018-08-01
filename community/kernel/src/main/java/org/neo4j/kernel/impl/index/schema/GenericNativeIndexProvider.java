@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -33,9 +34,13 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
+
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexProvider.getConfiguredSpaceFillingCurveConfiguration;
 
 /**
  * Single-value all-in-one native index
@@ -110,17 +115,32 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
         }
     };
 
+    /**
+     * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
+     * The config is read once and all relevant CRS configs cached here.
+     */
+    private final ConfiguredSpaceFillingCurveSettingsCache configuredSettings;
+
+    /**
+     * A space filling curve configuration used when reading spatial index values.
+     */
+    private final SpaceFillingCurveConfiguration configuration;
+
     public GenericNativeIndexProvider( int priority, IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache,
-            FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+            FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
         super( DESCRIPTOR, priority, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+
+        this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
+        this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
     }
 
     @Override
     IndexLayout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
     {
         int numberOfSlots = descriptor.properties().length;
-        return new GenericLayout( numberOfSlots );
+        // TODO read header from the tree and build a IndexSpecificSpaceFillingCurveSettingsCache and pass in
+        return new GenericLayout( numberOfSlots, null );
     }
 
     @Override

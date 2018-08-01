@@ -66,4 +66,9 @@ public class ConfiguredSpaceFillingCurveSettingsCache
             return SpaceFillingCurveSettingsFactory.fromConfig( maxBits, new EnvelopeSettings( crs ) );
         }
     }
+
+    public int getMaxBits()
+    {
+        return maxBits;
+    }
 }

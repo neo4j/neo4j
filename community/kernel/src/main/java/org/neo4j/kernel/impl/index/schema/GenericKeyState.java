@@ -28,11 +28,14 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.GenericLayout.Type;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.store.TemporalValueWriterAdapter;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
@@ -73,6 +76,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     // TODO copy-pasted from individual keys
     // TODO also put this in Type enum
+    private static final int SIZE_GEOMETRY =       Long.BYTES +    /* rawValueBits */
+                                                   Integer.BYTES + /* coordinate reference system tableId */
+                                                   Integer.BYTES;  /* coordinate reference system codePointId */
     public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
                                                    Integer.BYTES + /* nanoOfSecond */
                                                    Integer.BYTES;  /* timeZone */
@@ -108,7 +114,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private boolean isHighestArray;
     private int arrayLength;
     private int currentArrayOffset;
+    private final IndexSpecificSpaceFillingCurveSettingsCache settings;
 
+    // spatial                long0 (rawValueBits), long1 (coordinate reference system tableId), long2 (coordinate reference system tableId)
     // zoned date time:       long0 (epochSecondUTC), long1 (nanoOfSecond), long2 (zoneId), long3 (zoneOffsetSeconds)
     // local date time:       long0 (nanoOfSecond), long1 (epochSecond)
     // date:                  long0 (epochDay)
@@ -118,7 +126,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     // text:                  long0 (length), long1 (bytesDereferenced), long2 (ignoreLength), long3 (isHighest), byteArray
     // boolean:               long0
     // number:                long0 (value), long1 (number type)
-    // TODO spatial
 
     // for non-array values
     private long long0;
@@ -133,6 +140,15 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private long[] long2Array;
     private long[] long3Array;
     private byte[][] byteArrayArray;
+
+    // for spatial values
+    private CoordinateReferenceSystem crs;
+    private SpaceFillingCurve spaceFillingCurve;
+
+    GenericKeyState( IndexSpecificSpaceFillingCurveSettingsCache settings )
+    {
+        this.settings = settings;
+    }
 
     /* <initializers> */
     void clear()
@@ -498,6 +514,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         switch ( type )
         {
+        case GEOMETRY:
+            return SIZE_GEOMETRY;
         case ZONED_DATE_TIME:
             return SIZE_ZONED_DATE_TIME;
         case LOCAL_DATE_TIME:
@@ -517,6 +535,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return SIZE_BOOLEAN;
         case NUMBER:
             return numberKeySize( long1 ) + SIZE_NUMBER_TYPE;
+        case GEOMETRY_ARRAY:
+            return arrayKeySize( SIZE_GEOMETRY );
         case ZONED_DATE_TIME_ARRAY:
             return arrayKeySize( SIZE_ZONED_DATE_TIME );
         case LOCAL_DATE_TIME_ARRAY:

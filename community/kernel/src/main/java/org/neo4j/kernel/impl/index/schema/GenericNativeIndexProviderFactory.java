@@ -68,7 +68,7 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
 
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == mode);
-        return new GenericNativeIndexProvider( priority, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        return new GenericNativeIndexProvider( priority, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
     }
 
     public interface Dependencies extends AbstractIndexProviderFactory.Dependencies
