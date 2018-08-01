@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AccumulatingAppender extends AppenderSkeleton
 {
-    Queue<LoggingEvent> eventsList = new ConcurrentLinkedQueue<>();
+    private final Queue<LoggingEvent> eventsList = new ConcurrentLinkedQueue<>();
 
     @Override
     protected void append( LoggingEvent event )
@@ -47,12 +47,12 @@ public class AccumulatingAppender extends AppenderSkeleton
         return false;
     }
 
-    public void clearEventsList()
+    void clearEventsList()
     {
         eventsList.clear();
     }
 
-    public ArrayList<LoggingEvent> getEventsList()
+    ArrayList<LoggingEvent> getEventsList()
     {
         return new ArrayList<>( eventsList );
     }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.jmx.impl;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +49,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -73,7 +73,7 @@ import static org.neo4j.kernel.impl.store.StoreFile.SCHEMA_STORE;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.ID;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
-public class StoreSizeBeanTest
+class StoreSizeBeanTest
 {
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private final File storeDir = new File( "" );
@@ -85,12 +85,12 @@ public class StoreSizeBeanTest
     private StoreSize storeSizeBean;
     private File storeDirAbsolute;
 
-    public StoreSizeBeanTest() throws IOException
+    StoreSizeBeanTest() throws IOException
     {
     }
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         Dependencies dependencies = new Dependencies();
         DataSourceManager dataSourceManager = new DataSourceManager();
@@ -172,49 +172,49 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void verifyGroupingOfNodeRelatedFiles() throws Exception
+    void verifyGroupingOfNodeRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(1, 4 ), storeSizeBean.getNodeStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfPropertyRelatedFiles() throws Exception
+    void verifyGroupingOfPropertyRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 5, 10 ), storeSizeBean.getPropertyStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfStringRelatedFiles() throws Exception
+    void verifyGroupingOfStringRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(11, 12 ), storeSizeBean.getStringStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfArrayRelatedFiles() throws Exception
+    void verifyGroupingOfArrayRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(13, 14 ), storeSizeBean.getArrayStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfRelationshipRelatedFiles() throws Exception
+    void verifyGroupingOfRelationshipRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 15, 22 ), storeSizeBean.getRelationshipStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfLabelRelatedFiles() throws Exception
+    void verifyGroupingOfLabelRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 23, 26 ), storeSizeBean.getLabelStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfCountStoreRelatedFiles() throws Exception
+    void verifyGroupingOfCountStoreRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 29, 29), storeSizeBean.getCountStoreSize() );
@@ -223,21 +223,21 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void verifyGroupingOfSchemaRelatedFiles() throws Exception
+    void verifyGroupingOfSchemaRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 27, 28 ), storeSizeBean.getSchemaStoreSize() );
     }
 
     @Test
-    public void sumAllFiles() throws Exception
+    void sumAllFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 0, 29 ), storeSizeBean.getTotalStoreSize() );
     }
 
     @Test
-    public void shouldCountAllLogFiles() throws Throwable
+    void shouldCountAllLogFiles() throws Throwable
     {
         createFileOfSize( logFiles.getLogFileForVersion( 0 ), 1 );
         createFileOfSize( logFiles.getLogFileForVersion( 1 ), 2 );
@@ -246,7 +246,7 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void shouldCountAllIndexFiles() throws Exception
+    void shouldCountAllIndexFiles() throws Exception
     {
         // Explicit index file
         File explicitIndex = new File( storeDir, "explicitIndex" );
@@ -257,20 +257,17 @@ public class StoreSizeBeanTest
         when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( iterable( indexImplementation ) );
 
         // Schema index files
-        {
-            File schemaIndex = new File( storeDir, "schemaIndex" );
-            createFileOfSize( schemaIndex, 2 );
-            IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
-            when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
-            when( indexProvider.directoryStructure() ).thenReturn( directoryStructure );
-        }
-        {
-            File schemaIndex = new File( storeDir, "schemaIndex2" );
-            createFileOfSize( schemaIndex, 3 );
-            IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
-            when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
-            when( indexProvider2.directoryStructure() ).thenReturn( directoryStructure );
-        }
+        File schemaIndex = new File( storeDir, "schemaIndex" );
+        createFileOfSize( schemaIndex, 2 );
+        IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
+        when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
+        when( indexProvider.directoryStructure() ).thenReturn( directoryStructure );
+
+        File schemaIndex2 = new File( storeDir, "schemaIndex2" );
+        createFileOfSize( schemaIndex2, 3 );
+        IndexDirectoryStructure directoryStructure2 = mock( IndexDirectoryStructure.class );
+        when( directoryStructure2.rootDirectory() ).thenReturn( schemaIndex2 );
+        when( indexProvider2.directoryStructure() ).thenReturn( directoryStructure2 );
 
         // Label scan store
         File labelScan = new File( storeDir, "labelScanStore" );
