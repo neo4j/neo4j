@@ -19,23 +19,31 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.schema.IndexCreator;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableCollection;
-
-public class IndexCreatorFacadeMethods
+public enum IndexCreatorFacadeMethods implements Consumer<IndexCreator>
 {
-    private static final FacadeMethod<IndexCreator> ON = new FacadeMethod<>( "IndexCreator on( String propertyKey )", self -> self.on( "property" ) );
-    private static final FacadeMethod<IndexCreator> CREATE = new FacadeMethod<>( "IndexDefinition create()", IndexCreator::create );
+    ON( new FacadeMethod<>( "IndexCreator on( String propertyKey )", self -> self.on( "property" ) ) ),
+    CREATE( new FacadeMethod<>( "IndexDefinition create()", IndexCreator::create ) );
 
-    static final Iterable<FacadeMethod<IndexCreator>> ALL_INDEX_CREATOR_FACADE_METHODS =
-        unmodifiableCollection( asList(
-                ON,
-                CREATE
-        ) );
+    private final FacadeMethod<IndexCreator> facadeMethod;
 
-    private IndexCreatorFacadeMethods()
+    IndexCreatorFacadeMethods( FacadeMethod<IndexCreator> facadeMethod )
     {
+        this.facadeMethod = facadeMethod;
+    }
+
+    @Override
+    public void accept( IndexCreator indexCreator )
+    {
+        facadeMethod.accept( indexCreator );
+    }
+
+    @Override
+    public String toString()
+    {
+        return facadeMethod.toString();
     }
 }

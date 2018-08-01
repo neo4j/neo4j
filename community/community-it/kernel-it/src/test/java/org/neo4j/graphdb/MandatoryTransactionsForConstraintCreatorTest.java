@@ -23,21 +23,19 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.schema.ConstraintCreator;
 
-import static org.neo4j.graphdb.ConstraintCreatorFacadeMethods.ALL_CONSTRAINT_CREATOR_FACADE_METHODS;
-
 public class MandatoryTransactionsForConstraintCreatorTest
     extends AbstractMandatoryTransactionsTest<ConstraintCreator>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ConstraintCreatorFacadeMethods.values() );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsConstraintCreators()
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ConstraintCreatorFacadeMethods.values() );
     }
 
     @Override

@@ -23,14 +23,12 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.index.RelationshipIndex;
 
-import static org.neo4j.graphdb.RelationshipIndexFacadeMethods.ALL_RELATIONSHIP_INDEX_FACADE_METHODS;
-
 public class MandatoryTransactionsForRelationshipIndexFacadeTest extends AbstractMandatoryTransactionsTest<RelationshipIndex>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipIndexFacade()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_INDEX_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), RelationshipIndexFacadeMethods.values() );
     }
 
     @Override

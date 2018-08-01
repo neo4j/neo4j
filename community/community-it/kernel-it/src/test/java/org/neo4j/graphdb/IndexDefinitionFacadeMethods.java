@@ -19,24 +19,33 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableCollection;
-
-public class IndexDefinitionFacadeMethods
+public enum IndexDefinitionFacadeMethods implements Consumer<IndexDefinition>
 {
-    private static final FacadeMethod<IndexDefinition> GET_LABEL = new FacadeMethod<>( "Label getLabel()", IndexDefinition::getLabel );
-    private static final FacadeMethod<IndexDefinition> GET_PROPERTY_KEYS =
-            new FacadeMethod<>( "Iterable<String> getPropertyKeys()", IndexDefinition::getPropertyKeys );
-    private static final FacadeMethod<IndexDefinition> DROP = new FacadeMethod<>( "void drop()", IndexDefinition::drop );
-    private static final FacadeMethod<IndexDefinition> IS_CONSTRAINT_INDEX =
-            new FacadeMethod<>( "boolean isConstraintIndex()", IndexDefinition::isConstraintIndex );
+    GET_LABEL( new FacadeMethod<>( "Label getLabel()", IndexDefinition::getLabel ) ),
+    GET_PROPERTY_KEYS( new FacadeMethod<>( "Iterable<String> getPropertyKeys()", IndexDefinition::getPropertyKeys ) ),
+    DROP( new FacadeMethod<>( "void drop()", IndexDefinition::drop ) ),
+    IS_CONSTRAINT_INDEX( new FacadeMethod<>( "boolean isConstraintIndex()", IndexDefinition::isConstraintIndex ) );
 
-    static final Iterable<FacadeMethod<IndexDefinition>> ALL_INDEX_DEFINITION_FACADE_METHODS =
-            unmodifiableCollection( asList( GET_LABEL, GET_PROPERTY_KEYS, DROP, IS_CONSTRAINT_INDEX ) );
+    private final FacadeMethod<IndexDefinition> facadeMethod;
 
-    private IndexDefinitionFacadeMethods()
+    IndexDefinitionFacadeMethods( FacadeMethod<IndexDefinition> facadeMethod )
     {
+        this.facadeMethod = facadeMethod;
+    }
+
+    @Override
+    public void accept( IndexDefinition indexDefinition )
+    {
+        facadeMethod.accept( indexDefinition );
+    }
+
+    @Override
+    public String toString()
+    {
+        return facadeMethod.toString();
     }
 }

@@ -19,53 +19,50 @@
  */
 package org.neo4j.graphdb;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableCollection;
+import java.util.function.Consumer;
+
 import static org.neo4j.graphdb.FacadeMethod.consume;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterators.loop;
 
 /**
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
  */
-public class GraphDatabaseServiceFacadeMethods
+public enum GraphDatabaseServiceFacadeMethods implements Consumer<GraphDatabaseService>
 {
-    static final FacadeMethod<GraphDatabaseService> CREATE_NODE = new FacadeMethod<>( "Node createNode()", GraphDatabaseService::createNode );
-    static final FacadeMethod<GraphDatabaseService> CREATE_NODE_WITH_LABELS = new FacadeMethod<>( "Node createNode( Label... labels )", gds -> gds.createNode( label( "FOO" ) ) );
-    static final FacadeMethod<GraphDatabaseService> GET_NODE_BY_ID = new FacadeMethod<>( "Node getNodeById( long id )", gds -> gds.getNodeById( 42 ) );
-    static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_BY_ID = new FacadeMethod<>( "Relationship getRelationshipById( long id )", gds -> gds.getRelationshipById( 42 ) );
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_NODES = new FacadeMethod<>( "Iterable<Node> getAllNodes()", gds -> consume( gds.getAllNodes() ) );
-    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED = new FacadeMethod<>(
-                "ResourceIterator<Node> findNodeByLabelAndProperty( Label label, String key, Object value )", gds -> consume( gds.findNodes( label( "bar" ), "baz", 23 ) ) );
-    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL = new FacadeMethod<>(
-                    "ResourceIterator<Node> findNodes( Label label )", gds -> consume( gds.findNodes( label( "bar" ) ) ) );
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS = new FacadeMethod<>( "Iterable<Label> getAllLabels()", GraphDatabaseService::getAllLabels );
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS_IN_USE = new FacadeMethod<>( "Iterable<Label> getAllLabelsInUse()", GraphDatabaseService::getAllLabelsInUse );
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES = new FacadeMethod<>( "Iterable<RelationshipType> getAllRelationshipTypes()", GraphDatabaseService::getAllRelationshipTypes );
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES_IN_USE = new FacadeMethod<>( "Iterable<RelationshipType> getAllRelationshipTypesInUse()", GraphDatabaseService::getAllRelationshipTypesInUse );
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_PROPERTY_KEYS = new FacadeMethod<>( "Iterable<String> getAllPropertyKeys()", GraphDatabaseService::getAllPropertyKeys );
-    static final FacadeMethod<GraphDatabaseService> SCHEMA = new FacadeMethod<>( "Schema schema()", GraphDatabaseService::schema );
-    static final FacadeMethod<GraphDatabaseService> INDEX = new FacadeMethod<>( "IndexManager index()", GraphDatabaseService::index );
+    CREATE_NODE( new FacadeMethod<>( "Node createNode()", GraphDatabaseService::createNode ) ),
+    CREATE_NODE_WITH_LABELS( new FacadeMethod<>( "Node createNode( Label... labels )", gds -> gds.createNode( label( "FOO" ) ) ) ),
+    GET_NODE_BY_ID( new FacadeMethod<>( "Node getNodeById( long id )", gds -> gds.getNodeById( 42 ) ) ),
+    GET_RELATIONSHIP_BY_ID( new FacadeMethod<>( "Relationship getRelationshipById( long id )", gds -> gds.getRelationshipById( 42 ) ) ),
+    GET_ALL_NODES( new FacadeMethod<>( "Iterable<Node> getAllNodes()", gds -> consume( gds.getAllNodes() ) ) ),
+    FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED(
+            new FacadeMethod<>( "ResourceIterator<Node> findNodeByLabelAndProperty( Label label, String key, Object value )",
+                    gds -> consume( gds.findNodes( label( "bar" ), "baz", 23 ) ) ) ),
+    FIND_NODES_BY_LABEL( new FacadeMethod<>( "ResourceIterator<Node> findNodes( Label label )", gds -> consume( gds.findNodes( label( "bar" ) ) ) ) ),
+    GET_ALL_LABELS( new FacadeMethod<>( "Iterable<Label> getAllLabels()", GraphDatabaseService::getAllLabels ) ),
+    GET_ALL_LABELS_IN_USE( new FacadeMethod<>( "Iterable<Label> getAllLabelsInUse()", GraphDatabaseService::getAllLabelsInUse ) ),
+    GET_ALL_RELATIONSHIP_TYPES( new FacadeMethod<>( "Iterable<RelationshipType> getAllRelationshipTypes()", GraphDatabaseService::getAllRelationshipTypes ) ),
+    GET_ALL_RELATIONSHIP_TYPES_IN_USE(
+            new FacadeMethod<>( "Iterable<RelationshipType> getAllRelationshipTypesInUse()", GraphDatabaseService::getAllRelationshipTypesInUse ) ),
+    GET_ALL_PROPERTY_KEYS( new FacadeMethod<>( "Iterable<String> getAllPropertyKeys()", GraphDatabaseService::getAllPropertyKeys ) ),
+    SCHEMA( new FacadeMethod<>( "Schema schema()", GraphDatabaseService::schema ) ),
+    INDEX( new FacadeMethod<>( "IndexManager index()", GraphDatabaseService::index ) );
 
-    static final Iterable<FacadeMethod<GraphDatabaseService>> ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS =
-        unmodifiableCollection( asList(
-                CREATE_NODE,
-                CREATE_NODE_WITH_LABELS,
-                GET_NODE_BY_ID,
-                GET_RELATIONSHIP_BY_ID,
-                GET_ALL_NODES,
-                FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED,
-                FIND_NODES_BY_LABEL,
-                GET_ALL_LABELS,
-                GET_ALL_LABELS_IN_USE,
-                GET_ALL_RELATIONSHIP_TYPES,
-                GET_ALL_RELATIONSHIP_TYPES_IN_USE,
-                GET_ALL_PROPERTY_KEYS,
-                SCHEMA,
-                INDEX
-        ) );
+    private final FacadeMethod<GraphDatabaseService> facadeMethod;
 
-    private GraphDatabaseServiceFacadeMethods()
+    GraphDatabaseServiceFacadeMethods( FacadeMethod<GraphDatabaseService> facadeMethod )
     {
+        this.facadeMethod = facadeMethod;
+    }
+
+    @Override
+    public void accept( GraphDatabaseService graphDatabaseService )
+    {
+        facadeMethod.accept( graphDatabaseService );
+    }
+
+    @Override
+    public String toString()
+    {
+        return facadeMethod.toString();
     }
 }

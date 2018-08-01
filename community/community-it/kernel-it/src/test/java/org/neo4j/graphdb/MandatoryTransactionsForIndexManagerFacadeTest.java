@@ -23,20 +23,18 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.index.IndexManager;
 
-import static org.neo4j.graphdb.IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACADE_METHODS;
-
 public class MandatoryTransactionsForIndexManagerFacadeTest extends AbstractMandatoryTransactionsTest<IndexManager>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexManagerFacade()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_MANAGER_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexManagerFacadeMethods.values() );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnIndexManagerFacade()
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_MANAGER_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( IndexManagerFacadeMethods.values() );
     }
 
     @Override

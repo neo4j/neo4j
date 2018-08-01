@@ -20,45 +20,43 @@
 package org.neo4j.graphdb;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableCollection;
-import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.FacadeMethod.INDEX_DEFINITION;
+import static org.neo4j.graphdb.FacadeMethod.LABEL;
 
-public class SchemaFacadeMethods
+public enum SchemaFacadeMethods implements Consumer<Schema>
 {
-    private static final Label LABEL = Label.label( "Label" );
+    INDEX_FOR( new FacadeMethod<>( "IndexCreator indexFor( Label label )", s -> s.indexFor( LABEL ) ) ),
+    GET_INDEXES_BY_LABEL( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes( Label label )", s -> s.getIndexes( LABEL ) ) ),
+    GET_INDEXES( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes()", Schema::getIndexes ) ),
+    GET_INDEX_STATE( new FacadeMethod<>( "IndexState getIndexState( IndexDefinition index )", s -> s.getIndexState( INDEX_DEFINITION ) ) ),
+    GET_INDEX_FAILURE( new FacadeMethod<>( "String getIndexFailure( IndexDefinition index )", s -> s.getIndexFailure( INDEX_DEFINITION ) ) ),
+    CONSTRAINT_FOR( new FacadeMethod<>( "ConstraintCreator constraintFor( Label label )", s -> s.constraintFor( LABEL ) ) ),
+    GET_CONSTRAINTS_BY_LABEL( new FacadeMethod<>( "Iterable<ConstraintDefinition> getConstraints( Label label )", s -> s.getConstraints( LABEL ) ) ),
+    GET_CONSTRAINTS( new FacadeMethod<>( "Iterable<ConstraintDefinition> getConstraints()", Schema::getConstraints ) ),
+    AWAIT_INDEX_ONLINE( new FacadeMethod<>( "void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )",
+            s -> s.awaitIndexOnline( INDEX_DEFINITION, 1L, TimeUnit.SECONDS ) ) ),
+    AWAIT_INDEXES_ONLINE( new FacadeMethod<>( "void awaitIndexesOnline( long duration, TimeUnit unit )", s -> s.awaitIndexesOnline( 1L, TimeUnit.SECONDS ) ) );
 
-    private static final IndexDefinition INDEX_DEFINITION = mock( IndexDefinition.class );
+    private final FacadeMethod<Schema> facadeMethod;
 
-    private static final FacadeMethod<Schema> INDEX_FOR = new FacadeMethod<>( "IndexCreator indexFor( Label label )", s -> s.indexFor( LABEL ) );
-    private static final FacadeMethod<Schema> GET_INDEXES_BY_LABEL = new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes( Label label )", s -> s.getIndexes( LABEL ) );
-    private static final FacadeMethod<Schema> GET_INDEXES = new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes()", Schema::getIndexes );
-    private static final FacadeMethod<Schema> GET_INDEX_STATE = new FacadeMethod<>( "IndexState getIndexState( IndexDefinition index )", s -> s.getIndexState( INDEX_DEFINITION ) );
-    private static final FacadeMethod<Schema> GET_INDEX_FAILURE = new FacadeMethod<>( "String getIndexFailure( IndexDefinition index )", s -> s.getIndexFailure( INDEX_DEFINITION ) );
-    private static final FacadeMethod<Schema> CONSTRAINT_FOR = new FacadeMethod<>( "ConstraintCreator constraintFor( Label label )", s -> s.constraintFor( LABEL ) );
-    private static final FacadeMethod<Schema> GET_CONSTRAINTS_BY_LABEL = new FacadeMethod<>( "Iterable<ConstraintDefinition> getConstraints( Label label )", s -> s.getConstraints( LABEL ) );
-    private static final FacadeMethod<Schema> GET_CONSTRAINTS = new FacadeMethod<>( "Iterable<ConstraintDefinition> getConstraints()", Schema::getConstraints );
-    private static final FacadeMethod<Schema> AWAIT_INDEX_ONLINE = new FacadeMethod<>( "void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )", s -> s.awaitIndexOnline( INDEX_DEFINITION, 1L, TimeUnit.SECONDS ) );
-    private static final FacadeMethod<Schema> AWAIT_INDEXES_ONLINE = new FacadeMethod<>( "void awaitIndexesOnline( long duration, TimeUnit unit )", s -> s.awaitIndexesOnline( 1L, TimeUnit.SECONDS ) );
-
-    static final Iterable<FacadeMethod<Schema>> ALL_SCHEMA_FACADE_METHODS = unmodifiableCollection( asList(
-        INDEX_FOR,
-        GET_INDEXES_BY_LABEL,
-        GET_INDEXES,
-        GET_INDEX_STATE,
-        GET_INDEX_FAILURE,
-        CONSTRAINT_FOR,
-        GET_CONSTRAINTS_BY_LABEL,
-        GET_CONSTRAINTS,
-        AWAIT_INDEX_ONLINE,
-        AWAIT_INDEXES_ONLINE
-    ) );
-
-    private SchemaFacadeMethods()
+    SchemaFacadeMethods( FacadeMethod<Schema> facadeMethod )
     {
+        this.facadeMethod = facadeMethod;
+    }
+
+    @Override
+    public void accept( Schema schema )
+    {
+        facadeMethod.accept( schema );
+    }
+
+    @Override
+    public String toString()
+    {
+        return facadeMethod.toString();
     }
 }

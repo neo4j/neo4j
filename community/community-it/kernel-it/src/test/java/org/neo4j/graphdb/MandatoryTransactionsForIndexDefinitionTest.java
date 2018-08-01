@@ -23,21 +23,18 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-import static org.neo4j.graphdb.IndexDefinitionFacadeMethods.ALL_INDEX_DEFINITION_FACADE_METHODS;
-
-public class MandatoryTransactionsForIndexDefinitionTest
-    extends AbstractMandatoryTransactionsTest<IndexDefinition>
+public class MandatoryTransactionsForIndexDefinitionTest extends AbstractMandatoryTransactionsTest<IndexDefinition>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexDefinitionFacadeMethods.values() );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( IndexDefinitionFacadeMethods.values() );
     }
 
     @Override

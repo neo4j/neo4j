@@ -21,7 +21,6 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.RelationshipFacadeMethods.ALL_RELATIONSHIP_FACADE_METHODS;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class MandatoryTransactionsForRelationshipTest extends AbstractMandatoryTransactionsTest<Relationship>
@@ -29,13 +28,13 @@ public class MandatoryTransactionsForRelationshipTest extends AbstractMandatoryT
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), RelationshipFacadeMethods.values() );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnRelationshipFacade()
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_RELATIONSHIP_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( RelationshipFacadeMethods.values() );
     }
 
     @Override

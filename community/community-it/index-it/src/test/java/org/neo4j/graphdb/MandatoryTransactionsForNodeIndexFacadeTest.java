@@ -23,14 +23,12 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.index.Index;
 
-import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_METHODS;
-
 public class MandatoryTransactionsForNodeIndexFacadeTest extends AbstractMandatoryTransactionsTest<Index<Node>>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_INDEX_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), NodeIndexFacadeMethods.values() );
     }
 
     @Override

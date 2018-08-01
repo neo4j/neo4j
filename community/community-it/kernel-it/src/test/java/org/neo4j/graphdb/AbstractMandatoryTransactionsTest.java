@@ -60,13 +60,13 @@ public abstract class AbstractMandatoryTransactionsTest<T>
 
     protected abstract T obtainEntityInTransaction( GraphDatabaseService graphDatabaseService );
 
-    public static <T> void assertFacadeMethodsThrowNotInTransaction( T entity, Iterable<FacadeMethod<T>> methods )
+    public static <T> void assertFacadeMethodsThrowNotInTransaction( T entity, Consumer<T>[] methods )
     {
-        for ( FacadeMethod<T> method : methods )
+        for ( Consumer<T> method : methods )
         {
             try
             {
-                method.call( entity );
+                method.accept( entity );
 
                 fail( "Transactions are mandatory, also for reads: " + method );
             }
@@ -77,15 +77,15 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         }
     }
 
-    public void assertFacadeMethodsThrowAfterTerminate( Iterable<FacadeMethod<T>> methods )
+    public void assertFacadeMethodsThrowAfterTerminate( Consumer<T>[] methods )
     {
-        for ( final FacadeMethod<T> method : methods )
+        for ( final Consumer<T> method : methods )
         {
             obtainEntityInTerminatedTransaction( entity ->
             {
                 try
                 {
-                    method.call( entity );
+                    method.accept( entity );
 
                     fail( "Transaction was terminated, yet not exception thrown in: " + method );
                 }

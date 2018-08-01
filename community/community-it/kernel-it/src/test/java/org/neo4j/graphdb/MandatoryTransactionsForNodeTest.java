@@ -21,20 +21,18 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.NodeFacadeMethods.ALL_NODE_FACADE_METHODS;
-
 public class MandatoryTransactionsForNodeTest extends AbstractMandatoryTransactionsTest<Node>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnNode()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), NodeFacadeMethods.values() );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnNode()
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_NODE_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( NodeFacadeMethods.values() );
     }
 
     @Override

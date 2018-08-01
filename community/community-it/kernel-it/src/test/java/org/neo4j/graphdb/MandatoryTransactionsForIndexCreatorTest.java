@@ -23,21 +23,19 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexCreator;
 
-import static org.neo4j.graphdb.IndexCreatorFacadeMethods.ALL_INDEX_CREATOR_FACADE_METHODS;
-
 public class MandatoryTransactionsForIndexCreatorTest
     extends AbstractMandatoryTransactionsTest<IndexCreator>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexCreators()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexCreatorFacadeMethods.values() );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnIndexCreators()
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( IndexCreatorFacadeMethods.values() );
     }
 
     @Override

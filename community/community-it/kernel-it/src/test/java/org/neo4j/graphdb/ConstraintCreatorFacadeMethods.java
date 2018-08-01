@@ -19,23 +19,31 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.schema.ConstraintCreator;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableCollection;
-
-public class ConstraintCreatorFacadeMethods
+public enum ConstraintCreatorFacadeMethods implements Consumer<ConstraintCreator>
 {
-    private static final FacadeMethod<ConstraintCreator> UNIQUE = new FacadeMethod<>( "ConstraintCreator assertPropertyIsUnique()", self -> self.assertPropertyIsUnique( "property" ) );
-    private static final FacadeMethod<ConstraintCreator> CREATE = new FacadeMethod<>( "ConstraintDefinition create()", ConstraintCreator::create );
+    UNIQUE( new FacadeMethod<>( "ConstraintCreator assertPropertyIsUnique()", self -> self.assertPropertyIsUnique( "property" ) ) ),
+    CREATE( new FacadeMethod<>( "ConstraintDefinition create()", ConstraintCreator::create ) );
 
-    static final Iterable<FacadeMethod<ConstraintCreator>> ALL_CONSTRAINT_CREATOR_FACADE_METHODS =
-            unmodifiableCollection( asList(
-                    UNIQUE,
-                    CREATE
-            ) );
+    private final FacadeMethod<ConstraintCreator> facadeMethod;
 
-    private ConstraintCreatorFacadeMethods()
+    ConstraintCreatorFacadeMethods( FacadeMethod<ConstraintCreator> facadeMethod )
     {
+        this.facadeMethod = facadeMethod;
+    }
+
+    @Override
+    public void accept( ConstraintCreator constraintCreator )
+    {
+        facadeMethod.accept( constraintCreator );
+    }
+
+    @Override
+    public String toString()
+    {
+        return facadeMethod.toString();
     }
 }

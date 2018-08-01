@@ -21,21 +21,19 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.GraphDatabaseServiceFacadeMethods.ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS;
-
 public class MandatoryTransactionsForGraphDatabaseServiceTest extends
         AbstractMandatoryTransactionsTest<GraphDatabaseService>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), GraphDatabaseServiceFacadeMethods.values() );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService()
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( GraphDatabaseServiceFacadeMethods.values() );
     }
 
     @Override

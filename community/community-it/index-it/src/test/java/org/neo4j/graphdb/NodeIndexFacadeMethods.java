@@ -19,37 +19,38 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.index.Index;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableCollection;
-
-public class NodeIndexFacadeMethods
+public enum NodeIndexFacadeMethods implements Consumer<Index<Node>>
 {
-    private static final FacadeMethod<Index<Node>> GET = new FacadeMethod<>( "IndexHits<T> get( String key, Object value )", self -> self.get( "foo", "bar" ) );
-    private static final FacadeMethod<Index<Node>> QUERY_BY_KEY = new FacadeMethod<>( "IndexHits<T> query( String key, Object queryOrQueryObject )", self -> self.query( "foo", "bar" ) );
-    private static final FacadeMethod<Index<Node>> QUERY = new FacadeMethod<>( "IndexHits<T> query( Object queryOrQueryObject )", self -> self.query( "foo" ) );
-    private static final FacadeMethod<Index<Node>> ADD = new FacadeMethod<>( "void add( T entity, String key, Object value )", self -> self.add( null, "foo", 42 ) );
-    private static final FacadeMethod<Index<Node>> REMOVE_BY_KEY_AND_VALUE = new FacadeMethod<>( "void remove( T entity, String key, Object value )", self -> self.remove( null, "foo", 42 ) );
-    private static final FacadeMethod<Index<Node>> REMOVE_BY_KEY = new FacadeMethod<>( "void remove( T entity, String key )", self -> self.remove( null, "foo" ) );
-    private static final FacadeMethod<Index<Node>> REMOVE = new FacadeMethod<>( "void remove( T entity )", self -> self.remove( null ) );
-    private static final FacadeMethod<Index<Node>> DELETE = new FacadeMethod<>( "void delete()", Index::delete );
-    private static final FacadeMethod<Index<Node>> PUT_IF_ABSENT = new FacadeMethod<>( "T putIfAbsent( T entity, String key, Object value )", self -> self.putIfAbsent( null, "foo", 42 ) );
+    GET( new FacadeMethod<>( "IndexHits<T> get( String key, Object value )", self -> self.get( "foo", "bar" ) ) ),
+    QUERY_BY_KEY( new FacadeMethod<>( "IndexHits<T> query( String key, Object queryOrQueryObject )", self -> self.query( "foo", "bar" ) ) ),
+    QUERY( new FacadeMethod<>( "IndexHits<T> query( Object queryOrQueryObject )", self -> self.query( "foo" ) ) ),
+    ADD( new FacadeMethod<>( "void add( T entity, String key, Object value )", self -> self.add( null, "foo", 42 ) ) ),
+    REMOVE_BY_KEY_AND_VALUE( new FacadeMethod<>( "void remove( T entity, String key, Object value )", self -> self.remove( null, "foo", 42 ) ) ),
+    REMOVE_BY_KEY( new FacadeMethod<>( "void remove( T entity, String key )", self -> self.remove( null, "foo" ) ) ),
+    REMOVE( new FacadeMethod<>( "void remove( T entity )", self -> self.remove( null ) ) ),
+    DELETE( new FacadeMethod<>( "void delete()", Index::delete ) ),
+    PUT_IF_ABSENT( new FacadeMethod<>( "T putIfAbsent( T entity, String key, Object value )", self -> self.putIfAbsent( null, "foo", 42 ) ) );
 
-    static final Iterable<FacadeMethod<Index<Node>>> ALL_NODE_INDEX_FACADE_METHODS = unmodifiableCollection(
-            asList(
-                    GET,
-                    QUERY_BY_KEY,
-                    QUERY,
-                    ADD,
-                    REMOVE_BY_KEY_AND_VALUE,
-                    REMOVE_BY_KEY,
-                    REMOVE,
-                    DELETE,
-                    PUT_IF_ABSENT
-            ) );
+    private final FacadeMethod<Index<Node>> facadeMethod;
 
-    private NodeIndexFacadeMethods()
+    NodeIndexFacadeMethods( FacadeMethod<Index<Node>> facadeMethod )
     {
+        this.facadeMethod = facadeMethod;
+    }
+
+    @Override
+    public void accept( Index<Node> nodeIndex )
+    {
+        facadeMethod.accept( nodeIndex );
+    }
+
+    @Override
+    public String toString()
+    {
+        return facadeMethod.toString();
     }
 }

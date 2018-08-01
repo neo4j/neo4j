@@ -22,10 +22,21 @@ package org.neo4j.graphdb;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-import static org.junit.Assert.assertNotNull;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
-public class FacadeMethod<T>
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
+
+public class FacadeMethod<T> implements Consumer<T>
 {
+    public static final Label LABEL = Label.label( "Label" );
+    public static final RelationshipType FOO = withName( "foo" );
+    public static final RelationshipType BAR = withName( "bar" );
+    public static final Label QUUX = label( "quux" );
+    public static final IndexDefinition INDEX_DEFINITION = mock( IndexDefinition.class );
+
     private final String methodSignature;
     private final Consumer<T> callable;
 
@@ -33,6 +44,12 @@ public class FacadeMethod<T>
     {
         this.methodSignature = methodSignature;
         this.callable = callable;
+    }
+
+    @Override
+    public void accept( T t )
+    {
+        callable.accept( t );
     }
 
     public void call( T self )
