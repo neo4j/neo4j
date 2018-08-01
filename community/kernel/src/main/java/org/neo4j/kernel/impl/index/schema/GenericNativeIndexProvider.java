@@ -21,9 +21,13 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -37,7 +41,10 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.kernel.impl.index.schema.SpatialIndexProvider.getConfiguredSpaceFillingCurveConfiguration;
@@ -136,25 +143,37 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     }
 
     @Override
-    IndexLayout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
+    IndexLayout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor, File storeFile )
     {
-        int numberOfSlots = descriptor.properties().length;
-        // TODO read header from the tree and build a IndexSpecificSpaceFillingCurveSettingsCache and pass in
-        return new GenericLayout( numberOfSlots, null );
+        try
+        {
+            int numberOfSlots = descriptor.properties().length;
+            Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
+            GBPTree.readHeader( pageCache, storeFile, new SpaceFillingCurveSettingsReader( settings ) );
+            return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, settings ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
     protected IndexPopulator newIndexPopulator( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
-        return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
+        // TODO this layout cast isn't nice, try and get rid of it
+        return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig,
+                ((GenericLayout) layout).getSpaceFillingCurveSettings() );
     }
 
     @Override
     protected IndexAccessor newIndexAccessor( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
+        // TODO this layout cast isn't nice, try and get rid of it
+        return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
+                ((GenericLayout) layout).getSpaceFillingCurveSettings() );
     }
 
     @Override

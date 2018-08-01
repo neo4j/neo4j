@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.Value;
@@ -68,7 +69,7 @@ public class GenericIndexKeyValidatorTest
     {
         // given
         Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
-        when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3 ) );
+        when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) ) );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, layout );
 
         // when
@@ -91,7 +92,7 @@ public class GenericIndexKeyValidatorTest
         // given
         int slots = random.nextInt( 1, 6 );
         int maxLength = random.nextInt( 15, 30 ) * slots;
-        GenericLayout layout = new GenericLayout( slots );
+        GenericLayout layout = new GenericLayout( slots, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, layout );
         CompositeGenericKey key = layout.newKey();
 
@@ -146,7 +147,6 @@ public class GenericIndexKeyValidatorTest
         {
             do
             {
-                // TODO remember to remove this when generic layout gets support for spatial values
                 tuple[j] = random.nextValue();
             }
             while ( Values.isGeometryValue( tuple[j] ) ||

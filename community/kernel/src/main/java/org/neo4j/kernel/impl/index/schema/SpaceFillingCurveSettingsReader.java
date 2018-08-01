@@ -19,29 +19,25 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.function.Consumer;
+import java.nio.ByteBuffer;
+import java.util.Map;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.index.internal.gbptree.Header;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-/**
- * Writes index state in the {@link GBPTree} header.
- */
-class NativeIndexHeaderWriter implements Consumer<PageCursor>
+class SpaceFillingCurveSettingsReader implements Header.Reader
 {
-    private final byte state;
-    private final Consumer<PageCursor> additionalHeaderWriter;
+    private final Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings;
 
-    NativeIndexHeaderWriter( byte state, Consumer<PageCursor> additionalHeaderWriter )
+    SpaceFillingCurveSettingsReader( Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings )
     {
-        this.state = state;
-        this.additionalHeaderWriter = additionalHeaderWriter;
+        this.settings = settings;
     }
 
     @Override
-    public void accept( PageCursor cursor )
+    public void read( ByteBuffer headerBytes )
     {
-        cursor.putByte( state );
-        additionalHeaderWriter.accept( cursor );
+        // TODO read into the map there
     }
 }

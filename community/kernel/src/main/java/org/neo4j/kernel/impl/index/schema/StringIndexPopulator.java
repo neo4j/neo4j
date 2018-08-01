@@ -28,12 +28,14 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+
 public class StringIndexPopulator extends NativeIndexPopulator<StringIndexKey,NativeIndexValue>
 {
     StringIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<StringIndexKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig, NO_HEADER_WRITER );
     }
 
     @Override

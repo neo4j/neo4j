@@ -46,6 +46,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor> implements IndexAccessor
@@ -188,7 +189,8 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
                 IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
         {
-            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
+            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
+                    NO_HEADER_WRITER );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;

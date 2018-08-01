@@ -34,6 +34,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+
 /**
  * {@link IndexAccessor} using {@link StringLayout}, i.e for {@link String} values.
  */
@@ -45,7 +47,7 @@ public class StringIndexAccessor extends NativeIndexAccessor<StringIndexKey,Nati
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
+        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig, NO_HEADER_WRITER );
     }
 
     @Override

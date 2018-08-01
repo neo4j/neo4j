@@ -34,6 +34,7 @@ import java.util.function.Consumer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -41,6 +42,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
 {
@@ -213,7 +215,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
 
     private GenericLayout getLayout()
     {
-        return new GenericLayout( NUMBER_OF_SLOTS );
+        return new GenericLayout( NUMBER_OF_SLOTS, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) );
     }
 
     private void withCursor( File storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException

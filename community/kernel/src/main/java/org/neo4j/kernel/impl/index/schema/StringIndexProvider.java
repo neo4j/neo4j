@@ -55,7 +55,7 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
     }
 
     @Override
-    IndexLayout<StringIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
+    IndexLayout<StringIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor, File storeFile )
     {
         return new StringLayout();
     }

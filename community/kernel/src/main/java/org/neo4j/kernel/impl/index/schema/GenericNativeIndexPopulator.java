@@ -25,15 +25,17 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 class GenericNativeIndexPopulator extends NativeIndexPopulator<CompositeGenericKey,NativeIndexValue>
 {
     GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
-            IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
+            IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
     }
 
     @Override

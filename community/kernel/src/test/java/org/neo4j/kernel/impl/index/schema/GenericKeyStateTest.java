@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -57,6 +58,7 @@ import org.neo4j.values.storable.ValueGroup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.booleanArray;
@@ -126,7 +128,7 @@ class GenericKeyStateTest
     {
         // Given
         PageCursor cursor = newPageCursor();
-        GenericKeyState writeState = new GenericKeyState();
+        GenericKeyState writeState = newKeyState();
         Value value = valueGenerator.next();
         int offset = cursor.getOffset();
 
@@ -135,7 +137,7 @@ class GenericKeyStateTest
         writeState.put( cursor );
 
         // Then
-        GenericKeyState readState = new GenericKeyState();
+        GenericKeyState readState = newKeyState();
         int size = writeState.size();
         cursor.setOffset( offset );
         assertTrue( readState.read( cursor, size ), "failed to read" );
@@ -149,7 +151,7 @@ class GenericKeyStateTest
     void copyShouldCopy( ValueGenerator valueGenerator )
     {
         // Given
-        GenericKeyState from = new GenericKeyState();
+        GenericKeyState from = newKeyState();
         Value value = valueGenerator.next();
         from.writeValue( value, NEUTRAL );
         GenericKeyState to = genericKeyStateWithSomePreviousState( valueGenerator );
@@ -165,8 +167,8 @@ class GenericKeyStateTest
     void copyShouldCopyExtremeValues()
     {
         // Given
-        GenericKeyState extreme = new GenericKeyState();
-        GenericKeyState copy = new GenericKeyState();
+        GenericKeyState extreme = newKeyState();
+        GenericKeyState copy = newKeyState();
 
         for ( ValueGroup valueGroup : ValueGroup.values() )
         {
@@ -222,7 +224,7 @@ class GenericKeyStateTest
         {
             Value value = valueGenerator.next();
             values.add( value );
-            GenericKeyState state = new GenericKeyState();
+            GenericKeyState state = newKeyState();
             state.writeValue( value, NEUTRAL );
             states.add( state );
         }
@@ -273,7 +275,7 @@ class GenericKeyStateTest
         // Given
         PageCursor cursor = newPageCursor();
         Value value = valueGenerator.next();
-        GenericKeyState state = new GenericKeyState();
+        GenericKeyState state = newKeyState();
         state.writeValue( value, NEUTRAL );
         int offsetBefore = cursor.getOffset();
 
@@ -418,9 +420,9 @@ class GenericKeyStateTest
 
     private void assertHighest( Value value )
     {
-        GenericKeyState highestOfAll = new GenericKeyState();
-        GenericKeyState highestInValueGroup = new GenericKeyState();
-        GenericKeyState other = new GenericKeyState();
+        GenericKeyState highestOfAll = newKeyState();
+        GenericKeyState highestInValueGroup = newKeyState();
+        GenericKeyState other = newKeyState();
         highestOfAll.initValueAsHighest( ValueGroup.UNKNOWN );
         highestInValueGroup.initValueAsHighest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -432,9 +434,9 @@ class GenericKeyStateTest
 
     private void assertLowest( Value value )
     {
-        GenericKeyState lowestOfAll = new GenericKeyState();
-        GenericKeyState lowestInValueGroup = new GenericKeyState();
-        GenericKeyState other = new GenericKeyState();
+        GenericKeyState lowestOfAll = newKeyState();
+        GenericKeyState lowestInValueGroup = newKeyState();
+        GenericKeyState other = newKeyState();
         lowestOfAll.initValueAsLowest( ValueGroup.UNKNOWN );
         lowestInValueGroup.initValueAsLowest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -450,12 +452,12 @@ class GenericKeyStateTest
 
     private void assertValidMinimalSplitter( Value left, Value right )
     {
-        GenericKeyState leftState = new GenericKeyState();
+        GenericKeyState leftState = newKeyState();
         leftState.writeValue( left, NEUTRAL );
-        GenericKeyState rightState = new GenericKeyState();
+        GenericKeyState rightState = newKeyState();
         rightState.writeValue( right, NEUTRAL );
 
-        GenericKeyState minimalSplitter = new GenericKeyState();
+        GenericKeyState minimalSplitter = newKeyState();
         GenericKeyState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertTrue( leftState.compareValueTo( minimalSplitter ) < 0,
@@ -466,12 +468,12 @@ class GenericKeyStateTest
 
     private void assertValidMinimalSplitterForEqualValues( Value value )
     {
-        GenericKeyState leftState = new GenericKeyState();
+        GenericKeyState leftState = newKeyState();
         leftState.writeValue( value, NEUTRAL );
-        GenericKeyState rightState = new GenericKeyState();
+        GenericKeyState rightState = newKeyState();
         rightState.writeValue( value, NEUTRAL );
 
-        GenericKeyState minimalSplitter = new GenericKeyState();
+        GenericKeyState minimalSplitter = newKeyState();
         GenericKeyState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertTrue( leftState.compareValueTo( minimalSplitter ) == 0,
@@ -550,7 +552,7 @@ class GenericKeyStateTest
 
     private GenericKeyState genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
     {
-        GenericKeyState to = new GenericKeyState();
+        GenericKeyState to = newKeyState();
         if ( random.nextBoolean() )
         {
             // Previous value
@@ -565,6 +567,11 @@ class GenericKeyStateTest
     private PageCursor newPageCursor()
     {
         return ByteArrayPageCursor.wrap( PageCache.PAGE_SIZE );
+    }
+
+    private GenericKeyState newKeyState()
+    {
+        return new GenericKeyState( mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) );
     }
 
     @FunctionalInterface

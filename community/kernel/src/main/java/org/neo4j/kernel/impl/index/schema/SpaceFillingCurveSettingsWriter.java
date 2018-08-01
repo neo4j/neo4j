@@ -21,27 +21,21 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.function.Consumer;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 
-/**
- * Writes index state in the {@link GBPTree} header.
- */
-class NativeIndexHeaderWriter implements Consumer<PageCursor>
+class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
 {
-    private final byte state;
-    private final Consumer<PageCursor> additionalHeaderWriter;
+    private final IndexSpecificSpaceFillingCurveSettingsCache settings;
 
-    NativeIndexHeaderWriter( byte state, Consumer<PageCursor> additionalHeaderWriter )
+    SpaceFillingCurveSettingsWriter( IndexSpecificSpaceFillingCurveSettingsCache settings )
     {
-        this.state = state;
-        this.additionalHeaderWriter = additionalHeaderWriter;
+        this.settings = settings;
     }
 
     @Override
     public void accept( PageCursor cursor )
     {
-        cursor.putByte( state );
-        additionalHeaderWriter.accept( cursor );
+        // TODO write those settings!
     }
 }

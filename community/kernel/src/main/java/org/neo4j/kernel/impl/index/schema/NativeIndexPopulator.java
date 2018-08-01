@@ -73,6 +73,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final VALUE treeValue;
     private final UniqueIndexSampler uniqueSampler;
     final IndexSamplingConfig samplingConfig;
+    private final Consumer<PageCursor> additionalHeaderWriter;
 
     private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> additionsWorkSync;
     private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> updatesWorkSync;
@@ -82,12 +83,13 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-                                StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, Consumer<PageCursor> additionalHeaderWriter )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.samplingConfig = samplingConfig;
+        this.additionalHeaderWriter = additionalHeaderWriter;
         switch ( descriptor.type() )
         {
         case GENERAL:
@@ -109,7 +111,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     @Override
     public synchronized void create()
     {
-        create( new NativeIndexHeaderWriter( BYTE_POPULATING ) );
+        create( new NativeIndexHeaderWriter( BYTE_POPULATING, additionalHeaderWriter ) );
     }
 
     protected synchronized void create( Consumer<PageCursor> headerWriter )
@@ -299,7 +301,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     void markTreeAsOnline()
     {
-        tree.checkpoint( IOLimiter.UNLIMITED, pc -> pc.putByte( BYTE_ONLINE ) );
+        tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter ) );
     }
 
     static class IndexUpdateApply<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>

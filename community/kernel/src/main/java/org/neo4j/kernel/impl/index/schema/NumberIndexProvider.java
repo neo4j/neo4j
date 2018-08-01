@@ -54,7 +54,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
     }
 
     @Override
-    IndexLayout<NumberIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
+    IndexLayout<NumberIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor, File storeFile )
     {
         // split like this due to legacy reasons, there are old stores out there with these different identifiers
         switch ( descriptor.type() )

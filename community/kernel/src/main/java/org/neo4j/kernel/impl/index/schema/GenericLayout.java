@@ -139,4 +139,9 @@ class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
     {
         CompositeGenericKey.minimalSplitter( left, right, into );
     }
+
+    IndexSpecificSpaceFillingCurveSettingsCache getSpaceFillingCurveSettings()
+    {
+        return spatialSettings;
+    }
 }
