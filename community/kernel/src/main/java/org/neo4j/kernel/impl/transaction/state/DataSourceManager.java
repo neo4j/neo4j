@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -83,7 +84,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     public NeoStoreDataSource getDataSource()
     {
-        return dataSources.get( 0 );
+        return Iterables.last( dataSources );
     }
 
     @Override
@@ -126,6 +127,6 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
     @Override
     public Kernel get()
     {
-        return dataSources.get( 0 ).getKernel();
+        return getDataSource().getKernel();
     }
 }

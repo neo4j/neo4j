@@ -26,12 +26,12 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -51,7 +51,7 @@ public class PageCacheWarmerKernelExtensionFactory
 
         FileSystemAbstraction fileSystemAbstraction();
 
-        DataSourceManager getDataSourceManager();
+        NeoStoreDataSource getDataSource();
 
         LogService logService();
 
@@ -73,7 +73,7 @@ public class PageCacheWarmerKernelExtensionFactory
         PageCache pageCache = deps.pageCache();
         FileSystemAbstraction fs = deps.fileSystemAbstraction();
         LogService logService = deps.logService();
-        DataSourceManager dataSourceManager = deps.getDataSourceManager();
+        NeoStoreDataSource dataSourceManager = deps.getDataSource();
         Log log = logService.getInternalLog( PageCacheWarmer.class );
         PageCacheWarmerMonitor monitor = deps.monitors().newMonitor( PageCacheWarmerMonitor.class );
         Config config = deps.config();
