@@ -99,13 +99,13 @@ public class TestAutoIndexing
     @Test
     public void testNodeAutoIndexFromAPISanity()
     {
+        newTransaction();
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "test_uuid" );
         autoIndexer.setEnabled( true );
         assertEquals( 1, autoIndexer.getAutoIndexedProperties().size() );
         assertTrue( autoIndexer.getAutoIndexedProperties().contains(
                 "test_uuid" ) );
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         node1.setProperty( "test_uuid", "node1" );
@@ -125,6 +125,7 @@ public class TestAutoIndexing
     @Test
     public void testAutoIndexesReportReadOnly()
     {
+        newTransaction();
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -143,11 +144,11 @@ public class TestAutoIndexing
     @Test
     public void testChangesAreVisibleInTransaction()
     {
+        newTransaction();
+
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "nodeProp" );
         autoIndexer.setEnabled( true );
-
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         node1.setProperty( "nodeProp", "nodePropValue" );
@@ -180,11 +181,11 @@ public class TestAutoIndexing
     @Test
     public void testRelationshipAutoIndexFromAPISanity()
     {
+        newTransaction();
         final String propNameToIndex = "test";
         AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
         autoIndexer.startAutoIndexingProperty( propNameToIndex );
         autoIndexer.setEnabled( true );
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -221,6 +222,7 @@ public class TestAutoIndexing
         config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "true" );
         startDb();
 
+        newTransaction();
         assertTrue( graphDb.index().getNodeAutoIndexer().isEnabled() );
         assertTrue( graphDb.index().getRelationshipAutoIndexer().isEnabled() );
 
@@ -248,10 +250,9 @@ public class TestAutoIndexing
         config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "true" );
         startDb();
 
+        newTransaction();
         assertTrue( graphDb.index().getNodeAutoIndexer().isEnabled() );
         assertTrue( graphDb.index().getRelationshipAutoIndexer().isEnabled() );
-
-        newTransaction();
 
         // Build the graph, a 3-cycle
         Node node1 = graphDb.createNode();
@@ -356,8 +357,8 @@ public class TestAutoIndexing
     @Test
     public void testDefaultIfOffIsForEverything()
     {
-        graphDb.index().getNodeAutoIndexer().setEnabled( true );
         newTransaction();
+        graphDb.index().getNodeAutoIndexer().setEnabled( true );
         Node node1 = graphDb.createNode();
         node1.setProperty( "testProp", "node1" );
         node1.setProperty( "testProp1", "node1" );
@@ -384,9 +385,9 @@ public class TestAutoIndexing
         config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "false" );
         startDb();
 
+        newTransaction();
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "testProp" );
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         node1.setProperty( "nodeProp1", "node1" );
@@ -441,12 +442,12 @@ public class TestAutoIndexing
         // Now only node properties named propName should be indexed.
         startDb();
 
+        newTransaction();
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         assertTrue( autoIndexer.isEnabled() );
 
         autoIndexer.setEnabled( false );
         assertFalse( autoIndexer.isEnabled() );
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -466,10 +467,10 @@ public class TestAutoIndexing
     @Test
     public void testStopMonitoringProperty()
     {
+        newTransaction();
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.setEnabled( true );
         autoIndexer.startAutoIndexingProperty( "propName" );
-        newTransaction();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
         node1.setProperty( "propName", "node" );
@@ -503,14 +504,13 @@ public class TestAutoIndexing
     public void testGettingAutoIndexByNameReturnsSomethingReadOnly()
     {
         // Create the node and relationship auto-indexes
+        newTransaction();
         graphDb.index().getNodeAutoIndexer().setEnabled( true );
         graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(
                 "nodeProp" );
         graphDb.index().getRelationshipAutoIndexer().setEnabled( true );
         graphDb.index().getRelationshipAutoIndexer().startAutoIndexingProperty(
                 "relProp" );
-
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -561,11 +561,9 @@ public class TestAutoIndexing
          * Checks a bug where removing non-cached heavy properties
          * would cause NPE in auto indexer.
          */
-        graphDb.index().getNodeAutoIndexer().setEnabled( true );
-        graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(
-                "nodeProp" );
-
         newTransaction();
+        graphDb.index().getNodeAutoIndexer().setEnabled( true );
+        graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty( "nodeProp" );
 
         Node node1 = graphDb.createNode();
         // Large array, needed for making sure this is a heavy property
@@ -586,11 +584,10 @@ public class TestAutoIndexing
     @Test
     public void testRemoveRelationshipRemovesDocument()
     {
+        newTransaction();
         AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "foo" );
         autoIndexer.setEnabled( true );
-
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -621,11 +618,10 @@ public class TestAutoIndexing
     @Test
     public void testDeletingNodeRemovesItFromAutoIndex()
     {
+        newTransaction();
         AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
         nodeAutoIndexer.startAutoIndexingProperty( "foo" );
         nodeAutoIndexer.setEnabled( true );
-
-        newTransaction();
 
         Node node1 = graphDb.createNode();
         node1.setProperty( "foo", "bar" );
@@ -655,11 +651,11 @@ public class TestAutoIndexing
         String key2 = "bar";
         String value1 = "bip";
         String value2 = "bop";
+        newTransaction();
         AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
         nodeAutoIndexer.startAutoIndexingProperty( key1 );
         nodeAutoIndexer.startAutoIndexingProperty( key2 );
         nodeAutoIndexer.setEnabled( true );
-        newTransaction();
         Node node = graphDb.createNode();
         node.setProperty( key1, value1 );
         node.setProperty( key2, value2 );

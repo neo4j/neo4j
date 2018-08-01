@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
@@ -305,7 +306,12 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
         int initialPropertiesSize = getAutoIndexedPropertiesForType( "node" ).size();
 
         String propName = "some-property" + System.currentTimeMillis();
-        server().getDatabase().getGraph().index().getNodeAutoIndexer().startAutoIndexingProperty( propName );
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.index().getNodeAutoIndexer().startAutoIndexingProperty( propName );
+            tx.success();
+        }
 
         List<String> properties = getAutoIndexedPropertiesForType( "node" );
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Iterator;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Entity;
@@ -34,14 +35,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class PathProxyTest
 {
+    private EmbeddedProxySPI proxySPI;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        proxySPI = mock( EmbeddedProxySPI.class );
+    }
+
     @Test
     public void shouldIterateThroughNodes()
     {
         // given
-        Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Node> iterator = path.nodes().iterator();
         Node node;
@@ -63,7 +73,7 @@ public class PathProxyTest
     public void shouldIterateThroughNodesInReverse()
     {
         // given
-        Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Node> iterator = path.reverseNodes().iterator();
         Node node;
@@ -85,7 +95,7 @@ public class PathProxyTest
     public void shouldIterateThroughRelationships()
     {
         // given
-        Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Relationship> iterator = path.relationships().iterator();
         Relationship relationship;
@@ -108,7 +118,7 @@ public class PathProxyTest
     public void shouldIterateThroughRelationshipsInReverse()
     {
         // given
-        Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Relationship> iterator = path.reverseRelationships().iterator();
         Relationship relationship;
@@ -131,7 +141,7 @@ public class PathProxyTest
     public void shouldIterateAlternatingNodesAndRelationships()
     {
         // given
-        Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<PropertyContainer> iterator = path.iterator();
         PropertyContainer entity;
