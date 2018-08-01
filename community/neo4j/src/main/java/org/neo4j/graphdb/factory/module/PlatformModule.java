@@ -41,6 +41,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -126,6 +127,8 @@ public class PlatformModule
 
     public final SystemNanoClock clock;
 
+    public final ThreadToStatementContextBridge threadToTransactionBridge;
+
     public final VersionContextSupplier versionContextSupplier;
 
     public final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
@@ -207,6 +210,7 @@ public class PlatformModule
         dependencies.satisfyDependency( dataSourceManager );
 
         availabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );
+        threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( availabilityGuard ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 

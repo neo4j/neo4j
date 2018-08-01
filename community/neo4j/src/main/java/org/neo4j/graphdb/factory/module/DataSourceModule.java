@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -61,8 +60,6 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class DataSourceModule
 {
-    public final ThreadToStatementContextBridge threadToTransactionBridge;
-
     public final NeoStoreDataSource neoStoreDataSource;
 
     public final Supplier<InwardKernel> kernelAPI;
@@ -91,8 +88,6 @@ public class DataSourceModule
         File databaseDirectory = new File( platformModule.storeDir, databaseName );
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         Monitors monitors = new Monitors( platformModule.monitors );
-
-        threadToTransactionBridge = deps.satisfyDependency( new ThreadToStatementContextBridge( platformModule.availabilityGuard ) );
 
         transactionEventHandlers = new TransactionEventHandlers( graphDatabaseFacade );
 

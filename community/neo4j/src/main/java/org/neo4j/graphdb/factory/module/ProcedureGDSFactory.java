@@ -69,9 +69,10 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
                 dataSource.neoStoreDataSource.getDependencyResolver(),
                 availability,
                 urlValidator,
-                securityContext
+                securityContext,
+                platform.threadToTransactionBridge
             ),
-            dataSource.threadToTransactionBridge,
+            platform.threadToTransactionBridge,
             platform.config,
             tokenHolders
         );

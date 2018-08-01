@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -51,9 +52,11 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
     private final SecurityContext securityContext;
+    private final ThreadToStatementContextBridge threadToTransactionBridge;
 
     public ProcedureGDBFacadeSPI( DataSourceModule sourceModule, DependencyResolver resolver, CoreAPIAvailabilityGuard availability,
-            ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator, SecurityContext securityContext )
+            ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator, SecurityContext securityContext,
+            ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.databaseDirectory = sourceModule.neoStoreDataSource.getDatabaseDirectory();
         this.sourceModule = sourceModule;
@@ -61,6 +64,7 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         this.availability = availability;
         this.urlValidator = urlValidator;
         this.securityContext = securityContext;
+        this.threadToTransactionBridge = threadToTransactionBridge;
     }
 
     @Override
@@ -169,8 +173,8 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
             availability.assertDatabaseAvailable();
             KernelTransaction kernelTx = sourceModule.kernelAPI.get().beginTransaction( type, this.securityContext, timeout );
             kernelTx.registerCloseListener(
-                    txId -> sourceModule.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
-            sourceModule.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
+                    txId -> threadToTransactionBridge.unbindTransactionFromCurrentThread() );
+            threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;
         }
         catch ( TransactionFailureException e )
