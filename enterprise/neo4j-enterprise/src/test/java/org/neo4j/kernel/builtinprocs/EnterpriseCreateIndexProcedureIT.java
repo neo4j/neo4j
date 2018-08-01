@@ -296,7 +296,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
             {
                 query[i] = IndexQuery.exact( propertyKeyIds[i], value );
             }
-            transaction.dataRead().nodeIndexSeek( index, indexCursor, IndexOrder.NONE, query );
+            transaction.dataRead().nodeIndexSeek( index, indexCursor, IndexOrder.NONE, false, query );
             assertTrue( indexCursor.next() );
             assertEquals( node, indexCursor.nodeReference() );
             assertFalse( indexCursor.next() );

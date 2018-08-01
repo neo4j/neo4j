@@ -132,7 +132,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( 11), this, null );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11), this, null, true );
         return filter;
     }
 
@@ -147,7 +147,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, boolean needsValues )
     {
         events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );
     }

@@ -78,13 +78,16 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, predicates );
+        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
         return nodeValueIterator;
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
+        // Spatial does not support providing values
+        assert !needsValues;
+
         if ( predicates.length != 1 )
         {
             throw new IllegalArgumentException( "Only single property spatial indexes are supported." );
@@ -94,10 +97,10 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
         {
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates );
+            cursor.initialize( descriptor, multiProgressor, predicates, false );
             for ( NativeIndexReader<SpatialIndexKey,NativeIndexValue> reader : this )
             {
-                reader.query( multiProgressor, indexOrder, predicates );
+                reader.query( multiProgressor, indexOrder, false, predicates );
             }
         }
         else
@@ -120,16 +123,16 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
                 SpatialIndexPartReader<NativeIndexValue> part = uncheckedSelect( crs );
                 if ( part != null )
                 {
-                    part.query( cursor, indexOrder, predicates );
+                    part.query( cursor, indexOrder, false, predicates );
                 }
                 else
                 {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, false );
                 }
             }
             else
             {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, false );
             }
         }
     }

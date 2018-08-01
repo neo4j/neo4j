@@ -155,8 +155,7 @@ public class NativeStringIndexingIT
             {
                 ktx.dataRead().nodeIndexSeek( TestIndexDescriptorFactory
                                                       .forLabel( labelId, propertyKeyId1, propertyKeyId2 ),
-                                              cursor, IndexOrder.NONE,
-                                              IndexQuery.exact( propertyKeyId1, string1 ),
+                                              cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId1, string1 ),
                                               IndexQuery.exact( propertyKeyId2, string2 ) );
                 assertTrue( cursor.next() );
                 assertEquals( node.getId(), cursor.nodeReference() );

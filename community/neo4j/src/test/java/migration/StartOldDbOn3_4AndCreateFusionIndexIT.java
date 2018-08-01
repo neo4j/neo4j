@@ -408,7 +408,7 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
             }
             IndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
+            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, predicates );
             int count = 0;
             while ( cursor.next() )
             {

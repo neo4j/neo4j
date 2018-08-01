@@ -39,7 +39,7 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
     {
         this.progressor = progressor;
     }

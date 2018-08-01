@@ -37,6 +37,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api
+import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
@@ -274,20 +275,37 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                               properties: Int*): IndexReference =
     transactionalContext.kernelTransaction.schemaRead().index(label, properties: _*)
 
-  private def seek(index: IndexReference, propertyIndicesWithValues: Seq[Int], query: IndexQuery*): CursorIterator[(NodeValue, Seq[Value])] = {
+  private def seek(index: IndexReference, propertyIndicesWithValues: Seq[Int], queries: IndexQuery*): CursorIterator[(NodeValue, Seq[Value])] = {
     val nodeCursor: NodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query: _*)
+    val actualValues =
+      if (queries.forall(_.isInstanceOf[ExactPredicate])) {
+        // We don't need property values from the index for an exact seek
+        Some(propertyIndicesWithValues.map(queries(_).asInstanceOf[ExactPredicate].value()))
+      } else {
+        None
+      }
+
+
+    val needsValuesFromIndexSeek = actualValues.isEmpty && propertyIndicesWithValues.nonEmpty
+    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, needsValuesFromIndexSeek, queries: _*)
     new CursorIterator[(NodeValue, Seq[Value])] {
       override protected def fetchNext(): (NodeValue, Seq[Value]) = {
         if (nodeCursor.next()) {
           val nodeRef = nodeCursor.nodeReference()
 
-          if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
-            // We were promised at plan time that we can get values everywhere, so this should never happen
-            throw new IllegalStateException("NodeCursor did unexpectedly not have values during index seek.")
-          }
           // Get the actual property values for the requested indices
-          val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
+          val values = actualValues match {
+            case Some(v) =>
+              v
+            case None =>
+              if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
+                // We were promised at plan time that we can get values everywhere, so this should never happen
+                throw new IllegalStateException("NodeCursor did unexpectedly not have values during index seek.")
+              }
+              propertyIndicesWithValues.map(nodeCursor.propertyValue)
+          }
+
+
           val node = fromNodeProxy(entityAccessor.newNodeProxy(nodeRef))
           (node, values)
         }
@@ -302,7 +320,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def indexScan(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(NodeValue, Seq[Value])] = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
+    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, propertyIndicesWithValues.nonEmpty)
     new CursorIterator[(NodeValue, Seq[Value])] {
       override protected def fetchNext(): (NodeValue, Seq[Value]) = {
         if (nodeCursor.next()) {
@@ -328,7 +346,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def indexScanPrimitive(index: IndexReference): PrimitiveLongResourceIterator = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
+    // for a primitive cursor, we don't need values
+    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, false)
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long =
         if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
@@ -339,7 +358,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(Long, Seq[Value])] = {
       val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-      reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
+      reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, propertyIndicesWithValues.nonEmpty)
       new CursorIterator[(Long, Seq[Value])] {
         override protected def fetchNext(): (Long, Seq[Value]) =
           if (nodeCursor.next()) {

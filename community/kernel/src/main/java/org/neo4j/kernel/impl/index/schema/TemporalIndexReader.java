@@ -76,12 +76,12 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, predicates );
+        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
         return nodeValueIterator;
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         if ( predicates.length != 1 )
         {
@@ -92,10 +92,10 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
         {
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates );
+            cursor.initialize( descriptor, multiProgressor, predicates, needsValues );
             for ( NativeIndexReader<?,NativeIndexValue> reader : this )
             {
-                reader.query( multiProgressor, indexOrder, predicates );
+                reader.query( multiProgressor, indexOrder, needsValues, predicates );
             }
         }
         else
@@ -105,16 +105,16 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
                 NativeIndexReader<?,NativeIndexValue> part = uncheckedSelect( predicate.valueGroup() );
                 if ( part != null )
                 {
-                    part.query( cursor, indexOrder, predicates );
+                    part.query( cursor, indexOrder, needsValues, predicates );
                 }
                 else
                 {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, needsValues );
                 }
             }
             else
             {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, needsValues );
             }
         }
     }

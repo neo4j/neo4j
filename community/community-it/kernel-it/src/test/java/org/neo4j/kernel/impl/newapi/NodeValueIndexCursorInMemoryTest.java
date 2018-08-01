@@ -44,4 +44,16 @@ public class NodeValueIndexCursorInMemoryTest extends AbstractNodeValueIndexCurs
     {
         return false;
     }
+
+    @Override
+    protected boolean indexProvidesStringValues()
+    {
+        return true;
+    }
+
+    @Override
+    protected boolean indexProvidesNumericValues()
+    {
+        return true;
+    }
 }

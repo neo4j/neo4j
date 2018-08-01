@@ -87,11 +87,8 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeIndexSeek(
-            IndexReference index,
-            NodeValueIndexCursor cursor,
-            IndexOrder indexOrder,
-            IndexQuery... query ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+    public final void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+            throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
         if ( hasForbiddenProperties( index ) )
@@ -104,7 +101,7 @@ abstract class Read implements TxStateHolder,
         IndexReader reader = indexReader( index, false );
         cursorImpl.setRead( this, null );
         IndexProgressor.NodeValueClient target = withFullValuePrecision( cursorImpl, query, reader );
-        reader.query( target, indexOrder, query );
+        reader.query( target, indexOrder, needsValues, query );
     }
 
     private IndexProgressor.NodeValueClient withFullValuePrecision( DefaultNodeValueIndexCursor cursor,
@@ -213,14 +210,12 @@ abstract class Read implements TxStateHolder,
         IndexReader reader = indexReader( index, true );
         cursor.setRead( this, reader );
         IndexProgressor.NodeValueClient target = withFullValuePrecision( cursor, query, reader );
-        reader.query( target, IndexOrder.NONE, query );
+        // we never need values for exact predicates
+        reader.query( target, IndexOrder.NONE, false, query );
     }
 
     @Override
-    public final void nodeIndexScan(
-            IndexReference index,
-            NodeValueIndexCursor cursor,
-            IndexOrder indexOrder ) throws KernelException
+    public final void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues ) throws KernelException
     {
         ktx.assertOpen();
         if ( hasForbiddenProperties( index ) )
@@ -232,7 +227,7 @@ abstract class Read implements TxStateHolder,
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
         ((DefaultNodeValueIndexCursor) cursor).setRead( this, null );
-        indexReader( index, false ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
+        indexReader( index, false ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )

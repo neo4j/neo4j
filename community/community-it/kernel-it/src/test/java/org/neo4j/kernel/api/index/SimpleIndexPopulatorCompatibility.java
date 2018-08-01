@@ -201,7 +201,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 for ( NodeAndValue entry : Iterables.concat( valueSet1, valueSet2 ) )
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
+                    reader.query( nodes, IndexOrder.NONE, false , IndexQuery.exact( propertyKeyId, entry.value ) );
                     assertEquals( entry.nodeId, nodes.next() );
                     assertFalse( nodes.hasNext() );
                 }
@@ -231,7 +231,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 for ( NodeAndValue entry : values )
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
+                    reader.query( nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
                     assertEquals( entry.nodeId, nodes.next() );
                     assertFalse( nodes.hasNext() );
                 }
@@ -267,7 +267,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     for ( NodeAndValue entry : valueSet1 )
                     {
                         NodeValueIterator nodes = new NodeValueIterator();
-                        reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.value.toString(), asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
                     }
                 }

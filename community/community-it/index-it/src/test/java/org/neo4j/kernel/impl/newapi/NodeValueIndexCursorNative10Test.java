@@ -48,4 +48,16 @@ public class NodeValueIndexCursorNative10Test extends AbstractNodeValueIndexCurs
     {
         return true;
     }
+
+    @Override
+    protected boolean indexProvidesStringValues()
+    {
+        return false;
+    }
+
+    @Override
+    protected boolean indexProvidesNumericValues()
+    {
+        return true;
+    }
 }

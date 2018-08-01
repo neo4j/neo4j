@@ -81,7 +81,7 @@ public class BridgingIndexProgressor implements IndexProgressor.NodeValueClient,
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, boolean needsValues )
     {
         assertKeysAlign( descriptor.schema().getPropertyIds() );
         progressors.add( progressor );

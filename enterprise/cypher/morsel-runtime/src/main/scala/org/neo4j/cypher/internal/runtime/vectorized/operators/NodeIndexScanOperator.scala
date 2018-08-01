@@ -48,7 +48,8 @@ class NodeIndexScanOperator(offset: Int, label: Int, propertyKey: Int, argumentS
       val read = context.transactionalContext.dataRead
 
       if (!hasMore) {
-        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE)
+        //TODO we need to figure out how to deal with values and indexes here
+        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE, true)
       }
 
       hasMore = iterate(currentRow, valueIndexCursor, argumentSize)

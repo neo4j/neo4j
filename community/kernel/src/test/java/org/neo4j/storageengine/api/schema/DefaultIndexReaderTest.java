@@ -41,7 +41,7 @@ class DefaultIndexReaderTest
         String expectedMessage = String.format( "This reader only have support for index order %s. Provided index order was %s.",
                 IndexOrder.NONE, IndexOrder.ASCENDING );
         UnsupportedOperationException operationException = assertThrows( UnsupportedOperationException.class,
-                () -> indexReader.query( new SimpleNodeValueClient(), IndexOrder.ASCENDING, IndexQuery.exists( 1 ) ) );
+                () -> indexReader.query( new SimpleNodeValueClient(), IndexOrder.ASCENDING, false, IndexQuery.exists( 1 ) ) );
         assertEquals( expectedMessage, operationException.getMessage() );
     }
 

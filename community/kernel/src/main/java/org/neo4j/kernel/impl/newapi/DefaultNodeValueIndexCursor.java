@@ -72,11 +72,12 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                            IndexQuery[] query )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );
+
+        this.needsValues = needsValues;
         this.query = query;
 
         IndexQuery firstPredicate = query[0];
@@ -254,7 +255,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void prefixQuery( IndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
     {
-        needsValues = true;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -280,7 +280,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         ValueGroup valueGroup = predicate.valueGroup();
         ValueCategory category = valueGroup.category();
-        this.needsValues = category == ValueCategory.TEXT || category == ValueCategory.NUMBER || category == ValueCategory.TEMPORAL;
+        // We have values for text, number, and temporal but nor for other categories, so even if a NodeValueClientValue
+        // wants values, we can't provide them
+        this.needsValues = this.needsValues && (category == ValueCategory.TEXT || category == ValueCategory.NUMBER || category == ValueCategory.TEMPORAL);
+
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -307,7 +310,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void scanQuery( IndexDescriptor descriptor )
     {
-        needsValues = true;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -330,7 +332,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void suffixOrContainsQuery( IndexDescriptor descriptor, IndexQuery query )
     {
-        needsValues = true;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();

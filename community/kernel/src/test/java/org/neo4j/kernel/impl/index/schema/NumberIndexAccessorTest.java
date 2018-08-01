@@ -72,7 +72,7 @@ public abstract class NumberIndexAccessorTest extends NativeIndexAccessorTest<Nu
             }
 
             SimpleNodeValueClient client = new SimpleNodeValueClient();
-            reader.query( client, supportedOrder, supportedQuery );
+            reader.query( client, supportedOrder, client.needsValues(), supportedQuery );
             int i = 0;
             while ( client.next() )
             {
@@ -101,7 +101,7 @@ public abstract class NumberIndexAccessorTest extends NativeIndexAccessorTest<Nu
                 CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
 
         // when
-        reader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
+        reader.query( new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery );
     }
 
     // </READER ordering>

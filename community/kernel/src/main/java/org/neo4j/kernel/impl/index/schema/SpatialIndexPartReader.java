@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
+
 import org.neo4j.values.storable.ValueGroup;
 
 public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends NativeIndexReader<SpatialIndexKey,VALUE>
@@ -76,13 +77,16 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, predicates );
+        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
         return nodeValueIterator;
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
+        // Spatial does not support providing values
+        assert !needsValues;
+
         validateQuery( indexOrder, predicates );
         IndexQuery predicate = predicates[0];
 
@@ -116,7 +120,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     {
         treeKeyFrom.initValueAsLowest( ValueGroup.GEOMETRY );
         treeKeyTo.initValueAsHighest( ValueGroup.GEOMETRY );
-        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false,  false );
     }
 
     private void startSeekForExact( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexProgressor.NodeValueClient client, Value value,
@@ -124,7 +128,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     {
         treeKeyFrom.from( value );
         treeKeyTo.from( value );
-        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false, false );
     }
 
     private void startSeekForRange( IndexProgressor.NodeValueClient client, GeometryRangePredicate rangePredicate, IndexQuery[] query )
@@ -132,7 +136,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         try
         {
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-            client.initialize( descriptor, multiProgressor, query );
+            client.initialize( descriptor, multiProgressor, query, false );
             SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
             double[] from = rangePredicate.from() == null ? null : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? null : rangePredicate.to().coordinate();
@@ -146,13 +150,13 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
                 RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
                 IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
-                multiProgressor.initialize( descriptor, hitProgressor, query );
+                multiProgressor.initialize( descriptor, hitProgressor, query, false );
             }
         }
         catch ( IllegalArgumentException e )
         {
             // Invalid query ranges will cause this state (eg. min>max)
-            client.initialize( descriptor, IndexProgressor.EMPTY, query );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, false );
         }
         catch ( IOException e )
         {
@@ -161,19 +165,22 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     }
 
     @Override
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialIndexKey treeKeyFrom,
-            SpatialIndexKey treeKeyTo, IndexQuery[] query, boolean needFilter )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexQuery[] query,
+            boolean needFilter, boolean needsValues )
     {
+        // Spatial does not support providing values
+        assert !needsValues;
+
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
-            client.initialize( descriptor, IndexProgressor.EMPTY, query );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, false );
             return;
         }
         try
         {
             RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
             IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
-            client.initialize( descriptor, hitProgressor, query );
+            client.initialize( descriptor, hitProgressor, query, false );
         }
         catch ( IOException e )
         {

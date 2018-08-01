@@ -92,11 +92,13 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
     {
         this.progressor = progressor;
         this.keys = descriptor.schema().getPropertyIds();
-        target.initialize( descriptor, this, query );
+        // We set needsValues to true for the target, since this will enable us to execute the cheaper filterByIndexValues
+        // instead of filterByCursors if the target can provide values
+        target.initialize( descriptor, this, query, true );
     }
 
     @Override

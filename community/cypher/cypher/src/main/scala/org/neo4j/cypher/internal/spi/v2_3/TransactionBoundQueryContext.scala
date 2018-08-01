@@ -22,11 +22,7 @@ package org.neo4j.cypher.internal.spi.v2_3
 import java.net.URL
 import java.util.function.Predicate
 
-import org.eclipse.collections.api.collection.primitive.ImmutableLongCollection
 import org.eclipse.collections.api.iterator.LongIterator
-import org.eclipse.collections.impl.factory.primitive.LongSets
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator
-import org.eclipse.collections.impl.utility.internal.primitive.LongIteratorIterate
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v2_3._
@@ -39,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.spi.{CursorIterator, PrimitiveCursorIterator}
+import org.neo4j.cypher.internal.spi.CursorIterator
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
@@ -231,23 +227,13 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
 
   private def seek(index: IndexReference, query: IndexQuery*) = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query:_*)
+    //older planners cannot use values provided by the index
+    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, false, query:_*)
     new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (nodeCursor.next()) proxySpi.newNodeProxy(nodeCursor.nodeReference())
         else null
       }
-
-      override protected def close(): Unit = nodeCursor.close()
-    }
-  }
-
-  private def scan(index: IndexReference) = {
-    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
-    new PrimitiveCursorIterator {
-      override protected def fetchNext(): Long =
-        if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
 
       override protected def close(): Unit = nodeCursor.close()
     }
@@ -357,9 +343,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
       }.getOrElse(Iterator.empty)
   }
 
-  def indexScan(index: SchemaTypes.IndexDescriptor) = {
+  def indexScan(index: SchemaTypes.IndexDescriptor): CursorIterator[Node] = {
     val cursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(tc.schemaRead.indexReferenceUnchecked(index.labelId, index.propertyId), cursor, IndexOrder.NONE)
+    //older planners cannot use values provided by the index
+    reads().nodeIndexScan(tc.schemaRead.indexReferenceUnchecked(index.labelId, index.propertyId), cursor, IndexOrder.NONE, false)
     new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (cursor.next()) proxySpi.newNodeProxy(cursor.nodeReference())

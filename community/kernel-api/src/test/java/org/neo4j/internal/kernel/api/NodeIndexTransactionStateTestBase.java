@@ -19,12 +19,15 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.collector.Collectors2;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -41,12 +43,22 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 
-// TODO test without values (when we don't want to get values and thus choose a different code path). Create a rule or similar to to this
+@RunWith( Parameterized.class)
 public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Parameterized.Parameters()
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][] {
+                { true }, { false }
+        });
+    }
+
+    @Parameterized.Parameter
+    public boolean needsValues;
 
     @Test
     public void shouldPerformStringSuffixSearch() throws Exception
@@ -70,7 +82,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             expected.add( nodeWithProp( tx, "2suff" ) );
             nodeWithPropId( tx, "skruff" );
             IndexReference index = tx.schemaRead().index( label, prop );
-            assertNodeAndValueForSeek( expected, tx, index,  IndexQuery.stringSuffix( prop, "suff" ));
+            assertNodeAndValueForSeek( expected, tx, index, needsValues, "pasuff", IndexQuery.stringSuffix( prop, "suff" ) );
         }
     }
 
@@ -103,7 +115,10 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
 
             IndexReference index = tx.schemaRead().index( label, prop );
 
-            assertNodeAndValueForScan( expected, tx, index );
+            // For now, scans cannot request values, since Spatial cannot provide them
+            // If we have to possibility to accept values IFF they exist (which corresponds
+            // to ValueCapability PARTIAL) this needs to change
+            assertNodeAndValueForScan( expected, tx, index, false, "noff" );
         }
     }
 
@@ -129,7 +144,8 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeWithProp( tx, "dragonfruit" );
             IndexReference index = tx.schemaRead().index( label, prop );
-            assertNodeAndValueForSeek( expected, tx, index, IndexQuery.exact( prop, "banana") );
+            // Equality seek does never provide values
+            assertNodeAndValueForSeek( expected, tx, index, false, "banana", IndexQuery.exact( prop, "banana" ) );
         }
     }
 
@@ -156,7 +172,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             nodeWithPropId( tx, "skruff" );
             IndexReference index = tx.schemaRead().index( label, prop );
 
-            assertNodeAndValueForSeek( expected, tx, index, IndexQuery.stringPrefix( prop, "suff" ) );
+            assertNodeAndValueForSeek( expected, tx, index,  needsValues, "suffpa", IndexQuery.stringPrefix( prop, "suff" ) );
         }
     }
 
@@ -182,7 +198,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             expected.add( nodeWithProp( tx, "cherry" ) );
             nodeWithProp( tx, "dragonfruit" );
             IndexReference index = tx.schemaRead().index( label, prop );
-            assertNodeAndValueForSeek( expected, tx, index, IndexQuery.range( prop, "b", true, "d", false ) );
+            assertNodeAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -213,7 +229,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             tx.dataWrite().nodeSetProperty( nodeToChange, prop, newProperty );
             expected.add(Pair.of(nodeToChange, newProperty ));
 
-            assertNodeAndValueForSeek( expected, tx, index, IndexQuery.range( prop, "b", true, "d", false ) );
+            assertNodeAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -243,7 +259,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             TextValue newProperty = stringValue( "kiwi" );
             tx.dataWrite().nodeSetProperty( nodeToChange, prop, newProperty );
 
-            assertNodeAndValueForSeek( expected, tx, index, IndexQuery.range( prop, "b", true, "d", false ) );
+            assertNodeAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -273,7 +289,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             IndexReference index = tx.schemaRead().index( label, prop );
             tx.dataWrite().nodeDelete( nodeToChange );
 
-            assertNodeAndValueForSeek( expected, tx, index, IndexQuery.range( prop, "b", true, "d", false ) );
+            assertNodeAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -281,10 +297,10 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     public void shouldPerformStringContainsSearch() throws Exception
     {
         // given
-        MutableLongSet expected = new LongHashSet();
+        Set<Pair<Long,Value>> expected = new HashSet<>();
         try ( Transaction tx = beginTransaction() )
         {
-            expected.add( nodeWithPropId( tx, "gnomebat" ) );
+            expected.add( nodeWithProp( tx, "gnomebat" ) );
             nodeWithPropId( tx, "fishwombat" );
             tx.success();
         }
@@ -296,20 +312,11 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
-            expected.add( nodeWithPropId( tx, "homeopatic" ) );
+            expected.add( nodeWithProp( tx, "homeopatic" ) );
             nodeWithPropId( tx, "telephonecompany" );
             IndexReference index = tx.schemaRead().index( label, prop );
-            try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
-            {
-                tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, IndexQuery.stringContains( prop, "me" ) );
-                MutableLongSet found = new LongHashSet();
-                while ( nodes.next() )
-                {
-                    found.add( nodes.nodeReference() );
-                }
 
-                assertThat( found, equalTo( expected ) );
-            }
+            assertNodeAndValueForSeek( expected, tx, index, needsValues, "immense", IndexQuery.stringContains( prop, "me" ) );
         }
     }
 
@@ -360,18 +367,63 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    private void assertNodeAndValueForSeek( Set<Pair<Long,Value>> expected, Transaction tx, IndexReference index, IndexQuery... queries ) throws KernelException
+    /**
+     * Perform an index seek and assert that the correct nodes and values were found.
+     *
+     * Since this method modifies TX state for the test it is not safe to call this method more than once in the same transaction.
+     *
+     * @param expected the expected nodes and values
+     * @param tx the transaction
+     * @param index the index
+     * @param needsValues if the index is expected to provide values
+     * @param anotherValueFoundByQuery a values that would be found by the index queries, if a node with that value existed. This method
+     * will create a node with that value, after initializing the cursor and assert that the new node is not found.
+     * @param queries the index queries
+     */
+    private void assertNodeAndValueForSeek( Set<Pair<Long,Value>> expected, Transaction tx, IndexReference index, boolean needsValues,
+            Object anotherValueFoundByQuery, IndexQuery... queries ) throws Exception
     {
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
         {
-            tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, queries );
+            tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, needsValues, queries );
+            assertNodeAndValue( expected, tx, needsValues, anotherValueFoundByQuery, nodes );
+        }
+    }
 
-            // Modify tx state with changes that should not be reflected in the cursor, since it was already initialized in the above statement
-            for ( Pair<Long,Value> pair : expected )
-            {
-                tx.dataWrite().nodeDelete( pair.first() );
-            }
+    /**
+     * Perform an index scan and assert that the correct nodes and values were found.
+     *
+     * Since this method modifies TX state for the test it is not safe to call this method more than once in the same transaction.
+     *
+     * @param expected the expected nodes and values
+     * @param tx the transaction
+     * @param index the index
+     * @param needsValues if the index is expected to provide values
+     * @param anotherValueFoundByQuery a values that would be found by, if a node with that value existed. This method
+     * will create a node with that value, after initializing the cursor and assert that the new node is not found.
+     */
+    private void assertNodeAndValueForScan( Set<Pair<Long,Value>> expected, Transaction tx, IndexReference index, boolean needsValues,
+            Object anotherValueFoundByQuery ) throws Exception
+    {
+        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
+        {
+            tx.dataRead().nodeIndexScan( index, nodes, IndexOrder.NONE, needsValues );
+            assertNodeAndValue( expected, tx, needsValues, anotherValueFoundByQuery, nodes );
+        }
+    }
 
+    private void assertNodeAndValue( Set<Pair<Long,Value>> expected, Transaction tx, boolean needsValues, Object anotherValueFoundByQuery,
+            NodeValueIndexCursor nodes ) throws Exception
+    {
+        // Modify tx state with changes that should not be reflected in the cursor, since it was already initialized in the above statement
+        for ( Pair<Long,Value> pair : expected )
+        {
+            tx.dataWrite().nodeDelete( pair.first() );
+        }
+        nodeWithPropId( tx, anotherValueFoundByQuery );
+
+        if ( needsValues )
+        {
             Set<Pair<Long,Value>> found = new HashSet<>();
             while ( nodes.next() )
             {
@@ -380,27 +432,16 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
 
             assertThat( found, equalTo( expected ) );
         }
-    }
-
-    private void assertNodeAndValueForScan( Set<Pair<Long,Value>> expected, Transaction tx, IndexReference index ) throws KernelException
-    {
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
+        else
         {
-            tx.dataRead().nodeIndexScan( index, nodes, IndexOrder.NONE );
-
-            // Modify tx state with changes that should not be reflected in the cursor, since it was already initialized in the above statement
-            for ( Pair<Long,Value> pair : expected )
-            {
-                tx.dataWrite().nodeDelete( pair.first() );
-            }
-
-            Set<Pair<Long,Value>> found = new HashSet<>();
+            Set<Long> foundIds = new HashSet<>();
             while ( nodes.next() )
             {
-                found.add( Pair.of( nodes.nodeReference(), nodes.propertyValue( 0 ) ) );
+                foundIds.add( nodes.nodeReference() );
             }
+            ImmutableSet<Long> expectedIds = expected.stream().map( Pair::first ).collect( Collectors2.toImmutableSet() );
 
-            assertThat( found, equalTo( expected ) );
+            assertThat( foundIds, equalTo( expectedIds ) );
         }
     }
 }

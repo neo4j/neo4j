@@ -36,6 +36,7 @@ public abstract class AbstractIndexReader implements IndexReader
     public void query(
             IndexProgressor.NodeValueClient client,
             IndexOrder indexOrder,
+            boolean needsValues,
             IndexQuery... query ) throws IndexNotApplicableKernelException
     {
         if ( indexOrder != IndexOrder.NONE )
@@ -44,7 +45,7 @@ public abstract class AbstractIndexReader implements IndexReader
                     String.format( "This reader only have support for index order %s. Provided index order was %s.",
                             IndexOrder.NONE, indexOrder ) );
         }
-        client.initialize( descriptor, new NodeValueIndexProgressor( query( query ), client ), query );
+        client.initialize( descriptor, new NodeValueIndexProgressor( query( query ), client ), query, needsValues );
     }
 
 }

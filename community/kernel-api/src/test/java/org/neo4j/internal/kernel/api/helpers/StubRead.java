@@ -40,8 +40,7 @@ import org.neo4j.values.storable.Value;
 public class StubRead implements Read
 {
     @Override
-    public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder,
-            IndexQuery... query )
+    public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
@@ -61,7 +60,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder )
+    public void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues )
     {
         throw new UnsupportedOperationException();
     }

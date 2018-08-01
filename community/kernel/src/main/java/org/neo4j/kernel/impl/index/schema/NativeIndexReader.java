@@ -147,7 +147,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         validateQuery( indexOrder, predicates );
 
@@ -158,7 +158,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         treeKeyTo.initialize( Long.MAX_VALUE );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter, needsValues );
     }
 
     @Override
@@ -171,18 +171,19 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
      */
     abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter,
+            boolean needsValues )
     {
         if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
         {
-            client.initialize( descriptor, IndexProgressor.EMPTY, query );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, needsValues );
             return;
         }
         try
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
-            client.initialize( descriptor, hitProgressor, query );
+            client.initialize( descriptor, hitProgressor, query, needsValues );
         }
         catch ( IOException e )
         {

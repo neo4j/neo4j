@@ -51,7 +51,7 @@ public class CompiledIndexUtilsTest
         CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
 
         // THEN
-        verify( read, times( 1 ) ).nodeIndexSeek( any(), any(), any(), any() );
+        verify( read, times( 1 ) ).nodeIndexSeek( any(), any(), any(), any(), any() );
     }
 
     @Test
@@ -67,7 +67,7 @@ public class CompiledIndexUtilsTest
                 index, null );
 
         // THEN
-        verify( read, never() ).nodeIndexSeek( any(), any(), any() );
+        verify( read, never() ).nodeIndexSeek( any(), any(), any(), any() );
         assertFalse( cursor.next() );
     }
 }

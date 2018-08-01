@@ -74,9 +74,10 @@ public interface IndexProgressor extends AutoCloseable
          * @param descriptor The descriptor
          * @param progressor The progressor
          * @param query The query of this progression
+         * @param needsValues if the index should fetch property values together with node ids for index queries
          */
         void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                         IndexQuery[] query );
+                         IndexQuery[] query, boolean needsValues );
 
         /**
          * Accept the node id and values of a candidate index entry. Return true if the entry is

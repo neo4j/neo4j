@@ -70,7 +70,7 @@ public class FilteringNativeHitIndexProgressorTest
         when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue)invocation.getArgument( 0 )).stringValue() ) );
         FilteringNativeHitIndexProgressor<StringIndexKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 new ArrayList<>(), predicates );
-        valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates );
+        valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, valueClient.needsValues() );
         List<Long> result = new ArrayList<>();
 
         // when

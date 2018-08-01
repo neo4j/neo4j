@@ -61,7 +61,7 @@ public class QueryResultComparingIndexReader implements IndexReader
 
         // Also call the other query method and bake comparison from it into a wrapped version of this iterator
         NodeValueIterator otherResult = new NodeValueIterator();
-        actual.query( otherResult, IndexOrder.NONE, predicates );
+        actual.query( otherResult, IndexOrder.NONE, false, predicates );
         return new PrimitiveLongResourceCollections.PrimitiveLongBaseResourceIterator( mainResult )
         {
             @Override
@@ -99,7 +99,7 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... query ) throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query ) throws IndexNotApplicableKernelException
     {
         // Also call the other query method and bake comparison from it into a wrapped version of this iterator
         PrimitiveLongResourceIterator otherResult = actual.query( query );
@@ -112,7 +112,7 @@ public class QueryResultComparingIndexReader implements IndexReader
             private long mainValue;
 
             @Override
-            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
             {
                 IndexProgressor wrappedProgressor = new IndexProgressor()
                 {
@@ -149,7 +149,7 @@ public class QueryResultComparingIndexReader implements IndexReader
                     }
                 };
 
-                client.initialize( descriptor, wrappedProgressor, query );
+                client.initialize( descriptor, wrappedProgressor, query, needsValues );
             }
 
             @Override
@@ -166,7 +166,7 @@ public class QueryResultComparingIndexReader implements IndexReader
             }
         };
 
-        actual.query( wrappedClient, indexOrder, query );
+        actual.query( wrappedClient, indexOrder, needsValues, query );
     }
 
     @Override

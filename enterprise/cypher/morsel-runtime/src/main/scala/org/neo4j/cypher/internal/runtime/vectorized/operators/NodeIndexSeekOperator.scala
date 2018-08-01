@@ -41,14 +41,16 @@ class NodeIndexSeekOperator(offset: Int,
                             override val indexMode: IndexSeekMode = IndexSeek)
   extends StreamingOperator with NodeIndexSeeker {
 
+  // TODO only the propertyKeys that we can get and conditionally other method just for nodes
+  val propertyIndicesWithValues = propertyKeys.indices
+
   override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
     val valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
     val read = context.transactionalContext.dataRead
     val queryState = new OldQueryState(context, resources = null, params = state.params)
     val indexReference = reference(context)
-    // TODO
-    val nodeIterator = indexSeek(queryState, indexReference, Seq.empty, currentRow)
-    new OTask(nodeIterator)
+    val tupleIterator = indexSeek(queryState, indexReference, propertyIndicesWithValues, currentRow)
+    new OTask(tupleIterator)
   }
 
   override val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
@@ -62,22 +64,23 @@ class NodeIndexSeekOperator(offset: Int,
     reference
   }
 
-  class OTask(nodeIterator: Iterator[(NodeValue, Seq[Value])]) extends ContinuableOperatorTask {
+  class OTask(tupleIterator: Iterator[(NodeValue, Seq[Value])]) extends ContinuableOperatorTask {
     override def operate(currentRow: MorselExecutionContext,
                          context: QueryContext,
                          state: QueryState): Unit = {
 
       var processedRows = 0
-      while (currentRow.hasMoreRows && nodeIterator.hasNext) {
+      while (currentRow.hasMoreRows && tupleIterator.hasNext) {
 //        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-        currentRow.setLongAt(offset, nodeIterator.next()._1.id())
-        // TODO
+        val (node, values) = tupleIterator.next()
+        currentRow.setLongAt(offset, node.id())
+        // TODO set values
         currentRow.moveToNextRow()
       }
 
       currentRow.finishedWriting()
     }
 
-    override def canContinue: Boolean = nodeIterator.hasNext
+    override def canContinue: Boolean = tupleIterator.hasNext
   }
 }

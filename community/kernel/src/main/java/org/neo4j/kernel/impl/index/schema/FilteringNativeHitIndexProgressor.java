@@ -50,4 +50,10 @@ class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE e
         }
         return true;
     }
+
+    // We need to make sure to always deserialize, even if the client doesn't need the value, to be able to filter
+    Value[] extractValues( KEY key )
+    {
+        return key.asValues();
+    }
 }

@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.ResourceManager
+import org.neo4j.cypher.internal.spi.CursorIterator
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.{CursorIterator, PrimitiveCursorIterator}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
@@ -224,23 +224,13 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
   private def seek(index: IndexReference, query: IndexQuery*) = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query:_*)
+    //older planners cannot use values provided by the index
+    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, false, query:_*)
     new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (nodeCursor.next()) entityAccessor.newNodeProxy(nodeCursor.nodeReference())
         else null
       }
-
-      override protected def close(): Unit = nodeCursor.close()
-    }
-  }
-
-  private def scan(index: IndexReference) = {
-    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
-    new PrimitiveCursorIterator {
-      override protected def fetchNext(): Long =
-        if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
 
       override protected def close(): Unit = nodeCursor.close()
     }
@@ -352,7 +342,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
   override def indexScan(index: IndexDescriptor) = {
     val cursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), cursor, IndexOrder.NONE)
+    //older planners cannot use values provided by the index
+    reads().nodeIndexScan(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), cursor, IndexOrder.NONE, false)
     new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (cursor.next()) entityAccessor.newNodeProxy(cursor.nodeReference())
