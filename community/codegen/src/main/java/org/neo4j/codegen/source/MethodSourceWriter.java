@@ -263,7 +263,23 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         }
         else if ( value instanceof Double )
         {
-            append( value.toString() );
+            Double doubleValue = (Double) value;
+            if ( Double.isNaN( doubleValue ) )
+            {
+                append( "Double.NaN" );
+            }
+            else if ( doubleValue == Double.POSITIVE_INFINITY )
+            {
+                append( "Double.POSITIVE_INFINITY" );
+            }
+            else if ( doubleValue == Double.NEGATIVE_INFINITY )
+            {
+                append( "Double.NEGATIVE_INFINITY" );
+            }
+            else
+            {
+                append( value.toString() );
+            }
         }
         else if ( value instanceof Boolean )
         {

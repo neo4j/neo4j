@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.codegen.bytecode.ByteCode;
 import org.neo4j.codegen.source.SourceCode;
@@ -1836,6 +1837,41 @@ public class CodeGenerationTest
         assertThat( unboxTest( Float.class, float.class, 12F ), equalTo( 12F ) );
         assertThat( unboxTest( Double.class, double.class, 12D ), equalTo( 12D ) );
         assertThat( unboxTest( Character.class, char.class, 'a' ), equalTo( 'a' ) );
+    }
+
+    @Test
+    public void shouldHandleInfinityAndNan() throws Throwable
+    {
+        assertTrue( Double.isInfinite( generateDoubleMethod( Double.POSITIVE_INFINITY ).get() ) );
+        assertTrue( Double.isInfinite( generateDoubleMethod( Double.NEGATIVE_INFINITY ).get() ) );
+        assertTrue( Double.isNaN( generateDoubleMethod( Double.NaN ).get() ) );
+    }
+
+    private Supplier<Double> generateDoubleMethod( double toBeReturned ) throws Throwable
+    {
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            simple.generate( MethodTemplate.method( double.class, "value" )
+                    .returns( constant( toBeReturned ) ).build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass() ).invoke();
+
+        MethodHandle method = instanceMethod( instance, "value" );
+        return () -> {
+            try
+            {
+                return (Double) method.invoke();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new AssertionError( throwable );
+            }
+        };
     }
 
     private <T> Object unboxTest( Class<T> boxedType, Class<?> unboxedType, T value )
