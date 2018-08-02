@@ -66,11 +66,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def getOptStatistics = Some(getStatistics)
 
-  override def createNode() = {
-    nodesCreated.increase()
-    inner.createNode()
-  }
-
   override def createNodeWithLabels(labels: Array[Int]) = {
     nodesCreated.increase()
     labelsAdded.increase(labels.length)

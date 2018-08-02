@@ -45,8 +45,6 @@ trait QueryContextAdaptation {
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = ???
 
-  override def createNode(): NodeValue = ???
-
   override def createNodeWithLabels(labels: Array[Int]): NodeValue = ???
 
   override def createNodeIdWithLabels(labels: Array[Int]): Long = ???
