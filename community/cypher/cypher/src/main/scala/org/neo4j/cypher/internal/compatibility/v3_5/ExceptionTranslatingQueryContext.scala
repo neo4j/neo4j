@@ -55,6 +55,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def createNode(): NodeValue =
     translateException(inner.createNode())
 
+  override def createNodeWithLabels(labels: Array[Int]): NodeValue =
+    translateException(inner.createNodeWithLabels(labels))
+
   override def createNodeId(): Long =
     translateException(inner.createNodeId())
 
