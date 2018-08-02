@@ -115,6 +115,7 @@ public class DataSourceModule
         deps.satisfyDependency( storeCopyCheckPointMutex );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
+                databaseName,
                 databaseDirectory,
                 config,
                 editionModule.idGeneratorFactory,

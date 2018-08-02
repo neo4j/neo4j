@@ -24,6 +24,7 @@ package org.neo4j.backup;
 
 import java.util.function.Supplier;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -96,13 +97,18 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
-        if ( !isCausalClusterInstance( context ) )
+        if ( !isCausalClusterInstance( context ) && isDefaultDatabase( dependencies.neoStoreDataSource() ) )
         {
             return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
                     dependencies.logService().getInternalLogProvider(), dependencies.monitors(), dependencies.neoStoreDataSource(),
                     dependencies.fileSystemAbstraction() );
         }
         return new LifecycleAdapter();
+    }
+
+    private static boolean isDefaultDatabase( NeoStoreDataSource neoStoreDataSource )
+    {
+        return DatabaseManager.DEFAULT_DATABASE_NAME.equals( neoStoreDataSource.getDatabaseName() );
     }
 
     private static boolean isCausalClusterInstance( KernelContext kernelContext )

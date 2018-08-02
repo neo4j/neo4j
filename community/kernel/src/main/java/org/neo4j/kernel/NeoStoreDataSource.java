@@ -260,6 +260,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private Dependencies dataSourceDependencies;
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
+    private final String databaseName;
     private File databaseDirectory;
     private boolean readOnly;
     private final IdController idController;
@@ -278,18 +279,20 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final Iterable<QueryEngineProvider> engineProviders;
     private final boolean failOnCorruptedLogFiles;
 
-    public NeoStoreDataSource( File databaseDirectory, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService, JobScheduler scheduler,
-            TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver, TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory,
-            SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor,
-            FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth, LogFileCreationMonitor physicalLogMonitor,
-            TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing,
-            IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics,
-            Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock,
-            AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IdController idController, DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-            Function<File,FileSystemWatcherService> watcherServiceFactory, GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
+    public NeoStoreDataSource( String databaseName, File databaseDirectory, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService,
+            JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver, TokenHolders tokenHolders,
+            StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
+            IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
+            LogFileCreationMonitor physicalLogMonitor, TransactionHeaderInformationFactory transactionHeaderInformationFactory,
+            CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing, IndexConfigStore indexConfigStore,
+            ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
+            Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock, AccessCapability accessCapability,
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController,
+            DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+            Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<File,FileSystemWatcherService> watcherServiceFactory,
+            GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
     {
+        this.databaseName = databaseName;
         this.databaseDirectory = databaseDirectory;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -852,6 +855,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
     {
         return storeCopyCheckPointMutex;
+    }
+
+    public String getDatabaseName()
+    {
+        return databaseName;
     }
 
     // For test purposes only, not thread safe

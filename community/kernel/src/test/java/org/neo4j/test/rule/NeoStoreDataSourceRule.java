@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.function.Function;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -129,7 +130,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 deps -> new DiagnosticsManager( NullLog.getInstance() ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> IndexProvider.EMPTY );
 
-        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory,
+        dataSource = new NeoStoreDataSource( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 mutableDependencies,
                 mockedTokenHolders(), locksFactory,
