@@ -128,9 +128,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def createNodeWithLabels(labels: Array[Int]): NodeValue = ValueUtils.fromNodeProxy(entityAccessor.newNodeProxy(writes().nodeCreateWithLabels(labels)))
+  override def createNode(labels: Array[Int]): NodeValue = ValueUtils.fromNodeProxy(entityAccessor.newNodeProxy(writes().nodeCreateWithLabels(labels)))
 
-  override def createNodeIdWithLabels(labels: Array[Int]): Long = writes().nodeCreateWithLabels(labels)
+  override def createNodeId(labels: Array[Int]): Long = writes().nodeCreateWithLabels(labels)
 
   override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = {
     val relId = transactionalContext.kernelTransaction.dataWrite().relationshipCreate(start, relType, end)

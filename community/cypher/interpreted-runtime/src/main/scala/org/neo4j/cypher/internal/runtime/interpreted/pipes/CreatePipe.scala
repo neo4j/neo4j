@@ -91,7 +91,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
                            state: QueryState,
                            data: CreateNodeCommand): (String, NodeValue) = {
     val labelIds = data.labels.map(_.getOrCreateId(state.query).id).toArray
-    val node = state.query.createNodeWithLabels(labelIds)
+    val node = state.query.createNode(labelIds)
     data.properties.foreach(setProperties(context, state, node.id(), _, state.query.nodeOps))
     data.idName -> node
   }

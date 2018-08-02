@@ -66,9 +66,9 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def relationshipOps: Operations[RelationshipValue]
 
-  def createNodeWithLabels(labels: Array[Int]): NodeValue
+  def createNode(labels: Array[Int]): NodeValue
 
-  def createNodeIdWithLabels(labels: Array[Int]): Long
+  def createNodeId(labels: Array[Int]): Long
 
   def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue
 
