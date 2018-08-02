@@ -24,8 +24,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
@@ -156,7 +155,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 
     private boolean performHandshake()
     {
-        List<Long> suggestions = new ArrayList<>();
+        long[] suggestions = new long[4];
         for ( int i = 0; i < 4; i++ )
         {
             final long suggestion = handshakeBuffer.getInt( (i + 1) * Integer.BYTES ) & 0xFFFFFFFFL;
@@ -166,12 +165,12 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
             {
                 break;
             }
-            suggestions.add( suggestion );
+            suggestions[i] = suggestion;
         }
 
         if ( protocol == null )
         {
-            log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.", suggestions );
+            log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.", Arrays.toString( suggestions ) );
         }
 
         return protocol != null;
