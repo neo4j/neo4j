@@ -34,9 +34,11 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import java.io.IOException;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 
 public class EagerProcedureIT
@@ -80,6 +82,22 @@ public class EagerProcedureIT
     }
 
     @Test
+    public void shouldNotGetErrorBecauseOfNormalEagerizationWhenStreamingFromANormalReadProcedureToDestructiveCypher()
+    {
+        // When we have a simple graph (a)
+        int count = 10;
+        setUpTestData( count );
+
+        // Then we can run an normal read procedure and it will be eagerized by normal Cypher eagerization
+        Result res = db.execute( "MATCH (n) WHERE n.key = 'value' " +
+                "CALL org.neo4j.procedure.findNeighboursNotEagerized(n) " +
+                "YIELD relationship AS r, node as m " +
+                "DELETE r, m RETURN true" );
+        assertThat( "Should get one fewer rows than original nodes", res.resultAsString(), containsString( (count - 1) + " rows" ) );
+        assertThat( "The plan description should contain the 'Eager' operation", res.getExecutionPlanDescription().toString(), containsString( "+Eager" ) );
+    }
+
+    @Test
     public void shouldGetEagerPlanForAnEagerProcedure()
     {
         // When explaining a call to an eagerized procedure
@@ -102,9 +120,14 @@ public class EagerProcedureIT
 
     private void setUpTestData()
     {
+        setUpTestData( 2 );
+    }
+
+    private void setUpTestData( int nodes )
+    {
         try ( Transaction tx = db.beginTx() )
         {
-            createChainOfNodesWithLabelAndProperty( 2, "FOLLOWS", "User", "key", "value" );
+            createChainOfNodesWithLabelAndProperty( nodes, "FOLLOWS", "User", "key", "value" );
             tx.success();
         }
     }
@@ -159,11 +182,35 @@ public class EagerProcedureIT
         }
     }
 
+    public static class NeighbourOutput
+    {
+        public final Relationship relationship;
+        public final Node node;
+
+        public NeighbourOutput( Relationship relationship, Node node )
+        {
+            this.relationship = relationship;
+            this.node = node;
+        }
+    }
+
     @SuppressWarnings( "unused" )
     public static class ClassWithProcedures
     {
         @Context
         public GraphDatabaseService db;
+
+        @Procedure( mode = READ )
+        public Stream<NeighbourOutput> findNeighboursNotEagerized( @Name( "node" ) Node node )
+        {
+            return findNeighbours( node );
+        }
+
+        private Stream<NeighbourOutput> findNeighbours( Node node )
+        {
+            return StreamSupport.stream( node.getRelationships(Direction.OUTGOING).spliterator(), false ).map(
+                    (relationship -> new NeighbourOutput( relationship, relationship.getOtherNode( node ) )) );
+        }
 
         @Procedure( mode = WRITE, eager = true )
         public Stream<Output> deleteNeighboursEagerized( @Name( "node" ) Node node, @Name( "relation" ) String relation )
