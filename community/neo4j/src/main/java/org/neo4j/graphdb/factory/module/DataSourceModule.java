@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 public class DataSourceModule
 {
@@ -44,13 +43,14 @@ public class DataSourceModule
     public DataSourceModule( String databaseName, final PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
+
         tokenHolders = editionModule.tokenHoldersSupplier.get();
         File databaseDirectory = new File( platformModule.storeDir, databaseName );
 
         platformModule.diagnosticsManager.prependProvider( platformModule.config );
 
-        neoStoreDataSource = new NeoStoreDataSource(
-                new ModularDatabaseCreationContext( databaseName, databaseDirectory, platformModule, editionModule, procedures, graphDatabaseFacade, tokenHolders ) );
+        neoStoreDataSource = new NeoStoreDataSource( new ModularDatabaseCreationContext( databaseName, databaseDirectory, platformModule, editionModule,
+                procedures, graphDatabaseFacade, tokenHolders ) );
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;

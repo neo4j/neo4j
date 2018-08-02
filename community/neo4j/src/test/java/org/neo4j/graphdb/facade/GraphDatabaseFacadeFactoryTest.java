@@ -25,10 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Optional;
 
-
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
