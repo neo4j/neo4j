@@ -150,7 +150,8 @@ public class CoreServerModule
         CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines,
                 replicationModule.getSessionTracker(), lastFlushedStorage );
 
-        final Supplier<DatabaseHealth> databaseHealthSupplier = platformModule.dependencies.provideDependency( DatabaseHealth.class );
+        final Supplier<DatabaseHealth> databaseHealthSupplier =
+                () -> platformModule.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( DatabaseHealth.class );
         commandApplicationProcess = new CommandApplicationProcess(
                 consensusModule.raftLog(),
                 platformModule.config.get( CausalClusteringSettings.state_machine_apply_max_batch_size ),

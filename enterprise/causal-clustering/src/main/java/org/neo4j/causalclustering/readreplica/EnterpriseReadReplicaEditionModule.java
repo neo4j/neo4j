@@ -256,7 +256,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         CatchUpClient catchUpClient = life.add( new CatchUpClient( logProvider, Clocks.systemClock(), channelInitializer ) );
 
-        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
+        final Supplier<DatabaseHealth> databaseHealthSupplier =
+                () -> platformModule.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( DatabaseHealth.class );
 
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseDirectory, config );

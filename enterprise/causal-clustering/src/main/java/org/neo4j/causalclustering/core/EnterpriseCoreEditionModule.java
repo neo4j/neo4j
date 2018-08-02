@@ -226,7 +226,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         logProvider = logging.getInternalLogProvider();
-        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
+        final Supplier<DatabaseHealth> databaseHealthSupplier =
+                () -> platformModule.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( DatabaseHealth.class );
 
         watcherServiceFactory = directory -> createFileSystemWatcherService( fileSystem, directory, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );
