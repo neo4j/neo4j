@@ -208,8 +208,8 @@ public class EagerProcedureIT
 
         private Stream<NeighbourOutput> findNeighbours( Node node )
         {
-            return StreamSupport.stream( node.getRelationships(Direction.OUTGOING).spliterator(), false ).map(
-                    (relationship -> new NeighbourOutput( relationship, relationship.getOtherNode( node ) )) );
+            return StreamSupport.stream( node.getRelationships( Direction.OUTGOING ).spliterator(), false ).map(
+                    relationship -> new NeighbourOutput( relationship, relationship.getOtherNode( node ) ) );
         }
 
         @Procedure( mode = WRITE, eager = true )
