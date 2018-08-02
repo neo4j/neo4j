@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.Description;
+import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
@@ -50,6 +52,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.AnyValue;
@@ -73,6 +76,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 public class AuthenticationIT extends AbstractBoltTransportsTest
 {
     protected EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    protected final AssertableLogProvider logProvider = new AssertableLogProvider();
     protected Neo4jWithSocket server =
             new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
 
@@ -81,7 +85,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
-        return new TestGraphDatabaseFactory();
+        return new TestGraphDatabaseFactory( logProvider );
     }
 
     protected Consumer<Map<String,String>> getSettingsFunction()
@@ -137,6 +141,8 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 "The client is unauthorized due to authentication failure." ) ) );
 
         assertThat( connection, eventuallyDisconnects() );
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( Matchers.containsString( BoltServer.class.getPackage().getName() ) ).warn(
+                containsString( "The client is unauthorized due to authentication failure." ) ) );
     }
 
     @Test

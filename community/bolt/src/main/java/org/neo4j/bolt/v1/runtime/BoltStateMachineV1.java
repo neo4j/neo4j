@@ -36,6 +36,7 @@ import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.messaging.BoltStateMachineV1Context;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -291,6 +292,10 @@ public class BoltStateMachineV1 implements BoltStateMachine
             if ( ExceptionUtils.indexOfType( cause, AuthorizationExpiredException.class ) != -1 )
             {
                 throw new BoltConnectionAuthFatality( "Failed to process a bolt message", cause );
+            }
+            if ( cause instanceof AuthenticationException )
+            {
+                throw new BoltConnectionAuthFatality( (AuthenticationException) cause );
             }
 
             throw new BoltConnectionFatality( "Failed to process a bolt message", cause );

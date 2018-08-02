@@ -38,7 +38,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
     @Override
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
-        return new TestEnterpriseGraphDatabaseFactory();
+        return new TestEnterpriseGraphDatabaseFactory( logProvider );
     }
 
     @Override
