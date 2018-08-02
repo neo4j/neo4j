@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -101,9 +101,9 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   protected def createNode(context: ExecutionContext,
                            state: QueryState,
                            data: CreateNodeCommand): (String, NodeValue) = {
-    val node = state.query.createNode()
+    val labelIds = data.labels.map(_.getOrCreateId(state.query).id).toArray
+    val node = state.query.createNodeWithLabels(labelIds)
     data.properties.foreach(setProperties(context, state, node.id(), _, state.query.nodeOps))
-    setLabels(context, state, node.id(), data.labels)
     data.idName -> node
   }
 
