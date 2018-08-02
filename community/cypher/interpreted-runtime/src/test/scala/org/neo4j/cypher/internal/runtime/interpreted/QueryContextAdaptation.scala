@@ -51,6 +51,8 @@ trait QueryContextAdaptation {
 
   override def createNodeId(): Long = ???
 
+  override def createNodeIdWithLabels(labels: Array[Int]): Long = ???
+
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit = ???
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = ???

@@ -66,6 +66,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def createNodeId(): Long = singleDbHit(inner.createNodeId())
 
+  override def createNodeIdWithLabels(labels: Array[Int]): Long = singleDbHit(inner.createNodeIdWithLabels(labels))
+
   override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue =
     singleDbHit(inner.createRelationship(start, end, relType))
 

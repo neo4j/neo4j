@@ -82,6 +82,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.createNodeId()
   }
 
+  override def createNodeIdWithLabels(labels: Array[Int]) = {
+    nodesCreated.increase()
+    labelsAdded.increase(labels.length)
+    inner.createNodeIdWithLabels(labels)
+  }
+
   override def nodeOps: Operations[NodeValue] =
     new CountingOps[NodeValue](inner.nodeOps, nodesDeleted)
 
