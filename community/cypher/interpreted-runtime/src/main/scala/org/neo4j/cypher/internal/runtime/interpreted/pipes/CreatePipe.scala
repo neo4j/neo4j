@@ -77,17 +77,6 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
     * @param key the property key associated with the NO_VALUE
     */
   protected def handleNoValue(key: String): Unit
-
-  /**
-    * Set labels on node.
-    */
-  protected def setLabels(context: ExecutionContext,
-                          state: QueryState,
-                          nodeId: Long,
-                          labels: Seq[LazyLabel]): Unit = {
-    val labelIds = labels.map(_.getOrCreateId(state.query).id)
-    state.query.setLabelsOnNode(nodeId, labelIds.iterator)
-  }
 }
 
 /**

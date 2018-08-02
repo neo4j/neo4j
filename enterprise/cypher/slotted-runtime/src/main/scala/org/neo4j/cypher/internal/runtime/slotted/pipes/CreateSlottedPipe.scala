@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.opencypher.v9_0.util.{InternalException, InvalidSemanticsException}
 import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{InternalException, InvalidSemanticsException}
 
 /**
   * Extends BaseCreatePipe with slotted methods to create nodes and relationships.
@@ -36,9 +36,9 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
   protected def createNode(context: ExecutionContext,
                            state: QueryState,
                            command: CreateNodeSlottedCommand): Long = {
-    val nodeId = state.query.createNodeId()
+    val labelIds = command.labels.map(_.getOrCreateId(state.query).id).toArray
+    val nodeId = state.query.createNodeIdWithLabels(labelIds)
     command.properties.foreach(setProperties(context, state, nodeId, _, state.query.nodeOps))
-    setLabels(context, state, nodeId, command.labels)
     nodeId
   }
 
