@@ -48,12 +48,12 @@ object SemanticTableConverter {
 
   private def convert(types: astV3_3.ASTAnnotationMap[astV3_3.Expression, frontendV3_3.ExpressionTypeInfo], expressionMapping: ExpressionMapping3To4):
   astV3_4.ASTAnnotationMap[expressionsV3_4.Expression, frontendV3_4.semantics.ExpressionTypeInfo] = {
-    val result: Map[ExpressionV3_4, ExpressionTypeInfo] = types.filter {
+    val result: Seq[(ExpressionV3_4, ExpressionTypeInfo)] = types.toSeq.filter {
       case (exprV3_3, _) => expressionMapping.isDefinedAt((exprV3_3, exprV3_3.position))
     }.map {
       case (exprV3_3, typeInfoV3_3) => (expressionMapping((exprV3_3, exprV3_3.position)), convert(typeInfoV3_3))
     }
-    astV3_4.ASTAnnotationMap(result.toSeq:_*)
+    astV3_4.ASTAnnotationMap(result:_*)
   }
 
   private def convert(resolvedRelTypeNames: mutable.Map[String, frontendV3_3.RelTypeId]): mutable.Map[String, utilV3_4.RelTypeId] = {
