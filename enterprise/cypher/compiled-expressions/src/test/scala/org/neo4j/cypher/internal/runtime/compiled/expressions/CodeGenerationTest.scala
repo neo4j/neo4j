@@ -207,7 +207,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(function("e")).evaluate(ctx, db, EMPTY_MAP) should equal(Values.E)
   }
 
-  test("range function") {
+  test("range function with no step") {
+    val range = function("range", literalInt(5), literalInt(9))
+    compile(range).evaluate(ctx, db, EMPTY_MAP) should equal(list(longValue(5), longValue(6), longValue(7),
+                                                                  longValue(8), longValue(9)))
+  }
+
+  test("range function with step") {
     val range = function("range", literalInt(5), literalInt(9), literalInt(2))
     compile(range).evaluate(ctx, db, EMPTY_MAP) should equal(list(longValue(5), longValue(7), longValue(9)))
   }

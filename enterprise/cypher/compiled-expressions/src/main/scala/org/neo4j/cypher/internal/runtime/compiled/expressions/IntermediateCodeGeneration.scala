@@ -649,7 +649,16 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     case functions.Sqrt =>
       compile(c.args.head).map(in => IntermediateExpression(
         invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sqrt"), in.ir), in.fields, in.variables, in.nullCheck))
-    case functions.Range =>
+
+    case functions.Range  if c.args.length == 2 =>
+      for {start <- compile(c.args(0))
+           end <- compile(c.args(1))
+      } yield IntermediateExpression(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue]("range"),
+                                                  start.ir, end.ir),
+                                     start.fields ++ end.fields,
+                                     start.variables ++ end.variables, Set.empty)
+
+    case functions.Range  if c.args.length == 3 =>
       for {start <- compile(c.args(0))
            end <- compile(c.args(1))
            step <- compile(c.args(2))

@@ -301,6 +301,11 @@ public final class CypherFunctions
         }
     }
 
+    public static ListValue range( AnyValue startValue, AnyValue endValue )
+    {
+        return VirtualValues.range( asLong( startValue ), asLong( endValue ), 1L );
+    }
+
     public static ListValue range( AnyValue startValue, AnyValue endValue, AnyValue stepValue )
     {
         long step = asLong( stepValue );
