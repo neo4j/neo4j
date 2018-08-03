@@ -80,6 +80,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                               context.notificationLogger,
                               context.readOnly,
                               state.cardinalities,
+                              // TODO if debug create new else use context
                               context.schedulerTracer)
   }
 
