@@ -28,12 +28,15 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.{IndexOrder, IndexReference, NodeValueIndexCursor}
 
 
-class NodeIndexScanOperator(offset: Int, label: Int, propertyKey: Int, argumentSize: SlotConfiguration.Size)
-  extends NodeIndexOperator[NodeValueIndexCursor](offset) {
+class NodeIndexScanOperator(offset: Int,
+                            label: Int,
+                            propertyKey: Int,
+                            maybeValueFromIndexOffset: Option[Int],
+                            argumentSize: SlotConfiguration.Size)
+  extends NodeIndexOperatorWithValues[NodeValueIndexCursor](offset, maybeValueFromIndexOffset) {
 
   override def init(context: QueryContext, state: QueryState, inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
     val valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
-    val read = context.transactionalContext.dataRead
     val index = context.transactionalContext.schemaRead.index(label, propertyKey)
     new OTask(valueIndexCursor, index)
   }
@@ -48,8 +51,7 @@ class NodeIndexScanOperator(offset: Int, label: Int, propertyKey: Int, argumentS
       val read = context.transactionalContext.dataRead
 
       if (!hasMore) {
-        //TODO we need to figure out how to deal with values and indexes here
-        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE, true)
+        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE, maybeValueFromIndexOffset.isDefined)
       }
 
       hasMore = iterate(currentRow, valueIndexCursor, argumentSize)

@@ -31,15 +31,18 @@ import org.neo4j.internal.kernel.api._
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.util.CypherTypeException
 
-class NodeIndexContainsScanOperator(offset: Int, label: Int, propertyKey: Int, valueExpr: Expression,
+class NodeIndexContainsScanOperator(offset: Int,
+                                    label: Int,
+                                    propertyKey: Int,
+                                    maybeValueFromIndexOffset: Option[Int],
+                                    valueExpr: Expression,
                                     argumentSize: SlotConfiguration.Size)
-  extends NodeIndexOperator[NodeValueIndexCursor](offset) {
+  extends NodeIndexOperatorWithValues[NodeValueIndexCursor](offset, maybeValueFromIndexOffset) {
 
   override def init(context: QueryContext,
                     state: QueryState,
                     inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
     val valueIndexCursor: NodeValueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
-    val read = context.transactionalContext.dataRead
     val index = context.transactionalContext.schemaRead.index(label, propertyKey)
     new OTask(valueIndexCursor, index)
   }
@@ -61,8 +64,7 @@ class NodeIndexContainsScanOperator(offset: Int, label: Int, propertyKey: Int, v
 
         value match {
           case value: TextValue =>
-            //TODO we need to figure out how to deal with values and indexes here
-            read.nodeIndexSeek(index, valueIndexCursor, IndexOrder.NONE, true, IndexQuery.stringContains(index.properties()(0), value.stringValue()))
+            read.nodeIndexSeek(index, valueIndexCursor, IndexOrder.NONE, maybeValueFromIndexOffset.isDefined, IndexQuery.stringContains(index.properties()(0), value.stringValue()))
           case Values.NO_VALUE =>
             // CONTAINS null does not produce any rows
             nullExpression = true

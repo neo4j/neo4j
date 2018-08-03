@@ -22,17 +22,19 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RefSlot
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
+import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationExpressionOperator
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.PropertyKeyToken
 import org.opencypher.v9_0.util.InternalException
 
 class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverters, readOnly: Boolean)
@@ -64,6 +66,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
           propertyKey.nameId.id,
+          getMaybeIndexedValueOffset(column, slots, propertyKey),
           argumentSize)
 
       case NodeIndexContainsScan(column, labelToken, propertyKey, valueExpr, _) =>
@@ -71,6 +74,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
           propertyKey.nameId.id,
+          getMaybeIndexedValueOffset(column, slots, propertyKey),
           converters.toCommandExpression(valueExpr),
           argumentSize)
 
@@ -79,7 +83,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
         new NodeIndexSeekOperator(
           slots.getLongOffsetFor(column),
           label,
-          propertyKeys,
+          getIndexedProperties(column, propertyKeys, slots),
           argumentSize,
           valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
@@ -89,7 +93,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
         new NodeIndexSeekOperator(
           slots.getLongOffsetFor(column),
           label,
-          propertyKeys,
+          getIndexedProperties(column, propertyKeys, slots),
           argumentSize,
           valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
@@ -101,6 +105,27 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
     }
 
     new StreamingPipeline(thisOp, slots, None)
+  }
+
+  private def getIndexedProperties(column: String, propertyKeys: Seq[PropertyKeyToken], slots: SlotConfiguration): Seq[SlottedIndexedProperty] = {
+    propertyKeys.map { pk =>
+      val maybeOffset =
+        getMaybeIndexedValueOffset(column, slots, pk)
+      SlottedIndexedProperty(pk.nameId.id, maybeOffset)
+    }
+  }
+
+  /**
+    * If the value of a property should be fetched from the index, this returns the slot offset to store the value in
+    */
+  private def getMaybeIndexedValueOffset(column: String, slots: SlotConfiguration, pk: PropertyKeyToken): Option[Int] = {
+    // TODO getValueFromIndex
+    if (false) {
+      val name = column + "." + pk.name
+      Some(slots.getReferenceOffsetFor(name))
+    } else {
+      None
+    }
   }
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {

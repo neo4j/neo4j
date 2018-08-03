@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.NodeIndexCursor
+import org.neo4j.internal.kernel.api.{NodeIndexCursor, NodeValueIndexCursor}
 
 abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends StreamingOperator {
 
@@ -33,9 +33,8 @@ abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends
     while (currentRow.hasMoreRows && cursorHasMore) {
       cursorHasMore = cursor.next()
       if (cursorHasMore) {
-        //              iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-
         currentRow.setLongAt(offset, cursor.nodeReference())
+        extensionForEachRow(cursor, currentRow)
         currentRow.moveToNextRow()
       }
     }
@@ -48,5 +47,29 @@ abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends
       }
     }
     cursorHasMore
+  }
+
+  /**
+    * An extension point for subclasses to do more with each row.
+    * This function is called in between `cursor.next()` and `currentRow.moveToNextRow()`
+    */
+  protected def extensionForEachRow(cursor: CURSOR, currentRow: MorselExecutionContext): Unit = {}
+}
+
+/**
+  * Provides helper methods for index operators that get nodes together with actual property values.
+  */
+abstract class NodeIndexOperatorWithValues[CURSOR <: NodeValueIndexCursor](offset: Int, maybeValueFromIndexOffset: Option[Int])
+  extends NodeIndexOperator[CURSOR](offset) {
+
+  override protected def extensionForEachRow(cursor: CURSOR, currentRow: MorselExecutionContext): Unit = {
+    maybeValueFromIndexOffset.foreach { offset =>
+      if (!cursor.hasValue) {
+        // We were promised at plan time that we can get values everywhere, so this should never happen
+        throw new IllegalStateException("NodeCursor did unexpectedly not have values during index scan.")
+      }
+      val value = cursor.propertyValue(offset)
+      currentRow.setRefAt(offset, value)
+    }
   }
 }
