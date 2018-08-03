@@ -229,7 +229,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
-                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+                platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, storeDir );
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,

@@ -92,7 +92,7 @@ public class CommunityEditionModule extends EditionModule
         life.add( platformModule.dataSourceManager );
 
         watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
-                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+                platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
         life.add( watcherService );
 

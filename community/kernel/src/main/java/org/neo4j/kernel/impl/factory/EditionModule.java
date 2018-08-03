@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -128,8 +129,15 @@ public abstract class EditionModule
     public IdController idController;
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
-            LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
+            LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )
     {
+        if ( !config.get( GraphDatabaseSettings.filewatcher_enabled ) )
+        {
+            Log log = logging.getInternalLog( getClass() );
+            log.info( "File watcher disabled by configuration." );
+            return FileSystemWatcherService.EMPTY_WATCHER;
+        }
+
         try
         {
             RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );

@@ -39,6 +39,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.impl.lucene.explicit.LuceneDataSource;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -254,6 +255,27 @@ public class FileWatchIT
 
         logProvider.assertContainsMessageContaining(
                 "'" + storeDirectoryName + "' which belongs to the store was deleted while database was running." );
+    }
+
+    @Test( timeout = TEST_TIMEOUT )
+    public void shouldLogWhenDisabled()
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        GraphDatabaseService db = null;
+        try
+        {
+            db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                    .setFileSystem( new NonWatchableFileSystemAbstraction() )
+                    .newEmbeddedDatabaseBuilder( testDirectory.directory( "failed-start-db" ) )
+                    .setConfig( GraphDatabaseSettings.filewatcher_enabled, "false" )
+                    .newGraphDatabase();
+
+            logProvider.assertContainsMessageContaining( "File watcher disabled by configuration." );
+        }
+        finally
+        {
+            shutdownDatabaseSilently( db );
+        }
     }
 
     private void shutdownDatabaseSilently( GraphDatabaseService databaseService )
