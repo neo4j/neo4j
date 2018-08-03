@@ -34,7 +34,7 @@ import scala.collection.mutable.ArrayBuffer
 
 abstract class SchedulerTest extends CypherFunSuite {
 
-  private val tracer = SchedulerTracer.NoSchedulerTracer
+  private val tracer = NOOP.NoSchedulerTracer
 
   def newScheduler(maxConcurrency: Int): Scheduler
 

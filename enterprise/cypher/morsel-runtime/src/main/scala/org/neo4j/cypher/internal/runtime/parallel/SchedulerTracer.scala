@@ -40,18 +40,7 @@ trait QueryExecutionTracer {
   /**
     * Trace the scheduling of a work unit for this query execution
     */
-  def scheduleWorkUnit(task: Task): ScheduledWorkUnitEvent
-
-  /**
-    * End of query execution
-    */
-  def stopQuery(): Unit
-}
-
-/**
-  * Work unit event of a particular query execution
-  */
-trait ScheduledWorkUnitEvent {
+  def scheduleWorkUnit(task: Task)
 
   /**
     * Trace the start of a work unit event for this query execution
@@ -67,35 +56,16 @@ trait WorkUnitEvent {
   /**
     * Trace the stop of this work unit event.
     */
-  def stop(): Unit
+  def stop()
 }
 
-trait EventWriter {
-
-  /**
-    * Report (e.g., log) this tracing data point
-    */
-  def report(dataPoint: DataPoint): Unit
-
-  /**
-    * Flush buffered data points
-    */
-  def flush(): Unit
-}
-
-case class DataPoint(queryId: Int, threadId: Long, scheduledTime: Long, startTime: Long, stopTime: Long, task: Task)
-
-object SchedulerTracer {
+object NOOP {
   val NoSchedulerTracer: SchedulerTracer = new SchedulerTracer {
     override def traceQuery(): QueryExecutionTracer = NoQueryExecutionTracer
   }
 
   val NoQueryExecutionTracer: QueryExecutionTracer = new QueryExecutionTracer {
-    override def scheduleWorkUnit(task: Task): ScheduledWorkUnitEvent = NoScheduledWorkUnitEvent
-    override def stopQuery(): Unit = {}
-  }
-
-  val NoScheduledWorkUnitEvent: ScheduledWorkUnitEvent = new ScheduledWorkUnitEvent {
+    override def scheduleWorkUnit(task: Task): Unit = {}
     override def startWorkUnit(task: Task): WorkUnitEvent = NoWorkUnitEvent
   }
 

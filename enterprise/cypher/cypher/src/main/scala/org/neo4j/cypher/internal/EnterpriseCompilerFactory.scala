@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.runtime.parallel._
+import org.neo4j.cypher.internal.runtime.parallel.{SimpleScheduler, SingleThreadScheduler}
 import org.neo4j.cypher.internal.runtime.vectorized.Dispatcher
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
@@ -86,11 +86,6 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       val settings = graph.getDependencyResolver.resolveDependency(classOf[Config])
       val morselSize: Int = settings.get(GraphDatabaseSettings.cypher_morsel_size)
       val workers: Int = settings.get(GraphDatabaseSettings.cypher_worker_count)
-      val doSchedulerTracing = settings.get(GraphDatabaseSettings.enable_morsel_runtime_trace)
-      val traceEventWriter = new SloppyEventWriter
-//      val schedulerTracer = if (doSchedulerTracing) new SpatulaTracer(traceEventWriter) else SchedulerTracer.NoSchedulerTracer
-      val schedulerTracer = new SpatulaTracer(new RealEventWriter(line => println(line)))
-
       val scheduler =
         if (workers == 1) new SingleThreadScheduler()
         else {
@@ -106,7 +101,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       CypherCurrentCompiler(
         planner,
         EnterpriseRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
-        EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log, config, schedulerTracer),
+        EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log, config),
         kernelMonitors)
 
     } else
@@ -126,8 +121,8 @@ case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogg
                                     log: Log,
                                     clock: Clock,
                                     debugOptions: Set[String],
-                                    config: CypherPlannerConfiguration,
-                                    schedulerTracer: SchedulerTracer) extends RuntimeContext
+                                    config: CypherPlannerConfiguration
+                                   ) extends RuntimeContext
 
 /**
   * Creator of EnterpriseRuntimeContext
@@ -135,15 +130,15 @@ case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogg
 case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery],
                                            dispatcher: Dispatcher,
                                            log: Log,
-                                           config: CypherPlannerConfiguration,
-                                           schedulerTracer: SchedulerTracer)
+                                           config: CypherPlannerConfiguration)
   extends RuntimeContextCreator[EnterpriseRuntimeContext] {
 
   override def create(notificationLogger: InternalNotificationLogger,
                       tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
-                      readOnly: Boolean): EnterpriseRuntimeContext =
+                      readOnly: Boolean
+                     ): EnterpriseRuntimeContext =
     EnterpriseRuntimeContext(notificationLogger,
                              tokenContext,
                              readOnly,
@@ -152,6 +147,5 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                              log,
                              clock,
                              debugOptions,
-                             config,
-                             schedulerTracer)
+                             config: CypherPlannerConfiguration)
 }

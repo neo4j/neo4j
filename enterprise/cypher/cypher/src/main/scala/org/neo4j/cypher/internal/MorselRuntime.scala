@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.parallel.{SchedulerTracer, SingleThreadScheduler}
+import org.neo4j.cypher.internal.runtime.parallel.SingleThreadScheduler
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
@@ -79,9 +79,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                               dispatcher,
                               context.notificationLogger,
                               context.readOnly,
-                              state.cardinalities,
-                              // TODO if debug create new else use context
-                              context.schedulerTracer)
+                              state.cardinalities)
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
@@ -99,8 +97,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                                      dispatcher: Dispatcher,
                                      notificationLogger: InternalNotificationLogger,
                                      readOnly: Boolean,
-                                     cardinalities: Cardinalities,
-                                     schedulerTracer: SchedulerTracer) extends ExecutionPlan_V35 {
+                                     cardinalities: Cardinalities) extends ExecutionPlan_V35 {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
@@ -115,15 +112,8 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
         taskCloser.close(success = true)
         ExplainExecutionResult(fieldNames, planDescription(), READ_ONLY,
           notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
-      } else new VectorizedOperatorExecutionResult(operators,
-                                                   logicalPlan,
-                                                   planDescription,
-                                                   queryContext,
-                                                   params,
-                                                   fieldNames,
-                                                   taskCloser,
-                                                   dispatcher,
-                                                   schedulerTracer)
+      } else new VectorizedOperatorExecutionResult(operators, logicalPlan, planDescription, queryContext,
+        params, fieldNames, taskCloser, dispatcher)
     }
 
     override def runtimeName: RuntimeName = MorselRuntimeName
@@ -136,12 +126,11 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                                           params: MapValue,
                                           override val fieldNames: Array[String],
                                           taskCloser: TaskCloser,
-                                          dispatcher: Dispatcher,
-                                          schedulerTracer: SchedulerTracer) extends StandardInternalExecutionResult(queryContext, ProcedureRuntimeName, Some(taskCloser)) with IterateByAccepting {
+                                          dispatcher: Dispatcher) extends StandardInternalExecutionResult(queryContext, ProcedureRuntimeName, Some(taskCloser)) with IterateByAccepting {
 
 
     override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit =
-      dispatcher.execute(operators, queryContext, params, taskCloser, schedulerTracer)(visitor)
+      dispatcher.execute(operators, queryContext, params, taskCloser)(visitor)
 
     override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
 

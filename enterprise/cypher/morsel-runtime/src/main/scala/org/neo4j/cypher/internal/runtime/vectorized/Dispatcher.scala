@@ -23,24 +23,25 @@
 package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.parallel.{SchedulerTracer, Scheduler}
+import org.neo4j.cypher.internal.runtime.parallel.{NOOP, Scheduler}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.TaskCloser
 
 class Dispatcher(morselSize: Int, scheduler: Scheduler) {
 
+  val spatula = NOOP.NoSchedulerTracer
+
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
                               params: MapValue,
-                              taskCloser: TaskCloser,
-                              schedulerTracer: SchedulerTracer)
+                              taskCloser: TaskCloser)
                              (visitor: QueryResultVisitor[E]): Unit = {
     val leaf = getLeaf(operators)
 
     val state = QueryState(params, visitor, morselSize, false)
     val initialTask = leaf.init(MorselExecutionContext.EMPTY, queryContext, state)
-    val queryExecution = scheduler.execute(initialTask, schedulerTracer)
+    val queryExecution = scheduler.execute(initialTask, spatula)
     val maybeError = queryExecution.await()
     maybeError match {
       case Some(error) =>
