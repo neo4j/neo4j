@@ -34,31 +34,21 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
 
   private val executionService = new ExecutorCompletionService[Try[TaskResult]](executor)
 
-  override def execute(task: Task, tracer: SchedulerTracer): QueryExecution = {
-    val queryTracer = tracer.traceQuery()
-    new SimpleQueryExecution(schedule(task, queryTracer), this, queryTracer)
-  }
+  override def execute(task: Task): QueryExecution = new SimpleQueryExecution(schedule(task), this)
 
   def isMultiThreaded: Boolean = true
 
-  def schedule(task: Task, queryTracer: QueryExecutionTracer): Future[Try[TaskResult]] = {
-    queryTracer.scheduleWorkUnit(task)
+  def schedule(task: Task): Future[Try[TaskResult]] = {
     val callableTask =
       new Callable[Try[TaskResult]] {
-        override def call(): Try[TaskResult] = {
-          val event = queryTracer.startWorkUnit(task)
-          val result = Try(TaskResult(task, task.executeWorkUnit()))
-          event.stop()
-          result
-        }
+        override def call(): Try[TaskResult] =
+          Try(TaskResult(task, task.executeWorkUnit()))
       }
 
     executionService.submit(callableTask)
   }
 
-  class SimpleQueryExecution(initialTask: Future[Try[TaskResult]],
-                             scheduler: SimpleScheduler,
-                             queryTracer: QueryExecutionTracer) extends QueryExecution {
+  class SimpleQueryExecution(initialTask: Future[Try[TaskResult]], scheduler: SimpleScheduler) extends QueryExecution {
 
     var inFlightTasks = new ArrayBuffer[Future[Try[TaskResult]]]
     inFlightTasks += initialTask
@@ -72,10 +62,10 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
           taskResultTry match {
             case Success(taskResult) =>
               for (newTask <- taskResult.newDownstreamTasks)
-                newInFlightTasks += scheduler.schedule(newTask, queryTracer)
+                newInFlightTasks += scheduler.schedule(newTask)
 
               if (taskResult.task.canContinue)
-                newInFlightTasks += scheduler.schedule(taskResult.task, queryTracer)
+                newInFlightTasks += scheduler.schedule(taskResult.task)
 
             case Failure(exception) =>
               return Some(exception)

@@ -158,8 +158,6 @@ case class PipelineTask(start: ContinuableOperatorTask,
   }
 
   override def canContinue: Boolean = start.canContinue
-
-  override def toString: String = name
 }
 
 /**
