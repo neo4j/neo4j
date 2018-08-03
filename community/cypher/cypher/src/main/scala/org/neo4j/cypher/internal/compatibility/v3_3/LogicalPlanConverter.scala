@@ -156,6 +156,7 @@ object LogicalPlanConverter {
         case (frontendV3_3.helpers.Last(head), children: Seq[AnyRef]) => utilV3_4.Last(children(0))
 
         case ( _:plansV3_3.ProcedureSignature, children: Seq[AnyRef]) =>
+          // TODO: Add the additional `eager` parameter when upgrading to next 3.3 release
          plansV3_4.ProcedureSignature(children(0).asInstanceOf[QualifiedName],
                                       children(1).asInstanceOf[IndexedSeq[FieldSignature]],
                                       children(2).asInstanceOf[Option[IndexedSeq[FieldSignature]]],
@@ -163,6 +164,7 @@ object LogicalPlanConverter {
                                       children(4).asInstanceOf[ProcedureAccessMode],
                                       children(5).asInstanceOf[Option[String]],
                                       children(6).asInstanceOf[Option[String]],
+                                      false,  // replace with correct value after next 3.3 release
                                       None)
 
         case ( _:plansV3_3.UserFunctionSignature, children: Seq[AnyRef]) =>

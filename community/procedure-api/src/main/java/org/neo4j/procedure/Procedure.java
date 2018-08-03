@@ -137,6 +137,22 @@ public @interface Procedure
     Mode mode() default Mode.DEFAULT;
 
     /**
+     * Cypher normally streams data lazily between operations, but
+     * for read-write queries this can cause side effects that can only
+     * be solved using <code>Eager</code> operators between the read and
+     * write components. Cypher can plan this for you for pure Cypher queries,
+     * but when you include a <code>WRITE</code> procedure into the query
+     * the planner will not know enough about the internals of the procedure
+     * to figure this out. If the procedure can perform updates (like deletes)
+     * that might negatively impact preceding reads in the Cypher query, then
+     * set this annotation attribute to <code>true</code>, so that all reads
+     * will be completed before calling the procedure. Note that this does
+     * not prevent the procedure from negatively interacting with itself, and
+     * developers still need to catch and deal with relevant exceptions themselves.
+     */
+    boolean eager() default false;
+
+    /**
      * When deprecating a procedure it is useful to indicate a possible
      * replacement procedure that clients might show in warnings.
      * @return a string representation of the replacement procedure.

@@ -138,6 +138,8 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
     val description = asOption(signature.description())
     val warning = asOption(signature.warning())
 
+    // TODO: Add a trailing argument `ks.eager()` after upgrading to the next 3.3 release
+    //ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, ks.eager())
     ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
   }
 
