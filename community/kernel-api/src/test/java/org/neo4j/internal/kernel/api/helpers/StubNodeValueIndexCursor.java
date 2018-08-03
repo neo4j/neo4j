@@ -28,8 +28,8 @@ import org.neo4j.values.storable.Value;
 
 public class StubNodeValueIndexCursor implements NodeValueIndexCursor
 {
-    Iterator<Pair<Long,Value[]>> things;
-    Pair<Long,Value[]> current = null;
+    private Iterator<Pair<Long,Value[]>> things;
+    private Pair<Long,Value[]> current;
 
     public StubNodeValueIndexCursor( Iterator<Pair<Long,Value[]>> things )
     {

@@ -99,7 +99,8 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query ) throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+            throws IndexNotApplicableKernelException
     {
         // Also call the other query method and bake comparison from it into a wrapped version of this iterator
         PrimitiveLongResourceIterator otherResult = actual.query( query );

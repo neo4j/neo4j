@@ -141,7 +141,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         return true;
     }
 
-
     protected boolean indexProvidesSpatialValues()
     {
         return false;

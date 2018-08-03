@@ -84,7 +84,8 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query ) throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+            throws IndexNotApplicableKernelException
     {
         try
         {

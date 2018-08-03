@@ -43,7 +43,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@RunWith( Parameterized.class)
+@RunWith( Parameterized.class )
 public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
@@ -51,7 +51,8 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     public ExpectedException exception = ExpectedException.none();
 
     @Parameterized.Parameters()
-    public static Iterable<Object[]> data() {
+    public static Iterable<Object[]> data()
+    {
         return Arrays.asList(new Object[][] {
                 { true }, { false }
         });
@@ -262,7 +263,6 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             assertNodeAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
-
 
     @Test
     public void shouldPerformStringRangeSearchWithDeletedNodeInTxState() throws Exception

@@ -745,8 +745,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             Value[] values = entry.getKey().getValues();
             MutableLongDiffSets diffSets = entry.getValue();
 
-            diffSets.getAdded().each( ( nodeId ) -> diffs.add( new NodeWithPropertyValues( nodeId, values ) ) );
-            diffSets.getRemoved().each( ( nodeId ) -> diffs.remove( new NodeWithPropertyValues( nodeId, values ) ) );
+            diffSets.getAdded().each( nodeId -> diffs.add( new NodeWithPropertyValues( nodeId, values ) ) );
+            diffSets.getRemoved().each( nodeId -> diffs.remove( new NodeWithPropertyValues( nodeId, values ) ) );
         }
         return diffs;
     }
@@ -801,8 +801,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             {
                 Value[] values = key.getValues();
                 MutableLongDiffSets diffSets = entry.getValue();
-                diffSets.getAdded().each( ( nodeId ) -> diffs.add( new NodeWithPropertyValues( nodeId, values ) ) );
-                diffSets.getRemoved().each( ( nodeId ) -> diffs.remove( new NodeWithPropertyValues( nodeId, values ) ) );
+                diffSets.getAdded().each( nodeId -> diffs.add( new NodeWithPropertyValues( nodeId, values ) ) );
+                diffSets.getRemoved().each( nodeId -> diffs.remove( new NodeWithPropertyValues( nodeId, values ) ) );
             }
         }
         return diffs;
@@ -933,8 +933,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             Value[] valuesArray = values.getValues();
             MutableLongDiffSets diffForSpecificValue = entry.getValue();
 
-            diffForSpecificValue.getAdded().each( ( nodeId ) -> diffs.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
-            diffForSpecificValue.getRemoved().each( ( nodeId ) -> diffs.remove( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
+            diffForSpecificValue.getAdded().each( nodeId -> diffs.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
+            diffForSpecificValue.getRemoved().each( nodeId -> diffs.remove( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
         }
         return diffs;
     }
@@ -983,8 +983,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             {
                 MutableLongDiffSets diffSets = entry.getValue();
                 Value[] values = key.getValues();
-                diffSets.getAdded().each( ( nodeId ) -> diffs.add( new NodeWithPropertyValues( nodeId, values ) ) );
-                diffSets.getRemoved().each( ( nodeId ) -> diffs.remove( new NodeWithPropertyValues( nodeId, values ) ) );
+                diffSets.getAdded().each( nodeId -> diffs.add( new NodeWithPropertyValues( nodeId, values ) ) );
+                diffSets.getRemoved().each( nodeId -> diffs.remove( new NodeWithPropertyValues( nodeId, values ) ) );
             }
             else
             {

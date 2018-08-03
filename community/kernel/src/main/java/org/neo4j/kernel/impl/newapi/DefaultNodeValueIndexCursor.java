@@ -339,7 +339,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             if ( needsValues )
             {
                 ReadableDiffSets<NodeWithPropertyValues> changes =
-                        txState.indexUpdatesWithValuesForSuffixOrContains( descriptor, query );;
+                        txState.indexUpdatesWithValuesForSuffixOrContains( descriptor, query );
                 addedWithValues = changes.getAdded().iterator();
                 removed = removed( txState, changes.getRemoved() );
             }
