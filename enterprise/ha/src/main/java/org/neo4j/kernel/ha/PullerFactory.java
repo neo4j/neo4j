@@ -23,13 +23,14 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -84,8 +85,13 @@ public class PullerFactory
 
     public UpdatePullingTransactionObligationFulfiller createObligationFulfiller( UpdatePuller updatePuller )
     {
-        return new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId,
-                () -> dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( TransactionIdStore.class ) );
+        return new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId, () ->
+        {
+            GraphDatabaseFacade databaseFacade =
+                    this.dependencyResolver.resolveDependency( DatabaseManager.class ).getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get();
+            DependencyResolver databaseResolver = databaseFacade.getDependencyResolver();
+            return databaseResolver.resolveDependency( TransactionIdStore.class );
+        } );
     }
 
     public UpdatePullerScheduler createUpdatePullerScheduler( UpdatePuller updatePuller )

@@ -22,8 +22,8 @@
  */
 package org.neo4j.kernel.ha.cluster.modeswitch;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterTransactionCommitProcess;
 import org.neo4j.kernel.ha.SlaveTransactionCommitProcess;
@@ -32,6 +32,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -66,7 +67,9 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     @Override
     protected TransactionCommitProcess getMasterImpl()
     {
-        DependencyResolver databaseResolver = this.dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver();
+        GraphDatabaseFacade databaseFacade = this.dependencyResolver.resolveDependency( DatabaseManager.class )
+                .getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get();
+        DependencyResolver databaseResolver = databaseFacade.getDependencyResolver();
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 databaseResolver.resolveDependency( TransactionAppender.class ),
                 databaseResolver.resolveDependency( StorageEngine.class ) );

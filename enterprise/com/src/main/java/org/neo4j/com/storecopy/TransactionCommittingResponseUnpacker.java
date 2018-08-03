@@ -25,12 +25,13 @@ package org.neo4j.com.storecopy;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -267,8 +268,9 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
 
         private DependencyResolver getDatabaseResolver()
         {
-            NeoStoreDataSource dataSource = globalResolver.resolveDependency( NeoStoreDataSource.class );
-            return dataSource.getDependencyResolver();
+            DatabaseManager databaseManager = globalResolver.resolveDependency( DatabaseManager.class );
+            GraphDatabaseFacade facade = databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get();
+            return facade.getDependencyResolver();
         }
 
         @Override
