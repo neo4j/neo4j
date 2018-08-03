@@ -36,7 +36,7 @@ public enum Group
     /** Monitor and report system-wide pauses, in case they lead to service interruption. */
     VM_PAUSE_MONITOR( "VmPauseMonitor" ),
     /** Rotates diagnostic text logs. */
-    TEXT_LOG_ROTATION( "TextLogRotation" ),
+    LOG_ROTATION( "LogRotation" ),
     /** Checkpoint and store flush. */
     CHECKPOINT( "CheckPoint" ),
     /** Various little periodic tasks that need to be done on a regular basis to keep the store in good shape. */
@@ -122,7 +122,12 @@ public enum Group
         return "neo4j." + groupName() + "-" + threadCounter.incrementAndGet();
     }
 
-    public ExecutorService buildExecutorService( SchedulerThreadFactory factory, OptionalInt threadCount )
+    public ExecutorService buildExecutorService( SchedulerThreadFactory factory )
+    {
+        return executorServiceFactory.build( this, factory );
+    }
+
+    public ExecutorService buildExecutorService( SchedulerThreadFactory factory, int threadCount )
     {
         return executorServiceFactory.build( this, factory, threadCount );
     }

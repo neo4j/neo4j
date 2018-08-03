@@ -216,7 +216,7 @@ public class SecurityLog extends LifecycleAdapter implements Log
         try
         {
             return new SecurityLog( config, fileSystem,
-                    jobScheduler.executor( Group.TEXT_LOG_ROTATION ) );
+                    jobScheduler.executor( Group.LOG_ROTATION ) );
         }
         catch ( IOException ioe )
         {

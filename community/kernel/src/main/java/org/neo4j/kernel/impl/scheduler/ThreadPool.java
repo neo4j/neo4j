@@ -40,7 +40,7 @@ final class ThreadPool
     ThreadPool( Group group, ThreadGroup parentThreadGroup )
     {
         threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
-        executor = group.buildExecutorService( threadFactory, OptionalInt.empty() );
+        executor = group.buildExecutorService( threadFactory );
         registry = new ConcurrentHashMap<>();
     }
 

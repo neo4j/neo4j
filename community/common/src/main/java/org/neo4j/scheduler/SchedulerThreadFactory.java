@@ -20,8 +20,13 @@
 package org.neo4j.scheduler;
 
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * Thread factories used by the {@link JobScheduler} need to be able to create both normal threads, and {@link ForkJoinWorkerThread}s.
+ * This interface collects the capabilities of both types of thread factories.
+ */
 public interface SchedulerThreadFactory extends ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory
 {
 }

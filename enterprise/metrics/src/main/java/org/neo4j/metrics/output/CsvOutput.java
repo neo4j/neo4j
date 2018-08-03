@@ -127,7 +127,7 @@ public class CsvOutput implements Lifecycle, EventReporter
             try
             {
                 return new RotatingFileOutputStreamSupplier( fileSystem, file, rotationThreshold, 0, maxArchives,
-                        scheduler.executor( Group.TEXT_LOG_ROTATION ), listener );
+                        scheduler.executor( Group.LOG_ROTATION ), listener );
             }
             catch ( IOException e )
             {

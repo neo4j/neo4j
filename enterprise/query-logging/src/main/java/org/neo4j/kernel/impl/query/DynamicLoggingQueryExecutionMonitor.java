@@ -193,7 +193,7 @@ class DynamicLoggingQueryExecutionMonitor extends LifecycleAdapter implements Qu
         RotatingFileOutputStreamSupplier rotatingSupplier = new RotatingFileOutputStreamSupplier(
                 fileSystem, currentQueryLogFile,
                 rotationThreshold, 0, maxArchives,
-                scheduler.executor( Group.TEXT_LOG_ROTATION ) );
+                scheduler.executor( Group.LOG_ROTATION ) );
         log = logBuilder.toOutputStream( rotatingSupplier );
         closable = rotatingSupplier;
     }

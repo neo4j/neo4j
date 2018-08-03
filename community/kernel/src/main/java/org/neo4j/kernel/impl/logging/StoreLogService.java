@@ -73,7 +73,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                 int maxInternalLogArchives, JobScheduler jobScheduler )
         {
             return withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
-                    jobScheduler.executor( Group.TEXT_LOG_ROTATION ) );
+                    jobScheduler.executor( Group.LOG_ROTATION ) );
         }
 
         public Builder withRotation( long internalLogRotationThreshold, long internalLogRotationDelay,
