@@ -175,7 +175,7 @@ public class ProcedureSignature
         private String[] allowed = new String[0];
         private String description;
         private String warning;
-        private boolean eager = false;
+        private boolean eager;
 
         public Builder( String[] namespace, String name )
         {
