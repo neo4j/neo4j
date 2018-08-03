@@ -22,12 +22,14 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
+import java.util.concurrent.TimeUnit
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * DataPointWriter which can be written to in a thread-safe way, and writes to a delegate on flush.
+  * EventWriter which accepts DataPoints and serializes them to a provided lineWriter. Uses RingBuffers.
   */
-class ThreadSafeDataWriter(delegate: DataPointWriter) extends DataPointWriter {
+class RealEventWriter(lineWriter: String => Unit) extends EventWriter {
 
   private val MAGIC_NUMBER = 1024
   private val buffersByThread: Array[RingBuffer] =
@@ -35,9 +37,20 @@ class ThreadSafeDataWriter(delegate: DataPointWriter) extends DataPointWriter {
 
   private var t0: Long = -1
 
-  override def write(dataPoint: DataPoint): Unit = {
+  override def report(dataPoint: DataPoint): Unit = {
     buffersByThread(dataPoint.executionThreadId.toInt).produce(dataPoint)
   }
+
+  private val SEPARATOR = ","
+  private val HEADER = Array("id",
+                             "upstreamId",
+                             "queryId",
+                             "schedulingThreadId",
+                             "schedulingTime(us)",
+                             "executionThreadId",
+                             "startTime(us)",
+                             "stopTime(us)",
+                             "pipeline")
 
   override def flush(): Unit = {
     val dataByThread =
@@ -47,15 +60,31 @@ class ThreadSafeDataWriter(delegate: DataPointWriter) extends DataPointWriter {
         dataPoints
       }
 
-    if (t0 == -1)
+    if (t0 == -1) {
       t0 = dataByThread.filter(_.nonEmpty).map(_.head.scheduledTime).min
+      lineWriter(HEADER.mkString(SEPARATOR))
+    }
 
     for {
       threadData <- dataByThread
       dataPoint <- threadData
-    } delegate.write(dataPoint.withTimeZero(t0))
+    } lineWriter(serialize(dataPoint))
+  }
 
-    delegate.flush()
+  private def serialize(dataPoint: DataPoint): String = {
+    def toDuration(nanoSnapshot:Long) = TimeUnit.NANOSECONDS.toMicros(nanoSnapshot-t0)
+
+    Array(
+      dataPoint.id,
+      dataPoint.upstreamId,
+      dataPoint.queryId.toString,
+      dataPoint.schedulingThreadId,
+      toDuration(dataPoint.scheduledTime).toString,
+      dataPoint.executionThreadId.toString,
+      toDuration(dataPoint.startTime).toString,
+      toDuration(dataPoint.stopTime).toString,
+      dataPoint.task.toString
+    ).mkString(SEPARATOR)
   }
 
   class RingBuffer() {

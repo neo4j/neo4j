@@ -87,11 +87,9 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       val morselSize: Int = settings.get(GraphDatabaseSettings.cypher_morsel_size)
       val workers: Int = settings.get(GraphDatabaseSettings.cypher_worker_count)
       val doSchedulerTracing = settings.get(GraphDatabaseSettings.enable_morsel_runtime_trace)
-      val schedulerTracer =
-        if (doSchedulerTracing)
-          new DataPointSchedulerTracer(new ThreadSafeDataWriter(new CsvStdOutDataWriter))
-        else
-          SchedulerTracer.NoSchedulerTracer
+      val traceEventWriter = new SloppyEventWriter
+//      val schedulerTracer = if (doSchedulerTracing) new SpatulaTracer(traceEventWriter) else SchedulerTracer.NoSchedulerTracer
+      val schedulerTracer = new SpatulaTracer(new RealEventWriter(line => println(line)))
 
       val scheduler =
         if (workers == 1) new SingleThreadScheduler()

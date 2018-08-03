@@ -22,12 +22,59 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
-  * Scheduler tracer that collect times and thread ids of events and report them as DataPoints.
+  * The sloppy event writer is intended for in IDE debugging, and stupidly assumes that once flush is
+  * called there will be no concurrent writes, so it's fine to just clear the internal data structures
+  * with little thread safety. This kinda works in a single query test environment.
   */
-class DataPointSchedulerTracer(dataPointWriter: DataPointWriter) extends SchedulerTracer {
+class SloppyEventWriter extends EventWriter {
+  private val MAGIC_NUMBER = 1024
+  private val dataByThread: Array[ArrayBuffer[DataPoint]] =
+    (0 until MAGIC_NUMBER).map(_ => new ArrayBuffer[DataPoint]).toArray
+
+  override def report(dataPoint: DataPoint): Unit = {
+    dataByThread(dataPoint.executionThreadId.toInt) += dataPoint
+  }
+
+  override def flush(): Unit = {
+    val stringOutput = result()
+    dataByThread.foreach(_.clear())
+    println(stringOutput)
+  }
+
+  private def result(): String = {
+    val t0 = dataByThread.filter(_.nonEmpty).map(_.head.startTime).min
+
+    def toDuration(nanoSnapshot:Long) = TimeUnit.NANOSECONDS.toMicros(nanoSnapshot-t0)
+
+    val sb = new StringBuilder
+    sb ++= "  %15s  %15s  %10s  %10s  %20s  %20s  %15s  %15s  %s\n"
+      .format("id","upstreamId","queryId","threadId","schedulingThreadId","scheduledTime(us)","startTime(us)","stopTime(us)","pipeline")
+    for (dp <- dataByThread.flatten) {
+      sb ++= "  %15d  %15d  %10d  %10d  %20d  %20d  %15d  %15d  %s\n"
+        .format(dp.id,
+                dp.upstreamId,
+                dp.queryId,
+                dp.executionThreadId,
+                dp.schedulingThreadId,
+                toDuration(dp.scheduledTime),
+                toDuration(dp.startTime),
+                toDuration(dp.stopTime),
+                dp.task.toString)
+    }
+    sb.result()
+  }
+}
+
+/**
+  * Tracer of a scheduler.
+  */
+class SpatulaTracer(eventWriter: EventWriter) extends SchedulerTracer {
 
   private val queryCounter = new AtomicInteger()
 
@@ -44,7 +91,7 @@ class DataPointSchedulerTracer(dataPointWriter: DataPointWriter) extends Schedul
     }
 
     override def stopQuery(): Unit =
-      dataPointWriter.flush()
+      eventWriter.flush()
   }
 
   case class ScheduledWorkUnit(upstreamWorkUnitId: Long, queryId: Int, scheduledTime: Long, schedulingThreadId: Long, task: Task) extends ScheduledWorkUnitEvent {
@@ -60,6 +107,14 @@ class DataPointSchedulerTracer(dataPointWriter: DataPointWriter) extends Schedul
                task)
     }
 
+    /*
+    Pseudo unique ID, it is not impossible that multiple tasks are scheduled at the same time
+    TODO better (more unique) id calculation. options:
+    id = WorkUnitEvent.scheduledTime                   <- collisions possible but unlikely (especially with ns)
+    id = task.id                                       <- many collisions: does not yet exist, but could use Pipeline IDs assigned by PipelineBuilder
+    id = WorkUnitEvent.scheduledTime & (task.id << 48) <- collisions possible but unlikely (assumes task.id range fits in 16 bits)
+    id = using something like a IdBatch concept that only requires threadsafe operation to retrieve a new batch of IDs
+    */
     private def workUnitId = scheduledTime
   }
 
@@ -74,7 +129,7 @@ class DataPointSchedulerTracer(dataPointWriter: DataPointWriter) extends Schedul
 
     override def stop(): Unit = {
       val stopTime = currentTime()
-      dataPointWriter.write(
+      eventWriter.report(
         DataPoint(id, upstreamId, queryId, schedulingThreadId, scheduledTime, executionThreadId, startTime, stopTime, task))
     }
   }

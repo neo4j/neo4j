@@ -75,6 +75,29 @@ trait WorkUnitEvent {
   def stop(): Unit
 }
 
+trait EventWriter {
+
+  /**
+    * Report (e.g., log) this tracing data point
+    */
+  def report(dataPoint: DataPoint): Unit
+
+  /**
+    * Flush buffered data points
+    */
+  def flush(): Unit
+}
+
+case class DataPoint(id: Long,
+                     upstreamId: Long,
+                     queryId: Int,
+                     schedulingThreadId: Long,
+                     scheduledTime: Long,
+                     executionThreadId: Long,
+                     startTime: Long,
+                     stopTime: Long,
+                     task: Task)
+
 object SchedulerTracer {
   val NoSchedulerTracer: SchedulerTracer = new SchedulerTracer {
     override def traceQuery(): QueryExecutionTracer = NoQueryExecutionTracer
