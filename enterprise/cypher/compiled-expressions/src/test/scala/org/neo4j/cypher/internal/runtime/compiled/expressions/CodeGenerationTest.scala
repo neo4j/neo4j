@@ -1285,6 +1285,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(stringValue("hello"))
   }
 
+  test("handle variables with whitespace ") {
+    val varName = "   k\te\ty   "
+    val variable = varFor(varName)
+    val compiled = compile(variable)
+    when(ctx.contains(varName)).thenReturn(true)
+    when(ctx.apply(varName)).thenReturn(stringValue("hello"))
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(stringValue("hello"))
+  }
+
   test("coerceTo tests") {
     //numbers
     coerce(longValue(42), symbols.CTAny) should equal(longValue(42))

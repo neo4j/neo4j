@@ -108,7 +108,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           fields, variables, Set.empty))
       }
     case Variable(name) =>
-      val variableName = s"variable_${name.replace(" ", "_")}"
+      val variableName = s"variable_${name.replaceAll("\\s", "_")}"
       val local = variable[AnyValue](variableName,
                                      invokeStatic(
                                        method[CompiledHelpers, AnyValue, ExecutionContext, String]("loadVariable"),
