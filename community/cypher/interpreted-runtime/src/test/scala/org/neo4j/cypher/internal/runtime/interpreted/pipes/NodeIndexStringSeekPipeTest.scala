@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
@@ -50,8 +50,8 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        "hello" -> Seq((node, Seq(Values.stringValue("hello")))),
-        "bye" -> Seq((node2, Seq(Values.stringValue("bye"))))
+        "hello" -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
+        "bye" -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
       )
     )
 
@@ -69,8 +69,8 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        "hello" -> Seq((node, Seq(Values.stringValue("hello")))),
-        "bye" -> Seq((node2, Seq(Values.stringValue("bye"))))
+        "hello" -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
+        "bye" -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
       )
     )
 
@@ -84,7 +84,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     ))
   }
 
-  private def indexFor(values: (String, Iterable[(NodeValue, Seq[Value])])*): QueryContext = {
+  private def indexFor(values: (String, Iterable[IndexedNodeWithProperties])*): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexSeek(any(), any(), any())).thenReturn(Iterator.empty)
     when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)

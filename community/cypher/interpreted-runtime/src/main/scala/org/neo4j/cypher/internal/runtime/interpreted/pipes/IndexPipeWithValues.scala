@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.IndexedNodeWithProperties
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.NodeValue
 
 /**
   * Provides a helper method for index pipes that get nodes together with actual property values.
@@ -31,17 +30,17 @@ trait IndexPipeWithValues extends Pipe {
   // Name of the node variable
   val ident: String
   // all indices where the index can provide values
-  val propertyIndicesWithValues: Seq[Int]
+  val propertyIndicesWithValues: Array[Int]
   // the names of the properties where we will get values
-  val propertyNamesWithValues: Seq[String]
+  val propertyNamesWithValues: Array[String]
 
   /**
     * Create an Iterator of ExecutionContexts given an Iterator of tuples of nodes and property values,
     * by copying the node and all values into the given baseContext.
     */
-  def createResultsFromTupleIterator(baseContext: ExecutionContext, tupleIterator: Iterator[(NodeValue, Seq[Value])]): Iterator[ExecutionContext] = {
+  def createResultsFromTupleIterator(baseContext: ExecutionContext, tupleIterator: Iterator[IndexedNodeWithProperties]): Iterator[ExecutionContext] = {
     tupleIterator.map {
-      case (node, values) =>
+      case IndexedNodeWithProperties(node, values) =>
         val valueEntries = propertyIndicesWithValues.map(offset => propertyNamesWithValues(offset) -> values(offset) )
         val newEntries = (ident -> node) +: valueEntries
         executionContextFactory.copyWith(baseContext, newEntries)

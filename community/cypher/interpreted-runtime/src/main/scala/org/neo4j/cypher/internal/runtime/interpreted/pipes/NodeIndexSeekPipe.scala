@@ -29,15 +29,15 @@ import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
-                             properties: Seq[IndexedProperty],
+                             properties: Array[IndexedProperty],
                              valueExpr: QueryExpression[Expression],
                              indexMode: IndexSeekMode = IndexSeek)
                             (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker with IndexPipeWithValues {
 
-  override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id).toArray
+  override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id)
 
-  override val propertyIndicesWithValues: Seq[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  override val propertyNamesWithValues: Seq[String] = propertyIndicesWithValues.map(offset => ident + "." + properties(offset).propertyKeyToken.name)
+  override val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  override val propertyNamesWithValues: Array[String] = propertyIndicesWithValues.map(offset => ident + "." + properties(offset).propertyKeyToken.name)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -56,6 +56,24 @@ case class NodeIndexSeekPipe(ident: String,
 
     val results = indexSeek(state, indexReference, propertyIndicesWithValues, baseContext)
     createResultsFromTupleIterator(baseContext, results)
+  }
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekPipe]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: NodeIndexSeekPipe =>
+      (that canEqual this) &&
+        ident == that.ident &&
+        label == that.label &&
+        (properties sameElements that.properties) &&
+        valueExpr == that.valueExpr &&
+        indexMode == that.indexMode
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(ident, label, properties.toSeq, valueExpr, indexMode)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }
 

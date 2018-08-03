@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, anyInt}
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
-import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
@@ -53,11 +53,11 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should return nodes found by index lookup when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(Seq("hello") -> Seq((node, Seq.empty)))
+      query = indexFor(Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)))
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray.toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, SingleQueryExpression(Literal("hello")))()
     val result = pipe.createResults(queryState)
 
@@ -69,13 +69,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty)),
-        Seq("world") -> Seq((node2, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
+        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))))()
     val result = pipe.createResults(queryState)
 
@@ -87,13 +87,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty)),
-        Seq("world") -> Seq((node2, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
+        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
@@ -105,13 +105,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty)),
-        Seq("world") -> Seq((node2, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
+        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
@@ -123,12 +123,12 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(
       ListLiteral(
         Literal("hello"),
@@ -143,12 +143,12 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(
       ListLiteral(
         Literal("hello"),
@@ -163,12 +163,12 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral()))()
     val result = pipe.createResults(queryState)
 
@@ -180,12 +180,12 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("hello")
@@ -200,13 +200,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq.empty)),
-        Seq("world") -> Seq((node, Seq.empty))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
+        Seq("world") -> Seq(IndexedNodeWithProperties(node, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("world")
@@ -221,13 +221,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop = 'hello' AND n.prop2 = 'world']
       query = indexFor(
-        Seq("hello", "world") -> Seq((node, Seq.empty)),
-        Seq("hello") -> Seq((node, Seq.empty), (node2, Seq.empty))
+        Seq("hello", "world") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty), IndexedNodeWithProperties(node2, Array.empty))
       )
     )
 
     // when
-    val properties = propertyKeys.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties,
       CompositeQueryExpression(Seq(
         SingleQueryExpression(Literal("hello")),
@@ -246,7 +246,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(Literal("wut?")))()
 
     // then
@@ -255,10 +255,10 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
-    val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Seq((node, Seq.empty))))
+    val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))))
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
@@ -269,12 +269,12 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use existing values from arguments when available") {
     //  GIVEN "hello" as x MATCH a WHERE a.prop = x
     val queryState: QueryState = QueryStateHelper.emptyWith(
-      query = indexFor(Seq("hello") -> Seq((node, Seq.empty))),
+      query = indexFor(Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))),
       initialContext = Some(ExecutionContext.from("x" -> stringValue("hello")))
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = false)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, SingleQueryExpression(Variable("x")))()
     val result = pipe.createResults(queryState)
 
@@ -286,13 +286,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq(Values.stringValue("hello")))),
-        Seq("bye") -> Seq((node2, Seq(Values.stringValue("bye"))))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
+        Seq("bye") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = true))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = true)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("bye")
@@ -310,13 +310,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello", "world") -> Seq((node, Seq(Values.stringValue("hello"), Values.stringValue("world")))),
-        Seq("bye", "cruel") -> Seq((node2, Seq(Values.stringValue("bye"), Values.stringValue("cruel"))))
+        Seq("hello", "world") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello"), Values.stringValue("world")))),
+        Seq("bye", "cruel") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"), Values.stringValue("cruel"))))
       )
     )
 
     // when
-    val properties = propertyKeys.map(IndexedProperty(_, getValueFromIndex = true))
+    val properties = propertyKeys.map(IndexedProperty(_, getValueFromIndex = true)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties,
       CompositeQueryExpression(Seq(
         ManyQueryExpression(ListLiteral(
@@ -339,13 +339,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq((node, Seq(Values.stringValue("hello")))),
-        Seq("world") -> Seq((node2, Seq(Values.stringValue("bye"))))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
+        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
       )
     )
 
     // when
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = true))
+    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = true)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
@@ -356,7 +356,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     ))
   }
 
-  private def indexFor(values: (Seq[AnyRef], Iterable[(NodeValue, Seq[Value])])*): QueryContext = {
+  private def indexFor(values: (Seq[AnyRef], Iterable[IndexedNodeWithProperties])*): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexSeek(any(), any(), any())).thenReturn(Iterator.empty)
     when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)

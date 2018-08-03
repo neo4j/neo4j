@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.internal.kernel.api.IndexReference
-import org.neo4j.values.storable.{TextValue, Value, Values}
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.opencypher.v9_0.util.CypherTypeException
 import org.opencypher.v9_0.util.attribution.Id
@@ -35,8 +34,8 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                getValueFromIndex: Boolean,
                                                valueExpr: Expression) extends Pipe with IndexPipeWithValues {
 
-  override val propertyIndicesWithValues: Seq[Int] = if (getValueFromIndex) Seq(0) else Seq.empty
-  override val propertyNamesWithValues: Seq[String] = Seq(ident + "." + propertyKey.name)
+  override val propertyIndicesWithValues: Array[Int] = if (getValueFromIndex) Array(0) else Array.empty
+  override val propertyNamesWithValues: Array[String] = Array(ident + "." + propertyKey.name)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -65,7 +64,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     resultNodes
   }
 
-  protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[(NodeValue, Seq[Value])]
+  protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties]
 
 }
 
@@ -77,7 +76,7 @@ case class NodeIndexContainsScanPipe(ident: String,
                                     (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, getValueFromIndex, valueExpr) {
 
-  override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[(NodeValue, Seq[Value])] =
+  override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties] =
     state.query.indexSeekByContains(indexReference, propertyIndicesWithValues, value)
 }
 
@@ -89,6 +88,6 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                     (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, getValueFromIndex, valueExpr) {
 
-  override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[(NodeValue, Seq[Value])] =
+  override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties] =
     state.query.indexSeekByEndsWith(indexReference, propertyIndicesWithValues, value)
 }

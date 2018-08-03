@@ -100,19 +100,19 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
-  def indexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], queries: Seq[IndexQuery]): Iterator[(NodeValue, Seq[Value])]
+  def indexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], queries: Seq[IndexQuery]): Iterator[IndexedNodeWithProperties]
 
-  def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])]
+  def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties]
 
-  def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])]
+  def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties]
 
-  def indexScan(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(NodeValue, Seq[Value])]
+  def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties]
 
-  def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(Long, Seq[Value])]
+  def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties]
 
   def indexScanPrimitive(index: IndexReference): LongIterator
 
-  def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], queries: Seq[IndexQuery.ExactPredicate]): Option[(NodeValue, Seq[Value])]
+  def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], queries: Seq[IndexQuery.ExactPredicate]): Option[IndexedNodeWithProperties]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
@@ -314,3 +314,39 @@ trait CloseableResource {
   def close(success: Boolean)
 }
 
+/**
+  * A node together with some of its properties, as fetched together from an index.
+  */
+case class IndexedNodeWithProperties(node: NodeValue, values: Array[Value]) {
+  def canEqual(other: Any): Boolean = other.isInstanceOf[IndexedNodeWithProperties]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: IndexedNodeWithProperties =>
+      (that canEqual this) &&
+        node == that.node &&
+        (values sameElements that.values)
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(node, values.toSeq)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+}
+
+case class IndexedPrimitiveNodeWithProperties(node: Long, values: Array[Value]) {
+  def canEqual(other: Any): Boolean = other.isInstanceOf[IndexedPrimitiveNodeWithProperties]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: IndexedPrimitiveNodeWithProperties =>
+      (that canEqual this) &&
+        node == that.node &&
+        (values sameElements that.values)
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(node, values.toSeq)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+}

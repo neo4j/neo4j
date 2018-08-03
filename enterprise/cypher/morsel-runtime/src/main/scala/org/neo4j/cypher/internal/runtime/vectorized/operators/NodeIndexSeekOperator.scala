@@ -23,27 +23,25 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeekMode, NodeIndexSeeker, QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized._
+import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
 import org.neo4j.internal.kernel.api._
-import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.LabelToken
 
 class NodeIndexSeekOperator(offset: Int,
                             label: LabelToken,
-                            properties: Seq[SlottedIndexedProperty],
+                            properties: Array[SlottedIndexedProperty],
                             argumentSize: SlotConfiguration.Size,
                             override val valueExpr: QueryExpression[Expression],
                             override val indexMode: IndexSeekMode = IndexSeek)
   extends StreamingOperator with NodeIndexSeeker {
 
-  private val propertyIndicesWithValues: Seq[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  val propertyOffsets: Seq[Int] = properties.map(_.slotOffset).collect{ case Some(o) => o }
+  private val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  val propertyOffsets: Array[Int] = properties.map(_.slotOffset).collect{ case Some(o) => o }
 
   override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
     val queryState = new OldQueryState(context, resources = null, params = state.params)
@@ -52,7 +50,7 @@ class NodeIndexSeekOperator(offset: Int,
     new OTask(tupleIterator)
   }
 
-  override val propertyIds: Array[Int] = properties.map(_.propertyKeyId).toArray
+  override val propertyIds: Array[Int] = properties.map(_.propertyKeyId)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -63,14 +61,14 @@ class NodeIndexSeekOperator(offset: Int,
     reference
   }
 
-  class OTask(tupleIterator: Iterator[(NodeValue, Seq[Value])]) extends ContinuableOperatorTask {
+  class OTask(tupleIterator: Iterator[IndexedNodeWithProperties]) extends ContinuableOperatorTask {
     override def operate(currentRow: MorselExecutionContext,
                          context: QueryContext,
                          state: QueryState): Unit = {
 
       var processedRows = 0
       while (currentRow.hasMoreRows && tupleIterator.hasNext) {
-        val (node, values) = tupleIterator.next()
+        val IndexedNodeWithProperties(node, values) = tupleIterator.next()
         currentRow.setLongAt(offset, node.id())
         propertyOffsets.foreach {
           offset => currentRow.setRefAt(offset, values(offset))

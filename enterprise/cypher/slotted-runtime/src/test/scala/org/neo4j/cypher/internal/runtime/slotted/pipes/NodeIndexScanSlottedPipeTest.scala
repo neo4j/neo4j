@@ -23,9 +23,9 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.cypher.internal.runtime.{IndexedPrimitiveNodeWithProperties, QueryContext}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.symbols._
@@ -47,7 +47,7 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
   test("should return nodes found by index scan when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Seq((node.id, Seq.empty)))
+      query = scanFor(Seq(IndexedPrimitiveNodeWithProperties(node.id, Array.empty)))
     )
 
     // when
@@ -63,7 +63,7 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
   test("should use index provided values when available") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Seq((node.id, Seq(Values.stringValue("hello")))))
+      query = scanFor(Seq(IndexedPrimitiveNodeWithProperties(node.id, Array(Values.stringValue("hello")))))
     )
 
     // when
@@ -80,9 +80,9 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     ))
   }
 
-  private def scanFor(results: Iterable[(Long, Seq[Value])]): QueryContext = {
+  private def scanFor(results: Iterable[IndexedPrimitiveNodeWithProperties]): QueryContext = {
     val query = mock[QueryContext]
-    when(query.indexScanPrimitive(any())).thenReturn(PrimitiveLongHelper.mapToPrimitive[(Long, Seq[Value])](results.iterator, _._1))
+    when(query.indexScanPrimitive(any())).thenReturn(PrimitiveLongHelper.mapToPrimitive[IndexedPrimitiveNodeWithProperties](results.iterator, _.node))
     when(query.indexScanPrimitiveWithValues(any(), any())).thenReturn(results.iterator)
     query
   }

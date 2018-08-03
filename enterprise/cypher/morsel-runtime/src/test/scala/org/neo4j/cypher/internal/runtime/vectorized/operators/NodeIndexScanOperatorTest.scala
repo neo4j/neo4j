@@ -24,12 +24,12 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.mockito.Mockito.{RETURNS_DEEP_STUBS, when}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
+import org.neo4j.cypher.internal.runtime.{IndexedPrimitiveNodeWithProperties, QueryContext}
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.symbols.{CTAny, CTNode}
@@ -52,7 +52,7 @@ class NodeIndexScanOperatorTest extends CypherFunSuite with ImplicitDummyPos {
 
   test("should use index provided values when available") {
     // given
-    val queryContext = scanFor(Seq((node.id, Seq(Values.stringValue("hello")))))
+    val queryContext = scanFor(Seq(IndexedPrimitiveNodeWithProperties(node.id, Array(Values.stringValue("hello")))))
 
     // input data
     val inputMorsel = new Morsel(new Array[Long](0), new Array[AnyValue](0), 0)
@@ -85,10 +85,10 @@ class NodeIndexScanOperatorTest extends CypherFunSuite with ImplicitDummyPos {
     outputMorsel.validRows should equal(1)
   }
 
-  private def scanFor(results: Iterable[(Long, Seq[Value])]): QueryContext = {
+  private def scanFor(results: Iterable[IndexedPrimitiveNodeWithProperties]): QueryContext = {
     val context = mock[QueryContext](RETURNS_DEEP_STUBS)
 
-   val jIterator =  results.map { case (l,vs) =>  org.neo4j.helpers.collection.Pair.of(new java.lang.Long(l), vs.asJava)}.iterator.asJava
+   val jIterator =  results.map { case IndexedPrimitiveNodeWithProperties(l,vs) =>  org.neo4j.helpers.collection.Pair.of(new java.lang.Long(l), vs)}.iterator.asJava
 
     val cursor = new StubNodeValueIndexCursor(jIterator)
     when(context.transactionalContext.cursors.allocateNodeValueIndexCursor).thenReturn(cursor)

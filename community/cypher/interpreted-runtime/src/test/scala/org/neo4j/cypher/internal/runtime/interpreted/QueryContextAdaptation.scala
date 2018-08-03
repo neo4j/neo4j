@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
@@ -40,9 +39,9 @@ trait QueryContextAdaptation {
 
   override def createNewQueryContext(): QueryContext = ???
 
-  override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): scala.Iterator[(NodeValue, Seq[Value])] = ???
+  override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): scala.Iterator[IndexedNodeWithProperties] = ???
 
-  override def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: String): Iterator[(NodeValue, Seq[Value])] = ???
+  override def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties] = ???
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = ???
 
@@ -94,7 +93,7 @@ trait QueryContextAdaptation {
 
   override def indexReference(label: Int, properties: Int*): IndexReference = ???
 
-  override def indexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], value: Seq[IndexQuery]): scala.Iterator[(NodeValue, Seq[Value])] = ???
+  override def indexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], value: Seq[IndexQuery]): scala.Iterator[IndexedNodeWithProperties] = ???
 
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[RelationshipValue] = ???
 
@@ -127,11 +126,11 @@ trait QueryContextAdaptation {
 
   override def getOrCreateLabelId(labelName: String): Int = ???
 
-  override def indexScan(index: IndexReference, propertyIndicesWithValues: Seq[Int]): scala.Iterator[(NodeValue, Seq[Value])] = ???
+  override def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): scala.Iterator[IndexedNodeWithProperties] = ???
 
   override def indexScanPrimitive(index: IndexReference): LongIterator = ???
 
-  override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Seq[Int]): Iterator[(Long, Seq[Value])] = ???
+  override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties] = ???
 
   override def getImportURL(url: URL): Either[String, URL] = ???
 
@@ -153,7 +152,7 @@ trait QueryContextAdaptation {
 
   override def getNodesByLabelPrimitive(id: Int): LongIterator = ???
 
-  override def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Seq[Int], values: Seq[IndexQuery.ExactPredicate]): Option[(NodeValue, Seq[Value])] = ???
+  override def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], values: Seq[IndexQuery.ExactPredicate]): Option[IndexedNodeWithProperties] = ???
 
   override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 

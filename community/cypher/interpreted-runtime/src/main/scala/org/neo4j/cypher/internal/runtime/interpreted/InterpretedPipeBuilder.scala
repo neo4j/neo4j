@@ -84,11 +84,11 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case NodeIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         // TODO getValueFromIndex
-        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)), valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)).toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeUniqueIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)), valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)).toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeIndexScan(ident, label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey, getValueFromIndex = false)(id = id)

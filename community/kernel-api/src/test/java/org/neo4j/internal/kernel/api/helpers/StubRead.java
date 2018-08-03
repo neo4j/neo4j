@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import java.util.List;
-
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -53,7 +51,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public Pair<Long,Iterable<Value>> lockingNodeUniqueIndexSeek( IndexReference index, List<Integer> propertyIndicesWithValues,
+    public Pair<Long,Value[]> lockingNodeUniqueIndexSeek( IndexReference index, int[] propertyIndicesWithValues,
             IndexQuery.ExactPredicate... predicates ) throws KernelException
     {
         throw new UnsupportedOperationException();

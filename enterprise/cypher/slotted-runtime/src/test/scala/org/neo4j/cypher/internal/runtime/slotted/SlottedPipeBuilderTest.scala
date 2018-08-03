@@ -537,7 +537,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     pipe should equal(ApplySlottedPipe(
       NodesByLabelScanSlottedPipe("x", LazyLabel("label"), X_NODE_SLOTS, Size.zero)(),
-      NodeIndexSeekSlottedPipe("z", label, Seq.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek,
+      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek,
         SlotConfiguration.empty
           .newLong("x", false, CTNode)
           .newLong("z", false, CTNode),
@@ -727,7 +727,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     pipe should equal(
-      NodeIndexSeekSlottedPipe("z", label, Seq.empty, SingleQueryExpression(commands.expressions.Literal(42)), UniqueIndexSeek,
+      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), UniqueIndexSeek,
         SlotConfiguration.empty.newLong("z", false, CTNode), Size.zero)()
     )
   }

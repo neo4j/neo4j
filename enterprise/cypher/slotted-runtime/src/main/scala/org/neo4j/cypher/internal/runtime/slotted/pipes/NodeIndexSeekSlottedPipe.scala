@@ -31,7 +31,7 @@ import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,
-                                    properties: Seq[SlottedIndexedProperty],
+                                    properties: Array[SlottedIndexedProperty],
                                     valueExpr: QueryExpression[Expression],
                                     indexMode: IndexSeekMode = IndexSeek,
                                     slots: SlotConfiguration,
@@ -40,10 +40,10 @@ case class NodeIndexSeekSlottedPipe(ident: String,
 
   override val offset: Int = slots.getLongOffsetFor(ident)
 
-  override val propertyIds: Array[Int] = properties.map(_.propertyKeyId).toArray
+  override val propertyIds: Array[Int] = properties.map(_.propertyKeyId)
 
-  private val propertyIndicesWithValues: Seq[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  override val propertyOffsets: Seq[Int] = properties.map(_.slotOffset).collect{ case Some(o) => o }
+  private val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  override val propertyOffsets: Array[Int] = properties.map(_.slotOffset).collect{ case Some(o) => o }
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -63,6 +63,25 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     createResultsFromTupleIterator(state, slots, results)
   }
 
+  def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekSlottedPipe]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: NodeIndexSeekSlottedPipe =>
+      (that canEqual this) &&
+        ident == that.ident &&
+        label == that.label &&
+        (properties sameElements that.properties) &&
+        valueExpr == that.valueExpr &&
+        indexMode == that.indexMode &&
+        slots == that.slots &&
+        argumentSize == that.argumentSize
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(ident, label, properties.toSeq, valueExpr, indexMode, slots, argumentSize)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
 }
 
 case class SlottedIndexedProperty(propertyKeyId: Int, slotOffset: Option[Int]) {

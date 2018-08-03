@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -29,10 +28,10 @@ import org.neo4j.values.storable.Value;
 
 public class StubNodeValueIndexCursor implements NodeValueIndexCursor
 {
-    Iterator<Pair<Long,List<Value>>> things;
-    Pair<Long,List<Value>> current = null;
+    Iterator<Pair<Long,Value[]>> things;
+    Pair<Long,Value[]> current = null;
 
-    public StubNodeValueIndexCursor( Iterator<Pair<Long,List<Value>>> things )
+    public StubNodeValueIndexCursor( Iterator<Pair<Long,Value[]>> things )
     {
         this.things = things;
     }
@@ -63,7 +62,7 @@ public class StubNodeValueIndexCursor implements NodeValueIndexCursor
     @Override
     public int numberOfProperties()
     {
-        return current.other().size();
+        return current.other().length;
     }
 
     @Override
@@ -81,7 +80,7 @@ public class StubNodeValueIndexCursor implements NodeValueIndexCursor
     @Override
     public Value propertyValue( int offset )
     {
-        return current.other().get( offset );
+        return current.other()[offset];
     }
 
     @Override

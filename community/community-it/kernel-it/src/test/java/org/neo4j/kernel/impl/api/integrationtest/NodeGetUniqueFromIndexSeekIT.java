@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.Iterator;
-
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
@@ -41,7 +38,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
@@ -107,15 +103,15 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // when looking for it
         Read read = newTransaction().dataRead();
         int propertyId = index.properties()[0];
-        Pair<Long, Iterable<Value>> result = read.lockingNodeUniqueIndexSeek( index, Collections.singletonList( 0 ), exact( propertyId, value ) );
+        Pair<Long,Value[]> result = read.lockingNodeUniqueIndexSeek( index, new int[]{0}, exact( propertyId, value ) );
         long foundId = result.first();
-        Iterator<Value> propertyValues = result.other().iterator();
+        Value[] propertyValues = result.other();
         commit();
 
         // then
         assertEquals( "Created node was not found", nodeId, foundId );
-        assertEquals( "Created node had wrong property value", value, propertyValues.next() );
-        assertFalse( "Created node had too many property values", propertyValues.hasNext());
+        assertEquals( "Created node had wrong property value", value, propertyValues[0] );
+        assertEquals( "Created node had too many property values", 1, propertyValues.length);
     }
 
     @Test

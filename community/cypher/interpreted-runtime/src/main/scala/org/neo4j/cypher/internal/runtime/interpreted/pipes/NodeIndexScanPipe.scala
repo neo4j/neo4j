@@ -31,8 +31,8 @@ case class NodeIndexScanPipe(ident: String,
                              getValueFromIndex: Boolean)
                             (val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
 
-  override val propertyIndicesWithValues: Seq[Int] = if (getValueFromIndex) Seq(0) else Seq.empty
-  override val propertyNamesWithValues: Seq[String] = if (getValueFromIndex) Seq(ident + "." + propertyKey.name) else Seq.empty
+  override val propertyIndicesWithValues: Array[Int] = if (getValueFromIndex) Array(0) else Array.empty
+  override val propertyNamesWithValues: Array[String] = if (getValueFromIndex) Array(ident + "." + propertyKey.name) else Array.empty
 
 
   private var reference: IndexReference = IndexReference.NO_INDEX

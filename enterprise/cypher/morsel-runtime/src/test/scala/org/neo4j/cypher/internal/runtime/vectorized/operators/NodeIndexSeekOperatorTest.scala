@@ -26,16 +26,16 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockingUniqueIndexSeek
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
+import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression}
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.symbols.{CTAny, CTNode}
@@ -59,8 +59,8 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use index provided values when available") {
     // given
     val queryContext = indexFor(
-      Seq("hello") -> Seq((node, Seq(Values.stringValue("hello")))),
-      Seq("bye") -> Seq((node2, Seq(Values.stringValue("bye"))))
+      Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
+      Seq("bye") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
     )
 
     // input data
@@ -80,7 +80,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos {
     // operator
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference("n." + propertyKey(0).name, nullable = false, CTAny)
-    val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name))))
+    val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name)))).toArray
     val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, slots.size(),
       ManyQueryExpression(ListLiteral(
         Literal("hello"),
@@ -103,8 +103,8 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use composite index provided values when available") {
     // given
     val queryContext = indexFor(
-      Seq("hello", "world") -> Seq((node, Seq(Values.stringValue("hello"), Values.stringValue("world")))),
-      Seq("bye", "cruel") -> Seq((node2, Seq(Values.stringValue("bye"), Values.stringValue("cruel"))))
+      Seq("hello", "world") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello"), Values.stringValue("world")))),
+      Seq("bye", "cruel") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"), Values.stringValue("cruel"))))
     )
 
     // input data
@@ -124,7 +124,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos {
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference("n." + propertyKeys(0).name, nullable = false, CTAny)
       .newReference("n." + propertyKeys(1).name, nullable = false, CTAny)
-    val properties = propertyKeys.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name))))
+    val properties = propertyKeys.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name)))).toArray
     val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, slots.size(),
       CompositeQueryExpression(Seq(
         ManyQueryExpression(ListLiteral(
@@ -150,8 +150,8 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use locking unique index provided values when available") {
     // given
     val queryContext = indexFor(
-        Seq("hello") -> Seq((node, Seq(Values.stringValue("hello")))),
-        Seq("world") -> Seq((node2, Seq(Values.stringValue("bye"))))
+        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
+        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
     )
 
     // input data
@@ -170,7 +170,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos {
 
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference("n." + propertyKey(0).name, nullable = false, CTAny)
-    val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name))))
+    val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name)))).toArray
 
     val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, slots.size(),
       ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek)
@@ -188,7 +188,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos {
     outputMorsel.validRows should equal(2)
   }
 
-  private def indexFor(values: (Seq[AnyRef], Iterable[(NodeValue, Seq[Value])])*): QueryContext = {
+  private def indexFor(values: (Seq[AnyRef], Iterable[IndexedNodeWithProperties])*): QueryContext = {
     val context = mock[QueryContext]
     when(context.indexSeek(any(), any(), any())).thenReturn(Iterator.empty)
     when(context.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)

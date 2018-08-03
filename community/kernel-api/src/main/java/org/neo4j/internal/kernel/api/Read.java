@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.List;
-
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Value;
@@ -73,7 +71,7 @@ public interface Read
      * if the index cannot provide values, index 0 for a non-composite index, and more indices for a composite index.
      * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
      */
-    Pair<Long, Iterable<Value>> lockingNodeUniqueIndexSeek( IndexReference index, List<Integer> propertyIndicesWithValues,
+    Pair<Long, Value[]> lockingNodeUniqueIndexSeek( IndexReference index, int[] propertyIndicesWithValues,
             IndexQuery.ExactPredicate... predicates )
             throws KernelException;
 

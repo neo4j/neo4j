@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -44,7 +44,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should return nodes found by index scan when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Iterator((node, Seq.empty)))
+      query = scanFor(Iterator(IndexedNodeWithProperties(node, Array.empty)))
     )
 
     // when
@@ -58,7 +58,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use index provided values when available") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Iterator((node, Seq(Values.stringValue("hello")))))
+      query = scanFor(Iterator(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))))
     )
 
     // when
@@ -71,7 +71,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
     ))
   }
 
-  private def scanFor(nodes: Iterator[(NodeValue, Seq[Value])]): QueryContext = {
+  private def scanFor(nodes: Iterator[IndexedNodeWithProperties]): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexScan(any(), any())).thenReturn(nodes)
     query

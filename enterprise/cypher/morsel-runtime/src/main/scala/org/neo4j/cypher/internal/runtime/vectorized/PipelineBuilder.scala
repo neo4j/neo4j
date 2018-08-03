@@ -107,12 +107,12 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
     new StreamingPipeline(thisOp, slots, None)
   }
 
-  private def getIndexedProperties(column: String, propertyKeys: Seq[PropertyKeyToken], slots: SlotConfiguration): Seq[SlottedIndexedProperty] = {
+  private def getIndexedProperties(column: String, propertyKeys: Seq[PropertyKeyToken], slots: SlotConfiguration): Array[SlottedIndexedProperty] = {
     propertyKeys.map { pk =>
       val maybeOffset =
         getMaybeIndexedValueOffset(column, slots, pk)
       SlottedIndexedProperty(pk.nameId.id, maybeOffset)
-    }
+    }.toArray
   }
 
   /**
