@@ -36,19 +36,19 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
 
   override def execute(task: Task, tracer: SchedulerTracer): QueryExecution = {
     val queryTracer: QueryExecutionTracer = tracer.traceQuery()
-    new SimpleQueryExecution(schedule(task, None, queryTracer), this, queryTracer)
+    new SimpleQueryExecution(schedule(task, queryTracer), this, queryTracer)
   }
 
   def isMultiThreaded: Boolean = true
 
-  def schedule(task: Task, upstreamWorkUnit: Option[WorkUnitEvent], queryTracer: QueryExecutionTracer): Future[Try[TaskResult]] = {
-    val scheduledWorkUnitEvent = queryTracer.scheduleWorkUnit(task, upstreamWorkUnit)
+  def schedule(task: Task, queryTracer: QueryExecutionTracer): Future[Try[TaskResult]] = {
+    val scheduledWorkUnitEvent = queryTracer.scheduleWorkUnit(task)
     val callableTask =
       new Callable[Try[TaskResult]] {
         override def call(): Try[TaskResult] = {
-          val workUnitEvent = scheduledWorkUnitEvent.start()
-          val result = Try(TaskResult(task, workUnitEvent, task.executeWorkUnit()))
-          workUnitEvent.stop()
+          val event = scheduledWorkUnitEvent.start()
+          val result = Try(TaskResult(task, task.executeWorkUnit()))
+          event.stop()
           result
         }
       }
@@ -72,10 +72,10 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
           taskResultTry match {
             case Success(taskResult) =>
               for (newTask <- taskResult.newDownstreamTasks)
-                newInFlightTasks += scheduler.schedule(newTask, Some(taskResult.workUnitEvent), queryTracer)
+                newInFlightTasks += scheduler.schedule(newTask, queryTracer)
 
               if (taskResult.task.canContinue)
-                newInFlightTasks += scheduler.schedule(taskResult.task, Some(taskResult.workUnitEvent), queryTracer)
+                newInFlightTasks += scheduler.schedule(taskResult.task, queryTracer)
 
             case Failure(exception) =>
               queryTracer.stopQuery()
@@ -91,4 +91,4 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
 
 }
 
-case class TaskResult(task: Task, workUnitEvent: WorkUnitEvent,  newDownstreamTasks: Seq[Task])
+case class TaskResult(task: Task, newDownstreamTasks: Seq[Task])

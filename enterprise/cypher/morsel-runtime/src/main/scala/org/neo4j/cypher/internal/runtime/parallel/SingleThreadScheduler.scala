@@ -37,7 +37,7 @@ class SingleThreadScheduler() extends Scheduler {
   class SingleThreadQueryExecution(initialTask: Task, tracer: QueryExecutionTracer) extends QueryExecution {
 
     private val jobStack: mutable.Stack[(Task,ScheduledWorkUnitEvent)] = new mutable.Stack()
-    schedule(initialTask, None)
+    schedule(initialTask)
 
     override def await(): Option[Throwable] = {
 
@@ -45,9 +45,9 @@ class SingleThreadScheduler() extends Scheduler {
         while (jobStack.nonEmpty) {
           val nextTaskAndEvent = jobStack.pop()
           val nextTask = nextTaskAndEvent._1
-          val nextTaskScheduledEvent = nextTaskAndEvent._2
+          val scheduledWorkUnitEvent = nextTaskAndEvent._2
 
-          val workUnitEvent = nextTaskScheduledEvent.start()
+          val workUnitEvent = scheduledWorkUnitEvent.start()
           val downstreamTasks =
             try {
               nextTask.executeWorkUnit()
@@ -56,10 +56,10 @@ class SingleThreadScheduler() extends Scheduler {
             }
 
           if (nextTask.canContinue)
-            schedule(nextTask, Some(workUnitEvent))
+            schedule(nextTask)
 
           for (newTask <- downstreamTasks)
-            schedule(newTask, Some(workUnitEvent))
+            schedule(newTask)
         }
         None
       } catch {
@@ -67,8 +67,8 @@ class SingleThreadScheduler() extends Scheduler {
       }
     }
 
-    private def schedule(task: Task, upstreamWorkUnitEvent: Option[WorkUnitEvent]) = {
-      val scheduledWorkUnitEvent = tracer.scheduleWorkUnit(task, upstreamWorkUnitEvent)
+    private def schedule(task: Task) = {
+      val scheduledWorkUnitEvent = tracer.scheduleWorkUnit(task)
       jobStack.push((task,scheduledWorkUnitEvent))
     }
   }
