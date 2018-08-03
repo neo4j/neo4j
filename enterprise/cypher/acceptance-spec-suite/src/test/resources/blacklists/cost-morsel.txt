@@ -61,7 +61,6 @@ Feature "MatchAcceptance": Scenario "Should handle EXISTS on node property when 
 Feature "MatchAcceptance": Scenario "Should handle NOT EXISTS on node property when node is null"
 Feature "MatchAcceptance": Scenario "Should handle simple IS NOT NULL on node property when node is null"
 Feature "MatchAcceptance": Scenario "Should handle complex IS NOT NULL on node property when node is null"
-Feature "MatchAcceptance": Scenario "loops with relationship type"
 Feature "MergeLegacyAcceptance": Scenario "Using a single bound node"
 Feature "MergeLegacyAcceptance": Scenario "Using a longer pattern"
 Feature "MergeLegacyAcceptance": Scenario "Using bound nodes in mid-pattern"
