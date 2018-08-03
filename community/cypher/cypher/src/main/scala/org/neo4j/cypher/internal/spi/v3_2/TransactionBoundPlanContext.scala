@@ -140,6 +140,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val description = asOption(ks.description())
     val warning = asOption(ks.warning())
 
+    // TODO: When releasing a newer 3.2, this signature will change and need a final `ks.eager()` argument
+    //ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, ks.eager())
     ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
   }
 

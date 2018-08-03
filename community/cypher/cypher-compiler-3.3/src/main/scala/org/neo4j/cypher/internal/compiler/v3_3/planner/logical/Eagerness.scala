@@ -127,10 +127,13 @@ object Eagerness {
   def horizonReadWriteEagerize(inputPlan: LogicalPlan, query: PlannerQuery)
                               (implicit context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    if (alwaysEager || (query.tail.nonEmpty && horizonReadWriteConflict(query, query.tail.get)))
-      context.logicalPlanProducer.planEager(inputPlan)
-    else
-      inputPlan
+    inputPlan match {
+      case ProcedureCall(left, call) if call.signature.eager => ProcedureCall(context.logicalPlanProducer.planEager(left), call)(inputPlan.solved)
+      case _ if alwaysEager || (query.tail.nonEmpty && horizonReadWriteConflict(query, query.tail.get)) =>
+        context.logicalPlanProducer.planEager(inputPlan)
+      case _ =>
+        inputPlan
+    }
   }
 
   /**

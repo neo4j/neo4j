@@ -47,6 +47,7 @@ public class ProcedureSignature
     private final String[] allowed;
     private final Optional<String> description;
     private final Optional<String> warning;
+    private final boolean eager;
 
     public ProcedureSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
@@ -55,7 +56,8 @@ public class ProcedureSignature
             Optional<String> deprecated,
             String[] allowed,
             Optional<String> description,
-            Optional<String> warning )
+            Optional<String> warning,
+            boolean eager )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -65,6 +67,7 @@ public class ProcedureSignature
         this.allowed = allowed;
         this.description = description;
         this.warning = warning;
+        this.eager = eager;
     }
 
     public QualifiedName name()
@@ -110,6 +113,11 @@ public class ProcedureSignature
     public Optional<String> warning()
     {
         return warning;
+    }
+
+    public boolean eager()
+    {
+        return eager;
     }
 
     @Override
@@ -160,6 +168,7 @@ public class ProcedureSignature
         private String[] allowed = new String[0];
         private Optional<String> description = Optional.empty();
         private Optional<String> warning = Optional.empty();
+        private boolean eager = false;
 
         public Builder( String[] namespace, String name )
         {
@@ -216,10 +225,15 @@ public class ProcedureSignature
             return this;
         }
 
+        public Builder eager( boolean eager )
+        {
+            this.eager = eager;
+            return this;
+        }
+
         public ProcedureSignature build()
         {
-            return new ProcedureSignature( name, inputSignature, outputSignature, mode, deprecated, allowed,
-                    description, warning );
+            return new ProcedureSignature( name, inputSignature, outputSignature, mode, deprecated, allowed, description, warning, eager );
         }
     }
 
