@@ -872,15 +872,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("extract parameter") {
-    // Given
-    val expression = parameter("prop")
-
-    // When
-    val compiled = compile(expression)
-
-    // Then
-    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(NO_VALUE)
-    compiled.evaluate(ctx, db, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
+    compile(parameter("prop")).evaluate(ctx, db, EMPTY_MAP) should equal(NO_VALUE)
+    compile(parameter("prop")).evaluate(ctx, db, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
+    compile(parameter("    AUTOBLAH BLAH BLAHA   ")).evaluate(ctx, db, map(Array("    AUTOBLAH BLAH BLAHA   "), Array(stringValue("foo")))) should equal(stringValue("foo"))
   }
 
   test("NULL") {
