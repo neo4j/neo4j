@@ -119,7 +119,7 @@ public abstract class Service
      * Enabling this is useful for debugging why services aren't loaded where you would expect them to.
      */
     private static final boolean printServiceLoaderStackTraces =
-            flag( Service.class, "printServiceLoaderStackTraces", true );
+            flag( Service.class, "printServiceLoaderStackTraces", false );
 
     private final Set<String> keys;
 
@@ -196,7 +196,7 @@ public abstract class Service
      * @return the matching Service implementation
      * @throws NoSuchElementException if no service could be loaded with the given key.
      */
-    public static <T extends Service> T load( Class<T> type, String key ) throws NoSuchElementException
+    public static <T extends Service> T load( Class<T> type, String key )
     {
         T service = loadSilently( type, key );
         if ( service == null )
