@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -36,30 +36,30 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 
+import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
 
-public class GraphDatabaseSettingsTest
+class GraphDatabaseSettingsTest
 {
     @Test
-    public void mustHaveNullDefaultPageCacheMemorySizeInBytes()
+    void mustHaveNullDefaultPageCacheMemorySizeInBytes()
     {
         String bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
         assertThat( bytes, is( nullValue() ) );
     }
 
     @Test
-    public void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue()
+    void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue()
     {
         Setting<String> setting = GraphDatabaseSettings.pagecache_memory;
         assertThat( Config.defaults( setting, "245760" ).get( setting ), is( "245760" ) );
@@ -68,7 +68,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void noDuplicateSettingsAreAllowed() throws Exception
+    void noDuplicateSettingsAreAllowed() throws Exception
     {
         final HashMap<String,String> fields = new HashMap<>();
         for ( Field field : GraphDatabaseSettings.class.getDeclaredFields() )
@@ -77,16 +77,15 @@ public class GraphDatabaseSettingsTest
             {
                 Setting<?> setting = (Setting<?>) field.get( null );
 
-                assertFalse(
-                        String.format( "'%s' in %s has already been defined in %s", setting.name(), field.getName(),
-                                fields.get( setting.name() ) ), fields.containsKey( setting.name() ) );
+                assertFalse( fields.containsKey( setting.name() ),
+                        format( "'%s' in %s has already been defined in %s", setting.name(), field.getName(), fields.get( setting.name() ) ) );
                 fields.put( setting.name(), field.getName() );
             }
         }
     }
 
     @Test
-    public void groupToScopeSetting()
+    void groupToScopeSetting()
     {
         // given
         String hostname = "my_other_host";
@@ -108,7 +107,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldEnableBoltByDefault()
+    void shouldEnableBoltByDefault()
     {
         // given
         Config config = Config.builder().withServerDefaults().build();
@@ -122,7 +121,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldBeAbleToDisableBoltConnectorWithJustOneParameter()
+    void shouldBeAbleToDisableBoltConnectorWithJustOneParameter()
     {
         // given
         Config config = Config.defaults( new BoltConnector( "bolt" ).enabled, "false" );
@@ -133,7 +132,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter()
+    void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter()
     {
         // given
         Config config = Config.defaults( stringMap(
@@ -147,7 +146,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldDeriveBoltListenAddressFromDefaultListenAddress()
+    void shouldDeriveBoltListenAddressFromDefaultListenAddress()
     {
         // given
         Config config = Config.defaults( stringMap(
@@ -161,7 +160,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort()
+    void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort()
     {
         // given
         Config config = Config.defaults( stringMap(
@@ -176,7 +175,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldStillSupportCustomNameForBoltConnector()
+    void shouldStillSupportCustomNameForBoltConnector()
     {
         Config config = Config.defaults( stringMap(
                 "dbms.connector.random_name_that_will_be_unsupported.type", "BOLT",
@@ -191,7 +190,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldSupportMultipleBoltConnectorsWithCustomNames()
+    void shouldSupportMultipleBoltConnectorsWithCustomNames()
     {
         Config config = Config.defaults( stringMap(
                 "dbms.connector.bolt1.type", "BOLT",
@@ -223,7 +222,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldSupportMultipleBoltConnectorsWithDefaultAndCustomName()
+    void shouldSupportMultipleBoltConnectorsWithDefaultAndCustomName()
     {
         Config config = Config.defaults( stringMap(
                 "dbms.connector.bolt.type", "BOLT",
@@ -244,7 +243,7 @@ public class GraphDatabaseSettingsTest
 
     /// JONAS HTTP FOLLOWS
     @Test
-    public void testServerDefaultSettings()
+    void testServerDefaultSettings()
     {
         // given
         Config config = Config.builder().withServerDefaults().build();
@@ -271,7 +270,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldBeAbleToDisableHttpConnectorWithJustOneParameter()
+    void shouldBeAbleToDisableHttpConnectorWithJustOneParameter()
     {
         // given
         Config disableHttpConfig = Config.defaults(
@@ -284,7 +283,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldBeAbleToOverrideHttpListenAddressWithJustOneParameter()
+    void shouldBeAbleToOverrideHttpListenAddressWithJustOneParameter()
     {
         // given
         Config config = Config.defaults( stringMap(
@@ -301,7 +300,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void hasDefaultBookmarkAwaitTimeout()
+    void hasDefaultBookmarkAwaitTimeout()
     {
         Config config = Config.defaults();
         long bookmarkReadyTimeoutMs = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
@@ -309,7 +308,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldBeAbleToOverrideHttpsListenAddressWithJustOneParameter()
+    void shouldBeAbleToOverrideHttpsListenAddressWithJustOneParameter()
     {
         // given
         Config config = Config.defaults( stringMap(
@@ -325,28 +324,22 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void throwsForIllegalBookmarkAwaitTimeout()
+    void throwsForIllegalBookmarkAwaitTimeout()
     {
         String[] illegalValues = { "0ms", "0s", "10ms", "99ms", "999ms", "42ms" };
 
         for ( String value : illegalValues )
         {
-            try
+            assertThrows( InvalidSettingException.class, () ->
             {
-                Config config = Config.defaults( stringMap(
-                        GraphDatabaseSettings.bookmark_ready_timeout.name(), value ) );
+                Config config = Config.defaults( stringMap( GraphDatabaseSettings.bookmark_ready_timeout.name(), value ) );
                 config.get( GraphDatabaseSettings.bookmark_ready_timeout );
-                fail( "Exception expected for value '" + value + "'" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( InvalidSettingException.class ) );
-            }
+            }, "Exception expected for value '" + value + "'" );
         }
     }
 
     @Test
-    public void shouldDeriveListenAddressFromDefaultListenAddress()
+    void shouldDeriveListenAddressFromDefaultListenAddress()
     {
         // given
         Config config = Config.fromSettings( stringMap( "dbms.connector.https.enabled", "true",
@@ -360,7 +353,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts()
+    void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts()
     {
         // given
         Config config = Config.defaults( stringMap( "dbms.connector.https.enabled", "true",
@@ -389,7 +382,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldStillSupportCustomNameForHttpConnector()
+    void shouldStillSupportCustomNameForHttpConnector()
     {
         Config config = Config.defaults( stringMap(
                 "dbms.connector.random_name_that_will_be_unsupported.type", "HTTP",
@@ -404,7 +397,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void shouldStillSupportCustomNameForHttpsConnector()
+    void shouldStillSupportCustomNameForHttpsConnector()
     {
         Config config = Config.defaults( stringMap(
                 "dbms.connector.random_name_that_will_be_unsupported.type", "HTTP",
@@ -419,7 +412,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
-    public void validateRetentionPolicy()
+    void validateRetentionPolicy()
     {
         String[] validSet =
                 new String[]{"true", "keep_all", "false", "keep_none", "10 files", "10k files", "10K size", "10m txs",
@@ -434,14 +427,9 @@ public class GraphDatabaseSettingsTest
 
         for ( String invalid : invalidSet )
         {
-            try
-            {
-                Config.defaults( keep_logical_logs, invalid );
-                fail( "Value \"" + invalid + "\" should be considered invalid" );
-            }
-            catch ( InvalidSettingException ignored )
-            {
-            }
+            assertThrows( InvalidSettingException.class, () -> Config.defaults( keep_logical_logs, invalid ),
+                    "Value \"" + invalid + "\" should be considered invalid" );
+
         }
     }
 }

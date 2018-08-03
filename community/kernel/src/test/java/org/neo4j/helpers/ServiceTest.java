@@ -19,7 +19,9 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,70 +29,57 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.neo4j.helpers.collection.Iterables;
 
-public class ServiceTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ServiceTest
 {
 
+    private ClassLoader contextClassLoader;
+
+    @BeforeEach
+    void setUp()
+    {
+        contextClassLoader = Thread.currentThread().getContextClassLoader();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        Thread.currentThread().setContextClassLoader( contextClassLoader );
+    }
+
     @Test
-    public void shouldLoadServiceInDefaultEnvironment()
+    void shouldLoadServiceInDefaultEnvironment()
     {
         FooService fooService = Service.load( FooService.class, "foo" );
         assertTrue( fooService instanceof BarService );
     }
 
     @Test
-    public void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader()
+    void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader()
     {
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        try
-        {
-            Thread.currentThread().setContextClassLoader( new ServiceBlockClassLoader( contextClassLoader ) );
-            FooService fooService = Service.load( FooService.class, "foo" );
-            assertTrue( fooService instanceof BarService );
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader( contextClassLoader );
-        }
+        Thread.currentThread().setContextClassLoader( new ServiceBlockClassLoader( contextClassLoader ) );
+        FooService fooService = Service.load( FooService.class, "foo" );
+        assertTrue( fooService instanceof BarService );
     }
 
     @Test
-    public void whenContextClassLoaderOverridesServiceShouldLoadThatClass()
+    void whenContextClassLoaderOverridesServiceShouldLoadThatClass()
     {
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        try
-        {
-            Thread.currentThread().setContextClassLoader( new ServiceRedirectClassLoader( contextClassLoader ) );
-            FooService fooService = Service.load( FooService.class, "foo" );
-            assertTrue( fooService instanceof BazService );
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader( contextClassLoader );
-        }
+        Thread.currentThread().setContextClassLoader( new ServiceRedirectClassLoader( contextClassLoader ) );
+        FooService fooService = Service.load( FooService.class, "foo" );
+        assertTrue( fooService instanceof BazService );
     }
 
     @Test
-    public void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce()
+    void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce()
     {
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        try
-        {
-            Thread.currentThread().setContextClassLoader( Service.class.getClassLoader() );
-            Iterable<FooService> services = Service.load( FooService.class );
-            int size = 0;
-            for ( FooService fooService : services )
-            {
-                size++;
-            }
-            assertEquals( 1, size );
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader( contextClassLoader );
-        }
+        Thread.currentThread().setContextClassLoader( Service.class.getClassLoader() );
+        Iterable<FooService> services = Service.load( FooService.class );
+        assertEquals( 1, Iterables.count( services ) );
     }
 
     private static final class ServiceBlockClassLoader extends ClassLoader

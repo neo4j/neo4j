@@ -38,9 +38,9 @@ public class StreamConsumer implements Runnable
         void handle( IOException failure );
     }
 
-    public static StreamExceptionHandler PRINT_FAILURES = Throwable::printStackTrace;
+    public static final StreamExceptionHandler PRINT_FAILURES = Throwable::printStackTrace;
 
-    public static StreamExceptionHandler IGNORE_FAILURES = failure ->
+    public static final StreamExceptionHandler IGNORE_FAILURES = failure ->
     {
     };
 

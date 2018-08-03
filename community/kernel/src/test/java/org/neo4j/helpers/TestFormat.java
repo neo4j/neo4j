@@ -19,20 +19,20 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestFormat
+class TestFormat
 {
     @Test
-    public void dateTime() throws Exception
+    void dateTime() throws Exception
     {
         // Date
         long timeWithDate = System.currentTimeMillis();
@@ -46,7 +46,7 @@ public class TestFormat
     }
 
     @Test
-    public void dateTimeWithTimeZone() throws Exception
+    void dateTimeWithTimeZone() throws Exception
     {
         String zoneOffset = "+03:00";
         TimeZone zone = TimeZone.getTimeZone( "GMT" + zoneOffset );
@@ -74,7 +74,7 @@ public class TestFormat
                 new SimpleDateFormat( Format.TIME_FORMAT ).parse( asString ).getTime(), zone ) );
     }
 
-    private long translateToDate( long timeWithDate, long time, TimeZone timeIsGivenInThisTimeZone )
+    private static long translateToDate( long timeWithDate, long time, TimeZone timeIsGivenInThisTimeZone )
     {
         Calendar calendar = Calendar.getInstance(timeIsGivenInThisTimeZone);
         calendar.setTimeInMillis( timeWithDate );
@@ -90,7 +90,7 @@ public class TestFormat
         return timeCalendar.getTimeInMillis();
     }
 
-    private String withoutColon( String zoneOffset )
+    private static String withoutColon( String zoneOffset )
     {
         return zoneOffset.replaceAll( ":", "" );
     }

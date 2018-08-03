@@ -19,15 +19,15 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.TimeUtil.nanosToString;
 
-public class TimeUtilTest
+class TimeUtilTest
 {
     @Test
-    public void formatNanosToString()
+    void formatNanosToString()
     {
         assertEquals( "1ns", nanosToString( 1 ) );
         assertEquals( "10ns", nanosToString( 10 ) );

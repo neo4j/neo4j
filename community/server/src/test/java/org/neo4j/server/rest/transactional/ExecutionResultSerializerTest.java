@@ -57,7 +57,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.SpatialMocks;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.helpers.collection.MapUtil;
@@ -69,6 +68,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mockito.mock.GraphMock;
 import org.neo4j.test.mockito.mock.Link;
+import org.neo4j.test.mockito.mock.SpatialMocks;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -83,10 +83,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
-import static org.neo4j.graphdb.SpatialMocks.mockCartesian_3D;
-import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
-import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
@@ -97,6 +93,10 @@ import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.GraphMock.path;
 import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Properties.properties;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
 public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 {

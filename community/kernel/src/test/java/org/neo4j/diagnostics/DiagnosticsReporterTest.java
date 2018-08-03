@@ -19,8 +19,8 @@
  */
 package org.neo4j.diagnostics;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,86 +37,30 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
 
-public class DiagnosticsReporterTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class DiagnosticsReporterTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    static class MyProvider extends DiagnosticsOfflineReportProvider
-    {
-        private final FileSystemAbstraction fs;
-        private List<DiagnosticsReportSource> logFiles = new ArrayList<>();
-
-        MyProvider( FileSystemAbstraction fs )
-        {
-            super( "my-provider", "logs" );
-            this.fs = fs;
-        }
-
-        void addFile( String destination, File file )
-        {
-            logFiles.add( newDiagnosticsFile( destination, fs, file ) );
-        }
-
-        @Override
-        public void init( FileSystemAbstraction fs, Config config, File storeDirectory )
-        {
-        }
-
-        @Override
-        public List<DiagnosticsReportSource> provideSources( Set<String> classifiers )
-        {
-            List<DiagnosticsReportSource> sources = new ArrayList<>();
-            if ( classifiers.contains( "fail" ) )
-            {
-                sources.add( new FailingSource() );
-            }
-            if ( classifiers.contains( "logs" ) )
-            {
-                sources.addAll( logFiles );
-            }
-
-            return sources;
-        }
-    }
-
-    private static class FailingSource implements DiagnosticsReportSource
-    {
-        @Override
-        public String destinationPath()
-        {
-            return "fail.txt";
-        }
-
-        @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
-        {
-            progress.percentChanged( 30 );
-            throw new RuntimeException( "You had it coming..." );
-        }
-
-        @Override
-        public long estimatedSize( DiagnosticsReporterProgress progress )
-        {
-            return 0;
-        }
-    }
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
 
     @Test
-    public void dumpFiles() throws Exception
+    void dumpFiles() throws Exception
     {
         DiagnosticsReporter reporter = setupDiagnosticsReporter();
 
@@ -129,10 +73,10 @@ public class DiagnosticsReporterTest
     }
 
     @Test
-    public void shouldContinueAfterError() throws Exception
+    void shouldContinueAfterError() throws Exception
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter(  );
-        MyProvider myProvider = new MyProvider( fileSystemRule.get() );
+        MyProvider myProvider = new MyProvider( fileSystem );
         reporter.registerOfflineProvider( myProvider );
 
         myProvider.addFile( "logs/a.txt", createNewFileWithContent( "a.txt", "file a") );
@@ -173,7 +117,7 @@ public class DiagnosticsReporterTest
     }
 
     @Test
-    public void supportPathsWithSpaces() throws IOException
+    void supportPathsWithSpaces() throws IOException
     {
         DiagnosticsReporter reporter = setupDiagnosticsReporter();
 
@@ -194,7 +138,7 @@ public class DiagnosticsReporterTest
     private DiagnosticsReporter setupDiagnosticsReporter() throws IOException
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter(  );
-        MyProvider myProvider = new MyProvider( fileSystemRule.get() );
+        MyProvider myProvider = new MyProvider( fileSystem );
         reporter.registerOfflineProvider( myProvider );
 
         myProvider.addFile( "logs/a.txt", createNewFileWithContent( "a.txt", "file a") );
@@ -202,7 +146,7 @@ public class DiagnosticsReporterTest
         return reporter;
     }
 
-    private void verifyContent( Path destination ) throws IOException
+    private static void verifyContent( Path destination ) throws IOException
     {
         URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath() );
 
@@ -215,6 +159,66 @@ public class DiagnosticsReporterTest
             List<String> fileB = Files.readAllLines( fs.getPath( "logs/b.txt" ) );
             assertEquals( 1, fileB.size() );
             assertEquals( "file b", fileB.get( 0 ) );
+        }
+    }
+
+    private static class MyProvider extends DiagnosticsOfflineReportProvider
+    {
+        private final FileSystemAbstraction fs;
+        private final List<DiagnosticsReportSource> logFiles = new ArrayList<>();
+
+        MyProvider( FileSystemAbstraction fs )
+        {
+            super( "my-provider", "logs" );
+            this.fs = fs;
+        }
+
+        void addFile( String destination, File file )
+        {
+            logFiles.add( newDiagnosticsFile( destination, fs, file ) );
+        }
+
+        @Override
+        public void init( FileSystemAbstraction fs, Config config, File storeDirectory )
+        {
+        }
+
+        @Override
+        public List<DiagnosticsReportSource> provideSources( Set<String> classifiers )
+        {
+            List<DiagnosticsReportSource> sources = new ArrayList<>();
+            if ( classifiers.contains( "fail" ) )
+            {
+                sources.add( new FailingSource() );
+            }
+            if ( classifiers.contains( "logs" ) )
+            {
+                sources.addAll( logFiles );
+            }
+
+            return sources;
+        }
+    }
+    private static class FailingSource implements DiagnosticsReportSource
+    {
+
+        @Override
+        public String destinationPath()
+        {
+            return "fail.txt";
+        }
+
+        @Override
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
+        {
+            progress.percentChanged( 30 );
+            throw new RuntimeException( "You had it coming..." );
+        }
+
+        @Override
+        public long estimatedSize( DiagnosticsReporterProgress progress )
+        {
+            return 0;
         }
     }
 }

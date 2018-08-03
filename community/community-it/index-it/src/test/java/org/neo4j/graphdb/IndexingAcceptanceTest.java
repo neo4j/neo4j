@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
+import org.neo4j.test.mockito.mock.SpatialMocks;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -40,10 +41,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
-import static org.neo4j.graphdb.SpatialMocks.mockCartesian_3D;
-import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
-import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -52,6 +49,10 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndPr
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
 public class IndexingAcceptanceTest
 {

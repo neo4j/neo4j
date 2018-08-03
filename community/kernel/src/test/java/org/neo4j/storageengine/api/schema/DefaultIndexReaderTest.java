@@ -19,36 +19,33 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
-public class DefaultIndexReaderTest
-{
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+class DefaultIndexReaderTest
+{
     @Test
-    public void defaultQueryImplementationMustThrowForUnsupportedIndexOrder() throws Exception
+    void defaultQueryImplementationMustThrowForUnsupportedIndexOrder()
     {
         // Given
         IndexReader indexReader = stubIndexReader();
 
         // Then
-        expectedException.expect( UnsupportedOperationException.class );
         String expectedMessage = String.format( "This reader only have support for index order %s. Provided index order was %s.",
                 IndexOrder.NONE, IndexOrder.ASCENDING );
-        expectedException.expectMessage( Matchers.containsString( expectedMessage ) );
-        indexReader.query( new SimpleNodeValueClient(), IndexOrder.ASCENDING, IndexQuery.exists( 1 ) );
+        UnsupportedOperationException operationException = assertThrows( UnsupportedOperationException.class,
+                () -> indexReader.query( new SimpleNodeValueClient(), IndexOrder.ASCENDING, IndexQuery.exists( 1 ) ) );
+        assertEquals( expectedMessage, operationException.getMessage() );
     }
 
-    private IndexReader stubIndexReader()
+    private static IndexReader stubIndexReader()
     {
         return new AbstractIndexReader( null )
         {

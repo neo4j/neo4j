@@ -19,18 +19,18 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.function.Predicates;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestExceptions
+class TestExceptions
 {
     @Test
-    public void canPeelExceptions()
+    void canPeelExceptions()
     {
         // given
         Throwable expected;
@@ -50,7 +50,7 @@ public class TestExceptions
     }
 
     @Test
-    public void canPeelUsingConveniencePredicate()
+    void canPeelUsingConveniencePredicate()
     {
         // given
         Throwable expected;
@@ -70,7 +70,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldDetectContainsOneOfSome()
+    void shouldDetectContainsOneOfSome()
     {
         // GIVEN
         Throwable cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
@@ -82,7 +82,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldSetMessage()
+    void shouldSetMessage()
     {
         // GIVEN
         String initialMessage = "Initial message";

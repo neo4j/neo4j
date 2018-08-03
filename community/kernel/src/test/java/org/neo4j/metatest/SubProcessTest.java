@@ -19,17 +19,31 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Callable;
 
 import org.neo4j.test.subprocess.SubProcess;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SubProcessTest
+class SubProcessTest
 {
     private static final String MESSAGE = "message";
+
+    @Test
+    void canInvokeSubprocessMethod() throws Exception
+    {
+        Callable<String> subprocess = new TestingProcess().start( MESSAGE );
+        try
+        {
+            assertEquals( MESSAGE, subprocess.call() );
+        }
+        finally
+        {
+            SubProcess.stop( subprocess );
+        }
+    }
 
     @SuppressWarnings( "serial" )
     private static class TestingProcess extends SubProcess<Callable<String>, String> implements Callable<String>
@@ -53,20 +67,6 @@ public class SubProcessTest
                 Thread.sleep( 1 );
             }
             return message;
-        }
-    }
-
-    @Test
-    public void canInvokeSubprocessMethod() throws Exception
-    {
-        Callable<String> subprocess = new TestingProcess().start( MESSAGE );
-        try
-        {
-            assertEquals( MESSAGE, subprocess.call() );
-        }
-        finally
-        {
-            SubProcess.stop( subprocess );
         }
     }
 }

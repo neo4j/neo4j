@@ -19,7 +19,7 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,16 +39,15 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class ValueUtilsTest
+class ValueUtilsTest
 {
     @Test
-    public void shouldHandleCollection()
+    void shouldHandleCollection()
     {
         // Given
         Collection<Integer> collection = Arrays.asList( 1, 2, 3 );
 
         // When
-
         AnyValue of = ValueUtils.of( collection );
 
         // Then
@@ -61,7 +60,7 @@ public class ValueUtilsTest
     }
 
     @Test
-    public void shouldHandleIterator()
+    void shouldHandleIterator()
     {
         // Given
         Iterator<Integer> iterator = Arrays.asList( 1, 2, 3 ).iterator();
@@ -79,7 +78,7 @@ public class ValueUtilsTest
     }
 
     @Test
-    public void shouldHandleMaps()
+    void shouldHandleMaps()
     {
         // Given
         Map<String,Object> map = MapUtil.map( "a", Arrays.asList( "foo", 42 ) );
@@ -95,13 +94,12 @@ public class ValueUtilsTest
     }
 
     @Test
-    public void shouldHandleIterable()
+    void shouldHandleIterable()
     {
         // Given
         Iterable<Integer> collection = Arrays.asList( 1, 2, 3 );
 
         // When
-
         AnyValue of = ValueUtils.of( collection );
 
         // Then

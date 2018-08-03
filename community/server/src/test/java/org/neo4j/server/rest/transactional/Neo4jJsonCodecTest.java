@@ -36,11 +36,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.SpatialMocks;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.test.mockito.mock.SpatialMocks;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -52,10 +52,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
-import static org.neo4j.graphdb.SpatialMocks.mockCartesian_3D;
-import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
-import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
+import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
 public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
 {

@@ -19,25 +19,27 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class SocketAddressTest
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class SocketAddressTest
 {
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldNotAllowNullAsHostname()
+    @Test
+    void shouldNotAllowNullAsHostname()
     {
-        new SocketAddress( null, 1 );
+        assertThrows( IllegalArgumentException.class, () -> new SocketAddress( null, 1 ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldNotAllowStartBracket()
+    @Test
+    void shouldNotAllowStartBracket()
     {
-        new SocketAddress( "[", 2 );
+        assertThrows( IllegalArgumentException.class, () -> new SocketAddress( "[", 2 ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldNotAllowEndBracket()
+    @Test
+    void shouldNotAllowEndBracket()
     {
-        new SocketAddress( "]", 3 );
+        assertThrows( IllegalArgumentException.class, () -> new SocketAddress( "]", 3 ) );
     }
 }

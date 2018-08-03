@@ -19,8 +19,8 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -29,31 +29,32 @@ import java.util.Arrays;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.nio.ByteBuffer.allocate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class TestEphemeralFileChannel
+@ExtendWith( EphemeralFileSystemExtension.class )
+class TestEphemeralFileChannel
 {
 
-    @Rule
-    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fileSystem;
 
     @Test
-    public void smoke() throws Exception
+    void smoke() throws Exception
     {
-        EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        StoreChannel channel = fs.open( new File( "yo" ), OpenMode.READ_WRITE );
+        StoreChannel channel = fileSystem.open( new File( "yo" ), OpenMode.READ_WRITE );
 
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocate( 23 );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );
-        channel = fs.open( new File( "yo" ), OpenMode.READ_WRITE );
+        channel = fileSystem.open( new File( "yo" ), OpenMode.READ_WRITE );
         long longValue = 1234567890L;
 
         // [1].....[2]........[1234567890L]...
@@ -102,32 +103,29 @@ public class TestEphemeralFileChannel
         channel.read( buffer, 15 );
         buffer.flip();
         assertEquals( longValue, buffer.getLong() );
-        fs.close();
     }
 
     @Test
-    public void absoluteVersusRelative() throws Exception
+    void absoluteVersusRelative() throws Exception
     {
         // GIVEN
         File file = new File( "myfile" );
-        EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        StoreChannel channel = fs.open( file, OpenMode.READ_WRITE );
+        StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
         byte[] bytes = "test".getBytes();
         channel.write( ByteBuffer.wrap( bytes ) );
         channel.close();
 
         // WHEN
-        channel = fs.open( new File( file.getAbsolutePath() ), OpenMode.READ );
+        channel = fileSystem.open( new File( file.getAbsolutePath() ), OpenMode.READ );
         byte[] readBytes = new byte[bytes.length];
         channel.readAll( ByteBuffer.wrap( readBytes ) );
 
         // THEN
         assertTrue( Arrays.equals( bytes, readBytes ) );
-        fs.close();
     }
 
     @Test
-    public void listFiles() throws Exception
+    void listFiles() throws Exception
     {
         /* GIVEN
          *                        root
@@ -138,7 +136,6 @@ public class TestEphemeralFileChannel
          *       |
          *     file
          */
-        EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         File root = new File( "/root" ).getCanonicalFile();
         File dir1 = new File( root, "dir1" );
         File dir2 = new File( root, "dir2" );
@@ -148,20 +145,19 @@ public class TestEphemeralFileChannel
         File file3 = new File( dir2, "file" );
         File file4 = new File( subdir1, "file" );
 
-        fs.mkdirs( dir2 );
-        fs.mkdirs( dir1 );
-        fs.mkdirs( subdir1 );
+        fileSystem.mkdirs( dir2 );
+        fileSystem.mkdirs( dir1 );
+        fileSystem.mkdirs( subdir1 );
 
-        fs.create( file1 );
-        fs.create( file2 );
-        fs.create( file3 );
-        fs.create( file4 );
+        fileSystem.create( file1 );
+        fileSystem.create( file2 );
+        fileSystem.create( file3 );
+        fileSystem.create( file4 );
 
         // THEN
-        assertEquals( asSet( dir1, dir2 ), asSet( fs.listFiles( root ) ) );
-        assertEquals( asSet( subdir1, file1, file2 ), asSet( fs.listFiles( dir1 ) ) );
-        assertEquals( asSet( file3 ), asSet( fs.listFiles( dir2 ) ) );
-        assertEquals( asSet( file4 ), asSet( fs.listFiles( subdir1 ) ) );
-        fs.close();
+        assertEquals( asSet( dir1, dir2 ), asSet( fileSystem.listFiles( root ) ) );
+        assertEquals( asSet( subdir1, file1, file2 ), asSet( fileSystem.listFiles( dir1 ) ) );
+        assertEquals( asSet( file3 ), asSet( fileSystem.listFiles( dir2 ) ) );
+        assertEquals( asSet( file4 ), asSet( fileSystem.listFiles( subdir1 ) ) );
     }
 }

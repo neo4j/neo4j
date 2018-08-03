@@ -19,17 +19,17 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.Strings.prettyPrint;
 
-public class StringsTest
+class StringsTest
 {
     @Test
-    public void testPrettyPrint()
+    void testPrettyPrint()
     {
         assertEquals( "null", prettyPrint( null ) );
         assertEquals( "42", prettyPrint( 42 ) );
@@ -53,7 +53,7 @@ public class StringsTest
     }
 
     @Test
-    public void testEscape()
+    void testEscape()
     {
         assertEquals( "abc", Strings.escape( "abc" ) );
         assertEquals( "Abc", Strings.escape( "Abc" ) );
@@ -68,7 +68,7 @@ public class StringsTest
     }
 
     @Test
-    public void testJoiningLines()
+    void testJoiningLines()
     {
         assertEquals( "a" + System.lineSeparator() + "b" + System.lineSeparator() + "c" + System.lineSeparator(),
                 Strings.joinAsLines( "a", "b", "c" ) );

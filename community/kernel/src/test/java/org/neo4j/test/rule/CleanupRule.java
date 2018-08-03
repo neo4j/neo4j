@@ -87,19 +87,17 @@ public class CleanupRule extends ExternalResource
             }
             catch ( NoSuchMethodException e )
             {
-                // Try the next method
-                continue;
+                // ignore
             }
             catch ( SecurityException e )
             {
                 throw new RuntimeException( e );
             }
         }
-        throw new IllegalArgumentException( "No suitable close method found on " + toClose +
-                ", which is a " + cls );
+        throw new IllegalArgumentException( "No suitable close method found on " + toClose + ", which is a " + cls );
     }
 
-    private AutoCloseable closeable( final Method method, final Object target )
+    private static AutoCloseable closeable( final Method method, final Object target )
     {
         return () ->
         {

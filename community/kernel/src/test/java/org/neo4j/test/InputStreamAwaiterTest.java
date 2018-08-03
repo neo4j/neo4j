@@ -19,9 +19,8 @@
  */
 package org.neo4j.test;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,13 +28,13 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
 
-public class InputStreamAwaiterTest
+class InputStreamAwaiterTest
 {
     @Test
-    public void shouldWaitForALineWithoutBlocking() throws Exception
+    void shouldWaitForALineWithoutBlocking() throws Exception
     {
         // given
         FakeClock clock = getFakeClock();
@@ -48,7 +47,7 @@ public class InputStreamAwaiterTest
     }
 
     @Test
-    public void shouldTimeoutWhenDifferentContentProvided() throws Exception
+    void shouldTimeoutWhenDifferentContentProvided()
     {
         // given
         FakeClock clock = getFakeClock();
@@ -58,20 +57,11 @@ public class InputStreamAwaiterTest
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
         // when
-        try
-        {
-            awaiter.awaitLine( "important message", 5, TimeUnit.SECONDS );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( TimeoutException e )
-        {
-            // ok
-        }
+        assertThrows( TimeoutException.class, () -> awaiter.awaitLine( "important message", 5, TimeUnit.SECONDS ) );
     }
 
     @Test
-    public void shouldTimeoutWhenNoContentProvided() throws Exception
+    void shouldTimeoutWhenNoContentProvided() throws Exception
     {
         // given
         FakeClock clock = getFakeClock();
@@ -79,16 +69,7 @@ public class InputStreamAwaiterTest
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
         // when
-        try
-        {
-            awaiter.awaitLine( "important message", 5, TimeUnit.SECONDS );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( TimeoutException e )
-        {
-            // ok
-        }
+        assertThrows( TimeoutException.class, () -> awaiter.awaitLine( "important message", 5, TimeUnit.SECONDS ) );
     }
 
     private static String lines( String... lines )
@@ -101,16 +82,16 @@ public class InputStreamAwaiterTest
         return result.toString();
     }
 
-    private FakeClock getFakeClock()
+    private static FakeClock getFakeClock()
     {
         return Clocks.fakeClock();
     }
 
-    private class Ticker
+    private static class Ticker
     {
-        private FakeClock clock;
-        private long duration;
-        private TimeUnit timeUnit;
+        private final FakeClock clock;
+        private final long duration;
+        private final TimeUnit timeUnit;
 
         Ticker( FakeClock clock, long duration, TimeUnit timeUnit )
         {
