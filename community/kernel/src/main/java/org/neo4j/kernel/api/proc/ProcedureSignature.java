@@ -168,7 +168,7 @@ public class ProcedureSignature
         private String[] allowed = new String[0];
         private Optional<String> description = Optional.empty();
         private Optional<String> warning = Optional.empty();
-        private boolean eager = false;
+        private boolean eager;
 
         public Builder( String[] namespace, String name )
         {
