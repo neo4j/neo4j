@@ -75,7 +75,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(
       procedureName, paramSignature, resultSignature, Mode.READ, false, null, Array.empty,
-      null, null, false)
+      null, null, false, false)
 
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
 
