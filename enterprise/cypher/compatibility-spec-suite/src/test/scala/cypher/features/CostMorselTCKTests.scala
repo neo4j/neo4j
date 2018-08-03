@@ -22,27 +22,24 @@
  */
 package cypher.features
 
-import java.util
-
-import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
+import cypher.features.ScenarioTestHelper.printComputedBlacklist
 import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
 
 class CostMorselTCKTests extends BaseTCKTests {
 
   // If you want to only run a specific feature or scenario, go to the BaseTCKTests
 
-  @TestFactory
-  def runCostMorselSingleThreaded(): util.Collection[DynamicTest] = {
-    createTests(scenarios, CostMorselTestConfigSingleThreaded)
-  }
+  //  Morsel engine is not complete and executes tests very slowly
+  // eg. MorselExecutionContext.createClone is not implemented
+  //  @TestFactory
+  //  def runCostMorsel(): Collection[DynamicTest] = {
+  // TODO: once Morsel is complete, generate blacklist with: generateBlacklistCostMorsel further down
+  //    createTests(scenarios, CostMorselTestConfig)
+  //  }
 
-  @TestFactory
-  def runCostMorsel(): util.Collection[DynamicTest] = {
-    createTests(scenarios, CostMorselTestConfig)
-  }
-
+  //  Morsel engine is not complete and executes tests very slowly
+  //eg. MorselExecutionContext.createClone is not implemented
   @Ignore
   def generateBlacklistTCKTestCostMorsel(): Unit = {
     printComputedBlacklist(scenarios, CostMorselTestConfig)
