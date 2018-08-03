@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.runtime.slotted.{expressions => slottedExpressi
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.{Equals, SignedDecimalIntegerLiteral}
+import org.opencypher.v9_0.expressions.{Equals, PropertyKeyToken, SignedDecimalIntegerLiteral}
 import org.opencypher.v9_0.util.AssertionUtils._
 import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.attribution.Id
@@ -66,18 +66,16 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case AllNodesScan(column, _) =>
         AllNodesScanSlottedPipe(column, slots, argumentSize)(id)
 
-      case NodeIndexScan(column, label, propertyKeys, _) =>
-        // TODO getValueFromIndex
-        NodeIndexScanSlottedPipe(column, label, propertyKeys, getValueFromIndex = false, slots, argumentSize)(id)
+      case NodeIndexScan(column, label, propertyKey, _) =>
+        NodeIndexScanSlottedPipe(column, label, propertyKey, getMaybeIndexedValueOffset(column, slots, propertyKey), slots, argumentSize)(id)
 
       case NodeIndexSeek(column, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekSlottedPipe(column, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)),
-          valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
+        NodeIndexSeekSlottedPipe(column, label, getIndexedProperties(column, propertyKeys, slots), valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
 
       case NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekSlottedPipe(column, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)),
+        NodeIndexSeekSlottedPipe(column, label, getIndexedProperties(column, propertyKeys, slots),
           valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id = id)
 
       case NodeByLabelScan(column, label, _) =>
@@ -93,7 +91,28 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     pipe
   }
 
-  private def generateSlotAccessorFunctions(slots: SlotConfiguration) = {
+  private def getIndexedProperties(column: String, propertyKeys: Seq[PropertyKeyToken], slots: SlotConfiguration): Seq[SlottedIndexedProperty] = {
+    propertyKeys.map { pk =>
+      val maybeOffset =
+        getMaybeIndexedValueOffset(column, slots, pk)
+      SlottedIndexedProperty(pk.nameId.id, maybeOffset)
+    }
+  }
+
+  /**
+    * If the value of a property should be fetched from the index, this returns the slot offset to store the value in
+    */
+  private def getMaybeIndexedValueOffset(column: String, slots: SlotConfiguration, pk: PropertyKeyToken): Option[Int] = {
+    // TODO getValueFromIndex
+    if (false) {
+      val name = column + "." + pk.name
+      Some(slots.getReferenceOffsetFor(name))
+    } else {
+      None
+    }
+  }
+
+  private def generateSlotAccessorFunctions(slots: SlotConfiguration): Unit = {
     slots.foreachSlot {
       case (key, slot) =>
         val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)

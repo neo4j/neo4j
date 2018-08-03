@@ -712,7 +712,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
         "n",
         LabelToken("Awesome", LabelId(0)),
         PropertyKeyToken("prop", PropertyKeyId(0)),
-        false,
+        None,
         SlotConfiguration.empty.newLong("n", false, CTNode), Size.zero)())
   }
 

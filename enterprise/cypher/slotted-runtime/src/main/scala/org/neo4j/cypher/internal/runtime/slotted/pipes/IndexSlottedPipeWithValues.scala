@@ -33,8 +33,6 @@ trait IndexSlottedPipeWithValues extends Pipe {
 
   // Offset of the long slot of node variable
   val offset: Int
-  // all indices where the index can provide values
-  val propertyIndicesWithValues: Seq[Int]
   // the offsets of the ref slots of properties where we will get values
   val propertyOffsets: Seq[Int]
   // Number of longs and refs

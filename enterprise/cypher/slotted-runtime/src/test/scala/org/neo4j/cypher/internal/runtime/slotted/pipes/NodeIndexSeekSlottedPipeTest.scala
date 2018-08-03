@@ -25,7 +25,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexedProperty, LockingUniqueIndexSeek}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockingUniqueIndexSeek
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression}
 import org.neo4j.internal.kernel.api.IndexQuery
@@ -62,7 +62,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     // when
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference("n." + propertyKey(0).name, nullable = false, CTAny)
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = true))
+    val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name))))
     val pipe = NodeIndexSeekSlottedPipe("n", label, properties, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("bye")
@@ -92,7 +92,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference("n." + propertyKeys(0).name, nullable = false, CTAny)
       .newReference("n." + propertyKeys(1).name, nullable = false, CTAny)
-    val properties = propertyKeys.map(IndexedProperty(_, getValueFromIndex = true))
+    val properties = propertyKeys.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name))))
     val pipe = NodeIndexSeekSlottedPipe("n", label, properties,
       CompositeQueryExpression(Seq(
         ManyQueryExpression(ListLiteral(
@@ -125,7 +125,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     // when
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference("n." + propertyKey(0).name, nullable = false, CTAny)
-    val properties = propertyKey.map(IndexedProperty(_, getValueFromIndex = true))
+    val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name))))
     val pipe = NodeIndexSeekSlottedPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek,
       slots, slots.size())()
     val result = pipe.createResults(queryState)

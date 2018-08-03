@@ -32,7 +32,7 @@ import org.opencypher.v9_0.util.attribution.Id
 case class NodeIndexScanSlottedPipe(ident: String,
                                     label: LabelToken,
                                     propertyKey: PropertyKeyToken,
-                                    getValueFromIndex: Boolean,
+                                    maybeValueFromIndexOffset: Option[Int],
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
                                    (val id: Id = Id.INVALID_ID)
@@ -40,9 +40,8 @@ case class NodeIndexScanSlottedPipe(ident: String,
 
   override val offset: Int = slots.getLongOffsetFor(ident)
 
-  override val propertyIndicesWithValues: Seq[Int] = if (getValueFromIndex) Seq(0) else Seq.empty
-  val propertyNamesWithValues: Seq[String] = if (getValueFromIndex) Seq(ident + "." + propertyKey.name) else Seq.empty
-  override val propertyOffsets: Seq[Int] = propertyNamesWithValues.map(name => slots.getReferenceOffsetFor(name))
+  override val propertyOffsets: Seq[Int] = maybeValueFromIndexOffset.toSeq
+  private val propertyIndicesWithValues: Seq[Int] = propertyOffsets.map(_ => 0)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 

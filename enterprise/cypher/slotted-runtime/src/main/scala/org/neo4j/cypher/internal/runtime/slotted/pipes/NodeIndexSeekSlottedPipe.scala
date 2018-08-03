@@ -31,7 +31,7 @@ import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,
-                                    properties: Seq[IndexedProperty],
+                                    properties: Seq[SlottedIndexedProperty],
                                     valueExpr: QueryExpression[Expression],
                                     indexMode: IndexSeekMode = IndexSeek,
                                     slots: SlotConfiguration,
@@ -40,11 +40,10 @@ case class NodeIndexSeekSlottedPipe(ident: String,
 
   override val offset: Int = slots.getLongOffsetFor(ident)
 
-  override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id).toArray
+  override val propertyIds: Array[Int] = properties.map(_.propertyKeyId).toArray
 
-  override val propertyIndicesWithValues: Seq[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  val propertyNamesWithValues: Seq[String] = propertyIndicesWithValues.map(offset => ident + "." + properties(offset).propertyKeyToken.name)
-  override val propertyOffsets: Seq[Int] = propertyNamesWithValues.map(name => slots.getReferenceOffsetFor(name))
+  private val propertyIndicesWithValues: Seq[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  override val propertyOffsets: Seq[Int] = properties.map(_.slotOffset).collect{ case Some(o) => o }
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -64,4 +63,8 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     createResultsFromTupleIterator(state, slots, results)
   }
 
+}
+
+case class SlottedIndexedProperty(propertyKeyId: Int, slotOffset: Option[Int]) {
+  def getValueFromIndex: Boolean = slotOffset.isDefined
 }

@@ -52,7 +52,7 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
 
     // when
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
-    val pipe = NodeIndexScanSlottedPipe("n", label, propertyKey, getValueFromIndex = false, slots, slots.size())()
+    val pipe = NodeIndexScanSlottedPipe("n", label, propertyKey, None, slots, slots.size())()
     val result = pipe.createResults(queryState)
 
     // then
@@ -67,9 +67,10 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     )
 
     // when
+    val nDotProp = "n." + propertyKey.name
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
-      .newReference("n." + propertyKey.name, nullable = false, CTAny)
-    val pipe = NodeIndexScanSlottedPipe("n", label, propertyKey, getValueFromIndex = true, slots, slots.size())()
+      .newReference(nDotProp, nullable = false, CTAny)
+    val pipe = NodeIndexScanSlottedPipe("n", label, propertyKey, Some(slots.getReferenceOffsetFor(nDotProp)), slots, slots.size())()
     val result = pipe.createResults(queryState)
 
     // then
