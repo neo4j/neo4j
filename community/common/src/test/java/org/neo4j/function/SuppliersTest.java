@@ -26,6 +26,8 @@ import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -94,5 +96,20 @@ class SuppliersTest
         verify( mockFunction ).apply( o2 );
         verify( mockFunction ).apply( o3 );
         verifyNoMoreInteractions( mockFunction );
+    }
+
+    @Test
+    void correctlyReportNotInitialisedSuppliers()
+    {
+        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( Object::new );
+        assertFalse( lazySingleton.isInitialised() );
+    }
+
+    @Test
+    void correctlyReportInitialisedSuppliers()
+    {
+        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( Object::new );
+        lazySingleton.get();
+        assertTrue( lazySingleton.isInitialised() );
     }
 }

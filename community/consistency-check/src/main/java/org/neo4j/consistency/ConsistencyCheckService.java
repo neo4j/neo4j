@@ -214,17 +214,8 @@ public class ConsistencyCheckService
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
-        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () ->
-        {
-            try
-            {
-                return new PrintWriter( createOrOpenAsOutputStream( fileSystem, reportFile, true ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        } ) );
+        Suppliers.Lazy<PrintWriter> reportWriterSupplier = getReportWriterSupplier( fileSystem, reportFile );
+        Log reportLog = new ConsistencyReportLog( reportWriterSupplier );
 
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
@@ -269,6 +260,10 @@ public class ConsistencyCheckService
         finally
         {
             life.shutdown();
+            if ( reportWriterSupplier.isInitialised() )
+            {
+                reportWriterSupplier.get().close();
+            }
         }
 
         if ( !summary.isConsistent() )
@@ -279,12 +274,27 @@ public class ConsistencyCheckService
         return Result.success( reportFile );
     }
 
+    private static Suppliers.Lazy<PrintWriter> getReportWriterSupplier( FileSystemAbstraction fileSystem, File reportFile )
+    {
+        return Suppliers.lazySingleton( () ->
+        {
+            try
+            {
+                return new PrintWriter( createOrOpenAsOutputStream( fileSystem, reportFile, true ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
+    }
+
     private File chooseReportPath( File reportDir )
     {
         return new File( reportDir, defaultLogFileName( timestamp ) );
     }
 
-    private File defaultReportDir( Config tuningConfiguration, File storeDir )
+    private static File defaultReportDir( Config tuningConfiguration, File storeDir )
     {
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {

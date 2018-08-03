@@ -417,7 +417,7 @@ public class BackupIT
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupDatabasePath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
             assertEquals( DbRepresentation.of( db ), getDbRepresentation() );
-            FileUtils.deleteDirectory( new File( backupDatabasePath.getPath() ) );
+            FileUtils.deleteDirectory( backupDatabasePath );
             backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupDatabasePath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
             assertEquals( DbRepresentation.of( db ), getDbRepresentation() );
@@ -427,7 +427,7 @@ public class BackupIT
                 index.add( node, key, value );
                 tx.success();
             }
-            FileUtils.deleteDirectory( new File( backupDatabasePath.getPath() ) );
+            FileUtils.deleteDirectory( backupDatabasePath );
             backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupDatabasePath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
             assertEquals( DbRepresentation.of( db ), getDbRepresentation() );

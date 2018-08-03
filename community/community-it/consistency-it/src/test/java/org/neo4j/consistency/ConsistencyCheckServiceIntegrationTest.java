@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -113,6 +114,17 @@ public class ConsistencyCheckServiceIntegrationTest
         assertThat( "Expected to see report about not deleted relationship record present as part of a chain",
                 Files.readAllLines( reportFile.toPath() ).toString(),
                 containsString( "The relationship record is not in use, but referenced from relationships chain.") );
+    }
+
+    @Test
+    public void ableToDeleteDatabaseDirectoryAfterConsistencyCheckRun() throws ConsistencyCheckIncompleteException, IOException
+    {
+        prepareDbWithDeletedRelationshipPartOfTheChain();
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        Result consistencyCheck = runFullConsistencyCheck( service, Config.defaults( settings() ) );
+        assertFalse( consistencyCheck.isSuccessful() );
+        // using commons file utils since they do not forgive not closed file descriptors on windows
+        org.apache.commons.io.FileUtils.deleteDirectory( fixture.databaseDirectory() );
     }
 
     @Test
@@ -380,7 +392,7 @@ public class ConsistencyCheckServiceIntegrationTest
         return runFullConsistencyCheck( service, configuration, fixture.databaseDirectory() );
     }
 
-    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, File storeDir )
+    private static Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, File storeDir )
             throws ConsistencyCheckIncompleteException
     {
         return service.runFullConsistencyCheck( storeDir,
