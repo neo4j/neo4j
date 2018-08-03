@@ -38,7 +38,7 @@ class SloppyEventWriter extends EventWriter {
     (0 until MAGIC_NUMBER).map(_ => new ArrayBuffer[DataPoint]).toArray
 
   override def report(dataPoint: DataPoint): Unit = {
-    dataByThread(dataPoint.executionThreadId.toInt) += dataPoint
+    dataByThread(dataPoint.threadId.toInt) += dataPoint
   }
 
   override def flush(): Unit = {
@@ -57,7 +57,7 @@ class SloppyEventWriter extends EventWriter {
     for (dp <- dataByThread.flatten) {
       sb ++= "  %d    %5d    %10d  %10d  %10d    %s\n"
         .format(dp.queryId,
-                dp.executionThreadId,
+                dp.threadId, 
                 toDuration(dp.scheduledTime),
                 toDuration(dp.startTime),
                 toDuration(dp.stopTime),
@@ -80,32 +80,24 @@ class SpatulaTracer(eventWriter: EventWriter) extends SchedulerTracer {
   case class QueryTracer(id: Int) extends QueryExecutionTracer {
     override def scheduleWorkUnit(task: Task): ScheduledWorkUnitEvent = {
       val scheduledTime = currentTime()
-      val schedulingThread = Thread.currentThread().getId
-      ScheduledWorkUnit(id, scheduledTime, schedulingThread, task)
+      ScheduledWorkUnit(id, scheduledTime)
     }
 
     override def stopQuery(): Unit =
       eventWriter.flush()
   }
 
-  case class ScheduledWorkUnit(id: Int, scheduledTime: Long, schedulingThreadId: Long, task: Task) extends ScheduledWorkUnitEvent {
-    override def start(): WorkUnitEvent = {
+  case class ScheduledWorkUnit(id: Int, scheduledTime: Long) extends ScheduledWorkUnitEvent {
+    override def startWorkUnit(task: Task): WorkUnitEvent = {
       val startTime = currentTime()
-      WorkUnit(id, schedulingThreadId, scheduledTime, Thread.currentThread().getId, startTime, task)
+      WorkUnit(id, Thread.currentThread().getId, scheduledTime, startTime, task)
     }
   }
 
-  case class WorkUnit(queryId: Int,
-                      schedulingThreadId: Long,
-                      scheduledTime: Long,
-                      executionThreadId: Long,
-                      startTime: Long,
-                      task: Task) extends WorkUnitEvent {
-
+  case class WorkUnit(queryId: Int, threadId: Long, scheduledTime: Long, startTime: Long, task: Task) extends WorkUnitEvent {
     override def stop(): Unit = {
       val stopTime = currentTime()
-      eventWriter.report(
-        DataPoint(queryId, schedulingThreadId, scheduledTime, executionThreadId, startTime, stopTime, task))
+      eventWriter.report(DataPoint(queryId, threadId, scheduledTime, startTime, stopTime, task))
     }
   }
 

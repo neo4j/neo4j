@@ -46,7 +46,7 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
     val callableTask =
       new Callable[Try[TaskResult]] {
         override def call(): Try[TaskResult] = {
-          val event = scheduledWorkUnitEvent.start()
+          val event = scheduledWorkUnitEvent.startWorkUnit(task)
           val result = Try(TaskResult(task, task.executeWorkUnit()))
           event.stop()
           result

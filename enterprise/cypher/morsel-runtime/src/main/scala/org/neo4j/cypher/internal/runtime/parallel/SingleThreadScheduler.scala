@@ -47,7 +47,7 @@ class SingleThreadScheduler() extends Scheduler {
           val nextTask = nextTaskAndEvent._1
           val scheduledWorkUnitEvent = nextTaskAndEvent._2
 
-          val workUnitEvent = scheduledWorkUnitEvent.start()
+          val workUnitEvent = scheduledWorkUnitEvent.startWorkUnit(nextTask)
           val downstreamTasks =
             try {
               nextTask.executeWorkUnit()
