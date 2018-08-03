@@ -54,7 +54,7 @@ class CsvStdOutDataWriter extends DataPointWriter {
       TimeUnit.NANOSECONDS.toMicros(dataPoint.startTime).toString,
       TimeUnit.NANOSECONDS.toMicros(dataPoint.stopTime).toString,
       dataPoint.task.toString
-    ).mkString(SEPARATOR) + "\n"
+    ).mkString(SEPARATOR)
 }
 
 object CsvStdOutDataWriter {
@@ -67,5 +67,5 @@ object CsvStdOutDataWriter {
                              "executionThreadId",
                              "startTime(us)",
                              "stopTime(us)",
-                             "pipeline").mkString(SEPARATOR) + "\n"
+                             "pipeline").mkString(SEPARATOR)
 }
