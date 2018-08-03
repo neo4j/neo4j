@@ -32,8 +32,7 @@ import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.runtime.parallel.{SimpleScheduler, SingleThreadScheduler}
-import org.neo4j.cypher.internal.runtime.vectorized.Dispatcher
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, ParallelDispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -86,17 +85,15 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       val settings = graph.getDependencyResolver.resolveDependency(classOf[Config])
       val morselSize: Int = settings.get(GraphDatabaseSettings.cypher_morsel_size)
       val workers: Int = settings.get(GraphDatabaseSettings.cypher_worker_count)
-      val scheduler =
-        if (workers == 1) new SingleThreadScheduler()
+      val dispatcher =
+        if (workers == 1) new SingleThreadedExecutor(morselSize)
         else {
           val numberOfThreads = if (workers == 0) java.lang.Runtime.getRuntime.availableProcessors() else workers
           val jobScheduler = graph.getDependencyResolver.resolveDependency(classOf[JobScheduler])
           val executorService = jobScheduler.workStealingExecutor(JobScheduler.Groups.cypherWorker, numberOfThreads)
 
-          new SimpleScheduler(executorService)
+          new ParallelDispatcher(morselSize, numberOfThreads, executorService)
         }
-
-      val dispatcher = new Dispatcher(morselSize, scheduler)
 
       CypherCurrentCompiler(
         planner,

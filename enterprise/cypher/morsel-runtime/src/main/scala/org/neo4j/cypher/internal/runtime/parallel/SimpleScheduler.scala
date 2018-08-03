@@ -36,8 +36,6 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
 
   override def execute(task: Task): QueryExecution = new SimpleQueryExecution(schedule(task), this)
 
-  def isMultiThreaded: Boolean = true
-
   def schedule(task: Task): Future[Try[TaskResult]] = {
     val callableTask =
       new Callable[Try[TaskResult]] {
