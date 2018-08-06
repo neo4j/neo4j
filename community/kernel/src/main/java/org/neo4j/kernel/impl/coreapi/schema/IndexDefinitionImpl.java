@@ -145,6 +145,11 @@ public class IndexDefinitionImpl implements IndexDefinition
     public boolean isNodeIndex()
     {
         assertInUnterminatedTransaction();
+        return internalIsNodeIndex();
+    }
+
+    private boolean internalIsNodeIndex()
+    {
         return labels != null;
     }
 
@@ -159,7 +164,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     public boolean isMultiTokenIndex()
     {
         assertInUnterminatedTransaction();
-        return labels != null ? labels.length > 1 : relTypes.length > 1;
+        return internalIsNodeIndex() ? labels.length > 1 : relTypes.length > 1;
     }
 
     @Override
@@ -174,7 +179,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     {
         HashFunction hf = HashFunction.incrementalXXH64();
         long hash = hf.initialise( 31 );
-        if ( labels != null )
+        if ( internalIsNodeIndex() )
         {
             hash = hf.update( hash, 42 ); // labels-array specific discriminator.
             hash = hf.update( hash, labels.length );
@@ -216,7 +221,7 @@ public class IndexDefinitionImpl implements IndexDefinition
             return false;
         }
         IndexDefinitionImpl other = (IndexDefinitionImpl) obj;
-        if ( labels != null )
+        if ( internalIsNodeIndex() )
         {
             if ( other.labels == null )
             {
@@ -260,7 +265,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     {
         String entityTokenType;
         String entityTokens;
-        if ( isNodeIndex() )
+        if ( internalIsNodeIndex() )
         {
             entityTokenType = labels.length > 1 ? "labels" : "label";
             entityTokens = Arrays.stream( labels ).map( Label::name ).collect( joining( "," ) );
