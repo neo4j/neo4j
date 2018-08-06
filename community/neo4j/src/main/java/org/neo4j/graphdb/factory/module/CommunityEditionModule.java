@@ -85,7 +85,6 @@ public class CommunityEditionModule extends EditionModule
         LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
-        File storeDir = platformModule.storeDir;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
@@ -113,7 +112,8 @@ public class CommunityEditionModule extends EditionModule
                 new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
 
-        dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, storeDir, config, life, dataSourceManager ) );
+        File kernelContextDirectory = platformModule.directoryStructure.rootDirectory();
+        dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, kernelContextDirectory, config, life, dataSourceManager ) );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 

@@ -347,7 +347,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             protected StoreLocker createStoreLocker()
             {
-                return new StoreLocker( fileSystem, storeDir );
+                return new StoreLocker( fileSystem, directoryStructure.rootDirectory() );
             }
         }
     }

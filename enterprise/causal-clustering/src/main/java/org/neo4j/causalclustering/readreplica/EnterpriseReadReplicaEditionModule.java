@@ -163,8 +163,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         Config config = platformModule.config;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
-        File storeDir = platformModule.storeDir;
-        final File databaseDirectory = new File( storeDir, config.get( GraphDatabaseSettings.active_database ) );
+        final File databaseDirectory = platformModule.directoryStructure.databaseDirectory( config.get( GraphDatabaseSettings.active_database ) );
 
         LifeSupport life = platformModule.life;
 
@@ -192,7 +191,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
 
-        life.add( dependencies.satisfyDependency( new KernelData( fileSystem, pageCache, storeDir, config, platformModule.dataSourceManager ) ) );
+        File contextDirectory = platformModule.directoryStructure.rootDirectory();
+        life.add( dependencies.satisfyDependency( new KernelData( fileSystem, pageCache, contextDirectory, config, platformModule.dataSourceManager ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 

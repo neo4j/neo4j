@@ -205,7 +205,7 @@ public class GraphDatabaseFacadeFactory
         catch ( final Throwable throwable )
         {
             error = new RuntimeException( "Error starting " + getClass().getName() + ", " +
-                    platform.storeDir, throwable );
+                    platform.directoryStructure.rootDirectory(), throwable );
         }
         finally
         {

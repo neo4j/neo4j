@@ -45,7 +45,7 @@ public class DataSourceModule
     {
 
         tokenHolders = editionModule.tokenHoldersSupplier.get();
-        File databaseDirectory = new File( platformModule.storeDir, databaseName );
+        File databaseDirectory = platformModule.directoryStructure.databaseDirectory( databaseName );
 
         platformModule.diagnosticsManager.prependProvider( platformModule.config );
 

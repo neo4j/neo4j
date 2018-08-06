@@ -213,7 +213,6 @@ public class HighlyAvailableEditionModule extends EditionModule
         final LifeSupport clusteringLife = new LifeSupport();
 
         final FileSystemAbstraction fs = platformModule.fileSystem;
-        final File storeDir = platformModule.storeDir;
         final Config config = platformModule.config;
         final Dependencies dependencies = platformModule.dependencies;
         final LogService logging = platformModule.logging;
@@ -229,7 +228,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
-        File databaseDirectory = new File( platformModule.storeDir, DatabaseManager.DEFAULT_DATABASE_NAME );
+        File databaseDirectory = platformModule.directoryStructure.databaseDirectory( DatabaseManager.DEFAULT_DATABASE_NAME );
         life.add( new BranchedDataMigrator( databaseDirectory ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( Master.class );
@@ -518,7 +517,7 @@ public class HighlyAvailableEditionModule extends EditionModule
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.dataSourceManager, members, fs, platformModule.pageCache,
-                        storeDir, lastUpdateTime, lastTxIdGetter, life ) );
+                        platformModule.directoryStructure.rootDirectory(), lastUpdateTime, lastTxIdGetter, life ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
