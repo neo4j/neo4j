@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
@@ -42,6 +41,7 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -265,15 +265,18 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         @Override
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
         {
-            config.augment( GraphDatabaseSettings.database_path, new File( storeDir, DatabaseManager.DEFAULT_DATABASE_NAME ).getAbsolutePath() );
+            File databasesRoot = storeDir.getParentFile();
+            config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
+            config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+            config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
             if ( impermanent )
             {
                 config.augment( ephemeral, TRUE );
-                return new ImpermanentTestDatabasePlatformModule( storeDir, config, dependencies, this.databaseInfo );
+                return new ImpermanentTestDatabasePlatformModule( databasesRoot, config, dependencies, this.databaseInfo );
             }
             else
             {
-                return new TestDatabasePlatformModule( storeDir, config, dependencies, this.databaseInfo );
+                return new TestDatabasePlatformModule( databasesRoot, config, dependencies, this.databaseInfo );
             }
         }
 

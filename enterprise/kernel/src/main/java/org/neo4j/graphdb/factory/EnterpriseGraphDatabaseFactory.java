@@ -26,10 +26,9 @@ import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
-
-import static org.neo4j.kernel.configuration.Settings.FALSE;
 
 /**
  * Factory for Neo4j database instances with Enterprise Edition features.
@@ -47,7 +46,10 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {
-                config.augment( GraphDatabaseSettings.ephemeral, FALSE );
+                File databasesRoot = storeDir.getParentFile();
+                config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
+                config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+                config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
                 return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
             }
         };

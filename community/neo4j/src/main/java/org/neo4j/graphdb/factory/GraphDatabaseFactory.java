@@ -28,6 +28,7 @@ import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -109,7 +110,6 @@ public class GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
-                config.augment( GraphDatabaseSettings.ephemeral, "false" );
                 return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir, config, state.databaseDependencies() );
             }
         };
@@ -139,8 +139,12 @@ public class GraphDatabaseFactory
     protected GraphDatabaseService newDatabase( File storeDir, Config config,
                                                 GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
+        File databasesRoot = storeDir.getParentFile();
+        config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
+        config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+        config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
-                .newFacade( storeDir, config, dependencies );
+                .newFacade( databasesRoot, config, dependencies );
     }
 
     public GraphDatabaseFactory addURLAccessRule( String protocol, URLAccessRule rule )
