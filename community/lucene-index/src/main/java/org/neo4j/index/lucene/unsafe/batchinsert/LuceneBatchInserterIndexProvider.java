@@ -31,6 +31,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
  * The {@link org.neo4j.unsafe.batchinsert.BatchInserter} version of the Lucene-based indexes. Indexes
  * created and populated using {@link org.neo4j.unsafe.batchinsert.BatchInserterIndex}s from this provider
  * are compatible with the normal {@link Index}es.
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvider

@@ -33,7 +33,7 @@ import org.neo4j.graphdb.PropertyContainer;
  * and the user should have no access other than mutating operations on the
  * database primitives.
  *
- * @deprecated this feature will be removed in 4.0, please consider using schema indexes instead.
+ * @deprecated this feature will be removed in the next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface AutoIndexer<T extends PropertyContainer>

@@ -34,7 +34,7 @@ import org.neo4j.graphdb.index.IndexHits;
  * time, any <code>long</code> that identifies the indexed {@link Node} or
  * {@link Relationship} and defines its global order is fine.
  *
- * @deprecated This will be removed in a 4.0. Use schema indexes on date/time valued properties instead.
+ * @deprecated This will be removed in the next major release. Please consider using schema indexes on date/time valued properties instead.
  */
 @Deprecated
 public interface TimelineIndex<T extends PropertyContainer>

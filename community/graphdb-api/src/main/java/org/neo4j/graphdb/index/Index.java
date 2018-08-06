@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Relationship;
  * @param <T> The type of entities this index manages. It may be either
  * {@link Node}s or {@link Relationship}s.
  *
- * @deprecated This API will be removed in 4.0.
+ * @deprecated This API will be removed in the next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface Index<T extends PropertyContainer> extends ReadableIndex<T>

@@ -37,6 +37,7 @@ import org.neo4j.index.impl.lucene.explicit.LuceneUtil;
  * It allows a query to have sorting, default operators, and allows the engine
  * to turn off searching of modifications made inside a transaction,
  * to gain performance.
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public class QueryContext

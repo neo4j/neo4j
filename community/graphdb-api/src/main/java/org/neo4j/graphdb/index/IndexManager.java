@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Relationship;
  * and {@link Relationship}s. An {@link IndexManager} is paired with a
  * {@link GraphDatabaseService} via {@link GraphDatabaseService#index()} so that
  * indexes can be accessed directly from the graph database.
- * @deprecated The {@link IndexManager} based indexes will be removed in 4.0, please consider using schema indexes instead.
+ * @deprecated The {@link IndexManager} based indexes will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface IndexManager

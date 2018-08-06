@@ -27,6 +27,7 @@ import org.neo4j.graphdb.PropertyContainer;
  * down version of {@link Index} that disallows mutating operations.
  *
  * @param <T> The Primitive this Index holds
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface ReadableIndex<T extends PropertyContainer>

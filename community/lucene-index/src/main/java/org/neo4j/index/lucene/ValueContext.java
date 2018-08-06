@@ -22,6 +22,7 @@ package org.neo4j.index.lucene;
 /**
  * ValueContext allows you to give not just a value, but to give the value
  * some context to live in.
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public class ValueContext

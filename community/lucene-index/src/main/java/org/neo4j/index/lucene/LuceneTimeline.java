@@ -35,6 +35,9 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 
+/**
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
+ */
 @Deprecated
 public class LuceneTimeline<T extends PropertyContainer> implements TimelineIndex<T>
 {

@@ -22,7 +22,7 @@ package org.neo4j.graphdb.index;
 import org.neo4j.graphdb.Relationship;
 
 /**
- * @deprecated this feature will be removed in a future release, please consider using schema indexes instead
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface RelationshipAutoIndexer extends AutoIndexer<Relationship>

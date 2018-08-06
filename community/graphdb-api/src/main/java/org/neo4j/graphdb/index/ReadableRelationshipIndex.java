@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Relationship;
  * relationships.
  *
  * @author Mattias Persson
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface ReadableRelationshipIndex extends ReadableIndex<Relationship>

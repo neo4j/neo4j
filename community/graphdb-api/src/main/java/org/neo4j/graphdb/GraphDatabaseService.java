@@ -514,7 +514,7 @@ public interface GraphDatabaseService
      * and is the entry point for managing indexes coupled with this database.
      *
      * @return the {@link IndexManager} for this database.
-     * @deprecated The {@link IndexManager} based indexes will be removed in a future release, please consider using schema indexes instead.
+     * @deprecated The {@link IndexManager} based indexes will be removed in the next major release. Please consider using schema indexes instead.
      */
     @Deprecated
     IndexManager index();

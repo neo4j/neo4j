@@ -38,7 +38,7 @@ import org.neo4j.graphdb.index.IndexHits;
  * calling such a method. This enables implementations more flexibility in
  * making for performance optimizations.
  *
- * @deprecated This will be removed in 4.0.
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface BatchInserterIndex

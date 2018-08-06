@@ -26,6 +26,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 /**
  * Provider of index store for batch inserter index providers
  * @see BatchInserterIndexProvider
+ * @deprecated This API will be removed in next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface IndexConfigStoreProvider

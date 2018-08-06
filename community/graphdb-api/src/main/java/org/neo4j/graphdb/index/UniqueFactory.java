@@ -34,6 +34,8 @@ import org.neo4j.graphdb.Transaction;
  * Uses the {@link Index#putIfAbsent(PropertyContainer, String, Object) putIfAbsent() method} of the referenced index.
  *
  * @param <T> the type of entity created by this {@link UniqueFactory}.
+ *
+ * @deprecated This API will be removed in next major release. Please consider using schema constraints and the Cypher {@code MERGE} clause instead.
  */
 @Deprecated
 public abstract class UniqueFactory<T extends PropertyContainer>

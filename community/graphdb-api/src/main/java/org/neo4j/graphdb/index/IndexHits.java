@@ -61,6 +61,7 @@ import org.neo4j.helpers.collection.Iterators;
  * </pre>
  *
  * @param <T> the type of items in the Iterator.
+ * @deprecated This API will be removed in the next major release. Please consider using schema indexes instead.
  */
 @Deprecated
 public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
