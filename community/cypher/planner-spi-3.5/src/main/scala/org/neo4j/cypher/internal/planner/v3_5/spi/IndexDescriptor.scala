@@ -60,4 +60,23 @@ case class IndexDescriptor(label: LabelId,
   val isComposite: Boolean = properties.length > 1
 
   def property: PropertyKeyId = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties.head
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[IndexDescriptor]
+
+  // The lambda functions `orderCapability` and `valueCapability`cannot be compared for
+  // equality in a sensible way. By exluding them from equals and hashCode, we make
+  // the assumption that they should be always the same for (label, properties) combination
+  override def equals(other: Any): Boolean = other match {
+    case that: IndexDescriptor =>
+      (that canEqual this) &&
+        label == that.label &&
+        properties == that.properties &&
+        limitations == that.limitations
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(label, properties, limitations)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
 }

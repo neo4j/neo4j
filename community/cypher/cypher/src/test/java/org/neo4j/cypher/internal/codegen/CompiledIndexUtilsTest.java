@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -51,7 +52,7 @@ public class CompiledIndexUtilsTest
         CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
 
         // THEN
-        verify( read, times( 1 ) ).nodeIndexSeek( any(), any(), any(), any(), any() );
+        verify( read, times( 1 ) ).nodeIndexSeek( any(), any(), any(), anyBoolean(), any() );
     }
 
     @Test
@@ -67,7 +68,7 @@ public class CompiledIndexUtilsTest
                 index, null );
 
         // THEN
-        verify( read, never() ).nodeIndexSeek( any(), any(), any(), any() );
+        verify( read, never() ).nodeIndexSeek( any(), any(), any(), anyBoolean() );
         assertFalse( cursor.next() );
     }
 }
