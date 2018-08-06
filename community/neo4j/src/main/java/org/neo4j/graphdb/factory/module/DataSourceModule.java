@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module;
 
-import java.io.File;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,13 +42,11 @@ public class DataSourceModule
     public DataSourceModule( String databaseName, final PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-
         tokenHolders = editionModule.tokenHoldersSupplier.get();
-        File databaseDirectory = platformModule.directoryStructure.databaseDirectory( databaseName );
 
         platformModule.diagnosticsManager.prependProvider( platformModule.config );
 
-        neoStoreDataSource = new NeoStoreDataSource( new ModularDatabaseCreationContext( databaseName, databaseDirectory, platformModule, editionModule,
+        neoStoreDataSource = new NeoStoreDataSource( new ModularDatabaseCreationContext( databaseName, platformModule, editionModule,
                 procedures, graphDatabaseFacade, tokenHolders ) );
 
         this.storeId = neoStoreDataSource::getStoreId;

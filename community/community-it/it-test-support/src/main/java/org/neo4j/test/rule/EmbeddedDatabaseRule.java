@@ -22,10 +22,9 @@ package org.neo4j.test.rule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import java.io.File;
-
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 
@@ -56,15 +55,9 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     }
 
     @Override
-    public File databaseDirectory()
+    public DatabaseLayout databaseLayout()
     {
-        return testDirectory.databaseDir();
-    }
-
-    @Override
-    public String getDatabaseDirAbsolutePath()
-    {
-        return databaseDirectory().getAbsolutePath();
+        return testDirectory.databaseLayout();
     }
 
     @Override
@@ -76,7 +69,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
+        return factory.newEmbeddedDatabaseBuilder( testDirectory.databaseDir() );
     }
 
     @Override

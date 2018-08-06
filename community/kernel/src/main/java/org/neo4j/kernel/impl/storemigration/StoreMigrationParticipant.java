@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
@@ -40,36 +40,36 @@ public interface StoreMigrationParticipant
      * Migrated data should go into {@code targetStoreDir}, where source and target dirs are
      * highest level database store dirs.
      *
-     * @param storeDir data to migrate.
-     * @param migrationDir place to migrate to.
+     * @param directoryStructure data to migrate.
+     * @param migrationStructure place to migrate to.
      * @param progress migration progress monitor
      * @param versionToMigrateFrom the version to migrate from
      * @param versionToMigrateTo the version to migrate to
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
-    void migrate( File storeDir, File migrationDir, ProgressReporter progress,
+    void migrate( DatabaseLayout directoryStructure, DatabaseLayout migrationStructure, ProgressReporter progress,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
-     * @param migrationDir directory where the
-     * {@link #migrate(File, File, ProgressReporter, String, String) migration} put its files.
-     * @param storeDir directory the store directory of the to move the migrated files to.
+     * @param migrationStructure directory where the
+     * {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, String, String) migration} put its files.
+     * @param directoryStructure directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from
      * @param versionToMigrateTo the version we want to migrate to
      * @throws IOException if unable to move one or more files.
      */
-    void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom, String versionToMigrateTo )
+    void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout directoryStructure, String versionToMigrateFrom, String versionToMigrateTo )
             throws IOException;
 
     /**
-     * Delete any file from {@code migrationDir} produced during migration.
-     * @param migrationDir the directory where migrated files end up.
+     * Delete any file from {@code migrationStructure} produced during migration.
+     * @param migrationStructure the directory where migrated files end up.
      * @throws IOException if unable to clean up one or more files.
      */
-    void cleanup( File migrationDir ) throws IOException;
+    void cleanup( DatabaseLayout migrationStructure ) throws IOException;
 
     /**
      * @return descriptive name of this migration participant.

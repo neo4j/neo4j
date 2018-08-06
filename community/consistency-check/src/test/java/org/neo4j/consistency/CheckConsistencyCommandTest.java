@@ -37,8 +37,10 @@ import org.neo4j.commandline.admin.Usage;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.extension.Inject;
@@ -68,15 +70,16 @@ class CheckConsistencyCommandTest
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
+        File databasesFolder = getDatabasesFolder( homeDir );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
+        DatabaseLayout databaseLayout = new DatabaseLayout( databasesFolder, "mydb" );
 
         when( consistencyCheckService
-                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
@@ -84,7 +87,7 @@ class CheckConsistencyCommandTest
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) );
     }
@@ -95,15 +98,16 @@ class CheckConsistencyCommandTest
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
+        File databasesFolder = getDatabasesFolder( homeDir );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
+        DatabaseLayout databaseLayout = new DatabaseLayout( databasesFolder, "mydb" );
 
         when( consistencyCheckService
-                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
@@ -111,7 +115,7 @@ class CheckConsistencyCommandTest
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} );
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) );
     }
@@ -122,14 +126,15 @@ class CheckConsistencyCommandTest
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
+        File databasesFolder = getDatabasesFolder( homeDir );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
-        File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
+        DatabaseLayout databaseLayout = new DatabaseLayout( databasesFolder, "mydb" );
 
         when( consistencyCheckService
-                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ) ) );
@@ -277,7 +282,7 @@ class CheckConsistencyCommandTest
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        Path backupDir = testDir.directory( "backup" ).toPath();
+        DatabaseLayout backupLayout = testDir.databaseLayout( "backup" );
         Path homeDir = testDir.directory( "home" ).toPath();
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
@@ -285,16 +290,16 @@ class CheckConsistencyCommandTest
                         consistencyCheckService );
 
         when( consistencyCheckService
-                .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ),
+                .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
                         any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--backup=" + backupDir} );
+        checkConsistencyCommand.execute( new String[]{"--backup=" + backupLayout.databaseDirectory()} );
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ),
+                .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
                         any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) );
@@ -359,5 +364,10 @@ class CheckConsistencyCommandTest
                             "                                           [default:false]%n" ),
                     baos.toString() );
         }
+    }
+
+    private static File getDatabasesFolder( Path homeDir )
+    {
+        return Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath().toString() ).get( GraphDatabaseSettings.databases_root_path );
     }
 }

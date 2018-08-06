@@ -50,8 +50,8 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.EnterpriseCluster;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.EnterpriseCluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
@@ -59,6 +59,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -276,8 +277,7 @@ public class OnlineBackupCommandCcIT
                 "--name=" + backupName ) );
 
         // then there has been a rotation
-        BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
-        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupStoreDir.toPath().resolve( backupName ).toFile() );
+        LogFiles logFiles = BackupTransactionLogFilesHelper.readLogFiles( new DatabaseLayout( new File( backupStoreDir, backupName ) ) );
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         assertEquals( 2, highestTxIdInLogFiles );
 
@@ -509,8 +509,7 @@ public class OnlineBackupCommandCcIT
     {
         Config config = Config.defaults();
         config.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        config.augment( GraphDatabaseSettings.active_database, name );
-        return DbRepresentation.of( storeDir, config );
+        return DbRepresentation.of( new File( storeDir, name ), config );
     }
 
     private int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception
@@ -528,7 +527,6 @@ public class OnlineBackupCommandCcIT
      */
     private static int runBackupToolFromSameJvmToGetExitCode( File backupDir, String backupName, String... args ) throws Exception
     {
-        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( backupDir, backupName )
-               ? 0 : 1;
+        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( backupDir, backupName ) ? 0 : 1;
     }
 }

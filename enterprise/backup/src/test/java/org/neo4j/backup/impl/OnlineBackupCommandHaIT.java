@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.LongStream;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -55,6 +54,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -261,7 +261,7 @@ public class OnlineBackupCommandHaIT
         // then
         String output = suppressOutput.getOutputVoice().toString();
         String legacyImplementationDetail = "temp-copy";
-        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail, DatabaseManager.DEFAULT_DATABASE_NAME ).toString();
+        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail ).toString();
         assertTrue( output.contains( "Start receiving store files" ) );
         assertTrue( output.contains( "Finish receiving store files" ) );
         String tested = Paths.get( location, "neostore.nodestore.db.labels" ).toString();
@@ -361,7 +361,7 @@ public class OnlineBackupCommandHaIT
 
         // then there has been a rotation
         BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
-        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+        LogFiles logFiles = BackupTransactionLogFilesHelper.readLogFiles( new StoreLayout( backupDir ).databaseDirectory( backupName ) );
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         assertEquals( 2, highestTxIdInLogFiles );
 
@@ -437,7 +437,7 @@ public class OnlineBackupCommandHaIT
 
     private GraphDatabaseService createDb2( Integer backupPort )
     {
-        File storeDir = testDirectory.directory("graph-db-2");
+        File storeDir = testDirectory.databaseDir("graph-db-2");
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
         builder.setConfig( OnlineBackupSettings.online_backup_server, "0.0.0.0:" + backupPort );
@@ -486,7 +486,6 @@ public class OnlineBackupCommandHaIT
     private DbRepresentation getBackupDbRepresentation( String name )
     {
         Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        config.augment( GraphDatabaseSettings.active_database, name );
-        return DbRepresentation.of( backupDir, config );
+        return DbRepresentation.of( new File( backupDir, name ), config );
     }
 }

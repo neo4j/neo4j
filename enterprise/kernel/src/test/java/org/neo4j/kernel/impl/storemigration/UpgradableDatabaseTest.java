@@ -39,6 +39,7 @@ import java.util.Collections;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -83,7 +84,7 @@ public class UpgradableDatabaseTest
         public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
                                               .around( fileSystemRule ).around( pageCacheRule );
 
-        private File workingDirectory;
+        private DatabaseLayout databaseLayout;
         private FileSystemAbstraction fileSystem;
         private LogTailScanner tailScanner;
 
@@ -102,18 +103,18 @@ public class UpgradableDatabaseTest
         public void setup() throws IOException
         {
             fileSystem = fileSystemRule.get();
-            workingDirectory = testDirectory.databaseDir();
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( version, workingDirectory );
+            databaseLayout = testDirectory.databaseLayout();
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( version, databaseLayout.databaseDirectory() );
             VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fileSystem ).build();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem ).build();
             tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         }
 
-        boolean storeFilesUpgradable( File storeDirectory, UpgradableDatabase upgradableDatabase )
+        boolean storeFilesUpgradable( DatabaseLayout databaseLayout, UpgradableDatabase upgradableDatabase )
         {
             try
             {
-                upgradableDatabase.checkUpgradable( storeDirectory );
+                upgradableDatabase.checkUpgradable( databaseLayout );
                 return true;
             }
             catch ( StoreUpgrader.UnableToUpgradeException e )
@@ -129,7 +130,7 @@ public class UpgradableDatabaseTest
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
-            final boolean result = storeFilesUpgradable( workingDirectory, upgradableDatabase );
+            final boolean result = storeFilesUpgradable( databaseLayout, upgradableDatabase );
 
             // then
             assertTrue( result );
@@ -141,7 +142,7 @@ public class UpgradableDatabaseTest
             // given
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
             // when
-            boolean currentVersion = upgradableDatabase.hasCurrentVersion( workingDirectory );
+            boolean currentVersion = upgradableDatabase.hasCurrentVersion( databaseLayout );
 
             // then
             assertFalse( currentVersion );
@@ -154,11 +155,11 @@ public class UpgradableDatabaseTest
             Assume.assumeTrue( StandardV2_3.STORE_VERSION.equals( version ) );
 
             // given
-            removeCheckPointFromTxLog( fileSystem, workingDirectory );
+            removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
-            final boolean result = storeFilesUpgradable( workingDirectory, upgradableDatabase );
+            final boolean result = storeFilesUpgradable( databaseLayout, upgradableDatabase );
 
             // then
             assertFalse( result );
@@ -184,7 +185,7 @@ public class UpgradableDatabaseTest
         public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
                 .around( fileSystemRule ).around( pageCacheRule );
 
-        private File workingDirectory;
+        private DatabaseLayout databaseLayout;
         private FileSystemAbstraction fileSystem;
         private LogTailScanner tailScanner;
 
@@ -201,15 +202,15 @@ public class UpgradableDatabaseTest
         public void setup() throws IOException
         {
             fileSystem = fileSystemRule.get();
-            workingDirectory = testDirectory.databaseDir();
+            databaseLayout = testDirectory.databaseLayout();
             // doesn't matter which version we pick we are changing it to the wrong one...
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_3.STORE_VERSION, workingDirectory );
-            changeVersionNumber( fileSystem, new File( workingDirectory, neostoreFilename ), version );
-            File metadataStore = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_3.STORE_VERSION, databaseLayout.databaseDirectory() );
+            changeVersionNumber( fileSystem, databaseLayout.file( neostoreFilename ), version );
+            File metadataStore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
             PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );
             VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fileSystem ).build();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem ).build();
             tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         }
 
@@ -220,7 +221,7 @@ public class UpgradableDatabaseTest
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
-            boolean currentVersion = upgradableDatabase.hasCurrentVersion( workingDirectory );
+            boolean currentVersion = upgradableDatabase.hasCurrentVersion( databaseLayout );
 
             // then
             assertFalse( currentVersion );
@@ -234,7 +235,7 @@ public class UpgradableDatabaseTest
             try
             {
                 // when
-                upgradableDatabase.checkUpgradable( workingDirectory );
+                upgradableDatabase.checkUpgradable( databaseLayout );
                 fail( "should not have been able to upgrade" );
             }
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )

@@ -75,7 +75,7 @@ public class HumanUnderstandableExecutionMonitorIT
                 1, 1, 0, 0 );
 
         // when
-        new ParallelBatchImporter( storage.directory().absolutePath(), storage.fileSystem(), storage.pageCache(), DEFAULT,
+        new ParallelBatchImporter( storage.directory().databaseLayout(), storage.fileSystem(), storage.pageCache(), DEFAULT,
                 NullLogService.getInstance(), monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR ).doImport( input );
 
         // then

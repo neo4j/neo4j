@@ -32,10 +32,11 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -111,7 +112,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
         try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath,
+            LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, new DatabaseLayout( fromPath ),
                     Config.defaults(), new Monitors() ) );
             life.start();
             long lastAppliedTx = fromTxExclusive;

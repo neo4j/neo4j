@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -37,6 +36,7 @@ import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -48,9 +48,10 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestReadOnlyNeo4j
 {
-    private static final File PATH = new File( "read-only" );
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
 
     @Test
     public void testSimple()
@@ -58,7 +59,7 @@ public class TestReadOnlyNeo4j
         DbRepresentation someData = createSomeData();
         GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabaseBuilder( PATH )
+                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
                 .newGraphDatabase();
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
@@ -81,7 +82,7 @@ public class TestReadOnlyNeo4j
         RelationshipType type = withName( "KNOWS" );
         GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabase( PATH );
+                .newImpermanentDatabase( testDirectory.databaseDir() );
         try ( Transaction tx = db.beginTx() )
         {
             Node prevNode = db.createNode();
@@ -102,8 +103,7 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase(
-                PATH );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( testDirectory.databaseDir() );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();

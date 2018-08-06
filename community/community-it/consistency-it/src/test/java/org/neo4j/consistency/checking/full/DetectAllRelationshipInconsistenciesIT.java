@@ -150,7 +150,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private StoreFactory newStoreFactory( PageCache pageCache )
     {
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, directory.databaseDir(), getTuningConfiguration(),
+        return new StoreFactory( directory.databaseLayout(), getTuningConfiguration(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance(),
                 EmptyVersionContextSupplier.EMPTY );
     }
@@ -164,7 +164,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        GraphDatabaseService database = factory.newEmbeddedDatabaseBuilder( directory.absolutePath() )
+        GraphDatabaseService database = factory.newEmbeddedDatabaseBuilder( directory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();

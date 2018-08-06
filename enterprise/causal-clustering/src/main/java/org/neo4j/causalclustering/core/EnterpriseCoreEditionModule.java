@@ -102,6 +102,7 @@ import org.neo4j.helpers.SocketAddress;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
@@ -205,13 +206,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
         config = platformModule.config;
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        final File databaseDirectory = platformModule.directoryStructure.databaseDirectory( config.get( GraphDatabaseSettings.active_database ) );
+        final DatabaseLayout databaseLayout = platformModule.directoryStructure.databaseDirectory( config.get( GraphDatabaseSettings.active_database ) );
         final LifeSupport life = platformModule.life;
 
         CoreMonitor.register( logging.getInternalLogProvider(), logging.getUserLogProvider(), platformModule.monitors );
 
         final File dataDir = config.get( GraphDatabaseSettings.data_directory );
-        final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, databaseDirectory, false );
+        final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, databaseLayout.databaseDirectory(), false );
         try
         {
             clusterStateDirectory.initialize( fileSystem );
@@ -231,8 +232,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         watcherServiceFactory = directory -> createFileSystemWatcherService( fileSystem, directory, logging,
                 platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherServiceFactory );
-        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseDirectory );
-        LocalDatabase localDatabase = new LocalDatabase( databaseDirectory,
+        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseLayout );
+        LocalDatabase localDatabase = new LocalDatabase( databaseLayout,
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 logFiles,
                 platformModule.dataSourceManager,
@@ -243,7 +244,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
         ClusteringModule clusteringModule = getClusteringModule( platformModule, discoveryServiceFactory,
-                clusterStateDirectory, identityModule, dependencies, databaseDirectory );
+                clusterStateDirectory, identityModule, dependencies, databaseLayout );
 
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
         dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
@@ -355,11 +356,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return new UpstreamDatabaseStrategySelector( defaultStrategy, loader, logProvider );
     }
 
-    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, File databaseDirectory )
+    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
     {
         try
         {
-            return LogFilesBuilder.activeFilesBuilder( databaseDirectory, fileSystem, platformModule.pageCache ).withConfig( config ).build();
+            return LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, platformModule.pageCache ).withConfig( config ).build();
         }
         catch ( IOException e )
         {
@@ -368,10 +369,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     protected ClusteringModule getClusteringModule( PlatformModule platformModule, DiscoveryServiceFactory discoveryServiceFactory,
-            ClusterStateDirectory clusterStateDirectory, IdentityModule identityModule, Dependencies dependencies, File databaseDirectory )
+            ClusterStateDirectory clusterStateDirectory, IdentityModule identityModule, Dependencies dependencies, DatabaseLayout databaseLayout )
     {
         return new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule, clusterStateDirectory.get(), databaseDirectory );
+                platformModule, clusterStateDirectory.get(), databaseLayout );
     }
 
     protected DuplexPipelineWrapperFactory pipelineWrapperFactory()

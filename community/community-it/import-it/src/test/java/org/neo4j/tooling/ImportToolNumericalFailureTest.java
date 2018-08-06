@@ -132,6 +132,6 @@ public class ImportToolNumericalFailureTest
 
     private File file( String localname )
     {
-        return new File( dbRule.databaseDirectory(), localname );
+        return dbRule.databaseLayout().file( localname );
     }
 }

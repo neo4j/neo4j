@@ -100,7 +100,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
   private def createDbWithFailedIndex: GraphDatabaseService = {
     val testDirectory = TestDirectory.testDirectory()
     testDirectory.prepareDirectory(getClass, "createDbWithFailedIndex")
-    val storeDir = testDirectory.storeDir()
+    val storeDir = testDirectory.databaseDir()
     graph.shutdown()
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
     eengine = createEngine(graph)

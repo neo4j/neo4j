@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -76,9 +77,9 @@ public class NeoStores implements AutoCloseable
                                                                  " %s as one of the stores types that should be open" +
                                                                  " to be able to use it.";
 
-    public static boolean isStorePresent( PageCache pageCache, File storeDir )
+    public static boolean isStorePresent( PageCache pageCache, DatabaseLayout databaseLayout )
     {
-        File metaDataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File metaDataStore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
         try ( PagedFile ignore = pageCache.map( metaDataStore, MetaDataStore.getPageSize( pageCache ) ) )
         {
             return true;

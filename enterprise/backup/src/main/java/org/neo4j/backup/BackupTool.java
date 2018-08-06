@@ -44,6 +44,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -208,7 +209,8 @@ public class BackupTool
             String host = hostnamePort.getHost();
             int port = hostnamePort.getPort();
 
-            BackupOutcome outcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, to, consistencyCheck, config, timeout, forensics );
+            BackupOutcome outcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, new DatabaseLayout( to.toFile() ),
+                    consistencyCheck, config, timeout, forensics );
             systemOut.println( "Done" );
             return outcome;
         }

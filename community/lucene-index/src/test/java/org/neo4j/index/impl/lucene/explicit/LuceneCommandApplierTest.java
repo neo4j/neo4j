@@ -24,10 +24,9 @@ import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -37,6 +36,8 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
@@ -44,26 +45,28 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.EXACT_CONFIG;
 
-@ExtendWith( EphemeralFileSystemExtension.class )
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneCommandApplierTest
 {
     @Inject
     private EphemeralFileSystemAbstraction fs;
-    private final File dir = new File( "dir" );
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
     void shouldHandleMultipleIdSpaces() throws Exception
     {
         // GIVEN
-        fs.mkdirs( dir );
         String indexName = "name";
         String key = "key";
-        IndexConfigStore configStore = new IndexConfigStore( dir, fs );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        IndexConfigStore configStore = new IndexConfigStore( databaseLayout, fs );
         configStore.set( Node.class, indexName, EXACT_CONFIG );
         try ( Lifespan lifespan = new Lifespan() )
         {
             Config dataSourceConfig = Config.defaults( LuceneDataSource.Configuration.ephemeral, Settings.TRUE );
-            LuceneDataSource dataSource = lifespan.add( spy( new LuceneDataSource( dir, dataSourceConfig, configStore, fs, OperationalMode.single ) ) );
+            LuceneDataSource originalDataSource = new LuceneDataSource( databaseLayout, dataSourceConfig, configStore, fs, OperationalMode.single );
+            LuceneDataSource dataSource = lifespan.add( spy( originalDataSource ) );
 
             try ( LuceneCommandApplier applier = new LuceneCommandApplier( dataSource, false ) )
             {

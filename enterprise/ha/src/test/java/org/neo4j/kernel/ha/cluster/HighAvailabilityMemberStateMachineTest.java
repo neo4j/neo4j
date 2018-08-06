@@ -50,6 +50,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -556,7 +557,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
-        SwitchToSlaveCopyThenBranch switchToSlave = new SwitchToSlaveCopyThenBranch( new File( "" ), NullLogService.getInstance(),
+        SwitchToSlaveCopyThenBranch switchToSlave = new SwitchToSlaveCopyThenBranch( new DatabaseLayout( new File( "" ) ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 config, mock( HaIdGeneratorFactory.class ),
                 handler,

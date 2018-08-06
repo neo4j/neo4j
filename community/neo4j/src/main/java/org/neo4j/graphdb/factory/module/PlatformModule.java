@@ -31,6 +31,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.store.layout.StoreDirectoryStructure;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -100,7 +100,7 @@ public class PlatformModule
 
     public final LifeSupport life;
 
-    public final StoreDirectoryStructure directoryStructure;
+    public final StoreLayout directoryStructure;
 
     public final DatabaseInfo databaseInfo;
 
@@ -157,7 +157,7 @@ public class PlatformModule
         config.augmentDefaults( GraphDatabaseSettings.neo4j_home, providedStoreDir.getAbsolutePath() );
         this.config = dependencies.satisfyDependency( config );
 
-        this.directoryStructure = new StoreDirectoryStructure( providedStoreDir.getAbsoluteFile() );
+        this.directoryStructure = new StoreLayout( providedStoreDir.getAbsoluteFile() );
 
         fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
         life.add( new FileSystemLifecycleAdapter( fileSystem ) );
@@ -218,8 +218,8 @@ public class PlatformModule
         kernelExtensionFactories = externalDependencies.kernelExtensions();
         engineProviders = externalDependencies.executionEngines();
         globalKernelExtensions = dependencies.satisfyDependency(
-                new GlobalKernelExtensions( new SimpleKernelContext( directoryStructure.rootDirectory(), databaseInfo, dependencies ), kernelExtensionFactories, dependencies,
-                        UnsatisfiedDependencyStrategies.fail() ) );
+                new GlobalKernelExtensions( new SimpleKernelContext( directoryStructure.rootDirectory(), databaseInfo, dependencies ), kernelExtensionFactories,
+                        dependencies, UnsatisfiedDependencyStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 

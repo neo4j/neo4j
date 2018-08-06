@@ -24,8 +24,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
@@ -63,12 +64,30 @@ public class NodeCommandTest
 {
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
-    private NodeStore nodeStore;
-    InMemoryClosableChannel channel = new InMemoryClosableChannel();
-    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0();
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+    private NodeStore nodeStore;
+    private final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0();
     private NeoStores neoStores;
+
+    @Before
+    public void before()
+    {
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
+        neoStores = storeFactory.openAllNeoStores( true );
+        nodeStore = neoStores.getNodeStore();
+    }
+
+    @After
+    public void after()
+    {
+        neoStores.close();
+    }
 
     @Test
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
@@ -238,24 +257,5 @@ public class NodeCommandTest
             labels.add( safeCastLongToInt( label ) );
         }
         return labels;
-    }
-
-    @Before
-    public void before()
-    {
-        File dir = new File( "dir" );
-        fs.get().mkdirs( dir );
-        @SuppressWarnings( "deprecation" )
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, dir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY );
-        neoStores = storeFactory.openAllNeoStores( true );
-        nodeStore = neoStores.getNodeStore();
-    }
-
-    @After
-    public void after()
-    {
-        neoStores.close();
     }
 }

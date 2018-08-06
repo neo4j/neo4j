@@ -32,8 +32,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -92,9 +90,7 @@ public class BackupReadReplicaIT
         DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
 
         // Verify that backed up database can be started and compare representation
-        Config config = getConfig();
-        config.augment( GraphDatabaseSettings.active_database, "readreplica" );
-        DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, config );
+        DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupPath, "readreplica" ), getConfig() );
         assertEquals( beforeChange, backupRepresentation );
         assertNotEquals( backupRepresentation, afterChange );
     }

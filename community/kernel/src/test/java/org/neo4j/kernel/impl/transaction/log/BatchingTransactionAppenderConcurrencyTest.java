@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
@@ -64,6 +63,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
@@ -99,9 +99,10 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     private final LifeRule life = new LifeRule();
     private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( life );
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDirectory ).around( life );
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
@@ -217,12 +218,10 @@ public class BatchingTransactionAppenderConcurrencyTest
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
                 failMethod( BatchingTransactionAppender.class, "force" ) );
         EphemeralFileSystemAbstraction efs = new EphemeralFileSystemAbstraction();
-        File directory = new File( "dir" ).getCanonicalFile();
-        efs.mkdirs( directory );
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
         life.add( new FileSystemLifecycleAdapter( fs ) );
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
-        LogFiles logFiles = LogFilesBuilder.builder( directory, fs )
+        LogFiles logFiles = LogFilesBuilder.builder( testDirectory.databaseLayout(), fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .build();

@@ -92,6 +92,7 @@ import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
@@ -163,7 +164,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         Config config = platformModule.config;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
-        final File databaseDirectory = platformModule.directoryStructure.databaseDirectory( config.get( GraphDatabaseSettings.active_database ) );
+        final DatabaseLayout databaseLayout = platformModule.directoryStructure.databaseDirectory( config.get( GraphDatabaseSettings.active_database ) );
 
         LifeSupport life = platformModule.life;
 
@@ -266,10 +267,10 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 () -> platformModule.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( DatabaseHealth.class );
 
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
-        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseDirectory, config );
+        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseLayout, config );
 
         LocalDatabase localDatabase =
-                new LocalDatabase( databaseDirectory, storeFiles, logFiles, platformModule.dataSourceManager,
+                new LocalDatabase( databaseLayout, storeFiles, logFiles, platformModule.dataSourceManager,
                         databaseHealthSupplier, platformModule.availabilityGuard, logProvider );
 
         Supplier<TransactionCommitProcess> writableCommitProcess = () -> new TransactionRepresentationCommitProcess(
@@ -425,11 +426,12 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
-    private static LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, File storeDir, Config config )
+    private static LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
+            Config config )
     {
         try
         {
-            return LogFilesBuilder.activeFilesBuilder( storeDir, fileSystem, platformModule.pageCache ).withConfig( config ).build();
+            return LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, platformModule.pageCache ).withConfig( config ).build();
         }
         catch ( IOException e )
         {

@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -106,7 +107,7 @@ public class CheckPointingLogRotationStressTesting
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             Config dbConfig = Config.defaults();
-            new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), fileSystem, null, DEFAULT,
+            new ParallelBatchImporter( new DatabaseLayout( ensureExistsAndEmpty( storeDir ) ), fileSystem, null, DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.defaultVisible( jobScheduler ), EMPTY, dbConfig,
                     RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ), NO_MONITOR )
                     .doImport( new NodeCountInputs( nodeCount ) );

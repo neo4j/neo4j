@@ -25,7 +25,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -68,9 +68,11 @@ public class NodeLabelsFieldTest
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
-    public RandomRule random = new RandomRule();
+    public final RandomRule random = new RandomRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private NeoStores neoStores;
     private NodeStore nodeStore;
@@ -78,10 +80,8 @@ public class NodeLabelsFieldTest
     @Before
     public void startUp()
     {
-        File storeDir = new File( "dir" );
-        fs.get().mkdirs( storeDir );
         Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

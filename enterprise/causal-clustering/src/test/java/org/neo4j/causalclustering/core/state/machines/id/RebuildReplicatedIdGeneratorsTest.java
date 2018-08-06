@@ -69,7 +69,7 @@ public class RebuildReplicatedIdGeneratorsTest
         File stickyGenerator = new File( testDirectory.databaseDir(), "stickyGenerator" );
         File nodeStoreIdGenerator = new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME + ".id" );
 
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, testDirectory.databaseDir(), Config.defaults(),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
                 getIdGenerationFactory( fileSystem ), pageCacheRule.getPageCache( fileSystem ), fileSystem,
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
@@ -86,7 +86,6 @@ public class RebuildReplicatedIdGeneratorsTest
                 }
                 nodeStore.updateRecord( nodeRecord );
             }
-            neoStores.close();
         }
 
         FileUtils.copyFile( stickyGenerator, nodeStoreIdGenerator );

@@ -74,7 +74,7 @@ public class PhysicalLogicalTransactionStoreTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
-    public TestDirectory dir = TestDirectory.testDirectory();
+    public final TestDirectory dir = TestDirectory.testDirectory();
     private File databaseDirectory;
     private Monitors monitors = new Monitors();
 
@@ -96,7 +96,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
                                                  .withTransactionIdStore( transactionIdStore )
                                                  .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.add( logFiles );
@@ -129,7 +129,7 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 1000 );
 
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.add( logFiles );
@@ -161,7 +161,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
 
@@ -256,7 +256,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.start();

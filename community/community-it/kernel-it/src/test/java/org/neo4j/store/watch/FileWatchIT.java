@@ -48,6 +48,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -64,7 +65,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
-// TODO watchers needs to be moved into datasource lifecycle
 @Ignore
 public class FileWatchIT
 {
@@ -139,7 +139,7 @@ public class FileWatchIT
     @Test( timeout = TEST_TIMEOUT )
     public void notifyAboutExplicitIndexFolderRemoval() throws InterruptedException, IOException
     {
-        String monitoredDirectory = getExplicitIndexDirectory( storeDir );
+        String monitoredDirectory = getExplicitIndexDirectory( testDirectory.databaseLayout() );
 
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkPointer = getCheckpointer( database );
@@ -328,10 +328,11 @@ public class FileWatchIT
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "testForceCheckPoint" ) );
     }
 
-    private static String getExplicitIndexDirectory( File storeDir )
+    //TODO:
+    private static String getExplicitIndexDirectory( DatabaseLayout databaseLayout )
     {
-        File schemaIndexDirectory = LuceneDataSource.getLuceneIndexStoreDirectory( storeDir );
-        Path relativeIndexPath = storeDir.toPath().relativize( schemaIndexDirectory.toPath() );
+        File schemaIndexDirectory = LuceneDataSource.getLuceneIndexStoreDirectory( databaseLayout );
+        Path relativeIndexPath = databaseLayout.databaseDirectory().toPath().relativize( schemaIndexDirectory.toPath() );
         return relativeIndexPath.getName( 0 ).toString();
     }
 

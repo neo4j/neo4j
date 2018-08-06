@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
@@ -75,9 +74,9 @@ public class DatabaseMigrator
     /**
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
-     * @param databaseDirectory database to migrate
+     * @param directoryStructure database to migrate
      */
-    public void migrate( File databaseDirectory )
+    public void migrate( DatabaseLayout directoryStructure )
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner );
@@ -96,6 +95,6 @@ public class DatabaseMigrator
         storeUpgrader.addParticipant( storeMigrator );
         storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );
         storeUpgrader.addParticipant( countsMigrator );
-        storeUpgrader.migrateIfNeeded( databaseDirectory );
+        storeUpgrader.migrateIfNeeded( directoryStructure );
     }
 }

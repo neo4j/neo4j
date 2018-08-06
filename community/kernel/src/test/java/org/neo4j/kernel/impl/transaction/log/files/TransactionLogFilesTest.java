@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -28,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.test.rule.TestDirectory;
@@ -44,17 +44,10 @@ import static org.junit.Assert.fail;
 public class TransactionLogFilesTest
 {
     @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
     public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private File storeDirectory;
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final String filename = "filename";
-
-    @Before
-    public void setUp()
-    {
-        storeDirectory = testDirectory.directory();
-    }
 
     @Test
     public void shouldGetTheFileNameForAGivenVersion() throws IOException
@@ -67,7 +60,8 @@ public class TransactionLogFilesTest
         final File versionFileName = files.getLogFileForVersion( version );
 
         // then
-        final File expected = new File( storeDirectory, getVersionedLogFileName( version ) );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        final File expected = databaseLayout.file( getVersionedLogFileName( version ) );
         assertEquals( expected, versionFileName );
     }
 
@@ -76,11 +70,12 @@ public class TransactionLogFilesTest
     {
         // given
         LogFiles files = createLogFiles();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) ).close();
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "2" ) ) ).close();
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) ).close();
-        fileSystemRule.create( new File( storeDirectory, filename ) ).close();
+        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
+        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "some", "2" ) ) ).close();
+        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
+        fileSystemRule.create( databaseLayout.file( filename ) ).close();
 
         // when
         final List<File> seenFiles = new ArrayList<>();
@@ -94,8 +89,8 @@ public class TransactionLogFilesTest
 
         // then
         assertThat( seenFiles, containsInAnyOrder(
-                new File( storeDirectory, getVersionedLogFileName( filename, "1" ) ),
-                new File( storeDirectory, getVersionedLogFileName( filename, "3" ) ) )  );
+                databaseLayout.file( getVersionedLogFileName( filename, "1" ) ),
+                databaseLayout.file( getVersionedLogFileName( filename, "3" ) ) )  );
         assertThat( seenVersions, containsInAnyOrder( 1L, 3L ) );
         files.shutdown();
     }
@@ -106,10 +101,11 @@ public class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) ).close();
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) ).close();
-        fileSystemRule.create( new File( storeDirectory, filename ) ).close();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
+        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
+        fileSystemRule.create( databaseLayout.file( filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -124,9 +120,10 @@ public class TransactionLogFilesTest
     {
         // given
         LogFiles files = createLogFiles();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystemRule.create( new File( storeDirectory, filename ) ).close();
+        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystemRule.create( databaseLayout.file( filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -192,7 +189,7 @@ public class TransactionLogFilesTest
     private LogFiles createLogFiles() throws IOException
     {
         return LogFilesBuilder
-                .builder( storeDirectory, fileSystemRule )
+                .builder( testDirectory.databaseLayout(), fileSystemRule )
                 .withLogFileName( filename )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )

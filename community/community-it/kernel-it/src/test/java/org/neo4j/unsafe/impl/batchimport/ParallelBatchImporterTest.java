@@ -52,6 +52,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -167,8 +168,8 @@ public class ParallelBatchImporterTest
     {
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
-        File storeDir = directory.storeDir( "dir" + random.nextAlphaNumericString( 8, 8 ) );
-        final BatchImporter inserter = new ParallelBatchImporter( directory.databaseDir( storeDir ),
+        DatabaseLayout databaseLayout = directory.databaseLayout( "dir" + random.nextAlphaNumericString( 8, 8 ) );
+        final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
                 processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR );
 
@@ -196,7 +197,7 @@ public class ParallelBatchImporterTest
 
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( storeDir )
+                    .newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
                     .setConfig( "dbms.backup.enabled", "false" )
                     .newGraphDatabase();
             try ( Transaction tx = db.beginTx() )
@@ -209,14 +210,14 @@ public class ParallelBatchImporterTest
             {
                 db.shutdown();
             }
-            assertConsistent( storeDir );
+            assertConsistent( databaseLayout );
             successful = true;
         }
         finally
         {
             if ( !successful )
             {
-                File failureFile = new File( storeDir, "input" );
+                File failureFile = new File( databaseLayout.databaseDirectory(), "input" );
                 try ( PrintStream out = new PrintStream( failureFile ) )
                 {
                     out.println( "Seed used in this failing run: " + random.seed() );
@@ -231,15 +232,14 @@ public class ParallelBatchImporterTest
         }
     }
 
-    protected void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException
+    protected void assertConsistent( DatabaseLayout databaseLayout ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
-        File databaseDirectory = directory.databaseDir( storeDir );
-        Result result = consistencyChecker.runFullConsistencyCheck( databaseDirectory,
+        Result result = consistencyChecker.runFullConsistencyCheck( databaseLayout,
                 Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false );
-        assertTrue( "Database contains inconsistencies, there should be a report in " + databaseDirectory,
+        assertTrue( "Database contains inconsistencies, there should be a report in " + databaseLayout.databaseDirectory(),
                 result.isSuccessful() );
     }
 

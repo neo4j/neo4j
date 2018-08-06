@@ -61,8 +61,9 @@ public class SystemTimeZoneLoggingIT
     private void checkStartLogLine( int hoursShift, String timeZoneSuffix ) throws IOException
     {
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
-        File storeDir = testDirectory.directory( String.valueOf( hoursShift ) );
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+        File storeDir = testDirectory.storeDir( String.valueOf( hoursShift ) );
+        File databaseDirectory = testDirectory.databaseLayout( storeDir ).databaseDirectory();
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
                 .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() ).newGraphDatabase();
         database.shutdown();
         Path databasePath = storeDir.toPath();
@@ -71,7 +72,7 @@ public class SystemTimeZoneLoggingIT
         assertTrue( debugLogLine, debugLogLine.contains( timeZoneSuffix ) );
     }
 
-    private String getLogLine( Path databasePath, Path logFilePath ) throws IOException
+    private static String getLogLine( Path databasePath, Path logFilePath ) throws IOException
     {
         return Files.readAllLines( databasePath.resolve( logFilePath ) ).get( 0 );
     }

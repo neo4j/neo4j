@@ -33,7 +33,6 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
-import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -43,6 +42,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
@@ -182,8 +182,9 @@ public class CheckConsistencyCommand implements AdminCommand
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            File storeDir = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
-            checkDbState( storeDir, config );
+            File databaseDirectory = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
+            DatabaseLayout databaseLayout = new DatabaseLayout( databaseDirectory );
+            checkDbState( databaseLayout, config );
             ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             // Only output progress indicator if a console receives the output
             ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
@@ -193,7 +194,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
 
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
-                    .runFullConsistencyCheck( storeDir, config, progressMonitorFactory,
+                    .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory,
                             FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out ), fileSystem,
                             verbose, reportDir.toFile(),
                             new ConsistencyFlags( checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners ) );
@@ -228,7 +229,7 @@ public class CheckConsistencyCommand implements AdminCommand
         return new HashMap<>();
     }
 
-    private void checkDbState( File storeDir, Config additionalConfiguration ) throws CommandFailed
+    private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = ConfigurableStandalonePageCacheFactory
@@ -236,7 +237,7 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             RecoveryRequiredChecker requiredChecker =
                     new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
-            if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
+            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
             {
                 throw new CommandFailed(
                         Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",

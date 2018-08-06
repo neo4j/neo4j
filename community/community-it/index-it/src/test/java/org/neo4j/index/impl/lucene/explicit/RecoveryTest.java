@@ -22,7 +22,6 @@ package org.neo4j.index.impl.lucene.explicit;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -146,7 +146,7 @@ public class RecoveryTest
     public void recoveryForRelationshipCommandsOnly() throws Throwable
     {
         // shutdown db here
-        File databaseDir = db.databaseDirectory();
+        DatabaseLayout databaseLayout = db.databaseLayout();
         shutdownDB();
 
         try ( Transaction tx = db.beginTx() )
@@ -163,8 +163,8 @@ public class RecoveryTest
         db.shutdown();
 
         Config config = Config.defaults();
-        IndexConfigStore indexStore = new IndexConfigStore( databaseDir, fileSystemRule.get() );
-        LuceneDataSource ds = new LuceneDataSource( databaseDir, config, indexStore, fileSystemRule.get(), OperationalMode.single );
+        IndexConfigStore indexStore = new IndexConfigStore( databaseLayout, fileSystemRule.get() );
+        LuceneDataSource ds = new LuceneDataSource( databaseLayout, config, indexStore, fileSystemRule.get(), OperationalMode.single );
         ds.start();
         ds.stop();
     }

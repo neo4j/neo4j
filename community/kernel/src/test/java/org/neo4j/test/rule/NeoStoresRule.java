@@ -19,11 +19,9 @@
  */
 package org.neo4j.test.rule;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -77,9 +75,8 @@ public class NeoStoresRule extends ExternalResource
         assert neoStores == null : "Already opened";
         TestDirectory testDirectory = TestDirectory.testDirectory( fs );
         testDirectory.prepareDirectory( testClass, null );
-        File databaseDir = testDirectory.databaseDir();
         Config configuration = configOf( config );
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, configuration, idGeneratorFactory.apply( fs ),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), configuration, idGeneratorFactory.apply( fs ),
                 pageCache, fs, format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )

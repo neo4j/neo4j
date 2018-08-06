@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DbRepresentation;
@@ -112,7 +113,7 @@ public class RecoveryIT
         ConsistencyCheckService.Result result;
         try
         {
-            result = new ConsistencyCheckService().runFullConsistencyCheck( storeDir, Config.defaults(),
+            result = new ConsistencyCheckService().runFullConsistencyCheck( new DatabaseLayout( storeDir ), Config.defaults(),
                     ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), true );
         }
         catch ( Exception e )

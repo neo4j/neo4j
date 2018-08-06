@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import org.neo4j.backup.IncrementalBackupNotPossibleException;
 import org.neo4j.backup.OnlineBackupExtensionFactory;
@@ -63,6 +62,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -146,8 +146,8 @@ public class BackupProtocolServiceIT
     private final Monitors monitors = new Monitors();
     private final IOLimiter limiter = IOLimiter.UNLIMITED;
     private FileSystemAbstraction fileSystem;
-    private Path databaseDirectory;
-    private Path backupDatabaseDirPath;
+    private DatabaseLayout databaseLayout;
+    private DatabaseLayout backupDatabaseLayout;
     private File backupStoreDir;
     private int backupPort = -1;
 
@@ -169,9 +169,9 @@ public class BackupProtocolServiceIT
     {
         fileSystem = fileSystemRule.get();
         backupPort = PortAuthority.allocatePort();
-        databaseDirectory = dbRule.databaseDirectory().getParentFile().toPath();
+        databaseLayout = dbRule.databaseLayout();
         backupStoreDir = target.storeDir( "backupStore" );
-        backupDatabaseDirPath = target.databaseDir( backupStoreDir ).toPath();
+        backupDatabaseLayout = target.databaseLayout( backupStoreDir );
     }
 
     private BackupProtocolService backupService()
@@ -196,13 +196,13 @@ public class BackupProtocolServiceIT
         createSchemaIndex( db );
         createAndIndexNode( db, 1 );
 
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, defaultConfig,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         createAndIndexNode( db, 1 );
         TestFullConsistencyCheck consistencyCheck = new TestFullConsistencyCheck();
         BackupOutcome backupOutcome = backupService()
-                .doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDirPath, consistencyCheck,
+                .doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseLayout, consistencyCheck,
                         defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
         assertTrue( "Consistency check invoked for incremental backup, ", consistencyCheck.isChecked() );
         assertTrue( backupOutcome.isConsistent() );
@@ -230,7 +230,7 @@ public class BackupProtocolServiceIT
             }
         };
 
-        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE,
+        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE,
                 Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
 
         verify( log ).info( "Previous backup not found, a new full backup will be performed." );
@@ -249,7 +249,7 @@ public class BackupProtocolServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, defaultConfig,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -276,7 +276,7 @@ public class BackupProtocolServiceIT
             }
         };
 
-        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE,
+        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE,
                 Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
 
         verify( log ).info( "Previous backup found, trying incremental backup." );
@@ -288,7 +288,7 @@ public class BackupProtocolServiceIT
     {
         try
         {
-            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDatabaseDirPath, ConsistencyCheck.NONE, Config.defaults(),
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDatabaseLayout, ConsistencyCheck.NONE, Config.defaults(),
                     BackupClient.BIG_READ_TIMEOUT, false );
             fail( "No exception thrown" );
         }
@@ -310,11 +310,11 @@ public class BackupProtocolServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                 ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
         try
         {
-            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDatabaseDirPath, ConsistencyCheck.NONE, Config.defaults(),
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDatabaseLayout, ConsistencyCheck.NONE, Config.defaults(),
                     BackupClient.BIG_READ_TIMEOUT, false );
             fail( "No exception thrown" );
         }
@@ -335,12 +335,12 @@ public class BackupProtocolServiceIT
         createAndIndexNode( db, 1 );
 
         // Touch a random file
-        Files.createFile( backupDatabaseDirPath.resolve( ".jibberishfile" ) );
+        assertTrue( backupDatabaseLayout.file( ".jibberishfile" ).createNewFile() );
 
         try
         {
             // when
-            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                     ConsistencyCheck.FULL, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
             fail( "Should have thrown an exception" );
         }
@@ -365,12 +365,12 @@ public class BackupProtocolServiceIT
         createAndIndexNode( db, 1 );
 
         // Touch a random directory
-        Files.createDirectory( backupDatabaseDirPath.resolve( "jibberishfolder" ) );
+        Files.createDirectory( backupDatabaseLayout.file( "jibberishfolder" ).toPath() );
 
         try
         {
             // when
-            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                     ConsistencyCheck.FULL, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
             fail( "Should have thrown an exception" );
         }
@@ -396,13 +396,13 @@ public class BackupProtocolServiceIT
 
         // when
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, Config.defaults(),
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, Config.defaults(),
                 BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
         assertFalse( "Temp directory was not removed as expected",
-                Files.exists( backupDatabaseDirPath.resolve( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) ) );
+                Files.exists( backupDatabaseLayout.file( StoreUtil.TEMP_COPY_DIRECTORY_NAME ).toPath() ) );
     }
 
     @Test
@@ -416,17 +416,12 @@ public class BackupProtocolServiceIT
 
         // when
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, Config.defaults(),
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, Config.defaults(),
                 BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
-        File[] files;
-        try ( Stream<Path> listing = Files.list( backupDatabaseDirPath ) )
-        {
-            files = listing.map( Path::toFile ).toArray( File[]::new );
-        }
-
+        File[] files = backupDatabaseLayout.databaseDirectory().listFiles();
         assertTrue( files.length > 0 );
 
         for ( final StoreFile storeFile : StoreFile.values() )
@@ -513,7 +508,7 @@ public class BackupProtocolServiceIT
         // it should be possible to at this point to start db based on our backup and create couple of properties
         // their ids should not clash with already existing
         GraphDatabaseService backupBasedDatabase = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( backupStoreDir )
+                .newEmbeddedDatabaseBuilder( backupDatabaseLayout.databaseDirectory() )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
         try
@@ -582,7 +577,7 @@ public class BackupProtocolServiceIT
 
         // when
         BackupProtocolService backupProtocolService = backupService();
-        BackupOutcome outcome = backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.FULL, Config.defaults(),
+        BackupOutcome outcome = backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.FULL, Config.defaults(),
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         db.shutdown();
@@ -604,7 +599,7 @@ public class BackupProtocolServiceIT
 
         // when
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                 ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -625,7 +620,7 @@ public class BackupProtocolServiceIT
 
         // when
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                 ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -652,7 +647,7 @@ public class BackupProtocolServiceIT
 
         // when
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                 ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -672,7 +667,7 @@ public class BackupProtocolServiceIT
 
         // when
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                 ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -697,7 +692,7 @@ public class BackupProtocolServiceIT
         rotateAndCheckPoint( db );
 
         // A full backup
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                 ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -713,7 +708,7 @@ public class BackupProtocolServiceIT
         // when
         try
         {
-            backupProtocolService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+            backupProtocolService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                     ConsistencyCheck.NONE, BackupClient.BIG_READ_TIMEOUT, defaultConfig );
             fail( "Should have thrown exception." );
         }
@@ -739,7 +734,7 @@ public class BackupProtocolServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout,
                 ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -752,7 +747,7 @@ public class BackupProtocolServiceIT
 
         // when
         backupProtocolService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, defaultConfig,
+                BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -783,7 +778,7 @@ public class BackupProtocolServiceIT
 
         // A full backup
         backupProtocolService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, defaultConfig,
+                BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -795,7 +790,7 @@ public class BackupProtocolServiceIT
 
         // when
         backupProtocolService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, defaultConfig,
+                BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -838,7 +833,7 @@ public class BackupProtocolServiceIT
         // Take a backup
         Config defaultConfig = Config.defaults();
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.FULL,
+        backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.FULL,
                 defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -861,7 +856,7 @@ public class BackupProtocolServiceIT
 
         // when
         backupProtocolService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, defaultConfig,
+                BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // then
@@ -895,7 +890,7 @@ public class BackupProtocolServiceIT
         dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newInstance(
-                new SimpleKernelContext( databaseDirectory.toFile(), DatabaseInfo.UNKNOWN, dependencies ),
+                new SimpleKernelContext( databaseLayout.databaseDirectory(), DatabaseInfo.UNKNOWN, dependencies ),
                 DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class ) );
         backup.start();
 
@@ -912,7 +907,7 @@ public class BackupProtocolServiceIT
             barrier.release();
         } );
 
-        BackupOutcome backupOutcome = backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.FULL,
+        BackupOutcome backupOutcome = backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.FULL,
                 withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
 
         backup.stop();
@@ -921,7 +916,7 @@ public class BackupProtocolServiceIT
 
         // then
         checkPreviousCommittedTxIdFromLog( 0, expectedLastTxId );
-        Path neoStore = db.databaseDirectory().toPath().resolve( MetaDataStore.DEFAULT_NAME );
+        Path neoStore = db.databaseLayout().file( MetaDataStore.DEFAULT_NAME ).toPath();
         PageCache pageCache = resolver.resolveDependency( PageCache.class );
         long txIdFromOrigin = MetaDataStore.getRecord( pageCache, neoStore.toFile(), Position.LAST_TRANSACTION_ID );
         checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId + 1, txIdFromOrigin );
@@ -965,7 +960,7 @@ public class BackupProtocolServiceIT
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
                 new OnlineBackupExtensionFactory().newInstance(
-                        new SimpleKernelContext( databaseDirectory.toFile(), DatabaseInfo.UNKNOWN, dependencies ),
+                        new SimpleKernelContext( databaseLayout.databaseDirectory(), DatabaseInfo.UNKNOWN, dependencies ),
                         DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
                 );
         try
@@ -974,7 +969,7 @@ public class BackupProtocolServiceIT
 
             // when
             backupService()
-                    .doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, withOnlineBackupDisabled,
+                    .doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, withOnlineBackupDisabled,
                             BackupClient.BIG_READ_TIMEOUT, false );
 
             // then
@@ -984,7 +979,7 @@ public class BackupProtocolServiceIT
             // when
             createAndIndexNode( dbRule, 2 );
 
-            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE,
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE,
                     withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
 
             // then
@@ -1007,21 +1002,21 @@ public class BackupProtocolServiceIT
         createSchemaIndex( db1 );
         createAndIndexNode( db1, 1 );
 
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE,
                 defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // When
         GraphDatabaseAPI db2 = dbRule.restartDatabase( ( fs, storeDirectory ) ->
         {
             deleteAllBackedUpTransactionLogs();
-            FileUtils.deletePathRecursively( storeDirectory.toPath() );
-            Files.createDirectory( storeDirectory.toPath() );
+            FileUtils.deletePathRecursively( storeDirectory.databaseDirectory().toPath() );
+            Files.createDirectory( storeDirectory.databaseDirectory().toPath() );
         } );
         createAndIndexNode( db2, 2 );
 
         try
         {
-            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, defaultConfig,
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, defaultConfig,
                     BackupClient.BIG_READ_TIMEOUT, false );
 
             fail( "Should have thrown exception about mismatching store ids" );
@@ -1097,7 +1092,7 @@ public class BackupProtocolServiceIT
     private void checkPreviousCommittedTxIdFromLog( long logVersion, long txId ) throws IOException
     {
         // Assert header of specified log version containing correct txId
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( backupDatabaseDirPath.toFile(), fileSystem ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( backupDatabaseLayout.databaseDirectory(), fileSystem ).build();
         LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
         assertEquals( txId, logHeader.lastCommittedTxId );
     }
@@ -1108,7 +1103,7 @@ public class BackupProtocolServiceIT
         LifeSupport life = new LifeSupport();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         LogicalTransactionStore transactionStore = life.add( new ReadOnlyTransactionStore(
-                pageCache, fileSystem, backupDatabaseDirPath.toFile(), Config.defaults(), monitors ) );
+                pageCache, fileSystem, backupDatabaseLayout, Config.defaults(), monitors ) );
         life.start();
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                       transactionStore.getTransactions( txId ) )
@@ -1128,13 +1123,13 @@ public class BackupProtocolServiceIT
 
     private long getLastTxChecksum( PageCache pageCache ) throws IOException
     {
-        Path neoStore = backupDatabaseDirPath.resolve( MetaDataStore.DEFAULT_NAME );
+        Path neoStore = backupDatabaseLayout.file( MetaDataStore.DEFAULT_NAME ).toPath();
         return MetaDataStore.getRecord( pageCache, neoStore.toFile(), Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private void deleteAllBackedUpTransactionLogs() throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( backupDatabaseDirPath.toFile(), fileSystem ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( backupDatabaseLayout.databaseDirectory(), fileSystem ).build();
         for ( File log : logFiles.logFiles() )
         {
             fileSystem.deleteFile( log );
@@ -1144,7 +1139,7 @@ public class BackupProtocolServiceIT
     private void doIncrementalBackupOrFallbackToFull()
     {
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDirPath, ConsistencyCheck.NONE, Config.defaults(),
+        backupProtocolService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseLayout, ConsistencyCheck.NONE, Config.defaults(),
                 BackupClient.BIG_READ_TIMEOUT, false );
     }
 
@@ -1159,13 +1154,13 @@ public class BackupProtocolServiceIT
     private DbRepresentation getBackupDbRepresentation()
     {
         Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        return DbRepresentation.of( backupStoreDir, config );
+        return DbRepresentation.of( backupDatabaseLayout.databaseDirectory(), config );
     }
 
     private DbRepresentation getDbRepresentation()
     {
         Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        return DbRepresentation.of( databaseDirectory.toFile(), config );
+        return DbRepresentation.of( databaseLayout.databaseDirectory(), config );
     }
 
     private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter
@@ -1198,12 +1193,12 @@ public class BackupProtocolServiceIT
         }
 
         @Override
-        public boolean runFull( Path storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+        public boolean runFull( DatabaseLayout databaseLayout, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
                 LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
                 ConsistencyFlags consistencyFlags ) throws ConsistencyCheckFailedException
         {
             markAsChecked();
-            return ConsistencyCheck.FULL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider,
+            return ConsistencyCheck.FULL.runFull( databaseLayout, tuningConfiguration, progressFactory, logProvider,
                     fileSystem, pageCache, verbose,
                     consistencyFlags );
         }

@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,7 +54,7 @@ import static org.neo4j.backup.ExceptionMatchers.exceptionContainsSuppressedThro
 public class BackupStrategyCoordinatorTest
 {
     @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    public final ExpectedException expectedException = ExpectedException.none();
 
     // dependencies
     private final ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
@@ -77,6 +78,7 @@ public class BackupStrategyCoordinatorTest
     @Before
     public void setup()
     {
+        when( reportDir.toFile() ).thenReturn( mock( File.class ) );
         when( outsideWorld.fileSystem() ).thenReturn( fileSystem );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( reportDir );

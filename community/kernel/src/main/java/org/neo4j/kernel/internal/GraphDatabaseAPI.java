@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.internal;
 
-import java.io.File;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +26,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StoreId;
@@ -56,7 +56,7 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
     /**
      * @return underlying database directory
      */
-    File databaseDirectory();
+    DatabaseLayout databaseLayout();
 
     /**
      * Begin internal transaction with specified type and access mode

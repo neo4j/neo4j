@@ -50,7 +50,7 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
                 config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
                 config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
                 config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-                return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
+                return new EnterpriseGraphDatabase( databasesRoot, config, state.databaseDependencies() );
             }
         };
     }

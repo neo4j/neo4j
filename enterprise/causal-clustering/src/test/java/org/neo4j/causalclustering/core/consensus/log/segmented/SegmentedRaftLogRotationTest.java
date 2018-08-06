@@ -22,12 +22,12 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
@@ -65,7 +65,7 @@ public class SegmentedRaftLogRotationTest
         log.append( new RaftLogEntry( 0, replicatedStringOfBytes( ROTATE_AT_SIZE_IN_BYTES ) ) );
 
         // Then
-        File[] files = fileSystemRule.get().listFiles( testDirectory.directory() );
+        File[] files = fileSystemRule.get().listFiles( testDirectory.directory(), ( dir, name ) -> name.startsWith( "raft" ) );
         assertEquals( 2, files.length );
     }
 
@@ -90,14 +90,9 @@ public class SegmentedRaftLogRotationTest
         assertEquals( term, log.readEntryTerm( indexToRestoreTo ) );
     }
 
-    private ReplicatedString replicatedStringOfBytes( int size )
+    private static ReplicatedString replicatedStringOfBytes( int size )
     {
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < size; i++ )
-        {
-            builder.append( "i" );
-        }
-        return new ReplicatedString( builder.toString() );
+        return new ReplicatedString( StringUtils.repeat( "i", size ) );
     }
 
     private SegmentedRaftLog createRaftLog( long rotateAtSize )

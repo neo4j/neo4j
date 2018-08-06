@@ -22,11 +22,11 @@ package org.neo4j.jmx.impl;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -80,23 +80,23 @@ public final class StoreSizeBean extends ManagementBeanProvider
     static class StoreSizeImpl extends Neo4jMBean implements StoreSize
     {
         private final FileSystemAbstraction fs;
-        private final File databasePath;
 
         private LogFiles logFiles;
         private ExplicitIndexProvider explicitIndexProviderLookup;
         private IndexProviderMap indexProviderMap;
         private LabelScanStore labelScanStore;
+        private DatabaseLayout databaseLayout;
 
         StoreSizeImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
 
             fs = management.getKernelData().getFilesystemAbstraction();
-            databasePath = resolveStorePath( management );
 
             DataSourceManager dataSourceManager = management.getKernelData().getDataSourceManager();
             dataSourceManager.addListener( new DataSourceManager.Listener()
             {
+
                 @Override
                 public void registered( NeoStoreDataSource ds )
                 {
@@ -104,6 +104,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                     explicitIndexProviderLookup = resolveDependency( ds, ExplicitIndexProvider.class );
                     indexProviderMap = resolveDependency( ds, IndexProviderMap.class );
                     labelScanStore = resolveDependency( ds, LabelScanStore.class );
+                    databaseLayout = ds.getDatabaseLayout();
                 }
 
                 private <T> T resolveDependency( NeoStoreDataSource ds, Class<T> clazz )
@@ -189,7 +190,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             // Add explicit indices
             for ( IndexImplementation index : explicitIndexProviderLookup.allIndexProviders() )
             {
-                size += FileUtils.size( fs, index.getIndexImplementationDirectory( databasePath ) );
+                size += FileUtils.size( fs, index.getIndexImplementationDirectory( databaseLayout ) );
             }
 
             // Add schema index
@@ -214,12 +215,12 @@ public final class StoreSizeBean extends ManagementBeanProvider
         @Override
         public long getTotalStoreSize()
         {
-            return databasePath == null ? 0L : FileUtils.size( fs, databasePath );
+            return databaseLayout == null ? 0L : FileUtils.size( fs, databaseLayout.databaseDirectory() );
         }
 
         private long sizeOf( String name )
         {
-            return databasePath == null ? 0L : FileUtils.size( fs, new File( databasePath, name ) );
+            return databaseLayout == null ? 0L : FileUtils.size( fs, databaseLayout.file( name ) );
         }
 
         private static class TotalSizeVersionVisitor implements LogVersionVisitor
@@ -264,19 +265,6 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 }
             }
             return size;
-        }
-
-        private File resolveStorePath( ManagementData management )
-        {
-            File storeDir = management.getKernelData().getStoreDir();
-            try
-            {
-                return storeDir.getCanonicalFile().getAbsoluteFile();
-            }
-            catch ( IOException e )
-            {
-                return storeDir.getAbsoluteFile();
-            }
         }
     }
 }

@@ -78,7 +78,7 @@ public class RecoverIndexDropIT
     {
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
-        File storeDir = directory.directory();
+        File storeDir = directory.databaseDir();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         createIndex( db );
         db.shutdown();

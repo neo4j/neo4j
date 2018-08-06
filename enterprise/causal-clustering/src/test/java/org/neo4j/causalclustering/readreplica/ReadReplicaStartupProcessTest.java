@@ -48,6 +48,7 @@ import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -78,7 +79,7 @@ public class ReadReplicaStartupProcessTest
     private AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "127.0.0.1", 123 );
     private StoreId localStoreId = new StoreId( 1, 2, 3, 4 );
     private StoreId otherStoreId = new StoreId( 5, 6, 7, 8 );
-    private File databaseDirectory = new File( "store-dir" );
+    private DatabaseLayout databaseLayout = new DatabaseLayout( new File( "store-dir" ) );
 
     @Before
     public void commonMocking() throws IOException
@@ -88,7 +89,7 @@ public class ReadReplicaStartupProcessTest
 
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
         when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) ).thenAnswer( f -> Stream.empty() );
-        when( localDatabase.databaseDirectory() ).thenReturn( databaseDirectory );
+        when( localDatabase.databaseLayout() ).thenReturn( databaseLayout );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
         when( topologyService.allCoreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( members );

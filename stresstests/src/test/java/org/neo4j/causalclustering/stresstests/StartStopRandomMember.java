@@ -56,7 +56,7 @@ class StartStopRandomMember extends RepeatOnRandomMember
     @Override
     protected void doWorkOnMember( ClusterMember member ) throws InterruptedException
     {
-        File databaseDirectory = member.database().databaseDirectory();
+        File databaseDirectory = member.database().databaseLayout().databaseDirectory();
         log.info( "Stopping: " + member );
         member.shutdown();
         assertStoreConsistent( databaseDirectory );

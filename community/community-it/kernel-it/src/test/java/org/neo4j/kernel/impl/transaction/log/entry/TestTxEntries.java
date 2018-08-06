@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 
@@ -30,13 +31,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 public class TestTxEntries
 {
-    private final File storeDir = new File( "dir" );
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
 
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,
@@ -46,6 +49,7 @@ public class TestTxEntries
     @Test
     public void testStartEntryWrittenOnceOnRollback() throws Exception
     {
+        File storeDir = testDirectory.databaseDir();
         final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
         EphemeralFileSystemAbstraction snapshot = fs.snapshot( db::shutdown );

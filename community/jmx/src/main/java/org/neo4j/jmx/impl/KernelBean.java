@@ -19,8 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Date;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
@@ -109,8 +107,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
         return databaseName;
     }
 
-    private class DataSourceInfo
-            implements DataSourceManager.Listener
+    private class DataSourceInfo implements DataSourceManager.Listener
     {
         @Override
         public void registered( NeoStoreDataSource ds )
@@ -121,17 +118,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
             storeCreationDate = id.getCreationTime();
             isReadOnly = ds.isReadOnly();
             storeId = id.getRandomId();
-
-            File databaseDirectory = ds.getDatabaseDirectory();
-            try
-            {
-                databaseDirectory = databaseDirectory.getCanonicalFile();
-            }
-            catch ( IOException ignored )
-            {
-            }
-
-            databaseName = databaseDirectory.getName();
+            databaseName = ds.getDatabaseName();
         }
 
         @Override

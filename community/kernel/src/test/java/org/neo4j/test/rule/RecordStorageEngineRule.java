@@ -19,14 +19,13 @@
  */
 package org.neo4j.test.rule;
 
-import java.io.File;
 import java.util.function.Function;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -74,7 +73,7 @@ import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
  * {@link PageCache}, which usually are managed by test rules themselves. That's why they are passed in
- * when {@link #getWith(FileSystemAbstraction, PageCache) getting (constructing)} the engine. Further
+ * when {@link #getWith(FileSystemAbstraction, PageCache, DatabaseLayout) getting (constructing)} the engine. Further
  * dependencies can be overridden in that returned builder as well.
  * <p>
  * Keep in mind that this rule must be created BEFORE {@link ConfigurablePageCacheRule} and any file system rule so that
@@ -91,24 +90,20 @@ public class RecordStorageEngineRule extends ExternalResource
         life.start();
     }
 
-    public Builder getWith( FileSystemAbstraction fs, PageCache pageCache )
+    public Builder getWith( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
     {
-        return new Builder( fs, pageCache );
+        return new Builder( fs, pageCache, databaseLayout );
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
-                                     IndexProvider indexProvider, DatabaseHealth databaseHealth, File storeDirectory,
+                                     IndexProvider indexProvider, DatabaseHealth databaseHealth, DatabaseLayout databaseLayout,
                                      Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer,
                                      Monitors monitors )
     {
-        if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
-        {
-            throw new IllegalStateException();
-        }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
         ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
         when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( Iterables.empty() );
-        IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
+        IndexConfigStore indexConfigStore = new IndexConfigStore( databaseLayout, fs );
         JobScheduler scheduler = life.add( new CentralJobScheduler() );
         Config config = Config.defaults();
 
@@ -120,7 +115,7 @@ public class RecordStorageEngineRule extends ExternalResource
                         new CommunityIdTypeConfigurationProvider() );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies );
         life.add( indexProviderMap );
-        return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs,
+        return life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
                 NullLogProvider.getInstance(), mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
@@ -144,16 +139,17 @@ public class RecordStorageEngineRule extends ExternalResource
         private DatabaseHealth databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
-        private File storeDirectory = new File( DatabaseManager.DEFAULT_DATABASE_NAME );
+        private final DatabaseLayout databaseLayout;
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexProvider indexProvider = IndexProvider.EMPTY;
         private Monitors monitors = new Monitors();
 
-        public Builder( FileSystemAbstraction fs, PageCache pageCache )
+        public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
             this.fs = fs;
             this.pageCache = pageCache;
+            this.databaseLayout = databaseLayout;
         }
 
         public Builder transactionApplierTransformer(
@@ -175,23 +171,15 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder storeDirectory( File storeDirectory )
-        {
-            this.storeDirectory = storeDirectory;
-            return this;
-        }
-
         public Builder monitors( Monitors monitors )
         {
             this.monitors = monitors;
             return this;
         }
 
-        // Add more here
-
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, indexProvider, databaseHealth, storeDirectory,
+            return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout,
                     transactionApplierTransformer, monitors );
         }
     }
@@ -201,7 +189,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
                 transactionApplierTransformer;
 
-        ExtendedRecordStorageEngine( File storeDir, Config config, PageCache pageCache, FileSystemAbstraction fs,
+        ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
                 LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                 LockService lockService, IndexProviderMap indexProviderMap,
@@ -212,10 +200,10 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
-                    scheduler, tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup,
-                    indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector,
-                    operationalMode, EmptyVersionContextSupplier.EMPTY );
+            super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, scheduler, tokenNameLookup,
+                    lockService, indexProviderMap,
+                    indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
+                    idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

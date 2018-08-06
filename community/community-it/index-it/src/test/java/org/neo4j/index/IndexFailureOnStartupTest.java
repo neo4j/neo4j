@@ -36,6 +36,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -144,7 +145,7 @@ public class IndexFailureOnStartupTest
     {
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            File indexDir = indexRootDirectory( db.databaseDirectory() );
+            File indexDir = indexRootDirectory( db.databaseLayout().databaseDirectory() );
             File[] files = indexDir.listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
             if ( files == null || files.length == 0 )
             {
@@ -205,9 +206,9 @@ public class IndexFailureOnStartupTest
         }
 
         @Override
-        public void run( FileSystemAbstraction fs, File base )
+        public void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
         {
-            File indexRootDirectory = new File( soleIndexDir( base ), "1" /*the partition*/ );
+            File indexRootDirectory = new File( soleIndexDir( databaseLayout.databaseDirectory() ), "1" /*the partition*/ );
             File[] files = fs.listFiles( indexRootDirectory, ( dir, name ) -> name.startsWith( prefix ) );
             Stream.of( files ).forEach( fs::deleteFile );
         }

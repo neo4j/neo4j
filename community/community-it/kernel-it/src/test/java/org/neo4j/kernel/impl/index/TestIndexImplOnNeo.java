@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,29 +31,37 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class TestIndexImplOnNeo
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class TestIndexImplOnNeo
 {
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
+
     private GraphDatabaseService db;
 
-    @Before
-    public void createDb()
+    @BeforeEach
+    void createDb()
     {
         db = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabase( new File( "mydb" ) );
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabase( testDirectory.databaseDir() );
     }
 
     private void restartDb()
@@ -63,14 +70,14 @@ public class TestIndexImplOnNeo
         createDb();
     }
 
-    @After
-    public void shutdownDb()
+    @AfterEach
+    void shutdownDb()
     {
         db.shutdown();
     }
 
     @Test
-    public void createIndexWithProviderThatUsesNeoAsDataSource()
+    void createIndexWithProviderThatUsesNeoAsDataSource()
     {
         String indexName = "inneo";
         assertFalse( indexExists( indexName ) );

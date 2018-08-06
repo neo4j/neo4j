@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
@@ -63,16 +64,17 @@ public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
     }
 
     @Override
-    protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, File dbDirectory,
+    protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
             File databaseDirectory ) throws IOException
     {
         File resourceDirectory = findFormatStoreDirectoryForVersion( version, databaseDirectory );
-        fileSystem.deleteRecursively( dbDirectory );
-        fileSystem.mkdirs( dbDirectory );
-        fileSystem.copyRecursively( resourceDirectory, dbDirectory );
+        File directory = databaseLayout.databaseDirectory();
+        fileSystem.deleteRecursively( directory );
+        fileSystem.mkdirs( directory );
+        fileSystem.copyRecursively( resourceDirectory, directory );
     }
 
-    private File findFormatStoreDirectoryForVersion( String version, File databaseDirectory ) throws IOException
+    private static File findFormatStoreDirectoryForVersion( String version, File databaseDirectory ) throws IOException
     {
         if ( version.equals( HighLimitV3_0_0.STORE_VERSION ) )
         {
@@ -84,7 +86,7 @@ public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
         }
     }
 
-    private File highLimit3_0Store( File databaseDirectory ) throws IOException
+    private static File highLimit3_0Store( File databaseDirectory ) throws IOException
     {
         return Unzip.unzip( EnterpriseStoreUpgraderTest.class, "upgradeTest30HighLimitDb.zip", databaseDirectory );
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.kernel;
 
-import java.io.File;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.Collections;
@@ -61,6 +60,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceIterableWrapper;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -1063,9 +1063,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public File databaseDirectory()
+    public DatabaseLayout databaseLayout()
     {
-        return actual.databaseDirectory();
+        return actual.databaseLayout();
     }
 
     @Override

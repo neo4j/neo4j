@@ -22,8 +22,7 @@
  */
 package org.neo4j.backup.impl;
 
-import java.nio.file.Path;
-
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -31,8 +30,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 interface BackupStrategy extends Lifecycle
 {
     Fallible<BackupStageOutcome> performIncrementalBackup(
-            Path desiredBackupLocation, Config config, OptionalHostnamePort userProvidedAddress );
+            DatabaseLayout targetDatabaseLayout, Config config, OptionalHostnamePort userProvidedAddress );
 
     Fallible<BackupStageOutcome> performFullBackup(
-            Path desiredBackupLocation, Config config, OptionalHostnamePort userProvidedAddress );
+            DatabaseLayout targetDatabaseLayout, Config config, OptionalHostnamePort userProvidedAddress );
 }

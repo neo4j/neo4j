@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -53,9 +54,9 @@ public class UpgradableDatabase
     }
 
     /**
-     * Assumed to only be called if {@link #hasCurrentVersion(File)} returns {@code false}.
+     * Assumed to only be called if {@link #hasCurrentVersion(DatabaseLayout)} returns {@code false}.
      *
-     * @param storeDirectory the store to check for upgradability is in.
+     * @param dbDirectoryStructure database directory structure.
      * @return the {@link RecordFormats} the current store (which is upgradable) is currently in.
      * @throws UpgradeMissingStoreFilesException if store cannot be upgraded due to some store files are missing.
      * @throws UpgradingStoreVersionNotFoundException if store cannot be upgraded due to store
@@ -66,10 +67,10 @@ public class UpgradableDatabase
      * format found.
      * @throws DatabaseNotCleanlyShutDownException if store cannot be upgraded due to not being cleanly shut down.
      */
-    public RecordFormats checkUpgradable( File storeDirectory )
+    public RecordFormats checkUpgradable( DatabaseLayout dbDirectoryStructure )
     {
-        Result result = storeVersionCheck.hasVersion( new File( storeDirectory, MetaDataStore.DEFAULT_NAME ),
-                format.storeVersion() );
+        File neostoreFile = dbDirectoryStructure.file( MetaDataStore.DEFAULT_NAME );
+        Result result = storeVersionCheck.hasVersion( neostoreFile, format.storeVersion() );
         if ( result.outcome.isSuccessful() )
         {
             // This store already has the format that we want
@@ -92,8 +93,7 @@ public class UpgradableDatabase
             if ( FormatFamily.isSameFamily( fromFormat, format ) && (fromFormat.generation() > format.generation()) )
             {
                 // Tried to downgrade, that isn't supported
-                result = new Result( Outcome.attemptedStoreDowngrade, fromFormat.storeVersion(),
-                        new File( storeDirectory, MetaDataStore.DEFAULT_NAME ).getAbsolutePath() );
+                result = new Result( Outcome.attemptedStoreDowngrade, fromFormat.storeVersion(), neostoreFile.getAbsolutePath() );
             }
             else
             {
@@ -112,10 +112,10 @@ public class UpgradableDatabase
         switch ( result.outcome )
         {
         case missingStoreFile:
-            throw new StoreUpgrader.UpgradeMissingStoreFilesException( getPathToStoreFile( storeDirectory, result ) );
+            throw new StoreUpgrader.UpgradeMissingStoreFilesException( getPathToStoreFile( dbDirectoryStructure, result ) );
         case storeVersionNotFound:
             throw new StoreUpgrader.UpgradingStoreVersionNotFoundException(
-                    getPathToStoreFile( storeDirectory, result ) );
+                    getPathToStoreFile( dbDirectoryStructure, result ) );
         case attemptedStoreDowngrade:
             throw new StoreUpgrader.AttemptedDowngradeException();
         case unexpectedStoreVersion:
@@ -145,14 +145,14 @@ public class UpgradableDatabase
         return new Result( Result.Outcome.storeNotCleanlyShutDown, null, null );
     }
 
-    private String getPathToStoreFile( File storeDirectory, Result result )
+    private static String getPathToStoreFile( DatabaseLayout directoryStructure, Result result )
     {
-        return new File( storeDirectory, result.storeFilename ).getAbsolutePath();
+        return directoryStructure.file( result.storeFilename ).getAbsolutePath();
     }
 
-    boolean hasCurrentVersion( File storeDir )
+    boolean hasCurrentVersion( DatabaseLayout dbDirectoryStructure )
     {
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStore = dbDirectoryStructure.file( MetaDataStore.DEFAULT_NAME );
         Result result = storeVersionCheck.hasVersion( neoStore, format.storeVersion() );
         switch ( result.outcome )
         {

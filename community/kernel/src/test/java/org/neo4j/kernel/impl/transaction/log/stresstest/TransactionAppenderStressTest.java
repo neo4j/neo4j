@@ -29,6 +29,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -57,22 +58,21 @@ public class TransactionAppenderStressTest
     public void concurrentTransactionAppendingTest() throws Exception
     {
         int threads = 10;
-        File workingDirectory = directory.directory( "work" );
         Callable<Long> runner = new Builder()
                 .with( untilTimeExpired( 10, SECONDS ) )
-                .withWorkingDirectory( workingDirectory )
+                .withWorkingDirectory( directory.databaseLayout() )
                 .withNumThreads( threads )
                 .build();
 
         long appendedTxs = runner.call();
 
-        assertEquals( new TransactionIdChecker( workingDirectory ).parseAllTxLogs(), appendedTxs );
+        assertEquals( new TransactionIdChecker( directory.databaseLayout().databaseDirectory() ).parseAllTxLogs(), appendedTxs );
     }
 
     public static class Builder
     {
         private BooleanSupplier condition;
-        private File workingDirectory;
+        private DatabaseLayout databaseLayout;
         private int threads;
 
         public Builder with( BooleanSupplier condition )
@@ -81,9 +81,9 @@ public class TransactionAppenderStressTest
             return this;
         }
 
-        public Builder withWorkingDirectory( File workingDirectory )
+        public Builder withWorkingDirectory( DatabaseLayout databaseLayout )
         {
-            this.workingDirectory = workingDirectory;
+            this.databaseLayout = databaseLayout;
             return this;
         }
 
@@ -95,7 +95,7 @@ public class TransactionAppenderStressTest
 
         public Callable<Long> build()
         {
-            return new Runner( workingDirectory, condition, threads );
+            return new Runner( databaseLayout, condition, threads );
         }
     }
 

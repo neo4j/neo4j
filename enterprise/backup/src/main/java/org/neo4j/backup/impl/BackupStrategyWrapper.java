@@ -25,6 +25,7 @@ package org.neo4j.backup.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
@@ -82,12 +83,12 @@ class BackupStrategyWrapper
         log.debug( "User specified address is %s:%s", userSpecifiedAddress.getHostname().toString(), userSpecifiedAddress.getPort().toString() );
         Config config = onlineBackupContext.getConfig();
 
-        boolean previousBackupExists = backupCopyService.backupExists( backupLocation );
+        boolean previousBackupExists = backupCopyService.backupExists( new DatabaseLayout( backupLocation.toFile() ) );
         if ( previousBackupExists )
         {
             log.info( "Previous backup found, trying incremental backup." );
             Fallible<BackupStageOutcome> state =
-                    backupStrategy.performIncrementalBackup( backupLocation, config, userSpecifiedAddress );
+                    backupStrategy.performIncrementalBackup( new DatabaseLayout( backupLocation.toFile() ), config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
             boolean incrementalWasSuccessful = BackupStageOutcome.SUCCESS.equals( state.getState() );
 
@@ -142,7 +143,7 @@ class BackupStrategyWrapper
         Path temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
 
         OptionalHostnamePort address = onlineBackupContext.getRequiredArguments().getAddress();
-        Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, config, address );
+        Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( new DatabaseLayout( temporaryFullBackupLocation.toFile() ), config, address );
 
         // NOTE temporaryFullBackupLocation can be equal to desired
         boolean aBackupAlreadyExisted = !userSpecifiedBackupLocation.equals( temporaryFullBackupLocation );

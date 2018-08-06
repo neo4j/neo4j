@@ -29,6 +29,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -100,7 +101,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
-    private final File storeDir;
+    private final DatabaseLayout directoryStructure;
     private final Config neo4jConfig;
     private final Configuration importConfiguration;
     private final PageCache pageCache;
@@ -124,7 +125,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private boolean successful;
 
-    private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+    private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, File databaseDirectory,
             RecordFormats recordFormats, Config neo4jConfig, Configuration importConfiguration, LogService logService,
             AdditionalInitialIds initialIds, boolean externalPageCache, IoTracer ioTracer )
     {
@@ -133,7 +134,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.importConfiguration = importConfiguration;
         this.initialIds = initialIds;
         this.logProvider = logService.getInternalLogProvider();
-        this.storeDir = storeDir;
+        this.directoryStructure = new DatabaseLayout( databaseDirectory );
         this.neo4jConfig = neo4jConfig;
         this.pageCache = pageCache;
         this.ioTracer = ioTracer;
@@ -143,7 +144,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private boolean databaseExistsAndContainsData()
     {
-        File metaDataFile = new File( storeDir, StoreType.META_DATA.getStoreFile().fileName( StoreFileType.STORE ) );
+        File metaDataFile = directoryStructure.file( StoreType.META_DATA.getStoreFile().fileName( StoreFileType.STORE ) );
         try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), StandardOpenOption.READ ) )
         {
             // OK so the db probably exists
@@ -174,7 +175,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         // There may have been a previous import which was killed before it even started, where the label scan store could
         // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
         // the db is either completely empty or non-existent anyway, so deleting this file is OK.
-        fileSystem.deleteFile( getLabelScanStoreFile( storeDir ) );
+        fileSystem.deleteFile( getLabelScanStoreFile( directoryStructure ) );
 
         instantiateStores();
         neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
@@ -188,7 +189,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         if ( databaseExistsAndContainsData() )
         {
-            throw new IllegalStateException( storeDir + " already contains data, cannot do import here" );
+            throw new IllegalStateException( directoryStructure.databaseDirectory() + " already contains data, cannot do import here" );
         }
     }
 
@@ -216,7 +217,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             {
                 for ( StoreFileType fileType : StoreFileType.values() )
                 {
-                    fileSystem.deleteFile( new File( storeDir, fileType.augment( storeName + type.getStoreFile().fileNamePart() ) ) );
+                    fileSystem.deleteFile( directoryStructure.file( fileType.augment( storeName + type.getStoreFile().fileNamePart() ) ) );
                 }
             }
         }
@@ -226,7 +227,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         life = new LifeSupport();
         life.start();
-        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
+        labelScanStore = new NativeLabelScanStore( pageCache, directoryStructure, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
     }
@@ -300,8 +301,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
     {
-        return new StoreFactory( neo4jConfig.get( GraphDatabaseSettings.active_database ), storeDir, name, neo4jConfig, idGeneratorFactory, pageCache,
-                fileSystem, recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
+        return new StoreFactory( directoryStructure, name, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider,
+                        EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 
     /**
@@ -505,8 +506,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             if ( type.isRecordStore() )
             {
                 RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
-                idGeneratorFactory.create( new File( storeDir, type.getStoreFile().fileName( StoreFileType.ID ) ), recordStore.getHighId(),
-                        false );
+                idGeneratorFactory.create( directoryStructure.file( type.getStoreFile().fileName( StoreFileType.ID ) ), recordStore.getHighId(), false );
             }
         }
     }

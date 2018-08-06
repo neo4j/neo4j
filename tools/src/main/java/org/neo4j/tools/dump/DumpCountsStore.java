@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.StatementConstants;
@@ -87,9 +88,8 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             Config config = Config.defaults();
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory =
-                        new StoreFactory( config.get( GraphDatabaseSettings.active_database ), path, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                                pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
+                StoreFactory factory = new StoreFactory( new DatabaseLayout( path ), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+                        pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();
                 SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );

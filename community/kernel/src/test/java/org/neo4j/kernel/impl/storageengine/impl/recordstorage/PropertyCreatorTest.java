@@ -65,9 +65,9 @@ public class PropertyCreatorTest
     @Before
     public void startStore()
     {
-        neoStores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storage.directory().directory(), Config.defaults(),
-                new DefaultIdGeneratorFactory( storage.fileSystem() ), storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY ).openNeoStores( true, StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
+        neoStores = new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
+                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
+                StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
         creator = new PropertyCreator( propertyStore, new PropertyTraverser() );

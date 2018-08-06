@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -51,14 +52,16 @@ public class IndexConfigStore extends LifecycleAdapter
     private final File oldFile;
     private final Map<String, Map<String, String>> nodeConfig = new ConcurrentHashMap<>();
     private final Map<String, Map<String, String>> relConfig = new ConcurrentHashMap<>();
-    private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
+    private final DatabaseLayout dbDirectoryStructure;
     private final FileSystemAbstraction fileSystem;
+    private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
 
-    public IndexConfigStore( File databaseDirectory, FileSystemAbstraction fileSystem )
+    public IndexConfigStore( DatabaseLayout dbDirectoryStructure, FileSystemAbstraction fileSystem )
     {
+        this.dbDirectoryStructure = dbDirectoryStructure;
         this.fileSystem = fileSystem;
-        this.file = new File( databaseDirectory, INDEX_DB_FILE_NAME );
-        this.oldFile = new File( databaseDirectory, OLD_INDEX_DB_FILE_NAME );
+        this.file = dbDirectoryStructure.file( INDEX_DB_FILE_NAME );
+        this.oldFile = dbDirectoryStructure.file( OLD_INDEX_DB_FILE_NAME );
     }
 
     private ByteBuffer buffer( int size )
@@ -260,7 +263,7 @@ public class IndexConfigStore extends LifecycleAdapter
     private void write()
     {
         // Write to a .tmp file
-        File tmpFile = new File( this.file.getParentFile(), TMP_INDEX_DB_FILE_NAME );
+        File tmpFile = dbDirectoryStructure.file( TMP_INDEX_DB_FILE_NAME );
         write( tmpFile );
 
         // Make sure the .old file doesn't exist, then rename the current one to .old

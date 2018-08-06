@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -55,16 +55,16 @@ public class RecoveryRequiredChecker
         this.monitors = monitors;
     }
 
-    public boolean isRecoveryRequiredAt( File dataDir ) throws IOException
+    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
     {
         // We need config to determine where the logical log files are
-        if ( !NeoStores.isStorePresent( pageCache, dataDir ) )
+        if ( !NeoStores.isStorePresent( pageCache, databaseLayout ) )
         {
             return false;
         }
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( dataDir, fs, pageCache )
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                                            .withConfig( config )
                                            .withLogEntryReader( reader ).build();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, monitors );

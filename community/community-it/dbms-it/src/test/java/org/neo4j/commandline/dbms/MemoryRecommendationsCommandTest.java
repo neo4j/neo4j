@@ -177,7 +177,7 @@ public class MemoryRecommendationsCommandTest
         String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
         File databaseDirectory = fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).build().get( database_path );
-        createDatabaseWithNativeIndexes( databaseDirectory.getParentFile(), databaseName );
+        createDatabaseWithNativeIndexes( databaseDirectory );
         OutsideWorld outsideWorld = new OutputCaptureOutsideWorld( output );
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
@@ -238,7 +238,7 @@ public class MemoryRecommendationsCommandTest
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 
-    private static void createDatabaseWithNativeIndexes( File storeDir, String databaseName )
+    private static void createDatabaseWithNativeIndexes( File databaseDirectory )
     {
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
@@ -249,9 +249,8 @@ public class MemoryRecommendationsCommandTest
                 continue;
             }
             GraphDatabaseService db =
-                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
                             .setConfig( default_schema_provider, schemaIndex.providerIdentifier() )
-                            .setConfig( active_database, databaseName )
                             .newGraphDatabase();
             String key = "key-" + schemaIndex.name();
             try

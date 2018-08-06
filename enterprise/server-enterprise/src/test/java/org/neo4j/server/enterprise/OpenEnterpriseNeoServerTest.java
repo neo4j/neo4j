@@ -61,7 +61,7 @@ class OpenEnterpriseNeoServerTest
         {
             Path expectedPath = Paths.get( testDirectory.storeDir().getPath(), "data", "databases", "graph.db" );
             GraphDatabaseFacade graph = server.getDatabase().getGraph();
-            assertEquals( expectedPath, graph.databaseDirectory().toPath() );
+            assertEquals( expectedPath, graph.databaseLayout().databaseDirectory().toPath() );
         }
         finally
         {

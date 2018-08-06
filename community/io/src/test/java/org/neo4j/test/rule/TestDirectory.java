@@ -33,6 +33,8 @@ import java.net.URISyntaxException;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -64,6 +66,8 @@ public class TestDirectory extends ExternalResource
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
     private File testDirectory;
+    private StoreLayout storeLayout;
+    private DatabaseLayout defaultDatabaseLayout;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
     {
@@ -161,12 +165,31 @@ public class TestDirectory extends ExternalResource
 
     public File databaseDir()
     {
-        return directory( DEFAULT_DATABASE_DIRECTORY );
+        return defaultDatabaseLayout.databaseDirectory();
+    }
+
+    public DatabaseLayout databaseLayout()
+    {
+        return defaultDatabaseLayout;
+    }
+
+    public DatabaseLayout databaseLayout( File storeDir )
+    {
+        DatabaseLayout databaseLayout = new StoreLayout( storeDir ).databaseDirectory( DEFAULT_DATABASE_DIRECTORY );
+        databaseLayout.databaseDirectory().mkdirs();
+        return databaseLayout;
+    }
+
+    public DatabaseLayout databaseLayout( String name )
+    {
+        DatabaseLayout databaseLayout = storeLayout.databaseDirectory( name );
+        createDirectory( databaseLayout.databaseDirectory() );
+        return databaseLayout;
     }
 
     public File storeDir()
     {
-        return directory();
+        return storeLayout.rootDirectory();
     }
 
     public File storeDir( String storeDirName )
@@ -176,16 +199,9 @@ public class TestDirectory extends ExternalResource
 
     public File databaseDir( File storeDirectory )
     {
-        File directory = new File( storeDirectory, DEFAULT_DATABASE_DIRECTORY );
-        try
-        {
-            fileSystem.mkdirs( directory );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( "Failed to create directory: " + directory, e );
-        }
-        return directory;
+        File databaseDirectory = databaseLayout( storeDirectory ).databaseDirectory();
+        createDirectory( databaseDirectory );
+        return databaseDirectory;
     }
 
     public File databaseDir( String customStoreDirectoryName )
@@ -219,6 +235,8 @@ public class TestDirectory extends ExternalResource
                 fileSystem.deleteRecursively( testDirectory );
             }
             testDirectory = null;
+            storeLayout = null;
+            defaultDatabaseLayout = null;
         }
         finally
         {
@@ -237,6 +255,10 @@ public class TestDirectory extends ExternalResource
             test = "static";
         }
         testDirectory = prepareDirectoryForTest( test );
+        storeLayout = new StoreLayout( testDirectory );
+        //TODO:do not create it by default?
+        defaultDatabaseLayout = storeLayout.databaseDirectory( DEFAULT_DATABASE_DIRECTORY );
+        fileSystem.mkdirs( defaultDatabaseLayout.databaseDirectory() );
     }
 
     public File prepareDirectoryForTest( String test ) throws IOException
@@ -256,6 +278,18 @@ public class TestDirectory extends ExternalResource
     private void directoryForDescription( Description description ) throws IOException
     {
         prepareDirectory( description.getTestClass(), description.getMethodName() );
+    }
+
+    private void createDirectory( File databaseDirectory )
+    {
+        try
+        {
+            fileSystem.mkdirs( databaseDirectory );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( "Failed to create directory: " + databaseDirectory, e );
+        }
     }
 
     private static File clean( FileSystemAbstraction fs, File dir ) throws IOException

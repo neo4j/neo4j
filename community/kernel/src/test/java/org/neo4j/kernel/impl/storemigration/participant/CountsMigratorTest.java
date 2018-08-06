@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
@@ -39,31 +41,30 @@ import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class CountsMigratorTest
 {
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory directory = TestDirectory.testDirectory( fs );
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( fs );
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( directory );
 
     @Test
     public void shouldNotAccidentallyDeleteStoreFilesIfNoMigrationWasRequired() throws IOException
     {
         // given
         CountsMigrator migrator = new CountsMigrator( fs, null, Config.defaults() );
-        File databaseDir = directory.databaseDir();
-        File countsStoreFileA = new File( databaseDir, COUNTS_STORE_LEFT.fileName( STORE ) );
-        File countsStoreFileB = new File( databaseDir, COUNTS_STORE_RIGHT.fileName( STORE ) );
+        DatabaseLayout sourceLayout  = directory.databaseLayout();
+        File countsStoreFileA = sourceLayout.file( COUNTS_STORE_LEFT.fileName( STORE ) );
+        File countsStoreFileB = sourceLayout.file( COUNTS_STORE_RIGHT.fileName( STORE ) );
         fs.create( countsStoreFileA );
         fs.create( countsStoreFileB );
-        File migrationDir = new File( databaseDir, "migration" );
-        fs.mkdirs( migrationDir );
+        DatabaseLayout migrationLayout = directory.databaseLayout( "migration" );
         String versionToMigrateFrom = StoreVersion.STANDARD_V3_2.versionString();
         String versionToMigrateTo = StoreVersion.STANDARD_V3_4.versionString();
-        migrator.migrate( databaseDir, migrationDir, SilentProgressReporter.INSTANCE, versionToMigrateFrom, versionToMigrateTo );
+        migrator.migrate( sourceLayout, migrationLayout, SilentProgressReporter.INSTANCE, versionToMigrateFrom, versionToMigrateTo );
         assertEquals( "Invalid test assumption: There should not have been migration for those versions", 0,
-                fs.listFiles( migrationDir ).length );
+                migrationLayout.listDatabaseFiles( ( dir, name ) -> true ).length );
 
         // when
-        migrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom, versionToMigrateTo );
+        migrator.moveMigratedFiles( migrationLayout, sourceLayout, versionToMigrateFrom, versionToMigrateTo );
 
         // then
         assertTrue( fs.fileExists( countsStoreFileA ) );

@@ -23,8 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -49,10 +50,13 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestDynamicStore
 {
+
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
+
     @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final RuleChain chain = RuleChain.outerRule( fs ).around( testDirectory ).around( pageCacheRule );
 
     private StoreFactory storeFactory;
     private NeoStores neoStores;
@@ -61,10 +65,8 @@ public class TestDynamicStore
     @Before
     public void setUp()
     {
-        File storeDir = new File( "dynamicstore" );
-        fs.get().mkdir( storeDir );
         config = config();
-        storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
+        storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 

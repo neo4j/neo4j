@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
@@ -63,7 +64,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        deleteLabelScanStoreFiles( dbRule.databaseDirectory() );
+        deleteLabelScanStoreFiles( dbRule.databaseLayout() );
 
         workCollector.init();
         labelScanStore.init();
@@ -86,7 +87,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        corruptLabelScanStoreFiles( dbRule.databaseDirectory() );
+        corruptLabelScanStoreFiles( dbRule.databaseLayout() );
 
         workCollector.init();
         labelScanStore.init();
@@ -140,19 +141,19 @@ public class NativeLabelScanStoreStartupIT
         LabelScanStoreTest.scrambleFile( random.random(), file );
     }
 
-    private static File storeFile( File directory )
+    private static File storeFile( DatabaseLayout databaseLayout )
     {
-        return new File( directory, NativeLabelScanStore.FILE_NAME );
+        return databaseLayout.file( NativeLabelScanStore.FILE_NAME );
     }
 
-    private void corruptLabelScanStoreFiles( File storeDirectory ) throws IOException
+    private void corruptLabelScanStoreFiles( DatabaseLayout databaseLayout ) throws IOException
     {
-        scrambleFile( storeFile( storeDirectory ) );
+        scrambleFile( storeFile( databaseLayout ) );
     }
 
-    private static void deleteLabelScanStoreFiles( File storeDirectory )
+    private static void deleteLabelScanStoreFiles( DatabaseLayout databaseLayout )
     {
-        assertTrue( storeFile( storeDirectory ).delete() );
+        assertTrue( storeFile( databaseLayout ).delete() );
     }
 
     private static void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException

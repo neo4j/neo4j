@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -182,7 +183,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final LifeSupport life;
     private final NeoStores neoStores;
     private final IndexConfigStore indexStore;
-    private final File databaseDirectory;
+    private final DatabaseLayout directoryStructure;
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IndexProviderMap indexProviderMap;
@@ -245,7 +246,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.fileSystem = fileSystem;
 
         life = new LifeSupport();
-        this.databaseDirectory = databaseDirectory;
+        this.directoryStructure = new DatabaseLayout( databaseDirectory );
         storeLocker = tryLockStore( fileSystem );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
@@ -263,10 +264,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         LogProvider internalLogProvider = logService.getInternalLogProvider();
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, databaseDirectory, fileSystem,
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, directoryStructure, fileSystem,
                 pageCache, internalLogProvider );
-        StoreFactory sf = new StoreFactory( config.get( GraphDatabaseSettings.active_database ), this.databaseDirectory, config, idGeneratorFactory, pageCache,
-                fileSystem, recordFormats, internalLogProvider, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory sf = new StoreFactory( this.directoryStructure, config, idGeneratorFactory, pageCache, fileSystem,
+                recordFormats, internalLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         maxNodeId = recordFormats.node().getMaxId();
 
@@ -310,7 +311,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        indexStore = life.add( new IndexConfigStore( this.databaseDirectory, fileSystem ) );
+        indexStore = life.add( new IndexConfigStore( this.directoryStructure, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
 
         actions = new BatchSchemaActions();
@@ -330,7 +331,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
     {
-        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.databaseDirectory );
+        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.directoryStructure.databaseDirectory() );
         try
         {
             storeLocker.checkLock();
@@ -959,7 +960,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private NativeLabelScanStore buildLabelIndex() throws IOException
     {
         NativeLabelScanStore labelIndex =
-                new NativeLabelScanStore( pageCache, databaseDirectory, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
+                new NativeLabelScanStore( pageCache, directoryStructure, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
         if ( labelsTouched )
         {
@@ -973,7 +974,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public String toString()
     {
-        return "EmbeddedBatchInserter[" + databaseDirectory + "]";
+        return "EmbeddedBatchInserter[" + directoryStructure + "]";
     }
 
     private Map<String, Object> getPropertyChain( long nextProp )
@@ -1060,7 +1061,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public String getStoreDir()
     {
-        return databaseDirectory.getPath();
+        return directoryStructure.databaseDirectory().getPath();
     }
 
     @Override

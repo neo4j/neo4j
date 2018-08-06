@@ -31,9 +31,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -77,8 +77,6 @@ public class StoreMigratorIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( pageCacheRule );
 
-    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
-    private final LogService logService = new SimpleLogService( logProvider );
     private final Monitors monitors = new Monitors();
     private final FileSystemAbstraction fs = fileSystemRule.get();
 
@@ -112,38 +110,37 @@ public class StoreMigratorIT
     public void shouldBeAbleToResumeMigrationOnMoving() throws Exception
     {
         // GIVEN a legacy database
-        File databaseDir = directory.databaseDir();
+        DatabaseLayout databaseLayout = directory.databaseLayout();
         File prepare = directory.directory( "prepare" );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseDir, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        LogTailScanner tailScanner = getTailScanner( databaseDir );
+        LogTailScanner tailScanner = getTailScanner( databaseLayout.databaseDirectory() );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseDir ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
-        File migrationDir = new File( databaseDir, StoreUpgrader.MIGRATION_DIRECTORY );
-        fs.mkdirs( migrationDir );
-        migrator.migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ), versionToMigrateFrom,
+        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
         countsMigrator
-                .migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ), versionToMigrateFrom,
+                .migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
         migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
-        migrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom,
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
-        countsMigrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom,
+        countsMigrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME,
-                databaseDir, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
     }
@@ -152,38 +149,37 @@ public class StoreMigratorIT
     public void shouldBeAbleToMigrateWithoutErrors() throws Exception
     {
         // GIVEN a legacy database
-        File databaseDir = directory.databaseDir();
+        DatabaseLayout databaseLayout = directory.databaseLayout();
         File prepare = directory.directory( "prepare" );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseDir, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         LogService logService = new SimpleLogService( logProvider, logProvider );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
 
-        LogTailScanner tailScanner = getTailScanner( databaseDir );
+        LogTailScanner tailScanner = getTailScanner( databaseLayout.databaseDirectory() );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseDir ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
-        File migrationDir = new File( databaseDir, StoreUpgrader.MIGRATION_DIRECTORY );
-        fs.mkdirs( migrationDir );
+        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
         // WHEN migrating
-        migrator.migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ), versionToMigrateFrom,
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
         countsMigrator
-                .migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ), versionToMigrateFrom,
+                .migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
-        migrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom,
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
-        countsMigrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom,
+        countsMigrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME,
-                databaseDir, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
         logProvider.assertNoLogCallContaining( "ERROR" );
@@ -193,36 +189,35 @@ public class StoreMigratorIT
     public void shouldBeAbleToResumeMigrationOnRebuildingCounts() throws Exception
     {
         // GIVEN a legacy database
-        File databaseDir = directory.databaseDir();
+        DatabaseLayout databaseLayout = directory.databaseLayout();
         File prepare = directory.directory( "prepare" );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseDir, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        LogTailScanner tailScanner = getTailScanner( databaseDir );
+        LogTailScanner tailScanner = getTailScanner( databaseLayout.databaseDirectory() );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseDir ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
-        File migrationDir = new File( databaseDir, StoreUpgrader.MIGRATION_DIRECTORY );
-        fs.mkdirs( migrationDir );
-        migrator.migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ),
+        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
-        countsMigrator.migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ),
+        countsMigrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
-        migrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom,
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
-        countsMigrator.moveMigratedFiles( migrationDir, databaseDir, versionToMigrateFrom,
+        countsMigrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                new StoreFactory( databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                         logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
     }
@@ -231,54 +226,52 @@ public class StoreMigratorIT
     public void shouldComputeTheLastTxLogPositionCorrectly() throws Throwable
     {
         // GIVEN a legacy database
-        File databaseDir = directory.databaseDir();
+        DatabaseLayout databaseLayout = directory.databaseLayout();
         File prepare = directory.directory( "prepare" );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseDir, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        LogTailScanner tailScanner = getTailScanner( databaseDir );
+        LogTailScanner tailScanner = getTailScanner( databaseLayout.databaseDirectory() );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseDir ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
-        File migrationDir = new File( databaseDir, StoreUpgrader.MIGRATION_DIRECTORY );
-        fs.mkdirs( migrationDir );
+        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
         // WHEN migrating
-        migrator.migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ),
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // THEN it should compute the correct last tx log position
-        assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationDir ) );
+        assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationLayout ) );
     }
 
     @Test
     public void shouldComputeTheLastTxInfoCorrectly() throws Exception
     {
         // given
-        File databaseDir = directory.databaseDir();
+        DatabaseLayout databaseLayout = directory.databaseLayout();
         File prepare = directory.directory( "prepare" );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseDir, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        LogTailScanner tailScanner = getTailScanner( databaseDir );
+        LogTailScanner tailScanner = getTailScanner( databaseLayout.databaseDirectory() );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseDir ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
-        File migrationDir = new File( databaseDir, StoreUpgrader.MIGRATION_DIRECTORY );
-        fs.mkdir( migrationDir );
+        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
         // when
-        migrator.migrate( databaseDir, migrationDir, progressMonitor.startSection( "section" ),
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // then
-        assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationDir ) ) );
+        assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationLayout ) ) );
     }
 
     private static UpgradableDatabase getUpgradableDatabase( PageCache pageCache, LogTailScanner tailScanner )
@@ -286,9 +279,9 @@ public class StoreMigratorIT
         return new UpgradableDatabase( new StoreVersionCheck( pageCache ), selectFormat(), tailScanner );
     }
 
-    private LogTailScanner getTailScanner( File storeDirectory ) throws IOException
+    private LogTailScanner getTailScanner( File databaseDirectory ) throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirectory, fs ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs ).build();
         return new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );
     }
 

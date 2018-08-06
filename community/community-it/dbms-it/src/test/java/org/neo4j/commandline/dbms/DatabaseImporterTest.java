@@ -134,7 +134,7 @@ public class DatabaseImporterTest
     private File provideStoreDirectory()
     {
         GraphDatabaseService db = null;
-        File homeStoreDir = testDir.storeDir( "home" );
+        File homeStoreDir = testDir.databaseDir( "home" );
         try
         {
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( homeStoreDir );
@@ -152,7 +152,7 @@ public class DatabaseImporterTest
             }
         }
 
-        return testDir.databaseDir( homeStoreDir );
+        return homeStoreDir;
     }
 
     private static Matcher<File> isExistingDatabase()

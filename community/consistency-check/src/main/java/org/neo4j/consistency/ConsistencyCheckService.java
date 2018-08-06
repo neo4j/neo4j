@@ -40,6 +40,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -85,22 +86,22 @@ public class ConsistencyCheckService
     }
 
     @Deprecated
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
             throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, verbose,
+        return runFullConsistencyCheck( databaseLayout, tuningConfiguration, progressFactory, logProvider, verbose,
                 new ConsistencyFlags( tuningConfiguration ) );
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, boolean verbose, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
         {
-            return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider,
+            return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider,
                     fileSystem, verbose, consistencyFlags );
         }
         finally
@@ -118,32 +119,32 @@ public class ConsistencyCheckService
     }
 
     @Deprecated
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
             boolean verbose ) throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+        return runFullConsistencyCheck( databaseLayout, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, new ConsistencyFlags( tuningConfiguration ) );
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose,
             ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem,
-                verbose, defaultReportDir( config, storeDir ), consistencyFlags );
+        return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem,
+                verbose, defaultReportDir( config, databaseLayout.databaseDirectory() ), consistencyFlags );
     }
 
     @Deprecated
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
             boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+        return runFullConsistencyCheck( databaseLayout, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, reportDir, new ConsistencyFlags( tuningConfiguration ) );
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, File reportDir,
             ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
@@ -155,7 +156,7 @@ public class ConsistencyCheckService
 
         try
         {
-            return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem,
+            return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem,
                     pageCache, verbose, reportDir, consistencyFlags );
         }
         finally
@@ -172,35 +173,35 @@ public class ConsistencyCheckService
     }
 
     @Deprecated
-    public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider,
             final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose )
             throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+        return runFullConsistencyCheck( databaseLayout, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 pageCache, verbose, new ConsistencyFlags( tuningConfiguration ) );
     }
 
-    public Result runFullConsistencyCheck( final File storeDir, Config config, ProgressMonitorFactory progressFactory,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory,
             final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
             final boolean verbose, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem, pageCache,
-                verbose, defaultReportDir( config, storeDir ), consistencyFlags );
+        return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache,
+                verbose, defaultReportDir( config, databaseLayout.databaseDirectory() ), consistencyFlags );
     }
 
     @Deprecated
-    public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider,
             final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose, File reportDir )
             throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+        return runFullConsistencyCheck( databaseLayout, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 pageCache, verbose, reportDir, new ConsistencyFlags( tuningConfiguration ) );
     }
 
-    public Result runFullConsistencyCheck( final File storeDir, Config config, ProgressMonitorFactory progressFactory,
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory,
             final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
             final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
@@ -209,7 +210,7 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.read_only, TRUE );
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
-        StoreFactory factory = new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config,
+        StoreFactory factory = new StoreFactory( databaseLayout, config,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         ConsistencySummaryStatistics summary;
@@ -220,7 +221,7 @@ public class ConsistencyCheckService
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
-        DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
+        DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( databaseLayout.databaseDirectory(),
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
                 RecoveryCleanupWorkCollector.IGNORE,
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
@@ -233,7 +234,7 @@ public class ConsistencyCheckService
             life.start();
 
             LabelScanStore labelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, true, monitors,
+                    new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, true, monitors,
                             RecoveryCleanupWorkCollector.IGNORE );
             life.add( labelScanStore );
 

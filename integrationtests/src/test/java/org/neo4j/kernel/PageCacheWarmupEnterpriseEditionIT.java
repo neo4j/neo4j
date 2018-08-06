@@ -116,8 +116,8 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         latch.release();
         DatabaseRule.RestartAction useBackupDir = ( fs, storeDir ) ->
         {
-            fs.deleteRecursively( storeDir );
-            fs.copyRecursively( backupDir, storeDir );
+            fs.deleteRecursively( storeDir.databaseDirectory() );
+            fs.copyRecursively( backupDir, storeDir.databaseDirectory() );
         };
         db.restartDatabase( useBackupDir,
                 OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE,
@@ -175,7 +175,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
                     }
                 },
                 true );
-        File databaseDir = db.databaseDirectory();
+        File databaseDir = db.databaseLayout().databaseDirectory();
         File data = testDirectory.cleanDirectory( "data" );
         File databases = new File( data, "databases" );
         File graphdb = testDirectory.databaseDir( databases );

@@ -26,10 +26,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.Log;
@@ -51,15 +54,15 @@ public class ExplicitIndexMigratorTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
     private final ProgressReporter progressMonitor = mock( ProgressReporter.class );
-    private final File storeDir = mock( File.class );
-    private final File migrationDir = mock( File.class );
+    private final DatabaseLayout storeLayout = new DatabaseLayout( new File( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+    private final DatabaseLayout migrationLayout = new DatabaseLayout( new File( StoreUpgrader.MIGRATION_DIRECTORY ) );
     private final File originalIndexStore = mock( File.class );
     private final File migratedIndexStore = new File( "." );
 
     @Before
     public void setUp()
     {
-        when( originalIndexStore.getParentFile() ).thenReturn( storeDir );
+        when( originalIndexStore.getParentFile() ).thenReturn( storeLayout.databaseDirectory() );
         when( fs.isDirectory( originalIndexStore ) ).thenReturn( true );
         when( fs.listFiles( originalIndexStore ) ).thenReturn( new File[]{mock( File.class )} );
     }
@@ -72,11 +75,11 @@ public class ExplicitIndexMigratorTest
         ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+        indexMigrator.migrate( storeLayout, migrationLayout, progressMonitor, StandardV2_3.STORE_VERSION,
                 StandardV3_0.STORE_VERSION );
 
         verify( fs, never() ).deleteRecursively( originalIndexStore );
-        verify( fs, never() ).moveToDirectory( migratedIndexStore, storeDir );
+        verify( fs, never() ).moveToDirectory( migratedIndexStore, storeLayout.databaseDirectory() );
     }
 
     @Test
@@ -85,7 +88,7 @@ public class ExplicitIndexMigratorTest
         ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+        indexMigrator.migrate( storeLayout, migrationLayout, progressMonitor, StandardV2_3.STORE_VERSION,
                 StandardV3_0.STORE_VERSION );
 
         verify( fs ).copyRecursively( originalIndexStore, migratedIndexStore );
@@ -97,14 +100,14 @@ public class ExplicitIndexMigratorTest
         ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+        indexMigrator.migrate( storeLayout, migrationLayout, progressMonitor, StandardV2_3.STORE_VERSION,
                 StandardV3_0.STORE_VERSION );
         reset( fs );
 
-        indexMigrator.moveMigratedFiles( migrationDir, storeDir, "any", "any" );
+        indexMigrator.moveMigratedFiles( migrationLayout, storeLayout, "any", "any" );
 
         verify( fs ).deleteRecursively( originalIndexStore );
-        verify( fs ).moveToDirectory( migratedIndexStore, storeDir );
+        verify( fs ).moveToDirectory( migratedIndexStore, storeLayout.databaseDirectory() );
     }
 
     @Test
@@ -117,7 +120,7 @@ public class ExplicitIndexMigratorTest
         try
         {
             ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, false );
-            indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+            indexMigrator.migrate( storeLayout, migrationLayout, progressMonitor, StandardV2_3.STORE_VERSION,
                     StandardV3_0.STORE_VERSION );
 
             fail( "Index migration should fail" );
@@ -138,9 +141,9 @@ public class ExplicitIndexMigratorTest
 
         ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+        indexMigrator.migrate( storeLayout, migrationLayout, progressMonitor, StandardV2_3.STORE_VERSION,
                 StandardV3_0.STORE_VERSION );
-        indexMigrator.cleanup( migrationDir );
+        indexMigrator.cleanup( migrationLayout );
 
         verify( fs ).deleteRecursively( migratedIndexStore );
     }
@@ -149,8 +152,8 @@ public class ExplicitIndexMigratorTest
     {
         IndexImplementation indexImplementation = mock( IndexImplementation.class );
 
-        when( indexImplementation.getIndexImplementationDirectory( storeDir ) ).thenReturn( originalIndexStore );
-        when( indexImplementation.getIndexImplementationDirectory( migrationDir ) ).thenReturn( migratedIndexStore );
+        when( indexImplementation.getIndexImplementationDirectory( storeLayout ) ).thenReturn( originalIndexStore );
+        when( indexImplementation.getIndexImplementationDirectory( migrationLayout ) ).thenReturn( migratedIndexStore );
 
         ExplicitIndexProvider explicitIndexProvider = mock( ExplicitIndexProvider.class );
         when( explicitIndexProvider.getProviderByName( "lucene" ) ).thenReturn( indexImplementation );

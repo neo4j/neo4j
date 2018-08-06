@@ -167,8 +167,8 @@ public class RecordRelationshipScanCursorTest
 
     private StoreFactory getStoreFactory()
     {
-        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME,
-                storage.directory().databaseDir(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
+        return new StoreFactory(
+                storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
                 storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 

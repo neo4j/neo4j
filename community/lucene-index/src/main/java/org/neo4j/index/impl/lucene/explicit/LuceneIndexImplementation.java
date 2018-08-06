@@ -30,6 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -57,16 +58,16 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
                     KEY_TO_LOWER_CASE, "true" ) );
 
     private LuceneDataSource dataSource;
-    private final File storeDir;
+    private final DatabaseLayout databaseLayout;
     private final Config config;
     private final Supplier<IndexConfigStore> indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final OperationalMode operationalMode;
 
-    public LuceneIndexImplementation( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
+    public LuceneIndexImplementation( DatabaseLayout databaseLayout, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction, OperationalMode operationalMode )
     {
-        this.storeDir = storeDir;
+        this.databaseLayout = databaseLayout;
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -76,7 +77,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     @Override
     public void init()
     {
-        this.dataSource = new LuceneDataSource( storeDir, config, indexStore.get(), fileSystemAbstraction, operationalMode );
+        this.dataSource = new LuceneDataSource( databaseLayout, config, indexStore.get(), fileSystemAbstraction, operationalMode );
         this.dataSource.init();
     }
 
@@ -100,9 +101,9 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
-    public File getIndexImplementationDirectory( File databaseDirectory )
+    public File getIndexImplementationDirectory( DatabaseLayout directoryStructure )
     {
-        return LuceneDataSource.getLuceneIndexStoreDirectory( databaseDirectory );
+        return LuceneDataSource.getLuceneIndexStoreDirectory( directoryStructure );
     }
 
     @Override

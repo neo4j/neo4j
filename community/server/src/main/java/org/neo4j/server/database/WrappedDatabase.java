@@ -44,7 +44,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     @Override
     public File getLocation()
     {
-        return graph.databaseDirectory();
+        return graph.databaseLayout().databaseDirectory();
     }
 
     @Override

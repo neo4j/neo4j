@@ -23,8 +23,8 @@ import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
@@ -60,10 +61,12 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 public class ExplicitBatchIndexApplierTest
 {
+    private final LifeRule life = new LifeRule( true );
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
+
     @Rule
-    public final LifeRule life = new LifeRule( true );
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory ).around( life );
 
     @Test
     public void shouldOnlyCreateOneApplierPerProvider() throws Exception
@@ -171,10 +174,8 @@ public class ExplicitBatchIndexApplierTest
 
     private IndexConfigStore newIndexConfigStore( MutableObjectIntMap<String> names, String providerName )
     {
-        File dir = new File( "conf" );
         EphemeralFileSystemAbstraction fileSystem = fs.get();
-        fileSystem.mkdirs( dir );
-        IndexConfigStore store = life.add( new IndexConfigStore( dir, fileSystem ) );
+        IndexConfigStore store = life.add( new IndexConfigStore( testDirectory.databaseLayout(), fileSystem ) );
 
         names.forEachKey( name ->
         {

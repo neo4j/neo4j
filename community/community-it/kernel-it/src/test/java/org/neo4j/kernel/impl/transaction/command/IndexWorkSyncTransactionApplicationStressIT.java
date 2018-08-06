@@ -103,8 +103,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         FusionIndexProvider indexProvider = NativeLuceneFusionIndexProviderFactory20.create( pageCache, directory.databaseDir(), fs,
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single, RecoveryCleanupWorkCollector.IMMEDIATE );
         RecordStorageEngine storageEngine = storageEngineRule
-                .getWith( fs, pageCache )
-                .storeDirectory( directory.directory() )
+                .getWith( fs, pageCache, directory.databaseLayout() )
                 .indexProvider( indexProvider )
                 .build();
         storageEngine.apply( tx( singletonList( createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), TransactionApplicationMode.EXTERNAL );

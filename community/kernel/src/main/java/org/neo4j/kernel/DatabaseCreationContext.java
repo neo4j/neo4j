@@ -26,6 +26,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -65,7 +66,7 @@ public interface DatabaseCreationContext
 {
     String getDatabaseName();
 
-    File getDatabaseDirectory();
+    DatabaseLayout getDatabaseDirectoryStructure();
 
     Config getConfig();
 

@@ -25,11 +25,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -86,10 +85,10 @@ public class ReadOnlyIndexReferenceFactoryTest
 
     private void setupIndexInfrastructure() throws Exception
     {
-        File storeDir = getStoreDir();
-        indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        indexStore = new IndexConfigStore( databaseLayout, fileSystemRule.get() );
         indexStore.set( Node.class, INDEX_NAME, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
-        LuceneDataSource luceneDataSource = new LuceneDataSource( storeDir, Config.defaults(),
+        LuceneDataSource luceneDataSource = new LuceneDataSource( databaseLayout, Config.defaults(),
                 indexStore, fileSystemRule.get(), OperationalMode.single );
         try
         {
@@ -104,12 +103,6 @@ public class ReadOnlyIndexReferenceFactoryTest
 
     private ReadOnlyIndexReferenceFactory getReadOnlyIndexReferenceFactory()
     {
-        return new ReadOnlyIndexReferenceFactory( filesystemFacade, new File( getStoreDir(), "index" ),
-                new IndexTypeCache( indexStore ) );
-    }
-
-    private File getStoreDir()
-    {
-        return testDirectory.directory();
+        return new ReadOnlyIndexReferenceFactory( filesystemFacade, testDirectory.databaseLayout().file( "index" ), new IndexTypeCache( indexStore ) );
     }
 }

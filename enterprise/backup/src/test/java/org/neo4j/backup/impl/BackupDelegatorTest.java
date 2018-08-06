@@ -26,9 +26,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
@@ -39,6 +38,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.io.layout.DatabaseLayout;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
@@ -71,13 +71,13 @@ public class BackupDelegatorTest
         // given
         AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "neo4j.com", 5432 );
         StoreId expectedStoreId = new StoreId( 7, 2, 5, 98 );
-        Path storeDir = Paths.get( "A directory to store transactions to" );
+        DatabaseLayout databaseLayout = new DatabaseLayout( new File( "." ) );
 
         // when
-        subject.tryCatchingUp( fromAddress, expectedStoreId, storeDir );
+        subject.tryCatchingUp( fromAddress, expectedStoreId, databaseLayout );
 
         // then
-        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true, true );
+        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, databaseLayout, true, true );
     }
 
     @Test
@@ -123,14 +123,14 @@ public class BackupDelegatorTest
     {
         // given
         StoreId storeId = new StoreId( 92, 5, 7, 32 );
-        Path anyFile = Paths.get( "anywhere" );
+        DatabaseLayout databaseLayout = new DatabaseLayout( new File( "." ) );
 
         // when
-        subject.copy( anyAddress, storeId, anyFile );
+        subject.copy( anyAddress, storeId, databaseLayout );
 
         // then
         ArgumentCaptor<CatchupAddressProvider> argumentCaptor = ArgumentCaptor.forClass( CatchupAddressProvider.class );
-        verify( remoteStore ).copy( argumentCaptor.capture(), eq( storeId ), eq( anyFile.toFile() ), eq( true ) );
+        verify( remoteStore ).copy( argumentCaptor.capture(), eq( storeId ), eq( databaseLayout ), eq( true ) );
 
         //and
         assertEquals( anyAddress, argumentCaptor.getValue().primary() );

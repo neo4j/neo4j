@@ -24,8 +24,8 @@ package org.neo4j.com.storecopy;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.com.RequestContext;
@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -56,10 +57,11 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
 
 public class ResponsePackerIT
 {
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( pageCacheRule ).around( testDirectory );
 
     @Test
     public void shouldPackTheHighestTxCommittedAsObligation() throws Exception
@@ -111,13 +113,11 @@ public class ResponsePackerIT
 
     private NeoStores createNeoStore( FileSystemAbstraction fs, PageCache pageCache ) throws IOException
     {
-        File storeDir = new File( "/store/" );
-        fs.mkdirs( storeDir );
         Config config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
-                EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory =
+                new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
         return storeFactory.openAllNeoStores( true );
     }
 }

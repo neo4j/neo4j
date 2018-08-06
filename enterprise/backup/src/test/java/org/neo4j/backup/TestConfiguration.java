@@ -54,7 +54,7 @@ public class TestConfiguration
     @Before
     public void before() throws Exception
     {
-        storeDir = dir.storeDir();
+        storeDir = dir.databaseDir();
         backupDir = dir.cleanDirectory( "full-backup" ).getAbsolutePath();
     }
 

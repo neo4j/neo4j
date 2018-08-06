@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -38,10 +39,10 @@ public interface IndexImplementation extends Lifecycle
 
     /**
      * Get index implementation root directory based on a store directory
-     * @param storeDir store directory
+     * @param directoryStructure database directory structure
      * @return index implementation root directory
      */
-    File getIndexImplementationDirectory( File storeDir );
+    File getIndexImplementationDirectory( DatabaseLayout directoryStructure );
 
     /**
      * Returns a {@link ExplicitIndexProviderTransaction} that keeps transaction state for all

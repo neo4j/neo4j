@@ -37,6 +37,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -113,10 +114,10 @@ public class CsvInputEstimateCalculationIT
                 parseInt( GraphDatabaseSettings.array_block_size.getDefaultValue() ), 0 ) );
 
         // when
-        File storeDir = directory.absolutePath();
+        DatabaseLayout databaseLayout = directory.databaseLayout();
         Config config = Config.defaults();
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        new ParallelBatchImporter( storeDir, fs, null, Configuration.DEFAULT,
+        new ParallelBatchImporter( databaseLayout, fs, null, Configuration.DEFAULT,
                 NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY, config,
                 format, NO_MONITOR ).doImport( input );
 
@@ -125,7 +126,7 @@ public class CsvInputEstimateCalculationIT
         try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL,
                       PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
                 .getOrCreatePageCache();
-              NeoStores stores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+              NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                       NullLogProvider.getInstance(), contextSupplier ).openAllNeoStores() )
         {
             assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
@@ -168,7 +169,7 @@ public class CsvInputEstimateCalculationIT
 
     private long sizeOf( StoreType type )
     {
-        return new File( directory.absolutePath(), DEFAULT_NAME + type.getStoreName() ).length();
+        return directory.databaseLayout().file( DEFAULT_NAME + type.getStoreName() ).length();
     }
 
     private Input generateData() throws IOException
@@ -192,7 +193,7 @@ public class CsvInputEstimateCalculationIT
                 IdType.INTEGER, COMMAS, Collector.EMPTY, groups );
     }
 
-    private long calculateNumberOfProperties( NeoStores stores )
+    private static long calculateNumberOfProperties( NeoStores stores )
     {
         long count = 0;
         PropertyRecord record = stores.getPropertyStore().newRecord();
@@ -211,7 +212,7 @@ public class CsvInputEstimateCalculationIT
         return count;
     }
 
-    private void assertRoughlyEqual( long expected, long actual )
+    private static void assertRoughlyEqual( long expected, long actual )
     {
         long diff = abs( expected - actual );
         assertThat( expected / 10, greaterThan( diff ) );

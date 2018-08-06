@@ -85,7 +85,7 @@ public class NeoStoreDataSourceTest
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( databaseHealth );
 
-            theDataSource = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            theDataSource = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     dependencies );
 
             databaseHealth.panic( new Throwable() );
@@ -108,7 +108,7 @@ public class NeoStoreDataSourceTest
     public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCache );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCache );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -124,7 +124,7 @@ public class NeoStoreDataSourceTest
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCache );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCache );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -143,7 +143,7 @@ public class NeoStoreDataSourceTest
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( health );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseDir(), fs.get(), pageCache, dependencies );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCache, dependencies );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -222,7 +222,7 @@ public class NeoStoreDataSourceTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
 
-        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.databaseDir(), fs.get(),
+        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.databaseLayout(), fs.get(),
                 pageCache, dependencies );
 
         try
@@ -244,7 +244,6 @@ public class NeoStoreDataSourceTest
     public void shouldAlwaysShutdownLifeEvenWhenCheckPointingFails() throws Exception
     {
         // Given
-        File databaseDir = dir.databaseDir();
         FileSystemAbstraction fs = this.fs.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
@@ -254,7 +253,7 @@ public class NeoStoreDataSourceTest
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseHealth );
-        NeoStoreDataSource dataSource = dsRule.getDataSource( databaseDir, fs, pageCache, dependencies );
+        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.databaseLayout(), fs, pageCache, dependencies );
         dataSource.start();
 
         try
@@ -270,7 +269,7 @@ public class NeoStoreDataSourceTest
         }
     }
 
-    private NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( LogFiles files )
+    private static NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( LogFiles files )
     {
         DependencyResolver resolver = mock( DependencyResolver.class );
         when( resolver.resolveDependency( LogFiles.class ) ).thenReturn( files );
@@ -279,14 +278,14 @@ public class NeoStoreDataSourceTest
         return dataSource;
     }
 
-    private LogFiles noLogs()
+    private static LogFiles noLogs()
     {
         LogFiles files = mock( TransactionLogFiles.class );
         when( files.getLowestLogVersion() ).thenReturn( -1L );
         return files;
     }
 
-    private LogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
+    private static LogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
     {
         LogFiles files = mock( TransactionLogFiles.class );
         when( files.getLowestLogVersion() ).thenReturn( logVersion );
@@ -297,7 +296,7 @@ public class NeoStoreDataSourceTest
         return files;
     }
 
-    private LogFiles logWithTransactionsInNextToOldestLog( long logVersion, long prevLogLastTxId )
+    private static LogFiles logWithTransactionsInNextToOldestLog( long logVersion, long prevLogLastTxId )
             throws IOException
     {
         LogFiles files = logWithTransactions( logVersion + 1, prevLogLastTxId );

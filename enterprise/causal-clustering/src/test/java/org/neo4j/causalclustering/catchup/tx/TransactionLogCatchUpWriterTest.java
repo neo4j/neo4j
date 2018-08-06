@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +37,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -93,7 +93,7 @@ public class TransactionLogCatchUpWriterTest
 
     private PageCache pageCache;
     private FileSystemAbstraction fs;
-    private File storeDir;
+    private DatabaseLayout databaseLayout;
 
     @Parameterized.Parameters
     public static List<Boolean> partOfStoreCopy()
@@ -104,7 +104,7 @@ public class TransactionLogCatchUpWriterTest
     @Before
     public void setup()
     {
-        storeDir = dir.databaseDir();
+        databaseLayout = dir.databaseLayout();
         fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
     }
@@ -135,7 +135,7 @@ public class TransactionLogCatchUpWriterTest
         // and
         long fromTx = 0;
         TransactionLogCatchUpWriter subject =
-                new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config, NullLogProvider.getInstance(), fromTx, partOfStoreCopy, false, true );
+                new TransactionLogCatchUpWriter( databaseLayout, fs, pageCache, config, NullLogProvider.getInstance(), fromTx, partOfStoreCopy, false, true );
 
         // when 1M tx received
         IntStream.range( 0, (int) ByteUnit.mebiBytes( 1 ) )
@@ -145,7 +145,7 @@ public class TransactionLogCatchUpWriterTest
         subject.close();
 
         // then there was a rotation
-        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache );
+        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache );
         LogFiles logFiles = logFilesBuilder.build();
         assertNotEquals( logFiles.getLowestLogVersion(), logFiles.getHighestLogVersion() );
     }
@@ -163,7 +163,7 @@ public class TransactionLogCatchUpWriterTest
         // and
         long fromTx = 0;
         TransactionLogCatchUpWriter subject =
-                new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config, NullLogProvider.getInstance(), fromTx, partOfStoreCopy, false, false );
+                new TransactionLogCatchUpWriter( databaseLayout, fs, pageCache, config, NullLogProvider.getInstance(), fromTx, partOfStoreCopy, false, false );
 
         // when 1M tx received
         IntStream.range( 0, (int) ByteUnit.mebiBytes( 1 ) )
@@ -173,7 +173,7 @@ public class TransactionLogCatchUpWriterTest
         subject.close();
 
         // then there was a rotation
-        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache );
+        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache );
         LogFiles logFiles = logFilesBuilder.build();
         assertEquals( logFiles.getLowestLogVersion(), logFiles.getHighestLogVersion() );
     }
@@ -185,7 +185,7 @@ public class TransactionLogCatchUpWriterTest
         int fromTxId = 37;
         int endTxId = fromTxId + 5;
 
-        TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config,
+        TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( databaseLayout, fs, pageCache, config,
                 NullLogProvider.getInstance(), fromTxId, partOfStoreCopy, logsInStoreDir, true );
 
         // when
@@ -197,7 +197,7 @@ public class TransactionLogCatchUpWriterTest
         catchUpWriter.close();
 
         // then
-        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache );
+        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache );
         if ( !logsInStoreDir )
         {
             logFilesBuilder.withConfig( config );
@@ -250,14 +250,14 @@ public class TransactionLogCatchUpWriterTest
     {
         // create an empty store
         org.neo4j.storageengine.api.StoreId storeId;
-        NeoStoreDataSource ds = dsRule.getDataSource( storeDir, fs, pageCache );
+        NeoStoreDataSource ds = dsRule.getDataSource( databaseLayout, fs, pageCache );
         try ( Lifespan ignored = new Lifespan( ds ) )
         {
             storeId = ds.getStoreId();
         }
 
         // we don't have log files after a store copy
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fsRule.get() ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fsRule.get() ).build();
         logFiles.accept( ( file, version ) -> file.delete() );
 
         return storeId;

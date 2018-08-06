@@ -82,7 +82,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
     public GraphDatabaseService newImpermanentDatabase( File storeDir )
     {
-        return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder( storeDir );
+        databaseBuilder.setConfig( GraphDatabaseSettings.active_database, storeDir.getName() );
+        databaseBuilder.setConfig( GraphDatabaseSettings.databases_root_path, storeDir.getParentFile().getAbsolutePath() );
+        return databaseBuilder.newGraphDatabase();
     }
 
     public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>,String> config )

@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -101,12 +102,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
 {
     private NeoStoreDataSource dataSource;
 
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, PageCache pageCache )
+    public NeoStoreDataSource getDataSource( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
     {
-        return getDataSource( storeDir, fs, pageCache, new Dependencies() );
+        return getDataSource( databaseLayout, fs, pageCache, new Dependencies() );
     }
 
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
+    public NeoStoreDataSource getDataSource( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             DependencyResolver otherCustomOverriddenDependencies )
     {
         shutdownAnyRunning();
@@ -143,7 +144,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         dependency( mutableDependencies, IndexProvider.class, deps -> IndexProvider.EMPTY );
 
         dataSource = new NeoStoreDataSource(
-                new TestDatabaseCreationContext( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, logService,
+                new TestDatabaseCreationContext( DatabaseManager.DEFAULT_DATABASE_NAME, databaseLayout, config, idGeneratorFactory, logService,
                         mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
                         mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs, transactionMonitor,
                         databaseHealth, mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
@@ -186,7 +187,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     private static class TestDatabaseCreationContext implements DatabaseCreationContext
     {
         private final String databaseName;
-        private final File databaseDirectory;
+        private final DatabaseLayout databaseLayout;
         private final Config config;
         private final IdGeneratorFactory idGeneratorFactory;
         private final LogService logService;
@@ -227,21 +228,21 @@ public class NeoStoreDataSourceRule extends ExternalResource
         private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
 
-        TestDatabaseCreationContext( String databaseName, File databaseDirectory, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService,
-                JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver, TokenHolders tokenHolders,
-                StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-                IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
-                LogFileCreationMonitor physicalLogMonitor, TransactionHeaderInformationFactory transactionHeaderInformationFactory,
-                CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing, IndexConfigStore indexConfigStore,
-                ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
-                Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock, AccessCapability accessCapability,
-                StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController,
-                DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
-                Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<File,FileSystemWatcherService> watcherServiceFactory,
-                GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
+        TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
+                LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
+                TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard,
+                TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
+                TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth, LogFileCreationMonitor physicalLogMonitor,
+                TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing,
+                IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics,
+                Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock,
+                AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                IdController idController, DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier,
+                CollectionsFactorySupplier collectionsFactorySupplier, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
+                Function<File,FileSystemWatcherService> watcherServiceFactory, GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
         {
             this.databaseName = databaseName;
-            this.databaseDirectory = databaseDirectory;
+            this.databaseLayout = databaseLayout;
             this.config = config;
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = logService;
@@ -290,9 +291,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
         }
 
         @Override
-        public File getDatabaseDirectory()
+        public DatabaseLayout getDatabaseDirectoryStructure()
         {
-            return databaseDirectory;
+            return databaseLayout;
         }
 
         @Override

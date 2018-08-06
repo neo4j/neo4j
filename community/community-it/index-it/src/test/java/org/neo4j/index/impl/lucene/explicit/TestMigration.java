@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -74,7 +75,7 @@ public class TestMigration
 
         graphDb.shutdown();
 
-        removeProvidersFromIndexDbFile( storeDir );
+        removeProvidersFromIndexDbFile( testDirectory.databaseLayout() );
         graphDb = startDatabase( storeDir );
 
         try ( Transaction ignored = graphDb.beginTx() )
@@ -96,7 +97,7 @@ public class TestMigration
 
         graphDb.shutdown();
 
-        removeProvidersFromIndexDbFile( storeDir );
+        removeProvidersFromIndexDbFile( testDirectory.databaseLayout() );
         graphDb = startDatabase( storeDir );
 
         try ( Transaction ignored = graphDb.beginTx() )
@@ -118,9 +119,9 @@ public class TestMigration
         return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
-    private void removeProvidersFromIndexDbFile( File storeDir )
+    private void removeProvidersFromIndexDbFile( DatabaseLayout databaseLayout )
     {
-        IndexConfigStore indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
+        IndexConfigStore indexStore = new IndexConfigStore( databaseLayout, fileSystemRule.get() );
         for ( Class<? extends PropertyContainer> cls : new Class[] {Node.class, Relationship.class} )
         {
             for ( String name : indexStore.getNames( cls ) )

@@ -321,7 +321,7 @@ public class SchemaIndexHaIT
     {
         ClusterManager.RepairKit slaveDown = cluster.shutdown( slave );
 
-        File databaseDir = slave.databaseDirectory();
+        File databaseDir = slave.databaseLayout().databaseDirectory();
         deleteRecursively( databaseDir );
         databaseDir.mkdir();
         return slaveDown;

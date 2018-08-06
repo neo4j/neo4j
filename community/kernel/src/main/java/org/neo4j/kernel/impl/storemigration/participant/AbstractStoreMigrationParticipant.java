@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
@@ -41,19 +41,19 @@ public class AbstractStoreMigrationParticipant implements StoreMigrationParticip
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, ProgressReporter progressMonitor,
+    public void migrate( DatabaseLayout sourceStructure, DatabaseLayout migrationStructure, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom,
+    public void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout directoryStructure, String versionToMigrateFrom,
             String versionToMigrateTo ) throws IOException
     {
     }
 
     @Override
-    public void cleanup( File migrationDir ) throws IOException
+    public void cleanup( DatabaseLayout migrationStructure ) throws IOException
     {
     }
 

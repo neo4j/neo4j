@@ -1404,7 +1404,7 @@ public class BatchInsertTest
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        return factory.newImpermanentDatabaseBuilder( localTestDirectory.storeDir() )
+        return factory.newImpermanentDatabaseBuilder( localTestDirectory.databaseDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )
                 .newGraphDatabase();
@@ -1413,7 +1413,7 @@ public class BatchInsertTest
     private LabelScanStore getLabelScanStore()
     {
         DefaultFileSystemAbstraction fs = fileSystemRule.get();
-        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), localTestDirectory.databaseDir(), fs,
+        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), localTestDirectory.databaseLayout(), fs,
                 FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 

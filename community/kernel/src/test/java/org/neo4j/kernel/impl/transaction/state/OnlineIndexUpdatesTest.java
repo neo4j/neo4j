@@ -107,9 +107,9 @@ public class OnlineIndexUpdatesTest
     {
         life = new LifeSupport();
         PageCache pageCache = storage.pageCache();
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storage.directory().directory(), Config.defaults(),
-                new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache, storage.fileSystem(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory =
+                new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
+                        storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
         neoStores.getCounts().start();

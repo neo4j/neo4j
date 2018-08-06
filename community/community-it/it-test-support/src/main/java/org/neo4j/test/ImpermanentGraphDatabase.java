@@ -172,7 +172,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
         {
-            startedButNotYetClosed.remove( databaseDirectory() );
+            startedButNotYetClosed.remove( databaseLayout() );
         }
 
         super.shutdown();

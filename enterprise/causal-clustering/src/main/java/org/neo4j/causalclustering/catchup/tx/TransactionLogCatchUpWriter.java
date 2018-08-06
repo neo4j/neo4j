@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -60,14 +61,14 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private final boolean asPartOfStoreCopy;
     private final TransactionLogWriter writer;
     private final LogFiles logFiles;
-    private final File storeDir;
+    private final DatabaseLayout databaseLayout;
     private final NeoStores stores;
     private final boolean rotateTransactionsManually;
 
     private long lastTxId = -1;
     private long expectedTxId;
 
-    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Config config,
+    TransactionLogCatchUpWriter( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, Config config,
             LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir,
             boolean forceTransactionRotations ) throws IOException
     {
@@ -75,14 +76,13 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         this.log = logProvider.getLog( getClass() );
         this.asPartOfStoreCopy = asPartOfStoreCopy;
         this.rotateTransactionsManually = forceTransactionRotations;
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( Config.defaults(), storeDir, fs, pageCache, logProvider );
-        this.stores = new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache,
-                fs, recordFormats, logProvider, EMPTY )
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, logProvider );
+        this.stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats, logProvider, EMPTY )
                 .openNeoStores( META_DATA );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( stores.getMetaDataStore() );
         LogFilesBuilder logFilesBuilder = LogFilesBuilder
-                .builder( storeDir, fs )
+                .builder( databaseLayout, fs )
                 .withDependencies( dependencies )
                 .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 )
                 .withConfig( customisedConfig( config, keepTxLogsInStoreDir, forceTransactionRotations ) )
@@ -90,7 +90,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         this.logFiles = logFilesBuilder.build();
         this.lifespan.add( logFiles );
         this.writer = new TransactionLogWriter( new LogEntryWriter( logFiles.getLogFile().getWriter() ) );
-        this.storeDir = storeDir;
+        this.databaseLayout = databaseLayout;
         this.expectedTxId = fromTxId;
     }
 
@@ -173,7 +173,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
             // Recovery will treat that as last checkpoint and will not try to recover store till new
             // last closed transaction offset will not overcome old one. Till that happens it will be
             // impossible for recovery process to restore the store
-            File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+            File neoStore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord(
                     pageCache,
                     neoStore,
@@ -185,7 +185,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
 
         if ( lastTxId != -1 )
         {
-            File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+            File neoStoreFile = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, lastTxId );
         }
         stores.close();

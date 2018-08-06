@@ -19,9 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.File;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -38,11 +37,11 @@ public class StandardBatchImporterFactory extends BatchImporterFactory
     }
 
     @Override
-    public BatchImporter instantiate( File storeDir, FileSystemAbstraction fileSystem, PageCache externalPageCache, Configuration config,
+    public BatchImporter instantiate( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem, PageCache externalPageCache, Configuration config,
             LogService logService, ExecutionMonitor executionMonitor, AdditionalInitialIds additionalInitialIds, Config dbConfig,
             RecordFormats recordFormats, ImportLogic.Monitor monitor )
     {
-        return new ParallelBatchImporter( storeDir, fileSystem, externalPageCache, config, logService, executionMonitor,
+        return new ParallelBatchImporter( directoryStructure, fileSystem, externalPageCache, config, logService, executionMonitor,
                 additionalInitialIds, dbConfig, recordFormats, monitor );
     }
 }

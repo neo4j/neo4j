@@ -125,7 +125,7 @@ public class CsvInputBatchImportIT
     {
         // GIVEN
         Config dbConfig = Config.builder().withSetting( db_timezone, LogTimeZone.SYSTEM.name() ).build();
-        BatchImporter importer = new ParallelBatchImporter( directory.databaseDir(), fileSystemRule.get(), null,
+        BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null,
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), AdditionalInitialIds.EMPTY, dbConfig,
                 RecordFormatSelector.defaultFormat(), NO_MONITOR );
         List<InputEntity> nodeData = randomNodeData();
@@ -315,7 +315,7 @@ public class CsvInputBatchImportIT
                 expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.storeDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.databaseDir() );
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes

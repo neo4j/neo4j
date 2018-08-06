@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -48,7 +49,7 @@ import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
 public class NeoStoreFileListing
 {
-    private final File storeDir;
+    private final DatabaseLayout directoryStructure;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
     private static final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
@@ -58,11 +59,11 @@ public class NeoStoreFileListing
     private final NeoStoreFileIndexListing neoStoreFileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
-    public NeoStoreFileListing( File storeDir, LogFiles logFiles,
+    public NeoStoreFileListing( DatabaseLayout directoryStructure, LogFiles logFiles,
             LabelScanStore labelScanStore, IndexingService indexingService,
             ExplicitIndexProvider explicitIndexProviders, StorageEngine storageEngine )
     {
-        this.storeDir = storeDir;
+        this.directoryStructure = directoryStructure;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
         this.neoStoreFileIndexListing = new NeoStoreFileIndexListing( labelScanStore, indexingService, explicitIndexProviders );
@@ -115,7 +116,7 @@ public class NeoStoreFileListing
 
     private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )
     {
-        File[] indexFiles = storeDir.listFiles( ( dir, name ) -> name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) );
+        File[] indexFiles = directoryStructure.listDatabaseFiles( ( dir, name ) -> name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) );
         if ( indexFiles != null )
         {
             for ( File file : indexFiles )

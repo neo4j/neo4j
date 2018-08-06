@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -55,13 +56,13 @@ public class RecoveryRequiredCheckerTest
     private final Monitors monitors = new Monitors();
     private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;
-    private File databaseDirectory;
+    private DatabaseLayout databaseLayout;
 
     @Before
     public void setup()
     {
-        storeDir = testDirectory.storeDir();
-        databaseDirectory = testDirectory.databaseDir();
+        databaseLayout = testDirectory.databaseLayout();
+        storeDir = databaseLayout.databaseDirectory();
         fileSystem = fileSystemRule.get();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
     }
@@ -72,7 +73,7 @@ public class RecoveryRequiredCheckerTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache );
 
-        assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( false ) );
+        assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
     }
 
     @Test
@@ -84,7 +85,7 @@ public class RecoveryRequiredCheckerTest
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
         }
     }
 
@@ -97,11 +98,11 @@ public class RecoveryRequiredCheckerTest
 
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
 
             new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newImpermanentDatabase( storeDir ).shutdown();
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( false ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
         }
     }
 
@@ -129,7 +130,7 @@ public class RecoveryRequiredCheckerTest
 
             RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache, config );
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
 
             new TestGraphDatabaseFactory()
                     .setFileSystem( fileSystemAbstraction )
@@ -138,7 +139,7 @@ public class RecoveryRequiredCheckerTest
                     .newGraphDatabase()
                     .shutdown();
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( false ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
         }
     }
 
@@ -157,7 +158,7 @@ public class RecoveryRequiredCheckerTest
         return new RecoveryRequiredChecker( fileSystem, pageCache, config, monitors );
     }
 
-    private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem, Config config )
+    private static FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem, Config config )
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                         .setFileSystem( fileSystem )

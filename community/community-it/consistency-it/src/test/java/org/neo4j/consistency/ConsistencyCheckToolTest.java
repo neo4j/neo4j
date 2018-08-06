@@ -47,6 +47,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.LogTimeZone;
@@ -81,15 +82,15 @@ public class ConsistencyCheckToolTest
     public void runsConsistencyCheck() throws Exception
     {
         // given
-        File storeDir = testDirectory.directory();
-        String[] args = {storeDir.getPath()};
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        String[] args = {databaseLayout.databaseDirectory().getAbsolutePath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
 
         // when
         runConsistencyCheckToolWith( service, args );
 
         // then
-        verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
+        verify( service ).runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                 anyBoolean(), any( ConsistencyFlags.class ) );
     }
@@ -101,7 +102,7 @@ public class ConsistencyCheckToolTest
         try
         {
             ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-            Mockito.when( service.runFullConsistencyCheck( any( File.class ), any( Config.class ),
+            Mockito.when( service.runFullConsistencyCheck( any( DatabaseLayout.class ), any( Config.class ),
                     any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                     eq( false ), any( ConsistencyFlags.class ) ) )
                     .then( invocationOnMock ->
@@ -130,8 +131,8 @@ public class ConsistencyCheckToolTest
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        File storeDir = testDirectory.directory();
-        String[] args = {storeDir.getPath()};
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        String[] args = {databaseLayout.databaseDirectory().getAbsolutePath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
 
         // when
@@ -139,7 +140,7 @@ public class ConsistencyCheckToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
+        verify( service ).runFullConsistencyCheck( eq( databaseLayout ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                 anyBoolean(), any( ConsistencyFlags.class ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
@@ -149,13 +150,13 @@ public class ConsistencyCheckToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        File storeDir = testDirectory.directory();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( configFile ), null );
 
-        String[] args = {storeDir.getPath(), "-config", configFile.getPath()};
+        String[] args = {databaseLayout.databaseDirectory().getAbsolutePath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
 
         // when
@@ -163,7 +164,7 @@ public class ConsistencyCheckToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
+        verify( service ).runFullConsistencyCheck( eq( databaseLayout ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                 anyBoolean(), any(ConsistencyFlags.class) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
@@ -268,7 +269,7 @@ public class ConsistencyCheckToolTest
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( config.getRaw()  )
                 .newGraphDatabase();
 

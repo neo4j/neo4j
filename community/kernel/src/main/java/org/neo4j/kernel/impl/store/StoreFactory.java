@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -73,27 +74,27 @@ public class StoreFactory
     private final OpenOption[] openOptions;
     private final VersionContextSupplier versionContextSupplier;
 
-    public StoreFactory( String databaseName, File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+    public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, VersionContextSupplier versionContextSupplier )
     {
-        this( databaseName, storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                selectForStoreOrConfig( config, storeDir, fileSystemAbstraction, pageCache, logProvider ),
+        this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider ),
                 logProvider, versionContextSupplier );
     }
 
-    public StoreFactory( String databaseName, File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+    public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider,
             VersionContextSupplier versionContextSupplier )
     {
-        this( databaseName, storeDir, MetaDataStore.DEFAULT_NAME, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
+        this( directoryStructure, MetaDataStore.DEFAULT_NAME, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 recordFormats, logProvider, versionContextSupplier );
     }
 
-    public StoreFactory( String databaseName, File storeDir, String storeName, Config config, IdGeneratorFactory idGeneratorFactory,
+    public StoreFactory( DatabaseLayout directoryStructure, String storeName, Config config, IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats,
             LogProvider logProvider, VersionContextSupplier versionContextSupplier, OpenOption... openOptions )
     {
-        this.databaseName = databaseName;
+        this.databaseName = directoryStructure.databaseDirectory().getName();
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -103,7 +104,7 @@ public class StoreFactory
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
 
         this.logProvider = logProvider;
-        this.neoStoreFileName = new File( storeDir, storeName );
+        this.neoStoreFileName = directoryStructure.file( storeName );
         this.pageCache = pageCache;
     }
 

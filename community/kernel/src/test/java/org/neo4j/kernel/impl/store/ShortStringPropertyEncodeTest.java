@@ -50,9 +50,9 @@ public class ShortStringPropertyEncodeTest
     @Before
     public void setupStore()
     {
-        neoStores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storage.directory().databaseDir(), Config.defaults(),
-                new DefaultIdGeneratorFactory( storage.fileSystem() ), storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY ).openNeoStores( true, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
+        neoStores = new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
+                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
+                StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
         propertyStore = neoStores.getPropertyStore();
     }
 

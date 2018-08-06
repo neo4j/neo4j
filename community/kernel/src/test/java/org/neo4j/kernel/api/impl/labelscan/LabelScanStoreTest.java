@@ -23,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.hamcrest.Matcher;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -49,6 +48,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -78,7 +78,7 @@ import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
 
 public abstract class LabelScanStoreTest
 {
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    protected final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final ExpectedException expectedException = ExpectedException.none();
     protected final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     final RandomRule random = new RandomRule();
@@ -92,13 +92,6 @@ public abstract class LabelScanStoreTest
     private LifeSupport life;
     private TrackingMonitor monitor;
     private LabelScanStore store;
-    protected File dir;
-
-    @Before
-    public void clearDir()
-    {
-        dir = testDirectory.directory();
-    }
 
     @After
     public void shutdown()
@@ -110,7 +103,7 @@ public abstract class LabelScanStoreTest
     }
 
     protected abstract LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction,
-            File rootFolder, FullStoreChangeStream fullStoreChangeStream, boolean usePersistentStore, boolean readOnly,
+            DatabaseLayout databaseLayout, FullStoreChangeStream fullStoreChangeStream, boolean usePersistentStore, boolean readOnly,
             LabelScanStore.Monitor monitor );
 
     @Test
@@ -587,7 +580,7 @@ public abstract class LabelScanStoreTest
         life = new LifeSupport();
         monitor = new TrackingMonitor();
 
-        store = createLabelScanStore( fileSystemRule.get(), dir, asStream( existingData ), usePersistentStore, readOnly,
+        store = createLabelScanStore( fileSystemRule.get(), testDirectory.databaseLayout(), asStream( existingData ), usePersistentStore, readOnly,
                 monitor );
         life.add( store );
 
@@ -595,15 +588,14 @@ public abstract class LabelScanStoreTest
         assertTrue( monitor.initCalled );
     }
 
-    private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data,
-            boolean usePersistentStore, boolean readOnly ) throws IOException
+    private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data, boolean usePersistentStore, boolean readOnly ) throws IOException
     {
         shutdown();
-        corruptIndex( fileSystemRule.get(), dir );
+        corruptIndex( fileSystemRule.get(), testDirectory.databaseLayout() );
         start( data, usePersistentStore, readOnly );
     }
 
-    protected abstract void corruptIndex( FileSystemAbstraction fileSystem, File rootFolder ) throws IOException;
+    protected abstract void corruptIndex( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException;
 
     protected void scrambleFile( File file ) throws IOException
     {

@@ -54,6 +54,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -166,7 +167,7 @@ public class StoreUpgradeIT
                 db.shutdown();
             }
 
-            assertConsistentStore( databaseDirectory );
+            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
         }
 
         @Test
@@ -208,7 +209,7 @@ public class StoreUpgradeIT
                 bootstrapper.stop();
             }
 
-            assertConsistentStore( databaseDirectory );
+            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
         }
 
         @Test
@@ -233,7 +234,7 @@ public class StoreUpgradeIT
                 db.shutdown();
             }
 
-            assertConsistentStore( databaseDirectory );
+            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
 
             // start the cluster with the db migrated from the old instance
             File haDir = testDir.storeDir( "ha-stuff" );
@@ -260,8 +261,8 @@ public class StoreUpgradeIT
                 clusterManager.safeShutdown();
             }
 
-            assertConsistentStore( master.databaseDirectory() );
-            assertConsistentStore( slave.databaseDirectory() );
+            assertConsistentStore( master.databaseLayout() );
+            assertConsistentStore( slave.databaseLayout() );
         }
     }
 
@@ -357,7 +358,7 @@ public class StoreUpgradeIT
                 db.shutdown();
             }
 
-            assertConsistentStore( databaseDirectory );
+            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
         }
     }
 

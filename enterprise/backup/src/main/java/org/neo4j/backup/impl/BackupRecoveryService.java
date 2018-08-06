@@ -44,7 +44,7 @@ class BackupRecoveryService
         configParams.put( GraphDatabaseSettings.logical_logs_location.name(), databaseDirectory.toString() );
         configParams.put( GraphDatabaseSettings.active_database.name(), databaseDirectory.getFileName().toString() );
         configParams.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
-        GraphDatabaseAPI targetDb = startTemporaryDb( databaseDirectory.getParent(), pageCache, configParams );
+        GraphDatabaseAPI targetDb = startTemporaryDb( databaseDirectory.toFile(), pageCache, configParams );
         targetDb.shutdown();
         // as soon as recovery will be extracted we will not gonna need this
         File lockFile = new File( databaseDirectory.getParent().toFile(), StoreLocker.STORE_LOCK_FILENAME );

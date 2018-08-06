@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -73,35 +74,32 @@ public class HighLimitStoreMigrationTest
 
         StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance() );
 
-        File storeDir = new File( testDirectory.databaseDir(), "storeDir" );
-        File migrationDir = new File( testDirectory.databaseDir(), "migrationDir" );
-        fileSystem.mkdir( migrationDir );
-        fileSystem.mkdir( storeDir );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        DatabaseLayout migrationLayout = testDirectory.databaseLayout( "migration" );
 
-        prepareNeoStoreFile( fileSystem, storeDir, HighLimitV3_0_0.STORE_VERSION, pageCache );
+        prepareNeoStoreFile( fileSystem, databaseLayout, HighLimitV3_0_0.STORE_VERSION, pageCache );
 
         ProgressReporter progressMonitor = mock( ProgressReporter.class );
 
-        migrator.migrate( storeDir, migrationDir, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
 
-        int newStoreFilesCount = fileSystem.listFiles( migrationDir ).length;
+        int newStoreFilesCount = fileSystem.listFiles( migrationLayout.databaseDirectory() ).length;
         assertThat( "Store should be migrated and new store files should be created.",
                 newStoreFilesCount, Matchers.greaterThanOrEqualTo( StoreType.values().length ) );
     }
 
-    private File prepareNeoStoreFile( FileSystemAbstraction fileSystem, File storeDir, String storeVersion,
-            PageCache pageCache ) throws IOException
+    private static File prepareNeoStoreFile( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, String storeVersion, PageCache pageCache )
+            throws IOException
     {
-        File neoStoreFile = createNeoStoreFile( fileSystem, storeDir );
+        File neoStoreFile = createNeoStoreFile( fileSystem, databaseLayout );
         long value = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
         return neoStoreFile;
     }
 
-    private File createNeoStoreFile( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    private static File createNeoStoreFile( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        fileSystem.mkdir( storeDir );
-        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
         fileSystem.create( neoStoreFile ).close();
         return neoStoreFile;
     }

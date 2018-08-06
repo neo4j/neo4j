@@ -52,7 +52,7 @@ public class TransactionLogsInSeparateLocationIT
     {
         File databaseDirectory = testDirectory.databaseDir();
         File txDirectory = new File( databaseDirectory, "transaction-logs" );
-        performTransactions( txDirectory.getName(), testDirectory.directory() );
+        performTransactions( txDirectory.getName(), testDirectory.databaseDir() );
         verifyTransactionLogs( txDirectory, databaseDirectory );
     }
 
@@ -61,7 +61,7 @@ public class TransactionLogsInSeparateLocationIT
     {
         File databaseDirectory = testDirectory.databaseDir();
         File txDirectory = testDirectory.directory( "transaction-logs" );
-        performTransactions( txDirectory.getAbsolutePath(), testDirectory.directory() );
+        performTransactions( txDirectory.getAbsolutePath(), testDirectory.databaseDir() );
         verifyTransactionLogs( txDirectory, databaseDirectory );
     }
 

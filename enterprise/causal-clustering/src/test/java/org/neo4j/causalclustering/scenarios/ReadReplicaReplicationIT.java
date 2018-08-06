@@ -227,7 +227,7 @@ public class ReadReplicaReplicationIT
 
     private static void gatherLabelScanStoreFiles( GraphDatabaseAPI db, Set<Path> labelScanStoreFiles )
     {
-        Path databaseDirectory = db.databaseDirectory().toPath().toAbsolutePath();
+        Path databaseDirectory = db.databaseLayout().databaseDirectory().toPath();
         LabelScanStore labelScanStore = db.getDependencyResolver().resolveDependency( LabelScanStore.class );
         try ( ResourceIterator<File> files = labelScanStore.snapshotStoreFiles() )
         {

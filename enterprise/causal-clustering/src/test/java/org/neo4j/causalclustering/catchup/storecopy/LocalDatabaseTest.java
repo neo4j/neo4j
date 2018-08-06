@@ -25,9 +25,9 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.io.File;
 import java.time.Clock;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -160,7 +160,7 @@ public class LocalDatabaseTest
 
     private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard, DataSourceManager dataSourceManager )
     {
-        return new LocalDatabase( new File( "." ), mock( StoreFiles.class ), mock( LogFiles.class ), dataSourceManager,
+        return new LocalDatabase( mock( DatabaseLayout.class ), mock( StoreFiles.class ), mock( LogFiles.class ), dataSourceManager,
                 () -> mock( DatabaseHealth.class ), availabilityGuard,
                 NullLogProvider.getInstance() );
     }

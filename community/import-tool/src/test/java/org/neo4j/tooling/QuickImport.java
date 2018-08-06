@@ -30,11 +30,12 @@ import org.neo4j.csv.reader.Readables;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -167,7 +168,7 @@ public class QuickImport
             {
                 System.out.println( "Seed " + randomSeed );
                 final JobScheduler jobScheduler = life.add( new CentralJobScheduler() );
-                consumer = BatchImporterFactory.withHighestPriority().instantiate( dir, fileSystem, null, importConfig,
+                consumer = BatchImporterFactory.withHighestPriority().instantiate( new DatabaseLayout( dir ), fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible( jobScheduler ), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR );
                 ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );

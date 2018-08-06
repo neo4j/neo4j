@@ -57,7 +57,7 @@ public class StoreMigrationTest
 
         // after migration we can open store and do something
         GraphDatabaseService database = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDir.storeDir() )
+                .newEmbeddedDatabaseBuilder( testDir.databaseDir() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() )
                 .newGraphDatabase();
         try ( Transaction transaction = database.beginTx() )

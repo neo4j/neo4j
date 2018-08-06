@@ -22,7 +22,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.function.Function;
@@ -33,6 +32,7 @@ import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -64,7 +64,7 @@ public class SwitchToSlaveBranchThenCopy extends SwitchToSlave
 {
     private final LogService logService;
 
-    public SwitchToSlaveBranchThenCopy( File storeDir, LogService logService, FileSystemAbstraction fileSystemAbstraction, Config config,
+    public SwitchToSlaveBranchThenCopy( DatabaseLayout databaseLayout, LogService logService, FileSystemAbstraction fileSystemAbstraction, Config config,
             HaIdGeneratorFactory idGeneratorFactory, DelegateInvocationHandler<Master> masterDelegateHandler,
             ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory requestContextFactory, PullerFactory pullerFactory,
             Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver, Monitor monitor,
@@ -73,7 +73,7 @@ public class SwitchToSlaveBranchThenCopy extends SwitchToSlave
             PageCache pageCache, Monitors monitors,
             Supplier<DatabaseTransactionStats> transactionStatsSupplier )
     {
-        this( storeDir,
+        this( databaseLayout,
                 logService,
                 config,
                 idGeneratorFactory,
@@ -83,7 +83,7 @@ public class SwitchToSlaveBranchThenCopy extends SwitchToSlave
                 pullerFactory,
                 masterClientResolver,
                 monitor,
-                new StoreCopyClient( storeDir, config, kernelExtensions, logService.getUserLogProvider(),
+                new StoreCopyClient( databaseLayout, config, kernelExtensions, logService.getUserLogProvider(),
                         fileSystemAbstraction, pageCache, storeCopyMonitor, false ),
                 neoDataSourceSupplier,
                 transactionIdStoreSupplier,
@@ -94,7 +94,7 @@ public class SwitchToSlaveBranchThenCopy extends SwitchToSlave
                 transactionStatsSupplier );
     }
 
-    SwitchToSlaveBranchThenCopy( File storeDir,
+    SwitchToSlaveBranchThenCopy( DatabaseLayout databaseLayout,
                                          LogService logService,
                                          Config config,
                                          HaIdGeneratorFactory idGeneratorFactory,
@@ -115,8 +115,8 @@ public class SwitchToSlaveBranchThenCopy extends SwitchToSlave
     {
         super( idGeneratorFactory, monitors, requestContextFactory, masterDelegateHandler,
                 clusterMemberAvailability, masterClientResolver, monitor, pullerFactory, updatePuller,
-                slaveServerFactory, config, logService, pageCache, storeDir, transactionIdStoreSupplier,
-                transactionStatsSupplier, neoDataSourceSupplier, storeCopyClient );
+                slaveServerFactory, config, logService, pageCache, databaseLayout, transactionIdStoreSupplier,
+                        transactionStatsSupplier, neoDataSourceSupplier, storeCopyClient );
         this.logService = logService;
     }
 
@@ -168,6 +168,6 @@ public class SwitchToSlaveBranchThenCopy extends SwitchToSlave
     void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
         stopServices();
-        branchPolicy.handle( storeDir, pageCache, logService );
+        branchPolicy.handle( databaseLayout.databaseDirectory(), pageCache, logService );
     }
 }

@@ -24,8 +24,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.collection.Iterables;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -52,7 +52,36 @@ import static org.junit.Assert.assertEquals;
 public class PropertyPhysicalToLogicalConverterTest
 {
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+
     private NeoStores neoStores;
+    private PropertyStore store;
+    private final Value longString = Values.of( "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing" );
+    private final Value longerString = Values.of( "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd" );
+    private PropertyPhysicalToLogicalConverter converter;
+    private final long[] none = new long[0];
+
+    @Before
+    public void before()
+    {
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
+        neoStores = storeFactory.openAllNeoStores( true );
+        store = neoStores.getPropertyStore();
+        converter = new PropertyPhysicalToLogicalConverter( store );
+    }
+
+    @After
+    public void after()
+    {
+        neoStores.close();
+    }
 
     @Test
     public void shouldConvertInlinedAddedProperty()
@@ -187,7 +216,7 @@ public class PropertyPhysicalToLogicalConverterTest
         assertEquals( expected, update );
     }
 
-    private PropertyRecord propertyRecord( PropertyBlock... propertyBlocks )
+    private static PropertyRecord propertyRecord( PropertyBlock... propertyBlocks )
     {
         PropertyRecord record = new PropertyRecord( 0 );
         if ( propertyBlocks != null )
@@ -207,39 +236,6 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyBlock block = new PropertyBlock();
         store.encodeValue( block, (int) key, value );
         return block;
-    }
-
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private PropertyStore store;
-    private final Value longString = Values.of(
-            "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing" );
-    private final Value longerString = Values.of(
-            "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd" );
-    private PropertyPhysicalToLogicalConverter converter;
-    private final long[] none = new long[0];
-    private final long[] labels = new long[]{11};
-
-    @Before
-    public void before()
-    {
-        File storeDir = new File( "dir" );
-        fs.get().mkdirs( storeDir );
-        StoreFactory storeFactory =
-                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                        pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY );
-        neoStores = storeFactory.openAllNeoStores( true );
-        store = neoStores.getPropertyStore();
-        converter = new PropertyPhysicalToLogicalConverter( store );
-    }
-
-    @After
-    public void after()
-    {
-        neoStores.close();
     }
 
     private EntityUpdates convert( long[] labelsBefore,

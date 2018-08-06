@@ -87,9 +87,7 @@ public class BackupCoreIT
             DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
 
             // Verify that old data is back
-            Config config = getConfig();
-            config.augment( GraphDatabaseSettings.active_database, "" + db.serverId() );
-            DbRepresentation backupRepresentation = DbRepresentation.of( backupsDir, config );
+            DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupsDir, "" + db.serverId() ), getConfig() );
             assertEquals( beforeChange, backupRepresentation );
             assertNotEquals( backupRepresentation, afterChange );
         }

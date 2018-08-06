@@ -41,6 +41,7 @@ import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -83,10 +84,10 @@ public class CoreBootstrapperIT
                 testDirectory.directory(), fileSystem, nodeCount, Standard.LATEST_NAME );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        File classicDatabaseDirectory = testDirectory.databaseDir( classicNeo4jStore );
-        CoreBootstrapper bootstrapper = new CoreBootstrapper( classicDatabaseDirectory, pageCache, fileSystem,
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( classicNeo4jStore );
+        CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem,
                 Config.defaults(), NullLogProvider.getInstance() );
-        bootstrapAndVerify( nodeCount, fileSystem, classicDatabaseDirectory, pageCache, Config.defaults(), bootstrapper );
+        bootstrapAndVerify( nodeCount, fileSystem, databaseLayout, pageCache, Config.defaults(), bootstrapper );
     }
 
     @Test
@@ -101,16 +102,16 @@ public class CoreBootstrapperIT
                 Standard.LATEST_NAME, customTransactionLogsLocation );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        File classicDatabaseDirectory = testDirectory.databaseDir( classicNeo4jStore );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( classicNeo4jStore );
         Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location,
                 customTransactionLogsLocation );
-        CoreBootstrapper bootstrapper = new CoreBootstrapper( classicDatabaseDirectory, pageCache, fileSystem,
+        CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem,
                 config, NullLogProvider.getInstance() );
 
-        bootstrapAndVerify( nodeCount, fileSystem, classicDatabaseDirectory, pageCache, config, bootstrapper );
+        bootstrapAndVerify( nodeCount, fileSystem, databaseLayout, pageCache, config, bootstrapper );
     }
 
-    private static void bootstrapAndVerify( long nodeCount, FileSystemAbstraction fileSystem, File databaseDirectory, PageCache pageCache, Config config,
+    private static void bootstrapAndVerify( long nodeCount, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache, Config config,
             CoreBootstrapper bootstrapper ) throws IOException
     {
         // when
@@ -136,9 +137,9 @@ public class CoreBootstrapperIT
         assertEquals( new GlobalSessionTrackerState(), snapshot.get( CoreStateType.SESSION_TRACKER ) );
 
         ReadOnlyTransactionStore transactionStore = new ReadOnlyTransactionStore( pageCache, fileSystem,
-                databaseDirectory, config, new Monitors() );
+                databaseLayout, config, new Monitors() );
         LastCommittedIndexFinder lastCommittedIndexFinder = new LastCommittedIndexFinder(
-                new ReadOnlyTransactionIdStore( pageCache, databaseDirectory ),
+                new ReadOnlyTransactionIdStore( pageCache, databaseLayout ),
                 transactionStore, NullLogProvider.getInstance() );
 
         long lastCommittedIndex = lastCommittedIndexFinder.getLastCommittedIndex();

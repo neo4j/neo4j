@@ -123,7 +123,7 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, testDirectory.databaseDir(), config,
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config,
                 new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider
                 .getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );

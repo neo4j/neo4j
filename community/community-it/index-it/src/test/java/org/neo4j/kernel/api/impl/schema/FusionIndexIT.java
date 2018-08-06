@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
@@ -52,7 +53,7 @@ public class FusionIndexIT
     public DatabaseRule db = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
 
-    private File databaseDirectory;
+    private DatabaseLayout databaseLayout;
     private final Label label = Label.label( "label" );
     private final String propKey = "propKey";
     private FileSystemAbstraction fs;
@@ -64,7 +65,7 @@ public class FusionIndexIT
     @Before
     public void setup()
     {
-        databaseDirectory = db.databaseDirectory();
+        databaseLayout = db.databaseLayout();
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
 
@@ -131,7 +132,7 @@ public class FusionIndexIT
 
     private void deleteIndexFilesFor( IndexProviderDescriptor descriptor )
     {
-        File databaseDirectory = this.databaseDirectory;
+        File databaseDirectory = this.databaseLayout.databaseDirectory();
         File rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
         File[] files = fs.listFiles( rootDirectory );
         for ( File indexFile : files )

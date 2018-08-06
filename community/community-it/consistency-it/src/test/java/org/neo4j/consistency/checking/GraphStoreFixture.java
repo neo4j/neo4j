@@ -42,6 +42,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.StatementConstants;
@@ -165,8 +166,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             LogProvider logProvider = NullLogProvider.getInstance();
             Config config = Config.defaults();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
-            StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME,
-                    directory.databaseDir(), config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
+            StoreFactory storeFactory = new StoreFactory(
+                    directory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
             neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
@@ -197,7 +198,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors )
     {
         NativeLabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, directory.databaseDir(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
+                new NativeLabelScanStore( pageCache, directory.databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
         try
         {
@@ -220,9 +221,9 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return life.add( new DefaultIndexProviderMap( extensions ) );
     }
 
-    public File databaseDirectory()
+    public DatabaseLayout databaseLayout()
     {
-        return directory.databaseDir();
+        return directory.databaseLayout();
     }
 
     public Statistics getAccessStatistics()
@@ -478,7 +479,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         Applier()
         {
             database = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( directory.storeDir() )
+                    .newEmbeddedDatabaseBuilder( directory.databaseDir() )
                     .setConfig( "dbms.backup.enabled", "false" )
                     .newGraphDatabase();
             DependencyResolver dependencyResolver = database.getDependencyResolver();
@@ -527,7 +528,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private void generateInitialData()
     {
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() );
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() );
         GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
@@ -572,7 +573,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 try
                 {
                     generateInitialData();
-                    start( GraphStoreFixture.this.directory.storeDir() );
+                    start( GraphStoreFixture.this.directory.databaseDir() );
                     try
                     {
                         base.evaluate();

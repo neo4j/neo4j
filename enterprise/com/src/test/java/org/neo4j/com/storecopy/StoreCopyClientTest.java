@@ -41,6 +41,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -107,8 +108,9 @@ public class StoreCopyClientTest
             throws Exception
     {
         // given
-        final File copyDir = new File( directory.directory(), "copy" );
-        final File originalDir = new File( directory.directory(), "original" );
+        final DatabaseLayout copyLayout = directory.databaseLayout("copy" );
+        final File originalDir = directory.storeDir( "original" );
+        DatabaseLayout originalLayout = directory.databaseLayout( originalDir );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         StoreCopyClientMonitor storeCopyMonitor = new StoreCopyClientMonitor.Adapter()
@@ -123,10 +125,10 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier =
-                new StoreCopyClient( directory.databaseDir( copyDir ), Config.defaults(), loadKernelExtensions(),
+                new StoreCopyClient( copyLayout, Config.defaults(), loadKernelExtensions(),
                         NullLogProvider.getInstance(), fileSystem, pageCache, storeCopyMonitor, false );
 
-        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalLayout.databaseDirectory() );
 
         try ( Transaction tx = original.beginTx() )
         {
@@ -135,13 +137,13 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( requestFactory.create( original, directory.databaseDir( originalDir ), fileSystem, false ) );
+                spy( requestFactory.create( original, originalLayout.databaseDirectory(), fileSystem, false ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
 
         // Then
-        GraphDatabaseService copy = startDatabase( copyDir );
+        GraphDatabaseService copy = startDatabase( copyLayout.databaseDirectory() );
 
         try ( Transaction tx = copy.beginTx() )
         {
@@ -155,21 +157,21 @@ public class StoreCopyClientTest
         }
 
         verify( storeCopyRequest, times( 1 ) ).done();
-        assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
+        assertFalse( copyLayout.file( TEMP_COPY_DIRECTORY_NAME ).exists() );
     }
 
     @Test
     public void storeCopyClientUseCustomTransactionLogLocationWhenConfigured() throws Exception
     {
-        final File copyDir = new File( directory.directory(), "copyCustomLocation" );
+        final DatabaseLayout copyLayout = directory.databaseLayout("copyCustomLocation" );
         final File originalDir = new File( directory.directory(), "originalCustomLocation" );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        File copyCustomLogFilesLocation = new File( copyDir, "CopyCustomLogFilesLocation" );
+        File copyCustomLogFilesLocation = copyLayout.file( "CopyCustomLogFilesLocation" );
         File originalCustomLogFilesLocation = new File( originalDir, "originalCustomLogFilesLocation" );
 
         Config config = Config.defaults( logical_logs_location, copyCustomLogFilesLocation.getName() );
         StoreCopyClient copier = new StoreCopyClient(
-                copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
+                copyLayout, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 new StoreCopyClientMonitor.Adapter(), false );
 
         GraphDatabaseAPI original = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
@@ -180,22 +182,22 @@ public class StoreCopyClientTest
         long logFileSize =
                 original.getDependencyResolver().resolveDependency( LogFiles.class ).getLogFileForVersion( 0 ).length();
 
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, directory.databaseDir( originalDir ), fileSystem, true );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalDir, fileSystem, true );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
         original.shutdown();
 
-        assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
+        assertFalse( copyLayout.file( TEMP_COPY_DIRECTORY_NAME ).exists() );
 
         LogFiles customLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( copyCustomLogFilesLocation, fileSystem ).build();
         assertTrue( customLogFiles.versionExists( 0 ) );
         assertThat( customLogFiles.getLogFileForVersion( 0 ).length(), greaterThanOrEqualTo( logFileSize ) );
 
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( copyDir, fileSystem ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( copyLayout.databaseDirectory(), fileSystem ).build();
         assertFalse( logFiles.versionExists( 0 ) );
 
         new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( copyDir )
+                .newEmbeddedDatabaseBuilder( copyLayout.databaseDirectory() )
                 .setConfig( logical_logs_location, copyCustomLogFilesLocation.getName() )
                 .newGraphDatabase().shutdown();
     }
@@ -217,8 +219,9 @@ public class StoreCopyClientTest
             throws Exception
     {
         // given
-        final File copyDir = new File( directory.directory(), "copy" );
-        final File originalDir = new File( directory.directory(), "original" );
+        final DatabaseLayout copyLayout = directory.databaseLayout("copy" );
+        final File originalDir = directory.storeDir( "original" );
+        DatabaseLayout originalLayout = directory.databaseLayout( originalDir );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         StoreCopyClientMonitor storeCopyMonitor = new StoreCopyClientMonitor.Adapter()
@@ -232,10 +235,10 @@ public class StoreCopyClientTest
         };
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        StoreCopyClient copier = new StoreCopyClient( directory.databaseDir( copyDir ), Config.defaults(), loadKernelExtensions(),
+        StoreCopyClient copier = new StoreCopyClient( copyLayout, Config.defaults(), loadKernelExtensions(),
                 NullLogProvider.getInstance(), fileSystem, pageCache, storeCopyMonitor, false );
 
-        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalLayout.databaseDirectory() );
 
         try ( Transaction tx = original.beginTx() )
         {
@@ -244,13 +247,13 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( requestFactory.create( original, directory.databaseDir( originalDir ), fileSystem, false ) );
+                spy( requestFactory.create( original, originalLayout.databaseDirectory(), fileSystem, false ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
 
         // Then
-        GraphDatabaseService copy = startDatabase( copyDir );
+        GraphDatabaseService copy = startDatabase( copyLayout.databaseDirectory() );
 
         try ( Transaction tx = copy.beginTx() )
         {
@@ -261,38 +264,37 @@ public class StoreCopyClientTest
         }
 
         verify( storeCopyRequest, times( 1 ) ).done();
-        assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
+        assertFalse( copyLayout.file( TEMP_COPY_DIRECTORY_NAME ).exists() );
     }
 
     @Test
     public void shouldResetNeoStoreLastTransactionOffsetForNonForensicCopy() throws Exception
     {
         // GIVEN
-        File initialStore = directory.directory( "initialStore" );
+        DatabaseLayout initialLayout = directory.databaseLayout( "initialStore" );
         File backupStore = directory.directory( "backupStore" );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        createInitialDatabase( initialStore );
+        createInitialDatabase( initialLayout.databaseDirectory() );
 
-        File initialDatabaseDirectory = directory.databaseDir( initialStore );
-        long originalTransactionOffset = MetaDataStore.getRecord( pageCache, new File( initialDatabaseDirectory, MetaDataStore.DEFAULT_NAME ),
+        long originalTransactionOffset = MetaDataStore.getRecord( pageCache, initialLayout.file( MetaDataStore.DEFAULT_NAME ),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
-        GraphDatabaseService initialDatabase = startDatabase( initialStore );
+        GraphDatabaseService initialDatabase = startDatabase( initialLayout.databaseDirectory() );
 
-        File backupDatabase = directory.databaseDir( backupStore );
+        DatabaseLayout backupLayout = directory.databaseLayout( backupStore );
         StoreCopyClient copier =
-                new StoreCopyClient( backupDatabase, Config.defaults(), loadKernelExtensions(), NullLogProvider
+                new StoreCopyClient( backupLayout, Config.defaults(), loadKernelExtensions(), NullLogProvider
                         .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                requestFactory.create( (GraphDatabaseAPI) initialDatabase, initialDatabaseDirectory, fileSystem, false );
+                requestFactory.create( (GraphDatabaseAPI) initialDatabase, initialLayout.databaseDirectory(), fileSystem, false );
 
         // WHEN
         copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
 
         // THEN
         long updatedTransactionOffset =
-                MetaDataStore.getRecord( pageCache, new File( backupDatabase, MetaDataStore.DEFAULT_NAME ),
+                MetaDataStore.getRecord( pageCache, backupLayout.file( MetaDataStore.DEFAULT_NAME ),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         assertNotEquals( originalTransactionOffset, updatedTransactionOffset );
         assertEquals( LogHeader.LOG_HEADER_SIZE, updatedTransactionOffset );
@@ -304,12 +306,12 @@ public class StoreCopyClientTest
     {
         // GIVEN
         File initialStore = directory.directory( "initialStore" );
-        File backupStore = directory.directory( "backupStore" );
+        DatabaseLayout backupLayout = directory.databaseLayout( "backupStore" );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
         StoreCopyClient copier =
-                new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
+                new StoreCopyClient( backupLayout, Config.defaults(), loadKernelExtensions(), NullLogProvider
                         .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
 
@@ -336,28 +338,30 @@ public class StoreCopyClientTest
         }
 
         // THEN
-        assertFalse( new File( backupStore, TEMP_COPY_DIRECTORY_NAME ).exists() );
+        assertFalse( backupLayout.file( TEMP_COPY_DIRECTORY_NAME ).exists() );
     }
 
     private void checkStoreCopyClientWithRecordFormats( String recordFormatsName ) throws Exception
     {
-        final File copyDir = new File( directory.directory(), "copy" );
-        final File originalDir = new File( directory.directory(), "original" );
+        final DatabaseLayout copyLayout = directory.databaseLayout("copy" );
+        final File originalDir = directory.storeDir( "original" );
+        DatabaseLayout originalLayout = directory.databaseLayout( originalDir );
+
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         Config config = Config.defaults( record_format, recordFormatsName );
-        StoreCopyClient copier = new StoreCopyClient( directory.databaseDir( copyDir ),
+        StoreCopyClient copier = new StoreCopyClient( copyLayout,
                 config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 new StoreCopyClientMonitor.Adapter(), false );
 
-        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, directory.databaseDir( originalDir ), fileSystem, false );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalLayout.databaseDirectory(), recordFormatsName );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalLayout.databaseDirectory(), fileSystem, false );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
 
-        assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
+        assertFalse( copyLayout.file( TEMP_COPY_DIRECTORY_NAME ).exists() );
 
         // Must not throw
-        startDatabase( copyDir, recordFormatsName ).shutdown();
+        startDatabase( copyLayout.databaseDirectory(), recordFormatsName ).shutdown();
     }
 
     private GraphDatabaseService createInitialDatabase( File initialStore )
@@ -399,7 +403,7 @@ public class StoreCopyClientTest
         return kernelExtensions;
     }
 
-    private void generateTransactions( GraphDatabaseAPI original )
+    private static void generateTransactions( GraphDatabaseAPI original )
     {
         for ( int i = 0; i < 10; i++ )
         {

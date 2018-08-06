@@ -63,7 +63,7 @@ public class ConcurrentChangesOnEntitiesTest
     public void setup()
     {
         db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
+                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
                 .newGraphDatabase();
     }
 
@@ -196,7 +196,7 @@ public class ConcurrentChangesOnEntitiesTest
         try
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    testDirectory.databaseDir(), Config.defaults(), ProgressMonitorFactory.textual( System.err ),
+                    testDirectory.databaseLayout(), Config.defaults(), ProgressMonitorFactory.textual( System.err ),
                     logProvider, false );
             assertTrue( result.isSuccessful() );
         }

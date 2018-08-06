@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
@@ -54,6 +55,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -129,7 +131,7 @@ public class NeoStoreFileListingTest
         IndexingService indexingService = mock( IndexingService.class );
         ExplicitIndexProvider explicitIndexes = mock( ExplicitIndexProvider.class );
         when( explicitIndexes.allIndexProviders() ).thenReturn( Collections.emptyList() );
-        File storeDir = mock( File.class );
+        DatabaseLayout storeDir = mock( DatabaseLayout.class );
         LogFiles logFiles = mock( LogFiles.class );
         filesInStoreDirAre( storeDir, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
@@ -227,7 +229,7 @@ public class NeoStoreFileListingTest
     private void verifyLogFilesWithCustomPathListing( String path ) throws IOException
     {
         GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory( "customDb" ) )
+                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir( "customDb" ) )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, path )
                 .newGraphDatabase();
         NeoStoreDataSource dataSource = graphDatabase.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
@@ -238,12 +240,12 @@ public class NeoStoreFileListingTest
         graphDatabase.shutdown();
     }
 
-    private static void filesInStoreDirAre( File storeDir, String[] filenames, String[] dirs )
+    private static void filesInStoreDirAre( DatabaseLayout databaseLayout, String[] filenames, String[] dirs )
     {
         ArrayList<File> files = new ArrayList<>();
         mockFiles( filenames, files, false );
         mockFiles( dirs, files, true );
-        when( storeDir.listFiles() ).thenReturn( files.toArray( new File[files.size()] ) );
+        when( databaseLayout.listDatabaseFiles(any()) ).thenReturn( files.toArray( new File[files.size()] ) );
     }
 
     private static ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )
@@ -267,8 +269,8 @@ public class NeoStoreFileListingTest
 
     private void createIndexDbFile() throws IOException
     {
-        File databaseDir = db.databaseDirectory();
-        final File indexFile = new File( databaseDir, "index.db" );
+        DatabaseLayout databaseLayout = db.databaseLayout();
+        final File indexFile = databaseLayout.file( "index.db" );
         if ( !indexFile.exists() )
         {
             assertTrue( indexFile.createNewFile() );

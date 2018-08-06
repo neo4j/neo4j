@@ -23,10 +23,10 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.UUID;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -53,20 +54,18 @@ public class TestExceptionTypeOnInvalidIds
     private static GraphDatabaseService graphDbReadOnly;
     private Transaction tx;
 
+    @ClassRule
+    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
+
     @BeforeClass
     public static void createDatabase()
     {
-        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( getRandomStoreDir() );
-        File storeDir = getRandomStoreDir();
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
-        graphDbReadOnly = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
+        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
+        File databaseDirectory = testDirectory.databaseLayout( "read_only" ).databaseDirectory();
+        new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDirectory ).shutdown();
+        graphDbReadOnly = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory ).
             setConfig( GraphDatabaseSettings.read_only, TRUE ).
             newGraphDatabase();
-    }
-
-    private static File getRandomStoreDir()
-    {
-        return new File( "target/var/id_test/" + UUID.randomUUID() );
     }
 
     @AfterClass
@@ -219,28 +218,28 @@ public class TestExceptionTypeOnInvalidIds
         getRelationshipByIdReadOnly( BIG_NEGATIVE_LONG );
     }
 
-    private void getNodeById( long index )
+    private static void getNodeById( long index )
     {
         Node value = graphdb.getNodeById( index );
         fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 
-    private void getNodeByIdReadOnly( long index )
+    private static void getNodeByIdReadOnly( long index )
     {
         Node value = graphDbReadOnly.getNodeById( index );
         fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 
-    private void getRelationshipById( long index )
+    private static void getRelationshipById( long index )
     {
         Relationship value = graphdb.getRelationshipById( index );
         fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 
-    private void getRelationshipByIdReadOnly( long index )
+    private static void getRelationshipByIdReadOnly( long index )
     {
         Relationship value = graphDbReadOnly.getRelationshipById( index );
         fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",

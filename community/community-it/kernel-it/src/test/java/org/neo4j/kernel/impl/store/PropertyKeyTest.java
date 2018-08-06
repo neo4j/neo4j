@@ -55,7 +55,7 @@ public class PropertyKeyTest
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( testDirectory.directory() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( testDirectory.databaseDir() );
 
         // When
         try ( Transaction tx = db.beginTx() )
@@ -73,7 +73,7 @@ public class PropertyKeyTest
         }
     }
 
-    private Map<String, Object> mapWithManyProperties( int count )
+    private static Map<String, Object> mapWithManyProperties( int count )
     {
         Map<String, Object> properties = new HashMap<>();
         for ( int i = 0; i < count; i++ )

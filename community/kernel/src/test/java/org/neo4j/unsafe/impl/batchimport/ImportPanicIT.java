@@ -78,7 +78,7 @@ public class ImportPanicIT
     public void shouldExitAndThrowExceptionOnPanic() throws Exception
     {
         // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs, null, Configuration.DEFAULT,
+        BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fs, null, Configuration.DEFAULT,
                 NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
                 Config.defaults(), StandardV3_0.RECORD_FORMATS, NO_MONITOR );
         Iterable<DataFactory> nodeData =
@@ -104,7 +104,7 @@ public class ImportPanicIT
         }
     }
 
-    private org.neo4j.unsafe.impl.batchimport.input.csv.Configuration csvConfigurationWithLowBufferSize()
+    private static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration csvConfigurationWithLowBufferSize()
     {
         return new org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overridden( COMMAS )
         {
@@ -116,7 +116,7 @@ public class ImportPanicIT
         };
     }
 
-    private Supplier<CharReadable> fileAsCharReadable( File file )
+    private static Supplier<CharReadable> fileAsCharReadable( File file )
     {
         return () ->
         {

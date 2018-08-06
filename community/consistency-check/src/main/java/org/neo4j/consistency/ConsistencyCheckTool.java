@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
@@ -112,13 +113,14 @@ public class ConsistencyCheckTool
         Config tuningConfiguration = readConfiguration( arguments );
         boolean verbose = isVerbose( arguments );
 
-        checkDbState( storeDir, tuningConfiguration );
+        DatabaseLayout databaseLayout = new DatabaseLayout( storeDir );
+        checkDbState( databaseLayout, tuningConfiguration );
 
         ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         LogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( systemOut );
         try
         {
-            return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
+            return consistencyCheckService.runFullConsistencyCheck( databaseLayout, tuningConfiguration,
                     ProgressMonitorFactory.textual( systemError ), logProvider, fs, verbose,
                     new ConsistencyFlags( tuningConfiguration ) );
         }
@@ -133,13 +135,13 @@ public class ConsistencyCheckTool
         return arguments.getBoolean( VERBOSE, false, true );
     }
 
-    private void checkDbState( File storeDir, Config tuningConfiguration ) throws ToolFailureException
+    private void checkDbState( DatabaseLayout databaseLayout, Config tuningConfiguration ) throws ToolFailureException
     {
         try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
             RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache,
                     tuningConfiguration, new Monitors() );
-            if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
+            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
             {
                 throw new ToolFailureException( Strings.joinAsLines(
                         "Active logical log detected, this might be a source of inconsistencies.",
@@ -169,7 +171,7 @@ public class ConsistencyCheckTool
         return storeDir;
     }
 
-    private Config readConfiguration( Args arguments ) throws ToolFailureException
+    private static Config readConfiguration( Args arguments ) throws ToolFailureException
     {
         Map<String,String> specifiedConfig = stringMap();
 

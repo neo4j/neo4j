@@ -121,9 +121,8 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         unzip( getClass(), ZIP_FILE_3_2, directory.databaseDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
 
-        File storeDir = directory.storeDir();
         // when
-        GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
+        GraphDatabaseAPI db = setupDb( directory.databaseDir(), indexRecoveryTracker );
 
         // then
         verifyInitialState( indexRecoveryTracker, 2, InternalIndexState.ONLINE );
@@ -161,7 +160,7 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         }
 
         // when
-        db = setupDb( storeDir, indexRecoveryTracker );
+        db = setupDb( directory.databaseDir(), indexRecoveryTracker );
         try
         {
             // then
@@ -179,10 +178,8 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         // given
         unzip( getClass(), ZIP_FILE_3_3, directory.databaseDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
-        File storeDir = directory.storeDir();
-
         // when
-        GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
+        GraphDatabaseAPI db = setupDb( directory.databaseDir(), indexRecoveryTracker );
 
         // then
         verifyInitialState( indexRecoveryTracker, 4, InternalIndexState.ONLINE );
@@ -227,7 +224,7 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         }
 
         // when
-        db = setupDb( storeDir, indexRecoveryTracker );
+        db = setupDb( directory.databaseDir(), indexRecoveryTracker );
         try
         {
             // then

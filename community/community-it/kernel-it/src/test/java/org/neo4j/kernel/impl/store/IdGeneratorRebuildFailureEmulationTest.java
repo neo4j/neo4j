@@ -77,7 +77,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = Config.defaults( params );
-        factory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, testDirectory.databaseDir(), config, new DefaultIdGeneratorFactory( fs ),
+        factory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 

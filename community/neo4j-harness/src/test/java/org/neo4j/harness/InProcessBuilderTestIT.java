@@ -188,7 +188,7 @@ public class InProcessBuilderTestIT
         // create graph db with one node upfront
         File existingStoreDir = testDir.directory( "existingStore" );
         File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, existingStoreDir.toPath().toString() )
-                .get( GraphDatabaseSettings.database_path ).getParentFile();
+                .get( GraphDatabaseSettings.database_path );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
@@ -199,7 +199,7 @@ public class InProcessBuilderTestIT
             db.shutdown();
         }
 
-        try ( ServerControls server = getTestServerBuilder( testDir.directory() ).copyFrom( existingStoreDir )
+        try ( ServerControls server = getTestServerBuilder( testDir.databaseDir() ).copyFrom( existingStoreDir )
                 .newServer() )
         {
             // Then

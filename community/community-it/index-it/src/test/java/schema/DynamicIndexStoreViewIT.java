@@ -58,7 +58,7 @@ public class DynamicIndexStoreViewIT
     public void populateDbWithConcurrentUpdates() throws Exception
     {
         GraphDatabaseService database =
-                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
         try
         {
             RandomValues randomValues = RandomValues.create();
@@ -113,7 +113,7 @@ public class DynamicIndexStoreViewIT
             database.shutdown();
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
             Config config = Config.defaults(  GraphDatabaseSettings.pagecache_memory, "8m" );
-            consistencyCheckService.runFullConsistencyCheck( testDirectory.databaseDir(), config,
+            consistencyCheckService.runFullConsistencyCheck( testDirectory.databaseLayout(), config,
                     ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
         }
     }

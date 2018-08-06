@@ -284,7 +284,7 @@ public class BatchingNeoStoresTest
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( storage.fileSystem() ) )
-                .newImpermanentDatabase( storage.directory().absolutePath() );
+                .newImpermanentDatabase( storage.directory().databaseDir() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );

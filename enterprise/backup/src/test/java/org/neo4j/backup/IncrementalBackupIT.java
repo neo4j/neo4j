@@ -51,7 +51,7 @@ import static org.junit.Assert.assertEquals;
 
 public class IncrementalBackupIT
 {
-    private TestName testName = new TestName();
+    private final TestName testName = new TestName();
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule

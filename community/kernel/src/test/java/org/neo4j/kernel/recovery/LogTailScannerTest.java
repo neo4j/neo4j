@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -53,6 +54,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -61,11 +63,13 @@ import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 @RunWith( Parameterized.class )
 public class LogTailScannerTest
 {
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
+
     @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final File directory = new File( "/somewhere" );
+    public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory ).around( pageCacheRule );
+
     private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
     private LogTailScanner tailScanner;
 
@@ -91,10 +95,9 @@ public class LogTailScannerTest
     @Before
     public void setUp() throws IOException
     {
-        fsRule.get().mkdirs( directory );
         logVersionRepository = new SimpleLogVersionRepository();
         logFiles = LogFilesBuilder
-                .activeFilesBuilder( directory, fsRule, pageCacheRule.getPageCache( fsRule ) )
+                .activeFilesBuilder( testDirectory.databaseLayout(), fsRule, pageCacheRule.getPageCache( fsRule ) )
                 .withLogVersionRepository( logVersionRepository )
                 .build();
         tailScanner = new LogTailScanner( logFiles, reader, monitors );

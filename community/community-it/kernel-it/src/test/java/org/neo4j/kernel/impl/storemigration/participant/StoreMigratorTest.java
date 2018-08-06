@@ -30,6 +30,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -145,23 +146,23 @@ public class StoreMigratorTest
     @Test
     public void extractTransactionInformationFromLogsInCustomRelativeLocation() throws Exception
     {
-        File databaseDirectory = directory.databaseDir();
-        File customLogLocation = new File( databaseDirectory, "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, databaseDirectory, directory.directory() );
+        DatabaseLayout databaseLayout = directory.databaseLayout();
+        File customLogLocation = databaseLayout.directory( "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, databaseLayout, directory.databaseDir() );
     }
 
     @Test
     public void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
-        File databaseDirectory = directory.databaseDir();
-        File customLogLocation = directory.directory( "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, databaseDirectory, directory.directory() );
+        DatabaseLayout databaseLayout = directory.databaseLayout();
+        File customLogLocation = databaseLayout.directory( "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, databaseLayout, directory.databaseDir() );
     }
 
-    private void extractTransactionalInformationFromLogs( String path, File customLogLocation, File databaseDirectory, File storeDir ) throws IOException
+    private void extractTransactionalInformationFromLogs( String path, File customLogLocation, DatabaseLayout databaseLayout, File storeDir ) throws IOException
     {
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        File neoStore = new File( databaseDirectory, DEFAULT_NAME );
+        File neoStore = databaseLayout.file( DEFAULT_NAME );
 
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( logical_logs_location, path ).newGraphDatabase();
@@ -179,7 +180,7 @@ public class StoreMigratorTest
                 MetaDataRecordFormat.FIELD_NOT_PRESENT );
         Config config = Config.defaults( logical_logs_location, path );
         StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
-        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseDirectory, 100 );
+        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100 );
 
         File[] logFiles = customLogLocation.listFiles();
         assertNotNull( logFiles );
@@ -219,9 +220,9 @@ public class StoreMigratorTest
         StoreMigrator migrator = newStoreMigrator();
         TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextLong(), random.nextLong() );
 
-        migrator.writeLastTxInformation( directory.databaseDir(), writtenTxId );
+        migrator.writeLastTxInformation( directory.databaseLayout(), writtenTxId );
 
-        TransactionId readTxId = migrator.readLastTxInformation( directory.databaseDir() );
+        TransactionId readTxId = migrator.readLastTxInformation( directory.databaseLayout() );
 
         assertEquals( writtenTxId, readTxId );
     }
@@ -232,9 +233,9 @@ public class StoreMigratorTest
         StoreMigrator migrator = newStoreMigrator();
         LogPosition writtenLogPosition = new LogPosition( random.nextLong(), random.nextLong() );
 
-        migrator.writeLastTxLogPosition( directory.databaseDir(), writtenLogPosition );
+        migrator.writeLastTxLogPosition( directory.databaseLayout(), writtenLogPosition );
 
-        LogPosition readLogPosition = migrator.readLastTxLogPosition( directory.databaseDir() );
+        LogPosition readLogPosition = migrator.readLastTxLogPosition( directory.databaseLayout() );
 
         assertEquals( writtenLogPosition, readLogPosition );
     }
@@ -244,14 +245,14 @@ public class StoreMigratorTest
     {
         // Prepare migrator and file
         StoreMigrator migrator = newStoreMigrator();
-        File graphDbDir = directory.databaseDir();
-        File neoStore = new File( graphDbDir, DEFAULT_NAME );
+        DatabaseLayout dbLayout = directory.databaseLayout();
+        File neoStore = dbLayout.file( DEFAULT_NAME );
         neoStore.createNewFile();
 
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
-        migrator.migrate( graphDbDir, directory.directory( "migrationDir" ), progressReporter,
+        migrator.migrate( dbLayout, directory.databaseLayout( "migrationDir" ), progressReporter,
                 StandardV3_0.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         // Should not have started any migration

@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.facade.spi;
 
-import java.io.File;
 import java.net.URL;
 
 import org.neo4j.function.ThrowingFunction;
@@ -33,6 +32,7 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
@@ -46,7 +46,7 @@ import org.neo4j.values.virtual.MapValue;
 
 public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 {
-    private final File databaseDirectory;
+    private final DatabaseLayout databaseLayout;
     private final DataSourceModule sourceModule;
     private final DependencyResolver resolver;
     private final CoreAPIAvailabilityGuard availability;
@@ -58,7 +58,7 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
             ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator, SecurityContext securityContext,
             ThreadToStatementContextBridge threadToTransactionBridge )
     {
-        this.databaseDirectory = sourceModule.neoStoreDataSource.getDatabaseDirectory();
+        this.databaseLayout = sourceModule.neoStoreDataSource.getDatabaseLayout();
         this.sourceModule = sourceModule;
         this.resolver = resolver;
         this.availability = availability;
@@ -86,9 +86,9 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public File databaseDirectory()
+    public DatabaseLayout databaseLayout()
     {
-        return databaseDirectory;
+        return databaseLayout;
     }
 
     @Override

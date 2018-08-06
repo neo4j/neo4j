@@ -41,6 +41,7 @@ import org.neo4j.backup.impl.BackupServer;
 import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -100,7 +101,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
-                eq( BackupServer.DEFAULT_PORT ), eq( Paths.get( "my_backup" ) ), eq( ConsistencyCheck.FULL ),
+                eq( BackupServer.DEFAULT_PORT ), eq( new DatabaseLayout( Paths.get( "my_backup" ).toFile() ) ), eq( ConsistencyCheck.FULL ),
                 any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
@@ -121,7 +122,8 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( Paths.get( "my_backup" ) ), eq( ConsistencyCheck.FULL ), any( Config.class ), eq( expectedTimeout ), eq( false ) );
+                eq( new DatabaseLayout( Paths.get( "my_backup" ).toFile() ) ), eq( ConsistencyCheck.FULL ), any( Config.class ), eq( expectedTimeout ),
+                eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -139,7 +141,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( Paths.get( "my_backup" ) ), eq( ConsistencyCheck.FULL ), any( Config.class ),
+                eq( new DatabaseLayout( Paths.get( "my_backup" ).toFile() ) ), eq( ConsistencyCheck.FULL ), any( Config.class ),
                 eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
@@ -158,7 +160,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( Paths.get( "my_backup" ) ), eq( ConsistencyCheck.FULL ), any( Config.class ),
+                eq( new DatabaseLayout( Paths.get( "my_backup" ).toFile() ) ), eq( ConsistencyCheck.FULL ), any( Config.class ),
                 eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
@@ -178,7 +180,7 @@ public class BackupToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( Paths.get( "my_backup" ) ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new DatabaseLayout( Paths.get( "my_backup" ).toFile() ) ),
                 any( ConsistencyCheck.class ), config.capture(), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
@@ -201,7 +203,7 @@ public class BackupToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( Paths.get( "my_backup" ) ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new DatabaseLayout( Paths.get( "my_backup" ).toFile() ) ),
                 any( ConsistencyCheck.class ), config.capture(), anyLong(), eq( false ) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
@@ -343,7 +345,7 @@ public class BackupToolTest
 
         // Then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( host ), eq( BackupServer.DEFAULT_PORT ),
-                eq( targetDir ), eq( ConsistencyCheck.NONE ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ),
+                eq( new DatabaseLayout( targetDir.toFile() ) ), eq( ConsistencyCheck.NONE ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ),
                 eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( host, BackupServer.DEFAULT_PORT ) + "'" );
@@ -362,7 +364,7 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // then
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( Paths.get( "my_backup" ) ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new DatabaseLayout( Paths.get( "my_backup" ).toFile() ) ),
                 any( ConsistencyCheck.class ), any( Config.class ), anyLong(), eq( true ) );
     }
 
@@ -378,7 +380,7 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // Then
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( Path.class ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( DatabaseLayout.class ),
                 eq( ConsistencyCheck.NONE ), any( Config.class ), anyLong(), anyBoolean() );
     }
 
@@ -395,7 +397,7 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // Then
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( Path.class ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( DatabaseLayout.class ),
                 eq( ConsistencyCheck.NONE ), any( Config.class ), anyLong(), anyBoolean() );
     }
 
@@ -411,7 +413,7 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // Then
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( Path.class ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( DatabaseLayout.class ),
                 eq( ConsistencyCheck.FULL ), any( Config.class ), anyLong(), anyBoolean() );
     }
 
@@ -428,7 +430,7 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // Then
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( Path.class ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( DatabaseLayout.class ),
                 eq( ConsistencyCheck.FULL ), any( Config.class ), anyLong(), anyBoolean() );
     }
 

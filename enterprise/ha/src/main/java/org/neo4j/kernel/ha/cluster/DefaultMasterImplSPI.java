@@ -91,7 +91,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.transactionCommitProcess = transactionCommitProcess;
         this.checkPointer = checkPointer;
         this.neoStoreDataSource = neoStoreDataSource;
-        this.databaseDirectory = graphDb.databaseDirectory();
+        this.databaseDirectory = graphDb.databaseLayout().databaseDirectory();
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, logicalTransactionStore );
         this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
         this.monitors = monitors;

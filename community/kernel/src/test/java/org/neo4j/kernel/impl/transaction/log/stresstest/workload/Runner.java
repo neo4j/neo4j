@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +28,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -49,13 +49,13 @@ import org.neo4j.logging.NullLog;
 
 public class Runner implements Callable<Long>
 {
-    private final File workingDirectory;
+    private final DatabaseLayout databaseLayout;
     private final BooleanSupplier condition;
     private final int threads;
 
-    public Runner( File workingDirectory, BooleanSupplier condition, int threads )
+    public Runner( DatabaseLayout databaseLayout, BooleanSupplier condition, int threads )
     {
-        this.workingDirectory = workingDirectory;
+        this.databaseLayout = databaseLayout;
         this.condition = condition;
         this.threads = threads;
     }
@@ -103,7 +103,7 @@ public class Runner implements Callable<Long>
         return lastCommittedTransactionId;
     }
 
-    private BatchingTransactionAppender createBatchingTransactionAppender( TransactionIdStore transactionIdStore,
+    private static BatchingTransactionAppender createBatchingTransactionAppender( TransactionIdStore transactionIdStore,
             TransactionMetadataCache transactionMetadataCache, LogFiles logFiles )
     {
         Log log = NullLog.getInstance();
@@ -119,7 +119,7 @@ public class Runner implements Callable<Long>
             FileSystemAbstraction fileSystemAbstraction ) throws IOException
     {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
-        return LogFilesBuilder.builder( workingDirectory, fileSystemAbstraction )
+        return LogFilesBuilder.builder( databaseLayout, fileSystemAbstraction )
                                                       .withTransactionIdStore(transactionIdStore)
                                                       .withLogVersionRepository( logVersionRepository )
                                                       .build();

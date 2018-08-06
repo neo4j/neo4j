@@ -36,6 +36,7 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -77,7 +78,7 @@ public class RebuildCountsTest
     @Before
     public void before() throws IOException
     {
-        storeDir = testDirectory.storeDir();
+        storeDir = testDirectory.databaseDir();
         restart( fsRule.get() );
     }
 
@@ -185,7 +186,8 @@ public class RebuildCountsTest
 
     private void deleteCounts( FileSystemAbstraction snapshot )
     {
-        final File storeFileBase = new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        final File storeFileBase = databaseLayout.file(  MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
         File alpha = new File( storeFileBase + CountsTracker.LEFT );
         File beta = new File( storeFileBase + CountsTracker.RIGHT );
         assertTrue( snapshot.deleteFile( alpha ) );

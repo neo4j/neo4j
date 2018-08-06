@@ -108,7 +108,6 @@ public class CountsRotationTest
                                           .around( testDir );
 
     private FileSystemAbstraction fs;
-    private File dir;
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
 
@@ -116,9 +115,8 @@ public class CountsRotationTest
     public void setup()
     {
         fs = fsRule.get();
-        dir = testDir.storeDir();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabaseBuilder( dir );
+                .newImpermanentDatabaseBuilder( testDir.databaseDir() );
         pageCache = pcRule.getPageCache( fs );
     }
 
@@ -332,7 +330,7 @@ public class CountsRotationTest
         adversary.disable();
 
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
-                .newEmbeddedDatabaseBuilder( dir )
+                .newEmbeddedDatabaseBuilder( testDir.databaseDir() )
                 .newGraphDatabase();
 
         CountDownLatch txStartLatch = new CountDownLatch( 1 );
@@ -398,7 +396,7 @@ public class CountsRotationTest
                 new File( testDir.databaseDir(), COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
     }
 
-    private void checkPoint( GraphDatabaseAPI db ) throws IOException
+    private static void checkPoint( GraphDatabaseAPI db ) throws IOException
     {
         TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );

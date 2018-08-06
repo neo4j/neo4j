@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.test.rule.DatabaseRule;
@@ -73,9 +74,9 @@ public class NativeLabelScanStoreChaosIT
         assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
     }
 
-    private static File storeFile( File directory )
+    private static File storeFile( DatabaseLayout databaseLayout )
     {
-        return new File( directory, NativeLabelScanStore.FILE_NAME );
+        return databaseLayout.file( NativeLabelScanStore.FILE_NAME );
     }
 
     private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()

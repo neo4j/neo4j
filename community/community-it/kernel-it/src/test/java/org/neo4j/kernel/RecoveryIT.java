@@ -60,6 +60,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -146,7 +147,7 @@ public class RecoveryIT
     @Test
     public void idGeneratorsRebuildAfterRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.directory() );
+        GraphDatabaseService database = startDatabase( directory.databaseDir() );
         int numberOfNodes = 10;
         try ( Transaction transaction = database.beginTx() )
         {
@@ -176,7 +177,7 @@ public class RecoveryIT
     @Test
     public void reportProgressOnRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.directory() );
+        GraphDatabaseService database = startDatabase( directory.databaseDir() );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -202,7 +203,7 @@ public class RecoveryIT
     @Test
     public void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.directory() );
+        GraphDatabaseService database = startDatabase( directory.databaseDir() );
         Label testLabel = Label.label( "testLabel" );
         final String propertyToDelete = "propertyToDelete";
         final String validPropertyName = "validProperty";
@@ -256,7 +257,7 @@ public class RecoveryIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = directory.databaseDir();
+        File storeDir = directory.storeDir();
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fileSystemRule.get(), adversary )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .newGraphDatabase();
@@ -299,8 +300,9 @@ public class RecoveryIT
             healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
 
             // restart the database, now with regular page cache
+            File databaseDirectory = ((GraphDatabaseAPI) db).databaseLayout().databaseDirectory();
             db.shutdown();
-            db = startDatabase( storeDir );
+            db = startDatabase( databaseDirectory );
 
             // now we observe correct state: node is in the index and relationship is removed
             try ( Transaction tx = db.beginTx() )
@@ -383,7 +385,7 @@ public class RecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( directory.storeDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( directory.databaseDir() );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
         EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();
@@ -449,7 +451,7 @@ public class RecoveryIT
                 }
                 .setFileSystem( crashedFs )
                 .setMonitors( monitors )
-                .newImpermanentDatabase( directory.storeDir() )
+                .newImpermanentDatabase( directory.databaseDir() )
                 .shutdown();
 
         // then
@@ -459,7 +461,7 @@ public class RecoveryIT
         {
             // Here we verify that the neostore contents, record by record are exactly the same when comparing
             // the store as it was right after the checkpoint with the store as it was right after reverse recovery completed.
-            assertSameStoreContents( checkPointFs, reversedFs.get(), directory.databaseDir() );
+            assertSameStoreContents( checkPointFs, reversedFs.get(), directory.databaseLayout() );
         }
         finally
         {
@@ -473,7 +475,7 @@ public class RecoveryIT
         return ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
     }
 
-    private static void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, File storeDir )
+    private static void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, DatabaseLayout databaseLayout )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
@@ -484,9 +486,9 @@ public class RecoveryIT
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
                         .getOrCreatePageCache();
-                NeoStores store1 = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, defaults(), new DefaultIdGeneratorFactory( fs1 ),
+                NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1 ),
                         pageCache1, fs1, logProvider, contextSupplier ).openAllNeoStores();
-                NeoStores store2 = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, defaults(), new DefaultIdGeneratorFactory( fs2 ),
+                NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2 ),
                         pageCache2, fs2, logProvider, contextSupplier ).openAllNeoStores()
                 )
         {
@@ -802,7 +804,7 @@ public class RecoveryIT
         File restoreDbStore = directory.storeDir( "restore-db" );
         File restoreDbStoreDir = directory.databaseDir( restoreDbStore );
         move( fileSystemRule.get(), this.directory.databaseDir(), restoreDbStoreDir );
-        return restoreDbStore;
+        return restoreDbStoreDir;
     }
 
     private static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException

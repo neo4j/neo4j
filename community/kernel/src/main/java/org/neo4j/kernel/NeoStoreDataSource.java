@@ -37,6 +37,7 @@ import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
@@ -156,6 +156,7 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
 
 public class NeoStoreDataSource extends LifecycleAdapter
 {
@@ -200,7 +201,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
     private final String databaseName;
-    private File databaseDirectory;
+    private DatabaseLayout databaseLayout;
     private boolean readOnly;
     private final IdController idController;
     private final DatabaseInfo databaseInfo;
@@ -221,7 +222,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public NeoStoreDataSource( DatabaseCreationContext context )
     {
         this.databaseName = context.getDatabaseName();
-        this.databaseDirectory = context.getDatabaseDirectory();
+        this.databaseLayout = context.getDatabaseDirectoryStructure();
         this.config = context.getConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();
@@ -294,7 +295,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( lockService );
         life.add( indexConfigStore );
 
-        FileSystemWatcherService watcherService = watcherServiceFactory.apply( databaseDirectory );
+        FileSystemWatcherService watcherService = watcherServiceFactory.apply( databaseLayout.databaseDirectory() );
         life.add( watcherService );
         dataSourceDependencies.satisfyDependency( watcherService );
 
@@ -303,7 +304,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         // Check the tail of transaction logs and validate version
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
-        LogFiles logFiles = LogFilesBuilder.builder( databaseDirectory, fs )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
                 .withLogFileMonitor( physicalLogMonitor )
                 .withConfig( config )
@@ -317,7 +318,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
-        RecordFormats formats = selectStoreFormats( config, databaseDirectory, fs, pageCache, logService );
+        RecordFormats formats = selectStoreFormats( config, databaseLayout, fs, pageCache, logService );
         upgradeStore( formats, tailScanner );
 
         // Build all modules and their services
@@ -440,8 +441,8 @@ public class NeoStoreDataSource extends LifecycleAdapter
     {
         LifeSupport extensionsLife = new LifeSupport();
 
-        extensionsLife.add( new DatabaseKernelExtensions( new SimpleKernelContext( databaseDirectory, databaseInfo, dependencies ), kernelExtensionFactories,
-                dependencies, UnsatisfiedDependencyStrategies.fail() ) );
+        extensionsLife.add( new DatabaseKernelExtensions( new SimpleKernelContext( databaseLayout.databaseDirectory(), databaseInfo, dependencies ),
+                kernelExtensionFactories, dependencies, fail() ) );
 
         indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies ) );
         dependencies.satisfyDependency( indexProviderMap );
@@ -449,11 +450,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private static RecordFormats selectStoreFormats( Config config, File databaseDirectory, FileSystemAbstraction fs, PageCache pageCache,
+    private static RecordFormats selectStoreFormats( Config config, DatabaseLayout dbDirectoryStructure, FileSystemAbstraction fs, PageCache pageCache,
             LogService logService )
     {
         LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, databaseDirectory, fs, pageCache, logging );
+        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, dbDirectoryStructure, fs, pageCache, logging );
         new RecordFormatPropertyConfigurator( formats, config ).configure();
         return formats;
     }
@@ -470,7 +471,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 indexProviderMap,
                 explicitIndexProvider,
                 pageCache,
-                format, tailScanner ).migrate( databaseDirectory );
+                format, tailScanner ).migrate( databaseLayout );
     }
 
     private StorageEngine buildStorageEngine(
@@ -479,7 +480,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             OperationalMode operationalMode, VersionContextSupplier versionContextSupplier )
     {
         RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseName, databaseDirectory, config, pageCache, fs, logProvider, tokenHolders,
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders,
                         schemaState, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth,
                         explicitIndexProviderLookup, indexConfigStore,
@@ -549,7 +550,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                 logicalTransactionStore, logVersionRepository, positionMonitor );
-        CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystemAbstraction );
+        CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( logService.getInternalLog( Recovery.class ) );
         Recovery recovery = new Recovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
         life.add( recovery );
@@ -598,7 +599,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         kernel.registerTransactionHook( transactionEventHandlers );
         life.add( kernel );
 
-        final NeoStoreFileListing fileListing = new NeoStoreFileListing( databaseDirectory, logFiles, labelScanStore,
+        final NeoStoreFileListing fileListing = new NeoStoreFileListing( databaseLayout, logFiles, labelScanStore,
                 indexingService, explicitIndexProvider, storageEngine );
         dataSourceDependencies.satisfyDependency( fileListing );
 
@@ -700,9 +701,9 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return storageEngine.getStoreId();
     }
 
-    public File getDatabaseDirectory()
+    public DatabaseLayout getDatabaseLayout()
     {
-        return databaseDirectory;
+        return databaseLayout;
     }
 
     public boolean isReadOnly()

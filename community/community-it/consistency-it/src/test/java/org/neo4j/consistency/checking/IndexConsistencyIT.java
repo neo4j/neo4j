@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -76,10 +77,10 @@ public class IndexConsistencyIT
     @Test
     public void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
     {
-        File databaseDirectory = db.databaseDirectory();
+        DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = new File( databaseDirectory, "indexesCopy" );
+        File indexesCopy = databaseLayout.file( "indexesCopy" );
         File indexSources = resolveComponent( DefaultIndexProviderMap.class ).getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
@@ -102,10 +103,10 @@ public class IndexConsistencyIT
     @Test
     public void reportNotCleanNativeIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
     {
-        File databaseDir = db.databaseDirectory();
+        DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = new File( databaseDir, "indexesCopy" );
+        File indexesCopy = databaseLayout.file( "indexesCopy" );
         File indexSources = resolveComponent( DefaultIndexProviderMap.class ).getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
@@ -238,7 +239,7 @@ public class IndexConsistencyIT
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.databaseDirectory(), config, NONE, log, fsa, true );
+            return service.runFullConsistencyCheck( db.databaseLayout(), config, NONE, log, fsa, true );
         }
     }
 }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -53,12 +54,12 @@ public class CommitStateHelper
         this.config = config;
     }
 
-    CommitState getStoreState( File storeDir ) throws IOException
+    CommitState getStoreState( DatabaseLayout databaseLayout ) throws IOException
     {
-        ReadOnlyTransactionIdStore metaDataStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
+        ReadOnlyTransactionIdStore metaDataStore = new ReadOnlyTransactionIdStore( pageCache, databaseLayout );
         long metaDataStoreTxId = metaDataStore.getLastCommittedTransactionId();
 
-        Optional<Long> latestTransactionLogIndex = getLatestTransactionLogIndex( metaDataStoreTxId, storeDir );
+        Optional<Long> latestTransactionLogIndex = getLatestTransactionLogIndex( metaDataStoreTxId, databaseLayout );
 
         //noinspection OptionalIsPresent
         if ( latestTransactionLogIndex.isPresent() )
@@ -71,15 +72,15 @@ public class CommitStateHelper
         }
     }
 
-    private Optional<Long> getLatestTransactionLogIndex( long startTxId, File storeDir ) throws IOException
+    private Optional<Long> getLatestTransactionLogIndex( long startTxId, DatabaseLayout databaseLayout ) throws IOException
     {
-        if ( !hasTxLogs( storeDir ) )
+        if ( !hasTxLogs( databaseLayout ) )
         {
             return Optional.empty();
         }
 
         // this is not really a read-only store, because it will create an empty transaction log if there is none
-        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, config, new Monitors() );
+        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, databaseLayout, config, new Monitors() );
 
         long lastTxId = BASE_TX_ID;
         try ( Lifespan ignored = new Lifespan( txStore ); TransactionCursor cursor = txStore.getTransactions( startTxId ) )
@@ -98,9 +99,10 @@ public class CommitStateHelper
         }
     }
 
-    public boolean hasTxLogs( File storeDir )
+    public boolean hasTxLogs( DatabaseLayout databaseLayout )
     {
-        File[] files = fs.listFiles( storeDir, TransactionLogFiles.DEFAULT_FILENAME_FILTER );
+        //TODO incorrect lookup of transaction logs
+        File[] files = fs.listFiles( databaseLayout.databaseDirectory(), TransactionLogFiles.DEFAULT_FILENAME_FILTER );
         if ( files == null )
         {
             throw new RuntimeException( "Files was null. Incorrect directory or I/O error?" );

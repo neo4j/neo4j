@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -76,6 +75,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -157,7 +157,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         StoreId storeId();
 
-        File databaseDirectory();
+        DatabaseLayout databaseLayout();
 
         /** Eg. Neo4j Enterprise HA, Neo4j Community Standalone.. */
         String name();
@@ -917,15 +917,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public File databaseDirectory()
+    public DatabaseLayout databaseLayout()
     {
-        return spi.databaseDirectory();
+        return spi.databaseLayout();
     }
 
     @Override
     public String toString()
     {
-        return spi.name() + " [" + databaseDirectory() + "]";
+        return spi.name() + " [" + databaseLayout() + "]";
     }
 
     @Override

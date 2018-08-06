@@ -48,6 +48,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -480,7 +481,7 @@ public class ImportTool
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
             boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
-            doImport( out, err, in, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
+            doImport( out, err, in, new DatabaseLayout( storeDir ), logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration, detailedPrinting );
 
             success = true;
@@ -549,7 +550,7 @@ public class ImportTool
         return null;
     }
 
-    public static void doImport( PrintStream out, PrintStream err, InputStream in, File storeDir, File logsDir, File badFile,
+    public static void doImport( PrintStream out, PrintStream err, InputStream in, DatabaseLayout databaseLayout, File logsDir, File badFile,
                                  FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
                                  Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
                                  Config dbConfig, OutputStream badOutput,
@@ -567,7 +568,7 @@ public class ImportTool
         ExecutionMonitor executionMonitor = detailedProgress
                         ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, out, SpectrumExecutionMonitor.DEFAULT_WIDTH )
                         : ExecutionMonitors.defaultVisible( in, jobScheduler );
-        BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( storeDir,
+        BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
                 fs,
                 null, // no external page cache
                 configuration,
@@ -576,7 +577,7 @@ public class ImportTool
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
                 new PrintingImportLogicMonitor( out, err ) );
-        printOverview( storeDir, nodesFiles, relationshipsFiles, configuration, out );
+        printOverview( databaseLayout.databaseDirectory(), nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try
         {
@@ -607,7 +608,7 @@ public class ImportTool
 
             if ( !success )
             {
-                err.println( "WARNING Import failed. The store files in " + storeDir.getAbsolutePath() +
+                err.println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().getAbsolutePath() +
                         " are left as they are, although they are likely in an unusable state. " +
                         "Starting a database on these store files will likely fail or observe inconsistent records so " +
                         "start at your own risk or delete the store manually" );

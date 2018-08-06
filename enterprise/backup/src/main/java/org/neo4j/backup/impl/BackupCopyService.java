@@ -25,7 +25,6 @@ package org.neo4j.backup.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -37,7 +36,7 @@ import org.neo4j.com.storecopy.FileMoveAction;
 import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 
@@ -101,11 +100,9 @@ class BackupCopyService
         }
     }
 
-    boolean backupExists( Path destination )
+    boolean backupExists( DatabaseLayout databaseLayout )
     {
-        File[] files = fs.listFiles( destination.toFile() );
-        return files != null && Arrays.stream( files ).anyMatch(
-                f -> f.isFile() && f.getName().endsWith( MetaDataStore.DEFAULT_NAME ) );
+        return databaseLayout.file( MetaDataStore.DEFAULT_NAME ).exists();
     }
 
     Path findNewBackupLocationForBrokenExisting( Path existingBackup )
@@ -127,7 +124,7 @@ class BackupCopyService
      */
     private Path findAnAvailableBackupLocation( Path file, String pattern )
     {
-        if ( backupExists( file ) )
+        if ( backupExists( new DatabaseLayout( file.toFile() ) ) )
         {
             // find alternative name
             final AtomicLong counter = new AtomicLong( 0 );
@@ -136,7 +133,7 @@ class BackupCopyService
 
             return availableAlternativeNames( file, pattern )
                     .peek( countNumberOfFilesProcessedForPotentialErrorMessage )
-                    .filter( f -> !backupExists( f ) )
+                    .filter( f -> !backupExists( new DatabaseLayout( f.toFile() ) ) )
                     .findFirst()
                     .orElseThrow( noFreeBackupLocation( file, counter ) );
         }

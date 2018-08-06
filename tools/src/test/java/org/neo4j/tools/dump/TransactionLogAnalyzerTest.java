@@ -98,7 +98,7 @@ public class TransactionLogAnalyzerTest
     {
         lastCommittedTxId = new AtomicLong( BASE_TX_ID );
         logVersionRepository = new SimpleLogVersionRepository();
-        logFiles = LogFilesBuilder.builder( directory.absolutePath(), fs )
+        logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .build();

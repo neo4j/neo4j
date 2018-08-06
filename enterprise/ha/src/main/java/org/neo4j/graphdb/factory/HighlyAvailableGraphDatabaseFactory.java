@@ -66,7 +66,7 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
                 config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
                 config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
                 config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-                return new HighlyAvailableGraphDatabase( storeDir, config, state.databaseDependencies() );
+                return new HighlyAvailableGraphDatabase( databasesRoot, config, state.databaseDependencies() );
             }
         };
     }

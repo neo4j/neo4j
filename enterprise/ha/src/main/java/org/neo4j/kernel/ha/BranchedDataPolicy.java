@@ -83,5 +83,5 @@ public enum BranchedDataPolicy
                 }
             };
 
-    public abstract void handle( File storeDir, PageCache pageCache, LogService msgLog ) throws IOException;
+    public abstract void handle( File databaseDirectory, PageCache pageCache, LogService msgLog ) throws IOException;
 }

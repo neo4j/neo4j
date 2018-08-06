@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +53,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.NullLogger;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
@@ -70,13 +72,11 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class MetaDataStoreTest
 {
-    private static final File STORE_DIR = new File( "store" );
-
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
     @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
+    public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory ).around( pageCacheRule );
 
     private EphemeralFileSystemAbstraction fs;
     private PageCache pageCache;
@@ -643,8 +643,7 @@ public class MetaDataStoreTest
 
     private File createMetaDataFile() throws IOException
     {
-        File file = new File( STORE_DIR, MetaDataStore.DEFAULT_NAME );
-        fs.mkdir( STORE_DIR );
+        File file = testDirectory.databaseLayout().file( MetaDataStore.DEFAULT_NAME );
         fs.create( file ).close();
         return file;
     }
@@ -782,7 +781,7 @@ public class MetaDataStoreTest
     private MetaDataStore newMetaDataStore()
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, STORE_DIR, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
                 pageCacheWithFakeOverflow, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }

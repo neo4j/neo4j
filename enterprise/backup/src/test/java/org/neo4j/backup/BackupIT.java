@@ -134,7 +134,7 @@ public class BackupIT
         serverStorePath = testDir.storeDir( "server" );
         serverDatabasePath = testDir.databaseDir( serverStorePath );
         otherServerPath = testDir.directory( "server2" );
-        backupDatabasePath = testDir.directory( "backedup-serverdb" );
+        backupDatabasePath = testDir.databaseDir( "backedup-serverdb" );
     }
 
     @After

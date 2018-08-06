@@ -65,6 +65,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -888,7 +889,7 @@ public class ClusterManager
             {
                 if ( consistencyCheck )
                 {
-                    consistencyCheck( db.databaseDirectory() );
+                    consistencyCheck( db.databaseLayout() );
                 }
             }
         }
@@ -899,9 +900,9 @@ public class ClusterManager
             parallelLife.shutdown();
         }
 
-        private void consistencyCheck( File storeDir ) throws Throwable
+        private void consistencyCheck( DatabaseLayout databaseLayout ) throws Throwable
         {
-            StoreAssertions.assertConsistentStore( storeDir );
+            StoreAssertions.assertConsistentStore( databaseLayout );
         }
 
         /**
@@ -1356,7 +1357,7 @@ public class ClusterManager
         public File getDatabaseDir( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
-            return member.databaseDirectory();
+            return member.databaseLayout().databaseDirectory();
         }
 
         public void sync( HighlyAvailableGraphDatabase... except )

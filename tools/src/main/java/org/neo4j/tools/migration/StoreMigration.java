@@ -31,6 +31,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -125,7 +126,8 @@ public class StoreMigration
                     kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                     deps, ignore() ) );
 
-            final LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDirectory, fs, pageCache )
+            DatabaseLayout databaseLayout = new DatabaseLayout( storeDirectory );
+            final LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                     .withConfig( config ).build();
             LogTailScanner tailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );
 
@@ -138,7 +140,7 @@ public class StoreMigration
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
                     indexProviderMap, migrationIndexProvider,
                     pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ), tailScanner );
-            migrator.migrate( storeDirectory );
+            migrator.migrate( databaseLayout );
 
             // Append checkpoint so the last log entry will have the latest version
             appendCheckpoint( logFiles, tailScanner );

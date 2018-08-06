@@ -23,9 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -38,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
@@ -123,7 +124,7 @@ public class JUnitRuleTestIT
         // given
 
         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
+                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
                 .newGraphDatabase();
         try
         {
@@ -135,8 +136,8 @@ public class JUnitRuleTestIT
         }
 
         // When a rule with an pre-populated graph db directory is used
-        final Neo4jRule ruleWithDirectory = new Neo4jRule( testDirectory.directory() )
-                .copyFrom( testDirectory.directory() );
+        final Neo4jRule ruleWithDirectory = new Neo4jRule( testDirectory.databaseDir() )
+                .copyFrom( testDirectory.databaseDir() );
         ruleWithDirectory.apply( new Statement()
         {
             @Override
@@ -164,9 +165,10 @@ public class JUnitRuleTestIT
 
     private String contentOf( String file ) throws IOException
     {
-        Path databaseDirectory = ((GraphDatabaseAPI) neo4j.getGraphDatabaseService()).databaseDirectory().toPath();
-        Path testDir = databaseDirectory.getParent().getParent();
-        return new String( Files.readAllBytes( testDir.resolve( file ) ), UTF_8 );
+        GraphDatabaseAPI api = (GraphDatabaseAPI) neo4j.getGraphDatabaseService();
+        Config config = api.getDependencyResolver().resolveDependency( Config.class );
+        File dataDirectory = config.get( GraphDatabaseSettings.data_directory );
+        return new String( Files.readAllBytes( new File( dataDirectory, file ).toPath() ), UTF_8 );
     }
 
     private static String currentTimeZoneOffsetString()

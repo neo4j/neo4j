@@ -24,8 +24,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.IntStream;
@@ -46,6 +46,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
@@ -60,9 +61,11 @@ public class SchemaStoreTest
 {
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
-
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+
     private Config config;
     private SchemaStore store;
     private NeoStores neoStores;
@@ -71,11 +74,9 @@ public class SchemaStoreTest
     @Before
     public void before()
     {
-        File storeDir = new File( "dir" );
-        fs.get().mkdirs( storeDir );
         config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
-        storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
+        storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getSchemaStore();

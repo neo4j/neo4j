@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -58,18 +58,20 @@ public class DirectRecordStoreMigrator
         this.config = config;
     }
 
-    public void migrate( File fromStoreDir, RecordFormats fromFormat, File toStoreDir, RecordFormats toFormat,
-            ProgressReporter progressReporter, StoreType[] types, StoreType... additionalTypesToOpen )
+    public void migrate( DatabaseLayout fromDirectoryStructure, RecordFormats fromFormat, DatabaseLayout toDirectoryStructure,
+            RecordFormats toFormat, ProgressReporter progressReporter, StoreType[] types, StoreType... additionalTypesToOpen )
     {
         StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );
         progressReporter.start( storesToOpen.length );
 
-        String databaseName = config.get( GraphDatabaseSettings.active_database );
-        try ( NeoStores fromStores = new StoreFactory( databaseName, fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, fromFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true, storesToOpen );
-                NeoStores toStores = new StoreFactory( databaseName, toStoreDir,
-                        withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ), new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat,
-                        NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true, storesToOpen ) )
+        try (
+                NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new DefaultIdGeneratorFactory( fs ),
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
+                        .openNeoStores( true, storesToOpen );
+                NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
+                    new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat, NullLogProvider.getInstance(),
+                        EmptyVersionContextSupplier.EMPTY )
+                        .openNeoStores( true, storesToOpen ) )
         {
             for ( StoreType type : types )
             {
@@ -83,7 +85,7 @@ public class DirectRecordStoreMigrator
         }
     }
 
-    private <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to )
+    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to )
     {
         to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse() );
 

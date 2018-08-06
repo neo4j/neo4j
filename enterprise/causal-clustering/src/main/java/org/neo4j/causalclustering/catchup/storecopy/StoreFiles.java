@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -150,9 +151,9 @@ public class StoreFiles
         return true;
     }
 
-    public StoreId readStoreId( File storeDir ) throws IOException
+    public StoreId readStoreId( DatabaseLayout databaseLayout ) throws IOException
     {
-        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
         org.neo4j.storageengine.api.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
         return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
                 kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );

@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.layout;
+package org.neo4j.io.layout;
 
 import java.io.File;
 
-public class StoreDirectoryStructure
+public class StoreLayout
 {
     private final File rootDirectory;
 
-    public StoreDirectoryStructure( File rootDatabasesDirectory )
+    public StoreLayout( File rootStoreDirectory )
     {
-        this.rootDirectory = rootDatabasesDirectory;
+        this.rootDirectory = rootStoreDirectory;
     }
 
     /**
@@ -39,8 +39,9 @@ public class StoreDirectoryStructure
         return rootDirectory;
     }
 
-    public File databaseDirectory( String databaseName )
+    //TODO:rename
+    public DatabaseLayout databaseDirectory( String databaseName )
     {
-        return new File( rootDirectory, databaseName );
+        return new DatabaseLayout( rootDirectory, databaseName );
     }
 }

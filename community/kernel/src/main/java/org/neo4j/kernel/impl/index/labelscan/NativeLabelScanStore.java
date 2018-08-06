@@ -37,6 +37,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -165,24 +166,24 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
-    public NativeLabelScanStore( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
+    public NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        this( pageCache, databaseDirectory, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+        this( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                 /*means no opinion about page size*/ 0 );
     }
 
     /*
      * Test access to be able to control page size.
      */
-    NativeLabelScanStore( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
+    NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
                 FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, int pageSize )
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
-        this.storeFile = getLabelScanStoreFile( databaseDirectory );
+        this.storeFile = getLabelScanStoreFile( directoryStructure );
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
         this.monitors = monitors;
@@ -194,12 +195,12 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Returns the file backing the label scan store.
      *
-     * @param databaseDirectory The store directory to use.
+     * @param directoryStructure The store directory to use.
      * @return the file backing the label scan store
      */
-    public static File getLabelScanStoreFile( File databaseDirectory )
+    public static File getLabelScanStoreFile( DatabaseLayout directoryStructure )
     {
-        return new File( databaseDirectory, FILE_NAME );
+        return directoryStructure.file( FILE_NAME );
     }
 
     /**

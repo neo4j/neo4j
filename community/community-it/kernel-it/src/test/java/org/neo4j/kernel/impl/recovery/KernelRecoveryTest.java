@@ -72,7 +72,7 @@ public class KernelRecoveryTest
             db.shutdown();
 
             // Then the logical log should be in sync
-            File logFile = new File( testDirectory.databaseDir(), TransactionLogFiles.DEFAULT_NAME + ".0" );
+            File logFile = testDirectory.databaseLayout().file( TransactionLogFiles.DEFAULT_NAME + ".0" );
             assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),
@@ -91,7 +91,7 @@ public class KernelRecoveryTest
     {
         return new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabase( testDirectory.storeDir() );
+                .newImpermanentDatabase( testDirectory.databaseDir() );
     }
 
     private static long createNode( GraphDatabaseService db )

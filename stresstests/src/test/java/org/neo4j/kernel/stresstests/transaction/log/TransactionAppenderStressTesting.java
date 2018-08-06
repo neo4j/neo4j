@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.concurrent.Callable;
 
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.stresstest.TransactionAppenderStressTest.Builder;
 import org.neo4j.kernel.impl.transaction.log.stresstest.TransactionAppenderStressTest.TransactionIdChecker;
 
@@ -35,9 +36,9 @@ import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
-import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
@@ -57,7 +58,7 @@ public class TransactionAppenderStressTesting
 
         Callable<Long> runner = new Builder()
                 .with( untilTimeExpired( durationInMinutes, MINUTES ) )
-                .withWorkingDirectory( ensureExistsAndEmpty( workingDirectory ) )
+                .withWorkingDirectory( new DatabaseLayout( ensureExistsAndEmpty( workingDirectory ) ) )
                 .withNumThreads( threads )
                 .build();
 

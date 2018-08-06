@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +57,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.is;
@@ -75,15 +75,16 @@ import static org.mockito.Mockito.when;
 
 public class RecordStorageEngineTest
 {
-    private static final File storeDir = new File( "/storedir" );
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
+    private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule )
             .around( pageCacheRule )
+            .around( testDirectory )
             .around( storageEngineRule );
 
     private static final Function<Optional<StoreType>,StoreType> assertIsPresentAndGet = optional ->
@@ -104,8 +105,7 @@ public class RecordStorageEngineTest
     public void panicOnExceptionDuringCommandsApply()
     {
         IllegalStateException failure = new IllegalStateException( "Too many open files" );
-        RecordStorageEngine engine = storageEngineRule
-                .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
+        RecordStorageEngine engine = storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ), testDirectory.databaseLayout() )
                 .databaseHealth( databaseHealth )
                 .transactionApplierTransformer( facade -> transactionApplierFacadeTransformer( facade, failure ) )
                 .build();
@@ -177,7 +177,7 @@ public class RecordStorageEngineTest
             }
         };
 
-        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache ).build();
+        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache, testDirectory.databaseLayout() ).build();
         engine.flushAndForce( limiter );
 
         assertThat( observedLimiter.get(), sameInstance( limiter ) );
@@ -202,13 +202,12 @@ public class RecordStorageEngineTest
     private RecordStorageEngine buildRecordStorageEngine()
     {
         return storageEngineRule
-                .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
-                .storeDirectory( storeDir )
+                .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ), testDirectory.databaseLayout() )
                 .databaseHealth( databaseHealth )
                 .build();
     }
 
-    private Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException
+    private static Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException
     {
         Exception applicationError = new UnderlyingStorageException( "No space left on device" );
         TransactionToApply txToApply = newTransactionThatFailsWith( applicationError );
@@ -241,7 +240,7 @@ public class RecordStorageEngineTest
 
     private static class FailingBatchTransactionApplierFacade extends BatchTransactionApplierFacade
     {
-        private Exception failure;
+        private final Exception failure;
 
         FailingBatchTransactionApplierFacade( Exception failure, BatchTransactionApplier... appliers )
         {

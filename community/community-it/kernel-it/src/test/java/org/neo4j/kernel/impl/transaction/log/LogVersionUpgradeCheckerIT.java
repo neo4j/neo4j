@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -68,7 +67,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading disabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
@@ -84,7 +83,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading disabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
@@ -98,7 +97,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading enabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .newGraphDatabase();
         db.shutdown();
@@ -108,7 +107,7 @@ public class LogVersionUpgradeCheckerIT
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder( storeDirectory.storeDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.databaseDir() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -129,10 +128,9 @@ public class LogVersionUpgradeCheckerIT
 
     private void appendCheckpoint( LogEntryVersion logVersion ) throws IOException
     {
-        File databaseDir = storeDirectory.databaseDir();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseDir, fs, pageCache ).withLogEntryReader( logEntryReader ).build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDirectory.databaseLayout(), fs, pageCache ).withLogEntryReader( logEntryReader ).build();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         LogTailScanner.LogTailInformation tailInformation = tailScanner.getTailInformation();
 

@@ -25,11 +25,10 @@ package org.neo4j.backup.impl;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.file.Path;
-
 import org.neo4j.backup.IncrementalBackupNotPossibleException;
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.logging.NullLogProvider;
@@ -56,7 +55,7 @@ public class BackupProtocolServiceStrategyTest
     OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
     AddressResolver addressResolver = mock( AddressResolver.class );
     HostnamePort hostnamePort = new HostnamePort( "hostname:1234" );
-    Path backupDirectory = mock( Path.class );
+    DatabaseLayout backuplayout = mock( DatabaseLayout.class );
     OptionalHostnamePort userSpecifiedHostname = new OptionalHostnamePort( (String) null, null, null );
 
     @Before
@@ -71,8 +70,7 @@ public class BackupProtocolServiceStrategyTest
     public void incrementalBackupsAreDoneAgainstResolvedAddress()
     {
         // when
-        Fallible<BackupStageOutcome> state = subject.performIncrementalBackup(
-                backupDirectory, config, userSpecifiedHostname );
+        Fallible<BackupStageOutcome> state = subject.performIncrementalBackup( backuplayout, config, userSpecifiedHostname );
 
         // then
         verify( backupProtocolService ).doIncrementalBackup( eq( hostnamePort.getHost() ),
@@ -90,7 +88,7 @@ public class BackupProtocolServiceStrategyTest
             .thenThrow( expectedException );
 
         // when
-        Fallible state = subject.performIncrementalBackup( backupDirectory, config, userSpecifiedHostname );
+        Fallible state = subject.performIncrementalBackup( backuplayout, config, userSpecifiedHostname );
 
         // then
         assertEquals( BackupStageOutcome.FAILURE, state.getState() );
@@ -101,7 +99,7 @@ public class BackupProtocolServiceStrategyTest
     public void fullBackupUsesResolvedAddress()
     {
         // when
-        Fallible state = subject.performFullBackup( backupDirectory, config, userSpecifiedHostname );
+        Fallible state = subject.performFullBackup( backuplayout, config, userSpecifiedHostname );
 
         // then
         verify( backupProtocolService ).doFullBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), any(), anyLong(), anyBoolean() );
@@ -116,7 +114,7 @@ public class BackupProtocolServiceStrategyTest
                 .thenThrow( ComException.class );
 
         // when
-        Fallible state = subject.performFullBackup( backupDirectory, config, userSpecifiedHostname );
+        Fallible state = subject.performFullBackup( backuplayout, config, userSpecifiedHostname );
 
         // then
         assertEquals( BackupStageOutcome.WRONG_PROTOCOL, state.getState() );

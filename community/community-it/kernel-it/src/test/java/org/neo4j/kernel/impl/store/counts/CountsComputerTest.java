@@ -76,13 +76,12 @@ public class CountsComputerTest
     private static final Config CONFIG = Config.defaults();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pcRule = new PageCacheRule();
-    private final TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
+    private final TestDirectory testDir = TestDirectory.testDirectory( fsRule );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( pcRule ).around( fsRule ).around( testDir );
 
     private FileSystemAbstraction fs;
-    private File dir;
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
 
@@ -90,9 +89,8 @@ public class CountsComputerTest
     public void setup()
     {
         fs = fsRule.get();
-        dir = testDir.storeDir();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabaseBuilder( dir );
+                .newImpermanentDatabaseBuilder( testDir.databaseDir() );
         pageCache = pcRule.getPageCache( fs );
     }
 
@@ -306,12 +304,12 @@ public class CountsComputerTest
 
     private File alphaStoreFile()
     {
-        return new File( dir, COUNTS_STORE_BASE + CountsTracker.LEFT );
+        return testDir.databaseLayout().file( COUNTS_STORE_BASE + CountsTracker.LEFT );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir, COUNTS_STORE_BASE + CountsTracker.RIGHT );
+        return testDir.databaseLayout().file( COUNTS_STORE_BASE + CountsTracker.RIGHT );
     }
 
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
@@ -338,7 +336,7 @@ public class CountsComputerTest
     private CountsTracker createCountsTracker()
     {
         return new CountsTracker( LOG_PROVIDER, fs, pageCache,
-                CONFIG, new File( dir, COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
+                CONFIG, testDir.databaseLayout().file( COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId )
@@ -352,8 +350,7 @@ public class CountsComputerTest
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
         StoreFactory storeFactory =
-                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, testDir.databaseDir(), CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER,
-                        EmptyVersionContextSupplier.EMPTY );
+                new StoreFactory( testDir.databaseLayout(), CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

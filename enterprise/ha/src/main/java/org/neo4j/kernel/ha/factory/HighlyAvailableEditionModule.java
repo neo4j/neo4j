@@ -70,6 +70,7 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -228,8 +229,8 @@ public class HighlyAvailableEditionModule extends EditionModule
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
-        File databaseDirectory = platformModule.directoryStructure.databaseDirectory( DatabaseManager.DEFAULT_DATABASE_NAME );
-        life.add( new BranchedDataMigrator( databaseDirectory ) );
+        DatabaseLayout databaseLayout = platformModule.directoryStructure.databaseDirectory( DatabaseManager.DEFAULT_DATABASE_NAME );
+        life.add( new BranchedDataMigrator( databaseLayout.databaseDirectory() ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( Master.class );
         Master master = (Master) newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
@@ -423,7 +424,7 @@ public class HighlyAvailableEditionModule extends EditionModule
 
         SwitchToSlave switchToSlaveInstance = chooseSwitchToSlaveStrategy( platformModule, config, dependencies, logging, monitors,
                 masterDelegateInvocationHandler, requestContextFactory, clusterMemberAvailability,
-                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory, editionIdGeneratorFactory, databaseDirectory );
+                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory, editionIdGeneratorFactory, databaseLayout );
 
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( resolveDatabaseDependency( platformModule, GraphDatabaseFacade.class ), platformModule.fileSystem,
@@ -594,12 +595,13 @@ public class HighlyAvailableEditionModule extends EditionModule
     private static SwitchToSlave chooseSwitchToSlaveStrategy( PlatformModule platformModule, Config config, Dependencies dependencies, LogService logging,
             Monitors monitors, DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory,
             ClusterMemberAvailability clusterMemberAvailability, MasterClientResolver masterClientResolver, UpdatePuller updatePullerProxy,
-            PullerFactory pullerFactory, Function<Slave,SlaveServer> slaveServerFactory, HaIdGeneratorFactory idGeneratorFactory, File databaseDirectory )
+            PullerFactory pullerFactory, Function<Slave,SlaveServer> slaveServerFactory, HaIdGeneratorFactory idGeneratorFactory,
+            DatabaseLayout databaseLayout )
     {
         switch ( config.get( HaSettings.branched_data_copying_strategy ) )
         {
             case branch_then_copy:
-                return new SwitchToSlaveBranchThenCopy( databaseDirectory, logging,
+                return new SwitchToSlaveBranchThenCopy( databaseLayout, logging,
                         platformModule.fileSystem, config, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
@@ -612,7 +614,7 @@ public class HighlyAvailableEditionModule extends EditionModule
                         monitors,
                         () -> resolveDatabaseDependency( platformModule, DatabaseTransactionStats.class ) );
             case copy_then_branch:
-                return new SwitchToSlaveCopyThenBranch( databaseDirectory, logging,
+                return new SwitchToSlaveCopyThenBranch( databaseLayout, logging,
                         platformModule.fileSystem, config, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
@@ -815,7 +817,7 @@ public class HighlyAvailableEditionModule extends EditionModule
 
                     diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( databaseInfo, neoStoreDataSource.getStoreId() ) );
                     neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
-                    diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getDatabaseDirectory() ) );
+                    diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getDatabaseLayout().databaseDirectory() ) );
                     assureLastCommitTimestampInitialized( dependencyResolver );
                 }
                 catch ( Throwable throwable )

@@ -66,6 +66,7 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -106,7 +107,7 @@ public class LuceneDataSource extends LifecycleAdapter
 
     public static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
-    private final File databaseDirectory;
+    private final DatabaseLayout directoryStructure;
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final OperationalMode operationalMode;
@@ -123,10 +124,10 @@ public class LuceneDataSource extends LifecycleAdapter
     /**
      * Constructs this data source.
      */
-    public LuceneDataSource( File databaseDirectory, Config config, IndexConfigStore indexStore,
+    public LuceneDataSource( DatabaseLayout directoryStructure, Config config, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction, OperationalMode operationalMode )
     {
-        this.databaseDirectory = databaseDirectory;
+        this.directoryStructure = directoryStructure;
         this.config = config;
         this.indexStore = indexStore;
         this.typeCache = new IndexTypeCache( indexStore );
@@ -142,7 +143,7 @@ public class LuceneDataSource extends LifecycleAdapter
         readOnly = isReadOnly( config, operationalMode );
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         this.baseStorePath = filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
-                getLuceneIndexStoreDirectory( databaseDirectory ) );
+                getLuceneIndexStoreDirectory( directoryStructure ) );
         filesystemFacade.cleanWriteLocks( baseStorePath );
         this.typeCache = new IndexTypeCache( indexStore );
         this.indexReferenceFactory = readOnly ?
@@ -192,9 +193,9 @@ public class LuceneDataSource extends LifecycleAdapter
         }
     }
 
-    public static File getLuceneIndexStoreDirectory( File databaseDirectory )
+    public static File getLuceneIndexStoreDirectory( DatabaseLayout directoryStructure )
     {
-        return new File( databaseDirectory, "index" );
+        return directoryStructure.file( "index" );
     }
 
     IndexType getType( IndexIdentifier identifier, boolean recovery ) throws ExplicitIndexNotFoundKernelException

@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.rule;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
@@ -53,6 +52,7 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -67,7 +67,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 {
     private GraphDatabaseBuilder databaseBuilder;
     private GraphDatabaseAPI database;
-    private File databaseDir;
+    private DatabaseLayout databaseLayout;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
     private Map<Setting<?>, String> config;
@@ -343,7 +343,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         {
             applyConfigChanges( additionalConfig );
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
-            databaseDir = database.databaseDirectory();
+            databaseLayout = database.databaseLayout();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }
     }
@@ -370,7 +370,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public interface RestartAction
     {
-        void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException;
+        void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout ) throws IOException;
 
         RestartAction EMPTY = ( fs, storeDirectory ) ->
         {
@@ -387,7 +387,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         database.shutdown();
-        action.run( fs, databaseDir );
+        action.run( fs, databaseLayout );
         database = null;
         applyConfigChanges( configChanges );
         return getGraphDatabaseAPI();
@@ -460,14 +460,14 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public File databaseDirectory()
+    public DatabaseLayout databaseLayout()
     {
-        return database.databaseDirectory();
+        return database.databaseLayout();
     }
 
     public String getDatabaseDirAbsolutePath()
     {
-        return databaseDirectory().getAbsolutePath();
+        return databaseLayout().databaseDirectory().getAbsolutePath();
     }
 
     @Override

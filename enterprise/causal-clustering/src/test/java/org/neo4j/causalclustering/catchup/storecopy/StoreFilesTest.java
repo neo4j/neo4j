@@ -38,6 +38,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -264,7 +265,8 @@ public class StoreFilesTest
     public void mustReadStoreId() throws Exception
     {
         File dir = getBaseDir();
-        File neostore = new File( dir, MetaDataStore.DEFAULT_NAME );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( dir );
+        File neostore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         long time = rng.nextLong();
         long randomNumber = rng.nextLong();
@@ -279,7 +281,7 @@ public class StoreFilesTest
         MetaDataStore.setRecord( pageCache, neostore, Position.UPGRADE_TIME, upgradeTime );
         MetaDataStore.setRecord( pageCache, neostore, Position.UPGRADE_TRANSACTION_ID, upgradeTransactionId );
 
-        StoreId storeId = storeFiles.readStoreId( dir );
+        StoreId storeId = storeFiles.readStoreId( databaseLayout );
 
         assertThat( storeId.getCreationTime(), is( time ) );
         assertThat( storeId.getRandomId(), is( randomNumber ) );

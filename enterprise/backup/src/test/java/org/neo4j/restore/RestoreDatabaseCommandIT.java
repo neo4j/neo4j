@@ -22,10 +22,8 @@
  */
 package org.neo4j.restore;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
@@ -36,7 +34,6 @@ import java.io.PrintStream;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -61,13 +58,16 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCommandIT
 {
@@ -75,98 +75,139 @@ public class RestoreDatabaseCommandIT
     public final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-    private Config toConfig;
-    private static final String databaseName = "to";
-    private File fromStore;
-    private File fromDatabase;
-    private String fromLogicalLogsPath;
-    private File toStore;
-    private String toLogicalLogsPath;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        toConfig = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
-        fromStore = directory.storeDir( "from" );
-        fromDatabase = directory.databaseDir( fromStore );
-        fromLogicalLogsPath = fromDatabase.getAbsolutePath();
-        toStore = toConfig.get( GraphDatabaseSettings.database_path ).getParentFile();
-        toLogicalLogsPath = toStore.getAbsolutePath();
-    }
 
     @Test
-    public void forceShouldRespectStoreLock() throws Exception
+    public void forceShouldRespectStoreLock()
     {
-        createDbAt( fromStore, fromLogicalLogsPath, 10 );
-        createDbAt( toStore, toLogicalLogsPath, 20, toConfig );
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
-        expectedException.expect( CommandFailed.class );
-        expectedException.expectMessage( "the database is in use -- stop Neo4j and try again" );
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
+        int fromNodeCount = 10;
+        int toNodeCount = 20;
+
+        createDbAt( fromPath, fromNodeCount );
+        createDbAt( toPath, toNodeCount );
 
         FileSystemAbstraction fs = fileSystemRule.get();
-        try ( StoreLocker storeLocker = new StoreLocker( fs, toStore ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fs, toPath.getParentFile() ) )
         {
             storeLocker.checkLock();
-            new RestoreDatabaseCommand( fs, fromDatabase, toConfig, databaseName, true ).execute();
+
+            new RestoreDatabaseCommand( fs, fromPath, config, databaseName, true ).execute();
+            fail( "expected exception" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
         }
     }
 
     @Test
     public void shouldNotCopyOverAndExistingDatabase() throws Exception
     {
-        createDbAt( fromStore, fromLogicalLogsPath, 0 );
-        createDbAt( toStore, toLogicalLogsPath, 0, toConfig );
+        // given
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Database with name [to] already exists" );
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
 
-        // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, false ).execute();
+        createDbAt( fromPath, 0 );
+        createDbAt( toPath, 0 );
+
+        try
+        {
+            // when
+
+            new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, false ).execute();
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalArgumentException exception )
+        {
+            // then
+            assertTrue( exception.getMessage(),
+                    exception.getMessage().contains( "Database with name [to] already exists" ) );
+        }
     }
 
     @Test
     public void shouldThrowExceptionIfBackupDirectoryDoesNotExist() throws Exception
     {
-        assertTrue( fromDatabase.delete() );
-        createDbAt( toStore, toLogicalLogsPath, 0, toConfig );
+        // given
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Source directory does not exist" );
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
 
-        // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, false ).execute();
+        createDbAt( toPath, 0 );
+
+        try
+        {
+            // when
+
+            new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, false ).execute();
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalArgumentException exception )
+        {
+            // then
+            assertTrue( exception.getMessage(), exception.getMessage().contains( "Source directory does not exist" ) );
+        }
     }
 
     @Test
     public void shouldThrowExceptionIfBackupDirectoryDoesNotHaveStoreFiles() throws Exception
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Source directory is not a database backup" );
+        // given
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
-        // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, false ).execute();
+        File fromPath = new File( directory.absolutePath(), "from" );
+        assertTrue( fromPath.mkdirs() );
+
+        try
+        {
+            // when
+            new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, false ).execute();
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalArgumentException exception )
+        {
+            // then
+            assertTrue( exception.getMessage(), exception.getMessage()
+                    .contains( "Source directory is not a database backup" ) );
+        }
     }
 
     @Test
     public void shouldAllowForcedCopyOverAnExistingDatabase() throws Exception
     {
-        createDbAt( fromStore, fromLogicalLogsPath, 10 );
-        createDbAt( toStore, toLogicalLogsPath, 20, toConfig );
+        // given
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
+
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
+        int fromNodeCount = 10;
+        int toNodeCount = 20;
+
+        createDbAt( fromPath, fromNodeCount );
+        createDbAt( toPath, toNodeCount );
 
         // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, true ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, true ).execute();
 
         // then
-        toConfig.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( toStore )
-                .setConfig( toConfig.getRaw() )
+        GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( toPath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
         try ( Transaction ignored = copiedDb.beginTx() )
         {
-            assertEquals( 10, Iterables.count( copiedDb.getAllNodes() ) );
+            assertEquals( fromNodeCount, Iterables.count( copiedDb.getAllNodes() ) );
         }
 
         copiedDb.shutdown();
@@ -176,14 +217,15 @@ public class RestoreDatabaseCommandIT
     public void restoreExplicitIndexesFromBackup() throws IOException, CommandFailed
     {
         String databaseName = "destination";
-        Config toConfig = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
-        File toStorePath = toConfig.get( GraphDatabaseSettings.database_path );
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
 
-        createDbWithExplicitIndexAt( fromStore, 100 );
+        createDbWithExplicitIndexAt( fromPath, 100 );
 
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, true ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, true ).execute();
 
-        GraphDatabaseService restoredDatabase = createDatabase( toStorePath, toStorePath.getAbsolutePath(), toConfig );
+        GraphDatabaseService restoredDatabase = createDatabase( toPath, toPath.getAbsolutePath() );
 
         try ( Transaction transaction = restoredDatabase.beginTx() )
         {
@@ -201,7 +243,6 @@ public class RestoreDatabaseCommandIT
             {
                 countRelationshipByKeyValue( indexManager, relationshipIndexName, "x", "y" );
             }
-            transaction.success();
         }
         restoredDatabase.shutdown();
     }
@@ -210,20 +251,27 @@ public class RestoreDatabaseCommandIT
     public void restoreTransactionLogsInCustomDirectoryForTargetDatabaseWhenConfigured()
             throws IOException, CommandFailed
     {
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
         File customTxLogDirectory = directory.directory( "customLogicalLog" );
         String customTransactionLogDirectory = customTxLogDirectory.getAbsolutePath();
+        config.augmentDefaults( GraphDatabaseSettings.logical_logs_location, customTransactionLogDirectory );
 
-        createDbAt( fromStore, fromLogicalLogsPath, 10 );
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
+        int fromNodeCount = 10;
+        int toNodeCount = 20;
+        createDbAt( fromPath, fromNodeCount );
 
-        GraphDatabaseService db = createDatabase( toStore, customTransactionLogDirectory, toConfig );
-        createTestData( 20, db );
+        GraphDatabaseService db = createDatabase( toPath, customTransactionLogDirectory );
+        createTestData( toNodeCount, db );
         db.shutdown();
 
         // when
-        new RestoreDatabaseCommand( fileSystemRule.get(), fromDatabase, toConfig, databaseName, true ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, true ).execute();
 
-        LogFiles fromStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromDatabase, fileSystemRule.get() ).build();
-        LogFiles toStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( toStore, databaseName ), fileSystemRule.get() ).build();
+        LogFiles fromStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromPath, fileSystemRule.get() ).build();
+        LogFiles toStoreLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( toPath, fileSystemRule.get() ).build();
         LogFiles customLogLocationLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( customTxLogDirectory, fileSystemRule.get() ).build();
         assertThat( toStoreLogFiles.logFiles(), emptyArray() );
         assertThat( customLogLocationLogFiles.logFiles(), arrayWithSize( 1 ) );
@@ -235,19 +283,18 @@ public class RestoreDatabaseCommandIT
     public void doNotRemoveRelativeTransactionDirectoryAgain() throws IOException, CommandFailed
     {
         FileSystemAbstraction fileSystem = Mockito.spy( fileSystemRule.get() );
-        File storeDir = directory.directory();
-        String testDatabase = "testDatabase";
-        File databaseDirectory = new File( storeDir, testDatabase );
-        File relativeLogDirectory = new File( databaseDirectory, "relativeDirectory" );
+        File fromPath = directory.directory( "from" );
+        File databaseFile = directory.directory();
+        File relativeLogDirectory = directory.directory( "relativeDirectory" );
 
-        Config config = Config.defaults( GraphDatabaseSettings.database_path, databaseDirectory.getAbsolutePath() );
+        Config config = Config.defaults( GraphDatabaseSettings.database_path, databaseFile.getAbsolutePath() );
         config.augment( GraphDatabaseSettings.logical_logs_location, relativeLogDirectory.getAbsolutePath() );
 
-        createDbAt( fromStore, fromLogicalLogsPath, 10 );
+        createDbAt( fromPath, 10 );
 
-        new RestoreDatabaseCommand( fileSystem, fromDatabase, config, testDatabase, true ).execute();
+        new RestoreDatabaseCommand( fileSystem, fromPath, config, "testDatabase", true ).execute();
 
-        verify( fileSystem ).deleteRecursively( eq( databaseDirectory ) );
+        verify( fileSystem ).deleteRecursively( eq( databaseFile ) );
         verify( fileSystem, never() ).deleteRecursively( eq( relativeLogDirectory ) );
     }
 
@@ -275,7 +322,7 @@ public class RestoreDatabaseCommandIT
                             "%n" +
                             "options:%n" +
                             "  --from=<backup-directory>   Path to backup to restore from.%n" +
-                            "  --database=<name>           Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" +
+                            "  --database=<name>           Name of database. [default:graph.db]%n" +
                             "  --force=<true|false>        If an existing database should be replaced.%n" +
                             "                              [default:false]%n" ),
                     baos.toString() );
@@ -300,40 +347,30 @@ public class RestoreDatabaseCommandIT
 
     private static Config configWith( String databaseName, String dataDirectory )
     {
-        return Config.builder()
-                .withSetting( GraphDatabaseSettings.active_database.name(), databaseName )
-                .withSetting( GraphDatabaseSettings.data_directory.name(), dataDirectory ).build();
+        return Config.defaults( stringMap( GraphDatabaseSettings.active_database.name(), databaseName,
+                GraphDatabaseSettings.data_directory.name(), dataDirectory ) );
     }
 
-    private static void createDbAt( File fromPath, String logicalLogsDirectory, int nodesToCreate )
+    private void createDbAt( File fromPath, int nodesToCreate )
     {
-        GraphDatabaseService db = createDatabase( fromPath, logicalLogsDirectory, Config.defaults() );
+        GraphDatabaseService db = createDatabase( fromPath, fromPath.getAbsolutePath() );
 
         createTestData( nodesToCreate, db );
 
         db.shutdown();
     }
 
-    private static void createDbAt( File fromPath, String logicalLogsDirectory, int nodesToCreate, Config config )
+    private GraphDatabaseService createDatabase( File fromPath, String absolutePath )
     {
-        GraphDatabaseService db = createDatabase( fromPath, logicalLogsDirectory, config );
-
-        createTestData( nodesToCreate, db );
-
-        db.shutdown();
-    }
-
-    private static GraphDatabaseService createDatabase( File fromPath, String logicalLogsDirectory, Config config )
-    {
-        config.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        config.augment( GraphDatabaseSettings.logical_logs_location, logicalLogsDirectory );
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( fromPath ).setConfig( config.getRaw() )
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( fromPath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.logical_logs_location, absolutePath )
                 .newGraphDatabase();
     }
 
-    private static void createDbWithExplicitIndexAt( File fromPath, int pairNumberOfNodesToCreate )
+    private void createDbWithExplicitIndexAt( File fromPath, int pairNumberOfNodesToCreate )
     {
-        GraphDatabaseService db = createDatabase( fromPath, fromPath.getAbsolutePath(), Config.defaults() );
+        GraphDatabaseService db = createDatabase( fromPath, fromPath.getAbsolutePath() );
 
         Index<Node> explicitNodeIndex;
         RelationshipIndex explicitRelationshipIndex;

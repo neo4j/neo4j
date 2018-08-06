@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.facade.spi;
 
-import java.io.File;
 import java.net.URL;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
@@ -129,9 +129,9 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public File databaseDirectory()
+    public DatabaseLayout databaseLayout()
     {
-        return dataSource.neoStoreDataSource.getDatabaseDirectory();
+        return dataSource.neoStoreDataSource.getDatabaseLayout();
     }
 
     @Override

@@ -31,7 +31,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -117,8 +116,7 @@ public class ConsistencyCheckServiceRecordFormatIT
     {
         ConsistencyCheckService service = new ConsistencyCheckService();
 
-        File databaseDir = db.databaseDirectory();
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( databaseDir, Config.defaults(),
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( db.databaseLayout(), Config.defaults(),
                 ProgressMonitorFactory.textual( System.out ), FormattedLogProvider.toOutputStream( System.out ), true );
 
         assertTrue( "Store is inconsistent", result.isSuccessful() );

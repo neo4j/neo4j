@@ -26,6 +26,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -69,7 +70,6 @@ import org.neo4j.time.SystemNanoClock;
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
 {
     private final String databaseName;
-    private final File databaseDirectory;
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final LogService logService;
@@ -109,14 +109,15 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
+    private final DatabaseLayout directoryStructure;
 
-    ModularDatabaseCreationContext( String databaseName, File databaseDirectory, PlatformModule platformModule, EditionModule editionModule,
+    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionModule editionModule,
             Procedures procedures, GraphDatabaseFacade facade, TokenHolders tokenHolders )
     {
         this.databaseName = databaseName;
-        this.databaseDirectory = databaseDirectory;
         this.config = platformModule.config;
         this.idGeneratorFactory = editionModule.idGeneratorFactory;
+        this.directoryStructure = platformModule.directoryStructure.databaseDirectory( databaseName );
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
         this.globalDependencies =  platformModule.dependencies;
@@ -134,7 +135,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.transactionHeaderInformationFactory = editionModule.headerInformationFactory;
         this.commitProcessFactory = editionModule.commitProcessFactory;
         this.autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
-        this.indexConfigStore = new IndexConfigStore( databaseDirectory, fs );
+        this.indexConfigStore = new IndexConfigStore( directoryStructure, fs );
         this.explicitIndexProvider = new DefaultExplicitIndexProvider();
         this.pageCache = platformModule.pageCache;
         this.constraintSemantics = editionModule.constraintSemantics;
@@ -163,9 +164,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public File getDatabaseDirectory()
+    public DatabaseLayout getDatabaseDirectoryStructure()
     {
-        return databaseDirectory;
+        return directoryStructure;
     }
 
     @Override

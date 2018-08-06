@@ -163,7 +163,7 @@ public class MultipleIndexPopulationStressIT
         // WHEN creating the indexes under stressful updates
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
-        Result result = cc.runFullConsistencyCheck( directory.databaseDir(),
+        Result result = cc.runFullConsistencyCheck( directory.databaseLayout(),
                 Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
@@ -298,7 +298,7 @@ public class MultipleIndexPopulationStressIT
         Config config = Config.defaults();
         RecordFormats recordFormats =
                 RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
-        BatchImporter importer = new ParallelBatchImporter( directory.databaseDir(), fileSystemRule.get(),
+        BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(),
                 null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR );
         try ( RandomDataInput input = new RandomDataInput( count ) )
         {

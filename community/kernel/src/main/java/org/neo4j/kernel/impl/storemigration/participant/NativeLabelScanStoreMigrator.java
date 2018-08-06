@@ -29,6 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -66,21 +67,21 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, ProgressReporter progressReporter,
+    public void migrate( DatabaseLayout storeStructure, DatabaseLayout migrationStructure, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        if ( isNativeLabelScanStoreMigrationRequired( storeDir ) )
+        if ( isNativeLabelScanStoreMigrationRequired( storeStructure ) )
         {
-            StoreFactory storeFactory = getStoreFactory( storeDir, versionToMigrateFrom );
+            StoreFactory storeFactory = getStoreFactory( storeStructure, versionToMigrateFrom );
             try ( NeoStores neoStores = storeFactory.openAllNeoStores();
                     Lifespan lifespan = new Lifespan() )
             {
                 neoStores.verifyStoreOk();
                 // Remove any existing file to ensure we always do migration
-                deleteNativeIndexFile( migrationDir );
+                deleteNativeIndexFile( migrationStructure );
 
                 progressReporter.start( neoStores.getNodeStore().getNumberOfIdsInUse() );
-                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationDir, progressReporter, neoStores );
+                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationStructure, progressReporter, neoStores );
                 lifespan.add( nativeLabelScanStore );
             }
             nativeLabelScanStoreMigrated = true;
@@ -88,20 +89,20 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
-            String versionToMigrateTo ) throws IOException
+    public void moveMigratedFiles( DatabaseLayout migrationDirectoryStructure, DatabaseLayout storeStructure,
+            String versionToUpgradeFrom, String versionToMigrateTo ) throws IOException
     {
         if ( nativeLabelScanStoreMigrated )
         {
-            File nativeLabelIndex = new File( migrationDir, NativeLabelScanStore.FILE_NAME );
-            moveNativeIndexFile( storeDir, nativeLabelIndex );
-            deleteLuceneLabelIndex( getLuceneStoreDirectory( storeDir ) );
+            File nativeLabelIndex = migrationDirectoryStructure.file( NativeLabelScanStore.FILE_NAME );
+            moveNativeIndexFile( storeStructure, nativeLabelIndex );
+            deleteLuceneLabelIndex( getLuceneStoreDirectory( storeStructure ) );
         }
     }
 
-    private void deleteNativeIndexFile( File storeDir ) throws IOException
+    private void deleteNativeIndexFile( DatabaseLayout directoryStructure ) throws IOException
     {
-        Optional<FileHandle> indexFile = fileSystem.streamFilesRecursive( NativeLabelScanStore.getLabelScanStoreFile( storeDir ) ).findFirst();
+        Optional<FileHandle> indexFile = fileSystem.streamFilesRecursive( NativeLabelScanStore.getLabelScanStoreFile( directoryStructure ) ).findFirst();
 
         if ( indexFile.isPresent() )
         {
@@ -116,36 +117,36 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         }
     }
 
-    private void moveNativeIndexFile( File storeDir, File nativeLabelIndex ) throws IOException
+    private void moveNativeIndexFile( DatabaseLayout storeStructure, File nativeLabelIndex ) throws IOException
     {
         Optional<FileHandle> nativeIndexFileHandle = fileSystem.streamFilesRecursive( nativeLabelIndex ).findFirst();
         if ( nativeIndexFileHandle.isPresent() )
         {
-            nativeIndexFileHandle.get().rename( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+            nativeIndexFileHandle.get().rename( storeStructure.file( NativeLabelScanStore.FILE_NAME ) );
         }
     }
 
-    private NativeLabelScanStore getNativeLabelScanStore( File migrationDir,
+    private NativeLabelScanStore getNativeLabelScanStore( DatabaseLayout migrationDirectoryStructure,
             ProgressReporter progressReporter, NeoStores neoStores )
     {
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
-        return new NativeLabelScanStore( pageCache, migrationDir, fileSystem,
+        return new NativeLabelScanStore( pageCache, migrationDirectoryStructure, fileSystem,
                 new MonitoredFullLabelStream( neoStoreIndexStoreView, progressReporter ), false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
-    private StoreFactory getStoreFactory( File storeDir, String versionToMigrateFrom )
+    private StoreFactory getStoreFactory( DatabaseLayout directoryStructure, String versionToMigrateFrom )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForVersion( versionToMigrateFrom );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
-        return new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config, idGeneratorFactory, pageCache, fileSystem,
+        return new StoreFactory( directoryStructure, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 
-    private boolean isNativeLabelScanStoreMigrationRequired( File storeDir ) throws IOException
+    private boolean isNativeLabelScanStoreMigrationRequired( DatabaseLayout directoryStructure ) throws IOException
     {
-        return fileSystem.streamFilesRecursive( new File( storeDir, NativeLabelScanStore.FILE_NAME ) )
+        return fileSystem.streamFilesRecursive( directoryStructure.file( NativeLabelScanStore.FILE_NAME ) )
                 .noneMatch( Predicates.alwaysTrue() );
     }
 
@@ -154,9 +155,9 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         fileSystem.deleteRecursively( indexRootDirectory );
     }
 
-    private static File getLuceneStoreDirectory( File storeRootDir )
+    private static File getLuceneStoreDirectory( DatabaseLayout directoryStructure )
     {
-        return new File( new File( new File( storeRootDir, "schema" ), "label" ), "lucene" );
+        return new File( new File( new File( directoryStructure.databaseDirectory(), "schema" ), "label" ), "lucene" );
     }
 
     private static class MonitoredFullLabelStream extends FullLabelStream

@@ -51,8 +51,8 @@ public class DatabaseStartupTest
     {
         // given
         // create a store
-        File storeDir = testDirectory.storeDir();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File databaseDir = testDirectory.databaseDir();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -64,14 +64,14 @@ public class DatabaseStartupTest
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().file( MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
         // when
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+            new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir );
             fail( "It should have failed." );
         }
         catch ( RuntimeException ex )
@@ -88,8 +88,8 @@ public class DatabaseStartupTest
     {
         // given
         // create a store
-        File storeDir = testDirectory.storeDir();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File databaseDirectory = testDirectory.databaseDir();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDirectory );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -102,14 +102,14 @@ public class DatabaseStartupTest
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().file( MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
         // when
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
                     .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newGraphDatabase();
             fail( "It should have failed." );
         }

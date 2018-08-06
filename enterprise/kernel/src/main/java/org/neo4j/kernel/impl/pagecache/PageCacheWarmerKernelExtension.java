@@ -49,7 +49,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
         this.availabilityGuard = availabilityGuard;
         this.dataSource = dataSource;
         this.config = config;
-        pageCacheWarmer = new PageCacheWarmer( fs, pageCache, scheduler, dataSource.getDatabaseDirectory() );
+        pageCacheWarmer = new PageCacheWarmer( fs, pageCache, scheduler, dataSource.getDatabaseLayout().databaseDirectory() );
         availabilityListener = new WarmupAvailabilityListener( scheduler, pageCacheWarmer, config, log, monitor );
     }
 

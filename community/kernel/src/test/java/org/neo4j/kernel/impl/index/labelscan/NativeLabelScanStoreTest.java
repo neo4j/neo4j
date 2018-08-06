@@ -29,6 +29,7 @@ import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -52,20 +53,20 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Override
-    protected LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, File rootFolder,
+    protected LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
             FullStoreChangeStream fullStoreChangeStream, boolean usePersistentStore, boolean readOnly,
             LabelScanStore.Monitor monitor )
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
-        return getLabelScanStore( fileSystemAbstraction, rootFolder, fullStoreChangeStream, readOnly, monitors );
+        return getLabelScanStore( fileSystemAbstraction, databaseLayout, fullStoreChangeStream, readOnly, monitors );
     }
 
-    private LabelScanStore getLabelScanStore( FileSystemAbstraction fileSystemAbstraction, File rootFolder,
+    private LabelScanStore getLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors )
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-        return new NativeLabelScanStore( pageCache, rootFolder, fileSystemAbstraction,
+        return new NativeLabelScanStore( pageCache, databaseLayout, fileSystemAbstraction,
                 fullStoreChangeStream, readOnly, monitors, RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
@@ -76,9 +77,9 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     }
 
     @Override
-    protected void corruptIndex( FileSystemAbstraction fileSystem, File rootFolder ) throws IOException
+    protected void corruptIndex( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        File lssFile = new File( rootFolder, NativeLabelScanStore.FILE_NAME );
+        File lssFile = databaseLayout.file( NativeLabelScanStore.FILE_NAME );
         scrambleFile( lssFile );
     }
 
@@ -90,7 +91,7 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
         when( monitors.newMonitor( LabelScanStore.Monitor.class ) ).thenReturn( LabelScanStore.Monitor.EMPTY );
         doThrow( new RuntimeException( expectedMessage ) ).when( monitors ).addMonitorListener( any() );
 
-        LabelScanStore scanStore = getLabelScanStore( fileSystemRule.get(), dir, EMPTY, true, monitors );
+        LabelScanStore scanStore = getLabelScanStore( fileSystemRule.get(), testDirectory.databaseLayout(), EMPTY, true, monitors );
         try
         {
             scanStore.init();
@@ -111,7 +112,7 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
         // label scan store init but no start
         LifeSupport life = new LifeSupport();
         TrackingMonitor monitor = new TrackingMonitor();
-        life.add( createLabelScanStore( fileSystemRule.get(), dir, EMPTY, true, false, monitor ) );
+        life.add( createLabelScanStore( fileSystemRule.get(), testDirectory.databaseLayout(), EMPTY, true, false, monitor ) );
         life.init();
         assertTrue( monitor.noIndexCalled );
         monitor.reset();
@@ -120,7 +121,7 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
         // when
         // starting label scan store again
         life = new LifeSupport();
-        life.add( createLabelScanStore( fileSystemRule.get(), dir, EMPTY, true, false, monitor ) );
+        life.add( createLabelScanStore( fileSystemRule.get(), testDirectory.databaseLayout(), EMPTY, true, false, monitor ) );
         life.init();
 
         // then
@@ -136,13 +137,13 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     public void shouldRestartPopulationIfIndexFileWasNeverFullyInitialized() throws IOException
     {
         // given
-        File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( dir );
+        File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( testDirectory.databaseLayout() );
         fileSystemRule.create( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();
 
         // when
-        life.add( createLabelScanStore( fileSystemRule.get(), dir, EMPTY, true, false, monitor ) );
+        life.add( createLabelScanStore( fileSystemRule.get(), testDirectory.databaseLayout(), EMPTY, true, false, monitor ) );
         life.start();
 
         // then

@@ -45,6 +45,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
@@ -87,6 +88,7 @@ public class StoreCopyRequestHandlerTest
         Dependencies dependencies = new Dependencies();
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.storageengine.api.StoreId( 1, 2, 5, 3, 4 ) );
         when( neoStoreDataSource.getDependencyResolver() ).thenReturn( dependencies );
+        when( neoStoreDataSource.getDatabaseLayout() ).thenReturn( new DatabaseLayout( new File( "." ) ) );
         embeddedChannel = new EmbeddedChannel( storeCopyRequestHandler );
     }
 

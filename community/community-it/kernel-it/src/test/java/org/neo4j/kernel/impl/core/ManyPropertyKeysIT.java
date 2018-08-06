@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.util.Collection;
 
 import org.neo4j.dbms.database.DatabaseManager;
@@ -71,14 +69,6 @@ public class ManyPropertyKeysIT
     public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
             .around( fileSystemRule ).around( pageCacheRule );
 
-    private File databaseDir;
-
-    @Before
-    public void setup()
-    {
-        databaseDir = testDirectory.databaseDir();
-    }
-
     @Test
     public void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
     {
@@ -124,16 +114,15 @@ public class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
     }
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
     {
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        StoreFactory storeFactory =
-                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
-                        pageCache, fileSystemRule.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
+                pageCache, fileSystemRule.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
@@ -155,7 +144,7 @@ public class ManyPropertyKeysIT
         return "key" + i;
     }
 
-    private Node createNodeWithProperty( GraphDatabaseService db, String key, Object value )
+    private static Node createNodeWithProperty( GraphDatabaseService db, String key, Object value )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -166,7 +155,7 @@ public class ManyPropertyKeysIT
         }
     }
 
-    private int propertyKeyCount( GraphDatabaseAPI db ) throws TransactionFailureException
+    private static int propertyKeyCount( GraphDatabaseAPI db ) throws TransactionFailureException
     {
         InwardKernel kernelAPI = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         try ( KernelTransaction tx = kernelAPI.beginTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )

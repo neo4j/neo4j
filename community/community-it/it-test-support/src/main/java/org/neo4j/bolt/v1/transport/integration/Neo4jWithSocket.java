@@ -24,6 +24,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -78,6 +80,7 @@ public class Neo4jWithSocket extends ExternalResource
         this.graphDatabaseFactory = graphDatabaseFactory;
         this.fileSystemProvider = fileSystemProvider;
         this.configure = configure;
+        this.workingDirectory = defaultWorkingDirectory();
     }
 
     public FileSystemAbstraction getFileSystem()
@@ -177,5 +180,17 @@ public class Neo4jWithSocket extends ExternalResource
     public GraphDatabaseService graphDatabaseService()
     {
         return gdb;
+    }
+
+    private File defaultWorkingDirectory()
+    {
+        try
+        {
+            return testDirectory.prepareDirectoryForTest( "default" );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 }

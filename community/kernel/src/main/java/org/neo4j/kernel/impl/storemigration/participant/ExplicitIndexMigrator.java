@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -60,7 +61,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File databaseDirectory, File migrationDir, ProgressReporter progressMonitor,
+    public void migrate( DatabaseLayout sourceStructure, DatabaseLayout migrationStructure, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         IndexImplementation indexImplementation = explicitIndexProvider.getProviderByName( LUCENE_EXPLICIT_INDEX_PROVIDER_NAME );
@@ -70,8 +71,8 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
             RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
             if ( !from.hasCompatibleCapabilities( to, CapabilityType.INDEX ) )
             {
-                originalExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( databaseDirectory );
-                migrationExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );
+                originalExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( sourceStructure );
+                migrationExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationStructure );
                 if ( isNotEmptyDirectory( originalExplicitIndexesRoot ) )
                 {
                     migrateExplicitIndexes( progressMonitor );
@@ -86,9 +87,8 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom,
-            String versionToMigrateTo )
-            throws IOException
+    public void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout storeStructure, String versionToMigrateFrom,
+            String versionToMigrateTo ) throws IOException
     {
         if ( explicitIndexMigrated )
         {
@@ -98,7 +98,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void cleanup( File migrationDir ) throws IOException
+    public void cleanup( DatabaseLayout migrationStructure ) throws IOException
     {
         if ( isIndexMigrationDirectoryExists() )
         {
@@ -144,7 +144,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
         return new LuceneExplicitIndexUpgrader( indexRootPath, progressMonitor( progressMonitor ) );
     }
 
-    private Monitor progressMonitor( ProgressReporter progressMonitor )
+    private static Monitor progressMonitor( ProgressReporter progressMonitor )
     {
         return new Monitor()
         {

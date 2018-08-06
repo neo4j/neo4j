@@ -35,6 +35,7 @@ import org.neo4j.backup.impl.BackupClient;
 import org.neo4j.backup.impl.BackupProtocolService;
 import org.neo4j.backup.impl.BackupServer;
 import org.neo4j.backup.impl.ConsistencyCheck;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.asList;
@@ -100,7 +101,7 @@ public class BackupToolUrisTest
             verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( Paths.get( "/var/backup/graph" ) ),
+                    eq( new DatabaseLayout( Paths.get( "/var/backup/graph" ).toFile() ) ),
                     eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
@@ -204,7 +205,7 @@ public class BackupToolUrisTest
             verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( Paths.get( "/var/backup/graph" ) ),
+                    eq( new DatabaseLayout( Paths.get( "/var/backup/graph" ).toFile() ) ),
                     eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),

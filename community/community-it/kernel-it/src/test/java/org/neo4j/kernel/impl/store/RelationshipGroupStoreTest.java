@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,7 +70,6 @@ public class RelationshipGroupStoreTest
     public PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
-    private File directory;
     private int defaultThreshold;
     private FileSystemAbstraction fs;
     private ImpermanentGraphDatabase db;
@@ -79,7 +77,6 @@ public class RelationshipGroupStoreTest
     @Before
     public void before()
     {
-        directory = testDir.databaseDir();
         fs = new DefaultFileSystemAbstraction();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }
@@ -171,8 +168,8 @@ public class RelationshipGroupStoreTest
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, directory, Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        return new StoreFactory( testDir.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
+                fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
     @Test

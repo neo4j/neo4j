@@ -58,7 +58,7 @@ public class TestStoreAccess
             assertTrue( "Store should be unclean", isUnclean( snapshot ) );
 
             PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-            new StoreAccess( snapshot, pageCache, testDirectory.databaseDir(), Config.defaults() ).initialize().close();
+            new StoreAccess( snapshot, pageCache, testDirectory.databaseLayout(), Config.defaults() ).initialize().close();
             assertTrue( "Store should be unclean", isUnclean( snapshot ) );
         }
     }
@@ -66,7 +66,7 @@ public class TestStoreAccess
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
-                .newImpermanentDatabase( testDirectory.storeDir() );
+                .newImpermanentDatabase( testDirectory.databaseDir() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -81,6 +81,6 @@ public class TestStoreAccess
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, Config.defaults(), monitors );
-        return requiredChecker.isRecoveryRequiredAt( testDirectory.databaseDir() );
+        return requiredChecker.isRecoveryRequiredAt( testDirectory.databaseLayout() );
     }
 }

@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
@@ -76,8 +78,12 @@ public class NodeStoreTest
 {
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory(efs);
+
     @Rule
-    public final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( efs ).around( testDirectory );
 
     private NodeStore nodeStore;
     private NeoStores neoStores;
@@ -346,8 +352,6 @@ public class NodeStoreTest
 
     private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache ) throws IOException
     {
-        File storeDir = new File( "dir" );
-        fs.mkdirs( storeDir );
         idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs )
         {
             @Override
@@ -357,7 +361,7 @@ public class NodeStoreTest
                 return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId ) );
             }
         } );
-        StoreFactory factory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, Config.defaults(), idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory( testDirectory.databaseLayout( "new" ), Config.defaults(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

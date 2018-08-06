@@ -47,6 +47,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -92,7 +93,6 @@ public class ConsistencyCheckServiceIntegrationTest
     };
 
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
-
     @Rule
     public final RuleChain chain = RuleChain.outerRule( testDirectory ).around( fixture );
 
@@ -124,7 +124,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Result consistencyCheck = runFullConsistencyCheck( service, Config.defaults( settings() ) );
         assertFalse( consistencyCheck.isSuccessful() );
         // using commons file utils since they do not forgive not closed file descriptors on windows
-        org.apache.commons.io.FileUtils.deleteDirectory( fixture.databaseDirectory() );
+        org.apache.commons.io.FileUtils.deleteDirectory( fixture.databaseLayout().databaseDirectory() );
     }
 
     @Test
@@ -227,8 +227,8 @@ public class ConsistencyCheckServiceIntegrationTest
     public void shouldReportMissingSchemaIndex() throws Exception
     {
         // given
-        File databaseDirectory = testDirectory.databaseDir();
-        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.storeDir() );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        GraphDatabaseService gds = getGraphDatabaseService( databaseLayout.databaseDirectory() );
 
         Label label = Label.label( "label" );
         String propKey = "propKey";
@@ -237,12 +237,12 @@ public class ConsistencyCheckServiceIntegrationTest
         gds.shutdown();
 
         // when
-        File schemaDir = findFile( "schema", databaseDirectory );
+        File schemaDir = findFile( databaseLayout, "schema" );
         FileUtils.deleteRecursively( schemaDir );
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        Result result = runFullConsistencyCheck( service, configuration, databaseDirectory );
+        Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
 
         // then
         assertTrue( result.isSuccessful() );
@@ -258,13 +258,13 @@ public class ConsistencyCheckServiceIntegrationTest
     @Test
     public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
-        File storeDir = testDirectory.storeDir();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         String defaultSchemaProvider = GraphDatabaseSettings.default_schema_provider.name();
         Label label = Label.label( "label" );
         String propKey = "propKey";
 
         // Given a lucene index
-        GraphDatabaseService db = getGraphDatabaseService( storeDir, defaultSchemaProvider, LUCENE10.providerIdentifier() );
+        GraphDatabaseService db = getGraphDatabaseService( databaseLayout.databaseDirectory(), defaultSchemaProvider, LUCENE10.providerIdentifier() );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
@@ -277,7 +277,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
                 Config.defaults( settings( defaultSchemaProvider, NATIVE20.providerIdentifier() ) );
-        Result result = runFullConsistencyCheck( service, configuration, testDirectory.databaseDir() );
+        Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
         assertTrue( result.isSuccessful() );
     }
 
@@ -298,9 +298,9 @@ public class ConsistencyCheckServiceIntegrationTest
         }
     }
 
-    private static File findFile( String targetFile, File directory )
+    private static File findFile( DatabaseLayout databaseLayout, String targetFile )
     {
-        File file = new File( directory, targetFile );
+        File file = databaseLayout.file( targetFile );
         if ( !file.exists() )
         {
             fail( "Could not find file " + targetFile );
@@ -328,7 +328,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
@@ -389,13 +389,13 @@ public class ConsistencyCheckServiceIntegrationTest
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
             throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( service, configuration, fixture.databaseDirectory() );
+        return runFullConsistencyCheck( service, configuration, fixture.databaseLayout() );
     }
 
-    private static Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, File storeDir )
+    private static Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, DatabaseLayout databaseLayout )
             throws ConsistencyCheckIncompleteException
     {
-        return service.runFullConsistencyCheck( storeDir,
+        return service.runFullConsistencyCheck( databaseLayout,
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
     }
 

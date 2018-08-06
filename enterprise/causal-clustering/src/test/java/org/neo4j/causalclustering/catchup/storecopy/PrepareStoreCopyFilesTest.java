@@ -36,6 +36,7 @@ import java.util.Arrays;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
@@ -59,7 +60,7 @@ public class PrepareStoreCopyFilesTest
     public final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemAbstraction );
     private PrepareStoreCopyFiles prepareStoreCopyFiles;
     private NeoStoreFileIndexListing indexListingMock;
-    private File databaseDirectory;
+    private DatabaseLayout databaseLayout;
     private NeoStoreFileListing.StoreFileListingBuilder fileListingBuilder;
 
     @Before
@@ -67,8 +68,8 @@ public class PrepareStoreCopyFilesTest
     {
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         fileListingBuilder = mock( NeoStoreFileListing.StoreFileListingBuilder.class, CALLS_REAL_METHODS );
-        databaseDirectory = testDirectory.databaseDir();
-        when( dataSource.getDatabaseDirectory() ).thenReturn( databaseDirectory );
+        databaseLayout = testDirectory.databaseLayout();
+        when( dataSource.getDatabaseLayout() ).thenReturn( databaseLayout );
         indexListingMock = mock( NeoStoreFileIndexListing.class );
         when( indexListingMock.getIndexIds() ).thenReturn( new LongHashSet() );
         NeoStoreFileListing storeFileListing = mock( NeoStoreFileListing.class );
@@ -97,8 +98,8 @@ public class PrepareStoreCopyFilesTest
     public void shouldReturnExpectedListOfFileNamesForEachType() throws Exception
     {
         // given
-        StoreFileMetadata[] expectedFiles = new StoreFileMetadata[]{new StoreFileMetadata( new File( databaseDirectory, "a" ), 1 ),
-                new StoreFileMetadata( new File( databaseDirectory, "b" ), 2 )};
+        StoreFileMetadata[] expectedFiles = new StoreFileMetadata[]{new StoreFileMetadata( databaseLayout.file( "a" ), 1 ),
+                new StoreFileMetadata( databaseLayout.file( "b" ), 2 )};
         setExpectedFiles( expectedFiles );
 
         //when
@@ -143,7 +144,7 @@ public class PrepareStoreCopyFilesTest
     {
         try
         {
-            return relativePath( databaseDirectory, f.file() );
+            return relativePath( databaseLayout.databaseDirectory(), f.file() );
         }
         catch ( IOException e )
         {

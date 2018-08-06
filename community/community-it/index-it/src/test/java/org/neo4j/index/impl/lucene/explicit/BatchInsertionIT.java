@@ -52,7 +52,7 @@ public class BatchInsertionIT
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
-        File path = dbRule.databaseDirectory();
+        File path = dbRule.databaseLayout().databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
 
         inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
@@ -106,7 +106,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        File file = dbRule.databaseDirectory();
+        File file = dbRule.databaseLayout().databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
@@ -132,7 +132,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
-        File file = dbRule.databaseDirectory();
+        File file = dbRule.databaseLayout().databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
@@ -162,7 +162,7 @@ public class BatchInsertionIT
     public void makeSureCantCreateNodeWithMagicNumber() throws IOException
     {
         // given
-        File path = dbRule.databaseDirectory();
+        File path = dbRule.databaseLayout().databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
 
         try

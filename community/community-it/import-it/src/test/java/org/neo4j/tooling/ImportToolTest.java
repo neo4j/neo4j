@@ -1311,7 +1311,7 @@ public class ImportToolTest
         {
             if ( storeType.isRecordStore() )
             {
-                new File( dbRule.databaseDirectory(), DEFAULT_NAME + storeType.getStoreName() ).delete();
+                dbRule.databaseLayout().file( DEFAULT_NAME + storeType.getStoreName() ).delete();
             }
         }
     }
@@ -2389,12 +2389,12 @@ public class ImportToolTest
 
     private File file( String localname )
     {
-        return new File( dbRule.databaseDirectory(), localname );
+        return dbRule.databaseLayout().file( localname );
     }
 
     private File badFile()
     {
-        return new File( dbRule.databaseDirectory(), BAD_FILE_NAME );
+        return dbRule.databaseLayout().file( BAD_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,

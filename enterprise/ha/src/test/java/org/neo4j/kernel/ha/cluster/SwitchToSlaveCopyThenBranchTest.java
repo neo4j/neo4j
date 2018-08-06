@@ -48,6 +48,7 @@ import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -386,7 +387,7 @@ public class SwitchToSlaveCopyThenBranchTest
         when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
                 argThat( storeId -> true ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
-        return spy( new SwitchToSlaveCopyThenBranch( new File( "" ), NullLogService.getInstance(),
+        return spy( new SwitchToSlaveCopyThenBranch( new DatabaseLayout( new File( "" ) ), NullLogService.getInstance(),
                 configMock(),
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),

@@ -65,7 +65,7 @@ public class LuceneDataSourceTest
     @Before
     public void setUp()
     {
-        indexStore = new IndexConfigStore( directory.directory(), fileSystemRule.get() );
+        indexStore = new IndexConfigStore( directory.databaseLayout(), fileSystemRule.get() );
         addIndex( "foo" );
     }
 
@@ -256,12 +256,12 @@ public class LuceneDataSourceTest
         dataSource.force();
     }
 
-    private Map<String, String> readOnlyConfig()
+    private static Map<String, String> readOnlyConfig()
     {
         return stringMap( GraphDatabaseSettings.read_only.name(), "true" );
     }
 
-    private Map<String, String> cacheSizeConfig()
+    private static Map<String, String> cacheSizeConfig()
     {
         return stringMap( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
     }
@@ -271,7 +271,7 @@ public class LuceneDataSourceTest
         indexStore.set( Node.class, name, stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 
-    private IndexIdentifier identifier( String name )
+    private static IndexIdentifier identifier( String name )
     {
         return new IndexIdentifier( IndexEntityType.Node, name );
     }
@@ -283,7 +283,7 @@ public class LuceneDataSourceTest
 
     private LuceneDataSource getLuceneDataSource( Config config, OperationalMode operationalMode )
     {
-        return new LuceneDataSource( directory.databaseDir(), config, indexStore,
+        return new LuceneDataSource( directory.databaseLayout(), config, indexStore,
                 new DefaultFileSystemAbstraction(), operationalMode );
     }
 }

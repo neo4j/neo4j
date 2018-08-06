@@ -31,6 +31,7 @@ import java.util.Set;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -103,7 +104,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
                 throw invalidUsage( "not a chain store: " + storeFile.getName() );
             }
         }
-        tool.dump( storeFile );
+        tool.dump( new DatabaseLayout( storeFile ) );
     }
 
     long firstRecord;
@@ -118,16 +119,15 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();
     }
 
-    void dump( File storeDir ) throws IOException
+    void dump( DatabaseLayout databaseLayout ) throws IOException
     {
         try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               PageCache pageCache = createPageCache( fs ) )
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = Config.defaults();
-            StoreFactory storeFactory =
-                    new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config, idGeneratorFactory, pageCache, fs, logProvider(),
-                            EmptyVersionContextSupplier.EMPTY );
+            StoreFactory storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
+                    logProvider(), EmptyVersionContextSupplier.EMPTY );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( getStoreTypes() ) )
             {
@@ -143,7 +143,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         }
     }
 
-    private StoreType[] getStoreTypes()
+    private static StoreType[] getStoreTypes()
     {
         return new StoreType[]{StoreType.NODE, StoreType.PROPERTY, StoreType.RELATIONSHIP};
     }

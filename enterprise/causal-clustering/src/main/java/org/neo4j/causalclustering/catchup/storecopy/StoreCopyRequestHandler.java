@@ -90,7 +90,7 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
             }
             else
             {
-                File databaseDirectory = neoStoreDataSource.getDatabaseDirectory();
+                File databaseDirectory = neoStoreDataSource.getDatabaseLayout().databaseDirectory();
                 try ( ResourceIterator<StoreFileMetadata> resourceIterator = files( request, neoStoreDataSource ) )
                 {
                     while ( resourceIterator.hasNext() )

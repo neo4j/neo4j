@@ -26,11 +26,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.util.Arrays;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -90,19 +90,18 @@ public class RecordRelationshipTraversalCursorTest
     @Before
     public void setupStores()
     {
-        File storeDir = storage.directory().absolutePath();
+        DatabaseLayout storeLayout = storage.directory().databaseLayout();
         Config config = Config.defaults( pagecache_memory, "8m" );
         PageCache pageCache = storage.pageCache();
         FileSystemAbstraction fs = storage.fileSystem();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory =
-                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, EMPTY );
+        StoreFactory storeFactory = new StoreFactory( storeLayout, config, idGeneratorFactory, pageCache, fs, logProvider, EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
     @After
-    public void shutDownStores() throws Exception
+    public void shutDownStores()
     {
         neoStores.close();
     }

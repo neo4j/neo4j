@@ -44,7 +44,7 @@ public class SchemaIndexExtensionLoader
 {
 
     @SuppressWarnings( "unchecked" )
-    public static DatabaseKernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem,
+    public static DatabaseKernelExtensions instantiateKernelExtensions( File databaseDirectory, FileSystemAbstraction fileSystem,
             Config config, LogService logService, PageCache pageCache,
             RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors )
     {
@@ -52,7 +52,7 @@ public class SchemaIndexExtensionLoader
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors );
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
-        KernelContext kernelContext = new SimpleKernelContext( storeDir, databaseInfo, deps );
+        KernelContext kernelContext = new SimpleKernelContext( databaseDirectory, databaseInfo, deps );
         return new DatabaseKernelExtensions( kernelContext, kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() );
     }
 }

@@ -29,6 +29,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -100,12 +101,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
               PageCache pageCache = createPageCache( fs ) )
         {
             final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-            Function<File,StoreFactory> createStoreFactory = file ->
-            {
-                Config config = Config.defaults();
-                return new StoreFactory( config.get( GraphDatabaseSettings.active_database ), file.getParentFile(), config, idGeneratorFactory, pageCache, fs,
-                        logProvider(), EmptyVersionContextSupplier.EMPTY );
-            };
+            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( new DatabaseLayout( file.getParentFile() ),
+                    Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider(), EmptyVersionContextSupplier.EMPTY );
 
             for ( String arg : args )
             {
