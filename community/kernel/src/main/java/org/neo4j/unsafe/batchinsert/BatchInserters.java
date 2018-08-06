@@ -41,46 +41,46 @@ public final class BatchInserters
     /**
      * Get a {@link BatchInserter} given a store directory.
      *
-     * @param storeDir the store directory
+     * @param databaseDirectory the database directory
      * @return a new {@link BatchInserter}
      * @throws IOException if there is an IO error
      */
-    public static BatchInserter inserter( File storeDir ) throws IOException
+    public static BatchInserter inserter( File databaseDirectory ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserter batchInserter = inserter( storeDir, fileSystem, stringMap() );
+        BatchInserter batchInserter = inserter( databaseDirectory, fileSystem, stringMap() );
         return new FileSystemClosingBatchInserter( batchInserter, (IndexConfigStoreProvider) batchInserter, fileSystem );
     }
 
-    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs ) throws IOException
+    public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fs ) throws IOException
     {
-        return inserter( storeDir, fs, stringMap(), loadKernelExtension() );
+        return inserter( databaseDirectory, fs, stringMap(), loadKernelExtension() );
     }
 
-    public static BatchInserter inserter( File storeDir, Map<String,String> config ) throws IOException
+    public static BatchInserter inserter( File databaseDirectory, Map<String,String> config ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserter inserter = inserter( storeDir, fileSystem, config, loadKernelExtension() );
+        BatchInserter inserter = inserter( databaseDirectory, fileSystem, config, loadKernelExtension() );
         return new FileSystemClosingBatchInserter( inserter, (IndexConfigStoreProvider) inserter, fileSystem );
     }
 
-    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
+    public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
     {
-        return inserter( storeDir, fs, config, loadKernelExtension() );
+        return inserter( databaseDirectory, fs, config, loadKernelExtension() );
     }
 
-    public static BatchInserter inserter( File storeDir,
+    public static BatchInserter inserter( File databaseDirectory,
             Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserterImpl inserter = new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
+        BatchInserterImpl inserter = new BatchInserterImpl( databaseDirectory, fileSystem, config, kernelExtensions );
         return new FileSystemClosingBatchInserter( inserter, inserter, fileSystem );
     }
 
-    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem, Map<String,String> config,
+    public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fileSystem, Map<String,String> config,
             Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
-        return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
+        return new BatchInserterImpl( databaseDirectory, fileSystem, config, kernelExtensions );
     }
 
     private static DefaultFileSystemAbstraction createFileSystem()
