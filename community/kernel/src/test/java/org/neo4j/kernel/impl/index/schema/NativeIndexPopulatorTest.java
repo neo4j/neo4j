@@ -54,6 +54,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
@@ -508,7 +509,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
 
     private void assertHeader( boolean online, String failureMessage, boolean messageTruncated ) throws IOException
     {
-        NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
+        NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( NO_HEADER_READER );
         try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
                 headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() ) )
         {

@@ -35,14 +35,14 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 public class IndexSpecificSpaceFillingCurveSettingsCache
 {
     private final ConfiguredSpaceFillingCurveSettingsCache globalConfigCache;
-    private final ConcurrentMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> indexConfigCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache = new ConcurrentHashMap<>();
 
     public IndexSpecificSpaceFillingCurveSettingsCache(
             ConfiguredSpaceFillingCurveSettingsCache globalConfigCache,
-            Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> indexConfigCache )
+            Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache )
     {
         this.globalConfigCache = globalConfigCache;
-        this.indexConfigCache.putAll( indexConfigCache );
+        this.specificIndexConfigCache.putAll( specificIndexConfigCache );
     }
 
     /**
@@ -59,7 +59,7 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsTableId, crsCodePoint );
 
         // Index-specific
-        SpaceFillingCurveSettings specificSetting = indexConfigCache.get( crs );
+        SpaceFillingCurveSettings specificSetting = specificIndexConfigCache.get( crs );
         if ( specificSetting != null )
         {
             return specificSetting.curve();
@@ -69,7 +69,7 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
         SpaceFillingCurveSettings configuredSetting = fromConfig( crs );
         if ( assignToIndexIfNotYetAssigned )
         {
-            indexConfigCache.put( crs, configuredSetting );
+            specificIndexConfigCache.put( crs, configuredSetting );
         }
         return configuredSetting.curve();
     }
@@ -79,7 +79,8 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
      */
     public void visitIndexSpecificSettings( SettingVisitor visitor )
     {
-        indexConfigCache.forEach( (crs, settings) -> visitor.visit( crs, settings ) );
+        visitor.count( specificIndexConfigCache.size() );
+        specificIndexConfigCache.forEach( (crs, settings) -> visitor.visit( crs, settings ) );
     }
 
     private SpaceFillingCurveSettings fromConfig( CoordinateReferenceSystem crs )

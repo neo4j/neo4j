@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -63,5 +64,12 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey
     public void validateBeforeCommit( Value[] tuple )
     {
         validator.validate( tuple );
+    }
+
+    @Override
+    public void force( IOLimiter ioLimiter )
+    {
+        // This accessor needs to use the header writer here because coordinate reference systems may have changed since last checkpoint.
+        tree.checkpoint( ioLimiter, headerWriter );
     }
 }

@@ -28,8 +28,14 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILE
 
 class NativeIndexHeaderReader implements Header.Reader
 {
+    private final Header.Reader additionalReader;
     byte state;
     String failureMessage;
+
+    NativeIndexHeaderReader( Header.Reader additionalReader )
+    {
+        this.additionalReader = additionalReader;
+    }
 
     @Override
     public void read( ByteBuffer headerData )
@@ -38,6 +44,10 @@ class NativeIndexHeaderReader implements Header.Reader
         if ( state == BYTE_FAILED )
         {
             failureMessage = readFailureMessage( headerData );
+        }
+        else
+        {
+            additionalReader.read( headerData );
         }
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -150,7 +151,14 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
         {
             int numberOfSlots = descriptor.properties().length;
             Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
-            GBPTree.readHeader( pageCache, storeFile, new SpaceFillingCurveSettingsReader( settings ) );
+            try
+            {
+                GBPTree.readHeader( pageCache, storeFile, new NativeIndexHeaderReader( new SpaceFillingCurveSettingsReader( settings ) ) );
+            }
+            catch ( NoSuchFileException e )
+            {
+                // This is OK, it doesn't exist yet so just don't load any CRS settings from it
+            }
             return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, settings ) );
         }
         catch ( IOException e )

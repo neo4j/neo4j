@@ -47,6 +47,9 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
             @Override
             public void visit( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
             {
+                cursor.putInt( crs.getTable().getTableId() );
+                cursor.putInt( crs.getCode() );
+
                 cursor.putInt( settings.maxLevels );
                 cursor.putInt( settings.dimensions );
                 double[] min = settings.extents.getMin();

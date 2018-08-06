@@ -47,8 +47,7 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     @Override
     public boolean supportsSpatial()
     {
-        // TODO true when it supports spatial
-        return false;
+        return true;
     }
 
     @Override

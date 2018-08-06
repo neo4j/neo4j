@@ -308,6 +308,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             {
             case GEOMETRY_ARRAY:
                 copyGeometryArrayFrom( key, key.arrayLength );
+                break;
             case ZONED_DATE_TIME_ARRAY:
                 copyZonedDateTimeArrayFrom( key, key.arrayLength );
                 break;
@@ -365,10 +366,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     static Value assertCorrectType( Value value )
     {
-        if ( Values.isGeometryValue( value ) || Values.isGeometryArray( value ) )
-        {
-            throw new IllegalArgumentException( "Unsupported value " + value );
-        }
         return value;
     }
 
@@ -609,7 +606,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         switch ( type )
         {
         case GEOMETRY:
-            return geometryAsValue();
+            // TODO actually the existing spatial index stuff doesn't deserialize into Value instances for some reason, because it's lossy anyway?
+            return NO_VALUE;
         case ZONED_DATE_TIME:
             return zonedDateTimeAsValue( long0, long1, long2, long3 );
         case LOCAL_DATE_TIME:
@@ -657,12 +655,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
-    }
-
-    private Value geometryAsValue()
-    {
-        // TODO actually the existing spatial index stuff doesn't deserialize into Value instances for some reason, because it's lossy anyway?
-        return NO_VALUE;
     }
 
     private Value numberArrayAsValue()
@@ -1025,6 +1017,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case GEOMETRY_ARRAY:
             putGeometryCrs( cursor, long1, long2 );
             putArray( cursor, ( c, i ) -> putGeometry( c, long0Array[i] ) );
+            break;
         case ZONED_DATE_TIME_ARRAY:
             putArray( cursor, ( c, i ) -> putZonedDateTime( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
             break;
@@ -1085,7 +1078,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void putGeometry( PageCursor cursor, long long0 )
     {
-        putGeometryCrs( cursor, long1, long2 );
         cursor.putLong( long0 );
     }
 
@@ -1223,7 +1215,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
         case GEOMETRY_ARRAY:
             readGeometryCrs( cursor );
-            return readArray( cursor, ArrayType.POINT, this::readGeometry );
+            return readArray( cursor, ArrayType.POINT, this::readGeometryArrayItem );
         case ZONED_DATE_TIME_ARRAY:
             return readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
         case LOCAL_DATE_TIME_ARRAY:
@@ -1246,19 +1238,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             setCursorException( cursor, "non-valid type, " + type );
             return false;
         }
-    }
-
-    private boolean readGeometry( PageCursor cursor )
-    {
-        long0 = cursor.getLong();
-        return true;
-    }
-
-    private boolean readGeometryCrs( PageCursor cursor )
-    {
-        long1 = cursor.getInt();
-        long2 = cursor.getInt();
-        return true;
     }
 
     private boolean readArray( PageCursor cursor, ArrayType type, ArrayElementReader reader )
@@ -1389,6 +1368,33 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         {
             setCursorException( cursor, "non-valid array length, " + arrayLength );
             return false;
+        }
+        return true;
+    }
+
+    private boolean readGeometry( PageCursor cursor )
+    {
+        long0 = cursor.getLong();
+        return true;
+    }
+
+    private boolean readGeometryArrayItem( PageCursor cursor )
+    {
+        long0Array[currentArrayOffset++] = cursor.getLong();
+        return true;
+    }
+
+    private boolean readGeometryCrs( PageCursor cursor )
+    {
+        long1 = cursor.getInt();
+        long2 = cursor.getInt();
+        try
+        {
+            crs = CoordinateReferenceSystem.get( (int) long1, (int) long2 );
+        }
+        catch ( Exception e )
+        {
+            cursor.setCursorException( e.getMessage() );
         }
         return true;
     }
@@ -1758,7 +1764,16 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         }
         else
         {
-            assert this.crs == crs;
+            if ( currentArrayOffset == 0 )
+            {
+                updateCurve( crs );
+            }
+            else if ( this.crs != crs )
+            {
+                throw new IllegalStateException( format(
+                        "Tried to assign a geometry array containing different coordinate reference systems, first:%s, violating:%s at array position:%d",
+                        this.crs, crs, currentArrayOffset ) );
+            }
             long0Array[currentArrayOffset] = spaceFillingCurve.derivedValueFor( coordinate );
         }
     }
@@ -2238,7 +2253,18 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     @Override
     public String toString()
     {
-        return asValue().toString();
+        if ( type == Type.GEOMETRY )
+        {
+            return format( "Geometry[tableId:%d, code:%d, rawValue:%d]", long1, long2, long0 );
+        }
+        else if ( type == Type.GEOMETRY_ARRAY )
+        {
+            return format( "Geometry[tableId:%d, code:%d, rawValues:%s]", long1, long2, Arrays.toString( Arrays.copyOf( long0Array, arrayLength ) ) );
+        }
+        else
+        {
+            return asValue().toString();
+        }
     }
 
     @FunctionalInterface

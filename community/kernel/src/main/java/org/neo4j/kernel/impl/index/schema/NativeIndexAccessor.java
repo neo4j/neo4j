@@ -48,7 +48,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
 {
     private final NativeIndexUpdater<KEY,VALUE> singleUpdater;
     final IndexSamplingConfig samplingConfig;
-    private final NativeIndexHeaderWriter headerWriter;
+    final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
@@ -92,7 +92,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     @Override
     public void force( IOLimiter ioLimiter )
     {
-        tree.checkpoint( ioLimiter, headerWriter );
+        tree.checkpoint( ioLimiter );
     }
 
     @Override
