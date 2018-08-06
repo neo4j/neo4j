@@ -44,7 +44,10 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.csv_legacy_quote_escaping),
       config.get(GraphDatabaseSettings.csv_buffer_size),
       config.get(GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates),
-      config.get(GraphDatabaseSettings.cypher_disable_compiled_expressions)
+      config.get(GraphDatabaseSettings.cypher_disable_compiled_expressions),
+      config.get(GraphDatabaseSettings.cypher_worker_count),
+      config.get(GraphDatabaseSettings.cypher_morsel_size),
+      config.get(GraphDatabaseSettings.enable_morsel_runtime_trace)
     )
   }
 
@@ -77,4 +80,7 @@ case class CypherConfiguration(version: CypherVersion,
                                legacyCsvQuoteEscaping: Boolean,
                                csvBufferSize: Int,
                                planWithMinimumCardinalityEstimates: Boolean,
-                               disableCompiledExpressions: Boolean)
+                               disableCompiledExpressions: Boolean,
+                               workers: Int,
+                               morselSize: Int,
+                               doSchedulerTracing: Boolean)

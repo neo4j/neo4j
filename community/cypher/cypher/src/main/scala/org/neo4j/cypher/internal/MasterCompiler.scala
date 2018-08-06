@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.{InvalidArgumentException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -30,8 +31,8 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.logging.{Log, LogProvider}
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.logging.LogProvider
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.util.{InputPosition, SyntaxException => InternalSyntaxException}
 
@@ -57,9 +58,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
 
   import org.neo4j.cypher.internal.MasterCompiler._
 
-  private val log: Log = logProvider.getLog(getClass)
-
-  private val compilerConfig = CypherPlannerConfiguration(
+  private val plannerConfig = CypherPlannerConfiguration(
     queryCacheSize = config.queryCacheSize,
     statsDivergenceCalculator = getStatisticsDivergenceCalculator,
     useErrorsOverWarnings = config.useErrorsOverWarnings,
@@ -72,6 +71,12 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
     planWithMinimumCardinalityEstimates = config.planWithMinimumCardinalityEstimates,
     disableCompiledExpressions = config.disableCompiledExpressions
+  )
+
+  private val runtimeConfig = CypherRuntimeConfiguration(
+    workers = config.workers,
+    morselSize = config.morselSize,
+    doSchedulerTracing = config.doSchedulerTracing
   )
 
   /**
@@ -128,7 +133,8 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
                                                          preParsedQuery.planner,
                                                          preParsedQuery.runtime,
                                                          preParsedQuery.updateStrategy,
-                                                         compilerConfig)
+                                                         plannerConfig,
+                                                         runtimeConfig)
 
         try {
           compiler3_5.compile(preParsedQuery, tracer, notifications.result(), transactionalContext, params)
@@ -153,7 +159,8 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
                                                       preParsedQuery.planner,
                                                       preParsedQuery.runtime,
                                                       preParsedQuery.updateStrategy,
-                                                      compilerConfig)
+                                                      plannerConfig,
+                                                      runtimeConfig)
 
         compiler.compile(preParsedQuery, tracer, notifications.result(), transactionalContext, params)
       }
@@ -209,13 +216,13 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
   }
 
   private def getNonIndexedLabelWarningThreshold: Long = {
-    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
+    val setting: Config => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
     getSetting(graph, setting, DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
   }
 
   private def getSetting[A](gds: GraphDatabaseQueryService, configLookup: Config => A, default: A): A = gds match {
     // TODO: Cypher should not be pulling out components from casted interfaces, it should ask for Config as a dep
-    case (gdbApi:GraphDatabaseQueryService) => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
+    case gdbApi:GraphDatabaseQueryService => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
     case _ => default
   }
 }

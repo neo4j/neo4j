@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.CypherRuntime
+import org.neo4j.cypher.internal.compatibility.{CypherRuntime, CypherRuntimeConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.parallel.{SchedulerTracer, SingleThreadScheduler}
+import org.neo4j.cypher.internal.runtime.parallel._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
@@ -43,13 +43,12 @@ import org.neo4j.cypher.internal.runtime.vectorized.{Dispatcher, Pipeline, Pipel
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Notification
+import org.neo4j.scheduler.{Group, JobScheduler}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.TaskCloser
-
-
 
 object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
@@ -62,9 +61,8 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       val operatorBuilder = new PipelineBuilder(physicalPlan, converters, context.readOnly)
 
       val operators = operatorBuilder.create(logicalPlan)
-      val dispatcher =
-        if (context.debugOptions.contains("singlethreaded")) new Dispatcher(100000, new SingleThreadScheduler())
-        else context.dispatcher
+      val dispatcher = context.morselRuntimeState.getDispatcher(context.debugOptions)
+      val tracer = context.morselRuntimeState.tracer
       val fieldNames = state.statement().returnColumns.toArray
 
       context.notificationLogger.log(
@@ -80,7 +78,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                               context.notificationLogger,
                               context.readOnly,
                               state.cardinalities,
-                              context.schedulerTracer)
+                              tracer)
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
@@ -126,6 +124,35 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     }
 
     override def runtimeName: RuntimeName = MorselRuntimeName
+  }
+
+  case class MorselRuntimeState(config:CypherRuntimeConfiguration, jobScheduler: JobScheduler) {
+    private val dispatcher: Dispatcher = createDispatcher()
+    val tracer: SchedulerTracer = createTracer()
+
+    def getDispatcher(debugOptions: Set[String]): Dispatcher =
+        if (debugOptions.contains("singlethreaded") && config.workers != 1)
+          new Dispatcher(config.morselSize, new SingleThreadScheduler())
+        else
+          dispatcher
+
+    private def createDispatcher(): Dispatcher = {
+      val scheduler =
+        if (config.workers == 1) new SingleThreadScheduler()
+        else {
+          val numberOfThreads = if (config.workers == 0) java.lang.Runtime.getRuntime.availableProcessors() else config.workers
+          val executorService = jobScheduler.workStealingExecutor(Group.CYPHER_WORKER, numberOfThreads)
+          new SimpleScheduler(executorService)
+        }
+      new Dispatcher(config.morselSize, scheduler)
+    }
+
+    private def createTracer(): SchedulerTracer = {
+      if (config.doSchedulerTracing)
+        new DataPointSchedulerTracer(new ThreadSafeDataWriter(new CsvStdOutDataWriter))
+      else
+        SchedulerTracer.NoSchedulerTracer
+    }
   }
 
   class VectorizedOperatorExecutionResult(operators: Pipeline,

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap
@@ -38,11 +39,12 @@ class CompilerLibrary(factory: CompilerFactory) {
                      cypherPlanner: CypherPlannerOption,
                      cypherRuntime: CypherRuntimeOption,
                      cypherUpdateStrategy: CypherUpdateStrategy,
-                     config: CypherPlannerConfiguration): Compiler = {
+                     plannerConfig: CypherPlannerConfiguration,
+                     runtimeConfig: CypherRuntimeConfiguration): Compiler = {
     val key = CompilerKey(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
     val compiler = compilers.get(key)
     if (compiler == null) {
-      compilers.put(key, factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, config))
+      compilers.put(key, factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, plannerConfig, runtimeConfig))
       compilers.get(key)
     } else compiler
   }

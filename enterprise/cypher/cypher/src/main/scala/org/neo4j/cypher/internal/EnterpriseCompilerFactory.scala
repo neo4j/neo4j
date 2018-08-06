@@ -23,25 +23,23 @@
 package org.neo4j.cypher.internal
 
 import java.time.Clock
+import java.util.concurrent.atomic.AtomicReference
 
+import org.neo4j.cypher.internal.MorselRuntime.MorselRuntimeState
 import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
 import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
-import org.neo4j.cypher.internal.compatibility.{CypherCurrentCompiler, CypherPlanner, RuntimeContext, RuntimeContextCreator}
+import org.neo4j.cypher.internal.compatibility.{CypherCurrentCompiler, CypherPlanner, CypherRuntimeConfiguration, RuntimeContext, RuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.runtime.parallel._
-import org.neo4j.cypher.internal.runtime.vectorized.Dispatcher
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
-import org.neo4j.scheduler.{Group, JobScheduler}
+import org.neo4j.scheduler.JobScheduler
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
 class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
@@ -49,19 +47,42 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
                                 kernelMonitors: KernelMonitors,
                                 logProvider: LogProvider
                                ) extends CompilerFactory {
+  /*
+  One compiler is created for every Planner:Runtime:Version combination, e.g., Cost-Morsel-3.4 & Cost-Morsel-3.5.
+  Each compiler contains a runtime instance, and each morsel runtime instance requires a dispatcher instance.
+  This ensures only one (shared) dispatcher/tracer instance is created, even when there are multiple morsel runtime instances.
+   */
+  private val singletonMorselRuntimeState: AtomicReference[MorselRuntimeState] = new AtomicReference[MorselRuntimeState](null)
+
+  private def getMorselRuntimeState(config: CypherRuntimeConfiguration, jobScheduler: JobScheduler): MorselRuntimeState = {
+    val morselRuntimeState = singletonMorselRuntimeState.get()
+    if (null != morselRuntimeState) {
+      morselRuntimeState
+    } else {
+      singletonMorselRuntimeState.compareAndSet(null, MorselRuntimeState(config, jobScheduler))
+      assertHasExpectedConfig(singletonMorselRuntimeState.get(), config)
+    }
+  }
+
+  private def assertHasExpectedConfig(morselRuntimeState: MorselRuntimeState, expectedConfig: CypherRuntimeConfiguration): MorselRuntimeState = {
+    if (morselRuntimeState.config != expectedConfig) {
+      throw new IllegalStateException(s"Cypher runtime configuration unexpectedly changed from ${morselRuntimeState.config} to $expectedConfig")
+    }
+    morselRuntimeState
+  }
 
   override def createCompiler(cypherVersion: CypherVersion,
                               cypherPlanner: CypherPlannerOption,
                               cypherRuntime: CypherRuntimeOption,
                               cypherUpdateStrategy: CypherUpdateStrategy,
-                              config: CypherPlannerConfiguration
-                             ): Compiler = {
+                              plannerConfig: CypherPlannerConfiguration,
+                              runtimeConfig: CypherRuntimeConfiguration): Compiler = {
 
     val log = logProvider.getLog(getClass)
     val createPlanner: PartialFunction[CypherVersion, CypherPlanner] = {
       case CypherVersion.v3_4 =>
         Cypher34Planner(
-          config,
+          plannerConfig,
           MasterCompiler.CLOCK,
           kernelMonitors,
           log,
@@ -71,7 +92,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
 
       case CypherVersion.v3_5 =>
         Cypher35Planner(
-          config,
+          plannerConfig,
           MasterCompiler.CLOCK,
           kernelMonitors,
           log,
@@ -81,42 +102,20 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       }
 
     if (cypherPlanner != CypherPlannerOption.rule && createPlanner.isDefinedAt(cypherVersion)) {
-
       val planner = createPlanner(cypherVersion)
-      val settings = graph.getDependencyResolver.resolveDependency(classOf[Config])
-      val morselSize: Int = settings.get(GraphDatabaseSettings.cypher_morsel_size)
-      val workers: Int = settings.get(GraphDatabaseSettings.cypher_worker_count)
-      val doSchedulerTracing = settings.get(GraphDatabaseSettings.enable_morsel_runtime_trace)
-      // There is one tracer per compiler right now --> multiple queries from same compiler can be getting traced simultaneously
-      // TODO only create one tracer to share between all compilers (3.4 & 3.5)
-      val schedulerTracer =
-        if (doSchedulerTracing)
-          new DataPointSchedulerTracer(new ThreadSafeDataWriter(new CsvStdOutDataWriter))
-        else
-          SchedulerTracer.NoSchedulerTracer
-
-      val scheduler =
-        if (workers == 1) new SingleThreadScheduler()
-        else {
-          val numberOfThreads = if (workers == 0) java.lang.Runtime.getRuntime.availableProcessors() else workers
-          val jobScheduler = graph.getDependencyResolver.resolveDependency(classOf[JobScheduler])
-          val executorService = jobScheduler.workStealingExecutor(Group.CYPHER_WORKER, numberOfThreads)
-
-          new SimpleScheduler(executorService)
-        }
-
-      val dispatcher = new Dispatcher(morselSize, scheduler)
+      val morselRuntimeState = getMorselRuntimeState(runtimeConfig, graph.getDependencyResolver.resolveDependency(classOf[JobScheduler]))
 
       CypherCurrentCompiler(
         planner,
-        EnterpriseRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
-        EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log, config, schedulerTracer),
+        EnterpriseRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
+        EnterpriseRuntimeContextCreator(GeneratedQueryStructure, log, plannerConfig, morselRuntimeState),
         kernelMonitors)
 
     } else
-      community.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, config)
+      community.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, plannerConfig, runtimeConfig)
   }
 }
+
 
 /**
   * Enterprise runtime context. Enriches the community runtime context with infrastructure needed for
@@ -126,21 +125,19 @@ case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogg
                                     tokenContext: TokenContext,
                                     readOnly: Boolean,
                                     codeStructure: CodeStructure[GeneratedQuery],
-                                    dispatcher: Dispatcher,
                                     log: Log,
                                     clock: Clock,
                                     debugOptions: Set[String],
                                     config: CypherPlannerConfiguration,
-                                    schedulerTracer: SchedulerTracer) extends RuntimeContext
+                                    morselRuntimeState: MorselRuntimeState) extends RuntimeContext
 
 /**
   * Creator of EnterpriseRuntimeContext
   */
 case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery],
-                                           dispatcher: Dispatcher,
                                            log: Log,
                                            config: CypherPlannerConfiguration,
-                                           schedulerTracer: SchedulerTracer)
+                                           morselRuntimeState: MorselRuntimeState)
   extends RuntimeContextCreator[EnterpriseRuntimeContext] {
 
   override def create(notificationLogger: InternalNotificationLogger,
@@ -152,10 +149,9 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                              tokenContext,
                              readOnly,
                              codeStructure,
-                             dispatcher,
                              log,
                              clock,
                              debugOptions,
                              config,
-                             schedulerTracer)
+                             morselRuntimeState)
 }

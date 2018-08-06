@@ -120,3 +120,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     }).get
   }
 }
+
+case class CypherRuntimeConfiguration(workers: Int,
+                                      morselSize: Int,
+                                      doSchedulerTracing: Boolean)
