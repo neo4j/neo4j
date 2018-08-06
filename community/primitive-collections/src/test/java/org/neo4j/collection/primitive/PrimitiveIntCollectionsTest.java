@@ -194,18 +194,18 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void copyMap()
+    public void copyTransformMap()
     {
-        PrimitiveIntObjectMap<Object> originalMap = Primitive.intObjectMap();
+        PrimitiveIntObjectMap<String> originalMap = Primitive.intObjectMap();
         originalMap.put( 1, "a" );
         originalMap.put( 2, "b" );
         originalMap.put( 3, "c" );
-        PrimitiveIntObjectMap<Object> copyMap = PrimitiveIntCollections.copy( originalMap );
+        PrimitiveIntObjectMap<String> copyMap = PrimitiveIntCollections.copyTransform( originalMap, String::toUpperCase );
         assertNotSame( originalMap, copyMap );
         assertEquals( 3, copyMap.size() );
-        assertEquals( "a", copyMap.get( 1 ) );
-        assertEquals( "b", copyMap.get( 2 ) );
-        assertEquals( "c", copyMap.get( 3 ) );
+        assertEquals( "A", copyMap.get( 1 ) );
+        assertEquals( "B", copyMap.get( 2 ) );
+        assertEquals( "C", copyMap.get( 3 ) );
     }
 
     private void assertNoMoreItems( PrimitiveIntIterator iterator )
