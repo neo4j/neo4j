@@ -59,9 +59,7 @@ public class SchemaCache
     private final IndexProviderMap indexProviderMap;
     private volatile SchemaCacheState schemaCacheState;
 
-    public SchemaCache( ConstraintSemantics constraintSemantics,
-                        Iterable<SchemaRule> initialRules,
-                        IndexProviderMap indexProviderMap )
+    public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules, IndexProviderMap indexProviderMap )
     {
         this.indexProviderMap = indexProviderMap;
         this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules, indexProviderMap );
@@ -220,10 +218,12 @@ public class SchemaCache
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
-            this.indexDescriptorsByLabel = IntObjectHashMap.newMap( schemaCacheState.indexDescriptorsByLabel );
+            this.indexDescriptorsByLabel = new IntObjectHashMap<>( schemaCacheState.indexDescriptorsByLabel.size() );
+            schemaCacheState.indexDescriptorsByLabel.forEachKeyValue( ( k, v ) -> indexDescriptorsByLabel.put( k, new HashSet<>( v ) ) );
             this.indexDescriptorsByName = new HashMap<>( schemaCacheState.indexDescriptorsByName );
             this.dependantState = new ConcurrentHashMap<>();
-            this.indexByProperty = IntObjectHashMap.newMap( schemaCacheState.indexByProperty );
+            this.indexByProperty = new IntObjectHashMap<>( schemaCacheState.indexByProperty.size() );
+            schemaCacheState.indexByProperty.forEachKeyValue( ( k, v ) -> indexByProperty.put( k, new ArrayList<>( v ) ) );
             this.indexProviderMap = schemaCacheState.indexProviderMap;
         }
 
@@ -309,15 +309,13 @@ public class SchemaCache
                 indexDescriptorsByName.put( rule.getName(), index );
                 for ( int entityTokenId : schemaDescriptor.getEntityTokenIds() )
                 {
-                    Set<CapableIndexDescriptor> forLabel =
-                            indexDescriptorsByLabel.getIfAbsentPut( entityTokenId, HashSet::new );
+                    Set<CapableIndexDescriptor> forLabel = indexDescriptorsByLabel.getIfAbsentPut( entityTokenId, HashSet::new );
                     forLabel.add( index );
                 }
 
                 for ( int propertyId : index.schema().getPropertyIds() )
                 {
-                    List<CapableIndexDescriptor> indexesForProperty =
-                            indexByProperty.getIfAbsentPut( propertyId, ArrayList::new );
+                    List<CapableIndexDescriptor> indexesForProperty = indexByProperty.getIfAbsentPut( propertyId, ArrayList::new );
                     indexesForProperty.add( index );
                 }
             }
