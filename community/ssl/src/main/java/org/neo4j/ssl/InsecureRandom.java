@@ -19,9 +19,8 @@
  */
 package org.neo4j.ssl;
 
-import io.netty.util.internal.ThreadLocalRandom;
-
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class InsecureRandom extends java.security.SecureRandom
 {
