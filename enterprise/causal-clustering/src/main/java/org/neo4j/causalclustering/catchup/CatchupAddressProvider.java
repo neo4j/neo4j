@@ -26,9 +26,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 /**
@@ -137,32 +135,6 @@ public interface CatchupAddressProvider
         public AdvertisedSocketAddress secondary() throws CatchupAddressResolutionException
         {
             return secondaryUpstreamStrategyAddressSupplier.get();
-        }
-    }
-
-    class UpstreamStrategyAddressSupplier implements ThrowingSupplier<AdvertisedSocketAddress,CatchupAddressResolutionException>
-    {
-        private final UpstreamDatabaseStrategySelector strategySelector;
-        private final TopologyService topologyService;
-
-        private UpstreamStrategyAddressSupplier( UpstreamDatabaseStrategySelector strategySelector, TopologyService topologyService )
-        {
-            this.strategySelector = strategySelector;
-            this.topologyService = topologyService;
-        }
-
-        @Override
-        public AdvertisedSocketAddress get() throws CatchupAddressResolutionException
-        {
-            try
-            {
-                MemberId upstreamMember = strategySelector.bestUpstreamDatabase();
-                return topologyService.findCatchupAddress( upstreamMember ).orElseThrow( () -> new CatchupAddressResolutionException( upstreamMember ) );
-            }
-            catch ( UpstreamDatabaseSelectionException e )
-            {
-                throw new CatchupAddressResolutionException( e );
-            }
         }
     }
 }
