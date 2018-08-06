@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.hashing.HashFunction;
+import org.neo4j.internal.kernel.api.IndexReference;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
@@ -34,14 +35,16 @@ public class IndexDefinitionImpl implements IndexDefinition
 {
     private final InternalSchemaActions actions;
 
+    private final IndexReference indexReference;
     private final Label[] labels;
     private final RelationshipType[] relTypes;
     private final String[] propertyKeys;
     private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label[] labels, String[] propertyKeys, boolean constraintIndex )
+    public IndexDefinitionImpl( InternalSchemaActions actions, IndexReference ref, Label[] labels, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
+        this.indexReference = ref;
         this.labels = labels;
         this.relTypes = null;
         this.propertyKeys = propertyKeys;
@@ -50,15 +53,21 @@ public class IndexDefinitionImpl implements IndexDefinition
         assertInUnterminatedTransaction();
     }
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
+    public IndexDefinitionImpl( InternalSchemaActions actions, IndexReference ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
+        this.indexReference = ref;
         this.labels = null;
         this.relTypes = relTypes;
         this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;
 
         assertInUnterminatedTransaction();
+    }
+
+    public IndexReference getIndexReference()
+    {
+        return indexReference;
     }
 
     @Override
@@ -284,7 +293,8 @@ public class IndexDefinitionImpl implements IndexDefinition
             entityTokenType = relTypes.length > 1 ? "relationship types" : "relationship type";
             entityTokens = Arrays.stream( relTypes ).map( RelationshipType::name ).collect( joining( "," ) );
         }
-        return "IndexDefinition[" + entityTokenType + ":" + entityTokens + " on:" + String.join( ",", propertyKeys ) + "]";
+        return "IndexDefinition[" + entityTokenType + ":" + entityTokens + " on:" + String.join( ",", propertyKeys ) + "]" +
+                (indexReference == null ? "" : " (" + indexReference + ")");
     }
 
     private void assertInUnterminatedTransaction()

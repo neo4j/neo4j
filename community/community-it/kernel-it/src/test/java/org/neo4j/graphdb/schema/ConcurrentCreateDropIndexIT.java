@@ -27,6 +27,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -236,6 +240,29 @@ public class ConcurrentCreateDropIndexIT
             assertNull( index );
             tx.success();
         }
+    }
+
+    @Test
+    public void concurrentCreatingAndAwaitingIndexesOnline() throws Exception
+    {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<?> indexCreate = executor.submit( () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().indexFor( label( 0 ) ).on( KEY ).create();
+                tx.success();
+            }
+        } );
+        while ( !indexCreate.isDone() )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                tx.success();
+            }
+        }
+        indexCreate.get();
     }
 
     private Runnable indexCreate( int labelIndex )

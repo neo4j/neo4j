@@ -157,7 +157,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             // Created pending indexes
             if ( createdIndexes != null )
             {
-                indexingService.createIndexes( createdIndexes.toArray( new StoreIndexDescriptor[createdIndexes.size()] ) );
+                indexingService.createIndexes( createdIndexes.toArray( new StoreIndexDescriptor[0] ) );
                 createdIndexes = null;
             }
         }

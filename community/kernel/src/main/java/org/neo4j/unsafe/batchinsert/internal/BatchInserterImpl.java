@@ -47,6 +47,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -473,7 +474,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private void createIndex( int labelId, int[] propertyKeyIds )
+    private IndexReference createIndex( int labelId, int[] propertyKeyIds )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
         IndexProviderDescriptor providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
@@ -486,6 +487,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         schemaCache.addSchemaRule( schemaRule );
         labelsTouched = true;
         flushStrategy.forceFlush();
+        return schemaRule;
     }
 
     private void repopulateAllIndexes( NativeLabelScanStore labelIndex )
@@ -1118,8 +1120,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
             validateIndexCanBeCreated( labelId, propertyKeyIds );
 
-            createIndex( labelId, propertyKeyIds );
-            return new IndexDefinitionImpl( this, new Label[]{label}, propertyKeys, false );
+            IndexReference indexReference = createIndex( labelId, propertyKeyIds );
+            return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
         }
 
         @Override

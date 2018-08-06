@@ -158,14 +158,14 @@ public class SchemaImpl implements Schema
                 {
                     labels[i] = label( tokenRead.nodeLabelName( entityTokenIds[i] ) );
                 }
-                return new IndexDefinitionImpl( actions, labels, propertyNames, constraintIndex );
+                return new IndexDefinitionImpl( actions, index, labels, propertyNames, constraintIndex );
             case RELATIONSHIP:
                 RelationshipType[] relTypes = new RelationshipType[entityTokenIds.length];
                 for ( int i = 0; i < relTypes.length; i++ )
                 {
                     relTypes[i] = withName( tokenRead.relationshipTypeName( entityTokenIds[i] ) );
                 }
-                return new IndexDefinitionImpl( actions, relTypes, propertyNames, constraintIndex );
+                return new IndexDefinitionImpl( actions, index, relTypes, propertyNames, constraintIndex );
             default:
                 throw new IllegalArgumentException( "Cannot create IndexDefinition for " + schema.entityType() + " entity-typed schema." );
             }
@@ -229,6 +229,7 @@ public class SchemaImpl implements Schema
             }
 
             IndexDefinition index = iter.next();
+
             long millisBefore = System.currentTimeMillis();
             awaitIndexOnline( index, millisLeft, TimeUnit.MILLISECONDS );
             millisLeft -= System.currentTimeMillis() - millisBefore;
@@ -354,9 +355,16 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static IndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinitionImpl index )
-            throws SchemaRuleNotFoundException
+    private static IndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinitionImpl index ) throws SchemaRuleNotFoundException
     {
+        // Use the precise embedded index reference when available.
+        IndexReference reference = index.getIndexReference();
+        if ( reference != null )
+        {
+            return reference;
+        }
+
+        // Otherwise attempt to reverse engineer the schema that will let us look up the real IndexReference.
         int[] propertyKeyIds = resolveAndValidatePropertyKeys( tokenRead, index.getPropertyKeysArrayShared() );
         SchemaDescriptor schema;
 
@@ -392,7 +400,7 @@ public class SchemaImpl implements Schema
             throw new IllegalArgumentException( "The given index is neither a node index, nor a relationship index: " + index + "." );
         }
 
-        IndexReference reference = schemaRead.index( schema );
+        reference = schemaRead.index( schema );
         if ( reference == IndexReference.NO_INDEX )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, schema );
@@ -465,11 +473,11 @@ public class SchemaImpl implements Schema
             }
             else if ( constraint instanceof UniquenessConstraintDescriptor )
             {
-                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, labels, propertyKeys, true ) );
+                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
             }
             else
             {
-                return new NodeKeyConstraintDefinition( actions, new IndexDefinitionImpl( actions, labels, propertyKeys, true ) );
+                return new NodeKeyConstraintDefinition( actions, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
             }
         }
         else if ( constraint instanceof RelExistenceConstraintDescriptor )
@@ -511,7 +519,7 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    IndexDefinition indexDefinition = new IndexDefinitionImpl( this, new Label[]{label}, propertyKeys, false );
+                    IndexDefinition indexDefinition = new IndexDefinitionImpl( this, null, new Label[]{label}, propertyKeys, false );
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
