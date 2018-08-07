@@ -47,13 +47,13 @@ import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory
-import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
+import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}

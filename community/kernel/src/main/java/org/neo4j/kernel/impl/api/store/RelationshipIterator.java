@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.RelationshipVisitor;
 
 public interface RelationshipIterator extends RelationshipVisitor.Home, LongIterator
 {

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.spi
 
 import org.neo4j.collection.PrimitiveLongResourceIterator
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.storageengine.api.RelationshipVisitor
 
 import scala.collection.Iterator
 

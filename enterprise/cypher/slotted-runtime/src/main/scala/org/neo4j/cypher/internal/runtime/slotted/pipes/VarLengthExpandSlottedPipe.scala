@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyTypes, Pipe, Pip
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{RelationshipValue, VirtualValues}
+import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.attribution.Id
 
 import scala.collection.mutable
 

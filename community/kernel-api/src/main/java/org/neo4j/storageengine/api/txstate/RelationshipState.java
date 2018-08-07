@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.RelationshipVisitor;
 
 /**
  * Represents the transactional changes to a relationship.

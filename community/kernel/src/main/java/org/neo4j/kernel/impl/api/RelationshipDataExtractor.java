@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.storageengine.api.RelationshipVisitor;
+
 public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeException>
 {
     private int type;

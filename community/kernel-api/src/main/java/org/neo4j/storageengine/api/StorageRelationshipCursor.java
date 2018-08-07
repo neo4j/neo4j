@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-
 /**
  * Shared interface between the two {@link StorageRelationshipScanCursor} and {@link StorageRelationshipTraversalCursor}.
  */

@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, Dele
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.helpers.MathUtil
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
+import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.opencypher.v9_0.util.attribution.Id
 
 import scala.collection.mutable
 
