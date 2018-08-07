@@ -42,22 +42,7 @@ public class CausalClusterInProcessRunnerIT
     public void shouldBootAndShutdownCluster() throws Exception
     {
         Path clusterPath = testDirectory.directory().toPath();
-        CausalClusterInProcessBuilder.PortPickingStrategy portPickingStrategy = new CausalClusterInProcessBuilder.PortPickingStrategy()
-        {
-            Map<Integer, Integer> cache = new HashMap<>();
-
-            @Override
-            public int port( int offset, int id )
-            {
-                int key = offset + id;
-                if ( ! cache.containsKey( key ) )
-                {
-                    cache.put( key, PortAuthority.allocatePort() );
-                }
-
-                return cache.get( key );
-            }
-        };
+        CausalClusterInProcessBuilder.PortPickingStrategy portPickingStrategy = new PortAuthorityPortPickingStrategy();
 
         CausalClusterInProcessBuilder.CausalCluster cluster =
                 CausalClusterInProcessBuilder.init()

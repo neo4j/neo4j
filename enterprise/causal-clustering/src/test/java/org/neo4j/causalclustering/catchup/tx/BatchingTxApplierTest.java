@@ -29,6 +29,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.CountDownLatch;
 
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -54,13 +55,14 @@ public class BatchingTxApplierTest
 {
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
     private final TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
+    private final CommandIndexTracker commandIndexTracker = new CommandIndexTracker();
 
     private final long startTxId = 31L;
     private final int maxBatchSize = 16;
 
     private final BatchingTxApplier txApplier = new BatchingTxApplier(
             maxBatchSize, () -> idStore, () -> commitProcess, new Monitors(), PageCursorTracerSupplier.NULL,
-            EmptyVersionContextSupplier.EMPTY, NullLogProvider.getInstance() );
+            EmptyVersionContextSupplier.EMPTY, commandIndexTracker, NullLogProvider.getInstance() );
 
     @Before
     public void before()

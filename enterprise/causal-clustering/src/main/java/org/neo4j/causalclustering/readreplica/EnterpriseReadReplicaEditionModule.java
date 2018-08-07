@@ -49,12 +49,15 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
+import org.neo4j.causalclustering.catchup.tx.ReadReplicaLastAppliedTransactionMonitor;
+import org.neo4j.causalclustering.catchup.tx.TrackingLastAppliedTransactionMonitor;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.SupportedProtocolCreator;
 import org.neo4j.causalclustering.core.TransactionBackupServiceProvider;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -272,10 +275,17 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LifeSupport txPulling = new LifeSupport();
         int maxBatchSize = config.get( CausalClusteringSettings.read_replica_transaction_applier_batch_size );
+
+        // Used in the web interface to correctly report the transaction id
+        TrackingLastAppliedTransactionMonitor readReplicaLastAppliedTransactionMonitor = new TrackingLastAppliedTransactionMonitor();
+        dependencies.satisfyDependency( readReplicaLastAppliedTransactionMonitor );
+        platformModule.monitors.addMonitorListener( readReplicaLastAppliedTransactionMonitor );
+
+        CommandIndexTracker commandIndexTracker = platformModule.dependencies.satisfyDependency( new CommandIndexTracker() );
         BatchingTxApplier batchingTxApplier = new BatchingTxApplier(
                 maxBatchSize, () -> localDatabase.dataSource().getDependencyResolver().resolveDependency( TransactionIdStore.class ), writableCommitProcess,
                 platformModule.monitors, platformModule.tracers.pageCursorTracerSupplier,
-                platformModule.versionContextSupplier, logProvider );
+                platformModule.versionContextSupplier, commandIndexTracker, logProvider );
 
         TimerService timerService = new TimerService( platformModule.jobScheduler, logProvider );
 

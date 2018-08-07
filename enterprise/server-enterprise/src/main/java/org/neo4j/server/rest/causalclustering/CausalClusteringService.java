@@ -29,7 +29,6 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
 
 @Path( CausalClusteringService.BASE_PATH )
@@ -40,6 +39,7 @@ public class CausalClusteringService implements AdvertisableService
     static final String AVAILABLE = "available";
     static final String WRITABLE = "writable";
     static final String READ_ONLY = "read-only";
+    static final String DESCRIPTION = "status";
 
     private final CausalClusteringStatus status;
 
@@ -73,6 +73,13 @@ public class CausalClusteringService implements AdvertisableService
     public Response isAvailable()
     {
         return status.available();
+    }
+
+    @GET
+    @Path( DESCRIPTION )
+    public Response status()
+    {
+        return status.description();
     }
 
     @Override

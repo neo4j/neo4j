@@ -22,8 +22,14 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
+import org.codehaus.jackson.map.ObjectMapper;
+
+import java.io.IOException;
+import java.util.Collection;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.server.rest.repr.OutputFormat;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
@@ -45,6 +51,24 @@ abstract class BaseStatus implements CausalClusteringStatus
     public Response discover()
     {
         return output.ok( new CausalClusteringDiscovery( BASE_PATH ) );
+    }
+
+    Response statusResponse( long lastAppliedRaftIndex, boolean isParticipatingInRaftGroup, Collection<MemberId> votingMembers, boolean isHealthy,
+            MemberId memberId, MemberId leader, Long millisSinceLastLeaderMessage, boolean isCore )
+    {
+        String jsonObject;
+        ObjectMapper objectMapper = new ObjectMapper();
+        try
+        {
+            jsonObject = objectMapper.writeValueAsString(
+                    new ClusterStatusResponse( lastAppliedRaftIndex, isParticipatingInRaftGroup, votingMembers, isHealthy, memberId, leader,
+                            millisSinceLastLeaderMessage, isCore ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return status( OK ).type( MediaType.APPLICATION_JSON ).entity( jsonObject ).build();
     }
 
     Response positiveResponse()

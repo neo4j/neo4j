@@ -20,19 +20,9 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.server.rest.causalclustering;
+package org.neo4j.causalclustering.catchup.tx;
 
-import javax.ws.rs.core.Response;
-
-interface CausalClusteringStatus
+public interface ReadReplicaLastAppliedTransactionMonitor
 {
-    Response discover();
-
-    Response available();
-
-    Response readonly();
-
-    Response writable();
-
-    Response description();
+    void applyTransaction( long transactionId );
 }

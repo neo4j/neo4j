@@ -22,11 +22,24 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.core.consensus.DurationSinceLastMessageMonitor;
+import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
+import org.neo4j.causalclustering.diagnostics.CoreMembershipMonitor;
+import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.server.rest.repr.OutputFormat;
 
 import static org.neo4j.server.rest.causalclustering.CausalClusteringService.BASE_PATH;
@@ -36,11 +49,29 @@ class CoreStatus extends BaseStatus
     private final OutputFormat output;
     private final CoreGraphDatabase db;
 
+    // Dependency resolved
+    private final CoreMembershipMonitor coreMembershipMonitor;
+    private final RaftMembershipManager raftMembershipManager;
+    private final DatabaseHealth databaseHealth;
+    private final TopologyService topologyService;
+    private final DurationSinceLastMessageMonitor raftMessageTimerResetMonitor;
+    private final RaftMachine raftMachine;
+    private final CommandIndexTracker commandIndexTracker;
+
     CoreStatus( OutputFormat output, CoreGraphDatabase db )
     {
         super( output );
         this.output = output;
         this.db = db;
+
+        DependencyResolver dependencyResolver = db.getDependencyResolver();
+        this.coreMembershipMonitor = dependencyResolver.resolveDependency( CoreMembershipMonitor.class );
+        this.raftMembershipManager = dependencyResolver.resolveDependency( RaftMembershipManager.class );
+        this.databaseHealth = dependencyResolver.resolveDependency( DatabaseHealth.class );
+        this.topologyService = dependencyResolver.resolveDependency( TopologyService.class );
+        this.raftMachine = dependencyResolver.resolveDependency( RaftMachine.class );
+        this.raftMessageTimerResetMonitor = dependencyResolver.resolveDependency( DurationSinceLastMessageMonitor.class );
+        commandIndexTracker = dependencyResolver.resolveDependency( CommandIndexTracker.class );
     }
 
     @Override
@@ -66,5 +97,29 @@ class CoreStatus extends BaseStatus
     public Response writable()
     {
         return db.getRole() == Role.LEADER ? positiveResponse() : negativeResponse();
+    }
+
+    @Override
+    public Response description()
+    {
+        List<MemberId> votingMembers = new ArrayList<>( raftMembershipManager.votingMembers() );
+        long lastAppliedRaftIndex = commandIndexTracker.getAppliedCommandIndex();
+        MemberId leader = getLeader();
+        boolean participatingInRaftGroup = coreMembershipMonitor.hasJoinedRaft() && Objects.nonNull( leader );
+        long millisSinceLastLeaderMessage = raftMessageTimerResetMonitor.durationSinceLastMessage().toMillis();
+        return statusResponse( lastAppliedRaftIndex, participatingInRaftGroup, votingMembers, databaseHealth.isHealthy(), topologyService.myself(), leader,
+                millisSinceLastLeaderMessage, true );
+    }
+
+    private MemberId getLeader()
+    {
+        try
+        {
+            return raftMachine.getLeader();
+        }
+        catch ( NoLeaderFoundException e )
+        {
+            return null;
+        }
     }
 }

@@ -106,6 +106,12 @@ class TopologyServiceThatPrioritisesItself implements TopologyService
     }
 
     @Override
+    public MemberId myself()
+    {
+        return myself;
+    }
+
+    @Override
     public void init() throws Throwable
     {
     }

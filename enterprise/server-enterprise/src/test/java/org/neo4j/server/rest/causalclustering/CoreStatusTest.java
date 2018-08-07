@@ -22,33 +22,95 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.core.consensus.DurationSinceLastMessageMonitor;
+import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
+import org.neo4j.causalclustering.diagnostics.CoreMembershipMonitor;
+import org.neo4j.causalclustering.discovery.RoleInfo;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.causalclustering.ReadReplicaStatusTest.responseAsMap;
 
 public class CoreStatusTest
 {
-    private CoreGraphDatabase db;
     private CausalClusteringStatus status;
+
+    private CoreGraphDatabase db;
+    private Dependencies dependencyResolver = new Dependencies();
+    private final LogProvider logProvider = NullLogProvider.getInstance();
+
+    // Dependency resolved
+    private CoreMembershipMonitor coreMembershipMonitor;
+    private RaftMembershipManager raftMembershipManager;
+    private DatabaseHealth databaseHealth;
+    private FakeTopologyService topologyService;
+    private DurationSinceLastMessageMonitor raftMessageTimerResetMonitor;
+    private RaftMachine raftMachine;
+    private CommandIndexTracker commandIndexTracker;
+
+    private final MemberId myself = new MemberId( new UUID( 0x1234, 0x5678 ) );
+    private final MemberId core2 = new MemberId( UUID.randomUUID() );
+    private final MemberId core3 = new MemberId( UUID.randomUUID() );
 
     @Before
     public void setup() throws Exception
     {
         OutputFormat output = new OutputFormat( new JsonFormat(), new URI( "http://base.local:1234/" ), null );
         db = mock( CoreGraphDatabase.class );
+        when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
+
+        raftMembershipManager = dependencyResolver.satisfyDependency( fakeRaftMembershipManager( new HashSet<>( Arrays.asList( myself, core2, core3 ) ) ) );
+
+        databaseHealth = dependencyResolver.satisfyDependency(
+                new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), logProvider.getLog( DatabaseHealth.class ) ) );
+
+        topologyService = dependencyResolver.satisfyDependency( new FakeTopologyService( 2, 3, myself, RoleInfo.FOLLOWER ) );
+
+        coreMembershipMonitor = dependencyResolver.satisfyDependency( new CoreMembershipMonitor( mock( RaftMachine.class ) ) );
+
+        raftMessageTimerResetMonitor = dependencyResolver.satisfyDependency( new DurationSinceLastMessageMonitor( logProvider ) );
+        raftMachine = dependencyResolver.satisfyDependency( mock( RaftMachine.class ) );
+        commandIndexTracker = dependencyResolver.satisfyDependency( new CommandIndexTracker() );
+
         status = CausalClusteringStatusFactory.build( output, db );
     }
 
@@ -117,4 +179,142 @@ public class CoreStatusTest
         assertEquals( NOT_FOUND.getStatusCode(), writable.getStatus() );
         assertEquals( "false", writable.getEntity() );
     }
+
+
+    @Test
+    public void expectedStatusFieldsAreIncluded() throws IOException, NoLeaderFoundException
+    {
+        // given ideal normal conditions
+        commandIndexTracker.setAppliedCommandIndex( 123 );
+        coreMembershipMonitor.joinedRaftGroup();
+        when( raftMachine.getLeader() ).thenReturn( core2 );
+        raftMessageTimerResetMonitor.timerReset();
+
+        // and helpers
+        List<String> votingMembers =
+                raftMembershipManager.votingMembers().stream().map( memberId -> memberId.getUuid().toString() ).sorted().collect( Collectors.toList() );
+
+        // when
+        Response description = status.description();
+        Map<String,Object> response = responseAsMap( description );
+
+        // then
+        assertThat( response, containsAndEquals( "core", true ) );
+        assertThat( response, containsAndEquals( "lastAppliedRaftIndex", 123 ) );
+        assertThat( response, containsAndEquals( "participatingInRaftGroup", true ) );
+        assertThat( response, containsAndEquals( "votingMembers", votingMembers ) );
+        assertThat( response, containsAndEquals( "healthy", true ) );
+        assertThat( response, containsAndEquals( "memberId", myself.getUuid().toString() ) );
+        assertThat( response, containsAndEquals( "leader", core2.getUuid().toString() ) );
+        assertThat( response.toString(), Long.parseLong( response.get( "millisSinceLastLeaderMessage" ).toString() ), greaterThan( 0L ) );
+    }
+
+    @Test
+    public void notParticipatingInRaftGroupWhenNotJoinedRaft() throws IOException
+    {
+        // given
+        topologyService.makeLeader( myself );
+
+        // when
+        Response description = status.description();
+
+        // then
+        Map<String,Object> response = responseAsMap( description );
+        assertThat( response, containsAndEquals( "participatingInRaftGroup", false ) );
+    }
+
+    @Test
+    public void notParticipatingInRaftGroupWhenLeaderUnknown() throws IOException
+    {
+        // given
+        coreMembershipMonitor.joinedRaftGroup();
+        topologyService.makeLeader( null ); // TODO not necessary?
+
+        // when
+        Response description = status.description();
+
+        // then
+        Map<String,Object> response = responseAsMap( description );
+        assertThat( response, containsAndEquals( "participatingInRaftGroup", false ) );
+    }
+
+    @Test
+    public void databaseHealthIsReflected() throws IOException
+    {
+        // given database is not healthy
+        databaseHealth.panic( new RuntimeException() );
+        topologyService.makeLeader( myself );
+
+        // when
+        Response description = status.description();
+        Map<String,Object> response = responseAsMap( description );
+
+        // then
+        assertThat( response, containsAndEquals( "healthy", false ) );
+    }
+
+    @Test
+    public void leaderIsEmptyStringIfNonExistent() throws IOException
+    {
+        // given no leader
+        topologyService.makeLeader( null );
+
+        // when
+        Response description = status.description();
+
+        // then
+        Map<String,Object> response = responseAsMap( description );
+        assertThat( response, containsAndEquals( "leader", "" ) );
+    }
+
+    static RaftMembershipManager fakeRaftMembershipManager( Set<MemberId> votingMembers )
+    {
+        RaftMembershipManager raftMembershipManager = mock( RaftMembershipManager.class );
+        when( raftMembershipManager.votingMembers() ).thenReturn( votingMembers );
+        return raftMembershipManager;
+    }
+
+    private static Matcher<Map<String,Object>> containsAndEquals( String key, Object target )
+    {
+        return new BaseMatcher<Map<String,Object>>()
+        {
+            private boolean containsKey;
+            private boolean areEqual;
+
+            @Override
+            public boolean matches( Object item )
+            {
+                Map<String,Object> map = (Map<String,Object>) item;
+                if ( !map.containsKey( key ) )
+                {
+                    return false;
+                }
+                containsKey = true;
+                if ( !map.get( key ).equals( target ) )
+                {
+                    return false;
+                }
+                areEqual = true;
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                if ( !containsKey )
+                {
+                    description.appendText( "did not include key " ).appendValue( key );
+                }
+                else if ( !areEqual )
+                {
+                    description.appendText( "key " ).appendValue( key ).appendText( " did not match value" ).appendValue( target );
+                }
+                else
+                {
+                    throw new IllegalStateException( "Matcher failed, conditions should have passed" );
+                }
+            }
+        };
+    }
+
 }

@@ -141,7 +141,7 @@ public class CoreStateMachinesModule
                         logProvider );
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-        CommandIndexTracker commandIndexTracker = new CommandIndexTracker();
+        CommandIndexTracker commandIndexTracker = dependencies.satisfyDependency( new CommandIndexTracker() );
         freeIdCondition = new IdReusabilityCondition( commandIndexTracker, raftMachine, myself );
         this.idGeneratorFactory =
                 createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider, idTypeConfigurationProvider );

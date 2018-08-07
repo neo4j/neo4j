@@ -20,19 +20,35 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.server.rest.causalclustering;
+package org.neo4j.causalclustering.core.consensus;
 
-import javax.ws.rs.core.Response;
+import java.time.Duration;
 
-interface CausalClusteringStatus
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+
+public class DurationSinceLastMessageMonitor implements RaftMessageTimerResetMonitor
 {
-    Response discover();
+    private long lastMessageNanos = -1;
+    private final Log log;
 
-    Response available();
+    public DurationSinceLastMessageMonitor( LogProvider logProvider )
+    {
+        log = logProvider.getLog( DurationSinceLastMessageMonitor.class );
+        log.info( "Created duration tracker" );
+    }
 
-    Response readonly();
+    @Override
+    public void timerReset()
+    {
+        lastMessageNanos = System.nanoTime();
+        log.info( "Timer reset" );
+    }
 
-    Response writable();
-
-    Response description();
+    public Duration durationSinceLastMessage()
+    {
+        log.info( "Duration retrieved" );
+        return Duration.ofNanos( System.nanoTime() - lastMessageNanos );
+    }
 }
+

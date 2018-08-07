@@ -27,6 +27,7 @@ import org.neo4j.server.rest.repr.MappingSerializer;
 
 import static org.neo4j.server.rest.causalclustering.CausalClusteringService.AVAILABLE;
 import static org.neo4j.server.rest.causalclustering.CausalClusteringService.READ_ONLY;
+import static org.neo4j.server.rest.causalclustering.CausalClusteringService.DESCRIPTION;
 import static org.neo4j.server.rest.causalclustering.CausalClusteringService.WRITABLE;
 
 public class CausalClusteringDiscovery extends MappingRepresentation
@@ -47,5 +48,6 @@ public class CausalClusteringDiscovery extends MappingRepresentation
         serializer.putRelativeUri( AVAILABLE, basePath + "/" + AVAILABLE );
         serializer.putRelativeUri( READ_ONLY, basePath + "/" + READ_ONLY );
         serializer.putRelativeUri( WRITABLE, basePath + "/" + WRITABLE );
+        serializer.putRelativeUri( DESCRIPTION, basePath + "/" + DESCRIPTION );
     }
 }

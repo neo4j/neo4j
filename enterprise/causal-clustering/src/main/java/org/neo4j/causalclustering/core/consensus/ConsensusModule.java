@@ -131,6 +131,7 @@ public class ConsensusModule
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
                 minimumConsensusGroupSize, leaderAvailabilityTimers.getElectionTimeout(), systemClock(), config.get( join_catch_up_timeout ).toMillis(),
                 raftMembershipStorage );
+        platformModule.dependencies.satisfyDependency( raftMembershipManager );
 
         life.add( raftMembershipManager );
 
@@ -147,6 +148,10 @@ public class ConsensusModule
                 outbound, logProvider, raftMembershipManager, logShipping, inFlightCache,
                 config.get( refuse_to_be_leader ),
                 supportsPreVoting, platformModule.monitors );
+
+        DurationSinceLastMessageMonitor durationSinceLastMessageMonitor = new DurationSinceLastMessageMonitor( logProvider );
+        platformModule.monitors.addMonitorListener( durationSinceLastMessageMonitor );
+        platformModule.dependencies.satisfyDependency( durationSinceLastMessageMonitor );
 
         String dbName = config.get( CausalClusteringSettings.database );
 

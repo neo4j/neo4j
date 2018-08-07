@@ -127,6 +127,12 @@ class SharedDiscoveryReadReplicaClient extends SafeLifecycle implements Topology
         return sharedDiscoveryService.getCoreRoles();
     }
 
+    @Override
+    public MemberId myself()
+    {
+        return memberId;
+    }
+
     public MemberId getMemberId()
     {
         return memberId;

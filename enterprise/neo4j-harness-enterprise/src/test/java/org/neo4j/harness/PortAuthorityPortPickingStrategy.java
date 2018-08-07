@@ -20,19 +20,27 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.server.rest.causalclustering;
+package org.neo4j.harness;
 
-import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Map;
+import org.neo4j.ports.allocation.PortAuthority;
 
-interface CausalClusteringStatus
+
+public class PortAuthorityPortPickingStrategy implements CausalClusterInProcessBuilder.PortPickingStrategy
 {
-    Response discover();
+    Map<Integer, Integer> cache = new HashMap<>();
 
-    Response available();
+    @Override
+    public int port( int offset, int id )
+    {
+        int key = offset + id;
+        if ( ! cache.containsKey( key ) )
+        {
+            cache.put( key, PortAuthority.allocatePort() );
+        }
 
-    Response readonly();
-
-    Response writable();
-
-    Response description();
+        return cache.get( key );
+    }
 }
+

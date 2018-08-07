@@ -244,6 +244,12 @@ public class UserDefinedConfigurationStrategyTest
             }
 
             @Override
+            public MemberId myself()
+            {
+                return new MemberId( new UUID( 0, 0 ) );
+            }
+
+            @Override
             public String localDBName()
             {
                 return "default";

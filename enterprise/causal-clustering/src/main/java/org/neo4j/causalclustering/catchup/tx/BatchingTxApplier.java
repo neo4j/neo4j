@@ -24,6 +24,8 @@ package org.neo4j.causalclustering.catchup.tx;
 
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
+import org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -51,6 +53,8 @@ public class BatchingTxApplier extends LifecycleAdapter
     private final PullRequestMonitor monitor;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
+    private final ReadReplicaLastAppliedTransactionMonitor lastAppliedTransactionMonitor;
+    private final CommandIndexTracker commandIndexTracker;
     private final Log log;
 
     private TransactionQueue txQueue;
@@ -62,7 +66,8 @@ public class BatchingTxApplier extends LifecycleAdapter
     public BatchingTxApplier( int maxBatchSize, Supplier<TransactionIdStore> txIdStoreSupplier,
                               Supplier<TransactionCommitProcess> commitProcessSupplier, Monitors monitors,
                               PageCursorTracerSupplier pageCursorTracerSupplier,
-                              VersionContextSupplier versionContextSupplier, LogProvider logProvider )
+                              VersionContextSupplier versionContextSupplier, CommandIndexTracker commandIndexTracker,
+                              LogProvider logProvider )
     {
         this.maxBatchSize = maxBatchSize;
         this.txIdStoreSupplier = txIdStoreSupplier;
@@ -70,7 +75,9 @@ public class BatchingTxApplier extends LifecycleAdapter
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.log = logProvider.getLog( getClass() );
         this.monitor = monitors.newMonitor( PullRequestMonitor.class );
+        this.lastAppliedTransactionMonitor = monitors.newMonitor( ReadReplicaLastAppliedTransactionMonitor.class );
         this.versionContextSupplier = versionContextSupplier;
+        this.commandIndexTracker = commandIndexTracker;
     }
 
     @Override
@@ -82,6 +89,9 @@ public class BatchingTxApplier extends LifecycleAdapter
         {
             commitProcess.commit( first, NULL, EXTERNAL );
             pageCursorTracerSupplier.get().reportEvents();  // Report paging metrics for the commit
+            lastAppliedTransactionMonitor.applyTransaction( last.transactionId() );
+            long lastAppliedRaftLogIndex = LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader( last.transactionRepresentation().additionalHeader() );
+            commandIndexTracker.setAppliedCommandIndex( lastAppliedRaftLogIndex );
         } );
     }
 

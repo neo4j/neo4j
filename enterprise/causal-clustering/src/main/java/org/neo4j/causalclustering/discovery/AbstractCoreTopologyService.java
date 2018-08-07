@@ -95,4 +95,10 @@ public abstract class AbstractCoreTopologyService extends SafeLifecycle implemen
     }
 
     protected abstract void handleStepDown0( LeaderInfo steppingDown );
+
+    @Override
+    public MemberId myself()
+    {
+        return myself;
+    }
 }

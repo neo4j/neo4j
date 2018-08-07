@@ -37,7 +37,7 @@ public class CausalClusteringStatusFactory
         }
         else if ( db instanceof ReadReplicaGraphDatabase )
         {
-            return new ReadReplicaStatus( output );
+            return new ReadReplicaStatus( output, (ReadReplicaGraphDatabase) db );
         }
         else
         {

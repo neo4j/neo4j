@@ -59,4 +59,10 @@ class NotCausalClustering extends BaseStatus
     {
         return status( FORBIDDEN ).build();
     }
+
+    @Override
+    public Response description()
+    {
+        return Response.status( FORBIDDEN ).build();
+    }
 }

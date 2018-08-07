@@ -36,7 +36,7 @@ public class CommandIndexTracker
         this.appliedCommandIndex = appliedCommandIndex;
     }
 
-    long getAppliedCommandIndex()
+    public long getAppliedCommandIndex()
     {
         return appliedCommandIndex;
     }

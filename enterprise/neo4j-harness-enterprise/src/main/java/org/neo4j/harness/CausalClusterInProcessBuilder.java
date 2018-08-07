@@ -146,22 +146,22 @@ public class CausalClusterInProcessBuilder
     /**
      * Builder step interfaces
      */
-    interface WithCores
+    public interface WithCores
     {
         WithReplicas withCores( int n );
     }
 
-    interface WithReplicas
+    public interface WithReplicas
     {
         WithLogger withReplicas( int n );
     }
 
-    interface WithLogger
+    public interface WithLogger
     {
         WithPath withLogger( LogProvider l );
     }
 
-    interface WithPath
+    public interface WithPath
     {
         Builder atPath( Path p );
     }
@@ -251,7 +251,7 @@ public class CausalClusterInProcessBuilder
     /**
      * Implementation of in process Cluster
      */
-    static class CausalCluster
+    public static class CausalCluster
     {
         private final int nCores;
         private final int nReplicas;
@@ -295,7 +295,7 @@ public class CausalClusterInProcessBuilder
             return mapping;
         }
 
-        void boot() throws InterruptedException
+        public void boot() throws InterruptedException
         {
             List<String> initialMembers = new ArrayList<>( nCores );
 
@@ -436,7 +436,17 @@ public class CausalClusterInProcessBuilder
             builder.withConfig( new HttpConnector( "https", HttpConnector.Encryption.TLS ).advertised_address.name(), specifyPortOnly( httpsPort ) );
         }
 
-        void shutdown() throws InterruptedException
+        public List<ServerControls> getCoreControls()
+        {
+            return coreControls;
+        }
+
+        public List<ServerControls> getReplicaControls()
+        {
+            return replicaControls;
+        }
+
+        public void shutdown() throws InterruptedException
         {
             shutdownControls( replicaControls );
             shutdownControls( coreControls );

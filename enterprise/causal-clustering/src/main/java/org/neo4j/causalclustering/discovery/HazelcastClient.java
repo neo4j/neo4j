@@ -111,6 +111,12 @@ public class HazelcastClient extends SafeLifecycle implements TopologyService
     }
 
     @Override
+    public MemberId myself()
+    {
+        return myself;
+    }
+
+    @Override
     public String localDBName()
     {
         return dbName;
