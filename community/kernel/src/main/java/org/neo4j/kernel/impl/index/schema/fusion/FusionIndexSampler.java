@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 

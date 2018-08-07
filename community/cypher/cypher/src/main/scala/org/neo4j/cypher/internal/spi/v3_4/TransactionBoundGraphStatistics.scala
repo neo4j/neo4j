@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.spi.v3_4
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.util.v3_4._
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 
 object TransactionBoundGraphStatistics {
   def apply(read: Read, schemaRead: SchemaRead) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))

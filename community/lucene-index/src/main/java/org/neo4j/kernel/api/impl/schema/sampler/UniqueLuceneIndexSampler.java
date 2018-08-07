@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.helpers.TaskControl;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 

@@ -25,7 +25,7 @@ import java.time.{LocalDate, LocalDateTime}
 
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{ConstraintViolationException, Label}
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
+import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException
 
 import scala.collection.JavaConverters._
 

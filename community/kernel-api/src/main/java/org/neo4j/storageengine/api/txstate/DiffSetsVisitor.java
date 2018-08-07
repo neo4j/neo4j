@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 /**
  * Visits added and removed elements of a {@link ReadableDiffSets}.

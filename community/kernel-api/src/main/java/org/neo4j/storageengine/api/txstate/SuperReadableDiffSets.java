@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 /**
  * Super class of diff sets where use of {@link LongIterator} can be parameterized
