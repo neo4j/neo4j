@@ -49,6 +49,7 @@ import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
+import org.neo4j.storageengine.api.txstate.GraphState;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
@@ -89,7 +90,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private MutableLongObjectMap<String> createdPropertyKeyTokens;
     private MutableLongObjectMap<String> createdRelationshipTypeTokens;
 
-    private GraphState graphState;
+    private GraphStateImpl graphState;
     private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
@@ -613,11 +614,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId, collectionsFactory ) );
     }
 
-    private GraphState getOrCreateGraphState()
+    private GraphStateImpl getOrCreateGraphState()
     {
         if ( graphState == null )
         {
-            graphState = new GraphState( collectionsFactory );
+            graphState = new GraphStateImpl( collectionsFactory );
         }
         return graphState;
     }
