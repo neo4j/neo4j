@@ -29,8 +29,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.RelationshipDirection;
 
 import static java.lang.Math.toIntExact;
 
@@ -79,7 +78,7 @@ public class RelationshipChangesForNode
         this.diffStrategy = diffStrategy;
     }
 
-    public void addRelationship( long relId, int typeId, Direction direction )
+    public void addRelationship( long relId, int typeId, RelationshipDirection direction )
     {
         final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
         final MutableLongSet rels = relTypeToRelsMap.getIfAbsentPut( typeId, LongHashSet::new );
@@ -87,7 +86,7 @@ public class RelationshipChangesForNode
         rels.add( relId );
     }
 
-    public boolean removeRelationship( long relId, int typeId, Direction direction )
+    public boolean removeRelationship( long relId, int typeId, RelationshipDirection direction )
     {
         final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
         final MutableLongSet rels = relTypeToRelsMap.get( typeId );
@@ -175,7 +174,7 @@ public class RelationshipChangesForNode
         return loops;
     }
 
-    private MutableIntObjectMap<MutableLongSet> getTypeToRelMapForDirection( Direction direction )
+    private MutableIntObjectMap<MutableLongSet> getTypeToRelMapForDirection( RelationshipDirection direction )
     {
         final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap;
         switch ( direction )
@@ -186,7 +185,7 @@ public class RelationshipChangesForNode
             case OUTGOING:
                 relTypeToRelsMap = outgoing();
                 break;
-            case BOTH:
+            case LOOP:
                 relTypeToRelsMap = loops();
                 break;
             default:

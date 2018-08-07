@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
-import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
@@ -291,12 +291,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( startNodeId == endNodeId )
         {
-            getOrCreateNodeState( startNodeId ).addRelationship( id, relationshipTypeId, Direction.BOTH );
+            getOrCreateNodeState( startNodeId ).addRelationship( id, relationshipTypeId, RelationshipDirection.LOOP );
         }
         else
         {
-            getOrCreateNodeState( startNodeId ).addRelationship( id, relationshipTypeId, Direction.OUTGOING );
-            getOrCreateNodeState( endNodeId ).addRelationship( id, relationshipTypeId, Direction.INCOMING );
+            getOrCreateNodeState( startNodeId ).addRelationship( id, relationshipTypeId, RelationshipDirection.OUTGOING );
+            getOrCreateNodeState( endNodeId ).addRelationship( id, relationshipTypeId, RelationshipDirection.INCOMING );
         }
 
         getOrCreateRelationshipState( id ).setMetaData( startNodeId, endNodeId, relationshipTypeId );
@@ -317,12 +317,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( startNodeId == endNodeId )
         {
-            getOrCreateNodeState( startNodeId ).removeRelationship( id, type, Direction.BOTH );
+            getOrCreateNodeState( startNodeId ).removeRelationship( id, type, RelationshipDirection.LOOP );
         }
         else
         {
-            getOrCreateNodeState( startNodeId ).removeRelationship( id, type, Direction.OUTGOING );
-            getOrCreateNodeState( endNodeId ).removeRelationship( id, type, Direction.INCOMING );
+            getOrCreateNodeState( startNodeId ).removeRelationship( id, type, RelationshipDirection.OUTGOING );
+            getOrCreateNodeState( endNodeId ).removeRelationship( id, type, RelationshipDirection.INCOMING );
         }
 
         if ( relationshipStatesMap != null )

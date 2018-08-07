@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.kernel.impl.newapi.RelationshipDirection;
+import org.neo4j.storageengine.api.RelationshipDirection;
 
 /**
  * Represents the transactional changes to a node:

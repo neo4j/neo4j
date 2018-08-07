@@ -30,11 +30,10 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
-import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
-import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -138,7 +137,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         return labelDiffSets;
     }
 
-    public void addRelationship( long relId, int typeId, Direction direction )
+    public void addRelationship( long relId, int typeId, RelationshipDirection direction )
     {
         if ( !hasAddedRelationships() )
         {
@@ -147,7 +146,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         relationshipsAdded.addRelationship( relId, typeId, direction );
     }
 
-    public void removeRelationship( long relId, int typeId, Direction direction )
+    public void removeRelationship( long relId, int typeId, RelationshipDirection direction )
     {
         if ( hasAddedRelationships() )
         {

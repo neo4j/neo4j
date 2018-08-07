@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.storageengine.api;
 
 /**
  * Low level representation of relationship direction, used to keep traversal state and query tx-state
