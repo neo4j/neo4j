@@ -22,17 +22,17 @@
  */
 package org.neo4j.causalclustering.identity;
 
-import static java.lang.String.format;
-
 import java.util.Objects;
+
+import static java.lang.String.format;
 
 public final class StoreId
 {
     public static final StoreId DEFAULT = new StoreId(
-            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getCreationTime(),
-            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getRandomId(),
-            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getUpgradeTime(),
-            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getUpgradeId() );
+            org.neo4j.storageengine.api.StoreId.DEFAULT.getCreationTime(),
+            org.neo4j.storageengine.api.StoreId.DEFAULT.getRandomId(),
+            org.neo4j.storageengine.api.StoreId.DEFAULT.getUpgradeTime(),
+            org.neo4j.storageengine.api.StoreId.DEFAULT.getUpgradeId() );
 
     public static boolean isDefault( StoreId storeId )
     {
@@ -75,7 +75,7 @@ public final class StoreId
         return upgradeId;
     }
 
-    public boolean equalToKernelStoreId( org.neo4j.kernel.impl.store.StoreId kernelStoreId )
+    public boolean equalToKernelStoreId( org.neo4j.storageengine.api.StoreId kernelStoreId )
     {
         return creationTime == kernelStoreId.getCreationTime() &&
                randomId == kernelStoreId.getRandomId() &&

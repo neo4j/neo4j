@@ -22,6 +22,8 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast;
 
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,11 +31,9 @@ import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.net.URI;
 
-import org.junit.Test;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

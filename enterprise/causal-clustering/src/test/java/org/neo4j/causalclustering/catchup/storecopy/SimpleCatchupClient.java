@@ -98,7 +98,7 @@ class SimpleCatchupClient implements AutoCloseable
 
     private StoreId getStoreIdFromKernelStoreId( GraphDatabaseAPI graphDb )
     {
-        org.neo4j.kernel.impl.store.StoreId storeId = graphDb.storeId();
+        org.neo4j.storageengine.api.StoreId storeId = graphDb.storeId();
         return new StoreId( storeId.getCreationTime(), storeId.getRandomId(), storeId.getUpgradeTime(), storeId.getUpgradeId() );
     }
 

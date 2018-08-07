@@ -29,7 +29,7 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 /**
  * This API can be used to get access to services.

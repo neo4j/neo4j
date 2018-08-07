@@ -25,7 +25,7 @@ package org.neo4j.cluster.member;
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 /**
  * A ClusterMemberListener is listening for events from elections and availability state.

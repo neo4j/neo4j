@@ -50,11 +50,11 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 

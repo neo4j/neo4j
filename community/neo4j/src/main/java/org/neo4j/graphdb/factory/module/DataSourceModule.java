@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 public class DataSourceModule
 {

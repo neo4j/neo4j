@@ -22,7 +22,7 @@
  */
 package org.neo4j.kernel.ha.store;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.String.format;
 

@@ -37,9 +37,9 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -71,9 +71,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.ResourceReleaser.NO_OP;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
-import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.logging.NullLog.getInstance;
+import static org.neo4j.storageengine.api.StoreId.DEFAULT;
 
 public class SlaveLocksClientTest
 {

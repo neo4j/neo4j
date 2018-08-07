@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.storageengine.api;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -28,7 +28,6 @@ import java.util.Random;
 
 public final class StoreId implements Externalizable
 {
-
     public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1, -1 );
 
     private static final Random r = new SecureRandom();

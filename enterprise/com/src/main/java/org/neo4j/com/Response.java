@@ -25,8 +25,8 @@ package org.neo4j.com;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.storageengine.api.StoreId;
 
 /**
  * In response to a {@link Client#sendRequest(RequestType, RequestContext, Serializer, Deserializer) request}

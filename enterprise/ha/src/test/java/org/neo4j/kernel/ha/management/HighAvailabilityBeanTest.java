@@ -71,7 +71,7 @@ import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
-import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
+import static org.neo4j.storageengine.api.StoreId.DEFAULT;
 
 public class HighAvailabilityBeanTest
 {

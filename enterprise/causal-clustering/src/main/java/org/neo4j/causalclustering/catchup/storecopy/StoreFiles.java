@@ -153,7 +153,7 @@ public class StoreFiles
     public StoreId readStoreId( File storeDir ) throws IOException
     {
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        org.neo4j.kernel.impl.store.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
+        org.neo4j.storageengine.api.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
         return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
                 kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
     }

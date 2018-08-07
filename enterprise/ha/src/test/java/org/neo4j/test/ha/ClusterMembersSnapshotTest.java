@@ -43,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
+import static org.neo4j.storageengine.api.StoreId.DEFAULT;
 
 public class ClusterMembersSnapshotTest
 {

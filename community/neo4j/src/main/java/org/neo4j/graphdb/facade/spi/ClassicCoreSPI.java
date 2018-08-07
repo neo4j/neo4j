@@ -39,9 +39,9 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.values.virtual.MapValue;
 
 /**

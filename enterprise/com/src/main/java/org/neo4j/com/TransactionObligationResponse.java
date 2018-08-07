@@ -25,7 +25,7 @@ package org.neo4j.com;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 /**
  * {@link Response} that carries transaction obligation as a side-effect.

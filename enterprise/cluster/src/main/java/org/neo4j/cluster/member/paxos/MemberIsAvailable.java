@@ -29,7 +29,7 @@ import java.io.ObjectOutput;
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 /**
  * This message is broadcast when a member of the cluster declares that

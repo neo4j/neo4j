@@ -22,9 +22,9 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.StoreId;
 
 public interface MasterClientFactory
 {

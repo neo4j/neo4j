@@ -37,10 +37,10 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StoreId;
 
 /**
  * Keeps list of members, their roles and availability.

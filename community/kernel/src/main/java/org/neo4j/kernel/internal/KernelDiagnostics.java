@@ -31,9 +31,9 @@ import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.StoreId;
 
 public abstract class KernelDiagnostics implements DiagnosticsProvider
 {

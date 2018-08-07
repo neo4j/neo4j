@@ -36,7 +36,6 @@ import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -44,6 +43,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StoreId;
 
 public class MasterClientResolver implements MasterClientFactory, ComExceptionHandler
 {
