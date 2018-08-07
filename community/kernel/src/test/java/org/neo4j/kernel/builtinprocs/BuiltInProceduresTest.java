@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -112,7 +114,7 @@ public class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property",
+                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property", 100D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
     }
 
@@ -129,7 +131,7 @@ public class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property",
+                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
     }
 
@@ -219,7 +221,7 @@ public class BuiltInProceduresTest
                         "List all constraints in the database.", "READ" ),
                 record( "db.indexes", "db.indexes() :: (description :: STRING?, indexName :: STRING?, " +
                                       "tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, " +
-                                      "state :: STRING?, type :: STRING?, provider :: MAP?)",
+                                      "state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?)",
                         "List all indexes in the database.", "READ" ),
                 record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
                 record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)",
@@ -364,7 +366,7 @@ public class BuiltInProceduresTest
             call( "db.labels" );
             fail( "Procedure call should have failed" );
         }
-        catch ( ProcedureException e )
+        catch ( Exception e )
         {
             assertThat( e.getCause(), is( runtimeException ) );
             // expected
@@ -387,7 +389,7 @@ public class BuiltInProceduresTest
             call( "db.propertyKeys" );
             fail( "Procedure call should have failed" );
         }
-        catch ( ProcedureException e )
+        catch ( Exception e )
         {
             assertThat( e.getCause(), is( runtimeException ) );
             // expected
@@ -410,7 +412,7 @@ public class BuiltInProceduresTest
             call( "db.relationshipTypes" );
             fail( "Procedure call should have failed" );
         }
-        catch ( ProcedureException e )
+        catch ( Exception e )
         {
             assertThat( e.getCause(), is( runtimeException ) );
             // expected
@@ -568,7 +570,7 @@ public class BuiltInProceduresTest
                               .iterator();
     }
 
-    private List<Object[]> call( String name, Object... args ) throws ProcedureException
+    private List<Object[]> call( String name, Object... args ) throws ProcedureException, IndexNotFoundKernelException
     {
         BasicContext ctx = new BasicContext();
         ctx.put( KERNEL_TRANSACTION, tx );
@@ -578,6 +580,7 @@ public class BuiltInProceduresTest
         ctx.put( LOG, log );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
+        when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
         return Iterators.asList( procs.callProcedure(
                 ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args, resourceTracker ) );
     }

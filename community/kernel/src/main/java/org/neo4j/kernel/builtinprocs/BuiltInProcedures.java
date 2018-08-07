@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
@@ -64,6 +65,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.procedure.Mode.READ;
@@ -143,8 +145,16 @@ public class BuiltInProcedures
                     String description = "INDEX ON " + schema.userDescription( tokens );
                     String state = schemaRead.indexGetState( index ).toString();
                     Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
-                    result.add( new IndexResult(
-                            description, index.name(), tokenNames, propertyNames, state, type, providerDescriptorMap ) );
+                    PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
+                    IndexPopulationProgress indexProgress = new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
+                    result.add( new IndexResult( description,
+                                                 index.name(),
+                                                 tokenNames,
+                                                 propertyNames,
+                                                 state,
+                                                 type,
+                                                 indexProgress.getCompletedPercentage(),
+                                                 providerDescriptorMap ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
@@ -848,10 +858,17 @@ public class BuiltInProcedures
         public final List<String> properties;
         public final String state;
         public final String type;
+        public final Double progress;
         public final Map<String,String> provider;
 
-        private IndexResult( String description, String indexName, List<String> tokenNames, List<String> properties, String state, String type,
-                Map<String,String> provider )
+        private IndexResult( String description,
+                             String indexName,
+                             List<String> tokenNames,
+                             List<String> properties,
+                             String state,
+                             String type,
+                             Float progress,
+                             Map<String,String> provider )
         {
             this.description = description;
             this.indexName = indexName;
@@ -859,6 +876,7 @@ public class BuiltInProcedures
             this.properties = properties;
             this.state = state;
             this.type = type;
+            this.progress = progress.doubleValue();
             this.provider = provider;
         }
     }
