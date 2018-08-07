@@ -23,6 +23,7 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -234,6 +235,11 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         }
     }
 
+    /**
+     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
+     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
+     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
+     */
     @Override
     public long outgoingReference()
     {
@@ -241,6 +247,11 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         return outgoing == NO_ID ? NO_ID : encodeRelationshipReference( outgoing );
     }
 
+    /**
+     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
+     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
+     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
+     */
     @Override
     public long incomingReference()
     {
@@ -248,6 +259,11 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         return incoming == NO_ID ? NO_ID : encodeRelationshipReference( incoming );
     }
 
+    /**
+     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
+     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
+     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
+     */
     @Override
     public long loopsReference()
     {

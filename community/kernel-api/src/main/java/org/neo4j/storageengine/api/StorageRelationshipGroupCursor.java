@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding;
-
 public interface StorageRelationshipGroupCursor extends AutoCloseable
 {
     boolean next();
@@ -39,28 +37,16 @@ public interface StorageRelationshipGroupCursor extends AutoCloseable
     int loopCount();
 
     /**
-     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
-     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
-     *
      * @return reference to a starting point for outgoing relationships with this type. Can be passed into {@link #init(long, long)} at a later point.
      */
     long outgoingReference();
 
     /**
-     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
-     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
-     *
      * @return reference to a starting point for outgoing relationships with this type. Can be passed into {@link #init(long, long)} at a later point.
      */
     long incomingReference();
 
     /**
-     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
-     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
-     *
      * @return reference to a starting point for outgoing relationships with this type. Can be passed into {@link #init(long, long)} at a later point.
      */
     long loopsReference();
