@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -59,9 +60,9 @@ import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
-import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
+import org.neo4j.kernel.info.SystemDiagnostics;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
@@ -208,6 +209,7 @@ public class PlatformModule
 
         diagnosticsManager = life.add( dependencies
                 .satisfyDependency( new DiagnosticsManager( logging.getInternalLog( DiagnosticsManager.class ) ) ) );
+        SystemDiagnostics.registerWith( diagnosticsManager );
 
         dependencies.satisfyDependency( dataSourceManager );
 

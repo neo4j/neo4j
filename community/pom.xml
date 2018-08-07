@@ -51,6 +51,7 @@
     <module>procedure-api</module>
     <module>unsafe</module>
     <module>io</module>
+    <module>diagnostics</module>
     <module>kernel-api</module>
     <module>csv</module>
     <module>logging</module>

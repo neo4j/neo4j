@@ -17,19 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.info;
+package org.neo4j.internal.diagnostics;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.internal.diagnostics.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.info.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLog;
 
+/**
+ * Collects and manages all {@link DiagnosticsProvider}.
+ */
 public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
 {
     private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<>();
@@ -75,7 +78,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
                 }
             }
         } );
-        SystemDiagnostics.registerWith( this );
     }
 
     @Override

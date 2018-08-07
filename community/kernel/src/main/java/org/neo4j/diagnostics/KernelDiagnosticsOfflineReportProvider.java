@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.logging.BufferingLog;
 

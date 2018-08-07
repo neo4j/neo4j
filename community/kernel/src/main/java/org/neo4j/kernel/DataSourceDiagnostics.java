@@ -21,10 +21,10 @@ package org.neo4j.kernel;
 
 import java.io.IOException;
 
+import org.neo4j.internal.diagnostics.DiagnosticsExtractor;
+import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.info.DiagnosticsExtractor;
-import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.logging.Logger;
 
 enum DataSourceDiagnostics implements DiagnosticsExtractor<NeoStoreDataSource>

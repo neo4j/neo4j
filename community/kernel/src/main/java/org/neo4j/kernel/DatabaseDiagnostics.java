@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.internal.diagnostics.DiagnosticsExtractor;
+import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.info.DiagnosticsExtractor;
-import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.logging.Logger;
 
 public enum NeoStoresDiagnostics implements DiagnosticsExtractor<NeoStores>
