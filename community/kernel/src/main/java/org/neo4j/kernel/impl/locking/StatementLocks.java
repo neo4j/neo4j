@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.storageengine.api.lock.LockTracer;
 
 /**
  * Component used by {@link KernelStatement} to acquire {@link #pessimistic() pessimistic} and

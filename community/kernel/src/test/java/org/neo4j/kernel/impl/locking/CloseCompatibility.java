@@ -23,6 +23,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.storageengine.api.lock.LockTracer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

@@ -36,9 +36,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.resources.HeapAllocation;
+import org.neo4j.storageengine.api.lock.LockWaitEvent;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
@@ -52,8 +52,8 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ExecutingQueryTest
 {

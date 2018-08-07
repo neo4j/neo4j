@@ -24,6 +24,8 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.storageengine.api.lock.LockTracer;
+
 /**
  * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
  * locks using {@link DeferringLockClient}.

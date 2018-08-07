@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.lock.LockTracer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

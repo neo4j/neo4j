@@ -24,8 +24,8 @@ package org.neo4j.kernel.ha.lock;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.storageengine.api.lock.LockTracer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

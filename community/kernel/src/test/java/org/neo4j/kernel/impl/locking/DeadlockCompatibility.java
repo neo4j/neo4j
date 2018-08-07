@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.storageengine.api.lock.LockTracer;
 
 import static org.neo4j.kernel.impl.locking.Locks.Client;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;

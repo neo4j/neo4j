@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -31,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
 import org.neo4j.kernel.impl.util.DirectionWrapper;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipCreator.relCount;

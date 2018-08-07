@@ -27,8 +27,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.util.VisibleForTesting;
 
 public class LockManagerImpl

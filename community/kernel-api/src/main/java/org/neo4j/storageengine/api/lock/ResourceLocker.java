@@ -21,8 +21,6 @@ package org.neo4j.storageengine.api.lock;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.locking.LockTracer;
-
 public interface ResourceLocker
 {
     /**

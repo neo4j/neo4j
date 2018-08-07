@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WaitDetails;

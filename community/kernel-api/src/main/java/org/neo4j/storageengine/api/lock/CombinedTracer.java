@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.storageengine.api.lock;
 
 import java.util.Arrays;
-
-import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * A {@link LockTracer} that combines multiple {@linkplain LockTracer tracers} into one, invoking each of them for

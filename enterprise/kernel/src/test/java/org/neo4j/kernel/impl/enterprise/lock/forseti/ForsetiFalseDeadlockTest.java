@@ -39,10 +39,10 @@ import java.util.stream.Stream;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.util.concurrent.BinaryLatch;

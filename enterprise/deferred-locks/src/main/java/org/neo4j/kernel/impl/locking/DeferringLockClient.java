@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class DeferringLockClient implements Locks.Client

@@ -24,6 +24,7 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.Test;
 
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.hamcrest.Matchers.instanceOf;

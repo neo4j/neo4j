@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
-
-import org.neo4j.storageengine.api.lock.ResourceType;
+package org.neo4j.storageengine.api.lock;
 
 public interface LockTracer
 {

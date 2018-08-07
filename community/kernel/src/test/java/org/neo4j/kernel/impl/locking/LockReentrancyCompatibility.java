@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.junit.Assert.assertEquals;

@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;

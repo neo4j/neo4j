@@ -44,8 +44,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.set;
-import static org.neo4j.kernel.impl.locking.LockTracer.NONE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.storageengine.api.lock.LockTracer.NONE;
 
 public class TwoPhaseNodeForRelationshipLockingTest
 {

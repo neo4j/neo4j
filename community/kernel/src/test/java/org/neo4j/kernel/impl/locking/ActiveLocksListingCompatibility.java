@@ -25,6 +25,8 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
+import org.neo4j.storageengine.api.lock.LockTracer;
+
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;

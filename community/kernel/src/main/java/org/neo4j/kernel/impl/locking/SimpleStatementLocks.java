@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.storageengine.api.lock.LockTracer;
+
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
  * {@link #optimistic() optimistic} and {@link #pessimistic() pessimistic} locks.
