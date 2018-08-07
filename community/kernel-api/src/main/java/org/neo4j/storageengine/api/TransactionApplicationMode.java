@@ -19,10 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.transaction.command.Command.Version;
-
-import static org.neo4j.kernel.impl.transaction.command.Command.Version.AFTER;
-import static org.neo4j.kernel.impl.transaction.command.Command.Version.BEFORE;
+import static org.neo4j.storageengine.api.CommandVersion.AFTER;
+import static org.neo4j.storageengine.api.CommandVersion.BEFORE;
 
 /**
  * Mode of {@link StorageEngine#apply(CommandsToApply, TransactionApplicationMode) applying transactions}.
@@ -88,10 +86,10 @@ public enum TransactionApplicationMode
     private final boolean needsCacheInvalidation;
     private final boolean needsIdempotencyChecks;
     private final boolean indexesAndCounts;
-    private final Version version;
+    private final CommandVersion version;
 
     TransactionApplicationMode( boolean needsHighIdTracking, boolean needsCacheInvalidation,
-            boolean ensureIdempotency, boolean indexesAndCounts, Version version )
+            boolean ensureIdempotency, boolean indexesAndCounts, CommandVersion version )
     {
         this.needsHighIdTracking = needsHighIdTracking;
         this.needsCacheInvalidation = needsCacheInvalidation;
@@ -135,7 +133,7 @@ public enum TransactionApplicationMode
     /**
      * @return which version of commands to apply, where some commands have before/after versions.
      */
-    public Version version()
+    public CommandVersion version()
     {
         return version;
     }

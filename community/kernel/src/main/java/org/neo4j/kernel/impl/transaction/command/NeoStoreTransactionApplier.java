@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -32,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.BaseCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.Version;
+import org.neo4j.storageengine.api.CommandVersion;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
@@ -44,14 +42,14 @@ import org.neo4j.kernel.impl.transaction.command.Command.Version;
  */
 public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
 {
-    private final Version version;
+    private final CommandVersion version;
     private final LockGroup lockGroup;
     private final long transactionId;
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
 
-    public NeoStoreTransactionApplier( Version version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
+    public NeoStoreTransactionApplier( CommandVersion version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
             long transactionId, LockGroup lockGroup )
     {
         this.version = version;
@@ -181,12 +179,25 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command )
     {
-        neoStores.getMetaDataStore().setGraphNextProp( version.select( command ).getNextProp() );
+        neoStores.getMetaDataStore().setGraphNextProp( selectRecordByCommandVersion( command ).getNextProp() );
         return false;
     }
 
     private <RECORD extends AbstractBaseRecord> void updateStore( RecordStore<RECORD> store, BaseCommand<RECORD> command )
     {
-        store.updateRecord( version.select( command ) );
+        store.updateRecord( selectRecordByCommandVersion( command ) );
+    }
+
+    private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion( BaseCommand<RECORD> command )
+    {
+        switch ( version )
+        {
+        case BEFORE:
+            return command.getBefore();
+        case AFTER:
+            return command.getAfter();
+        default:
+            throw new IllegalArgumentException( "Unexpected command version " + version );
+        }
     }
 }
