@@ -52,7 +52,7 @@ public class EnterpriseSecurityContext extends SecurityContext
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
+    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
     {
         return this;
     }

@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -103,7 +104,7 @@ public class KernelTransactionFactory
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
         transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit,
-                loginContext.authorize( s -> -1 ), 0L, 1L );
+                loginContext.authorize( s -> -1, DatabaseManager.DEFAULT_DATABASE_NAME ), 0L, 1L );
 
         return new Instances( transaction );
     }

@@ -108,7 +108,7 @@ public class BasicLoginContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
+    public SecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
     {
         return new SecurityContext( authSubject, accessMode );
     }

@@ -33,7 +33,7 @@ public interface EnterpriseLoginContext extends LoginContext
 {
     Set<String> roles();
 
-    EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup );
+    EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName );
 
     EnterpriseLoginContext AUTH_DISABLED = new EnterpriseLoginContext()
     {
@@ -50,7 +50,7 @@ public interface EnterpriseLoginContext extends LoginContext
         }
 
         @Override
-        public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
+        public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
         {
             return EnterpriseSecurityContext.AUTH_DISABLED;
         }

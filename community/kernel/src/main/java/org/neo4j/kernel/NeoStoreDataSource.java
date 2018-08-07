@@ -587,7 +587,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                databaseSchemaState, indexingService, tokenHolders, dataSourceDependencies ) );
+                databaseSchemaState, indexingService, tokenHolders, this, dataSourceDependencies ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 

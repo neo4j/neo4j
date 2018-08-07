@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
- * By calling {@link #authorize(Function<String,Integer>)} the user is also authorized, and a full SecurityContext is returned,
+ * By calling {@link #authorize(Function, String)} the user is also authorized, and a full SecurityContext is returned,
  * which can be used to assert user permissions during query execution.
  */
 public interface LoginContext
@@ -39,7 +39,7 @@ public interface LoginContext
      * @param propertyIdLookup token lookup, used to compile property level security verification
      * @return the security context
      */
-    SecurityContext authorize( Function<String, Integer> propertyIdLookup );
+    SecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName );
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
@@ -50,7 +50,7 @@ public interface LoginContext
         }
 
         @Override
-        public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
+        public SecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
         {
             return SecurityContext.AUTH_DISABLED;
         }

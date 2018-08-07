@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -433,7 +434,7 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         LoginContext loginContext = mock( LoginContext.class );
-        when( loginContext.authorize( any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
+        when( loginContext.authorize( any(), any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
 
         assertException(() -> kernelTransactions.newInstance(KernelTransaction.Type.explicit, loginContext, 0L),
                 AuthorizationExpiredException.class, "Freeze failed.");
@@ -614,7 +615,7 @@ public class KernelTransactionsTest
                 AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mock( IndexingProvidersService.class), mockedTokenHolders(), new Dependencies() );
+                mock( IndexingProvidersService.class), mockedTokenHolders(), mock( NeoStoreDataSource.class ), new Dependencies() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -683,7 +684,7 @@ public class KernelTransactionsTest
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     accessCapability, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
                     ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mock( IndexingProvidersService.class ), tokenHolders, dataSourceDependencies );
+                    mock( IndexingProvidersService.class ), tokenHolders, mock( NeoStoreDataSource.class ), dataSourceDependencies );
         }
 
         @Override

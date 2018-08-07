@@ -84,7 +84,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
+    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
     {
         StandardAccessMode mode = mode( propertyIdLookup );
         return new EnterpriseSecurityContext( neoShiroSubject, mode, mode.roles, isAdmin() );

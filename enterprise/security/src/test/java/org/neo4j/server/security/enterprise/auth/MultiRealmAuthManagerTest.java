@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -564,12 +565,14 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         setMockAuthenticationStrategyResult( "neo4j", "neo4j", AuthenticationResult.SUCCESS );
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) ).authorize( token );
+        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) )
+                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
         userManager.setUserPassword( "neo4j", "1234", false );
         securityContext.subject().logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
-        securityContext = manager.login( authToken( "neo4j", "1234" ) ).authorize( token );
+        securityContext = manager.login( authToken( "neo4j", "1234" ) )
+                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -585,7 +588,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) ).authorize( token );
+        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) )
+                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -601,7 +605,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) ).authorize( token );
+        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) )
+                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -617,7 +622,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) ).authorize( token );
+        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) )
+                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
 
         // Then
         assertTrue( "should allow reads", securityContext.mode().allowsReads() );
@@ -633,7 +639,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) ).authorize( token );
+        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) )
+                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -649,7 +656,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) ).authorize( token );
+        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) )
+                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
 
         // Then
         assertFalse( securityContext.mode().allowsReads() );
@@ -666,14 +674,14 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
 
         // When
         LoginContext loginContext = manager.login( authToken( "morpheus", "abc123" ) );
-        SecurityContext securityContext = loginContext.authorize( token );
+        SecurityContext securityContext = loginContext.authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
         assertTrue( securityContext.mode().allowsReads() );
         assertTrue( securityContext.mode().allowsWrites() );
         assertTrue( securityContext.mode().allowsSchemaWrites() );
 
         loginContext.subject().logout();
 
-        securityContext = loginContext.authorize( token );
+        securityContext = loginContext.authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
         // Then
         assertFalse( securityContext.mode().allowsReads() );
         assertFalse( securityContext.mode().allowsWrites() );

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -117,7 +118,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         return new EnterpriseLoginContext()
         {
             @Override
-            public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
+            public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
             {
                 return new EnterpriseSecurityContext( subject(), inner.mode(), Collections.emptySet(), false );
             }
@@ -128,7 +129,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
                 return Collections.emptySet();
             }
 
-            SecurityContext inner = AnonymousContext.none().authorize( s -> -1 );
+            SecurityContext inner = AnonymousContext.none().authorize( s -> -1, DatabaseManager.DEFAULT_DATABASE_NAME );
 
             @Override
             public AuthSubject subject()
