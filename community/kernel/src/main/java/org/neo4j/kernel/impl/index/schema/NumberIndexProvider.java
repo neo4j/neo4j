@@ -28,6 +28,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -43,7 +44,7 @@ import org.neo4j.values.storable.ValueCategory;
 public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,NativeIndexValue>
 {
     public static final String KEY = "native";
-    public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    public static final IndexProviderDescriptor NATIVE_PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
     static final IndexCapability CAPABILITY = new NumberIndexCapability();
 
     public NumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs,

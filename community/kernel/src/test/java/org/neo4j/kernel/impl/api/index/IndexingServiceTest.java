@@ -52,6 +52,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -460,7 +461,7 @@ public class IndexingServiceTest
     {
         // GIVEN an indexing service that has a schema index provider X
         String otherProviderKey = "something-completely-different";
-        IndexProvider.Descriptor otherDescriptor = new IndexProvider.Descriptor(
+        IndexProviderDescriptor otherDescriptor = new IndexProviderDescriptor(
                 otherProviderKey, "no-version" );
         StoreIndexDescriptor rule = storeIndex( 1, 2, 3, otherDescriptor );
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
@@ -1407,19 +1408,19 @@ public class IndexingServiceTest
         }
     }
 
-    private StoreIndexDescriptor storeIndex( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
+    private StoreIndexDescriptor storeIndex( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor
             providerDescriptor )
     {
         return forSchema( forLabel( labelId, propertyKeyId ), providerDescriptor ).withId( ruleId );
     }
 
-    private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
+    private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor
             providerDescriptor )
     {
         return uniqueForSchema( forLabel( labelId, propertyKeyId ), providerDescriptor ).withId( ruleId );
     }
 
-    private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
+    private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor
             providerDescriptor, long constraintId )
     {
         return uniqueForSchema( forLabel( labelId, propertyKeyId ), providerDescriptor ).withIds( ruleId, constraintId );

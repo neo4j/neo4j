@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -52,7 +53,6 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -118,7 +118,7 @@ public class BuiltInProceduresTest
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
     }
 
-    private Map<String,String> getIndexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
+    private Map<String,String> getIndexProviderDescriptorMap( IndexProviderDescriptor providerDescriptor )
     {
         return MapUtil.stringMap( "key", providerDescriptor.getKey(), "version", providerDescriptor.getVersion() );
     }

@@ -61,6 +61,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -68,7 +69,6 @@ import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -153,7 +153,7 @@ import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
-    private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "lucene", "1.0" );
+    private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "lucene", "1.0" );
     private static final String PROP1 = "key1";
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";

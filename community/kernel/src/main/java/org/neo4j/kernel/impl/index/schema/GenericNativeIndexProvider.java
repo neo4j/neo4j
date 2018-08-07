@@ -28,12 +28,12 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueCategory;
@@ -93,7 +93,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
 {
     public static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
     public static final String KEY = SCHEMA_INDEX.providerName();
-    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, SCHEMA_INDEX.providerVersion() );
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, SCHEMA_INDEX.providerVersion() );
 
     // TODO implement
     public static final IndexCapability CAPABILITY = new IndexCapability()

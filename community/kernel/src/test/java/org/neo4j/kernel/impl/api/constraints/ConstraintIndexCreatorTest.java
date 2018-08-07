@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -304,7 +304,7 @@ public class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
         NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
-        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "Groovy", "1.2" );
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "Groovy", "1.2" );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();

@@ -24,6 +24,7 @@ import java.io.File;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -46,7 +47,7 @@ public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory<Luc
 {
     private static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.LUCENE10;
     private static final String KEY = SCHEMA_INDEX.providerName();
-    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( KEY, SCHEMA_INDEX.providerVersion() );
+    public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, SCHEMA_INDEX.providerVersion() );
 
     public LuceneIndexProviderFactory()
     {

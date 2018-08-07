@@ -51,6 +51,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -101,7 +102,7 @@ public class SchemaIndexHaIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule();
 
-    private static final IndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( "controlled", "1.0" );
+    private static final IndexProviderDescriptor CONTROLLED_PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( "controlled", "1.0" );
     private static final Predicate<GraphDatabaseService> IS_MASTER =
             item -> item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
 

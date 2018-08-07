@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -42,7 +43,7 @@ public class TemporalIndexProvider extends IndexProvider
 {
     public static final String KEY = "temporal";
     static final IndexCapability CAPABILITY = new TemporalIndexCapability();
-    private static final Descriptor TEMPORAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    private static final IndexProviderDescriptor TEMPORAL_PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;

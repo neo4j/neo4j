@@ -25,10 +25,10 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
@@ -46,7 +46,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     protected final SchemaDescriptor schema;
     protected final IndexDescriptor.Type type;
     protected final Optional<String> userSuppliedName;
-    protected final IndexProvider.Descriptor providerDescriptor;
+    protected final IndexProviderDescriptor providerDescriptor;
 
     IndexDescriptor( IndexDescriptor indexDescriptor )
     {
@@ -59,7 +59,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     public IndexDescriptor( SchemaDescriptor schema,
                             Type type,
                             Optional<String> userSuppliedName,
-                            IndexProvider.Descriptor providerDescriptor )
+                            IndexProviderDescriptor providerDescriptor )
     {
         this.schema = schema;
         this.type = type;
@@ -110,7 +110,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return userSuppliedName.orElse( "Unnamed index" );
     }
 
-    public IndexProvider.Descriptor providerDescriptor()
+    public IndexProviderDescriptor providerDescriptor()
     {
         return providerDescriptor;
     }

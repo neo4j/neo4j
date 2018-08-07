@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -55,7 +56,7 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema
 
 public abstract class IndexPopulationStressTest
 {
-    private static final IndexProvider.Descriptor PROVIDER = new IndexProvider.Descriptor( "provider", "1.0" );
+    private static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( "provider", "1.0" );
     @Rule
     public PageCacheAndDependenciesRule rules =
             new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, this.getClass() );

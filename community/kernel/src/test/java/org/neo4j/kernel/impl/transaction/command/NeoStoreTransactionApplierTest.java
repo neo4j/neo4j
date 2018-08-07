@@ -27,10 +27,10 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -561,7 +561,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
+        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
@@ -583,7 +583,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
+        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
@@ -605,7 +605,7 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ), 42L );
+        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
@@ -626,7 +626,7 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ), 42L );
+        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
@@ -652,7 +652,7 @@ public class NeoStoreTransactionApplierTest
 
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ), 42L );
+        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
@@ -678,7 +678,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
+        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
@@ -700,7 +700,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
+        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
@@ -912,12 +912,12 @@ public class NeoStoreTransactionApplierTest
 
     // SCHEMA RULE COMMAND
 
-    public static StoreIndexDescriptor indexRule( long id, int label, int propertyKeyId, IndexProvider.Descriptor providerDescriptor )
+    public static StoreIndexDescriptor indexRule( long id, int label, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
     {
         return IndexDescriptorFactory.forSchema( forLabel( label, propertyKeyId ), providerDescriptor ).withId( id );
     }
 
-    private static StoreIndexDescriptor constraintIndexRule( long id, int label, int propertyKeyId, IndexProvider.Descriptor providerDescriptor,
+    private static StoreIndexDescriptor constraintIndexRule( long id, int label, int propertyKeyId, IndexProviderDescriptor providerDescriptor,
             Long owningConstraint )
     {
         return IndexDescriptorFactory.uniqueForSchema( forLabel( label, propertyKeyId ), providerDescriptor ).withIds( id, owningConstraint );

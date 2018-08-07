@@ -31,6 +31,7 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -69,7 +70,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 @RunWith( Parameterized.class )
 public class FusionIndexProviderTest
 {
-    private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "test-fusion", "1" );
+    private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "test-fusion", "1" );
     public static final StoreIndexDescriptor AN_INDEX =
             IndexDescriptorFactory.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withId( 0 );
 
@@ -153,7 +154,7 @@ public class FusionIndexProviderTest
     private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )
     {
         IndexProvider mock = mock( providerClass );
-        when( mock.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( name, "1" ) );
+        when( mock.getProviderDescriptor() ).thenReturn( new IndexProviderDescriptor( name, "1" ) );
         return mock;
     }
 

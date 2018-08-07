@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.schema.index;
 
 import java.util.Optional;
 
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 
@@ -39,14 +40,14 @@ public class IndexDescriptorFactory
     }
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema,
-                                             IndexProvider.Descriptor providerDescriptor )
+                                             IndexProviderDescriptor providerDescriptor )
     {
         return forSchema( schema, Optional.empty(), providerDescriptor );
     }
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema,
                                              Optional<String> name,
-                                             IndexProvider.Descriptor providerDescriptor )
+                                             IndexProviderDescriptor providerDescriptor )
     {
         return new IndexDescriptor( schema, GENERAL, name, providerDescriptor );
     }
@@ -57,14 +58,14 @@ public class IndexDescriptorFactory
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,
-                                                   IndexProvider.Descriptor providerDescriptor )
+                                                   IndexProviderDescriptor providerDescriptor )
     {
         return uniqueForSchema( schema,Optional.empty(), providerDescriptor );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,
                                                    Optional<String> name,
-                                                   IndexProvider.Descriptor providerDescriptor )
+                                                   IndexProviderDescriptor providerDescriptor )
     {
         return new IndexDescriptor( schema, UNIQUE, name, providerDescriptor );
     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -28,7 +29,6 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 
 public class DefaultIndexProviderMapTest
 {
@@ -36,7 +36,7 @@ public class DefaultIndexProviderMapTest
     public void shouldNotSupportMultipleProvidersWithSameDescriptor()
     {
         // given
-        Descriptor descriptor = new Descriptor( "provider", "1.2" );
+        IndexProviderDescriptor descriptor = new IndexProviderDescriptor( "provider", "1.2" );
         IndexProvider provider1 = mock( IndexProvider.class );
         when( provider1.getProviderDescriptor() ).thenReturn( descriptor );
         IndexProvider provider2 = mock( IndexProvider.class );
@@ -56,13 +56,13 @@ public class DefaultIndexProviderMapTest
     {
         // given
         IndexProvider provider = mock( IndexProvider.class );
-        when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( "provider", "1.2" ) );
+        when( provider.getProviderDescriptor() ).thenReturn( new IndexProviderDescriptor( "provider", "1.2" ) );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( provider );
 
         // when
         DefaultIndexProviderMap defaultIndexProviderMap = new DefaultIndexProviderMap( dependencies );
         defaultIndexProviderMap.init();
-        assertThrows( IndexProviderNotFoundException.class, () -> defaultIndexProviderMap.lookup( new Descriptor( "provider2", "1.2" ) ) );
+        assertThrows( IndexProviderNotFoundException.class, () -> defaultIndexProviderMap.lookup( new IndexProviderDescriptor( "provider2", "1.2" ) ) );
     }
 }

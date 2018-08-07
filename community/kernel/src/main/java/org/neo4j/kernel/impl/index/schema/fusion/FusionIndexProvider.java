@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -71,7 +72,7 @@ public class FusionIndexProvider extends IndexProvider
             IndexProvider temporalProvider,
             IndexProvider luceneProvider,
             SlotSelector slotSelector,
-            Descriptor descriptor,
+            IndexProviderDescriptor descriptor,
             int priority,
             IndexDirectoryStructure.Factory directoryStructure,
             FileSystemAbstraction fs,

@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 
@@ -43,7 +43,7 @@ abstract class NativeLuceneFusionIndexProviderFactory<DEPENDENCIES extends Abstr
         return FusionIndexProvider.class;
     }
 
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory, IndexProvider.Descriptor descriptor )
+    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory, IndexProviderDescriptor descriptor )
     {
         IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( databaseDirectory ).forProvider( descriptor );
         return directoriesBySubProvider( parentDirectoryStructure );

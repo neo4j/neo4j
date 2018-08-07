@@ -50,6 +50,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -475,7 +476,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private void createIndex( int labelId, int[] propertyKeyIds )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-        IndexProvider.Descriptor providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
+        IndexProviderDescriptor providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
         StoreIndexDescriptor schemaRule = IndexDescriptorFactory.forSchema( schema, Optional.empty(), providerDescriptor ).withId( schemaStore.nextId() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
@@ -574,7 +575,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         long indexId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
 
-        IndexProvider.Descriptor providerDescriptor = this.indexProviderMap.getDefaultProvider().getProviderDescriptor();
+        IndexProviderDescriptor providerDescriptor = this.indexProviderMap.getDefaultProvider().getProviderDescriptor();
         StoreIndexDescriptor storeIndexDescriptor = IndexDescriptorFactory.uniqueForSchema( schema, providerDescriptor ).withIds( indexId, constraintRuleId );
 
         ConstraintRule constraintRule = ConstraintRule.constraintRule( constraintRuleId, constraintDescriptor, indexId );

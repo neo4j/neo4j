@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -45,7 +46,7 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
 {
     public static final String KEY = "string";
     static final IndexCapability CAPABILITY = new StringIndexCapability();
-    private static final Descriptor STRING_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    private static final IndexProviderDescriptor STRING_PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
 
     public StringIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,

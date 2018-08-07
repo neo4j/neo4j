@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -45,8 +46,8 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     protected final OperationalMode operationalMode;
     protected final FileSystemAbstraction fileSystem;
 
-    protected AbstractLuceneIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory, Config config,
-            OperationalMode operationalMode, FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )
+    protected AbstractLuceneIndexProvider( IndexProviderDescriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory,
+            Config config, OperationalMode operationalMode, FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )
     {
         super( descriptor, priority, directoryStructureFactory );
         this.config = config;

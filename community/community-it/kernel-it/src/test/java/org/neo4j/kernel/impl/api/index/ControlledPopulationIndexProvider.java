@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -51,7 +52,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     final AtomicInteger populatorCallCount = new AtomicInteger();
     final AtomicInteger writerCallCount = new AtomicInteger();
 
-    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor(
+    public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor(
             "controlled-population", "1.0" );
 
     public ControlledPopulationIndexProvider()

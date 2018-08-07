@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -146,7 +147,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     }
 
     public static final IndexProvider EMPTY =
-            new IndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
+            new IndexProvider( new IndexProviderDescriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {
                 private final IndexAccessor singleWriter = IndexAccessor.EMPTY;
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
@@ -190,13 +191,13 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             };
 
     /**
-     * Indicate that {@link Descriptor} has not yet been decided.
+     * Indicate that {@link IndexProviderDescriptor} has not yet been decided.
      * Specifically before transaction that create a new index has committed.
      */
-    public static final Descriptor UNDECIDED = new Descriptor( "Undecided", "0" );
+    public static final IndexProviderDescriptor UNDECIDED = new IndexProviderDescriptor( "Undecided", "0" );
 
     protected final int priority;
-    private final Descriptor providerDescriptor;
+    private final IndexProviderDescriptor providerDescriptor;
     private final IndexDirectoryStructure.Factory directoryStructureFactory;
     private final IndexDirectoryStructure directoryStructure;
 
@@ -205,7 +206,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         this( copySource.providerDescriptor, copySource.priority, copySource.directoryStructureFactory );
     }
 
-    protected IndexProvider( Descriptor descriptor, int priority,
+    protected IndexProvider( IndexProviderDescriptor descriptor, int priority,
                              IndexDirectoryStructure.Factory directoryStructureFactory )
     {
         this.directoryStructureFactory = directoryStructureFactory;
@@ -251,7 +252,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     /**
      * @return a description of this index provider
      */
-    public Descriptor getProviderDescriptor()
+    public IndexProviderDescriptor getProviderDescriptor()
     {
         return providerDescriptor;
     }
@@ -298,70 +299,4 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     }
 
     public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
-
-    public static class Descriptor
-    {
-        private final String key;
-        private final String version;
-
-        public Descriptor( String key, String version )
-        {
-            if ( key == null )
-            {
-                throw new IllegalArgumentException( "null provider key prohibited" );
-            }
-            if ( key.length() == 0 )
-            {
-                throw new IllegalArgumentException( "empty provider key prohibited" );
-            }
-            if ( version == null )
-            {
-                throw new IllegalArgumentException( "null provider version prohibited" );
-            }
-
-            this.key = key;
-            this.version = version;
-        }
-
-        public String getKey()
-        {
-            return key;
-        }
-
-        public String getVersion()
-        {
-            return version;
-        }
-
-        /**
-         * @return a combination of {@link #getKey()} and {@link #getVersion()} with a '-' in between.
-         */
-        public String name()
-        {
-            return key + "-" + version;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return ( 23 + key.hashCode() ) ^ version.hashCode();
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( obj instanceof Descriptor )
-            {
-                Descriptor otherDescriptor = (Descriptor) obj;
-                return key.equals( otherDescriptor.getKey() ) && version.equals( otherDescriptor.getVersion() );
-            }
-            return false;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "{key=" + key + ", version=" + version + "}";
-        }
-    }
 }

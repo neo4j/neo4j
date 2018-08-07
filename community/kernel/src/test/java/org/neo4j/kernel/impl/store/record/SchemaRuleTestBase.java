@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Optional;
 
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -39,7 +39,7 @@ abstract class SchemaRuleTestBase
     protected static final int PROPERTY_ID_1 = 30;
     protected static final int PROPERTY_ID_2 = 31;
 
-    protected static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( "index-provider", "1.0" );
+    protected static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( "index-provider", "1.0" );
 
     protected void assertEquality( Object o1, Object o2 )
     {

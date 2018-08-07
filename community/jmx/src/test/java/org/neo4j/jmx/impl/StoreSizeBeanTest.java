@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -36,7 +37,6 @@ import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
@@ -126,7 +126,7 @@ class StoreSizeBeanTest
     private static IndexProvider mockedIndexProvider( String name )
     {
         IndexProvider provider = mock( IndexProvider.class );
-        when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( name, "1" ) );
+        when( provider.getProviderDescriptor() ).thenReturn( new IndexProviderDescriptor( name, "1" ) );
         return provider;
     }
 

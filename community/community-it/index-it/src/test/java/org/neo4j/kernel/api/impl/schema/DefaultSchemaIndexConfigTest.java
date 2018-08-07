@@ -29,9 +29,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -100,7 +100,7 @@ public class DefaultSchemaIndexConfigTest
         assertIndexProvider( db, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
     }
 
-    private void assertIndexProvider( GraphDatabaseService db, IndexProvider.Descriptor expected ) throws IndexNotFoundKernelException
+    private void assertIndexProvider( GraphDatabaseService db, IndexProviderDescriptor expected ) throws IndexNotFoundKernelException
     {
         GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) db;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -114,7 +114,7 @@ public class DefaultSchemaIndexConfigTest
             IndexReference index = ktx.schemaRead().index( labelId, propertyId );
 
             assertEquals( "expected IndexProvider.Descriptor", expected,
-                    new IndexProvider.Descriptor( index.providerKey(), index.providerVersion() ) );
+                    new IndexProviderDescriptor( index.providerKey(), index.providerVersion() ) );
             tx.success();
         }
     }

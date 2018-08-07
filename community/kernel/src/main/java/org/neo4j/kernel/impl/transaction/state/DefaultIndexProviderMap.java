@@ -25,8 +25,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
@@ -34,7 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexProviderMap
 {
-    private final Map<Descriptor,IndexProvider> indexProvidersByDescriptor = new HashMap<>();
+    private final Map<IndexProviderDescriptor,IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
     private final DependencyResolver dependencies;
     private IndexProvider defaultIndexProvider;
@@ -53,7 +53,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
         for ( IndexProvider provider : indexProviderSelection.lowerPrioritizedCandidates() )
         {
-            Descriptor providerDescriptor = provider.getProviderDescriptor();
+            IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
             Objects.requireNonNull( providerDescriptor );
             IndexProvider existing = put( providerDescriptor, provider );
             if ( existing != null )
@@ -64,7 +64,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         }
     }
 
-    private IndexProvider put( Descriptor providerDescriptor, IndexProvider provider )
+    private IndexProvider put( IndexProviderDescriptor providerDescriptor, IndexProvider provider )
     {
         IndexProvider existing = indexProvidersByDescriptor.putIfAbsent( providerDescriptor, provider );
         indexProvidersByName.putIfAbsent( providerDescriptor.name(), provider );
@@ -79,7 +79,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     }
 
     @Override
-    public IndexProvider lookup( Descriptor providerDescriptor )
+    public IndexProvider lookup( IndexProviderDescriptor providerDescriptor )
     {
         assertInit();
         IndexProvider provider = indexProvidersByDescriptor.get( providerDescriptor );

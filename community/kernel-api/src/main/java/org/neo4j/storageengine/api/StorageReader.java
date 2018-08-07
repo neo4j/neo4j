@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -202,7 +201,7 @@ public interface StorageReader extends AutoCloseable
      * Return index reference of a stored index.
      *
      * @param descriptor {@link IndexDescriptor} to get provider reference for.
-     * @return {@link IndexProvider.Descriptor} for index.
+     * @return {@link IndexReference} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
     IndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

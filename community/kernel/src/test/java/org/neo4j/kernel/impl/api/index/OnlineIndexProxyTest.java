@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -37,7 +37,7 @@ public class OnlineIndexProxyTest
 {
     private final long indexId = 1;
     private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 1, 2 );
-    private final IndexProvider.Descriptor providerDescriptor = mock( IndexProvider.Descriptor.class );
+    private final IndexProviderDescriptor providerDescriptor = mock( IndexProviderDescriptor.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
 

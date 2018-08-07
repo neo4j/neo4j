@@ -45,6 +45,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -208,7 +209,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             {
                 IndexProxy indexProxy;
 
-                IndexProvider.Descriptor providerDescriptor = indexDescriptor.providerDescriptor();
+                IndexProviderDescriptor providerDescriptor = indexDescriptor.providerDescriptor();
                 IndexProvider provider = providerMap.lookup( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexDescriptor );
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
@@ -467,7 +468,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     }
 
     @Override
-    public IndexProvider.Descriptor indexProviderForNameOrDefault( Optional<String> providerName )
+    public IndexProviderDescriptor indexProviderForNameOrDefault( Optional<String> providerName )
     {
         if ( providerName.isPresent() )
         {

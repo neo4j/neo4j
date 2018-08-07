@@ -31,8 +31,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
@@ -75,7 +75,7 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        IndexProvider.Descriptor descriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor descriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -90,7 +90,7 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        IndexProvider.Descriptor descriptor = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor descriptor = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -105,8 +105,8 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        IndexProvider.Descriptor luceneDescriptor = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
-        IndexProvider.Descriptor nativeDescriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor luceneDescriptor = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor nativeDescriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( luceneDescriptor );
         deleteIndexFilesFor( nativeDescriptor );
 
@@ -129,7 +129,7 @@ public class FusionIndexIT
         }
     }
 
-    private void deleteIndexFilesFor( IndexProvider.Descriptor descriptor )
+    private void deleteIndexFilesFor( IndexProviderDescriptor descriptor )
     {
         File databaseDirectory = this.databaseDirectory;
         File rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();

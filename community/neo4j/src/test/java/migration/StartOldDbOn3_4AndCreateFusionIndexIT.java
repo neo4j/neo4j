@@ -46,12 +46,12 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Settings;
@@ -259,7 +259,7 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private static void verifyExpectedProvider( GraphDatabaseAPI db, Label label, IndexProvider.Descriptor expectedDescriptor )
+    private static void verifyExpectedProvider( GraphDatabaseAPI db, Label label, IndexProviderDescriptor expectedDescriptor )
             throws TransactionFailureException
     {
         try ( Transaction tx = db.beginTx();
@@ -281,7 +281,7 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private static void assertIndexHasExpectedProvider( IndexProvider.Descriptor expectedDescriptor, IndexReference index )
+    private static void assertIndexHasExpectedProvider( IndexProviderDescriptor expectedDescriptor, IndexReference index )
     {
         assertEquals( expectedDescriptor.getKey(), index.providerKey(), "same key" );
         assertEquals( expectedDescriptor.getVersion(), index.providerVersion(), "same version" );

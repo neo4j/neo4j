@@ -27,6 +27,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -51,7 +52,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean readOnly;
 
-    protected NativeIndexProvider( Descriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs,
+    protected NativeIndexProvider( IndexProviderDescriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs,
             Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( descriptor, priority, directoryStructureFactory );

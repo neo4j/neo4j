@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 
-import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
@@ -32,16 +32,16 @@ import static org.neo4j.io.fs.FileUtils.path;
  * {@link #directoryForIndex(long)} method.
  *
  * These instances are created from a {@link Factory} which typically gets passed into a {@link IndexProvider} constructor,
- * which then creates a {@link IndexDirectoryStructure} given its {@link Descriptor}.
+ * which then creates a {@link IndexDirectoryStructure} given its {@link IndexProviderDescriptor}.
  */
 public abstract class IndexDirectoryStructure
 {
     /**
-     * Creates an {@link IndexDirectoryStructure} for a {@link Descriptor} for a {@link IndexProvider}.
+     * Creates an {@link IndexDirectoryStructure} for a {@link IndexProviderDescriptor} for a {@link IndexProvider}.
      */
     public interface Factory
     {
-        IndexDirectoryStructure forProvider( IndexProvider.Descriptor descriptor );
+        IndexDirectoryStructure forProvider( IndexProviderDescriptor descriptor );
     }
 
     private static class SubDirectoryByIndexId extends IndexDirectoryStructure
@@ -151,7 +151,7 @@ public abstract class IndexDirectoryStructure
         return name.replaceAll( "\\+", "_" );
     }
 
-    private static String fileNameFriendly( Descriptor descriptor )
+    private static String fileNameFriendly( IndexProviderDescriptor descriptor )
     {
         return fileNameFriendly( descriptor.getKey() + "-" + descriptor.getVersion() );
     }

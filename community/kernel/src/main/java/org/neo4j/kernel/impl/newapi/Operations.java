@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernel
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -71,7 +72,6 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
@@ -933,7 +933,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
 
-        IndexProvider.Descriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
+        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
         IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
         ktx.txState().indexDoAdd( index );
         return index;
@@ -942,7 +942,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
     public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
     {
-        IndexProvider.Descriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
+        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
         IndexDescriptor index =
                 IndexDescriptorFactory.uniqueForSchema( schema,
                                                   Optional.empty(),
