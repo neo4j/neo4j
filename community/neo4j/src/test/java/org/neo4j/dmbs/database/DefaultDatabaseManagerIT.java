@@ -19,6 +19,7 @@
  */
 package org.neo4j.dmbs.database;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,6 +52,12 @@ class DefaultDatabaseManagerIT
         database = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
     }
 
+    @AfterEach
+    void tearDown()
+    {
+        database.shutdown();
+    }
+
     @Test
     void createDatabase()
     {
@@ -63,6 +71,14 @@ class DefaultDatabaseManagerIT
         DatabaseManager databaseManager = getDatabaseManager();
         Optional<GraphDatabaseFacade> database = databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME );
         assertTrue( database.isPresent() );
+    }
+
+    @Test
+    void shutdownDatabaseOnStop() throws Throwable
+    {
+        DatabaseManager databaseManager = getDatabaseManager();
+        databaseManager.stop();
+        assertFalse( database.isAvailable( 0 ) );
     }
 
     private DatabaseManager getDatabaseManager()

@@ -75,17 +75,22 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     }
 
     @Override
-    public synchronized void shutdownDatabase( String name )
+    public synchronized void shutdownDatabase( String ignore )
     {
-        if ( database != null )
-        {
-            database.shutdown();
-        }
+        shutdownDatabase();
     }
 
     @Override
     public void stop()
     {
-        shutdownDatabase( DatabaseManager.DEFAULT_DATABASE_NAME );
+        shutdownDatabase();
+    }
+
+    private void shutdownDatabase()
+    {
+        if ( database != null )
+        {
+            database.shutdown();
+        }
     }
 }
