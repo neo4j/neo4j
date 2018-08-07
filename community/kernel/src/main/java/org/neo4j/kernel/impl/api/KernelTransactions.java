@@ -104,7 +104,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final ExplicitIndexStore explicitIndexStore;
     private final IndexingProvidersService indexProviders;
     private final TokenHolders tokenHolders;
-    private final NeoStoreDataSource neoStoreDataSource;
+    private final String currentDatabaseName;
     private final Dependencies dataSourceDependencies;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
@@ -146,7 +146,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, IndexingProvidersService indexProviders, TokenHolders tokenHolders,
-            NeoStoreDataSource neoStoreDataSource, Dependencies dataSourceDependencies )
+            String currentDatabaseName, Dependencies dataSourceDependencies )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -168,7 +168,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.explicitIndexStore = explicitIndexStore;
         this.indexProviders = indexProviders;
         this.tokenHolders = tokenHolders;
-        this.neoStoreDataSource = neoStoreDataSource;
+        this.currentDatabaseName = currentDatabaseName;
         this.dataSourceDependencies = dataSourceDependencies;
         this.explicitIndexTxStateSupplier = () ->
                 new CachingExplicitIndexTransactionState(
@@ -184,7 +184,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( tokenHolders.propertyKeyTokens()::getOrCreateId, neoStoreDataSource.getDatabaseName() );
+        SecurityContext securityContext = loginContext.authorize( tokenHolders.propertyKeyTokens()::getOrCreateId, currentDatabaseName );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )

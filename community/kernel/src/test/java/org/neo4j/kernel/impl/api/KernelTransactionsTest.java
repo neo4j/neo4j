@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -40,7 +41,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -615,7 +615,7 @@ public class KernelTransactionsTest
                 AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mock( IndexingProvidersService.class), mockedTokenHolders(), mock( NeoStoreDataSource.class ), new Dependencies() );
+                mock( IndexingProvidersService.class), mockedTokenHolders(), DatabaseManager.DEFAULT_DATABASE_NAME, new Dependencies() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -684,7 +684,7 @@ public class KernelTransactionsTest
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     accessCapability, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
                     ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mock( IndexingProvidersService.class ), tokenHolders, mock( NeoStoreDataSource.class ), dataSourceDependencies );
+                    mock( IndexingProvidersService.class ), tokenHolders, DatabaseManager.DEFAULT_DATABASE_NAME, dataSourceDependencies );
         }
 
         @Override
