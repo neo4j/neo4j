@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.configuration.Config
@@ -28,7 +29,6 @@ import org.neo4j.kernel.configuration.Config
   * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
   */
 object CypherConfiguration {
-
   def fromConfig(config: Config): CypherConfiguration = {
     CypherConfiguration(
       CypherVersion(config.get(GraphDatabaseSettings.cypher_parser_version)),
@@ -54,8 +54,8 @@ object CypherConfiguration {
   def statsDivergenceFromConfig(config: Config): StatsDivergenceCalculator = {
     val divergenceThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
     val targetThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_target).doubleValue()
-    val minReplanTime = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis().longValue()
-    val targetReplanTime = config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis().longValue()
+    val minReplanTime = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
+    val targetReplanTime = config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis.longValue()
     val divergenceAlgorithm = config.get(GraphDatabaseSettings.cypher_replan_algorithm)
     StatsDivergenceCalculator.divergenceCalculatorFor(divergenceAlgorithm,
                                                       divergenceThreshold,
@@ -63,8 +63,6 @@ object CypherConfiguration {
                                                       minReplanTime,
                                                       targetReplanTime)
   }
-
-
 }
 
 case class CypherConfiguration(version: CypherVersion,
@@ -83,4 +81,36 @@ case class CypherConfiguration(version: CypherVersion,
                                disableCompiledExpressions: Boolean,
                                workers: Int,
                                morselSize: Int,
-                               doSchedulerTracing: Boolean)
+                               doSchedulerTracing: Boolean) {
+  def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
+    CypherRuntimeConfiguration(
+      workers = workers,
+      morselSize = morselSize,
+      doSchedulerTracing = doSchedulerTracing
+    )
+
+  def toCypherPlannerConfiguration(config: Config): CypherPlannerConfiguration =
+    CypherPlannerConfiguration(
+      queryCacheSize = queryCacheSize,
+      statsDivergenceCalculator = getStatisticsDivergenceCalculator(config),
+      useErrorsOverWarnings = useErrorsOverWarnings,
+      idpMaxTableSize = idpMaxTableSize,
+      idpIterationDuration = idpIterationDuration,
+      errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
+      errorIfShortestPathHasCommonNodesAtRuntime = errorIfShortestPathHasCommonNodesAtRuntime,
+      legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
+      csvBufferSize = csvBufferSize,
+      nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
+      planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
+      disableCompiledExpressions = disableCompiledExpressions
+    )
+
+  private def getStatisticsDivergenceCalculator(config: Config): StatsDivergenceCalculator = {
+    val divergenceThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
+    val targetThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_target).doubleValue()
+    val minReplanTime = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
+    val targetReplanTime = config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis.longValue()
+    val divergenceAlgorithm = config.get(GraphDatabaseSettings.cypher_replan_algorithm)
+    StatsDivergenceCalculator.divergenceCalculatorFor(divergenceAlgorithm, divergenceThreshold, targetThreshold, minReplanTime, targetReplanTime)
+  }
+}

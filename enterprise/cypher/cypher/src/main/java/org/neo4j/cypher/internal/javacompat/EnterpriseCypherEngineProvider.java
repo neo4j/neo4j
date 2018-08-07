@@ -23,7 +23,10 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
+import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.EnterpriseCompilerFactory;
+import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration;
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -60,12 +63,15 @@ public class EnterpriseCypherEngineProvider extends QueryEngineProvider
         LogService logService = resolver.resolveDependency( LogService.class );
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         Config config = resolver.resolveDependency( Config.class );
+        CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( config );
+        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( config );
+        CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();
         LogProvider logProvider = logService.getInternalLogProvider();
         CommunityCompilerFactory communityCompilerFactory =
-                new CommunityCompilerFactory( queryService, monitors, logProvider );
+                new CommunityCompilerFactory( queryService, monitors, logProvider, plannerConfig, runtimeConfig );
 
         EnterpriseCompilerFactory compilerFactory =
-                new EnterpriseCompilerFactory( communityCompilerFactory, queryService, monitors, logProvider );
+                new EnterpriseCompilerFactory( communityCompilerFactory, queryService, monitors, logProvider, plannerConfig, runtimeConfig );
 
         deps.satisfyDependency( compilerFactory );
         return createEngine( queryService, config, logProvider, compilerFactory );

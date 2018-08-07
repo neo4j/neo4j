@@ -21,14 +21,11 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
-import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
 import org.neo4j.cypher.{InvalidArgumentException, _}
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.impl.notification.NotificationCode._
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
@@ -55,29 +52,6 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
                      config: CypherConfiguration,
                      logProvider: LogProvider,
                      compilerLibrary: CompilerLibrary) {
-
-  import org.neo4j.cypher.internal.MasterCompiler._
-
-  private val plannerConfig = CypherPlannerConfiguration(
-    queryCacheSize = config.queryCacheSize,
-    statsDivergenceCalculator = getStatisticsDivergenceCalculator,
-    useErrorsOverWarnings = config.useErrorsOverWarnings,
-    idpMaxTableSize = config.idpMaxTableSize,
-    idpIterationDuration = config.idpIterationDuration,
-    errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
-    errorIfShortestPathHasCommonNodesAtRuntime = config.errorIfShortestPathHasCommonNodesAtRuntime,
-    legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
-    csvBufferSize = config.csvBufferSize,
-    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
-    planWithMinimumCardinalityEstimates = config.planWithMinimumCardinalityEstimates,
-    disableCompiledExpressions = config.disableCompiledExpressions
-  )
-
-  private val runtimeConfig = CypherRuntimeConfiguration(
-    workers = config.workers,
-    morselSize = config.morselSize,
-    doSchedulerTracing = config.doSchedulerTracing
-  )
 
   /**
     * Clear all compiler caches.
@@ -132,9 +106,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
         val compiler3_5 = compilerLibrary.selectCompiler(preParsedQuery.version,
                                                          preParsedQuery.planner,
                                                          preParsedQuery.runtime,
-                                                         preParsedQuery.updateStrategy,
-                                                         plannerConfig,
-                                                         runtimeConfig)
+                                                         preParsedQuery.updateStrategy)
 
         try {
           compiler3_5.compile(preParsedQuery, tracer, notifications.result(), transactionalContext, params)
@@ -158,9 +130,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
         val compiler = compilerLibrary.selectCompiler(preParsedQuery.version,
                                                       preParsedQuery.planner,
                                                       preParsedQuery.runtime,
-                                                      preParsedQuery.updateStrategy,
-                                                      plannerConfig,
-                                                      runtimeConfig)
+                                                      preParsedQuery.updateStrategy)
 
         compiler.compile(preParsedQuery, tracer, notifications.result(), transactionalContext, params)
       }
@@ -195,34 +165,4 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
 
   private def convertInputPosition(offset: InputPosition) =
     new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
-
-  private def getStatisticsDivergenceCalculator: StatsDivergenceCalculator = {
-    val divergenceThreshold = getSetting(graph,
-      config => config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue(),
-      DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
-    val targetThreshold = getSetting(graph,
-      config => config.get(GraphDatabaseSettings.query_statistics_divergence_target).doubleValue(),
-      DEFAULT_STATISTICS_DIVERGENCE_TARGET)
-    val minReplanTime = getSetting(graph,
-      config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue(),
-      DEFAULT_QUERY_PLAN_TTL)
-    val targetReplanTime = getSetting(graph,
-      config => config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis.longValue(),
-      DEFAULT_QUERY_PLAN_TARGET)
-    val divergenceAlgorithm = getSetting(graph,
-      config => config.get(GraphDatabaseSettings.cypher_replan_algorithm),
-      DEFAULT_DIVERGENCE_ALGORITHM)
-    StatsDivergenceCalculator.divergenceCalculatorFor(divergenceAlgorithm, divergenceThreshold, targetThreshold, minReplanTime, targetReplanTime)
-  }
-
-  private def getNonIndexedLabelWarningThreshold: Long = {
-    val setting: Config => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
-    getSetting(graph, setting, DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
-  }
-
-  private def getSetting[A](gds: GraphDatabaseQueryService, configLookup: Config => A, default: A): A = gds match {
-    // TODO: Cypher should not be pulling out components from casted interfaces, it should ask for Config as a dep
-    case gdbApi:GraphDatabaseQueryService => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
-    case _ => default
-  }
 }

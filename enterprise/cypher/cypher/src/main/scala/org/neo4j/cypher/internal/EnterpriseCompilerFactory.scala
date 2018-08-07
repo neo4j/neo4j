@@ -23,7 +23,6 @@
 package org.neo4j.cypher.internal
 
 import java.time.Clock
-import java.util.concurrent.atomic.AtomicReference
 
 import org.neo4j.cypher.internal.MorselRuntime.MorselRuntimeState
 import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
@@ -45,38 +44,21 @@ import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
                                 graph: GraphDatabaseQueryService,
                                 kernelMonitors: KernelMonitors,
-                                logProvider: LogProvider
+                                logProvider: LogProvider,
+                                plannerConfig: CypherPlannerConfiguration,
+                                runtimeConfig: CypherRuntimeConfiguration
                                ) extends CompilerFactory {
   /*
   One compiler is created for every Planner:Runtime:Version combination, e.g., Cost-Morsel-3.4 & Cost-Morsel-3.5.
   Each compiler contains a runtime instance, and each morsel runtime instance requires a dispatcher instance.
   This ensures only one (shared) dispatcher/tracer instance is created, even when there are multiple morsel runtime instances.
    */
-  private val singletonMorselRuntimeState: AtomicReference[MorselRuntimeState] = new AtomicReference[MorselRuntimeState](null)
-
-  private def getMorselRuntimeState(config: CypherRuntimeConfiguration, jobScheduler: JobScheduler): MorselRuntimeState = {
-    val morselRuntimeState = singletonMorselRuntimeState.get()
-    if (null != morselRuntimeState) {
-      morselRuntimeState
-    } else {
-      singletonMorselRuntimeState.compareAndSet(null, MorselRuntimeState(config, jobScheduler))
-      assertHasExpectedConfig(singletonMorselRuntimeState.get(), config)
-    }
-  }
-
-  private def assertHasExpectedConfig(morselRuntimeState: MorselRuntimeState, expectedConfig: CypherRuntimeConfiguration): MorselRuntimeState = {
-    if (morselRuntimeState.config != expectedConfig) {
-      throw new IllegalStateException(s"Cypher runtime configuration unexpectedly changed from ${morselRuntimeState.config} to $expectedConfig")
-    }
-    morselRuntimeState
-  }
+  private val morselRuntimeState = MorselRuntimeState(runtimeConfig, graph.getDependencyResolver.resolveDependency(classOf[JobScheduler]))
 
   override def createCompiler(cypherVersion: CypherVersion,
                               cypherPlanner: CypherPlannerOption,
                               cypherRuntime: CypherRuntimeOption,
-                              cypherUpdateStrategy: CypherUpdateStrategy,
-                              plannerConfig: CypherPlannerConfiguration,
-                              runtimeConfig: CypherRuntimeConfiguration): Compiler = {
+                              cypherUpdateStrategy: CypherUpdateStrategy): Compiler = {
 
     val log = logProvider.getLog(getClass)
     val createPlanner: PartialFunction[CypherVersion, CypherPlanner] = {
@@ -103,7 +85,6 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
 
     if (cypherPlanner != CypherPlannerOption.rule && createPlanner.isDefinedAt(cypherVersion)) {
       val planner = createPlanner(cypherVersion)
-      val morselRuntimeState = getMorselRuntimeState(runtimeConfig, graph.getDependencyResolver.resolveDependency(classOf[JobScheduler]))
 
       CypherCurrentCompiler(
         planner,
@@ -112,7 +93,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
         kernelMonitors)
 
     } else
-      community.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, plannerConfig, runtimeConfig)
+      community.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
   }
 }
 

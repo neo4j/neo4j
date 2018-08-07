@@ -38,7 +38,9 @@ import org.opencypher.v9_0.util.InvalidArgumentException
   */
 class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                                kernelMonitors: KernelMonitors,
-                               logProvider: LogProvider
+                               logProvider: LogProvider,
+                               plannerConfig: CypherPlannerConfiguration,
+                               runtimeConfig: CypherRuntimeConfiguration
                               ) extends CompilerFactory {
 
   private val log: Log = logProvider.getLog(getClass)
@@ -46,9 +48,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
   override def createCompiler(cypherVersion: CypherVersion,
                               cypherPlanner: CypherPlannerOption,
                               cypherRuntime: CypherRuntimeOption,
-                              cypherUpdateStrategy: CypherUpdateStrategy,
-                              plannerConfig: CypherPlannerConfiguration,
-                              runtimeConfig: CypherRuntimeConfiguration
+                              cypherUpdateStrategy: CypherUpdateStrategy
                              ): Compiler = {
 
     (cypherVersion, cypherPlanner) match {

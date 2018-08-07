@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
+import org.neo4j.cypher.internal.CypherConfiguration;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -59,10 +62,18 @@ public class ExecutionEngineTest
     {
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
         Monitors monitors = graph.getDependencyResolver().resolveDependency( Monitors.class );
+        DependencyResolver resolver = graph.getDependencyResolver();
 
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        CommunityCompilerFactory compilerFactory =
-                new CommunityCompilerFactory( graph, monitors, nullLogProvider );
+
+        Config config = resolver.resolveDependency( Config.class );
+        CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( config );
+
+        CommunityCompilerFactory compilerFactory = new CommunityCompilerFactory( graph,
+                                                                                 monitors,
+                                                                                 nullLogProvider,
+                                                                                 cypherConfig.toCypherPlannerConfiguration( config ),
+                                                                                 cypherConfig.toCypherRuntimeConfiguration() );
         ExecutionEngine executionEngine = new ExecutionEngine( graph, nullLogProvider, compilerFactory );
 
         Result result;

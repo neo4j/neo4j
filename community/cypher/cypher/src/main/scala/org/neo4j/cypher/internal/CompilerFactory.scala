@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
-import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 
 /**
@@ -30,7 +28,5 @@ trait CompilerFactory {
   def createCompiler(cypherVersion: CypherVersion,
                      cypherPlanner: CypherPlannerOption,
                      cypherRuntime: CypherRuntimeOption,
-                     cypherUpdateStrategy: CypherUpdateStrategy,
-                     plannerConfig: CypherPlannerConfiguration,
-                     runtimeConfig: CypherRuntimeConfiguration): Compiler
+                     cypherUpdateStrategy: CypherUpdateStrategy): Compiler
 }
