@@ -166,12 +166,13 @@ public class GraphDatabaseFacadeFactory
 
         Procedures procedures = setupProcedures( platform, edition, graphDatabaseFacade );
         platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
-        edition.setupSecurityModule( platform, procedures );
 
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         DatabaseManager databaseManager = edition.createDatabaseManager( graphDatabaseFacade, platform, edition, procedures, msgLog );
         platform.life.add( databaseManager );
         platform.dependencies.satisfyDependency( databaseManager );
+
+        edition.setupSecurityModule( platform, procedures );
 
         platform.life.add( platform.globalKernelExtensions );
         platform.life.add( createBoltServer( platform, edition, databaseManager ) );
