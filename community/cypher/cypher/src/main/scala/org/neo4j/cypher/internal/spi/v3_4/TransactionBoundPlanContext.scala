@@ -33,8 +33,8 @@ import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor
 import org.neo4j.procedure.Mode
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor
 
 import scala.collection.JavaConverters._
 

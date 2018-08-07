@@ -32,12 +32,12 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.tools.dump.inconsistency.ReportInconsistencies;
 
 import static org.junit.Assert.assertTrue;

@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.ExplicitClient;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
+class DefaultRelationshipExplicitIndexCursor extends IndexCursor<IndexProgressor>
         implements RelationshipExplicitIndexCursor, ExplicitClient
 {
     private Read read;
@@ -45,7 +46,7 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     }
 
     @Override
-    public void initialize( ExplicitIndexProgressor progressor, int expectedSize )
+    public void initialize( IndexProgressor progressor, int expectedSize )
     {
         super.initialize( progressor );
         this.expectedSize = expectedSize;

@@ -32,8 +32,8 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.ClockContext;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 /**
  * Extends the outwards-facing {@link org.neo4j.internal.kernel.api.Transaction} with additional functionality

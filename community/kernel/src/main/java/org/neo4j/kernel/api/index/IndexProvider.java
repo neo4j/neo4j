@@ -27,12 +27,12 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -189,12 +189,6 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                     throw new IllegalStateException();
                 }
             };
-
-    /**
-     * Indicate that {@link IndexProviderDescriptor} has not yet been decided.
-     * Specifically before transaction that create a new index has committed.
-     */
-    public static final IndexProviderDescriptor UNDECIDED = new IndexProviderDescriptor( "Undecided", "0" );
 
     protected final int priority;
     private final IndexProviderDescriptor providerDescriptor;

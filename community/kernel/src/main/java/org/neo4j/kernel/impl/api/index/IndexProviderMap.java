@@ -21,8 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.Consumer;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 /**
  * Contains mapping from {@link IndexProviderDescriptor} or provider name to {@link IndexProvider}.
@@ -61,6 +64,18 @@ public interface IndexProviderMap
      * @param visitor {@link Consumer} visiting all the {@link IndexProvider index providers} in this map.
      */
     void accept( Consumer<IndexProvider> visitor );
+
+    /**
+     * Create a {@link CapableIndexDescriptor} from the given index descriptor, which includes the capabilities
+     * that correspond to those of the index provider of the given {@code descriptor}, found in this {@link IndexProviderMap}.
+     *
+     * @return a CapableIndexDescriptor.
+     */
+    default CapableIndexDescriptor withCapabilities( StoreIndexDescriptor descriptor )
+    {
+        IndexCapability capability = lookup( descriptor.providerDescriptor() ).getCapability();
+        return new CapableIndexDescriptor( descriptor, capability );
+    }
 
     IndexProviderMap EMPTY = new IndexProviderMap()
     {

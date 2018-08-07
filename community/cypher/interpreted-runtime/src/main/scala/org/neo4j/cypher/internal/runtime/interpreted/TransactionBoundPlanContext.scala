@@ -29,8 +29,8 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor
 import org.neo4j.procedure.Mode
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.CypherExecutionException
 import org.opencypher.v9_0.util.symbols._

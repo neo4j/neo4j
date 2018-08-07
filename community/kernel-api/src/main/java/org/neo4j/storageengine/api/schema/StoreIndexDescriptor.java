@@ -17,12 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema.index;
+package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 
@@ -30,9 +27,6 @@ import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
  * Describes an index which is committed to the database.
  *
  * Adds an index id, a name, and optionally an owning constraint id to the general IndexDescriptor.
- *
- * Can be upgraded to a {@link CapableIndexDescriptor} by adding {@link IndexCapability} to this index,
- * using {@link StoreIndexDescriptor#withoutCapabilities()} or {@link StoreIndexDescriptor#withCapabilities(IndexProviderMap)}
  */
 public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
 {
@@ -84,8 +78,6 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
      * creates the unique index, and then waits for the index to become fully populated and online before creating
      * the actual constraint. During unique index population the owning constraint will be null.
      *
-     * See {@link ConstraintIndexCreator}.
-     *
      * @return the id of the owning constraint, or null if this has not been set yet.
      * @throws IllegalStateException if this IndexRule cannot support uniqueness constraints (ei. the index is not
      *                               unique)
@@ -134,18 +126,6 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     public CapableIndexDescriptor withoutCapabilities()
     {
         return new CapableIndexDescriptor( this, IndexCapability.NO_CAPABILITY );
-    }
-
-    /**
-     * Create a {@link CapableIndexDescriptor} from this index descriptor, with the capabilities that correspond
-     * to this indexes index provider, according to the given {@link IndexProviderMap}.
-     *
-     * @return a CapableIndexDescriptor.
-     */
-    public CapableIndexDescriptor withCapabilities( IndexProviderMap indexProviderMap )
-    {
-        IndexCapability capability = indexProviderMap.lookup( providerDescriptor ).getCapability();
-        return new CapableIndexDescriptor( this, capability );
     }
 
     // ** Misc

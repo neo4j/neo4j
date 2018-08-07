@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema.index;
+package org.neo4j.storageengine.api.schema;
 
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.index.IndexProvider;
 
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor.UNDECIDED;
+import static org.neo4j.storageengine.api.schema.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.storageengine.api.schema.IndexDescriptor.Type.UNIQUE;
 
 public class IndexDescriptorFactory
 {
@@ -36,7 +36,7 @@ public class IndexDescriptorFactory
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
-        return forSchema( schema, IndexProvider.UNDECIDED );
+        return forSchema( schema, UNDECIDED );
     }
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema,
@@ -54,7 +54,7 @@ public class IndexDescriptorFactory
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return uniqueForSchema( schema, IndexProvider.UNDECIDED );
+        return uniqueForSchema( schema, UNDECIDED );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,

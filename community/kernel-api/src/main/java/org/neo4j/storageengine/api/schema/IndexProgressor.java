@@ -21,9 +21,6 @@ package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
-import org.neo4j.kernel.impl.newapi.ExplicitIndexProgressor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -104,7 +101,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param providesLabels true if the progression can provide label information
          * @param label the label to scan for
          */
-        void scan( LabelScanValueIndexProgressor progressor, boolean providesLabels, int label );
+        void scan( IndexProgressor progressor, boolean providesLabels, int label );
 
         void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels );
 
@@ -130,7 +127,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param progressor the progressor
          * @param expectedSize expected number of entries this progressor will feed the client.
          */
-        void initialize( ExplicitIndexProgressor progressor, int expectedSize );
+        void initialize( IndexProgressor progressor, int expectedSize );
 
         /**
          * Accept the entity id and a score. Return true if the entry is accepted, false otherwise

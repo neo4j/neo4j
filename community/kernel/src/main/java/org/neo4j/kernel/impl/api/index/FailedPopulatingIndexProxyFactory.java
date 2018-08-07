@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 

@@ -20,7 +20,6 @@
 package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient

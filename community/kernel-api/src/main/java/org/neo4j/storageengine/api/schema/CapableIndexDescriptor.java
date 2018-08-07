@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema.index;
+package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexLimitation;
@@ -32,7 +32,7 @@ public class CapableIndexDescriptor extends StoreIndexDescriptor
 {
     private final IndexCapability indexCapability;
 
-    CapableIndexDescriptor( StoreIndexDescriptor indexDescriptor, IndexCapability indexCapability )
+    public CapableIndexDescriptor( StoreIndexDescriptor indexDescriptor, IndexCapability indexCapability )
     {
         super( indexDescriptor );
         this.indexCapability = indexCapability;

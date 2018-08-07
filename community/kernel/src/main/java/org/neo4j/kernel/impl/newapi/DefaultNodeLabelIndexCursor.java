@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
+class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         implements NodeLabelIndexCursor, NodeLabelClient
 {
     private Read read;
@@ -52,7 +52,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     }
 
     @Override
-    public void scan( LabelScanValueIndexProgressor progressor, boolean providesLabels, int label )
+    public void scan( IndexProgressor progressor, boolean providesLabels, int label )
     {
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
