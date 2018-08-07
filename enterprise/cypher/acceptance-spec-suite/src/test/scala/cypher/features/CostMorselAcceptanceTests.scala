@@ -33,15 +33,15 @@ class CostMorselAcceptanceTests extends BaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
-  @TestFactory
-  def runCostMorselSingleThreaded(): util.Collection[DynamicTest] = {
-    createTests(scenarios, CostMorselTestConfigSingleThreaded)
-  }
-
-  @TestFactory
-  def runCostMorsel(): util.Collection[DynamicTest] = {
-    createTests(scenarios, CostMorselTestConfig)
-  }
+//  @TestFactory
+//  def runCostMorselSingleThreaded(): util.Collection[DynamicTest] = {
+//    createTests(scenarios, CostMorselTestConfigSingleThreaded)
+//  }
+//
+//  @TestFactory
+//  def runCostMorsel(): util.Collection[DynamicTest] = {
+//    createTests(scenarios, CostMorselTestConfig)
+//  }
 
   @Ignore
   def generateBlacklistTCKTestCostMorsel(): Unit = {
