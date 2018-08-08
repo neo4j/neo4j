@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Logger;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 public final class DefaultDatabaseManager extends LifecycleAdapter implements DatabaseManager
 {
     private GraphDatabaseFacade database;
@@ -59,23 +61,18 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     @Override
     public GraphDatabaseFacade createDatabase( String name )
     {
-        if ( database == null )
-        {
-            DataSourceModule dataSource = new DataSourceModule( name, platform, edition, procedures, graphDatabaseFacade );
-            ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, edition.coreAPIAvailabilityGuard );
-            graphDatabaseFacade.init( spi, platform.threadToTransactionBridge, platform.config, dataSource.tokenHolders );
-            platform.dataSourceManager.register( dataSource.neoStoreDataSource );
-            database = graphDatabaseFacade;
-            return database;
-        }
-        else
-        {
-            throw new IllegalStateException( "Database is already created, fail to create another one." );
-        }
+        checkState( database == null, "Database is already created, fail to create another one." );
+
+        DataSourceModule dataSource = new DataSourceModule( name, platform, edition, procedures, graphDatabaseFacade );
+        ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, edition.coreAPIAvailabilityGuard );
+        graphDatabaseFacade.init( spi, platform.threadToTransactionBridge, platform.config, dataSource.tokenHolders );
+        platform.dataSourceManager.register( dataSource.neoStoreDataSource );
+        database = graphDatabaseFacade;
+        return database;
     }
 
     @Override
-    public synchronized void shutdownDatabase( String ignore )
+    public void shutdownDatabase( String ignore )
     {
         shutdownDatabase();
     }
