@@ -1118,7 +1118,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             validateIndexCanBeCreated( labelId, propertyKeyIds );
 
             createIndex( labelId, propertyKeyIds );
-            return new IndexDefinitionImpl( this, label, propertyKeys, false );
+            return new IndexDefinitionImpl( this, new Label[]{label}, propertyKeys, false );
         }
 
         @Override

@@ -134,7 +134,7 @@ public class SchemaWithPECAcceptanceTest
         SchemaHelper.createUniquenessConstraint( db, label, propertyKey );
         SchemaHelper.awaitIndexes( db );
         InternalSchemaActions actions = mock( InternalSchemaActions.class );
-        IndexDefinition index = new IndexDefinitionImpl( actions, label, new String[]{propertyKey}, true );
+        IndexDefinition index = new IndexDefinitionImpl( actions, new Label[]{label}, new String[]{propertyKey}, true );
         return new UniquenessConstraintDefinition( actions, index );
     }
 
@@ -143,7 +143,7 @@ public class SchemaWithPECAcceptanceTest
         SchemaHelper.createNodeKeyConstraint( db, label, propertyKey );
         SchemaHelper.awaitIndexes( db );
         InternalSchemaActions actions = mock( InternalSchemaActions.class );
-        IndexDefinition index = new IndexDefinitionImpl( actions, label, new String[]{propertyKey}, true );
+        IndexDefinition index = new IndexDefinitionImpl( actions, new Label[]{label}, new String[]{propertyKey}, true );
         return new NodeKeyConstraintDefinition( actions, index );
     }
 

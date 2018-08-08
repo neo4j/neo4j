@@ -39,15 +39,21 @@ public class IndexDefinitionImpl implements IndexDefinition
     private final String[] propertyKeys;
     private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String[] propertyKeys, boolean constraintIndex ) // TODO remove this constructor
-    {
-        this( actions, new Label[]{label}, null, propertyKeys, constraintIndex );
-    }
-
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label[] labels, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
+    public IndexDefinitionImpl( InternalSchemaActions actions, Label[] labels, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
         this.labels = labels;
+        this.relTypes = null;
+        this.propertyKeys = propertyKeys;
+        this.constraintIndex = constraintIndex;
+
+        assertInUnterminatedTransaction();
+    }
+
+    public IndexDefinitionImpl( InternalSchemaActions actions, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
+    {
+        this.actions = actions;
+        this.labels = null;
         this.relTypes = relTypes;
         this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;

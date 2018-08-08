@@ -148,31 +148,27 @@ public class SchemaImpl implements Schema
         {
             SchemaDescriptor schema = index.schema();
             int[] entityTokenIds = schema.getEntityTokenIds();
-            Label[] labels = null;
-            RelationshipType[] relTypes = null;
+            boolean constraintIndex = index.isUnique();
+            String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenRead, index.properties() );
             switch ( schema.entityType() )
             {
             case NODE:
-                labels = new Label[entityTokenIds.length];
+                Label[] labels = new Label[entityTokenIds.length];
                 for ( int i = 0; i < labels.length; i++ )
                 {
                     labels[i] = label( tokenRead.nodeLabelName( entityTokenIds[i] ) );
                 }
-                break;
+                return new IndexDefinitionImpl( actions, labels, propertyNames, constraintIndex );
             case RELATIONSHIP:
-                relTypes = new RelationshipType[entityTokenIds.length];
+                RelationshipType[] relTypes = new RelationshipType[entityTokenIds.length];
                 for ( int i = 0; i < relTypes.length; i++ )
                 {
                     relTypes[i] = withName( tokenRead.relationshipTypeName( entityTokenIds[i] ) );
                 }
-                break;
+                return new IndexDefinitionImpl( actions, relTypes, propertyNames, constraintIndex );
             default:
                 throw new IllegalArgumentException( "Cannot create IndexDefinition for " + schema.entityType() + " entity-typed schema." );
             }
-
-            boolean constraintIndex = index.isUnique();
-            String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenRead, index.properties() );
-            return new IndexDefinitionImpl( actions, labels, relTypes, propertyNames, constraintIndex );
         }
         catch ( KernelException e )
         {
@@ -475,22 +471,24 @@ public class SchemaImpl implements Schema
              constraint instanceof UniquenessConstraintDescriptor )
         {
             SchemaDescriptor schemaDescriptor = constraint.schema();
-            Label label = Label.label( lookup.labelGetName( schemaDescriptor.keyId() ) );
-            String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() )
-                    .mapToObj( lookup::propertyKeyGetName ).toArray( String[]::new );
+            int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
+            Label[] labels = new Label[entityTokenIds.length];
+            for ( int i = 0; i < entityTokenIds.length; i++ )
+            {
+                labels[i] = Label.label( lookup.labelGetName( entityTokenIds[i] ) );
+            }
+            String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() ).mapToObj( lookup::propertyKeyGetName ).toArray( String[]::new );
             if ( constraint instanceof NodeExistenceConstraintDescriptor )
             {
-                return new NodePropertyExistenceConstraintDefinition( actions, label, propertyKeys );
+                return new NodePropertyExistenceConstraintDefinition( actions, labels[0], propertyKeys );
             }
             else if ( constraint instanceof UniquenessConstraintDescriptor )
             {
-                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, label,
-                        propertyKeys, true ) );
+                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, labels, propertyKeys, true ) );
             }
             else
             {
-                return new NodeKeyConstraintDefinition( actions, new IndexDefinitionImpl( actions, label,
-                        propertyKeys, true ) );
+                return new NodeKeyConstraintDefinition( actions, new IndexDefinitionImpl( actions, labels, propertyKeys, true ) );
             }
         }
         else if ( constraint instanceof RelExistenceConstraintDescriptor )
@@ -532,7 +530,7 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    IndexDefinition indexDefinition = new IndexDefinitionImpl( this, label, propertyKeys, false );
+                    IndexDefinition indexDefinition = new IndexDefinitionImpl( this, new Label[]{label}, propertyKeys, false );
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );

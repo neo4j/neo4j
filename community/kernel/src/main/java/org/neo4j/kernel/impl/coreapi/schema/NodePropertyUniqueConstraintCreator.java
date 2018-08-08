@@ -46,8 +46,7 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
         assertInUnterminatedTransaction();
 
         IndexDefinitionImpl definition =
-                new IndexDefinitionImpl( actions, label, propertyKeys.toArray( new String[propertyKeys.size()] ),
-                        true );
+                new IndexDefinitionImpl( actions, new Label[]{label}, propertyKeys.toArray( new String[0] ), true );
         return actions.createPropertyUniquenessConstraint( definition );
     }
 }
