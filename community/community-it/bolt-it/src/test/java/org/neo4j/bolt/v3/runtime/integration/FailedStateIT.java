@@ -124,11 +124,11 @@ class FailedStateIT extends BoltStateMachineStateTestBase
 
     private static Stream<RequestMessage> ignoredMessages() throws BoltIOException
     {
-        return Stream.of( DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new RunMessage( "A cypher query" ) );
+        return Stream.of( DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new RunMessage( "A cypher query" ), COMMIT_MESSAGE, ROLLBACK_MESSAGE );
     }
 
     private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
     {
-        return Stream.of( newHelloMessage(), new BeginMessage(), COMMIT_MESSAGE, ROLLBACK_MESSAGE, GOODBYE_MESSAGE );
+        return Stream.of( newHelloMessage(), new BeginMessage(), GOODBYE_MESSAGE );
     }
 }
