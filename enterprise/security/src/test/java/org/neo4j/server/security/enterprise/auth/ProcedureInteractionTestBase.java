@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -200,10 +201,14 @@ public abstract class ProcedureInteractionTestBase<S>
         writeSubject = neo.login( "writeSubject", "abc" );
         schemaSubject = neo.login( "schemaSubject", "abc" );
         adminSubject = neo.login( "adminSubject", "abc" );
-        assertEmpty( schemaSubject, "CREATE (n) SET n:A:Test:NEWNODE:VeryUniqueLabel:Node " +
-                                    "SET n.id = '2', n.square = '4', n.name = 'me', n.prop = 'a', n.number = '1' " +
-                                    "DELETE n" );
-        assertEmpty( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
+        try ( Transaction tx = neo.getLocalGraph().beginTx( 1, TimeUnit.HOURS ) )
+        {
+            assertEmpty( schemaSubject, "CREATE (n) SET n:A:Test:NEWNODE:VeryUniqueLabel:Node " +
+                                        "SET n.id = '2', n.square = '4', n.name = 'me', n.prop = 'a', n.number = '1' " +
+                                        "DELETE n" );
+            assertEmpty( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
+            tx.success();
+        }
     }
 
     protected abstract NeoInteractionLevel<S> setUpNeoServer( Map<String,String> config ) throws Throwable;
