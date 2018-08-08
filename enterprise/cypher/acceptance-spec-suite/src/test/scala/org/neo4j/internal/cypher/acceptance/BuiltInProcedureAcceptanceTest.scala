@@ -280,6 +280,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "tokenNames" -> List("A"),
         "properties" -> List("prop"),
         "state" -> "ONLINE",
+        "progress" -> 100D,
         "type" -> "node_label_property",
         "provider" -> Map(
           "version" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getVersion,
@@ -316,6 +317,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "tokenNames" -> List("Person"),
         "properties" -> List("name"),
         "state" -> "ONLINE",
+        "progress" -> 100D,
         "type" -> "node_label_property",
         "provider" -> Map(
           "version" -> "1.0",
@@ -345,6 +347,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "tokenNames" -> List("Person"),
         "properties" -> List( "name" ),
         "state" -> "ONLINE",
+        "progress" -> 100D,
         "type" -> "node_unique_property",
         "provider" -> Map(
           "version" -> "1.0",
@@ -374,6 +377,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "tokenNames" -> List("Person"),
         "properties" -> List( "name" ),
         "state" -> "ONLINE",
+        "progress" -> 100D,
         "type" -> "node_unique_property",
         "provider" -> Map(
           "version" -> "1.0",
