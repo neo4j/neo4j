@@ -72,7 +72,7 @@ public class GraphDatabaseFactory
 
     /**
      * @param storeDir desired embedded database store dir
-     * @deprecated Currently {@code storeDir} points to a directory where particular database will gonna be located.
+     * @deprecated Currently {@code storeDir} points to a directory where the particular database is located.
      * That is a subject to change in a future major release.
      */
     @Deprecated
@@ -83,7 +83,7 @@ public class GraphDatabaseFactory
 
     /**
      * @param storeDir desired embedded database store dir
-     * @deprecated Currently {@code storeDir} points to a directory where particular database will gonna be located.
+     * @deprecated Currently {@code storeDir} points to a directory where the particular database is located.
      * That is a subject to change in a future major release.
      */
     @Deprecated
