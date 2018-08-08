@@ -40,7 +40,6 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   Netty
   Netty/All-in-One
-  opencsv
   openCypher AST for the Cypher Query Language
   openCypher Expressions
   openCypher Front End

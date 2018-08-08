@@ -175,10 +175,6 @@
       <groupId>org.parboiled</groupId>
       <artifactId>parboiled-scala_2.11</artifactId>
     </dependency>
-    <dependency>
-      <groupId>net.sf.opencsv</groupId>
-      <artifactId>opencsv</artifactId>
-    </dependency>
 
     <!-- code generation testing -->
 
