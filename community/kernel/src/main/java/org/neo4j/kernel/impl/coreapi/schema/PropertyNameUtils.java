@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -67,21 +66,6 @@ public class PropertyNameUtils
             propertyKeys[i] = tokenNameLookup.propertyKeyGetName( propertyIds[i] );
         }
         return propertyKeys;
-    }
-
-    public static int[] getPropertyIds( TokenRead tokenRead, String[] propertyKeys )
-    {
-        int[] propertyKeyIds = new int[propertyKeys.length];
-        for ( int i = 0; i < propertyKeys.length; i++ )
-        {
-            propertyKeyIds[i] = tokenRead.propertyKey( propertyKeys[i] );
-        }
-        return propertyKeyIds;
-    }
-
-    public static int[] getPropertyIds( TokenRead tokenRead, Iterable<String> propertyKeys )
-    {
-        return Iterables.stream( propertyKeys ).mapToInt( tokenRead::propertyKey ).toArray();
     }
 
     public static int[] getOrCreatePropertyKeyIds( TokenWrite tokenWrite, String... propertyKeys )

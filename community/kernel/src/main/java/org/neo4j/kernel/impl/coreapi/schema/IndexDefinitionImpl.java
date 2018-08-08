@@ -112,8 +112,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     /**
      * Returns the inner array of property keys in this index definition.
      * <p>
-     * This array <em><strong>must not</strong></em> be modified, since the index definition is supposed to be
-     * immutable.
+     * This array <em><strong>must not</strong></em> be modified, since the index definition is supposed to be immutable.
      *
      * @return The array of property keys.
      */
@@ -121,6 +120,30 @@ public class IndexDefinitionImpl implements IndexDefinition
     {
         assertInUnterminatedTransaction();
         return propertyKeys;
+    }
+
+    /**
+     * Returns the inner array of labels in this index definition.
+     * <p>
+     * This array <em><strong>must not</strong></em> be modified, since the index definition is supposed to be immutable.
+     *
+     * @return The label array, which may be null.
+     */
+    Label[] getLabelArrayShared()
+    {
+        return labels;
+    }
+
+    /**
+     * Returns the inner array of relationship types in this index definition.
+     * <p>
+     * This array <em><strong>must not</strong></em> be modified, since the index definition is supposed to be immutable.
+     *
+     * @return The relationship type array, which may be null.
+     */
+    RelationshipType[] getRelationshipTypesArrayShared()
+    {
+        return relTypes;
     }
 
     @Override
