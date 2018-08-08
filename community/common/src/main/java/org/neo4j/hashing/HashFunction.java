@@ -19,6 +19,8 @@
  */
 package org.neo4j.hashing;
 
+import java.util.function.ToLongFunction;
+
 /**
  * A hash function, as per this interface, will produce a deterministic value based on its input.
  * <p>
@@ -93,6 +95,33 @@ public interface HashFunction
     default int hashSingleValueToInt( long value )
     {
         return toInt( hashSingleValue( value ) );
+    }
+
+    /**
+     * Update the hash state by mixing in the given array and all of its elements, in order. This even works if the array is null, in which case a special value
+     * will be mixed in. Each element must be projected to a {@code long} value, which is why a projection function is required.
+     *
+     * @param intermediateHash The intermediate hash state given either by {@link #initialise(long)}, or by a previous call to this or the
+     * {@link #update(long, long)} method.
+     * @param array The array whose length and elements should be added to the hash state.
+     * @param projectionToLong The mechanism by which each element is transformed into a {@code long} value, prior to being mixed into the hash state.
+     * @param <T> The type of array elements.
+     * @return the new intermediate hash state with the array mixed in.
+     */
+    default <T> long updateWithArray( long intermediateHash, T[] array, ToLongFunction<T> projectionToLong )
+    {
+        if ( array == null )
+        {
+            // Even if the array is null, we still need to permute the hash, so we leave a trace of this step in the hashing.
+            return update( intermediateHash, -1 );
+        }
+
+        long hash = update( intermediateHash, array.length );
+        for ( T obj : array )
+        {
+            hash = update( hash, projectionToLong.applyAsLong( obj ) );
+        }
+        return hash;
     }
 
     /**

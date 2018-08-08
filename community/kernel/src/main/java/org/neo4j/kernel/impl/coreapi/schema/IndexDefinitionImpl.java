@@ -208,29 +208,9 @@ public class IndexDefinitionImpl implements IndexDefinition
     {
         HashFunction hf = HashFunction.incrementalXXH64();
         long hash = hf.initialise( 31 );
-        if ( internalIsNodeIndex() )
-        {
-            hash = hf.update( hash, 42 ); // labels-array specific discriminator.
-            hash = hf.update( hash, labels.length );
-            for ( Label label : labels )
-            {
-                hash = hf.update( hash, label.name().hashCode() );
-            }
-        }
-        if ( relTypes != null )
-        {
-            hash = hf.update( hash, 24 ); // relTypes-array specific discriminator.
-            hash = hf.update( hash, relTypes.length );
-            for ( RelationshipType relType : relTypes )
-            {
-                hash = hf.update( hash, relType.name().hashCode() );
-            }
-        }
-        hash = hf.update( hash, propertyKeys.length );
-        for ( String propertyKey : propertyKeys )
-        {
-            hash = hf.update( hash, propertyKey.hashCode() );
-        }
+        hash = hf.updateWithArray( hash, labels, label -> label.name().hashCode() );
+        hash = hf.updateWithArray( hash, relTypes, relType -> relType.name().hashCode() );
+        hash = hf.updateWithArray( hash, propertyKeys, String::hashCode );
         return hf.toInt( hash );
     }
 
