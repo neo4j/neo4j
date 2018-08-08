@@ -228,15 +228,6 @@ public abstract class Service
         }
     }
 
-    /**
-     * A short-hand alternative to {@link #Service(String, String...)} where a single key is derived by lower-casing the non-qualified class-name of the
-     * Service implementation.
-     */
-    protected Service()
-    {
-        this.keys = Collections.singleton( getClass().getSimpleName().toLowerCase() );
-    }
-
     @Override
     public String toString()
     {
