@@ -74,11 +74,6 @@ abstract class SchedulerTest extends CypherFunSuite {
     if (s.isMultiThreaded) {
       val countsPerThread = map.toSeq.groupBy(kv => kv._2).mapValues(_.size)
       countsPerThread.size() should equal(concurrency)
-      for ((threadId, count) <- countsPerThread) {
-        withClue(s"Counts:\n${countsPerThread.mkString("\n")}\n") {
-          count should be > 1
-        }
-      }
     }
   }
 
