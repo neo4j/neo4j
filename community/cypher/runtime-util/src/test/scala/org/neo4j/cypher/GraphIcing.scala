@@ -96,11 +96,9 @@ trait GraphIcing {
     def createIndex(label: String, properties: String*) = {
       graph.execute(s"CREATE INDEX ON :$label(${properties.mkString(",")})")
 
-      val indexDef = inTx {
-        graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+      inTx {
+        graph.schema().awaitIndexesOnline(1, TimeUnit.MINUTES)
       }
-
-      indexDef
     }
 
     def statement: Statement = txBridge.get()
