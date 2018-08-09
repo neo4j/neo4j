@@ -754,8 +754,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public LongDiffSets indexUpdatesForSuffixOrContains( IndexDescriptor descriptor, IndexQuery query )
     {
-        assert descriptor.schema().getPropertyIds().length == 1 :
-                "Suffix and contains queries are only supported for single property queries";
+
+        if ( descriptor.schema().getPropertyIds().length != 1 )
+        {
+            throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
+        }
 
         if ( indexUpdates == null )
         {
@@ -782,7 +785,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForSuffixOrContains( IndexDescriptor descriptor, IndexQuery query )
     {
-        assert descriptor.schema().getPropertyIds().length == 1 : "Suffix and contains queries are only supported for single property queries";
+        if ( descriptor.schema().getPropertyIds().length != 1 )
+        {
+            throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
+        }
 
         if ( indexUpdates == null )
         {
@@ -825,7 +831,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                                                                    Value lower, boolean includeLower,
                                                                    Value upper, boolean includeUpper )
     {
-        assert lower != null && upper != null : "Use Values.NO_VALUE to encode the lack of a bound";
+        if ( lower == null || upper == null )
+        {
+            throw new IllegalStateException( "Use Values.NO_VALUE to encode the lack of a bound" );
+        }
 
         TreeMap<ValueTuple, MutableLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
@@ -882,7 +891,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( IndexDescriptor descriptor, ValueGroup valueGroup, Value lower,
             boolean includeLower, Value upper, boolean includeUpper )
     {
-        assert lower != null && upper != null : "Use Values.NO_VALUE to encode the lack of a bound";
+        if ( lower == null || upper == null )
+        {
+            throw new IllegalStateException( "Use Values.NO_VALUE to encode the lack of a bound" );
+        }
 
         TreeMap<ValueTuple,MutableLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )

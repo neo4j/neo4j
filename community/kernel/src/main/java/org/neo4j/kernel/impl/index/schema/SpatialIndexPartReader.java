@@ -85,7 +85,10 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         // Spatial does not support providing values
-        assert !needsValues;
+        if ( needsValues )
+        {
+            throw new IllegalStateException( "Spatial index does not support providing values" );
+        }
 
         validateQuery( indexOrder, predicates );
         IndexQuery predicate = predicates[0];

@@ -86,7 +86,10 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         // Spatial does not support providing values
-        assert !needsValues;
+        if ( needsValues )
+        {
+            throw new IllegalStateException( "Spatial index does not support providing values" );
+        }
 
         if ( predicates.length != 1 )
         {
