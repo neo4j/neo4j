@@ -174,6 +174,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.internal.KernelDiagnostics;
@@ -195,8 +196,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.Tra
  * This implementation of {@link EditionModule} creates the implementations of services
  * that are specific to the Enterprise edition.
  */
-public class HighlyAvailableEditionModule
-        extends EditionModule
+public class HighlyAvailableEditionModule extends EditionModule
 {
     public HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
@@ -610,7 +610,8 @@ public class HighlyAvailableEditionModule
                         platformModule.dataSourceManager::getDataSource,
                         () -> resolveDatabaseDependency( platformModule, TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
-                        monitors, platformModule.transactionMonitor );
+                        monitors,
+                        () -> resolveDatabaseDependency( platformModule, DatabaseTransactionStats.class ) );
             case copy_then_branch:
                 return new SwitchToSlaveCopyThenBranch( databaseDirectory, logging,
                         platformModule.fileSystem, config, idGeneratorFactory,
@@ -622,7 +623,8 @@ public class HighlyAvailableEditionModule
                         platformModule.dataSourceManager::getDataSource,
                         () -> resolveDatabaseDependency( platformModule, TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
-                        monitors, platformModule.transactionMonitor );
+                        monitors,
+                        () -> resolveDatabaseDependency( platformModule, DatabaseTransactionStats.class ) );
             default:
                 throw new RuntimeException( "Unknown branched data copying strategy" );
         }

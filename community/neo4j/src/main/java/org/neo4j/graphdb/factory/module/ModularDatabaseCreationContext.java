@@ -129,7 +129,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.indexingServiceMonitor = monitors.newMonitor( IndexingService.Monitor.class );
         this.physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         this.fs = platformModule.fileSystem;
-        this.transactionMonitor = platformModule.transactionMonitor;
+        this.transactionMonitor = editionModule.createTransactionMonitor();
         this.databaseHealth = new DatabaseHealth( platformModule.panicEventGenerator, logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = editionModule.headerInformationFactory;
         this.commitProcessFactory = editionModule.commitProcessFactory;

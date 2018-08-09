@@ -28,8 +28,8 @@ import com.codahale.metrics.MetricRegistry;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;

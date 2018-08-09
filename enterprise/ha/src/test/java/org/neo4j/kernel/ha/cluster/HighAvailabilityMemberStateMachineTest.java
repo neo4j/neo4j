@@ -76,9 +76,9 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -546,7 +546,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         Config config = Config.defaults( ClusterSettings.server_id, me.toString() );
 
-        TransactionStats transactionCounters = mock( TransactionStats.class );
+        DatabaseTransactionStats transactionCounters = mock( DatabaseTransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
 
         PageCache pageCacheMock = mock( PageCache.class );
@@ -572,7 +572,7 @@ public class HighAvailabilityMemberStateMachineTest
                     SlaveServer mock = mock( SlaveServer.class );
                     when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
                     return mock;
-                }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters );
+                }, updatePuller, pageCacheMock, mock( Monitors.class ), () -> transactionCounters );
 
         ComponentSwitcherContainer switcherContainer = new ComponentSwitcherContainer();
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,

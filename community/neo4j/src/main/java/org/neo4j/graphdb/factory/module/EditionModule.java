@@ -59,6 +59,9 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
@@ -276,5 +279,25 @@ public abstract class EditionModule
     public void createDatabases( DatabaseManager databaseManager, Config config )
     {
         databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
+    }
+
+    public TransactionMonitor createTransactionMonitor()
+    {
+        return DatabaseStatisticsHolder.getInstance();
+    }
+
+    public TransactionCounters globalTransactionCounter()
+    {
+        return DatabaseStatisticsHolder.getInstance();
+    }
+
+    private static class DatabaseStatisticsHolder
+    {
+        private static final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
+
+        static DatabaseTransactionStats getInstance()
+        {
+            return databaseStatistics;
+        }
     }
 }

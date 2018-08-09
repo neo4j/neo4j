@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
+
 import static org.junit.Assert.assertEquals;
 
 class TransactionCountersChecker

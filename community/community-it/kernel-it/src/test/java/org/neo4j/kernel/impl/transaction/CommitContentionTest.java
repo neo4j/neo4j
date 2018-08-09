@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,9 +32,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -118,45 +117,14 @@ public class CommitContentionTest
     private GraphDatabaseService createDb()
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        //noinspection deprecation
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, platformModule -> new CommunityEditionModule( platformModule )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+            public DatabaseTransactionStats createTransactionMonitor()
             {
-                return new PlatformModule( storeDir, config, databaseInfo, dependencies )
-                {
-                    @Override
-                    protected TransactionStats createTransactionStats()
-                    {
-                        return new TransactionStats()
-                        {
-                            public boolean skip;
-
-                            @Override
-                            public void transactionFinished( boolean committed, boolean write )
-                            {
-                                super.transactionFinished( committed, write );
-
-                                if ( committed )
-                                {
-                                    // skip signal and waiting for second transaction
-                                    if ( skip )
-                                    {
-                                        return;
-                                    }
-                                    skip = true;
-
-                                    signalFirstTransactionStartedPushing();
-
-                                    waitForSecondTransactionToFinish();
-                                }
-                            }
-                        };
-                    }
-                };
+                return new SkipTransactionDatabaseStats();
             }
-        }.newFacade( storeLocation.storeDir(), Config.defaults(), state.databaseDependencies() );
+        } ).newFacade( storeLocation.storeDir(), Config.defaults(), state.databaseDependencies() );
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException
@@ -191,6 +159,31 @@ public class CommitContentionTest
         catch ( InterruptedException e )
         {
             reference.set( e );
+        }
+    }
+
+    private class SkipTransactionDatabaseStats extends DatabaseTransactionStats
+    {
+        boolean skip;
+
+        @Override
+        public void transactionFinished( boolean committed, boolean write )
+        {
+            super.transactionFinished( committed, write );
+
+            if ( committed )
+            {
+                // skip signal and waiting for second transaction
+                if ( skip )
+                {
+                    return;
+                }
+                skip = true;
+
+                signalFirstTransactionStartedPushing();
+
+                waitForSecondTransactionToFinish();
+            }
         }
     }
 }

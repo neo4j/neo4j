@@ -73,10 +73,10 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -124,14 +124,14 @@ public abstract class SwitchToSlave
 
     private final Supplier<NeoStoreDataSource> neoDataSourceSupplier;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
-    private final TransactionStats transactionCounters;
+    private final Supplier<DatabaseTransactionStats> transactionStatsSupplier;
 
     SwitchToSlave( HaIdGeneratorFactory idGeneratorFactory, Monitors monitors, RequestContextFactory requestContextFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
             MasterClientResolver masterClientResolver, Monitor monitor, PullerFactory pullerFactory, UpdatePuller updatePuller,
             Function<Slave,SlaveServer> slaveServerFactory, Config config, LogService logService, PageCache pageCache, File storeDir,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier, TransactionStats transactionCounters, Supplier<NeoStoreDataSource> neoDataSourceSupplier,
-            StoreCopyClient storeCopyClient )
+            Supplier<TransactionIdStore> transactionIdStoreSupplier, Supplier<DatabaseTransactionStats> transactionStatsSupplier,
+            Supplier<NeoStoreDataSource> neoDataSourceSupplier, StoreCopyClient storeCopyClient )
     {
         this.idGeneratorFactory = idGeneratorFactory;
         this.monitors = monitors;
@@ -149,7 +149,7 @@ public abstract class SwitchToSlave
         this.pageCache = pageCache;
         this.storeDir = storeDir;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
-        this.transactionCounters = transactionCounters;
+        this.transactionStatsSupplier = transactionStatsSupplier;
         this.neoDataSourceSupplier = neoDataSourceSupplier;
         this.storeCopyClient = storeCopyClient;
     }
@@ -178,7 +178,8 @@ public abstract class SwitchToSlave
         // We can't wait forever since switching to our designated role is quite important.
         Clock clock = Clocks.systemClock();
         long deadline = clock.millis() + config.get( HaSettings.internal_state_switch_timeout ).toMillis();
-        while ( transactionCounters.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
+        DatabaseTransactionStats transactionStats = transactionStatsSupplier.get();
+        while ( transactionStats.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
         {
             parkNanos( MILLISECONDS.toNanos( 10 ) );
         }

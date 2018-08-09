@@ -29,9 +29,9 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.management.TransactionManager;
 
 @Service.Implementation( ManagementBeanProvider.class )
@@ -50,14 +50,14 @@ public final class TransactionManagerBean extends ManagementBeanProvider
 
     private static class TransactionManagerImpl extends Neo4jMBean implements TransactionManager
     {
-        private final TransactionStats txMonitor;
-        private final DataSourceManager xadsm;
+        private final DatabaseTransactionStats txMonitor;
+        private final DataSourceManager dataSourceManager;
 
         TransactionManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.txMonitor = management.resolveDependency( TransactionStats.class );
-            this.xadsm = management.resolveDependency( DataSourceManager.class );
+            this.txMonitor = management.resolveDependency( DatabaseTransactionStats.class );
+            this.dataSourceManager = management.resolveDependency( DataSourceManager.class );
         }
 
         @Override
@@ -93,7 +93,7 @@ public final class TransactionManagerBean extends ManagementBeanProvider
         @Override
         public long getLastCommittedTxId()
         {
-            NeoStoreDataSource neoStoreDataSource = xadsm.getDataSource();
+            NeoStoreDataSource neoStoreDataSource = dataSourceManager.getDataSource();
             if ( neoStoreDataSource == null )
             {
                 return -1;

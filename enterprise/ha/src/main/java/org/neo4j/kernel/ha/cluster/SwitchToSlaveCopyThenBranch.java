@@ -55,8 +55,8 @@ import org.neo4j.kernel.ha.store.ForeignStoreException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
@@ -73,7 +73,7 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
             Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver, Monitor monitor,
             StoreCopyClientMonitor storeCopyMonitor, Supplier<NeoStoreDataSource> neoDataSourceSupplier,
             Supplier<TransactionIdStore> transactionIdStoreSupplier, Function<Slave,SlaveServer> slaveServerFactory, UpdatePuller updatePuller,
-            PageCache pageCache, Monitors monitors, TransactionStats transactionCounters )
+            PageCache pageCache, Monitors monitors, Supplier<DatabaseTransactionStats> transactionStatsSupplier )
     {
         this( storeDir,
                 logService,
@@ -93,7 +93,7 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
                 updatePuller,
                 pageCache,
                 monitors,
-                transactionCounters
+                transactionStatsSupplier
         );
     }
 
@@ -114,13 +114,13 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
                                  UpdatePuller updatePuller,
                                  PageCache pageCache,
                                  Monitors monitors,
-                                 TransactionStats transactionCounters )
+                                 Supplier<DatabaseTransactionStats> transactionStatsSupplier )
     {
         super( idGeneratorFactory, monitors, requestContextFactory, masterDelegateHandler,
                 clusterMemberAvailability, masterClientResolver, monitor, pullerFactory, updatePuller,
                 slaveServerFactory, config, logService, pageCache, storeDir,
                 transactionIdStoreSupplier,
-                transactionCounters, neoDataSourceSupplier, storeCopyClient );
+                transactionStatsSupplier, neoDataSourceSupplier, storeCopyClient );
         this.logService = logService;
     }
 

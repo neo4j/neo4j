@@ -73,9 +73,9 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
@@ -370,7 +370,7 @@ public class SwitchToSlaveCopyThenBranchTest
         when( dataSource.getStoreId() ).thenReturn( storeId );
         when( dataSource.getDependencyResolver() ).thenReturn( resolver );
 
-        TransactionStats transactionCounters = mock( TransactionStats.class );
+        DatabaseTransactionStats transactionCounters = mock( DatabaseTransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
 
         Response<HandshakeResult> response = mock( Response.class );
@@ -404,7 +404,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
                     when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
                     return server;
-                }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters ) );
+                }, updatePuller, pageCacheMock, mock( Monitors.class ), () -> transactionCounters ) );
     }
 
     private Config configMock()

@@ -44,8 +44,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
@@ -648,8 +648,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         // given
         long initialNodes = countNodes();
-        TransactionStats txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency(
-                TransactionStats.class );
+        DatabaseTransactionStats txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency(
+                DatabaseTransactionStats.class );
         long initialTerminations = txMonitor.getNumberOfTerminatedTransactions();
 
         // when sending a request and aborting in the middle of receiving the result

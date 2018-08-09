@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
@@ -127,8 +126,6 @@ public class PlatformModule
     public final AvailabilityGuard availabilityGuard;
 
     public final ThreadToStatementContextBridge threadToTransactionBridge;
-
-    public final TransactionStats transactionMonitor;
 
     public final SystemNanoClock clock;
 
@@ -215,8 +212,6 @@ public class PlatformModule
 
         availabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );
         threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( availabilityGuard ) );
-
-        transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
         kernelExtensionFactories = externalDependencies.kernelExtensions();
         engineProviders = externalDependencies.executionEngines();
@@ -362,10 +357,5 @@ public class PlatformModule
         default:
             throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
         }
-    }
-
-    protected TransactionStats createTransactionStats()
-    {
-        return new TransactionStats();
     }
 }

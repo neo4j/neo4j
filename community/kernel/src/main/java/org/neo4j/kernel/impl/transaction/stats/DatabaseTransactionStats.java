@@ -17,27 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.stats;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
-public class TransactionStats implements TransactionMonitor, TransactionCounters
+import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+
+public class DatabaseTransactionStats implements TransactionMonitor, TransactionCounters
 {
-    private final AtomicLong startedTransactionCount = new AtomicLong();
     private final AtomicLong activeReadTransactionCount = new AtomicLong();
-    private final AtomicLong activeWriteTransactionCount = new AtomicLong();
-    private final AtomicLong committedReadTransactionCount = new AtomicLong();
-    private final AtomicLong committedWriteTransactionCount = new AtomicLong();
-    private final AtomicLong rolledBackReadTransactionCount = new AtomicLong();
-    private final AtomicLong rolledBackWriteTransactionCount = new AtomicLong();
-    private final AtomicLong terminatedReadTransactionCount = new AtomicLong();
-    private final AtomicLong terminatedWriteTransactionCount = new AtomicLong();
+    private final LongAdder startedTransactionCount = new LongAdder();
+    private final LongAdder activeWriteTransactionCount = new LongAdder();
+    private final LongAdder committedReadTransactionCount = new LongAdder();
+    private final LongAdder committedWriteTransactionCount = new LongAdder();
+    private final LongAdder rolledBackReadTransactionCount = new LongAdder();
+    private final LongAdder rolledBackWriteTransactionCount = new LongAdder();
+    private final LongAdder terminatedReadTransactionCount = new LongAdder();
+    private final LongAdder terminatedWriteTransactionCount = new LongAdder();
     private volatile long peakTransactionCount;
 
     @Override
     public void transactionStarted()
     {
-        startedTransactionCount.incrementAndGet();
+        startedTransactionCount.increment();
         long active = activeReadTransactionCount.incrementAndGet();
         peakTransactionCount = Math.max( peakTransactionCount, active );
     }
@@ -66,7 +69,7 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     public void upgradeToWriteTransaction()
     {
         decrementCounter( activeReadTransactionCount, activeWriteTransactionCount, false );
-        incrementCounter( activeReadTransactionCount, activeWriteTransactionCount, true );
+        activeWriteTransactionCount.increment();
     }
 
     @Override
@@ -78,7 +81,7 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     @Override
     public long getNumberOfStartedTransactions()
     {
-        return startedTransactionCount.get();
+        return startedTransactionCount.longValue();
     }
 
     @Override
@@ -90,13 +93,13 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     @Override
     public long getNumberOfCommittedReadTransactions()
     {
-        return committedReadTransactionCount.get();
+        return committedReadTransactionCount.longValue();
     }
 
     @Override
     public long getNumberOfCommittedWriteTransactions()
     {
-        return committedWriteTransactionCount.get();
+        return committedWriteTransactionCount.longValue();
     }
 
     @Override
@@ -108,13 +111,13 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     @Override
     public long getNumberOfActiveReadTransactions()
     {
-        return activeReadTransactionCount.get();
+        return activeReadTransactionCount.longValue();
     }
 
     @Override
     public long getNumberOfActiveWriteTransactions()
     {
-        return activeWriteTransactionCount.get();
+        return activeWriteTransactionCount.longValue();
     }
 
     @Override
@@ -126,13 +129,13 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     @Override
     public long getNumberOfTerminatedReadTransactions()
     {
-        return terminatedReadTransactionCount.get();
+        return terminatedReadTransactionCount.longValue();
     }
 
     @Override
     public long getNumberOfTerminatedWriteTransactions()
     {
-        return terminatedWriteTransactionCount.get();
+        return terminatedWriteTransactionCount.longValue();
     }
 
     @Override
@@ -144,24 +147,36 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     @Override
     public long getNumberOfRolledBackReadTransactions()
     {
-        return rolledBackReadTransactionCount.get();
+        return rolledBackReadTransactionCount.longValue();
     }
 
     @Override
     public long getNumberOfRolledBackWriteTransactions()
     {
-        return rolledBackWriteTransactionCount.get();
+        return rolledBackWriteTransactionCount.longValue();
     }
 
-    private void incrementCounter( AtomicLong readCount, AtomicLong writeCount, boolean write )
+    private static void incrementCounter( LongAdder readCount, LongAdder writeCount, boolean write )
     {
-        long count = write ? writeCount.incrementAndGet() : readCount.incrementAndGet();
-        assert count > 0;
+        if ( write )
+        {
+            writeCount.increment();
+        }
+        else
+        {
+            readCount.increment();
+        }
     }
 
-    private void decrementCounter( AtomicLong readCount, AtomicLong writeCount, boolean write )
+    private static void decrementCounter( AtomicLong readCount, LongAdder writeCount, boolean write )
     {
-        long count = write ? writeCount.decrementAndGet() : readCount.decrementAndGet();
-        assert count >= 0;
+        if ( write )
+        {
+            writeCount.decrement();
+        }
+        else
+        {
+            readCount.decrementAndGet();
+        }
     }
 }

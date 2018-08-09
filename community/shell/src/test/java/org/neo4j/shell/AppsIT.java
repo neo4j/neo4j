@@ -41,8 +41,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -1170,7 +1170,7 @@ public class AppsIT extends AbstractShellIT
     @Test
     public void canTerminateAnActiveCommand() throws Exception
     {
-        TransactionStats txStats = db.getDependencyResolver().resolveDependency( TransactionStats.class );
+        DatabaseTransactionStats txStats = db.getDependencyResolver().resolveDependency( DatabaseTransactionStats.class );
         assertEquals( 0, txStats.getNumberOfActiveTransactions() );
 
         createNodeAndLockItInDifferentThread( "Person", "id", 42 );

@@ -73,9 +73,9 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -135,7 +135,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() ) );
         SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
         TransactionMonitor transactionMonitor = dependency( mutableDependencies, TransactionMonitor.class,
-                deps -> new TransactionStats() );
+                deps -> new DatabaseTransactionStats() );
         AvailabilityGuard availabilityGuard = dependency( mutableDependencies, AvailabilityGuard.class,
                 deps -> new AvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ), NullLog.getInstance() ) );
         dependency( mutableDependencies, DiagnosticsManager.class,

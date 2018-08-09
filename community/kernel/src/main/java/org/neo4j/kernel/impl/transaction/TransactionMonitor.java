@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction;
 
 /**
  * This monitor is used to track transaction management. It is called when client code starts, finishes, or terminates transactions.
- *
- * In HA this refers only to what the local instance is doing, not what is happening globally in the whole cluster.
  */
 public interface TransactionMonitor
 {

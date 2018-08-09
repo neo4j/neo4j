@@ -21,9 +21,8 @@ package org.neo4j.kernel;
 
 import java.time.Clock;
 
-import org.neo4j.kernel.impl.transaction.TransactionStats;
+import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -39,16 +38,18 @@ public class DatabaseAvailability extends LifecycleAdapter
 {
     private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = availabilityRequirement( "Database available" );
     private final AvailabilityGuard availabilityGuard;
-    private final TransactionStats transactionMonitor;
+    private final TransactionCounters transactionCounters;
+    private final Clock clock;
     private final long awaitActiveTransactionDeadlineMillis;
     private volatile boolean started;
 
-    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionStats transactionMonitor,
+    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionCounters transactionCounters, Clock clock,
             long awaitActiveTransactionDeadlineMillis )
     {
         this.availabilityGuard = availabilityGuard;
-        this.transactionMonitor = transactionMonitor;
+        this.transactionCounters = transactionCounters;
         this.awaitActiveTransactionDeadlineMillis = awaitActiveTransactionDeadlineMillis;
+        this.clock = clock;
 
         // On initial setup, deny availability
         availabilityGuard.require( AVAILABILITY_REQUIREMENT );
@@ -80,9 +81,8 @@ public class DatabaseAvailability extends LifecycleAdapter
 
     private void awaitTransactionsClosedWithinTimeout()
     {
-        Clock clock = Clocks.systemClock();
         long deadline = clock.millis() + awaitActiveTransactionDeadlineMillis;
-        while ( transactionMonitor.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
+        while ( transactionCounters.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
         {
             parkNanos( MILLISECONDS.toNanos( 10 ) );
         }
