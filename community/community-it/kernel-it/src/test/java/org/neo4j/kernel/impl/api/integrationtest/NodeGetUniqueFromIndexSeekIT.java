@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.eclipse.collections.api.tuple.primitive.LongObjectPair;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -103,9 +103,9 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // when looking for it
         Read read = newTransaction().dataRead();
         int propertyId = index.properties()[0];
-        Pair<Long,Value[]> result = read.lockingNodeUniqueIndexSeek( index, new int[]{0}, exact( propertyId, value ) );
-        long foundId = result.first();
-        Value[] propertyValues = result.other();
+        LongObjectPair<Value[]> result = read.lockingNodeUniqueIndexSeek( index, new int[]{0}, exact( propertyId, value ) );
+        long foundId = result.getOne();
+        Value[] propertyValues = result.getTwo();
         commit();
 
         // then

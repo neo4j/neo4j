@@ -351,7 +351,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else {
       val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.schema())
       val pair = reads().lockingNodeUniqueIndexSeek(index, propertyIndicesWithValues, queries: _*)
-      val (nodeId, values) = (pair.first(), pair.other())
+      val (nodeId, values) = (pair.getOne, pair.getTwo())
       if (StatementConstants.NO_SUCH_NODE == nodeId) {
         None
       } else {
