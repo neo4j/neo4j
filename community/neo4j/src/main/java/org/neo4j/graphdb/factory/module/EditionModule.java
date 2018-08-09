@@ -174,13 +174,13 @@ public abstract class EditionModule
         config.augment( GraphDatabaseSettings.editionName, databaseInfo.edition.toString() );
     }
 
-    public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );
-
     public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, PlatformModule platform, EditionModule edition,
             Procedures procedures, Logger msgLog )
     {
         return new DefaultDatabaseManager( platform, edition, procedures, msgLog, graphDatabaseFacade );
     }
+
+    public abstract void createSecurityModule( PlatformModule platformModule, Procedures procedures );
 
     protected static SecurityModule setupSecurityModule( PlatformModule platformModule, Log log, Procedures procedures,
             String key )
