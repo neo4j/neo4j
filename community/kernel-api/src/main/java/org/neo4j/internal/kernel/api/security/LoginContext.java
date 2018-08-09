@@ -37,6 +37,7 @@ public interface LoginContext
      * Authorize the user and return a SecurityContext.
      *
      * @param propertyIdLookup token lookup, used to compile property level security verification
+     * @param dbName the name of the database the user should be authorized against
      * @return the security context
      */
     SecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName );
