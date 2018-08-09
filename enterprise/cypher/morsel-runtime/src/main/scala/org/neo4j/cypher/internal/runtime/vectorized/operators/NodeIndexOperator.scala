@@ -66,7 +66,7 @@ abstract class NodeIndexOperatorWithValues[CURSOR <: NodeValueIndexCursor](offse
     maybeValueFromIndexOffset.foreach { offset =>
       if (!cursor.hasValue) {
         // We were promised at plan time that we can get values everywhere, so this should never happen
-        throw new IllegalStateException("NodeCursor did unexpectedly not have values during index scan.")
+        throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
       }
       val value = cursor.propertyValue(offset)
       currentRow.setRefAt(offset, value)

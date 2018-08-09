@@ -300,7 +300,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
             case None =>
               if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
                 // We were promised at plan time that we can get values everywhere, so this should never happen
-                throw new IllegalStateException("NodeCursor did unexpectedly not have values during index seek.")
+                throw new IllegalStateException("NodeCursor unexpectedly had no values during index seek.")
               }
               propertyIndicesWithValues.map(nodeCursor.propertyValue)
           }
@@ -328,7 +328,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
           if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
             // We were promised at plan time that we can get values everywhere, so this should never happen
-            throw new IllegalStateException("NodeCursor did unexpectedly not have values during index scan.")
+            throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
           }
           // Get the actual property values for the requested indices
           val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
@@ -366,7 +366,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
             if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
               // We were promised at plan time that we can get values everywhere, so this should never happen
-              throw new IllegalStateException("NodeCursor did unexpectedly not have values during index scan.")
+              throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
             }
             // Get the actual property values for the requested indices
             val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
