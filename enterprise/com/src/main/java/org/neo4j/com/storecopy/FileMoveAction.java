@@ -30,6 +30,12 @@ import java.nio.file.Path;
 
 public interface FileMoveAction
 {
+    /**
+     * Execute a file move, moving the prepared file to the given {@code toDir}.
+     * @param toDir The target directory of the move operation
+     * @param copyOptions
+     * @throws IOException
+     */
     void move( File toDir, CopyOption... copyOptions ) throws IOException;
 
     File file();
@@ -45,7 +51,10 @@ public interface FileMoveAction
                 Path originalPath = file.toPath();
                 Path relativePath = base.relativize( originalPath );
                 Path resolvedPath = toDir.toPath().resolve( relativePath );
-                Files.createDirectories( resolvedPath.getParent() );
+                if ( !Files.isSymbolicLink( resolvedPath.getParent() ) )
+                {
+                    Files.createDirectories( resolvedPath.getParent() );
+                }
                 Files.copy( originalPath, resolvedPath, copyOptions );
             }
 
