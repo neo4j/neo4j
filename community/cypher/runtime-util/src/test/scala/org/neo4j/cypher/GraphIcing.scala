@@ -97,7 +97,7 @@ trait GraphIcing {
       graph.execute(s"CREATE INDEX ON :$label(${properties.mkString(",")})")
 
       inTx {
-        graph.schema().awaitIndexesOnline(1, TimeUnit.MINUTES)
+        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
       }
     }
 
