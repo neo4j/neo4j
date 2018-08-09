@@ -285,33 +285,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         None
       }
 
-
     val needsValuesFromIndexSeek = actualValues.isEmpty && propertyIndicesWithValues.nonEmpty
     reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, needsValuesFromIndexSeek, queries: _*)
     new CursorIterator[IndexedNodeWithProperties] {
       override protected def fetchNext(): IndexedNodeWithProperties = {
-        if (nodeCursor.next()) {
-          val nodeRef = nodeCursor.nodeReference()
-
-          // Get the actual property values for the requested indices
-          val values = actualValues match {
-            case Some(v) =>
-              v
-            case None =>
-              if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
-                // We were promised at plan time that we can get values everywhere, so this should never happen
-                throw new IllegalStateException("NodeCursor unexpectedly had no values during index seek.")
-              }
-              propertyIndicesWithValues.map(nodeCursor.propertyValue)
-          }
-
-
-          val node = fromNodeProxy(entityAccessor.newNodeProxy(nodeRef))
-          IndexedNodeWithProperties(node, values)
-        }
-        else {
-          null
-        }
+        getNextNodeRefAndValuesFromCursor(nodeCursor, if (needsValuesFromIndexSeek) propertyIndicesWithValues else Array.emptyIntArray).map {
+          case (nodeRef, cursorValues) =>
+            IndexedNodeWithProperties(fromNodeProxy(entityAccessor.newNodeProxy(nodeRef)), actualValues.getOrElse(cursorValues))
+        }.orNull
       }
 
       override protected def close(): Unit = nodeCursor.close()
@@ -323,21 +304,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, propertyIndicesWithValues.nonEmpty)
     new CursorIterator[IndexedNodeWithProperties] {
       override protected def fetchNext(): IndexedNodeWithProperties = {
-        if (nodeCursor.next()) {
-          val nodeRef = nodeCursor.nodeReference()
-
-          if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
-            // We were promised at plan time that we can get values everywhere, so this should never happen
-            throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
-          }
-          // Get the actual property values for the requested indices
-          val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
-          val node = fromNodeProxy(entityAccessor.newNodeProxy(nodeRef))
-          IndexedNodeWithProperties(node, values)
-        }
-        else {
-          null
-        }
+        getNextNodeRefAndValuesFromCursor(nodeCursor, propertyIndicesWithValues).map {
+          case (nodeRef, cursorValues) => IndexedNodeWithProperties(fromNodeProxy(entityAccessor.newNodeProxy(nodeRef)), cursorValues)
+        }.orNull
       }
 
       override protected def close(): Unit = nodeCursor.close()
@@ -361,19 +330,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, propertyIndicesWithValues.nonEmpty)
       new CursorIterator[IndexedPrimitiveNodeWithProperties] {
         override protected def fetchNext(): IndexedPrimitiveNodeWithProperties =
-          if (nodeCursor.next()) {
-            val nodeRef = nodeCursor.nodeReference()
-
-            if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
-              // We were promised at plan time that we can get values everywhere, so this should never happen
-              throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
-            }
-            // Get the actual property values for the requested indices
-            val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
-            IndexedPrimitiveNodeWithProperties(nodeRef, values)
-          } else {
-            null
-          }
+          getNextNodeRefAndValuesFromCursor(nodeCursor, propertyIndicesWithValues).map {
+            case (nodeRef, cursorValues) => IndexedPrimitiveNodeWithProperties(nodeRef, cursorValues)
+          }.orNull
 
         override protected def close(): Unit = nodeCursor.close()
       }
@@ -419,7 +378,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       override protected def close(): Unit = cursor.close()
     }
   }
-
 
   override def nodeAsMap(id: Long): MapValue = {
     val nodes = nodeCursor
@@ -772,9 +730,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
   }
 
-  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
+  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = {
     val javaCreator = new java.util.function.Function[K, V]() {
-      override def apply(key: K) = creator
+      override def apply(key: K): V = creator
     }
     transactionalContext.schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
@@ -1110,6 +1068,23 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
+
+  private def getNextNodeRefAndValuesFromCursor(nodeCursor: NodeValueIndexCursor, propertyIndicesWithValues: Array[Int]): Option[(Long, Array[Value])] = {
+    if (nodeCursor.next()) {
+      val nodeRef = nodeCursor.nodeReference()
+
+      if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
+        // We were promised at plan time that we can get values everywhere, so this should never happen
+        throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
+      }
+      // Get the actual property values for the requested indices
+      val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
+      Some((nodeRef, values))
+    }
+    else {
+      None
+    }
+  }
 
   private def allocateAndTraceNodeCursor() = {
     val cursor = transactionalContext.cursors.allocateNodeCursor()

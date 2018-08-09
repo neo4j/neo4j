@@ -61,7 +61,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<NodeWithPropertyValues> addedWithValues = Collections.emptyIterator();
     private LongSet removed = LongSets.immutable.empty();
-    // TODO This should not be set simply to true. The NodeIndexSeeker should dictate that, either on creation or on initialize
     private boolean needsValues;
     private final DefaultCursors pool;
 

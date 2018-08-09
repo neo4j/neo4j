@@ -64,7 +64,7 @@ case class IndexDescriptor(label: LabelId,
   def canEqual(other: Any): Boolean = other.isInstanceOf[IndexDescriptor]
 
   // The lambda functions `orderCapability` and `valueCapability`cannot be compared for
-  // equality in a sensible way. By exluding them from equals and hashCode, we make
+  // equality in a sensible way. By excluding them from equals and hashCode, we make
   // the assumption that they should be always the same for (label, properties) combination
   override def equals(other: Any): Boolean = other match {
     case that: IndexDescriptor =>
