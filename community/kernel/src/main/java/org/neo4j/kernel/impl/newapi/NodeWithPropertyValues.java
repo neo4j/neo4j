@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.txstate;
+package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -27,8 +27,6 @@ import org.neo4j.values.storable.Value;
 /**
  * A node together with properties. This class is needed to present changes in the transaction state to index operations
  * that require knowing the affected property values as well.
- *
- * TODO create interface and impl
  */
 public class NodeWithPropertyValues
 {
@@ -36,7 +34,7 @@ public class NodeWithPropertyValues
     private final long nodeId;
     private final Value[] values;
 
-    public NodeWithPropertyValues( long nodeId, Value[] values )
+    NodeWithPropertyValues( long nodeId, Value[] values )
     {
         this.nodeId = nodeId;
         this.values = values;

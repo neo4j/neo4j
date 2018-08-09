@@ -17,33 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.impl.newapi;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.storageengine.api.txstate.NodeWithPropertyValues;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
+import static java.util.Collections.singleton;
 import static org.eclipse.collections.impl.factory.Sets.unionAll;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
-import static org.neo4j.kernel.impl.api.state.TxStateTest.newSetWithValues;
 
-public class TxStateCompositeIndexTest
+public class TxStateIndexChangesCompositeTest
 {
     private TransactionState state;
 
@@ -62,8 +66,8 @@ public class TxStateCompositeIndexTest
     public void shouldScanOnAnEmptyTxState()
     {
         // WHEN
-        LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
-        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1_2 );
+        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, indexOn_1_1_2 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, indexOn_1_1_2 );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
@@ -74,8 +78,7 @@ public class TxStateCompositeIndexTest
     public void shouldSeekOnAnEmptyTxState()
     {
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
+        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
@@ -89,8 +92,8 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_2_3 ).addDefaultStringEntries( 44L );
 
         // WHEN
-        LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
-        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1_2 );
+        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, indexOn_1_1_2 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, indexOn_1_1_2 );
 
         // THEN
         assertEquals( asSet( 42L, 43L ), toSet( diffSets.getAdded() ) );
@@ -105,8 +108,7 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_2_3 ).addDefaultStringEntries( 44L );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
+        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
         // THEN
         assertEquals( asSet( 43L ), toSet( diffSets.getAdded() ) );
     }
@@ -119,8 +121,7 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_2_3 ).addDefaultNumberEntries( 44L );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( 43001.0, 43002.0 ) );
+        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, indexOn_1_1_2, ValueTuple.of( 43001.0, 43002.0 ) );
 
         // THEN
         assertEquals( asSet( 43L ), toSet( diffSets.getAdded() ) );
@@ -135,8 +136,8 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_1_2 ).removeDefaultStringEntries( 44L );
 
         // WHEN
-        LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
-        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = state.indexUpdatesWithValuesForScan( indexOn_1_1_2 );
+        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, indexOn_1_1_2 );
+        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, indexOn_1_1_2 );
 
         // THEN
         assertEquals( asSet( 42L ), toSet( diffSets.getAdded() ) );
@@ -154,8 +155,7 @@ public class TxStateCompositeIndexTest
                 getDefaultStringPropertyValues( 43L, indexOn_1_1_2.schema().getPropertyIds() ) );
 
         // WHEN
-        LongDiffSets diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
+        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
         assertEquals( asSet( 43L, 44L ), toSet( diffSets.getAdded() ) );
@@ -202,7 +202,7 @@ public class TxStateCompositeIndexTest
         for ( int i = 0; i < values.length; i++ )
         {
             // WHEN
-            LongDiffSets diffSets = state.indexUpdatesForSeek( index, values[i] );
+            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, index, values[i] );
 
             // THEN
             assertEquals( asSet( nodeIdStart + i ), toSet( diffSets.getAdded() ) );
@@ -291,5 +291,10 @@ public class TxStateCompositeIndexTest
             values[i] = nodeId + "value" + propertyIds[i];
         }
         return ValueTuple.of( values );
+    }
+
+    static Set<NodeWithPropertyValues> newSetWithValues( long nodeId, Object... values )
+    {
+        return singleton( new NodeWithPropertyValues( nodeId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) ) );
     }
 }

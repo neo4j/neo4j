@@ -20,16 +20,16 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.UnmodifiableMap;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import java.util.NavigableMap;
+
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 
 /**
@@ -107,50 +107,23 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    LongDiffSets indexUpdatesForScan( IndexDescriptor index );
+    // INDEX UPDATES
 
     /**
-     * Returns the updates for a particular index as a DiffSets of both Node values and propertyValues.
-     *
-     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForScan(IndexDescriptor)} )}
-     * should be used instead.
+     * A readonly view of all index updates for the provided schema
      */
-    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForScan( IndexDescriptor descriptor );
-
-    LongDiffSets indexUpdatesForSuffixOrContains( IndexDescriptor index, IndexQuery query );
+    UnmodifiableMap<ValueTuple, ? extends LongDiffSets> getIndexUpdates( SchemaDescriptor schema );
 
     /**
-     * Returns the updates for a particular range as a DiffSets of both Node values and propertyValues.
+     * A readonly view of all index updates for the provided schema, in sorted order. The returned
+     * Map is unmodifiable.
      *
-     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForSuffixOrContains(IndexDescriptor, IndexQuery)} )}
-     * should be used instead.
+     * Ensure sorted index updates for a given index. This is needed for range query support and
+     * ay involve converting the existing hash map first.
      */
-    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForSuffixOrContains( IndexDescriptor descriptor, IndexQuery query );
+    NavigableMap<ValueTuple, ? extends LongDiffSets> getSortedIndexUpdates( SchemaDescriptor descriptor );
 
-    LongDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
-
-    LongDiffSets indexUpdatesForRangeSeek( IndexDescriptor index, ValueGroup valueGroup,
-                                                            Value lower, boolean includeLower,
-                                                            Value upper, boolean includeUpper );
-
-    /**
-     * Returns the updates for a particular range as a DiffSets of both Node values and propertyValues.
-     *
-     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForRangeSeek(IndexDescriptor, ValueGroup, Value, boolean, Value, boolean)}
-     * should be used instead.
-     */
-    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( IndexDescriptor descriptor, ValueGroup valueGroup, Value lower,
-            boolean includeLower, Value upper, boolean includeUpper );
-
-    LongDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
-
-    /**
-     * Returns the updates for a particular range as a DiffSets of both Node values and propertyValues.
-     *
-     * If property values are not needed, {@link ReadableTransactionState#indexUpdatesForRangeSeekByPrefix(IndexDescriptor, String)} )}
-     * should be used instead.
-     */
-    ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix );
+    // OTHER
 
     NodeState getNodeState( long id );
 
