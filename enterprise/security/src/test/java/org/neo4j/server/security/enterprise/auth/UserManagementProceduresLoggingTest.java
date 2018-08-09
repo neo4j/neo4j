@@ -84,7 +84,7 @@ public class UserManagementProceduresLoggingTest
                 authProcedures.securityLog, securityContext.isAdmin() );
     }
 
-    private EnterpriseUserManager getUserManager() throws Throwable
+    protected EnterpriseUserManager getUserManager() throws Throwable
     {
         InternalFlatFileRealm realm = new InternalFlatFileRealm(
                                             new InMemoryUserRepository(),
