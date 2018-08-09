@@ -72,14 +72,16 @@ public class UserSerialization extends FileRepositorySerializer<User>
         return  b.build();
     }
 
-    private String serialize( Credential cred )
+    // TODO: make private again when using new credentials
+    public String serialize( Credential cred )
     {
         String encodedSalt = HexString.encodeHexString( cred.salt() );
         String encodedPassword = HexString.encodeHexString( cred.passwordHash() );
         return String.join( credentialSeparator, Credential.DIGEST_ALGO, encodedPassword, encodedSalt );
     }
 
-    private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
+    // TODO: make private again when using new credentials
+    public Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
     {
         String[] split = part.split( credentialSeparator, -1 );
         if ( split.length != 3 )

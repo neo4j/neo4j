@@ -39,6 +39,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -596,6 +597,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         assertEmpty( adminSubject, "CALL dbms.security.createRole('new_role')" );
         userManager.assertRoleExists( "new_role" );
+        assertEquals( userManager.getUsernamesForRole( "new_role" ).size(), 0 );
     }
 
     @Test

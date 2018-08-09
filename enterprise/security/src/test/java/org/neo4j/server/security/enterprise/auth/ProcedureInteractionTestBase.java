@@ -76,6 +76,7 @@ import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -131,7 +132,7 @@ public abstract class ProcedureInteractionTestBase<S>
 
     private final String EMPTY_ROLE = "empty";
 
-    S adminSubject;
+    protected S adminSubject;
     S schemaSubject;
     S writeSubject;
     S editorSubject;
@@ -144,6 +145,9 @@ public abstract class ProcedureInteractionTestBase<S>
     String[] initialRoles = {ADMIN, ARCHITECT, PUBLISHER, EDITOR, READER, EMPTY_ROLE};
 
     @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+
+    @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
     private ThreadingRule threading()
@@ -151,7 +155,7 @@ public abstract class ProcedureInteractionTestBase<S>
         return threading;
     }
 
-    EnterpriseUserManager userManager;
+    protected EnterpriseUserManager userManager;
 
     protected NeoInteractionLevel<S> neo;
     protected TransportTestUtil util;
@@ -426,7 +430,7 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
-    void assertEmpty( S subject, String call )
+    protected void assertEmpty( S subject, String call )
     {
         String err = assertCallEmpty( subject, call );
         assertThat( err, equalTo( "" ) );

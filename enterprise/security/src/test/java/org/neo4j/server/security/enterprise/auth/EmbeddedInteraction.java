@@ -51,7 +51,7 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseLoginContext>
 {
-    private GraphDatabaseFacade db;
+    protected GraphDatabaseFacade db;
     private EnterpriseAuthManager authManager;
     private FileSystemAbstraction fileSystem;
     private ConnectorPortRegister connectorRegister;
@@ -75,7 +75,11 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseLoginC
         init( builder, config );
     }
 
-    private void init( GraphDatabaseBuilder builder, Map<String, String> config ) throws Throwable
+    protected EmbeddedInteraction()
+    {
+    }
+
+    protected void init( GraphDatabaseBuilder builder, Map<String, String> config ) throws Throwable
     {
         builder.setConfig( new BoltConnector( "bolt" ).type, "BOLT" );
         builder.setConfig( new BoltConnector( "bolt" ).enabled, "true" );
