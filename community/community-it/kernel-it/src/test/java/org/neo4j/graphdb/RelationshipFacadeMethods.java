@@ -34,11 +34,8 @@ public enum RelationshipFacadeMethods implements Consumer<Relationship>
     GET_PROPERTY_KEYS( new FacadeMethod<>( "Iterable<String> getPropertyKeys()", r -> consume( r.getPropertyKeys() ) ) ),
     DELETE( new FacadeMethod<>( "void delete()", Relationship::delete ) ),
     GET_START_NODE( new FacadeMethod<>( "Node getStartNode()", Relationship::getStartNode ) ),
-    GET_START_NODE_ID( new FacadeMethod<>( "Node getStartNode()", Relationship::getStartNodeId ) ),
     GET_END_NODE( new FacadeMethod<>( "Node getEndNode()", Relationship::getEndNode ) ),
-    GET_END_NODE_ID( new FacadeMethod<>( "Node getEndNode()", Relationship::getEndNodeId ) ),
     GET_OTHER_NODE( new FacadeMethod<>( "Node getOtherNode( Node node )", r -> r.getOtherNode( null ) ) ),
-    GET_OTHER_NODE_ID( new FacadeMethod<>( "Node getOtherNode( Node node )", r -> r.getOtherNodeId( 42 ) ) ),
     GET_NODES( new FacadeMethod<>( "Node[] getNodes()", Relationship::getNodes ) ),
     GET_TYPE( new FacadeMethod<>( "RelationshipType getType()", Relationship::getType ) ),
     IS_TYPE( new FacadeMethod<>( "boolean isType( RelationshipType type )", r -> r.isType( withName( "foo" ) ) ) );

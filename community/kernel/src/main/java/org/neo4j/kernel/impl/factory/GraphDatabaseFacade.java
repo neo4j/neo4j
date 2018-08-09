@@ -333,7 +333,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public IndexManager index()
     {
-        assertTransactionOpen();
         return indexManager.get();
     }
 

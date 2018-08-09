@@ -44,8 +44,7 @@ public enum GraphDatabaseServiceFacadeMethods implements Consumer<GraphDatabaseS
     GET_ALL_RELATIONSHIP_TYPES_IN_USE(
             new FacadeMethod<>( "Iterable<RelationshipType> getAllRelationshipTypesInUse()", GraphDatabaseService::getAllRelationshipTypesInUse ) ),
     GET_ALL_PROPERTY_KEYS( new FacadeMethod<>( "Iterable<String> getAllPropertyKeys()", GraphDatabaseService::getAllPropertyKeys ) ),
-    SCHEMA( new FacadeMethod<>( "Schema schema()", GraphDatabaseService::schema ) ),
-    INDEX( new FacadeMethod<>( "IndexManager index()", GraphDatabaseService::index ) );
+    SCHEMA( new FacadeMethod<>( "Schema schema()", GraphDatabaseService::schema ) );
 
     private final FacadeMethod<GraphDatabaseService> facadeMethod;
 
