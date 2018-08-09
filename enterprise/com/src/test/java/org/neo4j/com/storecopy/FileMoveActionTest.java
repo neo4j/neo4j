@@ -22,12 +22,14 @@
  */
 package org.neo4j.com.storecopy;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -118,5 +120,31 @@ public class FileMoveActionTest
         // then
         assertTrue( targetFile.exists() );
         assertTrue( sourceFile.exists() );
+    }
+
+    @Test
+    public void symbolicLinkAsTargetShouldNotBreakTheMove() throws Exception
+    {
+        /*
+         * Setup the following structure
+         * - realSourceFile: a dummy file serving as the file to copy, the original source
+         * - realTargetDirectory: the real directory to move the file into
+         * - linkTargetDirectory: a symbolic link pointing to realTargetDirectory.
+         */
+        String realFileFilename = "realFile"; // we need this for the assert at the end
+        Path realSourceFile = Files.createFile( new File( testDirectory.absolutePath(), realFileFilename ).toPath() );
+        Path realTargetDirectory = Files.createDirectory( new File( testDirectory.absolutePath(), "realTargetDirectory" ).toPath() );
+        Path linkTargetDirectory = Files.createSymbolicLink( new File( testDirectory.absolutePath(), "linkToTarget" ).toPath(), realTargetDirectory );
+
+        /*
+         * We now try to copy the realSourceFile to the linkTargetDirectory. This must succeed.
+         * As a reminder, the FileMoveAction.copyViaFileSystem() will prepare a file move operation for the real source file
+         *  (contained in the top level test directory). The move() call will accept as an argument the symbolic link and
+         *  try to move the source in there.
+         */
+        FileMoveAction.copyViaFileSystem( realSourceFile.toFile(), testDirectory.absolutePath() ).move( linkTargetDirectory.toFile() );
+
+        File target = new File( linkTargetDirectory.toFile(), realFileFilename );
+        assertTrue( Files.exists( target.toPath() ) );
     }
 }
