@@ -30,7 +30,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -116,7 +116,7 @@ public class SetDefaultAdminCommand implements AdminCommand
         UserRepository admins = new FileUserRepository( fileSystem, adminIniFile, NullLogProvider.getInstance() );
         admins.init();
         admins.start();
-        admins.create( new User.Builder( username, Credential.INACCESSIBLE ).build() );
+        admins.create( new User.Builder( username, LegacyCredential.INACCESSIBLE ).build() );
         admins.stop();
         admins.shutdown();
 

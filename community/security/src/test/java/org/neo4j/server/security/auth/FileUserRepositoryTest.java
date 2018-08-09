@@ -34,7 +34,7 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -83,7 +83,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         // When
@@ -98,7 +98,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         users = new FileUserRepository( fs, authFile, logProvider );
@@ -116,7 +116,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         // When
@@ -176,7 +176,7 @@ public class FileUserRepositoryTest
 
         FileUserRepository users = new FileUserRepository( crashingFileSystem, authFile, logProvider );
         users.start();
-        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
 
         // When
         try
@@ -199,11 +199,11 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         // When
-        User updatedUser = new User.Builder( "john", Credential.INACCESSIBLE ).withRequiredPasswordChange( true )
+        User updatedUser = new User.Builder( "john", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true )
                 .build();
         try
         {
@@ -223,12 +223,12 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
-        User modifiedUser = user.augment().withCredentials( Credential.forPassword( "foo" ) ).build();
+        User modifiedUser = user.augment().withCredentials( LegacyCredential.forPassword( "foo" ) ).build();
 
         // When
-        User updatedUser = user.augment().withCredentials( Credential.forPassword( "bar" ) ).build();
+        User updatedUser = user.augment().withCredentials( LegacyCredential.forPassword( "bar" ) ).build();
         try
         {
             users.update( modifiedUser, updatedUser );
@@ -281,7 +281,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        users.create( new User.Builder( "oskar", Credential.forPassword( "hidden" ) ).build() );
+        users.create( new User.Builder( "oskar", LegacyCredential.forPassword( "hidden" ) ).build() );
         DoubleLatch latch = new DoubleLatch( 2 );
 
         // When

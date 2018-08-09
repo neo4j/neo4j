@@ -31,7 +31,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -183,7 +183,7 @@ public class SetDefaultAdminCommandIT
         FileUserRepository userRepository = new FileUserRepository( fileSystem, userFile,
                 NullLogProvider.getInstance() );
         userRepository.start();
-        userRepository.create( new User.Builder( username, Credential.INACCESSIBLE ).build() );
+        userRepository.create( new User.Builder( username, LegacyCredential.INACCESSIBLE ).build() );
         assertTrue( userRepository.getAllUsernames().contains( username ) );
         userRepository.stop();
         userRepository.shutdown();

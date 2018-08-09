@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -145,7 +145,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
         User user = new User.Builder()
                 .withName( username )
-                .withCredentials( Credential.forPassword( initialPassword ) )
+                .withCredentials( LegacyCredential.forPassword( initialPassword ) )
                 .withRequiredPasswordChange( requirePasswordChange )
                 .build();
         userRepository.create( user );
@@ -204,7 +204,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         try
         {
             User updatedUser = existingUser.augment()
-                    .withCredentials( Credential.forPassword( password ) )
+                    .withCredentials( LegacyCredential.forPassword( password ) )
                     .withRequiredPasswordChange( requirePasswordChange )
                     .build();
             userRepository.update( existingUser, updatedUser );

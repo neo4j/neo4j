@@ -25,14 +25,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.security.Credential.INACCESSIBLE;
+import static org.neo4j.kernel.impl.security.LegacyCredential.INACCESSIBLE;
 
-public class CredentialTest
+public class LegacyCredentialTest
 {
     @Test
     public void testMatchesPassword()
     {
-        Credential credential = Credential.forPassword( "foo" );
+        LegacyCredential credential = LegacyCredential.forPassword( "foo" );
         assertTrue( credential.matchesPassword( "foo" ) );
         assertFalse( credential.matchesPassword( "fooo" ) );
         assertFalse( credential.matchesPassword( "fo" ) );
@@ -42,22 +42,22 @@ public class CredentialTest
     @Test
     public void testEquals()
     {
-        Credential credential = Credential.forPassword( "foo" );
-        Credential sameCredential = new Credential( credential.salt(), credential.passwordHash() );
+        LegacyCredential credential = LegacyCredential.forPassword( "foo" );
+        LegacyCredential sameCredential = new LegacyCredential( credential.salt(), credential.passwordHash() );
         assertEquals( credential, sameCredential );
     }
 
     @Test
     public void testInaccessibleCredentials()
     {
-        Credential credential = new Credential( INACCESSIBLE.salt(), INACCESSIBLE.passwordHash() );
+        LegacyCredential credential = new LegacyCredential( INACCESSIBLE.salt(), INACCESSIBLE.passwordHash() );
 
         //equals
         assertEquals( INACCESSIBLE, credential );
         assertEquals( credential, INACCESSIBLE );
         assertEquals( INACCESSIBLE, INACCESSIBLE );
-        assertNotEquals( INACCESSIBLE, Credential.forPassword( "" ) );
-        assertNotEquals( Credential.forPassword( "" ), INACCESSIBLE );
+        assertNotEquals( INACCESSIBLE, LegacyCredential.forPassword( "" ) );
+        assertNotEquals( LegacyCredential.forPassword( "" ), INACCESSIBLE );
 
         //matchesPassword
         assertFalse( INACCESSIBLE.matchesPassword( new String( new byte[]{} )) );

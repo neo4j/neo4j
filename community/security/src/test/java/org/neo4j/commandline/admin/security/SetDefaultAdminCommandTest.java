@@ -38,7 +38,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -78,7 +78,7 @@ public class SetDefaultAdminCommandTest
         UserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(),
                 fileSystem );
         users.create(
-                new User.Builder( "jake", Credential.forPassword( "123" ) )
+                new User.Builder( "jake", LegacyCredential.forPassword( "123" ) )
                         .withRequiredPasswordChange( false )
                         .build()
             );

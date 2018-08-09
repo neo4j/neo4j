@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -456,7 +456,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         User user = new User.Builder()
                 .withName( username )
-                .withCredentials( Credential.forPassword( initialPassword ) )
+                .withCredentials( LegacyCredential.forPassword( initialPassword ) )
                 .withRequiredPasswordChange( requirePasswordChange )
                 .build();
         synchronized ( this )
@@ -628,7 +628,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         try
         {
             User updatedUser = existingUser.augment()
-                    .withCredentials( Credential.forPassword( password ) )
+                    .withCredentials( LegacyCredential.forPassword( password ) )
                     .withRequiredPasswordChange( requirePasswordChange )
                     .build();
             synchronized ( this )

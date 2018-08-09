@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -281,7 +281,7 @@ public class InternalFlatFileRealmTest
             realm.stop();
             realm.shutdown();
         }
-        adminUserRepository.create( new User.Builder( "trinity", Credential.INACCESSIBLE ).build() );
+        adminUserRepository.create( new User.Builder( "trinity", LegacyCredential.INACCESSIBLE ).build() );
         realm.initialize();
         realm.start();
         assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ).size(), equalTo( 1 ) );
@@ -301,7 +301,7 @@ public class InternalFlatFileRealmTest
         }
         for ( String user : defaultAdmin )
         {
-            adminUserRepository.create( new User.Builder( user, Credential.INACCESSIBLE ).build() );
+            adminUserRepository.create( new User.Builder( user, LegacyCredential.INACCESSIBLE ).build() );
         }
         return new InternalFlatFileRealm(
                 userRepository,
@@ -316,7 +316,7 @@ public class InternalFlatFileRealmTest
 
     private User newUser( String userName, String password, boolean pwdChange )
     {
-        return new User.Builder( userName, Credential.forPassword( password ) ).withRequiredPasswordChange( pwdChange )
+        return new User.Builder( userName, LegacyCredential.forPassword( password ) ).withRequiredPasswordChange( pwdChange )
             .build();
     }
 
