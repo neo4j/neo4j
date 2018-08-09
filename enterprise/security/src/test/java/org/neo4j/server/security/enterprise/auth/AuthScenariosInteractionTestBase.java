@@ -110,7 +110,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         SecurityLog log = new SecurityLog();
         log.load();
 
-        log.assertHasLine( "mats", "logged in" );
+        log.assertHasLine( "mats", "failed to log in" );
         log.assertHasLine( "adminSubject", "created user `mats`" );
         log.assertHasLine( "adminSubject", "created role `role1`" );
         log.assertHasLine( "adminSubject", "deleted role `role1`" );
