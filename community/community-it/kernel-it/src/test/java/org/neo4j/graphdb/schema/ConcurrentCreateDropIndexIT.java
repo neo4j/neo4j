@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -55,6 +56,8 @@ public class ConcurrentCreateDropIndexIT
 
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final CleanupRule cleanupRule = new CleanupRule();
 
     private final int threads = Runtime.getRuntime().availableProcessors();
 
@@ -245,7 +248,7 @@ public class ConcurrentCreateDropIndexIT
     @Test
     public void concurrentCreatingAndAwaitingIndexesOnline() throws Exception
     {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = cleanupRule.add( Executors.newSingleThreadExecutor() );
         Future<?> indexCreate = executor.submit( () ->
         {
             try ( Transaction tx = db.beginTx() )
