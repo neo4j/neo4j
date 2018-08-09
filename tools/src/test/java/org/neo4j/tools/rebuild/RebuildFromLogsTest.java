@@ -87,7 +87,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = getRebuilPath();
-        new RebuildFromLogs( fileSystemRule.get() ).rebuild( getDatabasePath( prototypePath ), rebuildPath, BASE_TX_ID );
+        new RebuildFromLogs( fileSystemRule.get() ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
 
         // then
         assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
@@ -103,7 +103,7 @@ public class RebuildFromLogsTest
         File rebuildPath = getRebuilPath();
         expectedException.expect( InconsistentStoreException.class );
         RebuildFromLogs rebuildFromLogs = new TestRebuildFromLogs( fileSystemRule.get() );
-        rebuildFromLogs.rebuild( getDatabasePath( prototypePath ), rebuildPath, BASE_TX_ID );
+        rebuildFromLogs.rebuild( prototypePath, rebuildPath, BASE_TX_ID );
     }
 
     @Test
@@ -131,7 +131,7 @@ public class RebuildFromLogsTest
         new RebuildFromLogs( fileSystemRule.get() ).rebuild( copy, rebuildPath, txId );
 
         // then
-        assertEquals( getDbRepresentation( getDatabasePath( prototypePath ) ), getDbRepresentation( rebuildPath ) );
+        assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
     }
 
     private File getRebuilPath()
@@ -142,11 +142,6 @@ public class RebuildFromLogsTest
     private File getPrototypePath()
     {
         return new File( dir.directory(), "prototype" );
-    }
-
-    private File getDatabasePath( File storeDir )
-    {
-        return dir.databaseDir( storeDir );
     }
 
     private long populatePrototype( File prototypePath )

@@ -151,7 +151,7 @@ public class StoreUpgradeIT
             File databaseDirectory = store.prepareDirectory( testDir.databaseDir() );
 
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.storeDir() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.databaseDir() );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
@@ -219,7 +219,7 @@ public class StoreUpgradeIT
             File storeDir = testDir.storeDir( "initialData" );
             File databaseDirectory = store.prepareDirectory( testDir.databaseDir( storeDir ) );
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( databaseDirectory );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
@@ -239,7 +239,7 @@ public class StoreUpgradeIT
             // start the cluster with the db migrated from the old instance
             File haDir = testDir.storeDir( "ha-stuff" );
             ClusterManager clusterManager = new ClusterManager.Builder( haDir )
-                    .withSeedDir( storeDir ).withCluster( clusterOfSize( 2 ) ).build();
+                    .withSeedDir( databaseDirectory ).withCluster( clusterOfSize( 2 ) ).build();
 
             clusterManager.start();
 
@@ -296,7 +296,7 @@ public class StoreUpgradeIT
             File databaseDirectory = Unzip.unzip( getClass(), dbFileName, testDir.databaseDir() );
             new File( databaseDirectory, "debug.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.databaseDir() );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             try
@@ -343,7 +343,7 @@ public class StoreUpgradeIT
             }
 
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.databaseDir() );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.record_format, store.getFormatFamily() );
             builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );

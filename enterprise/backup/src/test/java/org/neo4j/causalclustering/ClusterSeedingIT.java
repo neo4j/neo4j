@@ -138,7 +138,7 @@ public class ClusterSeedingIT
         if ( backup.isPresent() )
         {
             Config config = Config.defaults( GraphDatabaseSettings.active_database, backup.get().getName() );
-            dataMatchesEventually( DbRepresentation.of( backup.get().getParentFile(), config ), cluster.coreMembers() );
+            dataMatchesEventually( DbRepresentation.of( backup.get(), config ), cluster.coreMembers() );
         }
         assertEquals( shouldStoreCopy, fileCopyDetector.hasDetectedAnyFileCopied() );
     }

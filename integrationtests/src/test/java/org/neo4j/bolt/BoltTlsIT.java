@@ -127,7 +127,7 @@ public class BoltTlsIT
     private void createAndStartDb()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( bolt.enabled, "true" )
                 .setConfig( bolt.listen_address, ":" + PortAuthority.allocatePort() )
                 .setConfig( GraphDatabaseSettings.bolt_ssl_policy, "bolt" )

@@ -92,7 +92,7 @@ public class BatchingNeoStoresIT
             batchingNeoStores.createNew();
         }
 
-        GraphDatabaseService database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
+        GraphDatabaseService database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( databaseDirectory );
         try
         {
             TransactionIdStore transactionIdStore = getTransactionIdStore( (GraphDatabaseAPI) database );

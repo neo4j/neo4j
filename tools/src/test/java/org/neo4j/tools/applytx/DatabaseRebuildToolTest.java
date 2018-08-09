@@ -97,10 +97,10 @@ public class DatabaseRebuildToolTest
                 NULL_PRINT_STREAM, NULL_PRINT_STREAM );
 
         // WHEN
-        tool.run( "--from", databaseDirectory( from ).getAbsolutePath(), "--to", to.getAbsolutePath(), "-i" );
+        tool.run( "--from", from.getAbsolutePath(), "--to", to.getAbsolutePath(), "-i" );
 
         // THEN
-        assertEquals( TransactionIdStore.BASE_TX_ID + 2, lastAppliedTx( databaseDirectory( to ) ) );
+        assertEquals( TransactionIdStore.BASE_TX_ID + 2, lastAppliedTx( to ) );
     }
 
     @Test

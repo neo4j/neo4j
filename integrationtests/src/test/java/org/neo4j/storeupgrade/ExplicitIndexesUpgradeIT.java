@@ -123,7 +123,7 @@ public class ExplicitIndexesUpgradeIT
     private GraphDatabaseService startDatabase( boolean allowUpgrade )
     {
         GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.databaseDir() );
         builder.setConfig( GraphDatabaseSettings.allow_upgrade, Boolean.toString( allowUpgrade ) );
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );

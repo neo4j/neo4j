@@ -35,7 +35,6 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
@@ -164,11 +163,10 @@ class RebuildFromLogs
             }
 
             // set last tx id in neostore otherwise the db is not usable
-            File targetDatabase = new File( target, DatabaseManager.DEFAULT_DATABASE_NAME );
-            MetaDataStore.setRecord( pageCache, new File( targetDatabase, MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
 
-            checkConsistency( targetDatabase, pageCache );
+            checkConsistency( target, pageCache );
         }
     }
 

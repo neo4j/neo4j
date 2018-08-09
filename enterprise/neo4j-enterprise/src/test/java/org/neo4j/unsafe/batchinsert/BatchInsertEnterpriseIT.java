@@ -106,7 +106,7 @@ public class BatchInsertEnterpriseIT
 
         // THEN
         GraphDatabaseService db = new EnterpriseGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.directory() )
+                .newEmbeddedDatabaseBuilder( directory.databaseDir() )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
@@ -130,7 +130,7 @@ public class BatchInsertEnterpriseIT
     @Test
     public void insertIntoExistingDatabase() throws IOException
     {
-        File storeDir = directory.directory();
+        File storeDir = directory.databaseDir();
 
         GraphDatabaseService db = newDb( storeDir, recordFormat );
         try
