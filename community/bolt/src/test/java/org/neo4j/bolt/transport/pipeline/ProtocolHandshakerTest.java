@@ -23,6 +23,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpVersion;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -32,8 +37,7 @@ import java.util.NoSuchElementException;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -47,7 +51,7 @@ import static org.neo4j.bolt.testing.BoltTestUtil.assertByteBufEquals;
 public class ProtocolHandshakerTest
 {
     private final Channel channel = mock( Channel.class );
-    private final LogProvider logProvider = NullLogProvider.getInstance();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -263,6 +267,30 @@ public class ProtocolHandshakerTest
             assertEquals( 0, channel.outboundMessages().size() );
             assertFalse( channel.isActive() );
             verify( protocol, never() ).install();
+        }
+    }
+
+    @Test
+    public void shouldRejectIfHttp()
+    {
+        try ( BoltChannel boltChannel = newBoltChannel() )
+        {
+            // Given
+            BoltProtocol protocol = newBoltProtocol( 1 );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( 1, protocol );
+            EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+
+            // When
+            FullHttpRequest request = new DefaultFullHttpRequest( HttpVersion.HTTP_1_1, HttpMethod.POST, "http://hello_world:10000" );
+            request.headers().setInt( HttpHeaderNames.CONTENT_LENGTH, 0 );
+            channel.writeInbound( request );
+
+            // Then
+            assertEquals( 0, channel.outboundMessages().size() );
+            assertFalse( channel.isActive() );
+            verify( protocol, never() ).install();
+            logProvider.assertExactly( AssertableLogProvider.inLog( ProtocolHandshaker.class ).warn(
+                    "Unsupported connection type: 'HTTP'. Bolt protocol only operates over a TCP connection or WebSocket." ) );
         }
     }
 
