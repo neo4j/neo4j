@@ -48,13 +48,13 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
     {
-        return open( filename, 0, idType, highId, maxId );
+        return open( databaseName, filename, 0, idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         IdGenerator generator = new ReadOnlyIdGenerator( highId, fileSystemAbstraction, filename );
         idGenerators.put( idType, generator );

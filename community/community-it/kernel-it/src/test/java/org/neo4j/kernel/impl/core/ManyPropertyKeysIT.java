@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.util.Collection;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -130,9 +131,9 @@ public class ManyPropertyKeysIT
     {
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        StoreFactory storeFactory = new StoreFactory( databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ), pageCache,
-                fileSystemRule.get(),
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory =
+                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
+                        pageCache, fileSystemRule.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

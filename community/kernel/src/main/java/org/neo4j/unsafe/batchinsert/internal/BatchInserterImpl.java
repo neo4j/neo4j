@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.function.LongFunction;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -265,7 +266,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         LogProvider internalLogProvider = logService.getInternalLogProvider();
         RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, databaseDirectory, fileSystem,
                 pageCache, internalLogProvider );
-        StoreFactory sf = new StoreFactory( this.databaseDirectory, config, idGeneratorFactory, pageCache, fileSystem,
+        StoreFactory sf = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, this.databaseDirectory, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         maxNodeId = recordFormats.node().getMaxId();

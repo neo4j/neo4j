@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -351,7 +352,8 @@ public class CountsComputerTest
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
         StoreFactory storeFactory =
-                new StoreFactory( testDir.databaseDir(), CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, testDir.databaseDir(), CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER,
+                        EmptyVersionContextSupplier.EMPTY );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

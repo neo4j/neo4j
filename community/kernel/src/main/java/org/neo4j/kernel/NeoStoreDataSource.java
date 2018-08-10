@@ -479,7 +479,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             OperationalMode operationalMode, VersionContextSupplier versionContextSupplier )
     {
         RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseDirectory, config, pageCache, fs, logProvider, tokenHolders,
+                new RecordStorageEngine( databaseName, databaseDirectory, config, pageCache, fs, logProvider, tokenHolders,
                         schemaState, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth,
                         explicitIndexProviderLookup, indexConfigStore,

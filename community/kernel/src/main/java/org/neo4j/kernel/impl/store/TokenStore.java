@@ -50,21 +50,12 @@ public abstract class TokenStore<RECORD extends TokenRecord>
 
     private final DynamicStringStore nameStore;
 
-    public TokenStore(
-            File file,
-            Config configuration,
-            IdType idType,
-            IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache,
-            LogProvider logProvider,
-            DynamicStringStore nameStore,
-            String typeDescriptor,
-            RecordFormat<RECORD> recordFormat,
-            String storeVersion,
+    public TokenStore( String databaseName, File file, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            LogProvider logProvider, DynamicStringStore nameStore, String typeDescriptor, RecordFormat<RECORD> recordFormat, String storeVersion,
             OpenOption... openOptions )
     {
-        super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
+        super( databaseName, file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor, recordFormat, NO_STORE_HEADER_FORMAT,
+                storeVersion, openOptions );
         this.nameStore = nameStore;
     }
 

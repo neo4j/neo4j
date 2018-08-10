@@ -57,6 +57,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
 /**
@@ -86,7 +87,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             Config config = Config.defaults();
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( path, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+                StoreFactory factory = new StoreFactory( DEFAULT_DATABASE_NAME, path, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
                         pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();

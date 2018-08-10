@@ -31,6 +31,7 @@ import java.io.IOException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -115,8 +116,8 @@ public class ResponsePackerIT
         Config config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory =
-                new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
+                EmptyVersionContextSupplier.EMPTY );
         return storeFactory.openAllNeoStores( true );
     }
 }

@@ -70,6 +70,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     protected final Config configuration;
     protected final PageCache pageCache;
+    private final String databaseName;
     final File storageFileName;
     protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
@@ -101,21 +102,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
      *
+     * @param databaseName database name
      * @param idType The Id used to index into this store
      */
-    public CommonAbstractStore(
-            File fileName,
-            Config configuration,
-            IdType idType,
-            IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache,
-            LogProvider logProvider,
-            String typeDescriptor,
-            RecordFormat<RECORD> recordFormat,
-            StoreHeaderFormat<HEADER> storeHeaderFormat,
-            String storeVersion,
-            OpenOption... openOptions )
+    public CommonAbstractStore( String databaseName, File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache, LogProvider logProvider, String typeDescriptor, RecordFormat<RECORD> recordFormat, StoreHeaderFormat<HEADER> storeHeaderFormat,
+            String storeVersion, OpenOption... openOptions )
     {
+        this.databaseName = databaseName;
         this.storageFileName = fileName;
         this.configuration = configuration;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -706,7 +700,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     void openIdGenerator()
     {
-        idGenerator = idGeneratorFactory.open( getIdFileName(), getIdType(), this::scanForHighId, recordFormat.getMaxId() );
+        idGenerator = idGeneratorFactory.open( databaseName, getIdFileName(), getIdType(), this::scanForHighId, recordFormat.getMaxId() );
     }
 
     /**

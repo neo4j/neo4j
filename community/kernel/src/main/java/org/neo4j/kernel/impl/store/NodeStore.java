@@ -59,18 +59,11 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         return bits.getLong( requiredBits );
     }
 
-    public NodeStore(
-            File fileName,
-            Config config,
-            IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache,
-            LogProvider logProvider,
-            DynamicArrayStore dynamicLabelStore,
-            RecordFormats recordFormats,
-            OpenOption... openOptions )
+    public NodeStore( String databaseName, File fileName, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache, LogProvider logProvider,
+            DynamicArrayStore dynamicLabelStore, RecordFormats recordFormats, OpenOption... openOptions )
     {
-        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.node(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
+        super( databaseName, fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
+                NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

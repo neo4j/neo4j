@@ -25,8 +25,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -75,9 +75,8 @@ public class PropertyStoreTest
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
-        final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
-                NullLogProvider.getInstance(), stringPropertyStore,
-                mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
+        final PropertyStore store = new PropertyStore( DatabaseManager.DEFAULT_DATABASE_NAME, path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
+                NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
                 RecordFormatSelector.defaultFormat() );
         store.initialise( true );
 

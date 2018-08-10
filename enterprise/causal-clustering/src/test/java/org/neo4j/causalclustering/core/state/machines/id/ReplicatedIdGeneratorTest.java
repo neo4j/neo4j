@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.IdGeneratorContractTest;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -101,8 +102,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     @Override
     protected IdGenerator openIdGenerator( int grabSize )
     {
-        ReplicatedIdGenerator replicatedIdGenerator =
-            new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, stubAcquirer(), logProvider, grabSize, true );
+        ReplicatedIdGenerator replicatedIdGenerator = getReplicatedIdGenerator( grabSize, 0L, stubAcquirer() );
         return new FreeIdFilteredIdGenerator( replicatedIdGenerator, idReusabilityCondition );
     }
 
@@ -111,8 +111,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
-        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, rangeAcquirer, logProvider,
-                10, true );
+        idGenerator = getReplicatedIdGenerator( 10, 0L, rangeAcquirer );
 
         assertTrue( fs.fileExists( file ) );
     }
@@ -122,8 +121,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
-        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, rangeAcquirer, logProvider,
-                10, true );
+        idGenerator = getReplicatedIdGenerator( 10, 0L, rangeAcquirer );
 
         Set<Long> idsGenerated = collectGeneratedIds( idGenerator, 1024 );
 
@@ -140,8 +138,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         long burnedIds = 23L;
-        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider,
-                10, true );
+        idGenerator = getReplicatedIdGenerator( 10, burnedIds, rangeAcquirer );
 
         Set<Long> idsGenerated = collectGeneratedIds( idGenerator, 1024 - burnedIds );
 
@@ -157,9 +154,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = mock( ReplicatedIdRangeAcquirer.class );
         when( rangeAcquirer.acquireIds( IdType.NODE ) ).thenReturn( allocation( 3, 21, 21 ) );
-        idGenerator =
-                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 42L, rangeAcquirer, logProvider, 10,
-                        true );
+        idGenerator = getReplicatedIdGenerator( 10, 42L, rangeAcquirer );
 
         idGenerator.nextId();
     }
@@ -170,8 +165,8 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         long burnedIds = 23L;
-        try ( FreeIdFilteredIdGenerator idGenerator = new FreeIdFilteredIdGenerator(
-                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider, 10, true ), idReusabilityCondition ) )
+        try ( FreeIdFilteredIdGenerator idGenerator = new FreeIdFilteredIdGenerator( getReplicatedIdGenerator( 10, burnedIds, rangeAcquirer ),
+                idReusabilityCondition ) )
         {
 
             idGenerator.freeId( 10 );
@@ -195,8 +190,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         long burnedIds = 23L;
-        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider,
-                10, true );
+        idGenerator = getReplicatedIdGenerator( 10, burnedIds, rangeAcquirer );
 
         assertEquals( 23, idGenerator.nextId() );
 
@@ -216,8 +210,8 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         IdReusabilityCondition idReusabilityCondition = getIdReusabilityCondition();
 
         long burnedIds = 23L;
-        try ( FreeIdFilteredIdGenerator idGenerator = new FreeIdFilteredIdGenerator(
-                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider, 10, true ), idReusabilityCondition ) )
+        try ( FreeIdFilteredIdGenerator idGenerator = new FreeIdFilteredIdGenerator( getReplicatedIdGenerator( 10, burnedIds, rangeAcquirer ),
+                idReusabilityCondition ) )
         {
 
             idGenerator.freeId( 10 );
@@ -301,4 +295,11 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
                 .thenReturn( allocation( -1, 0, 9216 + 1024 ) );
         return rangeAcquirer;
     }
+
+    private ReplicatedIdGenerator getReplicatedIdGenerator( int grabSize, long l, ReplicatedIdRangeAcquirer replicatedIdRangeAcquirer )
+    {
+        return new ReplicatedIdGenerator( DatabaseManager.DEFAULT_DATABASE_NAME, fs, file, IdType.NODE, () -> l, replicatedIdRangeAcquirer, logProvider,
+                grabSize, true );
+    }
+
 }

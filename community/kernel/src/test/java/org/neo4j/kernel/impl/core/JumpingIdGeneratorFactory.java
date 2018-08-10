@@ -45,13 +45,13 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         return get( idType );
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
     {
         return get( idType );
     }

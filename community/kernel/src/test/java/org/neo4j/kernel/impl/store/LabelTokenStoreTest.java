@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -72,7 +73,7 @@ public class LabelTokenStoreTest
     {
         UnusedLabelTokenStore() throws IOException
         {
-            super( file, config, generatorFactory, cache, logProvider, dynamicStringStore,
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, file, config, generatorFactory, cache, logProvider, dynamicStringStore,
                     RecordFormatSelector.defaultFormat() );
             storeFile = mock( PagedFile.class );
 

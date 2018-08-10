@@ -212,10 +212,10 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
-            super( storeDir, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, scheduler, tokenNameLookup,
-                    lockService, indexProviderMap,
-                    indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
-                    idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
+                    scheduler, tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup,
+                    indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector,
+                    operationalMode, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

@@ -26,6 +26,7 @@ import org.mockito.InOrder;
 
 import java.io.File;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
@@ -67,7 +68,7 @@ public class RelationshipGroupGetterTest
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( dir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
+        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, dir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCache.getPageCache( fs.get() ), fs.get(),
                 logProvider, EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )

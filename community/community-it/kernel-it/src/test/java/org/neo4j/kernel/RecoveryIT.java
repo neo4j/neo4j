@@ -39,6 +39,7 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -483,9 +484,9 @@ public class RecoveryIT
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
                         .getOrCreatePageCache();
-                NeoStores store1 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs1 ),
+                NeoStores store1 = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, defaults(), new DefaultIdGeneratorFactory( fs1 ),
                         pageCache1, fs1, logProvider, contextSupplier ).openAllNeoStores();
-                NeoStores store2 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs2 ),
+                NeoStores store2 = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, defaults(), new DefaultIdGeneratorFactory( fs2 ),
                         pageCache2, fs2, logProvider, contextSupplier ).openAllNeoStores()
                 )
         {

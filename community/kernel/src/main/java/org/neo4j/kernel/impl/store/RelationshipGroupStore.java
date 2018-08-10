@@ -30,24 +30,16 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.StorageReader;
 
 public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord,IntStoreHeader>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 
-    public RelationshipGroupStore(
-            File fileName,
-            Config config,
-            IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache,
-            LogProvider logProvider,
-            RecordFormats recordFormats,
-            OpenOption... openOptions )
+    public RelationshipGroupStore( String databaseName, File fileName, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            LogProvider logProvider, RecordFormats recordFormats, OpenOption... openOptions )
     {
-        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, recordFormats.relationshipGroup(),
-                new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
+        super( databaseName, fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+                recordFormats.relationshipGroup(), new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
                 recordFormats.storeVersion(), openOptions );
     }
 

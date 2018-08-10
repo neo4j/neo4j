@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -110,7 +111,7 @@ public class BatchingTokenRepositoryTest
         // given
 
         try ( PageCache pageCache = storage.pageCache();
-              NeoStores stores = new StoreFactory( storage.directory().absolutePath(), Config.defaults(),
+              NeoStores stores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storage.directory().absolutePath(), Config.defaults(),
                 new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache, storage.fileSystem(),
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
                 .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )

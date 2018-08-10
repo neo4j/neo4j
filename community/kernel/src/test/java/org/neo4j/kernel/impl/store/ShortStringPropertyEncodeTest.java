@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -49,9 +50,9 @@ public class ShortStringPropertyEncodeTest
     @Before
     public void setupStore()
     {
-        neoStores = new StoreFactory( storage.directory().databaseDir(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
-                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
-                StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
+        neoStores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storage.directory().databaseDir(), Config.defaults(),
+                new DefaultIdGeneratorFactory( storage.fileSystem() ), storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY ).openNeoStores( true, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
         propertyStore = neoStores.getPropertyStore();
     }
 

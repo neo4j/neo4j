@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.file.OpenOption;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -64,9 +65,8 @@ public class NeoStoreOpenFailureTest
         boolean create = true;
         StoreType[] storeTypes = StoreType.values();
         OpenOption[] openOptions = new OpenOption[0];
-        NeoStores neoStores = new NeoStores(
-                neoStoreFile, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create, storeTypes,
-                openOptions );
+        NeoStores neoStores = new NeoStores( DatabaseManager.DEFAULT_DATABASE_NAME, neoStoreFile, config, idGenFactory, pageCache, logProvider, fs, versions,
+                formats, create, storeTypes, openOptions );
         File schemaStore = neoStores.getSchemaStore().getStorageFileName();
         neoStores.close();
 
@@ -78,7 +78,7 @@ public class NeoStoreOpenFailureTest
         {
             // This should fail due to the permissions we changed above.
             // And when it fails, the already-opened stores should be closed.
-            new NeoStores( neoStoreFile, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create,
+            new NeoStores( DatabaseManager.DEFAULT_DATABASE_NAME, neoStoreFile, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create,
                     storeTypes, openOptions );
             fail( "Opening NeoStores should have thrown." );
         }

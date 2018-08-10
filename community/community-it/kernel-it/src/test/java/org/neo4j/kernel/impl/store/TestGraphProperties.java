@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.Future;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -194,8 +195,9 @@ public class TestGraphProperties
         db.shutdown();
 
         Config config = Config.defaults();
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseDir(), config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory =
+                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, testDirectory.databaseDir(), config, new DefaultIdGeneratorFactory( fs.get() ),
+                        pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores();
         long prop = neoStores.getMetaDataStore().getGraphNextProp();
         assertTrue( prop != 0 );

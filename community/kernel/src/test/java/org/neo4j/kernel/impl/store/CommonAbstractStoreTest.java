@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.function.LongSupplier;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -103,7 +104,7 @@ public class CommonAbstractStoreTest
     @Before
     public void setUpMocks() throws IOException
     {
-        when( idGeneratorFactory.open( any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) )
+        when( idGeneratorFactory.open( DatabaseManager.DEFAULT_DATABASE_NAME, any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) )
                 .thenReturn( idGenerator );
 
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
@@ -143,10 +144,9 @@ public class CommonAbstractStoreTest
         expectedException.expect( StoreNotFoundException.class );
         expectedException.expectMessage( "Fail to read header record of store file: " + storeFile.getAbsolutePath() );
 
-        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, config, IdType.NODE_LABELS,
+        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, config, IdType.NODE_LABELS,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
-                Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ),
-                recordFormats ) )
+                Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ), recordFormats ) )
         {
             dynamicArrayStore.initialise( false );
         }
@@ -248,8 +248,8 @@ public class CommonAbstractStoreTest
                 PageCache pageCache, LogProvider logProvider, RecordFormat<TheRecord> recordFormat,
                 OpenOption... openOptions )
         {
-            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
-                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType", recordFormat,
+                    NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
         }
 
         @Override

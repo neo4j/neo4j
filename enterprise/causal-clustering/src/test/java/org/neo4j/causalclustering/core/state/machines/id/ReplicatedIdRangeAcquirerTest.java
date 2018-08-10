@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import org.neo4j.causalclustering.core.replication.DirectReplicator;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.NullLogProvider;
@@ -118,7 +119,7 @@ public class ReplicatedIdRangeAcquirerTest
         ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine,
                 allocationSizes, member, NullLogProvider.getInstance() );
 
-        return new ReplicatedIdGenerator( fs, file, IdType.ARRAY_BLOCK, () -> initialHighId, acquirer,
+        return new ReplicatedIdGenerator( DatabaseManager.DEFAULT_DATABASE_NAME, fs, file, IdType.ARRAY_BLOCK, () -> initialHighId, acquirer,
                 NullLogProvider.getInstance(), 10, true );
     }
 }

@@ -62,6 +62,7 @@ public class StoreFactory
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     public static final String COUNTS_STORE = ".counts.db";
 
+    private final String databaseName;
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
@@ -72,26 +73,27 @@ public class StoreFactory
     private final OpenOption[] openOptions;
     private final VersionContextSupplier versionContextSupplier;
 
-    public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+    public StoreFactory( String databaseName, File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, VersionContextSupplier versionContextSupplier )
     {
-        this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
+        this( databaseName, storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 selectForStoreOrConfig( config, storeDir, fileSystemAbstraction, pageCache, logProvider ),
                 logProvider, versionContextSupplier );
     }
 
-    public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+    public StoreFactory( String databaseName, File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider,
             VersionContextSupplier versionContextSupplier )
     {
-        this( storeDir, MetaDataStore.DEFAULT_NAME, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
+        this( databaseName, storeDir, MetaDataStore.DEFAULT_NAME, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 recordFormats, logProvider, versionContextSupplier );
     }
 
-    public StoreFactory( File storeDir, String storeName, Config config, IdGeneratorFactory idGeneratorFactory,
+    public StoreFactory( String databaseName, File storeDir, String storeName, Config config, IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats,
             LogProvider logProvider, VersionContextSupplier versionContextSupplier, OpenOption... openOptions )
     {
+        this.databaseName = databaseName;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -157,7 +159,7 @@ public class StoreFactory
                         "Could not create store directory: " + neoStoreFileName.getParent(), e );
             }
         }
-        return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
+        return new NeoStores( databaseName, neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
                 fileSystemAbstraction, versionContextSupplier, recordFormats, createStoreIfNotExists, storeTypes,
                 openOptions );
     }

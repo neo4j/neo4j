@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -124,7 +125,7 @@ public class CsvInputEstimateCalculationIT
         try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL,
                       PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
                 .getOrCreatePageCache();
-              NeoStores stores = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+              NeoStores stores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                       NullLogProvider.getInstance(), contextSupplier ).openAllNeoStores() )
         {
             assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );

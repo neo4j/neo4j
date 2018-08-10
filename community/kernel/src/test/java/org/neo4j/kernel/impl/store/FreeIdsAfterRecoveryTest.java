@@ -25,6 +25,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -54,7 +55,7 @@ public class FreeIdsAfterRecoveryTest
     public void shouldCompletelyRebuildIdGeneratorsAfterCrash()
     {
         // GIVEN
-        StoreFactory storeFactory = new StoreFactory(
+        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME,
                 directory.directory(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );

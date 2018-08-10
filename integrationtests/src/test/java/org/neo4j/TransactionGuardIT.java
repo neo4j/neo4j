@@ -768,15 +768,15 @@ public class TransactionGuardIT
         }
 
         @Override
-        public IdGenerator open( File filename, IdType idType, LongSupplier highIdSupplier, long maxId )
+        public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highIdSupplier, long maxId )
         {
-            return delegate.open( filename, idType, highIdSupplier, maxId );
+            return delegate.open( databaseName, filename, idType, highIdSupplier, maxId );
         }
 
         @Override
-        public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highIdSupplier, long maxId )
+        public IdGenerator open( String databaseName, File filename, int grabSize, IdType idType, LongSupplier highIdSupplier, long maxId )
         {
-            return new TerminationIdGenerator( delegate.open( filename, grabSize, idType, highIdSupplier, maxId ) );
+            return new TerminationIdGenerator( delegate.open( databaseName, filename, grabSize, idType, highIdSupplier, maxId ) );
         }
 
         @Override

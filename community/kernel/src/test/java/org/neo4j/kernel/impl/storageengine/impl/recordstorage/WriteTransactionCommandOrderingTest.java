@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandVisitor;
@@ -196,7 +197,7 @@ public class WriteTransactionCommandOrderingTest
 
         RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.defaults(), null, null, NullLogProvider.getInstance(), null, null, null,
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, null, Config.defaults(), null, null, NullLogProvider.getInstance(), null, null, null,
                     Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
@@ -219,7 +220,8 @@ public class WriteTransactionCommandOrderingTest
 
         RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.defaults(), null, null, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS );
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, null, Config.defaults(), null, null, NullLogProvider.getInstance(), null,
+                    Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -249,7 +251,7 @@ public class WriteTransactionCommandOrderingTest
 
         RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.defaults(), null, null, NullLogProvider.getInstance(), Standard.LATEST_RECORD_FORMATS );
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, null, Config.defaults(), null, null, NullLogProvider.getInstance(), Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 

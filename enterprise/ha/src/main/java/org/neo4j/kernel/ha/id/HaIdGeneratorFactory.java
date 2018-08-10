@@ -29,6 +29,7 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -70,14 +71,14 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
+        return open( databaseName, filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         HaIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -89,7 +90,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         switch ( globalState )
         {
         case MASTER:
-            initialIdGenerator = localFactory.open( fileName, grabSize, idType, highId, maxId );
+            initialIdGenerator = localFactory.open( databaseName, fileName, grabSize, idType, highId, maxId );
             break;
         case SLAVE:
             // Initially we may call switchToSlave() before calling open, so we need this additional
@@ -184,7 +185,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 delegate.delete();
 
                 localFactory.create( fileName, highId, false );
-                delegate = localFactory.open( fileName, grabSize, idType, () -> highId, maxId );
+                delegate = localFactory.open( DatabaseManager.DEFAULT_DATABASE_NAME, fileName, grabSize, idType, () -> highId, maxId );
                 log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId +
                                                    " (the previous delegate was " + previousDelegate + ")."  );
             }

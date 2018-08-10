@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -73,9 +74,9 @@ public class TestIdGeneratorRebuilding
         File storeFile = testDirectory.file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
-                RecordFormatSelector.defaultFormat() );
+        NodeStore store =
+                new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, config, new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ),
+                        NullLogProvider.getInstance(), labelStore, RecordFormatSelector.defaultFormat() );
         store.initialise( true );
         store.makeStoreOk();
 
@@ -122,7 +123,7 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseDir(), config,
+        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, testDirectory.databaseDir(), config,
                 new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider
                 .getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
@@ -177,9 +178,9 @@ public class TestIdGeneratorRebuilding
         File storeFile = testDirectory.file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
-                RecordFormatSelector.defaultFormat() );
+        NodeStore store =
+                new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, config, new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ),
+                        NullLogProvider.getInstance(), labelStore, RecordFormatSelector.defaultFormat() );
         store.initialise( true );
         store.makeStoreOk();
 

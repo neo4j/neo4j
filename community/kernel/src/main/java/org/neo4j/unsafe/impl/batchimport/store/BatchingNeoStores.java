@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.function.Predicates;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -299,8 +300,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
     {
-        return new StoreFactory( storeDir, name, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider,
-                        EmptyVersionContextSupplier.EMPTY, openOptions );
+        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, name, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats,
+                logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 
     /**

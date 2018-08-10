@@ -53,6 +53,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.HexString;
 import org.neo4j.tools.util.TransactionLogUtils;
 
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -112,7 +113,8 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
+        return new StoreFactory( DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider,
+                EmptyVersionContextSupplier.EMPTY );
     }
 
     private static void interact( FileSystemAbstraction fileSystem, NeoStores neoStores ) throws IOException

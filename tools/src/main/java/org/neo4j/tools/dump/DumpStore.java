@@ -52,6 +52,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.PrintStreamLogger;
 
 import static java.lang.Long.parseLong;
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -99,7 +100,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
               PageCache pageCache = createPageCache( fs ) )
         {
             final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( file.getParentFile(),
+            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( DEFAULT_DATABASE_NAME, file.getParentFile(),
                     Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider(), EmptyVersionContextSupplier.EMPTY );
 
             for ( String arg : args )

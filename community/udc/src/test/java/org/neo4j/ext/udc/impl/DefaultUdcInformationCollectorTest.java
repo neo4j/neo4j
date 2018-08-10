@@ -227,13 +227,13 @@ public class DefaultUdcInformationCollectorTest
         }
 
         @Override
-        public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
         {
-            return open( filename, 0, idType, highId, maxId );
+            return open( databaseName, filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator open( String databaseName, File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
         {
             return get( idType );
         }

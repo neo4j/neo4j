@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Optional;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.function.Predicates;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileHandle;
@@ -138,7 +139,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         NullLogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForVersion( versionToMigrateFrom );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem,
+        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 

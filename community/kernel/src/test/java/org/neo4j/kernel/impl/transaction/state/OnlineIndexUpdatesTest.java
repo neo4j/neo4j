@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.io.pagecache.PageCache;
@@ -106,9 +107,9 @@ public class OnlineIndexUpdatesTest
     {
         life = new LifeSupport();
         PageCache pageCache = storage.pageCache();
-        StoreFactory storeFactory =
-                new StoreFactory( storage.directory().directory(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
-                        storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storage.directory().directory(), Config.defaults(),
+                new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache, storage.fileSystem(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
         neoStores.getCounts().start();

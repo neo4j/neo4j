@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -87,8 +88,9 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         PageCache pageCache = pageCacheRule.getPageCache( fs,
                 config().withInconsistentReads( nextReadIsInconsistent ) );
         File storeDir = new File( "stores" );
-        StoreFactory factory = new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory =
+                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                        NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = factory.openAllNeoStores( true );
         S store = initialiseStore( neoStores );
 

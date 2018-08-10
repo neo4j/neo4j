@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -166,7 +167,7 @@ public class RecordRelationshipScanCursorTest
 
     private StoreFactory getStoreFactory()
     {
-        return new StoreFactory(
+        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME,
                 storage.directory().databaseDir(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
                 storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }

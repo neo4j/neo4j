@@ -65,22 +65,12 @@ import org.neo4j.logging.LogProvider;
 public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord,IntStoreHeader>
         implements DynamicRecordAllocator
 {
-    public AbstractDynamicStore(
-            File fileName,
-            Config conf,
-            IdType idType,
-            IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache,
-            LogProvider logProvider,
-            String typeDescriptor,
-            int dataSizeFromConfiguration,
-            RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion,
-            OpenOption... openOptions )
+    public AbstractDynamicStore( String databaseName, File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache, LogProvider logProvider, String typeDescriptor, int dataSizeFromConfiguration, RecordFormat<DynamicRecord> recordFormat,
+            String storeVersion, OpenOption... openOptions )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
-                storeVersion, openOptions );
+        super( databaseName, fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor, recordFormat,
+                new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ), storeVersion, openOptions );
     }
 
     public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src,

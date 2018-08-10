@@ -153,14 +153,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private final CappedLogger transactionCloseWaitLogger;
 
-    MetaDataStore( File fileName, Config conf,
-            IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
-            String storeVersion,
-            OpenOption... openOptions )
+    MetaDataStore( String databaseName, File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache, LogProvider logProvider,
+            RecordFormat<MetaDataRecord> recordFormat, String storeVersion, OpenOption... openOptions )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
-                TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
+        super( databaseName, fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat,
+                NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clocks.systemClock() );
     }

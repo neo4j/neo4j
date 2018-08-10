@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -170,8 +171,8 @@ public class RelationshipGroupStoreTest
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( directory, Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
-                fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, directory, Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ),
+                pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
     @Test

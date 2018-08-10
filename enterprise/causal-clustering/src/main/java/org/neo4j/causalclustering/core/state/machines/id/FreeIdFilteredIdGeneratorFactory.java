@@ -45,19 +45,19 @@ public class FreeIdFilteredIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
     {
         FreeIdFilteredIdGenerator freeIdFilteredIdGenerator =
-                new FreeIdFilteredIdGenerator( delegate.open( filename, idType, highId, maxId ), freeIdCondition );
+                new FreeIdFilteredIdGenerator( delegate.open( databaseName, filename, idType, highId, maxId ), freeIdCondition );
         delegatedGenerator.put( idType, freeIdFilteredIdGenerator );
         return freeIdFilteredIdGenerator;
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( String databaseName, File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         FreeIdFilteredIdGenerator freeIdFilteredIdGenerator =
-                new FreeIdFilteredIdGenerator( delegate.open( filename, grabSize, idType, highId, maxId ),
+                new FreeIdFilteredIdGenerator( delegate.open( databaseName, filename, grabSize, idType, highId, maxId ),
                         freeIdCondition );
         delegatedGenerator.put( idType, freeIdFilteredIdGenerator );
         return freeIdFilteredIdGenerator;

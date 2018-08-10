@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -64,14 +65,11 @@ public class DirectRecordStoreMigrator
         StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );
         progressReporter.start( storesToOpen.length );
 
-        try (
-                NeoStores fromStores = new StoreFactory( fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
-                        .openNeoStores( true, storesToOpen );
-                NeoStores toStores = new StoreFactory( toStoreDir, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                    new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat, NullLogProvider.getInstance(),
-                        EmptyVersionContextSupplier.EMPTY )
-                        .openNeoStores( true, storesToOpen ) )
+        try ( NeoStores fromStores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
+                pageCache, fs, fromFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true, storesToOpen );
+                NeoStores toStores = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, toStoreDir,
+                        withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ), new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat,
+                        NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true, storesToOpen ) )
         {
             for ( StoreType type : types )
             {

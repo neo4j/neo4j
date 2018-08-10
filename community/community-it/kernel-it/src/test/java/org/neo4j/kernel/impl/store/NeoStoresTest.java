@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -147,8 +148,7 @@ public class NeoStoresTest
         databaseDir = dir.databaseDir();
         Config config = Config.defaults();
         pageCache = pageCacheRule.getPageCache( fs.get() );
-        StoreFactory sf = new StoreFactory( databaseDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory sf = getStoreFactory( config, databaseDir, fs.get(), NullLogProvider.getInstance() );
         sf.openAllNeoStores( true ).close();
         propertyKeyTokenHolder = new DelegatingTokenHolder( this::createPropertyKeyToken, TokenHolder.TYPE_PROPERTY_KEY );
     }
@@ -162,8 +162,7 @@ public class NeoStoresTest
     public void impossibleToGetStoreFromClosedNeoStoresContainer()
     {
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( databaseDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory sf = getStoreFactory( config, databaseDir, fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = sf.openAllNeoStores( true );
 
         assertNotNull( neoStores.getMetaDataStore() );
@@ -179,8 +178,7 @@ public class NeoStoresTest
     public void notAllowCreateDynamicStoreWithNegativeBlockSize()
     {
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( databaseDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory sf = getStoreFactory( config, databaseDir, fs.get(), NullLogProvider.getInstance() );
 
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Block size of dynamic array store should be positive integer." );
@@ -195,8 +193,7 @@ public class NeoStoresTest
     public void impossibleToGetNotRequestedStore()
     {
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( databaseDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory sf = getStoreFactory( config, databaseDir, fs.get(), NullLogProvider.getInstance() );
 
         exception.expect( IllegalStateException.class );
         exception.expectMessage(
@@ -538,8 +535,7 @@ public class NeoStoresTest
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
 
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( databaseDirectory, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory sf = getStoreFactory( config, databaseDirectory, fileSystem, LOG_PROVIDER );
 
         NeoStores neoStores = sf.openAllNeoStores();
         assertEquals( 12, neoStores.getMetaDataStore().getCurrentLogVersion() );
@@ -595,7 +591,7 @@ public class NeoStoresTest
     {
         // given
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( dir.directory(), config, new DefaultIdGeneratorFactory( fs.get() ),
+        StoreFactory sf = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, dir.directory(), config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
 
         // when
@@ -625,10 +621,7 @@ public class NeoStoresTest
     public void shouldInitializeTheTxIdToOne()
     {
         File databaseDir = dir.databaseDir();
-        StoreFactory factory =
-                new StoreFactory( databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                        pageCache, fs.get(),
-                        LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory = getStoreFactory( Config.defaults(), databaseDir, fs.get(), LOG_PROVIDER );
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
@@ -647,9 +640,7 @@ public class NeoStoresTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File databaseDir = dir.databaseDir();
-        StoreFactory factory = new StoreFactory(
-                databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory = getStoreFactory( Config.defaults(), databaseDir, fileSystem, LOG_PROVIDER );
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
@@ -726,8 +717,7 @@ public class NeoStoresTest
         // GIVEN
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.mkdirs( databaseDir );
-        StoreFactory factory = new StoreFactory( databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory = getStoreFactory( Config.defaults(), databaseDir, fileSystem, LOG_PROVIDER );
 
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
@@ -751,8 +741,7 @@ public class NeoStoresTest
         // GIVEN
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.mkdirs( databaseDir );
-        StoreFactory factory = new StoreFactory( databaseDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory = getStoreFactory( Config.defaults(), databaseDir, fileSystem, LOG_PROVIDER );
 
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
@@ -776,9 +765,7 @@ public class NeoStoresTest
         // given
         FileSystemAbstraction fileSystem = fs.get();
         Config defaults = Config.defaults( counts_store_rotation_timeout, "60m" );
-        StoreFactory factory =
-                new StoreFactory( databaseDir, defaults, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                        fileSystem, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory = getStoreFactory( defaults, databaseDir, fileSystem, LOG_PROVIDER );
         NeoStores neoStore = factory.openAllNeoStores( true );
 
         // let's hack the counts store so it fails to rotate and hence it fails to close as well...
@@ -836,7 +823,7 @@ public class NeoStoresTest
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.deleteRecursively( databaseDir );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem );
-        StoreFactory factory = new StoreFactory( databaseDir, Config.defaults(), idFactory, pageCache, fileSystem,
+        StoreFactory factory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, Config.defaults(), idFactory, pageCache, fileSystem,
                 LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
 
         // when
@@ -854,7 +841,7 @@ public class NeoStoresTest
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.deleteRecursively( databaseDir );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem );
-        StoreFactory factory = new StoreFactory( databaseDir, Config.defaults(), idFactory, pageCache, fileSystem,
+        StoreFactory factory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, Config.defaults(), idFactory, pageCache, fileSystem,
                 LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
         StoreType[] allStoreTypes = StoreType.values();
         StoreType[] allButLastStoreTypes = Arrays.copyOf( allStoreTypes, allStoreTypes.length - 1 );
@@ -877,7 +864,7 @@ public class NeoStoresTest
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        return new StoreFactory( neoStoreDir, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER,
+        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, neoStoreDir, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER,
                 EmptyVersionContextSupplier.EMPTY );
     }
 
@@ -1517,5 +1504,11 @@ public class NeoStoresTest
                 }
             }
         }
+    }
+
+    private StoreFactory getStoreFactory( Config config, File databaseDir, FileSystemAbstraction ephemeralFileSystemAbstraction, NullLogProvider instance )
+    {
+        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, config, new DefaultIdGeneratorFactory( ephemeralFileSystemAbstraction ),
+                pageCache, ephemeralFileSystemAbstraction, instance, EmptyVersionContextSupplier.EMPTY );
     }
 }

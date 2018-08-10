@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -74,7 +75,7 @@ public class StoreFactoryTest
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForStoreOrConfig( config, storeDir, fsRule, pageCache, logProvider );
-        return new StoreFactory( storeDir, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
+        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
                 recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 

@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -70,7 +71,7 @@ public class TestGrowingFileMemoryMapping
         FileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
-        StoreFactory storeFactory = new StoreFactory( databaseDir, config, idGeneratorFactory, pageCache,
+        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDir, config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = storeFactory.openAllNeoStores( true );

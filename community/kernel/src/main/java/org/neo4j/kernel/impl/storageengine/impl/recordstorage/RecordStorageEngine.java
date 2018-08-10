@@ -26,10 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -146,6 +146,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final int recordIdBatchSize;
 
     public RecordStorageEngine(
+            String databaseName,
             File storeDir,
             Config config,
             PageCache pageCache,
@@ -180,7 +181,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
 
         this.idController = idController;
-        StoreFactory factory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
+        StoreFactory factory = new StoreFactory( databaseName, storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
                 versionContextSupplier );
         neoStores = factory.openAllNeoStores( true );
 

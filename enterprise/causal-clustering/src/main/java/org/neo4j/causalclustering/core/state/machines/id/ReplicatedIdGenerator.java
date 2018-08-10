@@ -49,7 +49,7 @@ class ReplicatedIdGenerator implements IdGenerator
     private final IdContainer idContainer;
     private final ReentrantLock idContainerLock = new ReentrantLock();
 
-    ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, LongSupplier highId,
+    ReplicatedIdGenerator( String databaseName, FileSystemAbstraction fs, File file, IdType idType, LongSupplier highId,
             ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse )
     {
         this.idType = idType;

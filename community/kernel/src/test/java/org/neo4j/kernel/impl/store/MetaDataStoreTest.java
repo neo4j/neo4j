@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
@@ -781,7 +782,7 @@ public class MetaDataStoreTest
     private MetaDataStore newMetaDataStore()
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( STORE_DIR, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, STORE_DIR, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
                 pageCacheWithFakeOverflow, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
