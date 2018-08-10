@@ -195,7 +195,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         @Override
         protected StoreLocker createStoreLocker()
         {
-            return new StoreLocker( fileSystem, directoryStructure.rootDirectory() );
+            return new StoreLocker( fileSystem, storeLayout.storeDirectory() );
         }
 
         @Override

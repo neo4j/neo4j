@@ -206,7 +206,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         config = platformModule.config;
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        final DatabaseLayout databaseLayout = platformModule.directoryStructure.databaseDirectory( config.get( GraphDatabaseSettings.active_database ) );
+        final DatabaseLayout databaseLayout = platformModule.storeLayout.databaseLayout( config.get( GraphDatabaseSettings.active_database ) );
         final LifeSupport life = platformModule.life;
 
         CoreMonitor.register( logging.getInternalLogProvider(), logging.getUserLogProvider(), platformModule.monitors );
@@ -420,7 +420,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
         dependencies.satisfyDependency(
-                createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.directoryStructure.rootDirectory(),
+                createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeLayout.storeDirectory(),
                         config, platformModule.dataSourceManager, life ) );
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );

@@ -27,33 +27,39 @@ public class DatabaseLayout
 {
     private static final File[] EMPTY_FILES_ARRAY = new File[0];
     private final File databaseDirectory;
-    private final File databasesDirectory;
+    private final StoreLayout storeLayout;
+    private final String databaseName;
+
+    public static DatabaseLayout of( StoreLayout storeLayout, String databaseName )
+    {
+        return new DatabaseLayout( storeLayout, databaseName );
+    }
 
     public static DatabaseLayout of( File databaseDirectory )
     {
-        return new DatabaseLayout( databaseDirectory );
+        return new DatabaseLayout( new StoreLayout( databaseDirectory.getParentFile() ), databaseDirectory.getName() );
     }
 
     public static DatabaseLayout of( File rootDirectory, String databaseName )
     {
-        return new DatabaseLayout( rootDirectory, databaseName );
+        return new DatabaseLayout( new StoreLayout( rootDirectory ), databaseName );
     }
 
-    private DatabaseLayout( File databaseDirectory )
+    private DatabaseLayout( StoreLayout storeLayout, String databaseName )
     {
-        this.databaseDirectory = databaseDirectory;
-        this.databasesDirectory = databaseDirectory.getParentFile();
+        this.storeLayout = storeLayout;
+        this.databaseDirectory = new File( storeLayout.storeDirectory(), databaseName );
+        this.databaseName = databaseName;
     }
 
-    private DatabaseLayout( File rootDirectory, String databaseName )
+    public String getDatabaseName()
     {
-        this.databasesDirectory = rootDirectory;
-        this.databaseDirectory = new File( rootDirectory, databaseName );
+        return databaseName;
     }
 
-    public File getDatabasesDirectory()
+    public File getStoreDirectory()
     {
-        return databasesDirectory;
+        return storeLayout.storeDirectory();
     }
 
     public File databaseDirectory()
@@ -95,12 +101,12 @@ public class DatabaseLayout
             return false;
         }
         DatabaseLayout that = (DatabaseLayout) o;
-        return Objects.equals( databaseDirectory, that.databaseDirectory ) && Objects.equals( databasesDirectory, that.databasesDirectory );
+        return Objects.equals( databaseDirectory, that.databaseDirectory ) && Objects.equals( storeLayout, that.storeLayout );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( databaseDirectory, databasesDirectory );
+        return Objects.hash( databaseDirectory, storeLayout );
     }
 }

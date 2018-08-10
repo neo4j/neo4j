@@ -75,7 +75,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
             GraphDatabaseService graphDatabaseService = newTempDatabase( databaseLayout.databaseDirectory() );
             graphDatabaseService.shutdown();
             // as soon as recovery will be extracted we will not gonna need this
-            File lockFile = new File( databaseLayout.getDatabasesDirectory(), StoreLocker.STORE_LOCK_FILENAME );
+            File lockFile = new File( databaseLayout.getStoreDirectory(), StoreLocker.STORE_LOCK_FILENAME );
             if ( lockFile.exists() )
             {
                 FileUtils.deleteFile( lockFile );

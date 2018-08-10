@@ -361,7 +361,7 @@ public class OnlineBackupCommandHaIT
 
         // then there has been a rotation
         BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
-        LogFiles logFiles = BackupTransactionLogFilesHelper.readLogFiles( new StoreLayout( backupDir ).databaseDirectory( backupName ) );
+        LogFiles logFiles = BackupTransactionLogFilesHelper.readLogFiles( new StoreLayout( backupDir ).databaseLayout( backupName ) );
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         assertEquals( 2, highestTxIdInLogFiles );
 

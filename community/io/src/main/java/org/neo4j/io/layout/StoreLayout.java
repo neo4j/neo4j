@@ -23,25 +23,24 @@ import java.io.File;
 
 public class StoreLayout
 {
-    private final File rootDirectory;
+    private final File storeDirectory;
 
     public StoreLayout( File rootStoreDirectory )
     {
-        this.rootDirectory = rootStoreDirectory;
+        this.storeDirectory = rootStoreDirectory;
     }
 
     /**
      * Databases root directory where all databases are located.
      * @return all databases root directory
      */
-    public File rootDirectory()
+    public File storeDirectory()
     {
-        return rootDirectory;
+        return storeDirectory;
     }
 
-    //TODO:rename
-    public DatabaseLayout databaseDirectory( String databaseName )
+    public DatabaseLayout databaseLayout( String databaseName )
     {
-        return DatabaseLayout.of( rootDirectory, databaseName );
+        return DatabaseLayout.of( storeDirectory, databaseName );
     }
 }

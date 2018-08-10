@@ -112,7 +112,7 @@ public class CommunityEditionModule extends EditionModule
                 new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
 
-        File kernelContextDirectory = platformModule.directoryStructure.rootDirectory();
+        File kernelContextDirectory = platformModule.storeLayout.storeDirectory();
         dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, kernelContextDirectory, config, life, dataSourceManager ) );
 
         commitProcessFactory = new CommunityCommitProcessFactory();

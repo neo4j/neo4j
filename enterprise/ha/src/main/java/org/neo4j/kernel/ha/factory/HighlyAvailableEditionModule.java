@@ -56,7 +56,6 @@ import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -66,6 +65,7 @@ import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -229,7 +229,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
-        DatabaseLayout databaseLayout = platformModule.directoryStructure.databaseDirectory( DatabaseManager.DEFAULT_DATABASE_NAME );
+        DatabaseLayout databaseLayout = platformModule.storeLayout.databaseLayout( DatabaseManager.DEFAULT_DATABASE_NAME );
         life.add( new BranchedDataMigrator( databaseLayout.databaseDirectory() ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( Master.class );
@@ -518,7 +518,7 @@ public class HighlyAvailableEditionModule extends EditionModule
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.dataSourceManager, members, fs, platformModule.pageCache,
-                        platformModule.directoryStructure.rootDirectory(), lastUpdateTime, lastTxIdGetter, life ) );
+                        platformModule.storeLayout.storeDirectory(), lastUpdateTime, lastTxIdGetter, life ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,

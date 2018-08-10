@@ -95,7 +95,7 @@ public final class StoreFileBean extends ManagementBeanProvider
 
                 private File resolvePath( NeoStoreDataSource ds )
                 {
-                    File databasesDirectory = ds.getDatabaseLayout().getDatabasesDirectory();
+                    File databasesDirectory = ds.getDatabaseLayout().getStoreDirectory();
                     try
                     {
                         return databasesDirectory.getCanonicalFile().getAbsoluteFile();

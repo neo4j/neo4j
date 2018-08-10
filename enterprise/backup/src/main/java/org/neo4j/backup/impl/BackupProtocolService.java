@@ -227,7 +227,7 @@ public class BackupProtocolService
             {
                 targetDb.shutdown();
                 // as soon as recovery will be extracted we will not gonna need this
-                File lockFile = new File( targetLayout.getDatabasesDirectory().getParentFile(), StoreLocker.STORE_LOCK_FILENAME );
+                File lockFile = new File( targetLayout.getStoreDirectory(), StoreLocker.STORE_LOCK_FILENAME );
                 if ( lockFile.exists() )
                 {
                     FileUtils.deleteFile( lockFile );

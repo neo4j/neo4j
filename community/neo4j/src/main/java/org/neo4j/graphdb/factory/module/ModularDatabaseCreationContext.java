@@ -117,7 +117,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseName = databaseName;
         this.config = platformModule.config;
         this.idGeneratorFactory = editionModule.idGeneratorFactory;
-        this.directoryStructure = platformModule.directoryStructure.databaseDirectory( databaseName );
+        this.directoryStructure = platformModule.storeLayout.databaseLayout( databaseName );
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
         this.globalDependencies =  platformModule.dependencies;

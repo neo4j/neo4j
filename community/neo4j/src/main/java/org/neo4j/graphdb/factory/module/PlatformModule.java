@@ -22,12 +22,12 @@ package org.neo4j.graphdb.factory.module;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
@@ -100,7 +100,7 @@ public class PlatformModule
 
     public final LifeSupport life;
 
-    public final StoreLayout directoryStructure;
+    public final StoreLayout storeLayout;
 
     public final DatabaseInfo databaseInfo;
 
@@ -157,7 +157,7 @@ public class PlatformModule
         config.augmentDefaults( GraphDatabaseSettings.neo4j_home, providedStoreDir.getAbsolutePath() );
         this.config = dependencies.satisfyDependency( config );
 
-        this.directoryStructure = new StoreLayout( providedStoreDir.getAbsoluteFile() );
+        this.storeLayout = new StoreLayout( providedStoreDir.getAbsoluteFile() );
 
         fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
         life.add( new FileSystemLifecycleAdapter( fileSystem ) );
@@ -218,8 +218,8 @@ public class PlatformModule
         kernelExtensionFactories = externalDependencies.kernelExtensions();
         engineProviders = externalDependencies.executionEngines();
         globalKernelExtensions = dependencies.satisfyDependency(
-                new GlobalKernelExtensions( new SimpleKernelContext( directoryStructure.rootDirectory(), databaseInfo, dependencies ), kernelExtensionFactories,
-                        dependencies, UnsatisfiedDependencyStrategies.fail() ) );
+                new GlobalKernelExtensions( new SimpleKernelContext( storeLayout.storeDirectory(), databaseInfo, dependencies ),
+                        kernelExtensionFactories, dependencies, UnsatisfiedDependencyStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
@@ -245,7 +245,7 @@ public class PlatformModule
 
     protected StoreLocker createStoreLocker()
     {
-        return new GlobalStoreLocker( fileSystem, directoryStructure.rootDirectory() );
+        return new GlobalStoreLocker( fileSystem, storeLayout.storeDirectory() );
     }
 
     protected SystemNanoClock createClock()

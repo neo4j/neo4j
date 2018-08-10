@@ -173,21 +173,21 @@ public class TestDirectory extends ExternalResource
 
     public DatabaseLayout databaseLayout( File storeDir )
     {
-        DatabaseLayout databaseLayout = new StoreLayout( storeDir ).databaseDirectory( DEFAULT_DATABASE_DIRECTORY );
+        DatabaseLayout databaseLayout = new StoreLayout( storeDir ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
         createDirectory( defaultDatabaseLayout.databaseDirectory() );
         return databaseLayout;
     }
 
     public DatabaseLayout databaseLayout( String name )
     {
-        DatabaseLayout databaseLayout = storeLayout.databaseDirectory( name );
+        DatabaseLayout databaseLayout = storeLayout.databaseLayout( name );
         createDirectory( databaseLayout.databaseDirectory() );
         return databaseLayout;
     }
 
     public File storeDir()
     {
-        return storeLayout.rootDirectory();
+        return storeLayout.storeDirectory();
     }
 
     public File storeDir( String storeDirName )
@@ -254,7 +254,7 @@ public class TestDirectory extends ExternalResource
         }
         testDirectory = prepareDirectoryForTest( test );
         storeLayout = new StoreLayout( testDirectory );
-        defaultDatabaseLayout = storeLayout.databaseDirectory( DEFAULT_DATABASE_DIRECTORY );
+        defaultDatabaseLayout = storeLayout.databaseLayout( DEFAULT_DATABASE_DIRECTORY );
     }
 
     public File prepareDirectoryForTest( String test ) throws IOException
