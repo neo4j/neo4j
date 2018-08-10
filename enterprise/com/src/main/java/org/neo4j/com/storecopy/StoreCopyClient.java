@@ -130,7 +130,7 @@ public class StoreCopyClient
                 monitor.finishReceivingStoreFiles();
                 // Update highest archived log id
                 // Write transactions that happened during the copy to the currently active logical log
-                writeTransactionsToActiveLogFile( new DatabaseLayout( tempDatabaseDirectory ), response );
+                writeTransactionsToActiveLogFile( DatabaseLayout.of( tempDatabaseDirectory ), response );
             }
             finally
             {

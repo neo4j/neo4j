@@ -110,7 +110,7 @@ public class OnlineBackup
     public OnlineBackup backup( File targetDirectory )
     {
         outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
-                hostNameOrIp, port, new DatabaseLayout( targetDirectory ), getConsistencyCheck( true ), defaultConfig(), timeoutMillis, forensics );
+                hostNameOrIp, port, DatabaseLayout.of( targetDirectory ), getConsistencyCheck( true ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -144,7 +144,7 @@ public class OnlineBackup
     public OnlineBackup backup( File targetDirectory, boolean verification )
     {
         outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
-                hostNameOrIp, port, new DatabaseLayout( targetDirectory ), getConsistencyCheck( verification ), defaultConfig(),
+                hostNameOrIp, port, DatabaseLayout.of( targetDirectory ), getConsistencyCheck( verification ), defaultConfig(),
                 timeoutMillis, forensics );
         return this;
     }
@@ -178,7 +178,7 @@ public class OnlineBackup
     public OnlineBackup backup( File targetDirectory, Config tuningConfiguration )
     {
         outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
-                hostNameOrIp, port, new DatabaseLayout( targetDirectory ), getConsistencyCheck( true ), tuningConfiguration,
+                hostNameOrIp, port, DatabaseLayout.of( targetDirectory ), getConsistencyCheck( true ), tuningConfiguration,
                 timeoutMillis, forensics );
         return this;
     }
@@ -215,7 +215,7 @@ public class OnlineBackup
     public OnlineBackup backup( File targetDirectory, Config tuningConfiguration, boolean verification )
     {
         outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
-                hostNameOrIp, port, new DatabaseLayout( targetDirectory ), getConsistencyCheck( verification ), tuningConfiguration,
+                hostNameOrIp, port, DatabaseLayout.of( targetDirectory ), getConsistencyCheck( verification ), tuningConfiguration,
                 timeoutMillis, forensics );
         return this;
     }
@@ -417,7 +417,7 @@ public class OnlineBackup
 
     private static DatabaseLayout getTargetDatabaseLayout( String targetDirectory )
     {
-        return new DatabaseLayout( Paths.get( targetDirectory ).toFile() );
+        return DatabaseLayout.of( Paths.get( targetDirectory ).toFile() );
     }
 
     private static ConsistencyCheck getConsistencyCheck( boolean verification )

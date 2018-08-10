@@ -172,7 +172,7 @@ public class RestartIT
             for ( CoreClusterMember core : cluster.coreMembers() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( new DatabaseLayout( core.databaseDirectory() ), Config.defaults(), ProgressMonitorFactory.NONE,
+                        .runFullConsistencyCheck( DatabaseLayout.of( core.databaseDirectory() ), Config.defaults(), ProgressMonitorFactory.NONE,
                                 NullLogProvider.getInstance(), fileSystem, false,
                                 new ConsistencyFlags( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + core, result.isSuccessful() );
@@ -181,7 +181,7 @@ public class RestartIT
             for ( ReadReplica readReplica : cluster.readReplicas() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( new DatabaseLayout( readReplica.databaseDirectory() ), Config.defaults(), ProgressMonitorFactory.NONE,
+                        .runFullConsistencyCheck( DatabaseLayout.of( readReplica.databaseDirectory() ), Config.defaults(), ProgressMonitorFactory.NONE,
                                 NullLogProvider.getInstance(), fileSystem, false,
                                 new ConsistencyFlags( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );

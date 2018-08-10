@@ -88,7 +88,7 @@ public class StoreCopyRequestHandlerTest
         Dependencies dependencies = new Dependencies();
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.storageengine.api.StoreId( 1, 2, 5, 3, 4 ) );
         when( neoStoreDataSource.getDependencyResolver() ).thenReturn( dependencies );
-        when( neoStoreDataSource.getDatabaseLayout() ).thenReturn( new DatabaseLayout( new File( "." ) ) );
+        when( neoStoreDataSource.getDatabaseLayout() ).thenReturn( DatabaseLayout.of( new File( "." ) ) );
         embeddedChannel = new EmbeddedChannel( storeCopyRequestHandler );
     }
 

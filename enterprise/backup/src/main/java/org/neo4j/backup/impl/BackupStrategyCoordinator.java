@@ -103,7 +103,7 @@ class BackupStrategyCoordinator
         }
         if ( requiredArgs.isDoConsistencyCheck() )
         {
-            performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, consistencyFlags, new DatabaseLayout( destination.toFile() ) );
+            performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, consistencyFlags, DatabaseLayout.of( destination.toFile() ) );
         }
     }
 

@@ -481,7 +481,7 @@ public class ImportTool
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
             boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
-            doImport( out, err, in, new DatabaseLayout( storeDir ), logsDir, badFile, fs, nodesFiles, relationshipsFiles,
+            doImport( out, err, in, DatabaseLayout.of( storeDir ), logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration, detailedPrinting );
 
             success = true;

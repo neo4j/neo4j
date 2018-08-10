@@ -73,7 +73,7 @@ public class CoreStateDownloaderTest
     private final AdvertisedSocketAddress remoteAddress = new AdvertisedSocketAddress( "remoteAddress", 1234 );
     private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( remoteAddress );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
-    private final DatabaseLayout databaseLayout = new DatabaseLayout( new File( "." ) );
+    private final DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "." ) );
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachines,

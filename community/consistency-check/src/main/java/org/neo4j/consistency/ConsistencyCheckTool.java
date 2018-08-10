@@ -113,7 +113,7 @@ public class ConsistencyCheckTool
         Config tuningConfiguration = readConfiguration( arguments );
         boolean verbose = isVerbose( arguments );
 
-        DatabaseLayout databaseLayout = new DatabaseLayout( storeDir );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir );
         checkDbState( databaseLayout, tuningConfiguration );
 
         ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();

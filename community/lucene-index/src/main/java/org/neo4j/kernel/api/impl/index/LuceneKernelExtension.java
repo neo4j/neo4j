@@ -43,7 +43,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public LuceneKernelExtension( File databaseDirectory, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders, OperationalMode operationalMode )
     {
-        this.databaseLayout = new DatabaseLayout( databaseDirectory );
+        this.databaseLayout = DatabaseLayout.of( databaseDirectory );
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;

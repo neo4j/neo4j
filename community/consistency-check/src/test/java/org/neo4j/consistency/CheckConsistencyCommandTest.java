@@ -76,7 +76,7 @@ class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        DatabaseLayout databaseLayout = new DatabaseLayout( databasesFolder, "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -104,7 +104,7 @@ class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        DatabaseLayout databaseLayout = new DatabaseLayout( databasesFolder, "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -131,7 +131,7 @@ class CheckConsistencyCommandTest
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
-        DatabaseLayout databaseLayout = new DatabaseLayout( databasesFolder, "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),

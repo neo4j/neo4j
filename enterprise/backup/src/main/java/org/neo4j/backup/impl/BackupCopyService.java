@@ -124,7 +124,7 @@ class BackupCopyService
      */
     private Path findAnAvailableBackupLocation( Path file, String pattern )
     {
-        if ( backupExists( new DatabaseLayout( file.toFile() ) ) )
+        if ( backupExists( DatabaseLayout.of( file.toFile() ) ) )
         {
             // find alternative name
             final AtomicLong counter = new AtomicLong( 0 );
@@ -133,7 +133,7 @@ class BackupCopyService
 
             return availableAlternativeNames( file, pattern )
                     .peek( countNumberOfFilesProcessedForPotentialErrorMessage )
-                    .filter( f -> !backupExists( new DatabaseLayout( f.toFile() ) ) )
+                    .filter( f -> !backupExists( DatabaseLayout.of( f.toFile() ) ) )
                     .findFirst()
                     .orElseThrow( noFreeBackupLocation( file, counter ) );
         }

@@ -107,7 +107,7 @@ public class CheckPointingLogRotationStressTesting
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             Config dbConfig = Config.defaults();
-            new ParallelBatchImporter( new DatabaseLayout( ensureExistsAndEmpty( storeDir ) ), fileSystem, null, DEFAULT,
+            new ParallelBatchImporter( DatabaseLayout.of( ensureExistsAndEmpty( storeDir ) ), fileSystem, null, DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.defaultVisible( jobScheduler ), EMPTY, dbConfig,
                     RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ), NO_MONITOR )
                     .doImport( new NodeCountInputs( nodeCount ) );

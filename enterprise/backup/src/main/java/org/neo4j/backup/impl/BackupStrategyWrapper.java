@@ -83,12 +83,12 @@ class BackupStrategyWrapper
         log.debug( "User specified address is %s:%s", userSpecifiedAddress.getHostname().toString(), userSpecifiedAddress.getPort().toString() );
         Config config = onlineBackupContext.getConfig();
 
-        boolean previousBackupExists = backupCopyService.backupExists( new DatabaseLayout( backupLocation.toFile() ) );
+        boolean previousBackupExists = backupCopyService.backupExists( DatabaseLayout.of( backupLocation.toFile() ) );
         if ( previousBackupExists )
         {
             log.info( "Previous backup found, trying incremental backup." );
             Fallible<BackupStageOutcome> state =
-                    backupStrategy.performIncrementalBackup( new DatabaseLayout( backupLocation.toFile() ), config, userSpecifiedAddress );
+                    backupStrategy.performIncrementalBackup( DatabaseLayout.of( backupLocation.toFile() ), config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
             boolean incrementalWasSuccessful = BackupStageOutcome.SUCCESS.equals( state.getState() );
 
@@ -143,7 +143,7 @@ class BackupStrategyWrapper
         Path temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
 
         OptionalHostnamePort address = onlineBackupContext.getRequiredArguments().getAddress();
-        Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( new DatabaseLayout( temporaryFullBackupLocation.toFile() ), config, address );
+        Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( DatabaseLayout.of( temporaryFullBackupLocation.toFile() ), config, address );
 
         // NOTE temporaryFullBackupLocation can be equal to desired
         boolean aBackupAlreadyExisted = !userSpecifiedBackupLocation.equals( temporaryFullBackupLocation );

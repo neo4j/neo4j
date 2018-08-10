@@ -29,13 +29,23 @@ public class DatabaseLayout
     private final File databaseDirectory;
     private final File databasesDirectory;
 
-    public DatabaseLayout( File databaseDirectory )
+    public static DatabaseLayout of( File databaseDirectory )
+    {
+        return new DatabaseLayout( databaseDirectory );
+    }
+
+    public static DatabaseLayout of( File rootDirectory, String databaseName )
+    {
+        return new DatabaseLayout( rootDirectory, databaseName );
+    }
+
+    private DatabaseLayout( File databaseDirectory )
     {
         this.databaseDirectory = databaseDirectory;
         this.databasesDirectory = databaseDirectory.getParentFile();
     }
 
-    public DatabaseLayout( File rootDirectory, String databaseName )
+    private DatabaseLayout( File rootDirectory, String databaseName )
     {
         this.databasesDirectory = rootDirectory;
         this.databaseDirectory = new File( rootDirectory, databaseName );
@@ -70,7 +80,7 @@ public class DatabaseLayout
     @Override
     public String toString()
     {
-        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + '}';
+        return String.valueOf( databaseDirectory );
     }
 
     @Override

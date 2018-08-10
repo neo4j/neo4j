@@ -126,7 +126,7 @@ public class StoreMigration
                     kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                     deps, ignore() ) );
 
-            DatabaseLayout databaseLayout = new DatabaseLayout( storeDirectory );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( storeDirectory );
             final LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                     .withConfig( config ).build();
             LogTailScanner tailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );

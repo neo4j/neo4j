@@ -48,7 +48,7 @@ public class CopiedStoreRecoveryTest
         try
         {
             // when
-            copiedStoreRecovery.recoverCopiedStore( new DatabaseLayout( new File( "nowhere" ) ) );
+            copiedStoreRecovery.recoverCopiedStore( DatabaseLayout.of( new File( "nowhere" ) ) );
             fail( "should have thrown" );
         }
         catch ( DatabaseShutdownException ex )

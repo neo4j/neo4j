@@ -88,7 +88,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             Config config = Config.defaults();
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( new DatabaseLayout( path ), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+                StoreFactory factory = new StoreFactory( DatabaseLayout.of( path ), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
                         pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();

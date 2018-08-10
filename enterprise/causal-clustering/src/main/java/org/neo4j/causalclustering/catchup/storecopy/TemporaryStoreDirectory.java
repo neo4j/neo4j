@@ -45,7 +45,7 @@ public class TemporaryStoreDirectory implements AutoCloseable
     {
         this.tempStoreDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
         // TODO
-        this.tempDatabaseLayout = new DatabaseLayout( new File( tempStoreDir, DatabaseManager.DEFAULT_DATABASE_NAME ) );
+        this.tempDatabaseLayout = DatabaseLayout.of( new File( tempStoreDir, DatabaseManager.DEFAULT_DATABASE_NAME ) );
         storeFiles = new StoreFiles( fs, pageCache, ( directory, name ) -> true );
         tempLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( tempDatabaseLayout.databaseDirectory(), fs ).build();
         storeFiles.delete( tempStoreDir, tempLogFiles );

@@ -54,8 +54,8 @@ public class ExplicitIndexMigratorTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
     private final ProgressReporter progressMonitor = mock( ProgressReporter.class );
-    private final DatabaseLayout storeLayout = new DatabaseLayout( new File( DatabaseManager.DEFAULT_DATABASE_NAME ) );
-    private final DatabaseLayout migrationLayout = new DatabaseLayout( new File( StoreUpgrader.MIGRATION_DIRECTORY ) );
+    private final DatabaseLayout storeLayout = DatabaseLayout.of( new File( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+    private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( StoreUpgrader.MIGRATION_DIRECTORY ) );
     private final File originalIndexStore = mock( File.class );
     private final File migratedIndexStore = new File( "." );
 

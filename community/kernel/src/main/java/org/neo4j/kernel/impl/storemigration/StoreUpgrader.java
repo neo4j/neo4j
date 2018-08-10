@@ -105,7 +105,7 @@ public class StoreUpgrader
 
     public void migrateIfNeeded( DatabaseLayout dbDirectoryStructure )
     {
-        DatabaseLayout migrationStructure = new DatabaseLayout( dbDirectoryStructure.databaseDirectory(), MIGRATION_DIRECTORY );
+        DatabaseLayout migrationStructure = DatabaseLayout.of( dbDirectoryStructure.databaseDirectory(), MIGRATION_DIRECTORY );
 
         cleanupLegacyLeftOverDirsIn( dbDirectoryStructure.databaseDirectory() );
 

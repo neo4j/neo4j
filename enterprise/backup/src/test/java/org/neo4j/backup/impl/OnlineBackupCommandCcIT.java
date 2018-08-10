@@ -277,7 +277,7 @@ public class OnlineBackupCommandCcIT
                 "--name=" + backupName ) );
 
         // then there has been a rotation
-        LogFiles logFiles = BackupTransactionLogFilesHelper.readLogFiles( new DatabaseLayout( new File( backupStoreDir, backupName ) ) );
+        LogFiles logFiles = BackupTransactionLogFilesHelper.readLogFiles( DatabaseLayout.of( new File( backupStoreDir, backupName ) ) );
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         assertEquals( 2, highestTxIdInLogFiles );
 

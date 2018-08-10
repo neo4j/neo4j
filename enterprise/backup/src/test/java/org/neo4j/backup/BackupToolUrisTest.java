@@ -101,7 +101,7 @@ public class BackupToolUrisTest
             verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( new DatabaseLayout( Paths.get( "/var/backup/graph" ).toFile() ) ),
+                    eq( DatabaseLayout.of( Paths.get( "/var/backup/graph" ).toFile() ) ),
                     eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
@@ -205,7 +205,7 @@ public class BackupToolUrisTest
             verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( new DatabaseLayout( Paths.get( "/var/backup/graph" ).toFile() ) ),
+                    eq( DatabaseLayout.of( Paths.get( "/var/backup/graph" ).toFile() ) ),
                     eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),

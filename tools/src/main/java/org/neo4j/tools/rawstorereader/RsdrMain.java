@@ -113,7 +113,7 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( new DatabaseLayout( storeDir ), config, idGeneratorFactory, pageCache, fileSystem, logProvider,
+        return new StoreFactory( DatabaseLayout.of( storeDir ), config, idGeneratorFactory, pageCache, fileSystem, logProvider,
                 EmptyVersionContextSupplier.EMPTY );
     }
 

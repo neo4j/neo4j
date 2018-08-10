@@ -209,7 +209,7 @@ public class BackupTool
             String host = hostnamePort.getHost();
             int port = hostnamePort.getPort();
 
-            BackupOutcome outcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, new DatabaseLayout( to.toFile() ),
+            BackupOutcome outcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, DatabaseLayout.of( to.toFile() ),
                     consistencyCheck, config, timeout, forensics );
             systemOut.println( "Done" );
             return outcome;

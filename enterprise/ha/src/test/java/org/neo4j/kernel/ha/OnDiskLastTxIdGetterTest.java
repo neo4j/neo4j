@@ -61,9 +61,8 @@ public class OnDiskLastTxIdGetterTest
     @Test
     public void lastTransactionIdIsBaseTxIdWhileNeoStoresAreStopped()
     {
-        final StoreFactory storeFactory = new StoreFactory(
-                new DatabaseLayout( new File( "store" ) ), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(),
+        final StoreFactory storeFactory = new StoreFactory( DatabaseLayout.of( new File( "store" ) ),
+                Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ), pageCacheRule.getPageCache( fs.get() ), fs.get(),
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         final NeoStores neoStores = storeFactory.openAllNeoStores( true );
         neoStores.close();

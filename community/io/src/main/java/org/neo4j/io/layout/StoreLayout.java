@@ -42,6 +42,6 @@ public class StoreLayout
     //TODO:rename
     public DatabaseLayout databaseDirectory( String databaseName )
     {
-        return new DatabaseLayout( rootDirectory, databaseName );
+        return DatabaseLayout.of( rootDirectory, databaseName );
     }
 }

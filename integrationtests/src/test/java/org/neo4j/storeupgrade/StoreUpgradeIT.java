@@ -167,7 +167,7 @@ public class StoreUpgradeIT
                 db.shutdown();
             }
 
-            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
+            assertConsistentStore( DatabaseLayout.of( databaseDirectory ) );
         }
 
         @Test
@@ -209,7 +209,7 @@ public class StoreUpgradeIT
                 bootstrapper.stop();
             }
 
-            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
+            assertConsistentStore( DatabaseLayout.of( databaseDirectory ) );
         }
 
         @Test
@@ -234,7 +234,7 @@ public class StoreUpgradeIT
                 db.shutdown();
             }
 
-            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
+            assertConsistentStore( DatabaseLayout.of( databaseDirectory ) );
 
             // start the cluster with the db migrated from the old instance
             File haDir = testDir.storeDir( "ha-stuff" );
@@ -358,7 +358,7 @@ public class StoreUpgradeIT
                 db.shutdown();
             }
 
-            assertConsistentStore( new DatabaseLayout( databaseDirectory ) );
+            assertConsistentStore( DatabaseLayout.of( databaseDirectory ) );
         }
     }
 

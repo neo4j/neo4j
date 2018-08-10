@@ -246,7 +246,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.fileSystem = fileSystem;
 
         life = new LifeSupport();
-        this.directoryStructure = new DatabaseLayout( databaseDirectory );
+        this.directoryStructure = DatabaseLayout.of( databaseDirectory );
         storeLocker = tryLockStore( fileSystem );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),

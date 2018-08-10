@@ -147,7 +147,7 @@ public class TransactionLogRecoveryIT
     {
         try ( PageCache pageCache = this.pageCache.getPageCache( fs ) )
         {
-            LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( new DatabaseLayout( storeDir ), fs, pageCache ).build();
+            LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( DatabaseLayout.of( storeDir ), fs, pageCache ).build();
             try ( Lifespan ignored = new Lifespan( logFiles ) )
             {
                 LogEntryWriter writer = new LogEntryWriter( logFiles.getLogFile().getWriter() );

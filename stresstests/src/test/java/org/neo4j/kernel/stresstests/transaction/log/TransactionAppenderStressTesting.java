@@ -58,7 +58,7 @@ public class TransactionAppenderStressTesting
 
         Callable<Long> runner = new Builder()
                 .with( untilTimeExpired( durationInMinutes, MINUTES ) )
-                .withWorkingDirectory( new DatabaseLayout( ensureExistsAndEmpty( workingDirectory ) ) )
+                .withWorkingDirectory( DatabaseLayout.of( ensureExistsAndEmpty( workingDirectory ) ) )
                 .withNumThreads( threads )
                 .build();
 

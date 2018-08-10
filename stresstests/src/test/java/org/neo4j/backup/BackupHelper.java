@@ -63,7 +63,7 @@ public class BackupHelper
         try
         {
             BackupProtocolService backupProtocolService = new BackupProtocolService( outputStream );
-            BackupOutcome backupOutcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, new DatabaseLayout( targetDirectory.toFile() ),
+            BackupOutcome backupOutcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, DatabaseLayout.of( targetDirectory.toFile() ),
                     ConsistencyCheck.FULL, Config.defaults(), BackupClient.BIG_READ_TIMEOUT,
                     false );
             consistent = backupOutcome.isConsistent();

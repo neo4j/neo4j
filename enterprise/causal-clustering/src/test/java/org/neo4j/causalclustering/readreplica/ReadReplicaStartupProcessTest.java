@@ -79,7 +79,7 @@ public class ReadReplicaStartupProcessTest
     private AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "127.0.0.1", 123 );
     private StoreId localStoreId = new StoreId( 1, 2, 3, 4 );
     private StoreId otherStoreId = new StoreId( 5, 6, 7, 8 );
-    private DatabaseLayout databaseLayout = new DatabaseLayout( new File( "store-dir" ) );
+    private DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "store-dir" ) );
 
     @Before
     public void commonMocking() throws IOException

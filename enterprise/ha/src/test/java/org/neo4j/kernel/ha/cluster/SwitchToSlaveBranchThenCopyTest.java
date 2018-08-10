@@ -336,7 +336,7 @@ public class SwitchToSlaveBranchThenCopyTest
         when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
                 argThat( storeId -> true ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
-        return spy( new SwitchToSlaveBranchThenCopy( new DatabaseLayout( new File( "" ) ), NullLogService.getInstance(),
+        return spy( new SwitchToSlaveBranchThenCopy( DatabaseLayout.of( new File( "" ) ), NullLogService.getInstance(),
                 configMock(),
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),

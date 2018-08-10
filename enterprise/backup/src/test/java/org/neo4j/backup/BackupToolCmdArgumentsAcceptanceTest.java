@@ -105,7 +105,7 @@ public class BackupToolCmdArgumentsAcceptanceTest
         // Then
         verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                 eq( HOST ),
-                eq( PORT ), eq( new DatabaseLayout( PATH.toFile() ) ),
+                eq( PORT ), eq( DatabaseLayout.of( PATH.toFile() ) ),
                 expectedVerifyStoreValue ? eq( ConsistencyCheck.FULL ) : eq( ConsistencyCheck.NONE ),
                 any( Config.class ),
                 eq( BackupClient.BIG_READ_TIMEOUT ),

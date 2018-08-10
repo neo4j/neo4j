@@ -84,7 +84,7 @@ public class CoreBootstrapperIT
                 testDirectory.directory(), fileSystem, nodeCount, Standard.LATEST_NAME );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        DatabaseLayout databaseLayout = new DatabaseLayout( classicNeo4jStore );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( classicNeo4jStore );
         CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem,
                 Config.defaults(), NullLogProvider.getInstance() );
         bootstrapAndVerify( nodeCount, fileSystem, databaseLayout, pageCache, Config.defaults(), bootstrapper );
@@ -102,7 +102,7 @@ public class CoreBootstrapperIT
                 Standard.LATEST_NAME, customTransactionLogsLocation );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        DatabaseLayout databaseLayout = new DatabaseLayout( classicNeo4jStore );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( classicNeo4jStore );
         Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location,
                 customTransactionLogsLocation );
         CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem,

@@ -71,7 +71,7 @@ public class BackupDelegatorTest
         // given
         AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "neo4j.com", 5432 );
         StoreId expectedStoreId = new StoreId( 7, 2, 5, 98 );
-        DatabaseLayout databaseLayout = new DatabaseLayout( new File( "." ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "." ) );
 
         // when
         subject.tryCatchingUp( fromAddress, expectedStoreId, databaseLayout );
@@ -123,7 +123,7 @@ public class BackupDelegatorTest
     {
         // given
         StoreId storeId = new StoreId( 92, 5, 7, 32 );
-        DatabaseLayout databaseLayout = new DatabaseLayout( new File( "." ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "." ) );
 
         // when
         subject.copy( anyAddress, storeId, databaseLayout );

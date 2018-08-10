@@ -72,7 +72,7 @@ public class RemoteStoreTest
         // when
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( localhost );
-        remoteStore.copy( catchupAddressProvider, storeId, new DatabaseLayout( new File( "destination" ) ), true );
+        remoteStore.copy( catchupAddressProvider, storeId, DatabaseLayout.of( new File( "destination" ) ), true );
 
         // then
         verify( storeCopyClient ).copyStoreFiles( eq( catchupAddressProvider ), eq( storeId ), any( StoreFileStreamProvider.class ), any(), any() );
@@ -102,7 +102,7 @@ public class RemoteStoreTest
                 null, storeCopyClient, txPullClient, factory( writer ), Config.defaults(), new Monitors() );
 
         // when
-        remoteStore.copy( catchupAddressProvider, wantedStoreId, new DatabaseLayout( new File( "destination" ) ), true );
+        remoteStore.copy( catchupAddressProvider, wantedStoreId, DatabaseLayout.of( new File( "destination" ) ), true );
 
         // then
         long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
@@ -130,7 +130,7 @@ public class RemoteStoreTest
         // when
         try
         {
-            remoteStore.copy( catchupAddressProvider, storeId, new DatabaseLayout( new File( "." ) ), true );
+            remoteStore.copy( catchupAddressProvider, storeId, DatabaseLayout.of( new File( "." ) ), true );
         }
         catch ( StoreCopyFailedException e )
         {

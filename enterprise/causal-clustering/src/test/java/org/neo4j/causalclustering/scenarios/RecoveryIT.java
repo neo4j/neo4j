@@ -113,7 +113,7 @@ public class RecoveryIT
         ConsistencyCheckService.Result result;
         try
         {
-            result = new ConsistencyCheckService().runFullConsistencyCheck( new DatabaseLayout( storeDir ), Config.defaults(),
+            result = new ConsistencyCheckService().runFullConsistencyCheck( DatabaseLayout.of( storeDir ), Config.defaults(),
                     ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), true );
         }
         catch ( Exception e )

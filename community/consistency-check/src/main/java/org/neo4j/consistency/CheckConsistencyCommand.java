@@ -183,7 +183,7 @@ public class CheckConsistencyCommand implements AdminCommand
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             File databaseDirectory = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
-            DatabaseLayout databaseLayout = new DatabaseLayout( databaseDirectory );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory );
             checkDbState( databaseLayout, config );
             ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             // Only output progress indicator if a console receives the output
