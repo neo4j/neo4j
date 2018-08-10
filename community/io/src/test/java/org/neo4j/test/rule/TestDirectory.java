@@ -165,6 +165,11 @@ public class TestDirectory extends ExternalResource
         return databaseLayout().databaseDirectory();
     }
 
+    public StoreLayout storeLayout()
+    {
+        return storeLayout;
+    }
+
     public DatabaseLayout databaseLayout()
     {
         createDirectory( defaultDatabaseLayout.databaseDirectory() );
@@ -173,7 +178,7 @@ public class TestDirectory extends ExternalResource
 
     public DatabaseLayout databaseLayout( File storeDir )
     {
-        DatabaseLayout databaseLayout = new StoreLayout( storeDir ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
+        DatabaseLayout databaseLayout = StoreLayout.of( storeDir ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
         createDirectory( defaultDatabaseLayout.databaseDirectory() );
         return databaseLayout;
     }
@@ -253,7 +258,7 @@ public class TestDirectory extends ExternalResource
             test = "static";
         }
         testDirectory = prepareDirectoryForTest( test );
-        storeLayout = new StoreLayout( testDirectory );
+        storeLayout = StoreLayout.of( testDirectory );
         defaultDatabaseLayout = storeLayout.databaseLayout( DEFAULT_DATABASE_DIRECTORY );
     }
 

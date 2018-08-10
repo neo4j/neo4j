@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -173,7 +173,7 @@ public class StoreCopyClient
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
         // as soon as recovery will be extracted we will not gonna need this
-        File lockFile = new File( storeDir, StoreLocker.STORE_LOCK_FILENAME );
+        File lockFile = StoreLayout.of( storeDir ).storeLockFile();
         if ( lockFile.exists() )
         {
             FileUtils.deleteFile( lockFile );

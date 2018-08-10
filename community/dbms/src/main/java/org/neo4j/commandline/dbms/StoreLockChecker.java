@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -38,29 +38,29 @@ class StoreLockChecker implements Closeable
     private final FileSystemAbstraction fileSystem;
     private final StoreLocker storeLocker;
 
-    private StoreLockChecker( FileSystemAbstraction fileSystem, File storeDirectory )
+    private StoreLockChecker( FileSystemAbstraction fileSystem, StoreLayout storeLayout )
     {
         this.fileSystem = fileSystem;
-        this.storeLocker = new GlobalStoreLocker( fileSystem, storeDirectory );
+        this.storeLocker = new GlobalStoreLocker( fileSystem, storeLayout );
     }
 
     /**
-     * Create store lock checker with lock on a provided path if it exists and writable
-     * @param databaseDirectory database path
+     * Create store lock checker with lock on a provided store layout if it exists and writable
+     * @param storeLayout store layout to check
      * @return lock checker or empty closeable in case if path does not exists or is not writable
      * @throws CannotWriteException
      *
      * @see StoreLocker
      * @see Files
      */
-    static Closeable check( Path databaseDirectory ) throws CannotWriteException
+    static Closeable check( StoreLayout storeLayout ) throws CannotWriteException
     {
-        Path lockFile = databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME );
+        Path lockFile = storeLayout.storeLockFile().toPath();
         if ( Files.exists( lockFile ) )
         {
             if ( Files.isWritable( lockFile ) )
             {
-                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(), databaseDirectory.toFile() );
+                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(), storeLayout );
                 try
                 {
                     storeLocker.checkLock();

@@ -24,12 +24,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.StoreLockException;
@@ -77,13 +78,13 @@ public class BatchInserterImplTest
     public void testCreatesStoreLockFile() throws Exception
     {
         // Given
-        File file = testDirectory.databaseDir();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
         // When
-        BatchInserter inserter = BatchInserters.inserter( file.getAbsoluteFile(), fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout.databaseDirectory(), fileSystemRule.get() );
 
         // Then
-        assertThat( new File( file, StoreLocker.STORE_LOCK_FILENAME ).exists(), equalTo( true ) );
+        assertThat( databaseLayout.getStoreLayout().storeLockFile().exists(), equalTo( true ) );
         inserter.shutdown();
     }
 
@@ -91,9 +92,9 @@ public class BatchInserterImplTest
     public void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
-        File parent = testDirectory.databaseDir();
+        StoreLayout storeLayout = testDirectory.storeLayout();
         try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
-              StoreLocker lock = new StoreLocker( fileSystemAbstraction, parent ) )
+              StoreLocker lock = new StoreLocker( fileSystemAbstraction, storeLayout ) )
         {
             lock.checkLock();
 
@@ -101,7 +102,7 @@ public class BatchInserterImplTest
             expected.expect( StoreLockException.class );
             expected.expectMessage( "Unable to obtain lock on store lock file" );
             // When
-            BatchInserters.inserter( parent.getAbsoluteFile(), fileSystemAbstraction );
+            BatchInserters.inserter( storeLayout.databaseLayout( "any" ).databaseDirectory(), fileSystemAbstraction );
         }
     }
 }

@@ -183,7 +183,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final LifeSupport life;
     private final NeoStores neoStores;
     private final IndexConfigStore indexStore;
-    private final DatabaseLayout directoryStructure;
+    private final DatabaseLayout databaseLayout;
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IndexProviderMap indexProviderMap;
@@ -246,7 +246,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.fileSystem = fileSystem;
 
         life = new LifeSupport();
-        this.directoryStructure = DatabaseLayout.of( databaseDirectory );
+        this.databaseLayout = DatabaseLayout.of( databaseDirectory );
         storeLocker = tryLockStore( fileSystem );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
@@ -264,9 +264,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         LogProvider internalLogProvider = logService.getInternalLogProvider();
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, directoryStructure, fileSystem,
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, databaseLayout, fileSystem,
                 pageCache, internalLogProvider );
-        StoreFactory sf = new StoreFactory( this.directoryStructure, config, idGeneratorFactory, pageCache, fileSystem,
+        StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         maxNodeId = recordFormats.node().getMaxId();
@@ -311,7 +311,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        indexStore = life.add( new IndexConfigStore( this.directoryStructure, fileSystem ) );
+        indexStore = life.add( new IndexConfigStore( this.databaseLayout, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
 
         actions = new BatchSchemaActions();
@@ -331,7 +331,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
     {
-        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.directoryStructure.databaseDirectory() );
+        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.databaseLayout.getStoreLayout() );
         try
         {
             storeLocker.checkLock();
@@ -960,7 +960,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private NativeLabelScanStore buildLabelIndex() throws IOException
     {
         NativeLabelScanStore labelIndex =
-                new NativeLabelScanStore( pageCache, directoryStructure, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
+                new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
         if ( labelsTouched )
         {
@@ -974,7 +974,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public String toString()
     {
-        return "EmbeddedBatchInserter[" + directoryStructure + "]";
+        return "EmbeddedBatchInserter[" + databaseLayout + "]";
     }
 
     private Map<String, Object> getPropertyChain( long nextProp )
@@ -1061,7 +1061,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public String getStoreDir()
     {
-        return directoryStructure.databaseDirectory().getPath();
+        return databaseLayout.databaseDirectory().getPath();
     }
 
     @Override

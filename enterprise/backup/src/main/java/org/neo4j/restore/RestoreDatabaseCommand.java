@@ -28,6 +28,7 @@ import java.io.IOException;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -80,7 +81,7 @@ public class RestoreDatabaseCommand
             throw new IllegalArgumentException( format( "Database with name [%s] already exists at %s", toDatabaseName, toDatabaseDir ) );
         }
 
-        checkLock( toDatabaseDir.toPath() );
+        checkLock( DatabaseLayout.of( toDatabaseDir ).getStoreLayout() );
 
         fs.deleteRecursively( toDatabaseDir );
 

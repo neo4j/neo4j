@@ -36,7 +36,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.ClusterStateException;
@@ -48,6 +47,8 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -59,7 +60,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.internal.locker.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
 {
@@ -190,7 +190,7 @@ public class UnbindFromClusterCommandTest
     private Path createUnlockedFakeDbDir( Path homeDir ) throws IOException
     {
         Path fakeDbDir = createFakeDbDir( homeDir );
-        Files.createFile( Paths.get( fakeDbDir.toString(), STORE_LOCK_FILENAME ) );
+        Files.createFile( DatabaseLayout.of( fakeDbDir.toFile() ).getStoreLayout().storeLockFile().toPath() );
         return fakeDbDir;
     }
 
@@ -207,9 +207,9 @@ public class UnbindFromClusterCommandTest
         return graphDb;
     }
 
-    private FileLock createLockedStoreLockFileIn( Path parent ) throws IOException
+    private FileLock createLockedStoreLockFileIn( Path storeDir ) throws IOException
     {
-        Path storeLockFile = Files.createFile( Paths.get( parent.toString(), STORE_LOCK_FILENAME ) );
+        Path storeLockFile = StoreLayout.of( storeDir.toFile() ).storeLockFile().toPath();
         channel = FileChannel.open( storeLockFile, READ, WRITE );
         return channel.lock( 0, Long.MAX_VALUE, true );
     }

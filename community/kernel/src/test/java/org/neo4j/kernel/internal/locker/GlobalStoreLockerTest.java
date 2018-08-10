@@ -22,9 +22,9 @@ package org.neo4j.kernel.internal.locker;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -34,7 +34,6 @@ import static org.junit.Assert.fail;
 
 public class GlobalStoreLockerTest
 {
-
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
@@ -43,12 +42,12 @@ public class GlobalStoreLockerTest
     @Test
     public void failToLockSameFolderAcrossIndependentLockers() throws Exception
     {
-        File directory = testDirectory.directory( "store-dir" );
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
+        StoreLayout storeLayout = testDirectory.storeLayout();
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
         {
             storeLocker.checkLock();
 
-            try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
+            try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
             {
                 locker.checkLock();
                 fail("directory should be locked");
@@ -58,7 +57,7 @@ public class GlobalStoreLockerTest
                 // expected
             }
 
-            try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
+            try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
             {
                 locker.checkLock();
                 fail("directory should be locked");
@@ -73,12 +72,12 @@ public class GlobalStoreLockerTest
     @Test
     public void allowToLockSameDirectoryIfItWasUnlocked() throws IOException
     {
-        File directory = testDirectory.directory( "doubleLock" );
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
+        StoreLayout storeLayout = testDirectory.storeLayout();
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
         {
             storeLocker.checkLock();
         }
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
         {
             storeLocker.checkLock();
         }
@@ -87,8 +86,8 @@ public class GlobalStoreLockerTest
     @Test
     public void allowMultipleCallstoActuallyStoreLocker() throws IOException
     {
-        File directory = testDirectory.directory( "multipleCalls" );
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
+        StoreLayout storeLayout = testDirectory.storeLayout();
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
         {
             storeLocker.checkLock();
             storeLocker.checkLock();

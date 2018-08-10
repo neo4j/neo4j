@@ -34,9 +34,10 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
@@ -92,7 +93,7 @@ public class UnbindFromClusterCommand implements AdminCommand
 
             if ( hasDatabase )
             {
-                confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
+                confirmTargetDirectoryIsWritable( DatabaseLayout.of( pathToSpecificDatabase.toFile() ).getStoreLayout() );
             }
 
             ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDirectory );
@@ -114,10 +115,10 @@ public class UnbindFromClusterCommand implements AdminCommand
         }
     }
 
-    private void confirmTargetDirectoryIsWritable( Path pathToSpecificDatabase )
+    private static void confirmTargetDirectoryIsWritable( StoreLayout storeLayout )
             throws CannotWriteException, IOException
     {
-        try ( Closeable ignored = StoreLockChecker.check( pathToSpecificDatabase ) )
+        try ( Closeable ignored = StoreLockChecker.check( storeLayout ) )
         {
             // empty
         }

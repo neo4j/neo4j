@@ -46,6 +46,8 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -182,9 +184,9 @@ class DumpCommandTest
     void shouldRespectTheStoreLock() throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
-
+        StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
+              StoreLocker storeLocker = new StoreLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
 
@@ -227,13 +229,13 @@ class DumpCommandTest
     @DisabledOnOs( OS.WINDOWS )
     void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
+        StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
+              StoreLocker storeLocker = new StoreLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
 
-            try ( Closeable ignored = withPermissions( databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME ),
-                    emptySet() ) )
+            try ( Closeable ignored = withPermissions( storeLayout.storeLockFile().toPath(), emptySet() ) )
             {
                 CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
                 assertEquals( commandFailed.getMessage(), "you do not have permission to dump the database -- is Neo4j running as a different user?" );
@@ -245,10 +247,11 @@ class DumpCommandTest
     void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
             throws Exception
     {
+        File lockFile = StoreLayout.of( new File( "." ) ).storeLockFile();
         doAnswer( invocation ->
         {
             Predicate<Path> exclude = invocation.getArgument( 3 );
-            assertThat( exclude.test( Paths.get( StoreLocker.STORE_LOCK_FILENAME ) ), is( true ) );
+            assertThat( exclude.test( Paths.get( lockFile.getName() ) ), is( true ) );
             assertThat( exclude.test( Paths.get( "some-other-file" ) ), is( false ) );
             return null;
         } ).when( dumper ).dump(any(), any(), any(), any() );
@@ -349,7 +352,7 @@ class DumpCommandTest
     private static void assertCanLockStore( Path databaseDirectory ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
+              StoreLocker storeLocker = new StoreLocker( fileSystem, DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout() ) )
         {
             storeLocker.checkLock();
         }

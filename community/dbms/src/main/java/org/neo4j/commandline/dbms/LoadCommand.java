@@ -31,12 +31,12 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
-import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Objects.requireNonNull;
@@ -112,7 +112,7 @@ public class LoadCommand implements AdminCommand
         {
             if ( force )
             {
-                checkLock( databaseDirectory );
+                checkLock( DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout() );
                 FileUtils.deletePathRecursively( databaseDirectory );
                 if ( !isSameOrChildPath( databaseDirectory, transactionLogsDirectory ) )
                 {

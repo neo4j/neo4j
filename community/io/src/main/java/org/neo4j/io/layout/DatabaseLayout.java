@@ -37,12 +37,12 @@ public class DatabaseLayout
 
     public static DatabaseLayout of( File databaseDirectory )
     {
-        return new DatabaseLayout( new StoreLayout( databaseDirectory.getParentFile() ), databaseDirectory.getName() );
+        return new DatabaseLayout( StoreLayout.of( databaseDirectory.getParentFile() ), databaseDirectory.getName() );
     }
 
     public static DatabaseLayout of( File rootDirectory, String databaseName )
     {
-        return new DatabaseLayout( new StoreLayout( rootDirectory ), databaseName );
+        return new DatabaseLayout( StoreLayout.of( rootDirectory ), databaseName );
     }
 
     private DatabaseLayout( StoreLayout storeLayout, String databaseName )
@@ -57,9 +57,9 @@ public class DatabaseLayout
         return databaseName;
     }
 
-    public File getStoreDirectory()
+    public StoreLayout getStoreLayout()
     {
-        return storeLayout.storeDirectory();
+        return storeLayout;
     }
 
     public File databaseDirectory()

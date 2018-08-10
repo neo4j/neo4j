@@ -157,7 +157,7 @@ public class PlatformModule
         config.augmentDefaults( GraphDatabaseSettings.neo4j_home, providedStoreDir.getAbsolutePath() );
         this.config = dependencies.satisfyDependency( config );
 
-        this.storeLayout = new StoreLayout( providedStoreDir.getAbsoluteFile() );
+        this.storeLayout = StoreLayout.of( providedStoreDir.getAbsoluteFile() );
 
         fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
         life.add( new FileSystemLifecycleAdapter( fileSystem ) );
@@ -245,7 +245,7 @@ public class PlatformModule
 
     protected StoreLocker createStoreLocker()
     {
-        return new GlobalStoreLocker( fileSystem, storeLayout.storeDirectory() );
+        return new GlobalStoreLocker( fileSystem, storeLayout );
     }
 
     protected SystemNanoClock createClock()

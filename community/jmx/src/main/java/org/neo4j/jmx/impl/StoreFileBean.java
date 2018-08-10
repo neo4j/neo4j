@@ -20,7 +20,6 @@
 package org.neo4j.jmx.impl;
 
 import java.io.File;
-import java.io.IOException;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
@@ -95,15 +94,7 @@ public final class StoreFileBean extends ManagementBeanProvider
 
                 private File resolvePath( NeoStoreDataSource ds )
                 {
-                    File databasesDirectory = ds.getDatabaseLayout().getStoreDirectory();
-                    try
-                    {
-                        return databasesDirectory.getCanonicalFile().getAbsoluteFile();
-                    }
-                    catch ( IOException e )
-                    {
-                        return databasesDirectory.getAbsoluteFile();
-                    }
+                    return ds.getDatabaseLayout().getStoreLayout().storeDirectory();
                 }
             } );
         }

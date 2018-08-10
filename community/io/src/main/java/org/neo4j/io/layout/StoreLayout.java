@@ -23,11 +23,23 @@ import java.io.File;
 
 public class StoreLayout
 {
+    private static final String STORE_LOCK_FILENAME = "store_lock";
+
     private final File storeDirectory;
 
-    public StoreLayout( File rootStoreDirectory )
+    public static StoreLayout of( File storeDirectory )
+    {
+        return new StoreLayout( storeDirectory );
+    }
+
+    private StoreLayout( File rootStoreDirectory )
     {
         this.storeDirectory = rootStoreDirectory;
+    }
+
+    public DatabaseLayout databaseLayout( String databaseName )
+    {
+        return DatabaseLayout.of( storeDirectory, databaseName );
     }
 
     /**
@@ -39,8 +51,14 @@ public class StoreLayout
         return storeDirectory;
     }
 
-    public DatabaseLayout databaseLayout( String databaseName )
+    public File storeLockFile()
     {
-        return DatabaseLayout.of( storeDirectory, databaseName );
+        return new File( storeDirectory, STORE_LOCK_FILENAME );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.valueOf( storeDirectory );
     }
 }

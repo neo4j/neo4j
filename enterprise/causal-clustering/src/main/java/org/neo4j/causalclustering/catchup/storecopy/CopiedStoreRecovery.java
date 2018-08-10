@@ -35,7 +35,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLogProvider;
 
@@ -75,7 +74,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
             GraphDatabaseService graphDatabaseService = newTempDatabase( databaseLayout.databaseDirectory() );
             graphDatabaseService.shutdown();
             // as soon as recovery will be extracted we will not gonna need this
-            File lockFile = new File( databaseLayout.getStoreDirectory(), StoreLocker.STORE_LOCK_FILENAME );
+            File lockFile = databaseLayout.getStoreLayout().storeLockFile();
             if ( lockFile.exists() )
             {
                 FileUtils.deleteFile( lockFile );

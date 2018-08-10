@@ -73,7 +73,6 @@ import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -227,7 +226,7 @@ public class BackupProtocolService
             {
                 targetDb.shutdown();
                 // as soon as recovery will be extracted we will not gonna need this
-                File lockFile = new File( targetLayout.getStoreDirectory(), StoreLocker.STORE_LOCK_FILENAME );
+                File lockFile = targetLayout.getStoreLayout().storeLockFile();
                 if ( lockFile.exists() )
                 {
                     FileUtils.deleteFile( lockFile );

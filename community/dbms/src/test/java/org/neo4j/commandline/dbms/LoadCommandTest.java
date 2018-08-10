@@ -48,6 +48,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.extension.Inject;
@@ -196,9 +198,10 @@ class LoadCommandTest
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
+        StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker locker = new StoreLocker( fileSystem, databaseDirectory.getParent().toFile() ) )
+              StoreLocker locker = new StoreLocker( fileSystem, storeLayout ) )
         {
             locker.checkLock();
             CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db", "--force" ) );

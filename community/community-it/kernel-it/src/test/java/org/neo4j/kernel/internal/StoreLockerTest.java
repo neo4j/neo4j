@@ -35,6 +35,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -47,7 +48,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.internal.locker.StoreLocker.STORE_LOCK_FILENAME;
 
 public class StoreLockerTest
 {
@@ -63,7 +63,7 @@ public class StoreLockerTest
         CustomChannelFileSystemAbstraction fileSystemAbstraction =
                 new CustomChannelFileSystemAbstraction( fileSystemRule.get(), channel );
         int numberOfCallesToOpen = 0;
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
         {
             try
             {
@@ -91,7 +91,7 @@ public class StoreLockerTest
     @Test
     public void shouldAllowMultipleCallsToCheckLock() throws Exception
     {
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemRule.get(), target.directory( "unused" ) ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemRule.get(), target.storeLayout() ) )
         {
             storeLocker.checkLock();
             storeLocker.checkLock();
@@ -101,12 +101,12 @@ public class StoreLockerTest
     @Test
     public void keepLockWhenOtherTryToTakeLock() throws Exception
     {
-        File directory = target.directory( "unused" );
+        StoreLayout storeLayout = target.storeLayout();
         DefaultFileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
-        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, directory );
+        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout );
         storeLocker.checkLock();
 
-        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
+        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, storeLayout ) )
         {
             storeLocker1.checkLock();
             fail();
@@ -117,7 +117,7 @@ public class StoreLockerTest
         }
 
         // Initial locker should still have a valid lock
-        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
+        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, storeLayout ) )
         {
             storeLocker1.checkLock();
             fail();
@@ -142,7 +142,7 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
         {
             storeLocker.checkLock();
 
@@ -166,7 +166,7 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
         {
             storeLocker.checkLock();
             // Ok
@@ -191,9 +191,8 @@ public class StoreLockerTest
             }
         };
 
-        File storeDir = target.directory( "unused" );
-
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
+        StoreLayout storeLayout = target.storeLayout();
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout ) )
         {
             storeLocker.checkLock();
             fail();
@@ -202,7 +201,7 @@ public class StoreLockerTest
         {
             String msg = format( "Unable to create path for store dir: %s. " +
                     "Please ensure no other process is using this database, and that " +
-                    "the directory is writable (required even for read-only access)", storeDir );
+                    "the directory is writable (required even for read-only access)", storeLayout );
             assertThat( e.getMessage(), is( msg ) );
         }
     }
@@ -225,9 +224,9 @@ public class StoreLockerTest
             }
         };
 
-        File storeDir = target.directory( "unused" );
+        StoreLayout storeLayout = target.storeLayout();
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout ) )
         {
             storeLocker.checkLock();
             fail();
@@ -237,7 +236,7 @@ public class StoreLockerTest
             String msg = format( "Unable to obtain lock on store lock file: %s. " +
                             "Please ensure no other process is using this database, and that the " +
                             "directory is writable (required even for read-only access)",
-                    new File( storeDir, STORE_LOCK_FILENAME ) );
+                    storeLayout.storeLockFile() );
             assertThat( e.getMessage(), is( msg ) );
         }
     }
@@ -267,7 +266,7 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
         {
             storeLocker.checkLock();
             fail();

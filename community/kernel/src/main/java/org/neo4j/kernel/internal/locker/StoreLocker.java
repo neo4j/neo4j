@@ -28,26 +28,25 @@ import java.nio.channels.OverlappingFileLockException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
 
 /**
- * The class takes a lock on the {@link #STORE_LOCK_FILENAME} file. The lock is valid after a successful call to
+ * The class takes a lock on store described by provided instance of {@link StoreLayout}. The lock is valid after a successful call to
  * {@link #checkLock()} until a call to {@link #close()}.
  */
 public class StoreLocker implements Closeable
 {
-    public static final String STORE_LOCK_FILENAME = "store_lock";
-
     final FileSystemAbstraction fileSystemAbstraction;
     final File storeLockFile;
 
     FileLock storeLockFileLock;
     private StoreChannel storeLockFileChannel;
 
-    public StoreLocker( FileSystemAbstraction fileSystemAbstraction, File storeDirectory )
+    public StoreLocker( FileSystemAbstraction fileSystemAbstraction, StoreLayout storeLayout )
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
-        storeLockFile = new File( storeDirectory, STORE_LOCK_FILENAME );
+        storeLockFile = storeLayout.storeLockFile();
     }
 
     /**
