@@ -151,10 +151,7 @@ public class TestDirectory extends ExternalResource
     public File directory( String name )
     {
         File dir = new File( directory(), name );
-        if ( !fileSystem.fileExists( dir ) )
-        {
-            fileSystem.mkdir( dir );
-        }
+        createDirectory( dir );
         return dir;
     }
 
@@ -165,18 +162,19 @@ public class TestDirectory extends ExternalResource
 
     public File databaseDir()
     {
-        return defaultDatabaseLayout.databaseDirectory();
+        return databaseLayout().databaseDirectory();
     }
 
     public DatabaseLayout databaseLayout()
     {
+        createDirectory( defaultDatabaseLayout.databaseDirectory() );
         return defaultDatabaseLayout;
     }
 
     public DatabaseLayout databaseLayout( File storeDir )
     {
         DatabaseLayout databaseLayout = new StoreLayout( storeDir ).databaseDirectory( DEFAULT_DATABASE_DIRECTORY );
-        databaseLayout.databaseDirectory().mkdirs();
+        createDirectory( defaultDatabaseLayout.databaseDirectory() );
         return databaseLayout;
     }
 
@@ -256,9 +254,7 @@ public class TestDirectory extends ExternalResource
         }
         testDirectory = prepareDirectoryForTest( test );
         storeLayout = new StoreLayout( testDirectory );
-        //TODO:do not create it by default?
         defaultDatabaseLayout = storeLayout.databaseDirectory( DEFAULT_DATABASE_DIRECTORY );
-        fileSystem.mkdirs( defaultDatabaseLayout.databaseDirectory() );
     }
 
     public File prepareDirectoryForTest( String test ) throws IOException

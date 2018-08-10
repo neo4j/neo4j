@@ -53,7 +53,7 @@ public class SlaveUpgradeTest
             MigrationTestUtils.find23FormatStoreDirectory( databaseDirectory );
 
             new TestHighlyAvailableGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( storeDirectory )
+                    .newEmbeddedDatabaseBuilder( databaseDirectory )
                     .setConfig( ClusterSettings.server_id, "1" )
                     .setConfig( ClusterSettings.initial_hosts, "localhost:9999" )
                     .newGraphDatabase();

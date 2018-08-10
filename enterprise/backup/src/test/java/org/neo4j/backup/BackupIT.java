@@ -106,8 +106,8 @@ public class BackupIT
     private final RandomRule random = new RandomRule();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDir )
-            .around( fileSystemRule )
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule )
+            .around( testDir )
             .around( pageCacheRule )
             .around( SuppressOutput.suppressAll() )
             .around( random );
@@ -116,7 +116,6 @@ public class BackupIT
     public String recordFormatName;
 
     private File serverStorePath;
-    private File serverDatabasePath;
     private File otherServerPath;
     private File backupDatabasePath;
     private List<ServerInterface> servers;
@@ -132,7 +131,6 @@ public class BackupIT
     {
         servers = new ArrayList<>();
         serverStorePath = testDir.storeDir( "server" );
-        serverDatabasePath = testDir.databaseDir( serverStorePath );
         otherServerPath = testDir.directory( "server2" );
         backupDatabasePath = testDir.databaseDir( "backedup-serverdb" );
     }
@@ -202,7 +200,7 @@ public class BackupIT
             server = null;
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
 
-            long firstChecksum = lastTxChecksumOf( serverDatabasePath, pageCache );
+            long firstChecksum = lastTxChecksumOf( serverStorePath, pageCache );
             assertEquals( firstChecksum, lastTxChecksumOf( backupDatabasePath, pageCache ) );
 
             addMoreData( serverStorePath );
@@ -212,7 +210,7 @@ public class BackupIT
             shutdownServer( server );
             server = null;
 
-            long secondChecksum = lastTxChecksumOf( serverDatabasePath, pageCache );
+            long secondChecksum = lastTxChecksumOf( serverStorePath, pageCache );
             assertEquals( secondChecksum, lastTxChecksumOf( backupDatabasePath, pageCache ) );
             assertTrue( firstChecksum != secondChecksum );
         }
@@ -296,19 +294,19 @@ public class BackupIT
         // Data should be OK, but store id check should prevent that.
         try
         {
-            backup.incremental( backupDatabasePath.getPath() );
+            backup.incremental( serverStorePath.getPath() );
             fail( "Shouldn't work" );
         }
         catch ( RuntimeException e )
         {
-            assertThat(e.getCause(), instanceOf(MismatchingStoreIdException.class));
+            assertThat( e.getCause(), instanceOf( MismatchingStoreIdException.class ) );
         }
         shutdownServer( server );
         // Just make sure incremental backup can be received properly from
         // server A, even after a failed attempt from server B
         DbRepresentation furtherRepresentation = addMoreData( serverStorePath );
         server = startServer( serverStorePath, backupPort );
-        backup.incremental( backupDatabasePath.getPath() );
+        backup.incremental( serverStorePath.getPath() );
         assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( furtherRepresentation, getDbRepresentation() );
         shutdownServer( server );
@@ -773,6 +771,6 @@ public class BackupIT
         Config config = Config.builder()
                 .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .withSetting( GraphDatabaseSettings.active_database, backupDatabasePath.getName() ).build();
-        return DbRepresentation.of( backupDatabasePath.getParentFile(), config );
+        return DbRepresentation.of( backupDatabasePath , config );
     }
 }

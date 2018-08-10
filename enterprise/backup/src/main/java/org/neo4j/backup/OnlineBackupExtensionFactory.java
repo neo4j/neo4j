@@ -24,7 +24,7 @@ package org.neo4j.backup;
 
 import java.util.function.Supplier;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -97,7 +97,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
-        if ( !isCausalClusterInstance( context ) && isDefaultDatabase( dependencies.neoStoreDataSource() ) )
+        if ( !isCausalClusterInstance( context ) && isDefaultDatabase( dependencies.neoStoreDataSource(), dependencies.getConfig() ) )
         {
             return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
                     dependencies.logService().getInternalLogProvider(), dependencies.monitors(), dependencies.neoStoreDataSource(),
@@ -106,9 +106,9 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         return new LifecycleAdapter();
     }
 
-    private static boolean isDefaultDatabase( NeoStoreDataSource neoStoreDataSource )
+    private static boolean isDefaultDatabase( NeoStoreDataSource neoStoreDataSource, Config config )
     {
-        return DatabaseManager.DEFAULT_DATABASE_NAME.equals( neoStoreDataSource.getDatabaseName() );
+        return neoStoreDataSource.getDatabaseName().equals( config.get( GraphDatabaseSettings.active_database ) );
     }
 
     private static boolean isCausalClusterInstance( KernelContext kernelContext )

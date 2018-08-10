@@ -68,6 +68,12 @@ public class DatabaseLayout
     }
 
     @Override
+    public String toString()
+    {
+        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + '}';
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

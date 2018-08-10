@@ -33,6 +33,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 
 import org.neo4j.test.extension.Inject;
@@ -110,10 +111,10 @@ class LoaderTest
     }
 
     @Test
-    void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryDoesntExist()
+    void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryDoesntExist() throws IOException
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        Path destination = testDirectory.directory( "subdir/the-destination" ).toPath();
+        Path destination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "the-destination" );
         NoSuchFileException noSuchFileException = assertThrows( NoSuchFileException.class, () -> new Loader().load( archive, destination, destination ) );
         assertEquals( destination.getParent().toString(), noSuchFileException.getMessage() );
     }
@@ -123,7 +124,7 @@ class LoaderTest
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.file( "destination" ).toPath();
-        Path txLogsDestination = testDirectory.directory( "subdir/txLogs" ).toPath();
+        Path txLogsDestination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "txLogs" );
         NoSuchFileException noSuchFileException = assertThrows( NoSuchFileException.class, () -> new Loader().load( archive, destination, txLogsDestination ) );
         assertEquals( txLogsDestination.getParent().toString(), noSuchFileException.getMessage() );
     }
@@ -133,7 +134,7 @@ class LoaderTest
             throws IOException
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        Path destination = testDirectory.directory( "subdir/the-destination" ).toPath();
+        Path destination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "the-destination" );
         Files.write( destination.getParent(), new byte[0] );
         FileSystemException exception = assertThrows( FileSystemException.class, () -> new Loader().load( archive, destination, destination ) );
         assertEquals( destination.getParent().toString() + ": Not a directory", exception.getMessage() );
