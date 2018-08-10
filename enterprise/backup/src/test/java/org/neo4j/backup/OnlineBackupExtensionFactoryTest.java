@@ -92,7 +92,7 @@ class OnlineBackupExtensionFactoryTest
         @Override
         public Config getConfig()
         {
-            return null;
+            return Config.defaults();
         }
 
         @Override

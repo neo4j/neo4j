@@ -41,6 +41,7 @@ import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -171,7 +172,7 @@ public class RestartIT
             for ( CoreClusterMember core : cluster.coreMembers() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( core.database().databaseLayout(), Config.defaults(), ProgressMonitorFactory.NONE,
+                        .runFullConsistencyCheck( new DatabaseLayout( core.databaseDirectory() ), Config.defaults(), ProgressMonitorFactory.NONE,
                                 NullLogProvider.getInstance(), fileSystem, false,
                                 new ConsistencyFlags( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + core, result.isSuccessful() );
@@ -180,7 +181,7 @@ public class RestartIT
             for ( ReadReplica readReplica : cluster.readReplicas() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( readReplica.database().databaseLayout(), Config.defaults(), ProgressMonitorFactory.NONE,
+                        .runFullConsistencyCheck( new DatabaseLayout( readReplica.databaseDirectory() ), Config.defaults(), ProgressMonitorFactory.NONE,
                                 NullLogProvider.getInstance(), fileSystem, false,
                                 new ConsistencyFlags( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );

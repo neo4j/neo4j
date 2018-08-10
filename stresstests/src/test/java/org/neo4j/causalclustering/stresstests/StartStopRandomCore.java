@@ -73,7 +73,7 @@ class StartStopRandomCore extends RepeatOnRandomCore
         {
             fs.copyRecursively( storeDir, storeDirectory.storeDir() );
             new CopiedStoreRecovery( Config.defaults(), GraphDatabaseDependencies.newDependencies().kernelExtensions(),  pageCache )
-                    .recoverCopiedStore( storeDirectory.storeDir() );
+                    .recoverCopiedStore( storeDirectory.databaseLayout() );
             ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
                     new PrintStream( NULL_OUTPUT_STREAM ), new PrintStream( NULL_OUTPUT_STREAM ) );
             if ( !result.isSuccessful() )

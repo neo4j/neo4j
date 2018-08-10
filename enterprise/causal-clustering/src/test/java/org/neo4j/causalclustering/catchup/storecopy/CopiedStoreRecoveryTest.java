@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 
@@ -47,7 +48,7 @@ public class CopiedStoreRecoveryTest
         try
         {
             // when
-            copiedStoreRecovery.recoverCopiedStore( new File( "nowhere" ) );
+            copiedStoreRecovery.recoverCopiedStore( new DatabaseLayout( new File( "nowhere" ) ) );
             fail( "should have thrown" );
         }
         catch ( DatabaseShutdownException ex )

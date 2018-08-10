@@ -58,7 +58,7 @@ public class StoreCopyProcess
         {
             remoteStore.copy( addressProvider, expectedStoreId, tempStore.databaseLayout(),
                     false );
-            copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
+            copiedStoreRecovery.recoverCopiedStore( tempStore.databaseLayout() );
             localDatabase.replaceWith( tempStore.databaseLayout().databaseDirectory() );
         }
         log.info( "Replaced store successfully" );

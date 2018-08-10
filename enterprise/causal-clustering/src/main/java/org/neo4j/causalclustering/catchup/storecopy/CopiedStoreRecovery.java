@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -62,7 +63,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
         shutdown = true;
     }
 
-    public synchronized void recoverCopiedStore( File tempStore ) throws DatabaseShutdownException
+    public synchronized void recoverCopiedStore( DatabaseLayout databaseLayout ) throws DatabaseShutdownException
     {
         if ( shutdown )
         {
@@ -71,10 +72,10 @@ public class CopiedStoreRecovery extends LifecycleAdapter
 
         try
         {
-            GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
+            GraphDatabaseService graphDatabaseService = newTempDatabase( databaseLayout.databaseDirectory() );
             graphDatabaseService.shutdown();
             // as soon as recovery will be extracted we will not gonna need this
-            File lockFile = new File( tempStore, StoreLocker.STORE_LOCK_FILENAME );
+            File lockFile = new File( databaseLayout.getDatabasesDirectory(), StoreLocker.STORE_LOCK_FILENAME );
             if ( lockFile.exists() )
             {
                 FileUtils.deleteFile( lockFile );
