@@ -60,7 +60,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -273,11 +272,15 @@ public class DefaultBoltConnectionTest
     }
 
     @Test
-    public void stopShouldCloseStateMachineIfEnqueueThrowsRejectedExecutionException()
+    public void stopShouldCloseStateMachineIfEnqueueEndsWithRejectedExecutionException()
     {
         BoltConnection connection = newConnection();
 
-        doThrow( new RejectedExecutionException() ).when( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
+        doAnswer( i ->
+        {
+            connection.handleSchedulingError( new RejectedExecutionException() );
+            return null;
+        } ).when( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
 
         connection.stop();
 

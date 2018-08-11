@@ -58,7 +58,7 @@ import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CO
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 @RunWith( Parameterized.class )
-public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTransportsTest
+public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
 {
     private AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private AssertableLogProvider userLogProvider = new AssertableLogProvider();
@@ -67,6 +67,7 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     private TransportConnection connection1;
     private TransportConnection connection2;
     private TransportConnection connection3;
+    private TransportConnection connection4;
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
@@ -104,6 +105,7 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         close( connection1 );
         close( connection2 );
         close( connection3 );
+        close( connection4 );
     }
 
     @Test
@@ -136,6 +138,31 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
             exitStreaming( connection1 );
             exitStreaming( connection2 );
         }
+    }
+
+    @Test
+    public void shouldStopConnectionsWhenRelatedJobIsRejectedOnShutdown() throws Throwable
+    {
+        // Connect and get two connections into idle state
+        connection1 = enterStreaming();
+        exitStreaming( connection1 );
+        connection2 = enterStreaming();
+        exitStreaming( connection2 );
+
+        // Connect and get other set of connections to keep threads busy
+        connection3 = enterStreaming();
+        connection4 = enterStreaming();
+
+        // Clear any log output till now
+        internalLogProvider.clear();
+
+        // Shutdown the server
+        server.shutdownDatabase();
+
+        // Expect no scheduling error logs
+        userLogProvider.assertNoLogCallContaining(
+                "since there are no available threads to serve it at the moment. You can retry at a later time" );
+        internalLogProvider.assertNoLogCallContaining( "since there are no available threads to serve it at the moment. You can retry at a later time" );
     }
 
     private TransportConnection enterStreaming() throws Throwable

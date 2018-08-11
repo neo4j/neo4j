@@ -253,23 +253,31 @@ public class DefaultBoltConnection implements BoltConnection
     @Override
     public void handleSchedulingError( Throwable t )
     {
-        String message;
-        Neo4jError error;
-        if ( ExceptionUtils.hasCause( t, RejectedExecutionException.class ) )
+        // if the connection is closing, don't output any logs
+        if ( !willClose() )
         {
-            error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
-            message = String.format( "Unable to schedule bolt session '%s' for execution since there are no available threads to " +
-                    "serve it at the moment. You can retry at a later time or consider increasing max thread pool size for bolt connector(s).", id() );
-        }
-        else
-        {
-            error = Neo4jError.fatalFrom( t );
-            message = String.format( "Unexpected error during scheduling of bolt session '%s'.", id() );
+            String message;
+            Neo4jError error;
+            if ( ExceptionUtils.hasCause( t, RejectedExecutionException.class ) )
+            {
+                error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
+                message = String.format( "Unable to schedule bolt session '%s' for execution since there are no available threads to " +
+                        "serve it at the moment. You can retry at a later time or consider increasing max thread pool size for bolt connector(s).", id() );
+            }
+            else
+            {
+                error = Neo4jError.fatalFrom( t );
+                message = String.format( "Unexpected error during scheduling of bolt session '%s'.", id() );
+            }
+
+            log.error( message, t );
+            userLog.error( message );
+            machine.markFailed( error );
         }
 
-        log.error( message, t );
-        userLog.error( message );
-        machine.markFailed( error );
+        // this will ensure that the scheduled job will be executed on this thread (fork-join pool)
+        // and it will either send a failure response to the client or close the connection and its
+        // related resources (if closing)
         processNextBatch( 1, true );
     }
 
@@ -286,21 +294,12 @@ public class DefaultBoltConnection implements BoltConnection
         {
             machine.terminate();
 
-            try
+            // Enqueue an empty job for close to be handled linearly
+            // This is for already executing connections
+            enqueueInternal( ignore ->
             {
-                // Enqueue an empty job for close to be handled linearly
-                // This is for already executing connections
-                enqueueInternal( ignore ->
-                {
 
-                } );
-            }
-            catch ( RejectedExecutionException ex )
-            {
-                // If enqueue fails with RejectedExecutionException, this connection
-                // is not executing, so we can directly call close()
-                close();
-            }
+            } );
         }
     }
 
