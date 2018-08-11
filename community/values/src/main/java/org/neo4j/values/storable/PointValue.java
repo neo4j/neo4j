@@ -279,19 +279,37 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
      */
     public boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
     {
-        if ( lower != null )
+        if ( lower == null && upper == null )
         {
-            Comparison compareLower = this.unsafeTernaryCompareTo( lower );
-            if ( compareLower == Comparison.UNDEFINED || compareLower == Comparison.SMALLER_THAN || compareLower == Comparison.EQUAL && !includeLower )
-            {
-                return false;
-            }
+            return false;
         }
-        if ( upper != null )
+        if ( (lower != null) && (this.crs.getCode() != lower.crs.getCode() || this.coordinate.length != lower.coordinate.length) )
         {
-            Comparison compareUpper = this.unsafeTernaryCompareTo( upper );
-            return compareUpper != Comparison.UNDEFINED && compareUpper != Comparison.GREATER_THAN &&
-                   (compareUpper != Comparison.EQUAL || includeUpper);
+            return false;
+        }
+        if ( (upper != null) && (this.crs.getCode() != upper.crs.getCode() || this.coordinate.length != upper.coordinate.length) )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            if ( lower != null )
+            {
+                int cmpVal = Double.compare( this.coordinate[i], lower.coordinate[i] );
+                if ( !includeLower && cmpVal == 0 || cmpVal < 0 )
+                {
+                    return false;
+                }
+            }
+            if ( upper != null )
+            {
+                int cmpVal = Double.compare( this.coordinate[i], upper.coordinate[i] );
+                if ( !includeUpper && cmpVal == 0 || cmpVal > 0 )
+                {
+                    return false;
+                }
+            }
         }
         return true;
     }
