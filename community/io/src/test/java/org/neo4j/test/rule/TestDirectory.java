@@ -179,7 +179,7 @@ public class TestDirectory extends ExternalResource
     public DatabaseLayout databaseLayout( File storeDir )
     {
         DatabaseLayout databaseLayout = StoreLayout.of( storeDir ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
-        createDirectory( defaultDatabaseLayout.databaseDirectory() );
+        createDirectory( databaseLayout.databaseDirectory() );
         return databaseLayout;
     }
 

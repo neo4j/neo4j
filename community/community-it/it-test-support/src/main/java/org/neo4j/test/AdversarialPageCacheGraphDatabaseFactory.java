@@ -59,7 +59,9 @@ public class AdversarialPageCacheGraphDatabaseFactory
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
                     {
-                        config.augment( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
+                        File databasesRoot = storeDir.getParentFile();
+                        config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+                        config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
                         return new PlatformModule( storeDir, config, databaseInfo, dependencies )
                         {
                             @Override
@@ -72,8 +74,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                             protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
                                     LogService logging, Tracers tracers, VersionContextSupplier versionContextSupplier )
                             {
-                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers,
-                                        versionContextSupplier );
+                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, versionContextSupplier );
                                 return new AdversarialPageCache( pageCache, adversary );
                             }
                         };

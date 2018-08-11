@@ -294,7 +294,7 @@ public class BackupIT
         // Data should be OK, but store id check should prevent that.
         try
         {
-            backup.incremental( serverStorePath.getPath() );
+            backup.incremental( backupDatabasePath.getPath() );
             fail( "Shouldn't work" );
         }
         catch ( RuntimeException e )
@@ -306,7 +306,7 @@ public class BackupIT
         // server A, even after a failed attempt from server B
         DbRepresentation furtherRepresentation = addMoreData( serverStorePath );
         server = startServer( serverStorePath, backupPort );
-        backup.incremental( serverStorePath.getPath() );
+        backup.incremental( backupDatabasePath.getPath() );
         assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( furtherRepresentation, getDbRepresentation() );
         shutdownServer( server );

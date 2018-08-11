@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -65,7 +64,10 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {
+                File databasesRoot = storeDir.getParentFile();
                 config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
+                config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+                config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
                 {
                     @Override
@@ -88,7 +90,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
                             }
                         };
                     }
-                }.newFacade( storeDir, config, GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                }.newFacade( databasesRoot, config, GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
     }

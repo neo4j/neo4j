@@ -20,6 +20,7 @@
 package org.neo4j.io.layout;
 
 import java.io.File;
+import java.util.Objects;
 
 public class StoreLayout
 {
@@ -54,6 +55,27 @@ public class StoreLayout
     public File storeLockFile()
     {
         return new File( storeDirectory, STORE_LOCK_FILENAME );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        StoreLayout that = (StoreLayout) o;
+        return Objects.equals( storeDirectory, that.storeDirectory );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( storeDirectory );
     }
 
     @Override

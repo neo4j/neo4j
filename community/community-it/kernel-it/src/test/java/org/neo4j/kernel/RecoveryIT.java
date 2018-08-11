@@ -257,9 +257,9 @@ public class RecoveryIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = directory.storeDir();
+        File databaseDir = directory.databaseDir();
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fileSystemRule.get(), adversary )
-                .newEmbeddedDatabaseBuilder( storeDir )
+                .newEmbeddedDatabaseBuilder( databaseDir )
                 .newGraphDatabase();
         try
         {

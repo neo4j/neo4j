@@ -56,11 +56,11 @@ public class HalfCreatedConstraintIT
     @Test
     public void uniqueIndexWithoutOwningConstraintIsIgnoredDuringCheck() throws ConsistencyCheckTool.ToolFailureException, IOException
     {
-        File storeDir = testDirectory.storeDir();
+        File databaseDir = testDirectory.databaseDir();
         Label marker = Label.label( "MARKER" );
         String property = "property";
 
-        GraphDatabaseService database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( databaseDir );
         try
         {
             createNodes( marker, property, database );
@@ -72,7 +72,7 @@ public class HalfCreatedConstraintIT
             database.shutdown();
         }
 
-        ConsistencyCheckService.Result checkResult = ConsistencyCheckTool.runConsistencyCheckTool( new String[]{testDirectory.databaseDir().getAbsolutePath()},
+        ConsistencyCheckService.Result checkResult = ConsistencyCheckTool.runConsistencyCheckTool( new String[]{databaseDir.getAbsolutePath()},
                 emptyPrintStream(), emptyPrintStream() );
         assertTrue( String.join( System.lineSeparator(), Files.readAllLines( checkResult.reportFile().toPath() ) ), checkResult.isSuccessful() );
     }

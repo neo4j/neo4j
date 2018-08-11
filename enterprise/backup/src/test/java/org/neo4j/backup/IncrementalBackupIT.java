@@ -243,6 +243,6 @@ public class IncrementalBackupIT
 
     private DbRepresentation getBackupDbRepresentation()
     {
-        return DbRepresentation.of( backupStore, Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ) );
+        return DbRepresentation.of( backupDatabase, Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ) );
     }
 }

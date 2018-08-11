@@ -37,7 +37,7 @@ public class DatabaseLayout
 
     public static DatabaseLayout of( File databaseDirectory )
     {
-        return new DatabaseLayout( StoreLayout.of( databaseDirectory.getParentFile() ), databaseDirectory.getName() );
+        return of( databaseDirectory.getParentFile(), databaseDirectory.getName() );
     }
 
     public static DatabaseLayout of( File rootDirectory, String databaseName )

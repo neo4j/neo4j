@@ -55,6 +55,7 @@ import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.consistency.store.StoreAssertions;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -66,6 +67,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -1157,14 +1159,15 @@ public class ClusterManager
             URI clusterUri = clusterUri( member );
             int clusterPort = clusterUri.getPort();
             int haPort = PortAuthority.allocatePort();
-            File storeDir = new File( parent, "server" + serverId );
+            StoreLayout storeLayout = StoreLayout.of( new File( parent, "server" + serverId ) );
+            DatabaseLayout databaseLayout = storeLayout.databaseLayout( DatabaseManager.DEFAULT_DATABASE_NAME );
             if ( storeDirInitializer != null )
             {
-                storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
+                storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), databaseLayout.databaseDirectory() );
             }
 
             Monitors monitors = getDatabaseMonitors();
-            GraphDatabaseBuilder builder = dbFactory.setMonitors( monitors ).newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
+            GraphDatabaseBuilder builder = dbFactory.setMonitors( monitors ).newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() );
             builder.setConfig( ClusterSettings.cluster_name, name );
             builder.setConfig( ClusterSettings.initial_hosts, initialHosts );
             builder.setConfig( ClusterSettings.server_id, serverId + "" );

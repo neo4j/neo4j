@@ -27,7 +27,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +39,7 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
@@ -55,6 +55,8 @@ public class BackupStrategyCoordinatorTest
 {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     // dependencies
     private final ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
@@ -78,7 +80,7 @@ public class BackupStrategyCoordinatorTest
     @Before
     public void setup()
     {
-        when( reportDir.toFile() ).thenReturn( mock( File.class ) );
+        when( reportDir.toFile() ).thenReturn( testDirectory.databaseLayout().databaseDirectory() );
         when( outsideWorld.fileSystem() ).thenReturn( fileSystem );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( reportDir );

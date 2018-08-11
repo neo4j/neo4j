@@ -48,7 +48,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -187,11 +186,10 @@ public class UnbindFromClusterCommandTest
         }
     }
 
-    private Path createUnlockedFakeDbDir( Path homeDir ) throws IOException
+    private void createUnlockedFakeDbDir( Path homeDir ) throws IOException
     {
         Path fakeDbDir = createFakeDbDir( homeDir );
         Files.createFile( DatabaseLayout.of( fakeDbDir.toFile() ).getStoreLayout().storeLockFile().toPath() );
-        return fakeDbDir;
     }
 
     private FileLock createLockedFakeDbDir( Path homeDir ) throws IOException
@@ -207,14 +205,14 @@ public class UnbindFromClusterCommandTest
         return graphDb;
     }
 
-    private FileLock createLockedStoreLockFileIn( Path storeDir ) throws IOException
+    private FileLock createLockedStoreLockFileIn( Path databaseDir ) throws IOException
     {
-        Path storeLockFile = StoreLayout.of( storeDir.toFile() ).storeLockFile().toPath();
+        Path storeLockFile = Files.createFile( DatabaseLayout.of( databaseDir.toFile() ).getStoreLayout().storeLockFile().toPath() );
         channel = FileChannel.open( storeLockFile, READ, WRITE );
         return channel.lock( 0, Long.MAX_VALUE, true );
     }
 
-    private String[] databaseNameParameter( String databaseName )
+    private static String[] databaseNameParameter( String databaseName )
     {
         return new String[]{"--database=" + databaseName};
     }
