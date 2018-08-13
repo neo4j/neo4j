@@ -44,7 +44,7 @@ import scala.collection.JavaConversions._
   * }}}
   *
   */
-class SemanticIndexpAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
+class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
 
   private val allCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().toArray.groupBy(_.getDimension)
   private val allCRSDimensions = allCRS.keys.toArray
