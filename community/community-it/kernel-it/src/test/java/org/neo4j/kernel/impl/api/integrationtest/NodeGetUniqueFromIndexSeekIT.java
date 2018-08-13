@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.eclipse.collections.api.tuple.primitive.LongObjectPair;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -90,28 +89,6 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // then
         assertEquals( "Created node was not found", nodeId, foundId );
-    }
-
-    @Test
-    public void shouldFindMatchingNodeWithPropertyValue() throws Exception
-    {
-        // given
-        IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
-        Value value = Values.of( "value" );
-        long nodeId = createNodeWithValue( value );
-
-        // when looking for it
-        Read read = newTransaction().dataRead();
-        int propertyId = index.properties()[0];
-        LongObjectPair<Value[]> result = read.lockingNodeUniqueIndexSeek( index, new int[]{0}, exact( propertyId, value ) );
-        long foundId = result.getOne();
-        Value[] propertyValues = result.getTwo();
-        commit();
-
-        // then
-        assertEquals( "Created node was not found", nodeId, foundId );
-        assertEquals( "Created node had wrong property value", value, propertyValues[0] );
-        assertEquals( "Created node had too many property values", 1, propertyValues.length);
     }
 
     @Test

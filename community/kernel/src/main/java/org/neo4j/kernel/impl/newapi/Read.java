@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.tuple.primitive.LongObjectPair;
-import org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples;
-
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -147,18 +144,8 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final long lockingNodeUniqueIndexSeek(
-            IndexReference index,
-            IndexQuery.ExactPredicate... predicates )
+    public long lockingNodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        LongObjectPair<Value[]> pair = lockingNodeUniqueIndexSeek( index, new int[0], predicates );
-        return pair.getOne();
-    }
-
-    @Override
-    public LongObjectPair<Value[]> lockingNodeUniqueIndexSeek( IndexReference index, int[] propertyIndicesWithValues,
-            IndexQuery.ExactPredicate... predicates ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
     {
         assertIndexOnline( index );
         assertPredicatesMatchSchema( index, predicates );
@@ -191,14 +178,7 @@ abstract class Read implements TxStateHolder,
                 }
             }
 
-            Value[] values = new Value[propertyIndicesWithValues.length];
-            for ( int i = 0; i < propertyIndicesWithValues.length; i++ )
-            {
-                IndexQuery.ExactPredicate predicate = predicates[i];
-                values[i] = predicate.value();
-            }
-
-            return  PrimitiveTuples.pair( cursor.nodeReference(), values );
+            return cursor.nodeReference();
         }
     }
 
