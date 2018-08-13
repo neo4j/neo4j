@@ -172,7 +172,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         this.accessCapability = new ReadOnly();
 
-        watcherServiceFactory = dir -> createFileSystemWatcherService( fileSystem, dir, logging, platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        watcherServiceFactory = dir -> createFileSystemWatcherService( fileSystem, dir, logging,
+                platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherServiceFactory );
 
         lockManager = dependencies.satisfyDependency( new ReadReplicaLockManager() );

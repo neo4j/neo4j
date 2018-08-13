@@ -230,7 +230,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 () -> platformModule.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( DatabaseHealth.class );
 
         watcherServiceFactory = directory -> createFileSystemWatcherService( fileSystem, directory, logging,
-                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+                platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherServiceFactory );
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseDirectory );
         LocalDatabase localDatabase = new LocalDatabase( databaseDirectory,

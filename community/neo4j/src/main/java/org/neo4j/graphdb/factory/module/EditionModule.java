@@ -122,8 +122,15 @@ public abstract class EditionModule
     public NetworkConnectionTracker connectionTracker;
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
-            LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
+            LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )
     {
+        if ( !config.get( GraphDatabaseSettings.filewatcher_enabled ) )
+        {
+            Log log = logging.getInternalLog( getClass() );
+            log.info( "File watcher disabled by configuration." );
+            return FileSystemWatcherService.EMPTY_WATCHER;
+        }
+
         try
         {
             RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );

@@ -720,6 +720,10 @@ public class GraphDatabaseSettings implements LoadableConfig
             "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, TRUE );
 
+    @Description( "Allows the enabling or disabling of the file watcher service." +
+            " This is an auxiliary service but should be left enabled in almost all cases." )
+    public static final Setting<Boolean> filewatcher_enabled = setting( "dbms.filewatcher.enabled", BOOLEAN, TRUE );
+
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.

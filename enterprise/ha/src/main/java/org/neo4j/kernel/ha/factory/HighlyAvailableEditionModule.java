@@ -224,7 +224,7 @@ public class HighlyAvailableEditionModule
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
 
         watcherServiceFactory = dir -> createFileSystemWatcherService( platformModule.fileSystem, dir, logging,
-                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+                platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
