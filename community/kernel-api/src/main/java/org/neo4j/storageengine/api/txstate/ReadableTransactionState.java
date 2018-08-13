@@ -19,11 +19,11 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import com.sun.istack.internal.Nullable;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 
 import java.util.NavigableMap;
+import javax.annotation.Nullable;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;

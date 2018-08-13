@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -45,7 +45,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 class TxStateIndexChanges
 {
-    static LongDiffSets indexUpdatesForScan( TransactionState txState, IndexDescriptor descriptor )
+    static LongDiffSets indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor descriptor )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
         if ( updates == null )
@@ -61,7 +61,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForScan( TransactionState txState, IndexDescriptor descriptor )
+    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForScan( ReadableTransactionState txState, IndexDescriptor descriptor )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
         if ( updates == null )
@@ -80,7 +80,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static LongDiffSets indexUpdatesForSuffixOrContains( TransactionState txState, IndexDescriptor descriptor, IndexQuery query )
+    static LongDiffSets indexUpdatesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor, IndexQuery query )
     {
         if ( descriptor.schema().getPropertyIds().length != 1 )
         {
@@ -105,7 +105,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForSuffixOrContains( TransactionState txState, IndexDescriptor descriptor,
+    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor,
             IndexQuery query )
     {
         if ( descriptor.schema().getPropertyIds().length != 1 )
@@ -133,7 +133,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static LongDiffSets indexUpdatesForSeek( TransactionState txState, IndexDescriptor descriptor, ValueTuple values )
+    static LongDiffSets indexUpdatesForSeek( ReadableTransactionState txState, IndexDescriptor descriptor, ValueTuple values )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
         if ( updates != null )
@@ -144,7 +144,7 @@ class TxStateIndexChanges
         return LongDiffSets.EMPTY;
     }
 
-    static LongDiffSets indexUpdatesForRangeSeek( TransactionState txState, IndexDescriptor descriptor, ValueGroup valueGroup, Value lower,
+    static LongDiffSets indexUpdatesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor, ValueGroup valueGroup, Value lower,
             boolean includeLower, Value upper, boolean includeUpper )
     {
         if ( lower == null || upper == null )
@@ -203,7 +203,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( TransactionState txState, IndexDescriptor descriptor,
+    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor,
             ValueGroup valueGroup, Value lower, boolean includeLower, Value upper, boolean includeUpper )
     {
         if ( lower == null || upper == null )
@@ -266,7 +266,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static LongDiffSets indexUpdatesForRangeSeekByPrefix( TransactionState txState, IndexDescriptor descriptor, String prefix )
+    static LongDiffSets indexUpdatesForRangeSeekByPrefix( ReadableTransactionState txState, IndexDescriptor descriptor, String prefix )
     {
         NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
@@ -292,7 +292,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeekByPrefix( TransactionState txState, IndexDescriptor descriptor,
+    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeekByPrefix( ReadableTransactionState txState, IndexDescriptor descriptor,
             String prefix )
     {
         NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
