@@ -350,6 +350,7 @@ class InternalTreeLogic<KEY,VALUE>
             ValueMerger<KEY,VALUE> valueMerger, long stableGeneration, long unstableGeneration ) throws IOException
     {
         assert cursorIsAtExpectedLocation( cursor );
+        bTreeNode.validateKeyValueSize( key, value );
         moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
 
         insertInLeaf( cursor, structurePropagation, key, value, valueMerger, stableGeneration, unstableGeneration );
