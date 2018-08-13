@@ -25,7 +25,6 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
@@ -44,10 +43,10 @@ import org.opencypher.v9_0.parser.CypherParser
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
 import org.opencypher.v9_0.rewriting.rewriters._
+import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.attribution.IdGen
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
 
 import scala.collection.mutable
 
@@ -289,6 +288,17 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val labelNameObj: LabelName = LabelName(labelName)_
     HasLabels(Variable(name)_, Seq(labelNameObj))_
   }
+}
+
+case object namePatternPredicatePatternElements extends Rewriter {
+
+  override def apply(in: AnyRef): AnyRef = instance.apply(in)
+
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
+    case expr: PatternExpression =>
+      val (rewrittenExpr, _) = PatternExpressionPatternElementNamer(expr)
+      rewrittenExpr
+  })
 }
 
 case class FakePlan(availableSymbols: Set[String] = Set.empty)(implicit idGen: IdGen)

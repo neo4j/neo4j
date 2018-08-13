@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -159,15 +158,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
       Do[PlannerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.solveds, new Attributes(idGen, state.cardinalities)))
 
-    // This fakes pattern expression naming for testing purposes
-    // In the actual code path, this renaming happens as part of planning
-    //
-    // cf. QueryPlanningStrategy
-    //
-    private def namePatternPredicates(input: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-      val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
-      input.copy(maybeStatement = Some(newStatement))
-    }
 
     private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply(solveds, attributes)))
