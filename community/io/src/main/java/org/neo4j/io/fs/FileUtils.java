@@ -36,6 +36,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -584,16 +585,15 @@ public class FileUtils
         return path;
     }
 
-    // TODO javadoc what this one does. It comes from Serverutil initially.
-    public static File getMostCanonicalFile( File file )
+    public static File getCanonicalFile( File file )
     {
         try
         {
-            return file.getCanonicalFile().getAbsoluteFile();
+            return file.getCanonicalFile();
         }
         catch ( IOException e )
         {
-            return file.getAbsoluteFile();
+            throw new UncheckedIOException( e );
         }
     }
 

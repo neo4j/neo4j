@@ -47,9 +47,9 @@ import static org.neo4j.io.fs.FileUtils.size;
 
 public class FileUtilsTest
 {
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    public ExpectedException expected = ExpectedException.none();
-    public FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final ExpectedException expected = ExpectedException.none();
+    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Rule
     public RuleChain chain = RuleChain.outerRule( testDirectory ).around( expected );

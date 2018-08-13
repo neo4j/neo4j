@@ -150,14 +150,12 @@ public class PlatformModule
         dependencies.satisfyDependency( databaseInfo );
 
         clock = dependencies.satisfyDependency( createClock() );
-
         life = dependencies.satisfyDependency( createLife() );
 
-        // SPI - provided services
-        config.augmentDefaults( GraphDatabaseSettings.neo4j_home, providedStoreDir.getAbsolutePath() );
-        this.config = dependencies.satisfyDependency( config );
+        this.storeLayout = StoreLayout.of( providedStoreDir );
 
-        this.storeLayout = StoreLayout.of( providedStoreDir.getAbsoluteFile() );
+        config.augmentDefaults( GraphDatabaseSettings.neo4j_home, storeLayout.storeDirectory().getPath() );
+        this.config = dependencies.satisfyDependency( config );
 
         fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
         life.add( new FileSystemLifecycleAdapter( fileSystem ) );

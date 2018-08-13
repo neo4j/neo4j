@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Objects;
 
+import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
+
 public class DatabaseLayout
 {
     private static final File[] EMPTY_FILES_ARRAY = new File[0];
@@ -37,7 +39,8 @@ public class DatabaseLayout
 
     public static DatabaseLayout of( File databaseDirectory )
     {
-        return of( databaseDirectory.getParentFile(), databaseDirectory.getName() );
+        File canonicalFile = getCanonicalFile( databaseDirectory );
+        return of( canonicalFile.getParentFile(), canonicalFile.getName() );
     }
 
     public static DatabaseLayout of( File rootDirectory, String databaseName )

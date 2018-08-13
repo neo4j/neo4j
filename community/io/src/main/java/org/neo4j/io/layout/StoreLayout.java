@@ -22,6 +22,8 @@ package org.neo4j.io.layout;
 import java.io.File;
 import java.util.Objects;
 
+import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
+
 public class StoreLayout
 {
     private static final String STORE_LOCK_FILENAME = "store_lock";
@@ -30,7 +32,7 @@ public class StoreLayout
 
     public static StoreLayout of( File storeDirectory )
     {
-        return new StoreLayout( storeDirectory );
+        return new StoreLayout( getCanonicalFile( storeDirectory ) );
     }
 
     private StoreLayout( File rootStoreDirectory )

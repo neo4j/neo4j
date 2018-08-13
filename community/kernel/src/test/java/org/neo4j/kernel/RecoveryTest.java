@@ -109,6 +109,7 @@ public class RecoveryTest
     @Before
     public void setUp() throws Exception
     {
+        storeDir = directory.storeDir();
         logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystemRule.get() )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
