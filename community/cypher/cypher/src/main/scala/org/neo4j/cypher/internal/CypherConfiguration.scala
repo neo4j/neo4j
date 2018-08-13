@@ -92,7 +92,7 @@ case class CypherConfiguration(version: CypherVersion,
   def toCypherPlannerConfiguration(config: Config): CypherPlannerConfiguration =
     CypherPlannerConfiguration(
       queryCacheSize = queryCacheSize,
-      statsDivergenceCalculator = getStatisticsDivergenceCalculator(config),
+      statsDivergenceCalculator = CypherConfiguration.statsDivergenceFromConfig(config),
       useErrorsOverWarnings = useErrorsOverWarnings,
       idpMaxTableSize = idpMaxTableSize,
       idpIterationDuration = idpIterationDuration,
@@ -104,13 +104,4 @@ case class CypherConfiguration(version: CypherVersion,
       planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
       disableCompiledExpressions = disableCompiledExpressions
     )
-
-  private def getStatisticsDivergenceCalculator(config: Config): StatsDivergenceCalculator = {
-    val divergenceThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
-    val targetThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_target).doubleValue()
-    val minReplanTime = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
-    val targetReplanTime = config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis.longValue()
-    val divergenceAlgorithm = config.get(GraphDatabaseSettings.cypher_replan_algorithm)
-    StatsDivergenceCalculator.divergenceCalculatorFor(divergenceAlgorithm, divergenceThreshold, targetThreshold, minReplanTime, targetReplanTime)
-  }
 }

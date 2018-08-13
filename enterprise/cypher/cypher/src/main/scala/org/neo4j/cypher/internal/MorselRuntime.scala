@@ -131,10 +131,14 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     val tracer: SchedulerTracer = createTracer()
 
     def getDispatcher(debugOptions: Set[String]): Dispatcher =
-        if (debugOptions.contains("singlethreaded") && config.workers != 1)
-          new Dispatcher(config.morselSize, new SingleThreadScheduler())
-        else
-          dispatcher
+      if (singleThreadedRequested(debugOptions) && !isAlreadySingleThreaded)
+        new Dispatcher(config.morselSize, new SingleThreadScheduler())
+      else
+        dispatcher
+
+    private def singleThreadedRequested(debugOptions: Set[String]) = debugOptions.contains("singlethreaded")
+
+    private def isAlreadySingleThreaded = config.workers == 1
 
     private def createDispatcher(): Dispatcher = {
       val scheduler =

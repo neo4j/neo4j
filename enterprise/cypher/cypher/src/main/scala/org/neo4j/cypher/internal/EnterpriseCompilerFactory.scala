@@ -97,7 +97,6 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
   }
 }
 
-
 /**
   * Enterprise runtime context. Enriches the community runtime context with infrastructure needed for
   * query compilation and parallel execution.

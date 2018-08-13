@@ -61,8 +61,8 @@ public class ExecutionEngineTest
     public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
     {
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
-        Monitors monitors = graph.getDependencyResolver().resolveDependency( Monitors.class );
         DependencyResolver resolver = graph.getDependencyResolver();
+        Monitors monitors = resolver.resolveDependency( Monitors.class );
 
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
 
