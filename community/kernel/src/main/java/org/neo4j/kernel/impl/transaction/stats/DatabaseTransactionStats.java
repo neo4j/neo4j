@@ -48,7 +48,14 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
     @Override
     public void transactionFinished( boolean committed, boolean write )
     {
-        decrementCounter( activeReadTransactionCount, activeWriteTransactionCount, write );
+        if ( write )
+        {
+            activeWriteTransactionCount.decrement();
+        }
+        else
+        {
+            activeReadTransactionCount.decrementAndGet();
+        }
         if ( committed )
         {
             incrementCounter( committedReadTransactionCount, committedWriteTransactionCount, write );
@@ -68,7 +75,7 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
     @Override
     public void upgradeToWriteTransaction()
     {
-        decrementCounter( activeReadTransactionCount, activeWriteTransactionCount, false );
+        activeReadTransactionCount.decrementAndGet();
         activeWriteTransactionCount.increment();
     }
 
@@ -165,18 +172,6 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
         else
         {
             readCount.increment();
-        }
-    }
-
-    private static void decrementCounter( AtomicLong readCount, LongAdder writeCount, boolean write )
-    {
-        if ( write )
-        {
-            writeCount.decrement();
-        }
-        else
-        {
-            readCount.decrementAndGet();
         }
     }
 }
