@@ -11,3 +11,6 @@ Pattern comprehension in unwind with hits
 //ReturnAcceptance.feature
 RETURN true AND list
 RETURN false OR list
+
+//OptionalMatchAcceptance.feature
+optional match with distinct

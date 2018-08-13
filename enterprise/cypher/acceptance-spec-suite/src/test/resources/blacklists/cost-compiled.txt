@@ -137,6 +137,7 @@ Id on null
 type on null
 Shorthand case with filter should work as expected
 optional equality with boolean lists
+optional match with distinct
 
 //OrderByAcceptance.feature - Unsupported orderability
 ORDER BY nodes should return null results last in ascending order

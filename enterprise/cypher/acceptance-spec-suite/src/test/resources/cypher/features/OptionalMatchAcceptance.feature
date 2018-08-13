@@ -64,3 +64,18 @@ Feature: OptionalMatchAcceptance
       | n    |
       | null |
     And no side effects
+
+  Scenario: optional match with distinct
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)-[:Y]->(:B)-[:X]->(:B)
+      """
+    When executing query:
+      """
+      OPTIONAL MATCH (:A)-[:Y]->(:B)-[:X]->(b:B) RETURN DISTINCT labels(b)
+      """
+    Then the result should be:
+      | labels(b) |
+      | ['B']     |
+    And no side effects
