@@ -222,8 +222,9 @@ public class OnlineBackupCommandTest
         // with
         List<Object[]> cases = asList(
                 new Object[]{SelectedBackupProtocol.CATCHUP,
-                        "The selected protocol `catchup` means that it is only compatible with causal clustering instances\n"},
-                new Object[] {SelectedBackupProtocol.COMMON, "The selected protocol `common` means that it is only compatible with HA and single instances\n"}
+                        String.format( "The selected protocol `catchup` means that it is only compatible with causal clustering instances%n" )},
+                new Object[]{SelectedBackupProtocol.COMMON,
+                        String.format( "The selected protocol `common` means that it is only compatible with HA and single instances%n" )}
         );
         for ( Object[] thisCase : cases )
         {
