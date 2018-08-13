@@ -343,7 +343,6 @@ object CommunityExpressionConverter extends ExpressionConverter {
           None
         )
       case Tan => commandexpressions.TanFunction(self.toCommandExpression(id, invocation.arguments.head))
-      case Timestamp => commandexpressions.TimestampFunction()
       case ToBoolean => commandexpressions.ToBooleanFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToFloat => commandexpressions.ToFloatFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToInteger => commandexpressions.ToIntegerFunction(self.toCommandExpression(id, invocation.arguments.head))

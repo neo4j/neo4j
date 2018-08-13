@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.{Cardinality, Cost}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.functions.Rand
 import org.opencypher.v9_0.expressions.{Expression, FunctionInvocation, LabelName, Parameter}
-import org.opencypher.v9_0.expressions.functions.{Rand, Timestamp}
+import org.opencypher.v9_0.util.{Cardinality, Cost}
 
 import scala.language.implicitConversions
 
@@ -77,7 +77,6 @@ trait ExpressionEvaluator {
   def isNonDeterministic(expr: Expression): Boolean =
     expr.inputs.exists {
       case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => true
-      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Timestamp => true
       case _ => false
     }
 

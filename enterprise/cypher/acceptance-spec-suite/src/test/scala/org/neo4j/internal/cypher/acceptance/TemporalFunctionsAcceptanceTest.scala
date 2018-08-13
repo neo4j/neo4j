@@ -79,6 +79,13 @@ class TemporalFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
     now shouldBe a[LocalTime]
   }
 
+  test("timstamp should be query local") {
+    //older versions don't use the clock which we fake in this test
+    val result = innerExecuteDeprecated("UNWIND range(1, 1000) AS ignore RETURN timestamp() AS t").toList
+
+    result.map(m => m("t")).distinct should have size 1
+  }
+
   def single[T](values: Iterator[T]):T = {
     val value = values.next()
     values.hasNext shouldBe false
