@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -50,6 +51,7 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     @Override
     void assertValidValue( int stateSlot, Value value )
     {
+        Preconditions.requireBetween( stateSlot, 0, states.length );
         GenericKeyState.assertCorrectType( value );
     }
 

@@ -90,7 +90,7 @@ public final class Preconditions
     {
         if ( value != 0 )
         {
-            throw new IllegalArgumentException( "Expected long value equal to 0, got " + value );
+            throw new IllegalArgumentException( "Expected int value equal to 0, got " + value );
         }
         return value;
     }
@@ -122,6 +122,15 @@ public final class Preconditions
         if ( !expression )
         {
             throw new IllegalArgumentException( args.length > 0 ? format( message, args ) : message );
+        }
+    }
+
+    public static void requireBetween( int value, int lowInclusive, int highExclusive )
+    {
+        if ( value < lowInclusive || value >= highExclusive )
+        {
+            throw new IllegalArgumentException( String.format( "Expected int value between %d (inclusive) and %d (exclusive), got %d.",
+                    lowInclusive, highExclusive, value ) );
         }
     }
 }
