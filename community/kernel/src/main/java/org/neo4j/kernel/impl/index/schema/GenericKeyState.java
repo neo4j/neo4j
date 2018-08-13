@@ -291,7 +291,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         {
             return -1;
         }
-        else if ( other == null || other.type == null )
+        else if ( other.type == null )
         {
             return 1;
         }
