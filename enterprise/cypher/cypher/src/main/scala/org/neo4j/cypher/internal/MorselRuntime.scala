@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.{CypherRuntime, CypherRuntimeConfiguration}
+import org.neo4j.cypher.internal.compatibility.CypherRuntime
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.runtime.vectorized.{Dispatcher, Pipeline, Pipel
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Notification
-import org.neo4j.scheduler.{Group, JobScheduler}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
@@ -124,39 +123,6 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     }
 
     override def runtimeName: RuntimeName = MorselRuntimeName
-  }
-
-  case class MorselRuntimeState(config:CypherRuntimeConfiguration, jobScheduler: JobScheduler) {
-    private val dispatcher: Dispatcher = createDispatcher()
-    val tracer: SchedulerTracer = createTracer()
-
-    def getDispatcher(debugOptions: Set[String]): Dispatcher =
-      if (singleThreadedRequested(debugOptions) && !isAlreadySingleThreaded)
-        new Dispatcher(config.morselSize, new SingleThreadScheduler())
-      else
-        dispatcher
-
-    private def singleThreadedRequested(debugOptions: Set[String]) = debugOptions.contains("singlethreaded")
-
-    private def isAlreadySingleThreaded = config.workers == 1
-
-    private def createDispatcher(): Dispatcher = {
-      val scheduler =
-        if (config.workers == 1) new SingleThreadScheduler()
-        else {
-          val numberOfThreads = if (config.workers == 0) java.lang.Runtime.getRuntime.availableProcessors() else config.workers
-          val executorService = jobScheduler.workStealingExecutor(Group.CYPHER_WORKER, numberOfThreads)
-          new SimpleScheduler(executorService)
-        }
-      new Dispatcher(config.morselSize, scheduler)
-    }
-
-    private def createTracer(): SchedulerTracer = {
-      if (config.doSchedulerTracing)
-        new DataPointSchedulerTracer(new ThreadSafeDataWriter(new CsvStdOutDataWriter))
-      else
-        SchedulerTracer.NoSchedulerTracer
-    }
   }
 
   class VectorizedOperatorExecutionResult(operators: Pipeline,
