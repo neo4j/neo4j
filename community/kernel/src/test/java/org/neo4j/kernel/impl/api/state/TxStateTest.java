@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.state;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.UnmodifiableMap;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -38,7 +40,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterators;
@@ -53,8 +57,10 @@ import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
@@ -69,6 +75,7 @@ import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.new
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -232,6 +239,89 @@ public class TxStateTest
     }
 
     //endregion
+
+    //region index updates
+
+    @Test
+    public void shouldComputeIndexUpdatesOnUninitializedTxState()
+    {
+        // WHEN
+        UnmodifiableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getIndexUpdates( indexOn_1_1.schema() );
+
+        // THEN
+        assertNull( diffSets );
+    }
+
+    @Test
+    public void shouldComputeSortedIndexUpdatesOnUninitializedTxState()
+    {
+        // WHEN
+        NavigableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getSortedIndexUpdates( indexOn_1_1.schema() );
+
+        // THEN
+        assertNull( diffSets );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesOnEmptyTxState()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_2_1 ).withDefaultStringProperties( 42L );
+
+        // WHEN
+        UnmodifiableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getIndexUpdates( indexOn_1_1.schema() );
+
+        // THEN
+        assertNull( diffSets );
+    }
+
+    @Test
+    public void shouldComputeSortedIndexUpdatesOnEmptyTxState()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_2_1 ).withDefaultStringProperties( 42L );
+
+        // WHEN
+        NavigableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getSortedIndexUpdates( indexOn_1_1.schema() );
+
+        // THEN
+        assertNull( diffSets );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesOnTxStateWithAddedNodes()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 43L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 41L );
+
+        // WHEN
+        UnmodifiableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getIndexUpdates( indexOn_1_1.schema() );
+
+        // THEN
+        assertEquals( addedNodes( 42L ), diffSets.get( ValueTuple.of( Values.stringValue( "value42" ) ) ) );
+        assertEquals( addedNodes( 43L ), diffSets.get( ValueTuple.of( Values.stringValue( "value43" ) ) ) );
+        assertEquals( addedNodes( 41L ), diffSets.get( ValueTuple.of( Values.stringValue( "value41" ) ) ) );
+    }
+
+    @Test
+    public void shouldComputeSortedIndexUpdatesOnTxStateWithAddedNodes()
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 43L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 41L );
+
+        // WHEN
+        NavigableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getSortedIndexUpdates( indexOn_1_1.schema() );
+
+        TreeMap<ValueTuple,LongDiffSets> expected = sortedAddedNodesDiffSets( 42, 41, 43 );
+        // THEN
+        assertEquals( expected, diffSets );
+    }
+
+    // endregion
 
     //region index rule tests
 
@@ -752,6 +842,22 @@ public class TxStateTest
 
     //endregion
 
+    private LongDiffSets addedNodes( long... added )
+    {
+        return new MutableLongDiffSetsImpl( LongSets.mutable.of( added ), LongSets.mutable.empty(), collectionsFactory );
+    }
+
+    private TreeMap<ValueTuple,LongDiffSets> sortedAddedNodesDiffSets( long... added )
+    {
+        TreeMap<ValueTuple,LongDiffSets> map = new TreeMap<>( ValueTuple.COMPARATOR );
+        for ( long node : added )
+        {
+
+            map.put( ValueTuple.of( Values.stringValue( "value" + node ) ), addedNodes( node ) );
+        }
+        return map;
+    }
+
     abstract class VisitationOrder extends TxStateVisitor.Adapter
     {
         private final Set<String> visitMethods = new HashSet<>();
@@ -820,12 +926,6 @@ public class TxStateTest
     private interface IndexUpdater
     {
         void withDefaultStringProperties( long... nodeIds );
-
-        void withStringProperties( Collection<Pair<Long,String>> nodesWithValues );
-
-        <T extends Number> void withNumberProperties( Collection<Pair<Long,T>> nodesWithValues );
-
-        void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues );
     }
 
     private IndexUpdater addNodesToIndex( final IndexDescriptor descriptor )
@@ -840,25 +940,7 @@ public class TxStateTest
                 {
                     entries.add( of( nodeId, "value" + nodeId ) );
                 }
-                withStringProperties( entries );
-            }
-
-            @Override
-            public void withStringProperties( Collection<Pair<Long,String>> nodesWithValues )
-            {
-                withProperties( nodesWithValues );
-            }
-
-            @Override
-            public <T extends Number> void withNumberProperties( Collection<Pair<Long,T>> nodesWithValues )
-            {
-                withProperties( nodesWithValues );
-            }
-
-            @Override
-            public void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues )
-            {
-                withProperties( nodesWithValues );
+                withProperties( entries );
             }
 
             private <T> void withProperties( Collection<Pair<Long,T>> nodesWithValues )

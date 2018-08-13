@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import com.sun.istack.internal.Nullable;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
@@ -704,6 +705,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    @Nullable
     public UnmodifiableMap<ValueTuple, ? extends LongDiffSets> getIndexUpdates( SchemaDescriptor schema )
     {
         if ( indexUpdates == null )
@@ -720,6 +722,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    @Nullable
     public NavigableMap<ValueTuple, ? extends LongDiffSets> getSortedIndexUpdates( SchemaDescriptor descriptor )
     {
         if ( indexUpdates == null )
@@ -750,10 +753,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             ValueTuple propertiesBefore, ValueTuple propertiesAfter )
     {
         NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
-        Map<ValueTuple, MutableLongDiffSets> updates = getIndexUpdatesByDescriptor( descriptor );
+        Map<ValueTuple, MutableLongDiffSets> updates = getOrCreateIndexUpdatesByDescriptor( descriptor );
         if ( propertiesBefore != null )
         {
-            MutableLongDiffSets before = getIndexUpdatesForSeek( updates, propertiesBefore );
+            MutableLongDiffSets before = getOrCreateIndexUpdatesForSeek( updates, propertiesBefore );
             //noinspection ConstantConditions
             before.remove( nodeId );
             if ( before.getRemoved().contains( nodeId ) )
@@ -767,7 +770,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
         if ( propertiesAfter != null )
         {
-            MutableLongDiffSets after = getIndexUpdatesForSeek( updates, propertiesAfter );
+            MutableLongDiffSets after = getOrCreateIndexUpdatesForSeek( updates, propertiesAfter );
             //noinspection ConstantConditions
             after.add( nodeId );
             if ( after.getAdded().contains( nodeId ) )
@@ -781,18 +784,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    /**
-     * This method does some initialization of empty diffsets. Only call it from updating code.
-     */
-    private MutableLongDiffSets getIndexUpdatesForSeek( Map<ValueTuple,MutableLongDiffSets> updates, ValueTuple values )
+    private MutableLongDiffSets getOrCreateIndexUpdatesForSeek( Map<ValueTuple,MutableLongDiffSets> updates, ValueTuple values )
     {
         return updates.computeIfAbsent( values, value -> new MutableLongDiffSetsImpl() );
     }
 
-    /**
-     * This method does some initialization of empty diffsets. Only call it from updating code.
-     */
-    private Map<ValueTuple, MutableLongDiffSets> getIndexUpdatesByDescriptor( SchemaDescriptor schema )
+    private Map<ValueTuple, MutableLongDiffSets> getOrCreateIndexUpdatesByDescriptor( SchemaDescriptor schema )
     {
         if ( indexUpdates == null )
         {
