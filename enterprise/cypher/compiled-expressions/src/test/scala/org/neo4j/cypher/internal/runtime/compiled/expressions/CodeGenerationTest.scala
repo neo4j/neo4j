@@ -877,6 +877,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(parameter("    AUTOBLAH BLAH BLAHA   ")).evaluate(ctx, db, map(Array("    AUTOBLAH BLAH BLAHA   "), Array(stringValue("foo")))) should equal(stringValue("foo"))
   }
 
+  test("extract multiple parameters with whitespaces") {
+    compile(add(parameter(" A "), parameter("\tA\t")))
+      .evaluate(ctx, db, map(Array(" A ", "\tA\t"), Array(longValue(1), longValue(2) ))) should equal(longValue(3))
+    compile(add(parameter(" A "), parameter("_A_")))
+      .evaluate(ctx, db, map(Array(" A ", "_A_"), Array(longValue(1), longValue(2) ))) should equal(longValue(3))
+  }
+
   test("NULL") {
     // Given
     val expression = noValue
