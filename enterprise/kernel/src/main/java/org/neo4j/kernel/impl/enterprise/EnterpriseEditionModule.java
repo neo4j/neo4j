@@ -113,12 +113,12 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    public void createSecurityModule( PlatformModule platformModule, Procedures procedures )
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        EnterpriseEditionModule.createEnterpriseSecurityModule( this, platformModule, procedures );
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( this, platformModule, procedures );
     }
 
-    public static void createEnterpriseSecurityModule( EditionModule editionModule, PlatformModule platformModule, Procedures procedures )
+    public static void setupEnterpriseSecurityModule( EditionModule editionModule, PlatformModule platformModule, Procedures procedures )
     {
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
         {

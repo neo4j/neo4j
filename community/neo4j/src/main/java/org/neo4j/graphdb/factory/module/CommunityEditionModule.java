@@ -259,7 +259,7 @@ public class CommunityEditionModule extends EditionModule
     }
 
     @Override
-    public void createSecurityModule( PlatformModule platformModule, Procedures procedures )
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
         {

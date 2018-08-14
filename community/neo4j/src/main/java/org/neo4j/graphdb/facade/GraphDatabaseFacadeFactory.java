@@ -172,7 +172,7 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( databaseManager );
         platform.dependencies.satisfyDependency( databaseManager );
 
-        edition.createSecurityModule( platform, procedures );
+        edition.setupSecurityModule( platform, procedures );
 
         platform.life.add( platform.globalKernelExtensions );
         platform.life.add( createBoltServer( platform, edition, databaseManager ) );
