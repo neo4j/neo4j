@@ -61,7 +61,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       nextName
     }
 
-    def memoize(name: String): String = nextVariableName()//memoized.getOrElseUpdate(name, nextVariableName())
+    def memoize(name: String): String = memoized.getOrElseUpdate(name, nextVariableName())
   }
 
   import IntermediateCodeGeneration._
