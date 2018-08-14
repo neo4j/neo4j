@@ -17,13 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_5.planner
+package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
-package object logical {
-  type Selector[P] = Iterable[P] => Option[P]
-  type LeafPlanFinder = (QueryPlannerConfiguration, QueryGraph, LogicalPlanningContext, Solveds, Cardinalities) => Set[LogicalPlan]
+trait LeafPlanUpdater {
+  def apply(leafPlan: LogicalPlan): LogicalPlan
+}
+
+object EmptyUpdater extends LeafPlanUpdater {
+  override def apply(leafPlan: LogicalPlan): LogicalPlan = leafPlan
+}
+
+case class ChainedUpdater(first: LeafPlanUpdater, second: LeafPlanUpdater)  extends LeafPlanUpdater {
+  override def apply(leafPlan: LogicalPlan): LogicalPlan = second(first(leafPlan))
 }

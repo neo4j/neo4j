@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.alignGetValueFromIndexBehavior
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.util.attribution.Attributes
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
 */
-case class PlanWithTail(planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan) = PlanEventHorizon,
+case class PlanWithTail(planEventHorizon: (PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = PlanEventHorizon,
                         planPart: (PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = planPart,
-                        planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) = PlanUpdates)
+                        planUpdates: (PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext) = PlanUpdates)
   extends ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext, Solveds, Cardinalities, Attributes) => LogicalPlan) {
 
   override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext,
@@ -38,6 +39,9 @@ case class PlanWithTail(planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPl
     remaining match {
       case Some(plannerQuery) =>
         val lhsContext = context.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
+          // context for this query, which aligns getValueFromIndexBehavior
+          .withLeafPlanUpdater(alignGetValueFromIndexBehavior(plannerQuery, context.logicalPlanProducer, Attributes(context.logicalPlanProducer.idGen, solveds, cardinalities)))
+
         val partPlan = planPart(plannerQuery, lhsContext, solveds, cardinalities)
         val firstPlannerQuery = false
         val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext, solveds, cardinalities)

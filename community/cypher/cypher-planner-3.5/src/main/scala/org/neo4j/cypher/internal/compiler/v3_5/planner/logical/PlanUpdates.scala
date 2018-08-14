@@ -266,16 +266,7 @@ case object PlanUpdates
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
 
     if (nodesToLock.nonEmpty) {
-
-      def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
-        val lockThese = nodesToLock intersect plan.availableSymbols
-        if (lockThese.nonEmpty)
-          producer.planLock(plan, lockThese, context)
-        else
-          plan
-      }
-
-      val lockingContext = context.copy(leafPlanUpdater = addLockToPlan)
+      val lockingContext = context.withAddedLeafPlanUpdater(AddLockToPlan(nodesToLock, producer, context))
 
       //        antiCondApply
       //        /   \
@@ -290,5 +281,15 @@ case object PlanUpdates
       producer.planAntiConditionalApply(matchOrNull, ifMissingLockAndMatchAgain, ids, context)
     } else
       matchOrNull
+  }
+
+  case class AddLockToPlan(nodesToLock: Set[String], producer: LogicalPlanProducer, context: LogicalPlanningContext) extends LeafPlanUpdater {
+    override def apply(plan: LogicalPlan): LogicalPlan = {
+      val lockThese = nodesToLock intersect plan.availableSymbols
+      if (lockThese.nonEmpty)
+        producer.planLock(plan, lockThese, context)
+      else
+        plan
+    }
   }
 }

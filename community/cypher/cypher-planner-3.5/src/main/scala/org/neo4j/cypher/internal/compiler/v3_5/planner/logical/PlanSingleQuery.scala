@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{countStorePlanner, verifyBestPlan}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{alignGetValueFromIndexBehavior, countStorePlanner, verifyBestPlan}
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
 QueryGraphs and EventHorizons
  */
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = planPart,
-                           planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan) = PlanEventHorizon,
-                           planWithTail: ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext, Solveds, Cardinalities, Attributes) => LogicalPlan) = PlanWithTail(),
-                           planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) = PlanUpdates)
+                           planEventHorizon: (PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = PlanEventHorizon,
+                           planWithTail: (LogicalPlan, Option[PlannerQuery], LogicalPlanningContext, Solveds, Cardinalities, Attributes) => LogicalPlan = PlanWithTail(),
+                           planUpdates: (PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext) = PlanUpdates)
   extends ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => LogicalPlan) {
 
   override def apply(in: PlannerQuery, context: LogicalPlanningContext,
@@ -41,8 +41,12 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Solv
       case Some(plan) =>
         (plan, context.withUpdatedCardinalityInformation(plan, solveds, cardinalities))
       case None =>
-        val partPlan = planPart(in, context, solveds, cardinalities)
-        val (planWithUpdates, newContext) = planUpdates(in, partPlan, true /*first QG*/, context, solveds, cardinalities)
+
+        // context for this query, which aligns getValueFromIndexBehavior
+        val queryContext = context.withLeafPlanUpdater(alignGetValueFromIndexBehavior(in, context.logicalPlanProducer, Attributes(context.logicalPlanProducer.idGen, solveds, cardinalities)))
+
+        val partPlan = planPart(in, queryContext, solveds, cardinalities)
+        val (planWithUpdates, newContext) = planUpdates(in, partPlan, true /*first QG*/, queryContext, solveds, cardinalities)
         val projectedPlan = planEventHorizon(in, planWithUpdates, newContext, solveds, cardinalities)
         val projectedContext = newContext.withUpdatedCardinalityInformation(projectedPlan, solveds, cardinalities)
         (projectedPlan, projectedContext)
