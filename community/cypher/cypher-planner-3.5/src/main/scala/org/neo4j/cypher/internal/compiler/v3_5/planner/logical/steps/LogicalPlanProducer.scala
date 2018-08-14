@@ -216,7 +216,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     val solved = RegularPlannerQuery(queryGraph = queryGraph)
     val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
 
-    val plan = NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)
+    val plan = NodeIndexSeek(idName, label, propertyKeys.map(IndexedProperty(_, DoNotGetValue)), valueExpr, argumentIds)
     val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
@@ -236,7 +236,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexScan(idName, label, propertyKey, argumentIds), solved, context)
+    annotate(NodeIndexScan(idName, label, IndexedProperty(propertyKey, DoNotGetValue), argumentIds), solved, context)
   }
 
   def planNodeIndexContainsScan(idName: String,
@@ -253,7 +253,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexContainsScan(idName, label, propertyKey, valueExpr, argumentIds), solved, context)
+    annotate(NodeIndexContainsScan(idName, label, IndexedProperty(propertyKey, DoNotGetValue), valueExpr, argumentIds), solved, context)
   }
 
   def planNodeIndexEndsWithScan(idName: String,
@@ -270,7 +270,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds), solved, context)
+    annotate(NodeIndexEndsWithScan(idName, label, IndexedProperty(propertyKey, DoNotGetValue), valueExpr, argumentIds), solved, context)
   }
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
@@ -300,7 +300,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds), solved, context)
+    annotate(NodeUniqueIndexSeek(idName, label, propertyKeys.map(IndexedProperty(_, DoNotGetValue)), valueExpr, argumentIds), solved, context)
   }
 
   def planAssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

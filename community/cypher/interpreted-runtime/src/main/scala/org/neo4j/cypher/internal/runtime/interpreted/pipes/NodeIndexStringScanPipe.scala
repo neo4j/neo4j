@@ -22,26 +22,26 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexedProperty
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.{TextValue, Values}
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.CypherTypeException
 import org.opencypher.v9_0.util.attribution.Id
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
-                                               propertyKey: PropertyKeyToken,
-                                               getValueFromIndex: Boolean,
+                                               property: IndexedProperty,
                                                valueExpr: Expression) extends Pipe with IndexPipeWithValues {
 
-  override val propertyIndicesWithValues: Array[Int] = if (getValueFromIndex) Array(0) else Array.empty
-  override val propertyNamesWithValues: Array[String] = Array(ident + "." + propertyKey.name)
+  override val propertyIndicesWithValues: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
+  override val propertyNamesWithValues: Array[String] = Array(ident + "." + property.propertyKeyToken.name)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
     if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id,  propertyKey.nameId.id)
+      reference = context.indexReference(label.nameId.id, property.propertyKeyToken.nameId.id)
     }
     reference
   }
@@ -70,11 +70,10 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
 case class NodeIndexContainsScanPipe(ident: String,
                                      label: LabelToken,
-                                     propertyKey: PropertyKeyToken,
-                                     getValueFromIndex: Boolean,
+                                     property: IndexedProperty,
                                      valueExpr: Expression)
                                     (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, getValueFromIndex, valueExpr) {
+  extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties] =
     state.query.indexSeekByContains(indexReference, propertyIndicesWithValues, value)
@@ -82,11 +81,10 @@ case class NodeIndexContainsScanPipe(ident: String,
 
 case class NodeIndexEndsWithScanPipe(ident: String,
                                      label: LabelToken,
-                                     propertyKey: PropertyKeyToken,
-                                     getValueFromIndex: Boolean,
+                                     property: IndexedProperty,
                                      valueExpr: Expression)
                                     (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, getValueFromIndex, valueExpr) {
+  extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties] =
     state.query.indexSeekByEndsWith(indexReference, propertyIndicesWithValues, value)

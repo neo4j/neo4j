@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.runtime.planDescription
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions.{SemanticDirection, LabelName => AstLabelName, _}
 import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.attribution.{Id, IdGen, SequentialIdGen}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.{SemanticDirection, LabelName => AstLabelName, _}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
@@ -78,7 +78,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
                             Seq(EstimatedRows(333), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
                                 PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
 
-      , attach(NodeIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(PropertyKeyToken("Prop", PropertyKeyId(0))),
+      , attach(NodeIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
                              ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty),
                23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
@@ -86,7 +86,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
                                 Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(
-        NodeUniqueIndexSeek("x", LabelToken("Lebal", LabelId(0)), Seq(PropertyKeyToken("Porp", PropertyKeyId(0))),
+        NodeUniqueIndexSeek("x", LabelToken("Lebal", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Porp", PropertyKeyId(0)), DoNotGetValue)),
                             ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty),
         95.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.v3_5.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, IndexedProperty, SingleQueryExpression}
 import org.neo4j.graphdb._
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
@@ -311,8 +311,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
       val labelToken = LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = Seq(PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId)))
-      // We are calculating the cost including deserialization of values from the index
-      val properties = propertyKeyToken.map(IndexedProperty(_, getValueFromIndex = true)).toArray
+      // We are calculating the cost excluding deserialization of values from the index
+      val properties = propertyKeyToken.map(IndexedProperty(_, DoNotGetValue)).toArray
 
       NodeIndexSeekPipe(LABEL.name(), labelToken, properties, SingleQueryExpression(literal), IndexSeek)()
     }
@@ -327,9 +327,9 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
       val labelToken = LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
-      // We are calculating the cost including deserialization of values from the index
+      // We are calculating the cost excluding deserialization of values from the index
 
-      NodeIndexScanPipe(LABEL.name(), labelToken, propertyKeyToken, getValueFromIndex = true)()
+      NodeIndexScanPipe(LABEL.name(), labelToken, IndexedProperty(propertyKeyToken, DoNotGetValue))()
     }
   }
 

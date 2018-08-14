@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.{LogicalPlanningTestSupport2, StubbedLogicalPlanningConfiguration}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
-import org.opencypher.v9_0.ast._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.{LogicalPlanningTestSupport2, StubbedLogicalPlanningConfiguration}
 import org.neo4j.cypher.internal.ir.v3_5.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Union, _}
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.expressions.SemanticDirection.INCOMING
+import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.SemanticDirection.INCOMING
-import org.opencypher.v9_0.expressions._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Union, _}
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
@@ -42,7 +42,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
+        Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue)),
         RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("prefix")_)) _),
         Set.empty)
     )
@@ -56,7 +56,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexContainsScan(
         "a",
         LabelToken("Person", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+        IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue),
         StringLiteral("substring")_,
         Set.empty)
     )
@@ -73,7 +73,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           NodeIndexSeek(
             "a",
             LabelToken("Person", LabelId(0)),
-            Seq(PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1))),
+            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)), DoNotGetValue)),
             RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
             Set.empty)
         ))
@@ -90,7 +90,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeIndexSeek(
           "a",
           LabelToken("Person", LabelId(0)),
-          Seq(PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1))),
+          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)), DoNotGetValue)),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
           Set.empty)
       ))
@@ -107,7 +107,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
-                  Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
+                  Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue)),
                   RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
                   Set.empty)
       ))
@@ -124,7 +124,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
-                  Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
+                  Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue)),
                   SingleQueryExpression(StringLiteral("prefix1") _),
                   Set.empty)
       ))
@@ -141,7 +141,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
-                  Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
+                  Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue)),
                   ManyQueryExpression(ListLiteral(List(StringLiteral("prefix1") _, StringLiteral("prefix2") _)) _),
                   Set.empty)
       ))
@@ -155,7 +155,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        Seq(PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0))),
+        Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0)), DoNotGetValue)),
         RangeQueryExpression(InequalitySeekRangeWrapper(
           RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")_)))
         )_),
@@ -173,7 +173,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        Seq(PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0))),
+        Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0)), DoNotGetValue)),
         RangeQueryExpression(
           InequalitySeekRangeWrapper(
             RangeBetween(
@@ -210,7 +210,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeIndexSeek(
           "a",
           LabelToken("Person", LabelId(0)),
-          Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
+          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue)),
           RangeQueryExpression(InequalitySeekRangeWrapper(
             RangeGreaterThan(NonEmptyList(InclusiveBound(StringLiteral("Cinderella")_)))
           )_),
@@ -227,7 +227,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
+        Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue)),
         RangeQueryExpression(InequalitySeekRangeWrapper(
           RangeGreaterThan(NonEmptyList(InclusiveBound(StringLiteral("Frodo")_)))
         )_),
@@ -256,7 +256,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan label scans when having a compile-time label id") {
-    implicit val plan = new given {
+    val plan = new given {
       cost =  {
         case (_: AllNodesScan, _, _) => 1000.0
         case (_: NodeByIdSeek, _, _) => 2.0
@@ -294,7 +294,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan index scan for exists(n.prop)") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n"
@@ -303,13 +303,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexScan(
         "n",
         LabelToken("Awesome", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
         Set.empty)
     )
   }
 
   test("should plan unique index scan for exists(n.prop)") {
-    implicit val plan = new given {
+    val plan = new given {
       uniqueIndexOn("Awesome", "prop")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n"
@@ -318,13 +318,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexScan(
         "n",
         LabelToken("Awesome", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
         Set.empty)
     )
   }
 
   test("should plan index seek instead of index scan when there are predicates for both") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) AND n.prop = 42 RETURN n"
@@ -334,14 +334,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeIndexSeek(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          Seq(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0))),
+          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
           SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
           Set.empty)
       ))
   }
 
   test("should plan index seek when there is an index on the property") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
@@ -349,19 +349,19 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "n",
         LabelToken("Awesome", LabelId(0)),
-        Seq(PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0))),
-        SingleQueryExpression(SignedDecimalIntegerLiteral("42")_),
+        Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+        SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
         Set.empty)
     )
   }
 
   test("should plan unique index seek when there is an unique index on the property") {
-    implicit val plan = new given {
+    val plan = new given {
       uniqueIndexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), Set.empty)
+      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), Set.empty)
     )
   }
 
@@ -419,7 +419,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case NodeIndexSeek(
               "n",
               LabelToken("Awesome", _),
-              Seq(PropertyKeyToken("prop", _)),
+      Seq(IndexedProperty(PropertyKeyToken("prop", _), DoNotGetValue)),
               SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _) => ()
     }
   }
@@ -445,7 +445,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   // WHERE n:Label AND (n.prop = $val1 OR (n.prop = $val2 AND n.bar = $val3))
 
   test("should plan composite index seek when there is an index on two properties and both are in equality predicates") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
 
@@ -458,15 +458,15 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         "n",
         LabelToken("Awesome", LabelId(0)),
         Seq(
-          PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
-          PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), DoNotGetValue)),
         CompositeQueryExpression(Seq(seek1, seek2)),
         Set.empty)
     )
   }
 
   test("should plan composite index seek when there is an index on two properties and both are in equality predicates regardless of predicate order") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
 
@@ -479,15 +479,15 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         "n",
         LabelToken("Awesome", LabelId(0)),
         Seq(
-          PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
-          PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), DoNotGetValue)),
         CompositeQueryExpression(Seq(seek1, seek2)),
         Set.empty)
     )
   }
 
   test("should plan composite index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND exists(n.name) AND n.prop = 42 RETURN n"
 
@@ -500,8 +500,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           "n",
           LabelToken("Awesome", LabelId(0)),
           Seq(
-            PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
-            PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
+            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), DoNotGetValue)),
           CompositeQueryExpression(Seq(seek1, seek2)),
           Set.empty)
       )
@@ -514,7 +514,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should plan hinted label scans") {
 
-    implicit val plan = new given {
+    val plan = new given {
       cost = {
         case (_: Selection, _, _) => 20.0
         case (_: NodeHashJoin, _, _) => 1000.0
@@ -531,37 +531,37 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan hinted index seek") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), Set.empty)
     )
   }
 
   test("should plan hinted index seek when returning *") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
 
     plan._2 should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), Set.empty)
     )
   }
 
   test("should plan hinted index seek with or") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n:Awesome) USING INDEX n:Awesome(prop) WHERE n.prop = 42 OR n.prop = 1337 RETURN n"
 
     plan._2 should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), ManyQueryExpression(ListLiteral(List(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("1337")_))_), Set.empty)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), ManyQueryExpression(ListLiteral(List(SignedDecimalIntegerLiteral("42") _, SignedDecimalIntegerLiteral("1337") _)) _), Set.empty)
     )
   }
 
   test("should plan hinted index seek when there are multiple indices") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop1")
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n "
@@ -569,21 +569,21 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Selection(
         Ands(Set(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_))_,
-        NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop2", PropertyKeyId(1))), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)
+        NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)), SingleQueryExpression(SignedDecimalIntegerLiteral("3") _), Set.empty)
       )
     )
   }
 
   test("should plan hinted index seek when there are multiple or indices") {
-    implicit val plan = new given {
+    val plan = new given {
       indexOn("Awesome", "prop1")
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
 
     val prop1Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
     val prop2Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("3")(pos))
-    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val prop1 = IndexedProperty(PropertyKeyToken("prop1", PropertyKeyId(0)), DoNotGetValue)
+    val prop2 = IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)
     val labelToken = LabelToken("Awesome", LabelId(0))
     val seek1: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop1), prop1Predicate, Set.empty)
     val seek2: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop2), prop2Predicate, Set.empty)
@@ -594,17 +594,17 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan hinted unique index seek") {
-    implicit val plan = new given {
+    val plan = new given {
       uniqueIndexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)
+      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), Set.empty)
     )
   }
 
   test("should plan hinted unique index seek when there are multiple unique indices") {
-    implicit val plan = new given {
+    val plan = new given {
       uniqueIndexOn("Awesome", "prop1")
       uniqueIndexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n"
@@ -612,13 +612,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Selection(
         Ands(Set(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_))_,
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop2", PropertyKeyId(1))), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)
+        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)), SingleQueryExpression(SignedDecimalIntegerLiteral("3") _), Set.empty)
       )
     )
   }
 
   test("should plan hinted unique index seek based on an IN predicate  when there are multiple unique indices") {
-    implicit val plan = new given {
+    val plan = new given {
       uniqueIndexOn("Awesome", "prop1")
       uniqueIndexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 IN [3] RETURN n"
@@ -626,13 +626,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Selection(
         Ands(Set(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_))_,
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop2", PropertyKeyId(1))), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)
+        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)), SingleQueryExpression(SignedDecimalIntegerLiteral("3") _), Set.empty)
       )
     )
   }
 
   test("should plan node by ID seek based on a predicate with an id collection variable as the rhs") {
-    implicit val plan = new given {
+    val plan = new given {
       cost =  {
         case (_: AllNodesScan, _, _) => 1000.0
         case (_: NodeByIdSeek, _, _) => 2.0
@@ -663,10 +663,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should use index when there are multiple labels on the node") {
     val plan = (new given {
       indexOn("Crew", "name")
-      cost = {
-        case (_: NodeByIdSeek, _, _) => 1.0
-        case _ => 100.0
-      }
+      indexOn("Matrix", "someOther")
     } getLogicalPlanFor "MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")._2
 
     plan shouldBe using[NodeIndexSeek]
@@ -680,8 +677,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val prop1Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
     val prop2Predicate = SingleQueryExpression(StringLiteral("apa")(pos))
-    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val prop1 = IndexedProperty(PropertyKeyToken("prop1", PropertyKeyId(0)), DoNotGetValue)
+    val prop2 = IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)
     val labelToken = LabelToken("Awesome", LabelId(0))
     val seek1: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop1), prop1Predicate, Set.empty)
     val seek2: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop2), prop2Predicate, Set.empty)
@@ -717,8 +714,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n")._2
 
     val prop2Predicate = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("apa")(pos)))(pos))
-    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val prop1 = IndexedProperty(PropertyKeyToken("prop1", PropertyKeyId(0)), DoNotGetValue)
+    val prop2 = IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)
     val labelToken = LabelToken("Awesome", LabelId(0))
     val prop1Predicate = GreaterThanOrEqual(prop("n", "prop1"), literalInt(42))(pos)
     val seek1 = Selection(Seq(prop1Predicate), NodeIndexScan("n", labelToken, prop1, Set.empty))

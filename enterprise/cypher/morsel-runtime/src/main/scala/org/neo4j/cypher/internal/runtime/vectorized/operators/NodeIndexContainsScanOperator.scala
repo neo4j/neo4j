@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
+import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api._
 import org.neo4j.values.storable.{TextValue, Values}
@@ -33,17 +34,16 @@ import org.opencypher.v9_0.util.CypherTypeException
 
 class NodeIndexContainsScanOperator(offset: Int,
                                     label: Int,
-                                    propertyKey: Int,
-                                    maybeValueFromIndexOffset: Option[Int],
+                                    property: SlottedIndexedProperty,
                                     valueExpr: Expression,
                                     argumentSize: SlotConfiguration.Size)
-  extends NodeIndexOperatorWithValues[NodeValueIndexCursor](offset, maybeValueFromIndexOffset) {
+  extends NodeIndexOperatorWithValues[NodeValueIndexCursor](offset, property.maybePropertyValueSlot) {
 
   override def init(context: QueryContext,
                     state: QueryState,
                     inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
     val valueIndexCursor: NodeValueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
-    val index = context.transactionalContext.schemaRead.index(label, propertyKey)
+    val index = context.transactionalContext.schemaRead.index(label, property.propertyKeyId)
     new OTask(valueIndexCursor, index)
   }
 
@@ -64,7 +64,7 @@ class NodeIndexContainsScanOperator(offset: Int,
 
         value match {
           case value: TextValue =>
-            read.nodeIndexSeek(index, valueIndexCursor, IndexOrder.NONE, maybeValueFromIndexOffset.isDefined, IndexQuery.stringContains(index.properties()(0), value.stringValue()))
+            read.nodeIndexSeek(index, valueIndexCursor, IndexOrder.NONE, property.maybePropertyValueSlot.isDefined, IndexQuery.stringContains(index.properties()(0), value.stringValue()))
           case Values.NO_VALUE =>
             // CONTAINS null does not produce any rows
             nullExpression = true

@@ -314,7 +314,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val a3_5 = plansv3_5.AllNodesScan("n", Set.empty)
     val n3_5 = plansv3_5.NodeIndexSeek("a",
       expressionsv3_5.LabelToken("b", utilv3_5.LabelId(2)),
-      Seq(expressionsv3_5.PropertyKeyToken("c", utilv3_5.PropertyKeyId(3))),
+      Seq(plansv3_5.IndexedProperty(expressionsv3_5.PropertyKeyToken("c", utilv3_5.PropertyKeyId(3)), plansv3_5.DoNotGetValue)),
       plansv3_5.SingleQueryExpression(var3_5), Set.empty)
 
     convert[ErrorPlan](n3_4) should be(n3_5)

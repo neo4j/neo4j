@@ -26,13 +26,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.internal.kernel.api.IndexReference
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexScanSlottedPipe(ident: String,
                                     label: LabelToken,
-                                    propertyKey: PropertyKeyToken,
-                                    maybeValueFromIndexOffset: Option[Int],
+                                    property: SlottedIndexedProperty,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
                                    (val id: Id = Id.INVALID_ID)
@@ -40,14 +39,14 @@ case class NodeIndexScanSlottedPipe(ident: String,
 
   override val offset: Int = slots.getLongOffsetFor(ident)
 
-  override val propertyOffsets: Array[Int] = maybeValueFromIndexOffset.toArray
+  override val propertyOffsets: Array[Int] = property.maybePropertyValueSlot.toArray
   private val propertyIndicesWithValues: Array[Int] = propertyOffsets.map(_ => 0)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
     if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id,propertyKey.nameId.id)
+      reference = context.indexReference(label.nameId.id, property.propertyKeyId)
     }
     reference
   }

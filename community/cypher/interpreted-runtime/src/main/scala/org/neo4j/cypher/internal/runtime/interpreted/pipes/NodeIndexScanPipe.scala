@@ -21,25 +21,25 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexedProperty
 import org.neo4j.internal.kernel.api.IndexReference
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
-                             propertyKey: PropertyKeyToken,
-                             getValueFromIndex: Boolean)
+                             property: IndexedProperty)
                             (val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
 
-  override val propertyIndicesWithValues: Array[Int] = if (getValueFromIndex) Array(0) else Array.empty
-  override val propertyNamesWithValues: Array[String] = if (getValueFromIndex) Array(ident + "." + propertyKey.name) else Array.empty
+  override val propertyIndicesWithValues: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
+  override val propertyNamesWithValues: Array[String] = if (property.shouldGetValue) Array(ident + "." + property.propertyKeyToken.name) else Array.empty
 
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
     if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
+      reference = context.indexReference(label.nameId.id, property.propertyKeyToken.nameId.id)
     }
     reference
   }

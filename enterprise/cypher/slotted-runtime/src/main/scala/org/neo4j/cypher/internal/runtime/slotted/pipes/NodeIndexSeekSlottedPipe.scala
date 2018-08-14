@@ -43,7 +43,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyId)
 
   private val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  override val propertyOffsets: Array[Int] = properties.map(_.slotOffset).collect{ case Some(o) => o }
+  override val propertyOffsets: Array[Int] = properties.map(_.maybePropertyValueSlot).collect{ case Some(o) => o }
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -84,6 +84,6 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   }
 }
 
-case class SlottedIndexedProperty(propertyKeyId: Int, slotOffset: Option[Int]) {
-  def getValueFromIndex: Boolean = slotOffset.isDefined
+case class SlottedIndexedProperty(propertyKeyId: Int, maybePropertyValueSlot: Option[Int]) {
+  def getValueFromIndex: Boolean = maybePropertyValueSlot.isDefined
 }

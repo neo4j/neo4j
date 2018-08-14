@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.ValueCategory
-import org.neo4j.storageengine.api.schema.CapableIndexDescriptor
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.{CypherExecutionException, LabelId, PropertyKeyId, symbols => types}
@@ -103,9 +102,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val valueCapability: ValueCapability = tps => {
           reference.valueCapability(tps.map(typeToValueCategory): _*) match {
               // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
-            case api.IndexValueCapability.YES => tps.map(_ => true)
-            case api.IndexValueCapability.PARTIAL => tps.map(_ => false)
-            case api.IndexValueCapability.NO => tps.map(_ => false)
+            case api.IndexValueCapability.YES => tps.map(_ => GetValue)
+            case api.IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
+            case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
         Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability))

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.IndexReference
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexSeekPipe(ident: String,
@@ -36,7 +36,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id)
 
-  override val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  override val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.shouldGetValue).map(_._2)
   override val propertyNamesWithValues: Array[String] = propertyIndicesWithValues.map(offset => ident + "." + properties(offset).propertyKeyToken.name)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
@@ -76,5 +76,3 @@ case class NodeIndexSeekPipe(ident: String,
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }
-
-case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: Boolean)

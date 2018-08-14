@@ -26,6 +26,7 @@ import org.mockito.Mockito.{RETURNS_DEEP_STUBS, when}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
 import org.neo4j.cypher.internal.runtime.{IndexedPrimitiveNodeWithProperties, QueryContext}
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
@@ -72,8 +73,8 @@ class NodeIndexContainsScanOperatorTest extends CypherFunSuite with ImplicitDumm
     val nDotProp = "n." + propertyKey.name
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference(nDotProp, nullable = false, CTAny)
-    val operator = new NodeIndexContainsScanOperator(slots.getLongOffsetFor("n"), label.nameId.id, propertyKey.nameId.id,
-      Some(slots.getReferenceOffsetFor(nDotProp)), Literal("hell"), slots.size())
+    val operator = new NodeIndexContainsScanOperator(slots.getLongOffsetFor("n"), label.nameId.id,
+      SlottedIndexedProperty(propertyKey.nameId.id, Some(slots.getReferenceOffsetFor(nDotProp))), Literal("hell"), slots.size())
 
     // When
     operator.init(queryContext, QueryState.EMPTY, inputRow).operate(outputRow, queryContext, QueryState.EMPTY)

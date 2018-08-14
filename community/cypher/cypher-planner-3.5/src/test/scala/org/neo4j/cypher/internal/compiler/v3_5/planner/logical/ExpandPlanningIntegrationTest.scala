@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, RegularPlannerQuery}
-import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId}
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -120,7 +120,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Person", "name")
     } getLogicalPlanFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r")._2 should equal(
         Expand(
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), Seq(PropertyKeyToken("name", PropertyKeyId(0))), SingleQueryExpression(StringLiteral("Andres")_), Set.empty),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("name", PropertyKeyId(0)), DoNotGetValue)), SingleQueryExpression(StringLiteral("Andres")_), Set.empty),
           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
         )
     )

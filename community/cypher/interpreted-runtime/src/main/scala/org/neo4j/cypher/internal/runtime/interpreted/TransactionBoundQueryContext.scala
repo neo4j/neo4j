@@ -315,7 +315,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       override protected def fetchNext(): IndexedNodeWithProperties = {
         getNextNodeRefAndValuesFromCursor(nodeCursor, if (needsValuesFromIndexSeek) propertyIndicesWithValues else Array.emptyIntArray).map {
           case (nodeRef, cursorValues) =>
-            IndexedNodeWithProperties(fromNodeProxy(entityAccessor.newNodeProxy(nodeRef)), actualValues.getOrElse(cursorValues))
+          IndexedNodeWithProperties(fromNodeProxy(entityAccessor.newNodeProxy(nodeRef)), actualValues.getOrElse(cursorValues))
         }.orNull
       }
 

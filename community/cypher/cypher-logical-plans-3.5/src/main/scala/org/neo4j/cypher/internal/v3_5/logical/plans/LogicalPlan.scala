@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, Strictness}
-import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.{Expression, Property}
 import org.opencypher.v9_0.util.Foldable._
 import org.opencypher.v9_0.util.Rewritable._
 import org.opencypher.v9_0.util.attribution.{Id, IdGen, SameId}
@@ -52,6 +52,15 @@ abstract class LogicalPlan(idGen: IdGen)
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
   def availableSymbols: Set[String]
+
+  /**
+    * Indexes can provide property values. This is the map of the property name (e.g. "a.prop")
+    * to the property expression for all properties that leaves of this plan get from indexes.
+    */
+  def availablePropertiesFromIndexes: Map[Property, String] = {
+    lhs.fold(Map.empty[Property, String])(_.availablePropertiesFromIndexes) ++
+      rhs.fold(Map.empty[Property, String])(_.availablePropertiesFromIndexes)
+  }
 
   val id: Id = idGen.id()
 
@@ -184,12 +193,12 @@ abstract class LogicalPlan(idGen: IdGen)
   def indexUsage: Seq[IndexUsage] = {
     import org.opencypher.v9_0.util.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
-      case NodeIndexSeek(idName, label, propertyKeys, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, propertyKeys.map(_.name))
-      case NodeUniqueIndexSeek(idName, label, propertyKeys, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, propertyKeys.map(_.name))
-      case NodeIndexScan(idName, label, propertyKey, _) =>
-        (acc) => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, propertyKey.name)
+      case NodeIndexSeek(idName, label, properties, _, _) =>
+        acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
+      case NodeUniqueIndexSeek(idName, label, properties, _, _) =>
+        acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
+      case NodeIndexScan(idName, label, property, _) =>
+        acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, property.propertyKeyToken.name)
       }
   }
 }

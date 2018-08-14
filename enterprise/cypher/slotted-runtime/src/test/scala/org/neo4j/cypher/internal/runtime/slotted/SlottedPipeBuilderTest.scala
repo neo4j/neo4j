@@ -700,7 +700,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val leaf = NodeIndexScan(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
+      IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
       Set.empty)
 
     // when
@@ -712,8 +712,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       NodeIndexScanSlottedPipe(
         "n",
         LabelToken("Awesome", LabelId(0)),
-        PropertyKeyToken("prop", PropertyKeyId(0)),
-        None,
+        SlottedIndexedProperty(0, None),
         SlotConfiguration.empty.newLong("n", false, CTNode), Size.zero)())
   }
 

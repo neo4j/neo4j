@@ -41,7 +41,7 @@ class NodeIndexSeekOperator(offset: Int,
   extends StreamingOperator with NodeIndexSeeker {
 
   private val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  val propertyOffsets: Array[Int] = properties.map(_.slotOffset).collect{ case Some(o) => o }
+  val propertyOffsets: Array[Int] = properties.map(_.maybePropertyValueSlot).collect{ case Some(o) => o }
 
   override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
     val queryState = new OldQueryState(context, resources = null, params = state.params)

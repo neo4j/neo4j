@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.{OrderCapability, ValueCapability}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, GetValueFromIndexBehavior}
 import org.opencypher.v9_0.util.symbols.CypherType
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
@@ -44,8 +45,8 @@ object IndexDescriptor {
     * Given the actual types of properties (one for a single-property index and multiple for a composite index)
     * does the index provide the actual values?
     */
-  type ValueCapability = Seq[CypherType] => Seq[Boolean]
-  val noValueCapability: ValueCapability = s => s.map(_ => false)
+  type ValueCapability = Seq[CypherType] => Seq[GetValueFromIndexBehavior]
+  val noValueCapability: ValueCapability = s => s.map(_ => DoNotGetValue)
 
   def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)))
 

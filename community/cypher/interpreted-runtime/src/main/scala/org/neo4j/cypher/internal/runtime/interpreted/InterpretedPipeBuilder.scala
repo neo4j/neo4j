@@ -81,23 +81,22 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case UndirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
         UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, relIdExpr), toNode, fromNode)(id = id)
 
-      case NodeIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
+      case NodeIndexSeek(ident, label, properties, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        // TODO getValueFromIndex
-        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)).toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
-      case NodeUniqueIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
+      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKeys.map(IndexedProperty(_, getValueFromIndex = false)).toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
-      case NodeIndexScan(ident, label, propertyKey, _) =>
-        NodeIndexScanPipe(ident, label, propertyKey, getValueFromIndex = false)(id = id)
+      case NodeIndexScan(ident, label, property, _) =>
+        NodeIndexScanPipe(ident, label, property)(id = id)
 
-      case NodeIndexContainsScan(ident, label, propertyKey, valueExpr, _) =>
-        NodeIndexContainsScanPipe(ident, label, propertyKey, getValueFromIndex = false, buildExpression(valueExpr))(id = id)
+      case NodeIndexContainsScan(ident, label, property, valueExpr, _) =>
+        NodeIndexContainsScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
 
-      case NodeIndexEndsWithScan(ident, label, propertyKey, valueExpr, _) =>
-        NodeIndexEndsWithScanPipe(ident, label, propertyKey, getValueFromIndex = false, buildExpression(valueExpr))(id = id)
+      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _) =>
+        NodeIndexEndsWithScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
     }
   }
 

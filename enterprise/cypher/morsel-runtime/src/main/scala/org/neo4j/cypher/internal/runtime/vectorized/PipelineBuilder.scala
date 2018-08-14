@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.PropertyKeyToken
 import org.opencypher.v9_0.util.InternalException
 
 class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverters, readOnly: Boolean)
@@ -62,39 +61,37 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           LazyLabel(label)(SemanticTable()),
           argumentSize)
 
-      case plans.NodeIndexScan(column, labelToken, propertyKey, _) =>
+      case plans.NodeIndexScan(column, labelToken, property, _) =>
         new NodeIndexScanOperator(
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
-          propertyKey.nameId.id,
-          getMaybeIndexedValueOffset(column, slots, propertyKey),
+          getIndexedProperty(column, property, slots),
           argumentSize)
 
-      case NodeIndexContainsScan(column, labelToken, propertyKey, valueExpr, _) =>
+      case NodeIndexContainsScan(column, labelToken, property, valueExpr, _) =>
         new NodeIndexContainsScanOperator(
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
-          propertyKey.nameId.id,
-          getMaybeIndexedValueOffset(column, slots, propertyKey),
+          getIndexedProperty(column, property, slots),
           converters.toCommandExpression(id, valueExpr),
           argumentSize)
 
-      case plans.NodeIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
+      case plans.NodeIndexSeek(column, label, properties, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
           slots.getLongOffsetFor(column),
           label,
-          getIndexedProperties(column, propertyKeys, slots),
+          properties.map(getIndexedProperty(column, _, slots)).toArray,
           argumentSize,
           valueExpr.map(converters.toCommandExpression(id, _)),
           indexSeekMode)
 
-      case plans.NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
+      case plans.NodeUniqueIndexSeek(column, label, properties, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
           slots.getLongOffsetFor(column),
           label,
-          getIndexedProperties(column, propertyKeys, slots),
+          properties.map(getIndexedProperty(column, _, slots)).toArray,
           argumentSize,
           valueExpr.map(converters.toCommandExpression(id, _)),
           indexSeekMode)
@@ -108,25 +105,15 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
     new StreamingPipeline(thisOp, slots, None)
   }
 
-  private def getIndexedProperties(column: String, propertyKeys: Seq[PropertyKeyToken], slots: SlotConfiguration): Array[SlottedIndexedProperty] = {
-    propertyKeys.map { pk =>
-      val maybeOffset =
-        getMaybeIndexedValueOffset(column, slots, pk)
-      SlottedIndexedProperty(pk.nameId.id, maybeOffset)
-    }.toArray
-  }
-
-  /**
-    * If the value of a property should be fetched from the index, this returns the slot offset to store the value in
-    */
-  private def getMaybeIndexedValueOffset(column: String, slots: SlotConfiguration, pk: PropertyKeyToken): Option[Int] = {
-    // TODO getValueFromIndex
-    if (false) {
-      val name = column + "." + pk.name
-      Some(slots.getReferenceOffsetFor(name))
-    } else {
-      None
-    }
+  private def getIndexedProperty(column: String, property: IndexedProperty, slots: SlotConfiguration): SlottedIndexedProperty = {
+    val maybeOffset =
+      if (property.shouldGetValue) {
+        val name = column + "." + property.propertyKeyToken.name
+        Some(slots.getReferenceOffsetFor(name))
+      } else {
+        None
+      }
+    SlottedIndexedProperty(property.propertyKeyToken.nameId.id, maybeOffset)
   }
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {

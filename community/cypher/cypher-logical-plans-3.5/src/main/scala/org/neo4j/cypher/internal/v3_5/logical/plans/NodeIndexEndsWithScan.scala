@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.expressions.{Expression, LabelToken, PropertyKeyToken}
 
 /**
   * This operator does a full scan of an index, producing rows for all entries that end with a string value
@@ -30,11 +31,24 @@ import org.opencypher.v9_0.expressions.{Expression, LabelToken, PropertyKeyToken
   */
 case class NodeIndexEndsWithScan(idName: String,
                                  label: LabelToken,
-                                 propertyKey: PropertyKeyToken,
+                                 property: IndexedProperty,
                                  valueExpr: Expression,
                                  argumentIds: Set[String])
                                 (implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 
-  val availableSymbols: Set[String] = argumentIds + idName
+  private val maybePropertyNameWithValues: Option[String] = property match {
+    case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => Some(idName + "." + propName)
+    case _ => None
+  }
+
+  val availableSymbols: Set[String] = argumentIds + idName ++ maybePropertyNameWithValues
+
+  override def availablePropertiesFromIndexes: Map[Property, String] = {
+    property match {
+      case IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
+        Map((Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName))
+      case _ => Map.empty
+    }
+  }
 }

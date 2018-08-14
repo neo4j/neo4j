@@ -256,19 +256,21 @@ object LogicalPlanConverter {
     }
   }
 
+  // TODO
   private def nodeIndexSeekAsCodeGenPlan(indexSeek: plans.NodeIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =
-      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
+      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.properties.map(_.propertyKeyToken.name),
         descriptorVar, expression), actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName, indexSeek.valueExpr, indexSeek)
   }
 
+  // TODO
   private def nodeUniqueIndexSeekAsCodeGen(indexSeek: plans.NodeUniqueIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =
-      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
+      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.properties.map(_.propertyKeyToken.name),
         descriptorVar, expression), actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName, indexSeek.valueExpr, indexSeek)

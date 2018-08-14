@@ -19,18 +19,32 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 
 /**
   * This operator does a full scan of an index, producing one row per entry.
   */
 case class NodeIndexScan(idName: String,
                          label: LabelToken,
-                         propertyKey: PropertyKeyToken,
+                         property: IndexedProperty,
                          argumentIds: Set[String])
                         (implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  private val maybePropertyNameWithValues: Option[String] = property match {
+    case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => Some(idName + "." + propName)
+    case _ => None
+  }
+
+  override val availableSymbols: Set[String] = argumentIds + idName ++ maybePropertyNameWithValues
+
+  override def availablePropertiesFromIndexes: Map[Property, String] = {
+    property match {
+      case IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
+        Map((Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName))
+      case _ => Map.empty
+    }
+  }
 }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.opencypher.v9_0.frontend.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
-import org.opencypher.v9_0.expressions.functions.Point
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions.functions.Point
+import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.util.InternalException
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, Boolean, Cardinalities) => InternalPlanDescription) {
 
@@ -62,12 +62,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case NodeByIdSeek(_, _, _) =>
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(), variables)
 
-      case NodeIndexSeek(_, label, propertyKeys, valueExpr, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, propertyKeys, valueExpr, unique = false, readOnly)
+      case NodeIndexSeek(_, label, properties, valueExpr, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
-      case NodeUniqueIndexSeek(_, label, propertyKeys, valueExpr, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, propertyKeys, valueExpr, unique = true, readOnly)
+      case NodeUniqueIndexSeek(_, label, properties, valueExpr, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
       case ProduceResult(_, _) =>
@@ -90,16 +90,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val arguments = Seq(CountNodesExpression(variable, labelNames.map(l => l.map(_.name))))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
-      case NodeIndexContainsScan(_, label, propertyKey, valueExpr, _) =>
-        val arguments = Seq(Index(label.name, Seq(propertyKey.name)), Expression(valueExpr))
+      case NodeIndexContainsScan(_, label, property, valueExpr, _) =>
+        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, arguments, variables)
 
-      case NodeIndexEndsWithScan(_, label, propertyKey, valueExpr, _) =>
-        val arguments = Seq(Index(label.name, Seq(propertyKey.name)), Expression(valueExpr))
+      case NodeIndexEndsWithScan(_, label, property, valueExpr, _) =>
+        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
 
-      case NodeIndexScan(_, label, propertyKey, _) =>
-        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, Seq(propertyKey.name))), variables)
+      case NodeIndexScan(_, label, property, _) =>
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, Seq(property.propertyKeyToken.name))), variables)
 
       case ProcedureCall(_, call) =>
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
@@ -203,9 +203,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
-      case NodeUniqueIndexSeek(id, label, propKeys, value, arguments) =>
+      case NodeUniqueIndexSeek(id, label, properties, value, arguments) =>
         PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
-                            Seq(Index(label.name, propKeys.map(_.name))), variables)
+                            Seq(Index(label.name, properties.map(_.propertyKeyToken.name))), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
