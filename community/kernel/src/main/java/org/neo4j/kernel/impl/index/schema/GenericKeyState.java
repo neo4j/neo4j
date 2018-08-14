@@ -836,7 +836,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             putBoolean( cursor, long0 );
             break;
         case NUMBER:
-            putNumber( cursor, long0, long1 );
+            putNumberIncludingType( cursor, long0, long1 );
             break;
         case ZONED_DATE_TIME_ARRAY:
             putArray( cursor, ( c, i ) -> putZonedDateTime( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
@@ -864,10 +864,29 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             break;
         case NUMBER_ARRAY:
             cursor.putByte( (byte) long1 );
-            putArray( cursor, ( c, i ) -> c.putLong( long0Array[i] ) );
+            putArray( cursor, numberArrayElementWriter( long1 ) );
             break;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+
+    private ArrayElementWriter numberArrayElementWriter( long long1 )
+    {
+        switch ( (int) long1 )
+        {
+        case RawBits.BYTE:
+            return ( c, i ) -> c.putByte( (byte) long0Array[i] );
+        case RawBits.SHORT:
+            return ( c, i ) -> c.putShort( (short) long0Array[i] );
+        case RawBits.INT:
+        case RawBits.FLOAT:
+            return ( c, i ) -> c.putInt( (int) long0Array[i] );
+        case RawBits.LONG:
+        case RawBits.DOUBLE:
+            return ( c, i ) -> c.putLong( long0Array[i] );
+        default:
+            throw new IllegalArgumentException( "Unknown number type " + long1 );
         }
     }
 
@@ -885,10 +904,28 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    private static void putNumber( PageCursor cursor, long long0, long long1 )
+    private static void putNumberIncludingType( PageCursor cursor, long long0, long long1 )
     {
         cursor.putByte( (byte) long1 );
-        cursor.putLong( long0 );
+        switch ( (int) long1 )
+        {
+        case RawBits.BYTE:
+            cursor.putByte( (byte) long0 );
+            break;
+        case RawBits.SHORT:
+            cursor.putShort( (short) long0 );
+            break;
+        case RawBits.INT:
+        case RawBits.FLOAT:
+            cursor.putInt( (int) long0 );
+            break;
+        case RawBits.LONG:
+        case RawBits.DOUBLE:
+            cursor.putLong( long0 );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown number type " + long1 );
+        }
     }
 
     private static void putBoolean( PageCursor cursor, long long0 )
@@ -1002,7 +1039,13 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case BOOLEAN_ARRAY:
             return readArray( cursor, ArrayType.BOOLEAN, this::readBoolean );
         case NUMBER_ARRAY:
-            return readNumberArray( cursor );
+            long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
+            ArrayType numberType = numberArrayTypeOf( (byte) long1 );
+            if ( numberType == null )
+            {
+                return false;
+            }
+            return readArray( cursor, numberType, numberArrayElementReader( long1 ) );
         default:
             return false;
         }
@@ -1026,27 +1069,49 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return true;
     }
 
-    private boolean readNumberArray( PageCursor cursor )
+    private ArrayElementReader numberArrayElementReader( long long1 )
     {
-        long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
-        if ( !setArrayLengthWhenReading( cursor ) )
+        switch ( (int) long1 )
         {
-            return false;
+        case RawBits.BYTE:
+            return c ->
+            {
+                writeInteger( c.getByte() );
+                return true;
+            };
+        case RawBits.SHORT:
+            return c ->
+            {
+                writeInteger( c.getShort() );
+                return true;
+            };
+        case RawBits.INT:
+            return c->
+            {
+                writeInteger( c.getInt() );
+                return true;
+            };
+        case RawBits.LONG:
+            return c->
+            {
+                writeInteger( c.getLong() );
+                return true;
+            };
+        case RawBits.FLOAT:
+            return c->
+            {
+                writeFloatingPoint( Float.intBitsToFloat( c.getInt() ) );
+                return true;
+            };
+        case RawBits.DOUBLE:
+            return c->
+            {
+                writeFloatingPoint( Double.longBitsToDouble( c.getLong() ) );
+                return true;
+            };
+        default:
+            throw new IllegalArgumentException( "Unknown number type " + long1 );
         }
-        initializeNumberArray( arrayLength );
-        ArrayType numberType = numberArrayTypeOf( (byte) long1 );
-        if ( numberType == null )
-        {
-            return false;
-        }
-
-        beginArray( arrayLength, numberType );
-        for ( int i = 0; i < arrayLength; i++ )
-        {
-            long0Array[i] = cursor.getLong();
-        }
-        endArray();
-        return true;
     }
 
     private static ArrayType numberArrayTypeOf( byte numberType )
@@ -1103,8 +1168,25 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private boolean readNumber( PageCursor cursor )
     {
         long1 = cursor.getByte();
-        long0 = cursor.getLong();
-        return true;
+        switch ( (int) long1 )
+        {
+        case RawBits.BYTE:
+            long0 = cursor.getByte();
+            return true;
+        case RawBits.SHORT:
+            long0 = cursor.getShort();
+            return true;
+        case RawBits.INT:
+        case RawBits.FLOAT:
+            long0 = cursor.getInt();
+            return true;
+        case RawBits.LONG:
+        case RawBits.DOUBLE:
+            long0 = cursor.getLong();
+            return true;
+        default:
+            return false;
+        }
     }
 
     private boolean readBoolean( PageCursor cursor )
