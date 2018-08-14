@@ -64,7 +64,7 @@ import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.asZoneOffse
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.isZoneId;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
+public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 {
     /**
      * This is the biggest size a static (as in non-dynamic, like string), non-array value can have.
@@ -73,29 +73,30 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     // TODO copy-pasted from individual keys
     // TODO also put this in Type enum
-    private static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
-                                                    Integer.BYTES + /* nanoOfSecond */
-                                                    Integer.BYTES;  /* timeZone */
-    private static final int SIZE_LOCAL_DATE_TIME = Long.BYTES +    /* epochSecond */
-                                                    Integer.BYTES;  /* nanoOfSecond */
-    private static final int SIZE_DATE =            Long.BYTES;     /* epochDay */
-    private static final int SIZE_ZONED_TIME =      Long.BYTES +    /* nanosOfDayUTC */
-                                                    Integer.BYTES;  /* zoneOffsetSeconds */
-    private static final int SIZE_LOCAL_TIME =      Long.BYTES;     /* nanoOfDay */
-    private static final int SIZE_DURATION =        Long.BYTES +    /* totalAvgSeconds */
-                                                    Integer.BYTES + /* nanosOfSecond */
-                                                    Long.BYTES +    /* months */
-                                                    Long.BYTES;     /* days */
-    private static final int SIZE_BOOLEAN =         Byte.BYTES;     /* byte for this boolean value */
-    private static final int SIZE_NUMBER_TYPE =     Byte.BYTES;     /* type of value */
-    private static final int SIZE_NUMBER_BYTE =     Byte.BYTES;     /* raw value bits */
-    private static final int SIZE_NUMBER_SHORT =    Short.BYTES;    /* raw value bits */
-    private static final int SIZE_NUMBER_INT =      Integer.BYTES;  /* raw value bits */
-    private static final int SIZE_NUMBER_LONG =     Long.BYTES;     /* raw value bits */
-    private static final int SIZE_NUMBER_FLOAT =    Integer.BYTES;  /* raw value bits */
-    private static final int SIZE_NUMBER_DOUBLE =   Long.BYTES;     /* raw value bits */
-    private static final int SIZE_ARRAY_LENGTH =    Integer.BYTES;
-    private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / Integer.SIZE;
+    public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
+                                                   Integer.BYTES + /* nanoOfSecond */
+                                                   Integer.BYTES;  /* timeZone */
+    public static final int SIZE_LOCAL_DATE_TIME = Long.BYTES +    /* epochSecond */
+                                                   Integer.BYTES;  /* nanoOfSecond */
+    public static final int SIZE_DATE =            Long.BYTES;     /* epochDay */
+    public static final int SIZE_ZONED_TIME =      Long.BYTES +    /* nanosOfDayUTC */
+                                                   Integer.BYTES;  /* zoneOffsetSeconds */
+    public static final int SIZE_LOCAL_TIME =      Long.BYTES;     /* nanoOfDay */
+    public static final int SIZE_DURATION =        Long.BYTES +    /* totalAvgSeconds */
+                                                   Integer.BYTES + /* nanosOfSecond */
+                                                   Long.BYTES +    /* months */
+                                                   Long.BYTES;     /* days */
+    public static final int SIZE_STRING_LENGTH =   Short.BYTES;    /* length of string byte array */
+    public static final int SIZE_BOOLEAN =         Byte.BYTES;     /* byte for this boolean value */
+    public static final int SIZE_NUMBER_TYPE =     Byte.BYTES;     /* type of value */
+    public static final int SIZE_NUMBER_BYTE =     Byte.BYTES;     /* raw value bits */
+    public static final int SIZE_NUMBER_SHORT =    Short.BYTES;    /* raw value bits */
+    public static final int SIZE_NUMBER_INT =      Integer.BYTES;  /* raw value bits */
+    public static final int SIZE_NUMBER_LONG =     Long.BYTES;     /* raw value bits */
+    public static final int SIZE_NUMBER_FLOAT =    Integer.BYTES;  /* raw value bits */
+    public static final int SIZE_NUMBER_DOUBLE =   Long.BYTES;     /* raw value bits */
+    private static final int SIZE_ARRAY_LENGTH =   Integer.BYTES;
+    private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / SIZE_NUMBER_BYTE;
 
     private static final long TRUE = 1;
     private static final long FALSE = 0;
@@ -437,7 +438,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case DURATION:
             return SIZE_DURATION;
         case TEXT:
-            return Short.BYTES +    /* short field with bytesLength value */
+            return SIZE_STRING_LENGTH +    /* short field with bytesLength value */
                     (int) long0;    /* bytesLength */
         case BOOLEAN:
             return SIZE_BOOLEAN;
@@ -459,7 +460,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             int stringArraySize = 0;
             for ( int i = 0; i < arrayLength; i++ )
             {
-                stringArraySize += Short.BYTES + /* short field with bytesLength value */
+                stringArraySize += SIZE_STRING_LENGTH + /* short field with bytesLength value */
                         (int) long0Array[i];    /* bytesLength */
             }
             return SIZE_ARRAY_LENGTH + stringArraySize;

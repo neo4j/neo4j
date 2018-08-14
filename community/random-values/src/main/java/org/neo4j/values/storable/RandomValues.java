@@ -60,7 +60,6 @@ import static org.neo4j.values.storable.Values.shortValue;
  */
 public class RandomValues
 {
-
     public enum Types
     {
         BOOLEAN,
@@ -873,13 +872,19 @@ public class RandomValues
      */
     public ArrayValue nextLocalTimeArray( int minLength, int maxLength )
     {
+        LocalTime[] array = nextLocalTimeArrayRaw( minLength, maxLength );
+        return Values.localTimeArray( array );
+    }
+
+    public LocalTime[] nextLocalTimeArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         LocalTime[] array = new LocalTime[length];
         for ( int i = 0; i < length; i++ )
         {
             array[i] = ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) );
         }
-        return Values.localTimeArray( array );
+        return array;
     }
 
     /**
@@ -891,13 +896,19 @@ public class RandomValues
      */
     public ArrayValue nextTimeArray( int minLength, int maxLength )
     {
+        OffsetTime[] array = nextTimeArrayRaw( minLength, maxLength );
+        return Values.timeArray( array );
+    }
+
+    public OffsetTime[] nextTimeArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         OffsetTime[] array = new OffsetTime[length];
         for ( int i = 0; i < length; i++ )
         {
             array[i] = OffsetTime.ofInstant( randomInstant(), UTC );
         }
-        return Values.timeArray( array );
+        return array;
     }
 
     /**
@@ -909,13 +920,19 @@ public class RandomValues
      */
     public ArrayValue nextDateTimeArray( int minLength, int maxLength )
     {
+        ZonedDateTime[] array = nextDateTimeArrayRaw( minLength, maxLength );
+        return Values.dateTimeArray( array );
+    }
+
+    public ZonedDateTime[] nextDateTimeArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         ZonedDateTime[] array = new ZonedDateTime[length];
         for ( int i = 0; i < length; i++ )
         {
             array[i] = ZonedDateTime.ofInstant( randomInstant(), UTC );
         }
-        return Values.dateTimeArray( array );
+        return array;
     }
 
     /**
@@ -927,13 +944,19 @@ public class RandomValues
      */
     public ArrayValue nextLocalDateTimeArray( int minLength, int maxLength )
     {
+        LocalDateTime[] array = nextLocalDateTimeArrayRaw( minLength, maxLength );
+        return Values.localDateTimeArray( array );
+    }
+
+    public LocalDateTime[] nextLocalDateTimeArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         LocalDateTime[] array = new LocalDateTime[length];
         for ( int i = 0; i < length; i++ )
         {
             array[i] = ofInstant( randomInstant(), UTC );
         }
-        return Values.localDateTimeArray( array );
+        return array;
     }
 
     /**
@@ -945,13 +968,19 @@ public class RandomValues
      */
     public ArrayValue nextDateArray( int minLength, int maxLength )
     {
+        LocalDate[] array = nextDateArrayRaw( minLength, maxLength );
+        return Values.dateArray( array );
+    }
+
+    public LocalDate[] nextDateArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         LocalDate[] array = new LocalDate[length];
         for ( int i = 0; i < length; i++ )
         {
             array[i] = ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) );
         }
-        return Values.dateArray( array );
+        return array;
     }
 
     /**
@@ -963,13 +992,19 @@ public class RandomValues
      */
     public ArrayValue nextPeriodArray( int minLength, int maxLength )
     {
+        Period[] array = nextPeriodArrayRaw( minLength, maxLength );
+        return Values.durationArray( array );
+    }
+
+    public Period[] nextPeriodArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         Period[] array = new Period[length];
         for ( int i = 0; i < length; i++ )
         {
             array[i] = Period.of( generator.nextInt(), generator.nextInt( 12 ), generator.nextInt( 28 ) );
         }
-        return Values.durationArray( array );
+        return array;
     }
 
     /**
@@ -981,13 +1016,19 @@ public class RandomValues
      */
     public ArrayValue nextDurationArray( int minLength, int maxLength )
     {
+        Duration[] array = nextDurationArrayRaw( minLength, maxLength );
+        return Values.durationArray( array );
+    }
+
+    public Duration[] nextDurationArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         Duration[] array = new Duration[length];
         for ( int i = 0; i < length; i++ )
         {
             array[i] = Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS );
         }
-        return Values.durationArray( array );
+        return array;
     }
 
     /**
@@ -999,13 +1040,19 @@ public class RandomValues
      */
     public DoubleArray nextDoubleArray( int minLength, int maxLength )
     {
+        double[] array = nextDoubleArrayRaw( minLength, maxLength );
+        return Values.doubleArray( array );
+    }
+
+    public double[] nextDoubleArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         double[] doubles = new double[length];
         for ( int i = 0; i < length; i++ )
         {
             doubles[i] = generator.nextDouble();
         }
-        return Values.doubleArray( doubles );
+        return doubles;
     }
 
     /**
@@ -1017,13 +1064,19 @@ public class RandomValues
      */
     public FloatArray nextFloatArray( int minLength, int maxLength )
     {
+        float[] array = nextFloatArrayRaw( minLength, maxLength );
+        return Values.floatArray( array );
+    }
+
+    public float[] nextFloatArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         float[] floats = new float[length];
         for ( int i = 0; i < length; i++ )
         {
             floats[i] = generator.nextFloat();
         }
-        return Values.floatArray( floats );
+        return floats;
     }
 
     /**
@@ -1048,13 +1101,19 @@ public class RandomValues
      */
     public LongArray nextLongArray( int minLength, int maxLength )
     {
+        long[] array = nextLongArrayRaw( minLength, maxLength );
+        return Values.longArray( array );
+    }
+
+    public long[] nextLongArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         long[] longs = new long[length];
         for ( int i = 0; i < length; i++ )
         {
             longs[i] = generator.nextLong();
         }
-        return Values.longArray( longs );
+        return longs;
     }
 
     /**
@@ -1066,13 +1125,19 @@ public class RandomValues
      */
     public IntArray nextIntArray( int minLength, int maxLength )
     {
+        int[] array = nextIntArrayRaw( minLength, maxLength );
+        return Values.intArray( array );
+    }
+
+    public int[] nextIntArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         int[] ints = new int[length];
         for ( int i = 0; i < length; i++ )
         {
             ints[i] = generator.nextInt();
         }
-        return Values.intArray( ints );
+        return ints;
     }
 
     /**
@@ -1084,13 +1149,19 @@ public class RandomValues
      */
     public BooleanArray nextBooleanArray( int minLength, int maxLength )
     {
+        boolean[] array = nextBooleanArrayRaw( minLength, maxLength );
+        return Values.booleanArray( array );
+    }
+
+    public boolean[] nextBooleanArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         boolean[] booleans = new boolean[length];
         for ( int i = 0; i < length; i++ )
         {
             booleans[i] = generator.nextBoolean();
         }
-        return Values.booleanArray( booleans );
+        return booleans;
     }
 
     /**
@@ -1101,6 +1172,12 @@ public class RandomValues
      * @return the next pseudorandom {@link ByteArray}.
      */
     public ByteArray nextByteArray( int minLength, int maxLength )
+    {
+        byte[] array = nextByteArrayRaw( minLength, maxLength );
+        return Values.byteArray( array );
+    }
+
+    public byte[] nextByteArrayRaw( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
@@ -1120,7 +1197,7 @@ public class RandomValues
                 rand >>= Byte.SIZE;
             }
         }
-        return Values.byteArray( bytes );
+        return bytes;
     }
 
     /**
@@ -1132,13 +1209,19 @@ public class RandomValues
      */
     public ShortArray nextShortArray( int minLength, int maxLength )
     {
+        short[] array = nextShortArrayRaw( minLength, maxLength );
+        return Values.shortArray( array );
+    }
+
+    public short[] nextShortArrayRaw( int minLength, int maxLength )
+    {
         int length = intBetween( minLength, maxLength );
         short[] shorts = new short[length];
         for ( int i = 0; i < length; i++ )
         {
             shorts[i] = (short) generator.nextInt();
         }
-        return Values.shortArray( shorts );
+        return shorts;
     }
 
     /**

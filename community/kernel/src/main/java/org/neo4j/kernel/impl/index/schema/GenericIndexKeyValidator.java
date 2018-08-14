@@ -85,6 +85,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
 
     private static int worstCaseLength( AnyValue value )
     {
+        // todo we can simply multiply length with BIGGEST_STATIC_SIZE
         if ( value.isSequenceValue() )
         {
             SequenceValue sequenceValue = (SequenceValue) value;
