@@ -214,6 +214,13 @@ abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) 
 }
 
 abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
+  /**
+    * The property names with values from the index
+    */
+  def propertyNamesWithValues: Traversable[String]
+}
+
+abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
   def valueExpr: QueryExpression[Expression]
 }
 

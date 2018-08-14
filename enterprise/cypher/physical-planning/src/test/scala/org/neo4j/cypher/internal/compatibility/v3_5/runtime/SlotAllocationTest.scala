@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
-import org.opencypher.v9_0.ast.ASTAnnotationMap
-import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, PlannerQuery, VarPatternLength}
-import org.opencypher.v9_0.util.LabelId
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions._
+import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, VarPatternLength}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, _}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => logicalPlans}
+import org.opencypher.v9_0.ast.ASTAnnotationMap
+import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 //noinspection NameBooleanParameters
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -52,6 +52,39 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations should have size 1
     allocations(plan.id) should equal(
       SlotConfiguration(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
+  }
+
+  test("index seek without values") {
+    // given
+    val label = LabelToken("label2", LabelId(0))
+    val seekExpression = SingleQueryExpression(literalInt(42))
+    val plan = logicalPlans.NodeIndexSeek(x, label, Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), seekExpression, Set.empty)
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
+
+    // then
+    allocations should have size 1
+    allocations(plan.id) should equal(
+      SlotConfiguration(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
+  }
+
+
+  test("index seek with values") {
+    // given
+    val label = LabelToken("label2", LabelId(0))
+    val seekExpression = SingleQueryExpression(literalInt(42))
+    val plan = logicalPlans.NodeIndexSeek(x, label, Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), GetValue)), seekExpression, Set.empty)
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
+
+    // then
+    allocations should have size 1
+    allocations(plan.id) should equal(
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "x.prop" -> RefSlot(0, nullable = false, CTAny)), 1, 1))
   }
 
   test("limit should not introduce slots") {

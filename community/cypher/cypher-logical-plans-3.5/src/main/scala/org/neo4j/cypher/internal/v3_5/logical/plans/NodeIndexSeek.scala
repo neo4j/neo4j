@@ -31,9 +31,9 @@ case class NodeIndexSeek(idName: String,
                          properties: Seq[IndexedProperty],
                          valueExpr: QueryExpression[Expression],
                          argumentIds: Set[String])
-                        (implicit idGen: IdGen) extends IndexLeafPlan(idGen) {
+                        (implicit idGen: IdGen) extends IndexSeekLeafPlan(idGen) {
 
-  private val propertyNamesWithValues: Seq[String] = properties.collect {
+  override val propertyNamesWithValues: Seq[String] = properties.collect {
     case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => idName + "." + propName
   }
 

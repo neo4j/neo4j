@@ -261,6 +261,14 @@ object SlotAllocation {
     */
   private def allocate(lp: LogicalPlan, nullable: Boolean, argument: SlotConfiguration): SlotConfiguration =
     lp match {
+      case leaf: IndexLeafPlan =>
+        val result = argument
+        result.newLong(leaf.idName, nullable, CTNode)
+        leaf.propertyNamesWithValues.foreach { name =>
+          result.newReference(name, nullable = false, typ = CTAny)
+        }
+        result
+
       case leaf: NodeLogicalLeafPlan =>
         val result = argument
         result.newLong(leaf.idName, nullable, CTNode)

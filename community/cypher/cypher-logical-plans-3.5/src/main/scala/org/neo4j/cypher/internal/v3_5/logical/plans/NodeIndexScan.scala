@@ -31,12 +31,14 @@ case class NodeIndexScan(idName: String,
                          property: IndexedProperty,
                          argumentIds: Set[String])
                         (implicit idGen: IdGen)
-  extends NodeLogicalLeafPlan(idGen) {
+  extends IndexLeafPlan(idGen) {
 
   private val maybePropertyNameWithValues: Option[String] = property match {
     case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => Some(idName + "." + propName)
     case _ => None
   }
+
+  override def propertyNamesWithValues: Traversable[String] = maybePropertyNameWithValues
 
   override val availableSymbols: Set[String] = argumentIds + idName ++ maybePropertyNameWithValues
 
