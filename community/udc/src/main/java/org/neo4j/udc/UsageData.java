@@ -21,10 +21,10 @@ package org.neo4j.udc;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 

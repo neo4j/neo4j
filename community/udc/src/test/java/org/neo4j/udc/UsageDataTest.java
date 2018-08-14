@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sysinfo;
+package org.neo4j.udc;
 
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
