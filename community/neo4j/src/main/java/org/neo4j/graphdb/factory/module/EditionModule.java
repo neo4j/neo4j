@@ -124,6 +124,8 @@ public abstract class EditionModule
 
     public NetworkConnectionTracker connectionTracker;
 
+    private final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
+
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
             LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )
     {
@@ -283,21 +285,11 @@ public abstract class EditionModule
 
     public TransactionMonitor createTransactionMonitor()
     {
-        return DatabaseStatisticsHolder.getInstance();
+        return databaseStatistics;
     }
 
     public TransactionCounters globalTransactionCounter()
     {
-        return DatabaseStatisticsHolder.getInstance();
-    }
-
-    private static class DatabaseStatisticsHolder
-    {
-        private static final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
-
-        static DatabaseTransactionStats getInstance()
-        {
-            return databaseStatistics;
-        }
+        return databaseStatistics;
     }
 }
