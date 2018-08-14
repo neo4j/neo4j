@@ -118,14 +118,6 @@ public class SecuritySettings implements LoadableConfig
                     BOOLEAN );
 
     //=========================================================================
-    // Native graph settings
-    //=========================================================================
-    @Description( "Use NativeGraphRealm for native security." )
-    @Internal
-    public static final Setting<Boolean> native_graph_enabled =
-            setting( "dbms.security.native.graph_enabled", BOOLEAN, "false" );
-
-    //=========================================================================
     // LDAP settings
     //=========================================================================
 

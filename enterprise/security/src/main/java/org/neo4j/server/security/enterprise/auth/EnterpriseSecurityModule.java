@@ -82,11 +82,6 @@ public class EnterpriseSecurityModule extends SecurityModule
         super( EnterpriseEditionSettings.ENTERPRISE_SECURITY_MODULE_ID );
     }
 
-    public EnterpriseSecurityModule( String securityModuleId )
-    {
-        super( securityModuleId );
-    }
-
     @Override
     public void setup( Dependencies dependencies ) throws KernelException
     {
@@ -166,15 +161,11 @@ public class EnterpriseSecurityModule extends SecurityModule
         List<Realm> realms = new ArrayList<>( securityConfig.authProviders.size() + 1 );
         SecureHasher secureHasher = new SecureHasher();
 
-        EnterpriseUserManager internalRealm = null;
+        InternalFlatFileRealm internalRealm = null;
         if ( securityConfig.hasNativeProvider )
         {
             internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
-            realms.add( (Realm) internalRealm );
-        }
-        else if ( config.get( SecuritySettings.native_graph_enabled ) )
-        {
-            throw illegalConfiguration("Native graph enabled but native auth provider is not configured."  );
+            realms.add( internalRealm );
         }
 
         if ( securityConfig.hasLdapProvider )
@@ -217,13 +208,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         return orderedActiveRealms;
     }
 
-    protected EnterpriseUserManager createInternalRealm( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
-    {
-        return createInternalFlatFileRealm( config, logProvider, fileSystem, jobScheduler );
-    }
-
-    protected static InternalFlatFileRealm createInternalFlatFileRealm( Config config, LogProvider logProvider,
+    public static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         return new InternalFlatFileRealm(
@@ -239,7 +224,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             );
     }
 
-    protected static AuthenticationStrategy createAuthenticationStrategy( Config config )
+    private static AuthenticationStrategy createAuthenticationStrategy( Config config )
     {
         return new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config );
     }
