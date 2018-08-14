@@ -183,7 +183,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     newMockedLogicalPlan(ids.toSet, solveds, cardinalities)
 
   def newMockedLogicalPlanWithProjections(solveds: Solveds, ids: String*): LogicalPlan = {
-    val projections = RegularQueryProjection(projections = ids.map((id) => id -> varFor(id)).toMap)
+    val projections = RegularQueryProjection(projections = ids.map(id => id -> varFor(id)).toMap)
     val solved = RegularPlannerQuery(
       horizon = projections,
       queryGraph = QueryGraph.empty.addPatternNodes(ids: _*)
@@ -196,17 +196,19 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlan(idNames: Set[String],
                            solveds: Solveds = new Solveds,
                            cardinalities: Cardinalities = new Cardinalities,
-                           hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
+                           hints: Set[Hint] = Set[Hint](),
+                           availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
     val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
-    newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames, solved, Cardinality(1))
+    newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames, solved, Cardinality(1), availablePropertiesFromIndexes)
   }
 
   def newMockedLogicalPlanWithSolved(solveds: Solveds = new Solveds,
                                      cardinalities: Cardinalities = new Cardinalities,
                                      idNames: Set[String],
                                      solved: PlannerQuery,
-                                     cardinality: Cardinality = Cardinality(1)): LogicalPlan = {
-    val res = FakePlan(idNames)
+                                     cardinality: Cardinality = Cardinality(1),
+                                     availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
+    val res = FakePlan(idNames, availablePropertiesFromIndexes)
     solveds.set(res.id, solved)
     cardinalities.set(res.id, cardinality)
     res
@@ -215,9 +217,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanWithPatterns(solveds: Solveds = new Solveds,
                                        cardinalities: Cardinalities = new Cardinalities,
                                        idNames: Set[String],
-                                       patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
+                                       patterns: Seq[PatternRelationship] = Seq.empty,
+                                       availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
     val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns))
-    newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames, solved, Cardinality(0))
+    newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames, solved, Cardinality(0), availablePropertiesFromIndexes)
   }
 
   val config = CypherPlannerConfiguration(
@@ -301,7 +304,7 @@ case object namePatternPredicatePatternElements extends Rewriter {
   })
 }
 
-case class FakePlan(availableSymbols: Set[String] = Set.empty)(implicit idGen: IdGen)
+case class FakePlan(availableSymbols: Set[String] = Set.empty, override val availablePropertiesFromIndexes: Map[Property, String] = Map.empty)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   def rhs = None
   def lhs = None

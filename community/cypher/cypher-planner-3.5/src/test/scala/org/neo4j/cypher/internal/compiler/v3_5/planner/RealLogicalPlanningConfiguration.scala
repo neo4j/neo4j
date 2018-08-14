@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CardinalityCostModel, ExpressionEvaluator, Metrics, StatisticsBackedCardinalityModel}
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProcedureSignature}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.util.{Cardinality, Cost}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
@@ -49,6 +49,8 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics
   override def indexes: Set[(String, Seq[String])] = Set.empty
   override def uniqueIndexes: Set[(String, Seq[String])] = Set.empty
+  override def indexesWithValues: Set[(String, Seq[String])] = Set.empty
+  override def procedureSignatures: Set[ProcedureSignature] = Set.empty
   override def labelCardinality: Map[String, Cardinality] = Map.empty
   override def knownLabels: Set[String] = Set.empty
   override def labelsById: Map[Int, String] = Map.empty

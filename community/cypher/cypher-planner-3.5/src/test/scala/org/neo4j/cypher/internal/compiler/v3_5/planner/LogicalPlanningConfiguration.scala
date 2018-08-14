@@ -21,12 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProcedureSignature}
+import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.util.symbols.TypeSpec
 import org.opencypher.v9_0.util.{Cardinality, Cost, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+
+import scala.collection.mutable
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
@@ -35,6 +39,9 @@ trait LogicalPlanningConfiguration {
   def graphStatistics: GraphStatistics
   def indexes: Set[(String, Seq[String])]
   def uniqueIndexes: Set[(String, Seq[String])]
+  // A subset of indexes and uniqueIndexes
+  def indexesWithValues: Set[(String, Seq[String])]
+  def procedureSignatures: Set[ProcedureSignature]
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
   def labelsById: Map[Int, String]
@@ -51,14 +58,22 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def graphStatistics = parent.graphStatistics
   override def indexes = parent.indexes
   override def uniqueIndexes = parent.uniqueIndexes
+  override def indexesWithValues = parent.indexesWithValues
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
   override def labelsById = parent.labelsById
   override def qg = parent.qg
+  override def procedureSignatures: Set[ProcedureSignature] = parent.procedureSignatures
 }
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {
   self: LogicalPlanningConfiguration =>
+
+  private var mappings = mutable.Map.empty[Expression, TypeSpec]
+
+  def addTypeToSemanticTable(expr: Expression, typ: TypeSpec): Unit = {
+    mappings += ((expr, typ))
+  }
 
   override def updateSemanticTableWithTokens(table: SemanticTable): SemanticTable = {
     def addLabelIfUnknown(labelName: String) =
@@ -78,6 +93,12 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
     }
     labelCardinality.keys.foreach(addLabelIfUnknown)
     knownLabels.foreach(addLabelIfUnknown)
-    table
+
+    var theTable = table
+    for((expr, typ) <- mappings) {
+      theTable = theTable.copy(types = theTable.types + ((expr, ExpressionTypeInfo(typ, None))))
+    }
+
+    theTable
   }
 }

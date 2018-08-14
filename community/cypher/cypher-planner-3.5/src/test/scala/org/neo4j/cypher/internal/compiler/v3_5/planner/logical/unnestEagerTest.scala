@@ -23,17 +23,17 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Eagerness.unnestEager
 import org.neo4j.cypher.internal.ir.v3_5.CreateNode
 import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions.PropertyKeyName
+import org.opencypher.v9_0.util.attribution.Attributes
 import org.opencypher.v9_0.util.helpers.fixedPoint
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.attribution.Attributes
-import org.opencypher.v9_0.expressions.{PropertyKeyName, RelTypeName}
 
 class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should unnest create from rhs of apply") {
     val lhs = newMockedLogicalPlan()
     val rhs = newMockedLogicalPlan()
-    val create = Create(Argument(), nodes = List(CreateNode("a", Seq.empty, None)), Nil)
+    val create = Create(rhs, nodes = List(CreateNode("a", Seq.empty, None)), Nil)
     val input = Apply(lhs, create)
 
     rewrite(input) should equal(create.copy(source = Apply(lhs, rhs)))

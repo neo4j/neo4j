@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 trait CandidateSelectorFactory extends ((LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector)
 
 object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
-  val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
   private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
   override def apply(context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): CandidateSelector =

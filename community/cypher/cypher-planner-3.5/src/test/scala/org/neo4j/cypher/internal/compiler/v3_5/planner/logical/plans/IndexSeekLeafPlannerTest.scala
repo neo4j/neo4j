@@ -100,7 +100,41 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) =>  ()
+        case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), SingleQueryExpression(`lit42`), _)) => ()
+      }
+    }
+  }
+
+  test("index seek without values when there is an index on the property") {
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      qg = queryGraph(lessThanPredicate, hasLabels)
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, ctx, solveds, cardinalities)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) => ()
+      }
+    }
+  }
+
+  test("index seek with values (from index) when there is an index on the property") {
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      qg = queryGraph(lessThanPredicate, hasLabels)
+
+      indexWithValuesOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, ctx, solveds, cardinalities)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), _, _)) => ()
       }
     }
   }
@@ -261,7 +295,41 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), SingleQueryExpression(`lit42`), _)) => ()
+      }
+    }
+  }
+
+  test("unique index seek without values when there is an index on the property") {
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      qg = queryGraph(lessThanPredicate, hasLabels)
+
+      uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      // when
+      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg, ctx, solveds, cardinalities)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) => ()
+      }
+    }
+  }
+
+  test("unique index seek with values (from index) when there is an index on the property") {
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      qg = queryGraph(lessThanPredicate, hasLabels)
+
+      uniqueIndexWithValuesOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      // when
+      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg, ctx, solveds, cardinalities)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), _, _)) => ()
       }
     }
   }

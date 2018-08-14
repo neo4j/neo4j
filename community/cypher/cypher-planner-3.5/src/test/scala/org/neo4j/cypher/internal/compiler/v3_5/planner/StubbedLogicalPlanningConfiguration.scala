@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.opencypher.v9_0.util.{Cardinality, Cost, LabelId, Selectivity}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProcedureSignature}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.{Expression, HasLabels}
+import org.opencypher.v9_0.util.{Cardinality, Cost, LabelId}
 
 class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
@@ -50,18 +50,36 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   var indexes: Set[(String, Seq[String])] = Set.empty
   var uniqueIndexes: Set[(String, Seq[String])] = Set.empty
+  // A subset of indexes and uniqueIndexes
+  var indexesWithValues: Set[(String, Seq[String])] = Set.empty
+
+  var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
   lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
 
-  def indexOn(label: String, properties: String*) {
+  def indexOn(label: String, properties: String*): Unit = {
     indexes = indexes + (label -> properties)
   }
 
-  def uniqueIndexOn(label: String, properties: String*) {
+  def indexWithValuesOn(label: String, properties: String*): Unit = {
+    indexOn(label, properties: _*)
+    indexesWithValues = indexesWithValues + (label -> properties)
+  }
+
+  def uniqueIndexOn(label: String, properties: String*): Unit = {
     uniqueIndexes = uniqueIndexes + (label -> properties)
   }
 
-  def costModel() = cost.orElse(parent.costModel())
+  def uniqueIndexWithValuesOn(label: String, properties: String*): Unit = {
+    uniqueIndexOn(label, properties: _*)
+    indexesWithValues = indexesWithValues + (label -> properties)
+  }
+
+  def procedure(signature: ProcedureSignature): Unit = {
+    procedureSignatures += signature
+  }
+
+  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = cost.orElse(parent.costModel())
 
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, Selections}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions.PartialPredicate.PartialPredicateWrapper
 import org.opencypher.v9_0.expressions.{Expression, Ors}
+import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
 
@@ -35,7 +35,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
 
         // This is a Seq of possible solutions per expression
         val plansPerExpression: Seq[Seq[LeafPlansForVariable]] = exprs.toSeq.map {
-          (e: Expression) =>
+          e: Expression =>
             val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, context))
             val qgForExpression = qg.copy(selections = Selections.from(e))
             plansForVariables.map(p =>

@@ -30,9 +30,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v3_5._
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.opencypher.v9_0.ast._
@@ -106,22 +107,35 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       }
 
       private def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-        if (config.uniqueIndexes((labelName, propertyKeys)))
-          Some(IndexDescriptor(
-            semanticTable.resolvedLabelNames(labelName),
-            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_))
-          ))
-        else
+        if (config.uniqueIndexes((labelName, propertyKeys))) {
+          Some(indexFor(labelName, propertyKeys))
+        }
+        else {
           None
+        }
 
       private def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-        if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys)))
-          Some(IndexDescriptor(
-            semanticTable.resolvedLabelNames(labelName),
-            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_))
-          ))
-        else
+        if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys))) {
+          Some(indexFor(labelName, propertyKeys))
+        }
+        else {
           None
+        }
+
+      private def indexFor(labelName: String, propertyKeys: Seq[String]) = {
+        // Our fake index either can always or never return property values
+        val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) GetValue else DoNotGetValue
+        val valueCapability: ValueCapability = _ => propertyKeys.map(_ => canGetValue)
+        IndexDescriptor(
+          semanticTable.resolvedLabelNames(labelName),
+          propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
+          valueCapability = valueCapability
+        )
+      }
+
+      override def procedureSignature(name: QualifiedName): ProcedureSignature = {
+        config.procedureSignatures.find(_.name == name).get
+      }
 
       override def indexExistsForLabel(labelId: Int): Boolean = {
         val labelName = config.labelsById(labelId)
@@ -131,7 +145,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
         config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey))
 
-      override def getOptPropertyKeyId(propertyKeyName: String) =
+
+      override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+        indexGet(labelName, propertyKeys)
+
+      override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)
 
       override def getOptLabelId(labelName: String): Option[Int] =

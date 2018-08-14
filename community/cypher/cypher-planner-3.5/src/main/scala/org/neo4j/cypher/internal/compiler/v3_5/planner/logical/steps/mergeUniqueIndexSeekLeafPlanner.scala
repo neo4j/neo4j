@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlansForVariable, LogicalPlanningContext}
-import org.opencypher.v9_0.ast._
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, QueryExpression}
-import org.opencypher.v9_0.expressions.{Expression, LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexedProperty, LogicalPlan, QueryExpression}
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.expressions.{Expression, LabelToken}
 
 /*
  * Plan the following type of plan
@@ -55,14 +55,14 @@ object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   }
 
   override def constructPlan(idName: String,
-                              label: LabelToken,
-                              propertyKeys: Seq[PropertyKeyToken],
-                              valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint],
-                              argumentIds: Set[String],
+                             label: LabelToken,
+                             properties: Seq[IndexedProperty],
+                             valueExpr: QueryExpression[Expression],
+                             hint: Option[UsingIndexHint],
+                             argumentIds: Set[String],
                              context: LogicalPlanningContext)
                             (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, solvedPredicates, hint, argumentIds, context)
+      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, properties, valueExpr, solvedPredicates, hint, argumentIds, context)
 
   override def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)
