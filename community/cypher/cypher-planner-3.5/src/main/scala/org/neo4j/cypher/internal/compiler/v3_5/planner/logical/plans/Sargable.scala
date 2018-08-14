@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.{functions, _}
+import org.opencypher.v9_0.util.symbols._
 
 object WithSeekableArgs {
   def unapply(v: Any) = v match {
@@ -144,8 +145,36 @@ sealed trait Sargable[+T <: Expression] {
   def name = ident.name
 }
 
+object Seekable {
+  /**
+    * Find a common super-type for cases where we have multiple TypeSpecs, by combing all TypeSpecs as well as their contained type ranges.
+    * For example two range predicates over the same property, with different value types.
+    */
+  def combineMultipleTypeSpecs(specs: Seq[TypeSpec]): CypherType = {
+    val singleSpec = specs.reduceLeftOption {
+      (spec1, spec2) => spec1 leastUpperBounds spec2
+    }.getOrElse(CTAny.invariant)
+    cypherTypeForTypeSpec(singleSpec)
+  }
+
+  /**
+    * A single TypeSpec can include multiple ranges. Find the common super-type by combining all ranges.
+    */
+  def cypherTypeForTypeSpec(spec: TypeSpec): CypherType = {
+    spec.ranges.map(_.lower).reduceLeftOption {
+      (typ1, typ2) => typ1.leastUpperBound(typ2)
+    }.getOrElse(CTAny)
+  }
+}
+
 sealed trait Seekable[T <: Expression] extends Sargable[T] {
   def dependencies: Set[LogicalVariable]
+
+  /**
+    * Return the type of the property that this seekable refers to.
+    * E.g., for "n.prop = 5" this would return CTInt
+    */
+  def propertyValueType(semanticTable: SemanticTable): CypherType
 }
 
 sealed trait EqualitySeekable[T <: Expression] extends Seekable[T] {
@@ -156,6 +185,8 @@ case class IdSeekable(expr: FunctionInvocation, ident: LogicalVariable, args: Se
   extends EqualitySeekable[FunctionInvocation] {
 
   def dependencies: Set[LogicalVariable] = args.dependencies
+
+  override def propertyValueType(semanticTable: SemanticTable): CypherType = CTAny
 }
 
 case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args: SeekableArgs)
@@ -163,6 +194,22 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
 
   def propertyKey: PropertyKeyName = expr.propertyKey
   def dependencies: Set[LogicalVariable] = args.dependencies
+
+  override def propertyValueType(semanticTable: SemanticTable): CypherType = {
+    args match {
+      case SingleSeekableArg(seekableExpr) =>
+        Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(seekableExpr))
+      case ManySeekableArgs(seekableExpr) =>
+        seekableExpr match {
+          // Equality is rewritten to IN AFTER semantic check. Thus, we are lacking type information for the ListLiteral
+          case ListLiteral(expressions) =>
+            Seekable.combineMultipleTypeSpecs(expressions.map(exp => semanticTable.getActualTypeFor(exp)))
+          // When the query actually contained an IN, the list could be autoparameterized
+          case _ =>
+            Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(args.expr).unwrapLists)
+        }
+    }
+  }
 }
 
 sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
@@ -176,6 +223,8 @@ case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr
 
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
+
+  override def propertyValueType(semanticTable: SemanticTable): CypherType = CTString
 }
 
 case class PointDistanceSeekable(ident: LogicalVariable,
@@ -189,6 +238,8 @@ case class PointDistanceSeekable(ident: LogicalVariable,
 
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(PointDistanceSeekRangeWrapper(range)(range.point.position))
+
+  override def propertyValueType(semanticTable: SemanticTable): CypherType = CTPoint
 }
 
 case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
@@ -208,6 +259,10 @@ case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: Prop
 
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(InequalitySeekRangeWrapper(range)(ident.position))
+
+  override def propertyValueType(semanticTable: SemanticTable): CypherType = {
+    Seekable.combineMultipleTypeSpecs(expr.inequalities.map(ineq => semanticTable.getActualTypeFor(ineq.rhs)).toIndexedSeq)
+  }
 }
 
 sealed trait Scannable[+T <: Expression] extends Sargable[T] {

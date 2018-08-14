@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
-import org.mockito.Mockito
-import org.opencypher.v9_0.ast._
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ManySeekableArgs, PrefixRange, SingleSeekableArg}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.NonEmptyList
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -67,7 +70,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("IdSeekable works") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
+    when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertMatches(expr) {
@@ -82,7 +85,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("IdSeekable does not match if rhs depends on lhs variable") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
-    Mockito.when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
+    when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
@@ -92,7 +95,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("IdSeekable does not match if function is not the id function") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("rand") _, nodeA)_
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
+    when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
@@ -103,7 +106,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   test("PropertySeekable works with plain expressions") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     val expr: Expression = In(leftExpr, expr2)_
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
+    when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertMatches(expr) {
       case AsPropertySeekable(seekable) =>
@@ -119,8 +122,8 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2))_
     val expr: Expression = In(leftExpr, rightExpr)_
-    Mockito.when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
+    when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
+    when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertMatches(expr) {
       case AsPropertySeekable(seekable) =>
@@ -132,9 +135,62 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
+  test("PropertySeekable propertyValueType with ListLiteral") {
+    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
+    val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2))_
+    val expr: Expression = In(leftExpr, rightExpr)_
+    when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
+    when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
+
+    val table = mock[SemanticTable]
+    when(table.getActualTypeFor(expr1)).thenReturn(CTFloat.invariant)
+    when(table.getActualTypeFor(expr2)).thenReturn(CTInteger.invariant)
+    val AsPropertySeekable(seekable) = expr
+
+    seekable.propertyValueType(table) should be(CTNumber)
+  }
+
+  test("PropertySeekable propertyValueType with equals") {
+    val propExpr = Property(nodeA, PropertyKeyName("id")_)_
+    val expr: Expression = Equals(propExpr, expr1)_
+    when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
+
+    val table = mock[SemanticTable]
+    when(table.getActualTypeFor(expr1)).thenReturn(CTFloat.invariant)
+    val AsPropertySeekable(seekable) = expr
+
+    seekable.propertyValueType(table) should be(CTFloat)
+  }
+
+  test("PropertySeekable propertyValueType with Parameter") {
+    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
+    val rightExpr: Parameter = Parameter("foo", CTString)(pos)
+    val expr: Expression = In(leftExpr, rightExpr)_
+
+    val table = mock[SemanticTable]
+    when(table.getActualTypeFor(rightExpr)).thenReturn(CTList(CTString))
+    val AsPropertySeekable(seekable) = expr
+
+    seekable.propertyValueType(table) should be(CTString)
+  }
+
+  test("InequalityRangeSeekable propertyValueType") {
+    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
+    val min = SignedDecimalIntegerLiteral("10")(pos)
+    val max = DecimalDoubleLiteral("20.5")(pos)
+    val expr: Expression = AndedPropertyInequalities(nodeA, leftExpr, NonEmptyList(GreaterThan(leftExpr, min)(pos), LessThanOrEqual(leftExpr, max)(pos)))
+
+    val table = mock[SemanticTable]
+    when(table.getActualTypeFor(min)).thenReturn(CTInteger.invariant)
+    when(table.getActualTypeFor(max)).thenReturn(CTFloat.invariant)
+    val AsValueRangeSeekable(seekable) = expr
+
+    seekable.propertyValueType(table) should be(CTNumber)
+  }
+
   test("PropertySeekable does not match if rhs depends on lhs variable") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    Mockito.when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
+    when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
     val expr: Expression = In(leftExpr, expr2)_
 
     assertDoesNotMatch(expr) {
@@ -153,6 +209,164 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
         scannable.ident should equal(nodeA)
         scannable.propertyKey should equal(propertyExpr.propertyKey)
     }
+  }
+
+  // Testing Seekable.combineMultipleTypeSpecs
+
+  test("combines empty TypeSpec to any") {
+    // Given
+    val specs = Seq.empty[TypeSpec]
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTAny)
+  }
+
+  test("combines int to int") {
+    // Given
+    val specs = Seq(CTInteger.invariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTInteger)
+  }
+
+  test("combines int and int to int") {
+    // Given
+    val specs = Seq(CTInteger.invariant, CTInteger.invariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTInteger)
+  }
+
+  test("combines float and int to number") {
+    // Given
+    val specs = Seq(CTFloat.invariant, CTInteger.invariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines float and point to any") {
+    // Given
+    val specs = Seq(CTFloat.invariant, CTPoint.invariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTAny)
+  }
+
+  test("combines covariant types") {
+    // Given
+    val specs = Seq(CTFloat.invariant, CTNumber.covariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines union types") {
+    // Given
+    val specs = Seq(CTFloat.invariant union CTInteger.invariant, CTNumber.covariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines same union types") {
+    // Given
+    val specs = Seq(CTFloat.invariant union CTInteger.invariant, CTFloat.invariant union CTInteger.invariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines unrelated union types") {
+    // Given
+    val specs = Seq(CTFloat.invariant union CTInteger.invariant, CTString.invariant union CTInteger.invariant)
+
+    // when
+    val spec = Seekable.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTAny)
+  }
+
+  // Testing Seekable.cypherTypeForTypeSpec
+
+  test("converts any to CTAny") {
+    // Given
+    val spec = CTAny.invariant
+
+    // when
+    val typ = Seekable.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts T to CTAny") {
+    // Given
+    val spec = CTAny.covariant
+
+    // when
+    val typ = Seekable.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts contravariant type to CTAny") {
+    // Given
+    val spec = CTFloat.contravariant
+
+    // when
+    val typ = Seekable.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts union type to CTAny") {
+    // Given
+    val spec = CTFloat.invariant union CTString.invariant
+
+    // when
+    val typ = Seekable.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts intersection type to CTAny") {
+    // Given
+    val spec = CTFloat.invariant intersect CTString.invariant
+
+    // when
+    val typ = Seekable.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
   }
 
   def assertMatches[T](item: Expression)(pf: PartialFunction[Expression, T]) =
