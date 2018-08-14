@@ -144,9 +144,7 @@ public interface ReadableTransactionState
 
     PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor index, ValueGroup valueGroup,
-                                                            Value lower, boolean includeLower,
-                                                            Value upper, boolean includeUpper );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate );
 
     PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
 

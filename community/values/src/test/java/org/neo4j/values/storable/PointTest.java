@@ -22,8 +22,10 @@ package org.neo4j.values.storable;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
+import org.neo4j.values.Comparison;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -81,6 +83,52 @@ public class PointTest
     {
         assertTrue( pointValue( Cartesian, 1, 2 ).valueGroup() != null );
         assertTrue( pointValue( WGS84, 1, 2 ).valueGroup() != null );
+    }
+
+    //-------------------------------------------------------------
+    // Comparison tests
+
+    @Test
+    public void shouldCompareTwoPoints()
+    {
+        assertThat( "Two identical points should be equal", pointValue( Cartesian, 1, 2 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( 0 ) );
+        assertThat( "Different CRS should compare CRS codes", pointValue( Cartesian, 1, 2 ).compareTo( pointValue( WGS84, 1, 2 ) ),
+                equalTo( Cartesian.getCode() - WGS84.getCode() ) );
+        assertThat( "Point greater on both dimensions is greater", pointValue( Cartesian, 2, 3 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( 1 ) );
+        assertThat( "Point greater on first dimensions is greater", pointValue( Cartesian, 2, 2 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( 1 ) );
+        assertThat( "Point greater on second dimensions is greater", pointValue( Cartesian, 1, 3 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( 1 ) );
+        assertThat( "Point smaller on both dimensions is smaller", pointValue( Cartesian, 0, 1 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( -1 ) );
+        assertThat( "Point smaller on first dimensions is smaller", pointValue( Cartesian, 0, 2 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( -1 ) );
+        assertThat( "Point smaller on second dimensions is smaller", pointValue( Cartesian, 1, 1 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( -1 ) );
+        assertThat( "Point greater on first and smaller on second dimensions is greater",
+                pointValue( Cartesian, 2, 1 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( 1 ) );
+        assertThat( "Point smaller on first and greater on second dimensions is smaller",
+                pointValue( Cartesian, 0, 3 ).compareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( -1 ) );
+    }
+
+    @Test
+    public void shouldTernaryCompareTwoPoints()
+    {
+        assertThat( "Two identical points should be equal", pointValue( Cartesian, 1, 2 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ),
+                equalTo( Comparison.EQUAL ) );
+        assertThat( "Different CRS should be incomparable", pointValue( Cartesian, 1, 2 ).unsafeTernaryCompareTo( pointValue( WGS84, 1, 2 ) ),
+                equalTo( Comparison.UNDEFINED ) );
+        assertThat( "Point greater on both dimensions is greater", pointValue( Cartesian, 2, 3 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ),
+                equalTo( Comparison.GREATER_THAN ) );
+        assertThat( "Point greater on first dimensions is UNDEFINED", pointValue( Cartesian, 2, 2 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ),
+                equalTo( Comparison.UNDEFINED ) );
+        assertThat( "Point greater on second dimensions is UNDEFINED", pointValue( Cartesian, 1, 3 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ),
+                equalTo( Comparison.UNDEFINED ) );
+        assertThat( "Point smaller on both dimensions is smaller", pointValue( Cartesian, 0, 1 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ),
+                equalTo( Comparison.SMALLER_THAN ) );
+        assertThat( "Point smaller on first dimensions is UNDEFINED", pointValue( Cartesian, 0, 2 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ),
+                equalTo( Comparison.UNDEFINED ) );
+        assertThat( "Point smaller on second dimensions is UNDEFINED", pointValue( Cartesian, 1, 1 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ),
+                equalTo( Comparison.UNDEFINED ) );
+        assertThat( "Point greater on first and smaller on second dimensions is UNDEFINED",
+                pointValue( Cartesian, 2, 1 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( Comparison.UNDEFINED ) );
+        assertThat( "Point smaller on first and greater on second dimensions is UNDEFINED",
+                pointValue( Cartesian, 0, 3 ).unsafeTernaryCompareTo( pointValue( Cartesian, 1, 2 ) ), equalTo( Comparison.UNDEFINED ) );
     }
 
     //-------------------------------------------------------------

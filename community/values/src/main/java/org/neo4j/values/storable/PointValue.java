@@ -174,9 +174,14 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         for ( int i = 0; i < coordinate.length; i++ )
         {
             int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
-            if ( cmpVal != 0 && cmpVal != result )
+            if ( cmpVal == 0 && result != 0 )
             {
-                if ( (cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0) )
+                // Equal on one dimension, but not others, is not defined
+                return Comparison.UNDEFINED;
+            }
+            if ( cmpVal != result )
+            {
+                if ( (cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0) || (i > 0 && result == 0) )
                 {
                     return Comparison.UNDEFINED;
                 }
@@ -281,7 +286,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     {
         if ( lower == null && upper == null )
         {
-            return false;
+            return true;
         }
         if ( (lower != null) && (this.crs.getCode() != lower.crs.getCode() || this.coordinate.length != lower.coordinate.length) )
         {

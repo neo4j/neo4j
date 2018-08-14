@@ -256,10 +256,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeek(
-                    descriptor, valueGroup,
-                    predicate.fromValue(), predicate.fromInclusive(),
-                    predicate.toValue(), predicate.toInclusive() );
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeek( descriptor, predicate );
             added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }

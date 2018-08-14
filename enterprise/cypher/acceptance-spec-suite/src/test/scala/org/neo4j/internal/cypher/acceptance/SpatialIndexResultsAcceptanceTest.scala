@@ -552,12 +552,18 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     ).toList.foreach {
       case (op, expected) =>
         // When
-        val includingBorder = innerExecuteDeprecated(s"MATCH (n:Label) WHERE n.prop $op point({x: 1, y: 5}) RETURN n")
+        val resultsWithIndex = innerExecuteDeprecated(s"MATCH (n:Label) WHERE n.prop $op point({x: 1, y: 5}) RETURN n").toList.map(_ ("n"))
+        val resultsWithoutIndex = innerExecuteDeprecated(s"MATCH (n) WHERE n.prop $op point({x: 1, y: 5}) RETURN n").toList.map(_ ("n"))
 
         // Then
         val expectAxes = op contains "="
-        withClue(s"Should ${if(expectAxes) "" else "NOT "}find nodes that are on the axes defined by the search point when using operator '$op'") {
-          includingBorder.toList.map(_ ("n")).toSet should be(expected)
+        withClue(s"Should ${if(expectAxes) "" else "NOT "}find nodes that are on the axes defined by the search point when using operator '$op' and index") {
+          resultsWithIndex.toSet should be(expected)
+        }
+
+        // And should get same results without an index
+        withClue(s"Should ${if(expectAxes) "" else "NOT "}find nodes that are on the axes defined by the search point when using operator '$op' and no index") {
+          resultsWithoutIndex.toSet should be(expected)
         }
     }
     // When running a spatial range query for points greater than or equal to the search point
@@ -604,5 +610,29 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     val maxPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian, 2, 6)
     assertRangeScanFor(">=", minPoint, "<=", maxPoint, vertices :+ nodeToFind: _*)
     assertRangeScanFor(">", minPoint, "<", maxPoint, nodeToFind)
+  }
+
+  test("should not return points on edges even when using transaction state") {
+    val atPoint = Values.pointValue(CoordinateReferenceSystem.WGS84, 1, 5)
+    val onAxisX = Values.pointValue(CoordinateReferenceSystem.WGS84, 1, 4)
+    val onAxisY = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 5)
+    val inRange = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 4)
+    val query = "MATCH (n:Label) WHERE n.prop < {prop} RETURN n, n.prop AS prop ORDER BY id(n)"
+    createIndex()
+    createIndexedNode(atPoint)
+
+    def runTest(name: String): Unit = {
+      val results = innerExecuteDeprecated(query, scala.Predef.Map("prop" -> atPoint))
+      println(results.executionPlanDescription())
+      withClue(s"Should not find on-axis points when searching for < $atPoint ($name)") {
+        results.toList.map(_ ("prop")).toSet should be(Set(inRange))
+      }
+    }
+
+    graph.inTx {
+      Seq(onAxisX, onAxisY, inRange).foreach(createIndexedNode(_))
+      runTest("nodes in same transaction")
+    }
+    runTest("no transaction state")
   }
 }

@@ -40,7 +40,12 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
       case (n1: NumberValue, n2: NumberValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       case (n1: TextValue, n2: TextValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       case (n1: BooleanValue, n2: BooleanValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: PointValue, n2: PointValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: PointValue, n2: PointValue) => this match {
+          // The ternary comparator cannot handle the '='  part of the >= and <= cases, so we need to switch to the within function
+        case _: LessThanOrEqual => Some(n1.withinRange(null, false, n2, true))
+        case _: GreaterThanOrEqual => Some(n1.withinRange(n2, true, null, false))
+        case _ => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      }
       case (n1: DateValue, n2: DateValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       case (n1: LocalTimeValue, n2: LocalTimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       case (n1: TimeValue, n2: TimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))

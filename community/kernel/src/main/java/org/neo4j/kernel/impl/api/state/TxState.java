@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -76,7 +76,6 @@ import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -1064,10 +1063,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor descriptor, ValueGroup valueGroup,
-                                                                   Value lower, boolean includeLower,
-                                                                   Value upper, boolean includeUpper )
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
     {
+        Value lower = predicate.fromValue();
+        Value upper = predicate.toValue();
         assert lower != null && upper != null : "Use Values.NO_VALUE to encode the lack of a bound";
 
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
@@ -1084,39 +1083,40 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( lower == NO_VALUE )
         {
-            selectedLower = ValueTuple.of( Values.minValue( valueGroup, upper ) );
+            selectedLower = ValueTuple.of( Values.minValue( predicate.valueGroup(), upper ) );
             selectedIncludeLower = true;
         }
         else
         {
             selectedLower = ValueTuple.of( lower );
-            selectedIncludeLower = includeLower;
+            selectedIncludeLower = predicate.fromInclusive();
         }
 
         if ( upper == NO_VALUE )
         {
-            selectedUpper = ValueTuple.of( Values.maxValue( valueGroup, lower ) );
+            selectedUpper = ValueTuple.of( Values.maxValue( predicate.valueGroup(), lower ) );
             selectedIncludeUpper = false;
         }
         else
         {
             selectedUpper = ValueTuple.of( upper );
-            selectedIncludeUpper = includeUpper;
+            selectedIncludeUpper = predicate.toInclusive();
         }
 
-        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-    }
-
-    private PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( TreeMap<ValueTuple,PrimitiveLongDiffSets> sortedUpdates, ValueTuple lower,
-            boolean includeLower, ValueTuple upper, boolean includeUpper )
-    {
         PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
 
-        Collection<PrimitiveLongDiffSets> inRange = sortedUpdates.subMap( lower, includeLower, upper, includeUpper ).values();
-        for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
+        NavigableMap<ValueTuple,PrimitiveLongDiffSets> inRangeX =
+                sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+        for ( Map.Entry<ValueTuple,PrimitiveLongDiffSets> entry : inRangeX.entrySet() )
         {
-            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
-            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
+            ValueTuple values = entry.getKey();
+            PrimitiveLongDiffSets diffForSpecificValue = entry.getValue();
+            // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
+            if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
+            {
+                diffs.addAll( diffForSpecificValue.getAdded().iterator() );
+                diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
+            }
         }
         return diffs;
     }
