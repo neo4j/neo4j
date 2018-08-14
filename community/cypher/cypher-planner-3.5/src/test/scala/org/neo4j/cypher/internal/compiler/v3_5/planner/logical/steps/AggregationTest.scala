@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
 import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
@@ -92,6 +92,27 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Then
     result should equal(
       Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
+    )
+  }
+
+  test("adds renaming aggregation when variable available from index") {
+    val prop = Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos)
+    val projection = AggregatingQueryProjection(
+      groupingExpressions = Map("x.prop" -> prop),
+      aggregationExpressions = aggregatingMap
+    )
+
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
+      planContext = newMockedPlanContext
+    )
+
+    val startPlan = newMockedLogicalPlan(idNames = Set("x", "x.prop"), availablePropertiesFromIndexes = Map(prop -> "x.prop"))
+
+    // When
+    val result = aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities)
+    // Then
+    result should equal(
+      Aggregation(startPlan, Map("x.prop" -> Variable("x.prop")(pos)), aggregatingMap)
     )
   }
 }

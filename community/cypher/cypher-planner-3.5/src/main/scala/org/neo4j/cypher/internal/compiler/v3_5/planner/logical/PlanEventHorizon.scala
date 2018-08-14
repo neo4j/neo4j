@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{PatternExpressionSolver, aggregation, projection, sortSkipAndLimit}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ResolvedCall}
+import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.InternalException
 
 /*
@@ -51,17 +52,17 @@ case object PlanEventHorizon
         }
 
       case queryProjection: DistinctQueryProjection =>
-        val projections = queryProjection.projections
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, projections, context, solveds, cardinalities)
-        val distinctPlan = context.logicalPlanProducer.planDistinct(inner, projectionsMap, projections, context)
+        val distinctPlan = distinct(selectedPlan, queryProjection, context, solveds, cardinalities)
         sortSkipAndLimit(distinctPlan, query, context, solveds, cardinalities)
 
       case UnwindProjection(variable, expression) =>
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), context, solveds, cardinalities)
+        val rewrittenExpression = replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(expression).asInstanceOf[Expression]
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), context, solveds, cardinalities)
         context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
 
       case ProcedureCallProjection(call) =>
-        context.logicalPlanProducer.planCallProcedure(plan, call, context)
+        val rewrittenCall = replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(call).asInstanceOf[ResolvedCall]
+        context.logicalPlanProducer.planCallProcedure(plan, rewrittenCall, call, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
         context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.ir.v3_5.QueryProjection
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions.{Expression, Variable}
+import org.opencypher.v9_0.expressions._
 
 object projection {
 
@@ -32,12 +32,16 @@ object projection {
     // if we had a previous projection it might have projected something already
     // we only want to project what's left from that previous projection
     val alreadySolvedProjections = solveds.get(in.id).tailOrSelf.horizon match {
-      case solvedProjection: QueryProjection => solvedProjection.projections.keys
-      case _ => Seq.empty
+      case solvedProjection: QueryProjection => solvedProjection.projections
+      case _ => Map.empty[String, Expression]
     }
-    val stillToSolveProjection = projectionsToPlan -- alreadySolvedProjections
+    val stillToSolveProjection = projectionsToPlan -- alreadySolvedProjections.keys
 
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjection, context, solveds, cardinalities)
+    // We want to leverage if we got the value from an index already
+    val stillToSolveProjectionWithRenames = replacePropertyLookupsWithVariables(in.availablePropertiesFromIndexes)(stillToSolveProjection)
+      .asInstanceOf[Map[String, Expression]]
+
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjectionWithRenames, context, solveds, cardinalities)
 
     val ids = plan.availableSymbols
 

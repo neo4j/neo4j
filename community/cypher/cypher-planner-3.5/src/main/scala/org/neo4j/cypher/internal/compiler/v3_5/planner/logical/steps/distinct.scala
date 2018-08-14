@@ -20,27 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.v3_5.DistinctQueryProjection
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
-object aggregation {
-  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+object distinct {
+  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
     // We want to leverage if we got the value from an index already
-    val aggregationWithRenames = replacePropertyLookupsWithVariables(plan.availablePropertiesFromIndexes)(aggregation)
-      .asInstanceOf[AggregatingQueryProjection]
+    val distinctWithRenames = replacePropertyLookupsWithVariables(plan.availablePropertiesFromIndexes)(distinctQueryProjection)
+      .asInstanceOf[DistinctQueryProjection]
 
     val expressionSolver = PatternExpressionSolver()
-    val (step1, groupingExpressions) = expressionSolver(plan, aggregationWithRenames.groupingExpressions, context, solveds, cardinalities)
-    val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregationWithRenames.aggregationExpressions, context, solveds, cardinalities)
+    val (rewrittenPlan, groupingKeys) = expressionSolver(plan, distinctWithRenames.groupingKeys, context, solveds, cardinalities)
 
-    context.logicalPlanProducer.planAggregation(
+    context.logicalPlanProducer.planDistinct(
       rewrittenPlan,
-      groupingExpressions,
-      aggregations,
-      aggregation.groupingExpressions,
-      aggregation.aggregationExpressions,
+      groupingKeys,
+      distinctQueryProjection.groupingKeys,
       context)
   }
 }

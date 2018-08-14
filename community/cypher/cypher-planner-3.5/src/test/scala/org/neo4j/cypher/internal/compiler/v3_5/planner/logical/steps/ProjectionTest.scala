@@ -105,10 +105,46 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 
+  test("does not add projection when variable available from index") {
+    val n = Variable("n")(pos)
+    val prop = Property(n, PropertyKeyName("prop")(pos))(pos)
+    // given
+    val projections: Map[String, Expression] = Map("n.prop" -> prop)
+    val (context, startPlan, solveds, cardinalities) = queryGraphWith(
+      projectionsMap = Map("n" -> Variable("n")(pos)) ++ projections,
+      availablePropertiesFromIndexes = Map(prop -> "n.prop"))
+
+    // when
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+
+    // then
+    result should equal(startPlan)
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
+  }
+
+  test("adds renaming projection when variable available from index") {
+    val n = Variable("n")(pos)
+    val prop = Property(n, PropertyKeyName("prop")(pos))(pos)
+    // given
+    val projections: Map[String, Expression] = Map("foo" -> prop)
+    val (context, startPlan, solveds, cardinalities) = queryGraphWith(
+      projectionsMap = Map("n" -> Variable("n")(pos), "n.prop" -> prop),
+      availablePropertiesFromIndexes = Map(prop -> "n.prop"))
+
+    // when
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+
+    // then
+    val actualProjections = Map("foo" -> Variable("n.prop")(pos))
+    result should equal(Projection(startPlan, actualProjections))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
+  }
+
   private def queryGraphWith(skip: Option[Expression] = None,
                              limit: Option[Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos))):
+                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos)),
+                             availablePropertiesFromIndexes: Map[Property, String] = Map.empty):
   (LogicalPlanningContext, LogicalPlan, Solveds, Cardinalities) = {
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
@@ -117,7 +153,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ids = projectionsMap.keySet
 
     val plan =
-      newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames = ids, solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)))
+      newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames = ids, solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
+        availablePropertiesFromIndexes = availablePropertiesFromIndexes)
 
     (context, plan, solveds, cardinalities)
   }

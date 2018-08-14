@@ -459,8 +459,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(UnwindCollection(inner, name, expression), solved, context)
   }
 
-  def planCallProcedure(inner: LogicalPlan, call: ResolvedCall, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(ProcedureCallProjection(call)))
+  def planCallProcedure(inner: LogicalPlan, call: ResolvedCall, reported: ResolvedCall, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(ProcedureCallProjection(reported)))
     annotate(ProcedureCall(inner, call), solved, context)
   }
 
