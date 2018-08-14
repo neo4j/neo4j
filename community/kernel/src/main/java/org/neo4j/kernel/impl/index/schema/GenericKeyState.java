@@ -916,11 +916,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    interface ArrayElementWriter
-    {
-        void write( PageCursor cursor, int i );
-    }
-
     private void putArray( PageCursor cursor, ArrayElementWriter writer )
     {
         cursor.putInt( arrayLength );
@@ -1065,13 +1060,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case BOOLEAN_ARRAY:
             return readArray( cursor, ArrayType.BOOLEAN, this::readBoolean );
         case NUMBER_ARRAY:
-            long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
-            ArrayType numberType = numberArrayTypeOf( (byte) long1 );
-            if ( numberType == null )
-            {
-                return false;
-            }
-            return readArray( cursor, numberType, numberArrayElementReader( long1 ) );
+            return readNumberArray( cursor );
         default:
             return false;
         }
@@ -1093,6 +1082,17 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
         endArray();
         return true;
+    }
+
+    private boolean readNumberArray( PageCursor cursor )
+    {
+        long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
+        ArrayType numberType = numberArrayTypeOf( (byte) long1 );
+        if ( numberType == null )
+        {
+            return false;
+        }
+        return readArray( cursor, numberType, numberArrayElementReader( long1 ) );
     }
 
     private ArrayElementReader numberArrayElementReader( long long1 )
@@ -1862,8 +1862,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private static NumberValue numberAsValue( long long0, long long1 )
     {
-        // There's a difference between composing a single text value and a array text value
-        // and there's therefore no common "raw" variant of it
         return RawBits.asNumberValue( long0, (byte) long1 );
     }
 
@@ -1879,7 +1877,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private static Value textAsValue( byte[] byteArray, long long0 )
     {
-        // There's a difference between composing a single text value and a array text value
+        // There's a difference between composing a single text value and a array text values
         // and there's therefore no common "raw" variant of it
         return byteArray == null ? NO_VALUE : Values.utf8Value( byteArray, 0, (int) long0 );
     }
@@ -1980,6 +1978,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     interface ArrayElementReader
     {
         boolean readFrom( PageCursor cursor );
+    }
+
+    @FunctionalInterface
+    interface ArrayElementWriter
+    {
+        void write( PageCursor cursor, int i );
     }
 
     @FunctionalInterface
