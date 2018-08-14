@@ -87,7 +87,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
                                                     Long.BYTES;     /* days */
     private static final int SIZE_BOOLEAN =         Byte.BYTES;     /* byte for this boolean value */
     private static final int SIZE_NUMBER_TYPE =     Byte.BYTES;     /* type of value */
-    private static final int SIZE_NUMBER =          Long.BYTES;     /* raw value bits */
+    private static final int SIZE_NUMBER_BYTE =     Byte.BYTES;     /* raw value bits */
+    private static final int SIZE_NUMBER_SHORT =    Short.BYTES;    /* raw value bits */
+    private static final int SIZE_NUMBER_INT =      Integer.BYTES;  /* raw value bits */
+    private static final int SIZE_NUMBER_LONG =     Long.BYTES;     /* raw value bits */
+    private static final int SIZE_NUMBER_FLOAT =    Integer.BYTES;  /* raw value bits */
+    private static final int SIZE_NUMBER_DOUBLE =   Long.BYTES;     /* raw value bits */
     private static final int SIZE_ARRAY_LENGTH =    Integer.BYTES;
     private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / Integer.SIZE;
 
@@ -436,7 +441,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case BOOLEAN:
             return SIZE_BOOLEAN;
         case NUMBER:
-            return SIZE_NUMBER + SIZE_NUMBER_TYPE;
+            return numberKeySize( long1 ) + SIZE_NUMBER_TYPE;
         case ZONED_DATE_TIME_ARRAY:
             return arrayKeySize( SIZE_ZONED_DATE_TIME );
         case LOCAL_DATE_TIME_ARRAY:
@@ -460,9 +465,30 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case BOOLEAN_ARRAY:
             return arrayKeySize( SIZE_BOOLEAN );
         case NUMBER_ARRAY:
-            return arrayKeySize( SIZE_NUMBER ) + SIZE_NUMBER_TYPE;
+            return arrayKeySize( numberKeySize( long1 ) ) + SIZE_NUMBER_TYPE;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+
+    private static int numberKeySize( long long1 )
+    {
+        switch ( (int) long1 )
+        {
+        case RawBits.BYTE:
+            return SIZE_NUMBER_BYTE;
+        case RawBits.SHORT:
+            return SIZE_NUMBER_SHORT;
+        case RawBits.INT:
+            return SIZE_NUMBER_INT;
+        case RawBits.LONG:
+            return SIZE_NUMBER_LONG;
+        case RawBits.FLOAT:
+            return SIZE_NUMBER_FLOAT;
+        case RawBits.DOUBLE:
+            return SIZE_NUMBER_DOUBLE;
+        default:
+            throw new IllegalArgumentException( "Unknown number type " + long1 );
         }
     }
 
