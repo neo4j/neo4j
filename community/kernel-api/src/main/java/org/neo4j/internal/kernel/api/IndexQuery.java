@@ -393,6 +393,14 @@ public abstract class IndexQuery
         {
             return toInclusive;
         }
+
+        /**
+         * @return true if the order defined for this type can also be relied on for bounds comparisons.
+         */
+        public boolean isRegularOrder()
+        {
+            return true;
+        }
     }
 
     public static final class GeometryRangePredicate extends RangePredicate<PointValue>
@@ -436,6 +444,15 @@ public abstract class IndexQuery
         public PointValue to()
         {
             return to;
+        }
+
+        /**
+         * The order defined for spatial types cannot be used for bounds comparisons.
+         * @return false
+         */
+        public boolean isRegularOrder()
+        {
+            return false;
         }
     }
 

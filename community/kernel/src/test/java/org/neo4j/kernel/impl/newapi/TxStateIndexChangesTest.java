@@ -217,10 +217,9 @@ class TxStateIndexChangesTest
     {
         return DynamicTest.dynamicTest( String.format( "range seek: lo=%s (incl: %s), hi=%s (incl: %s)", lo, includeLo, hi, includeHi ), () ->
         {
-            final LongDiffSets diffSets =
-                    TxStateIndexChanges.indexUpdatesForRangeSeek( state, index, ValueGroup.NUMBER, lo, includeLo, hi, includeHi );
+            final LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
             final ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
-                    TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( state, index, ValueGroup.NUMBER, lo, includeLo, hi, includeHi );
+                    TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
 
             final LongSet expectedNodeIds = LongSets.immutable.ofAll( Arrays.stream( expected ).mapToLong( NodeWithPropertyValues::getNodeId ) );
             assertEquals( expectedNodeIds, diffSets.getAdded() );

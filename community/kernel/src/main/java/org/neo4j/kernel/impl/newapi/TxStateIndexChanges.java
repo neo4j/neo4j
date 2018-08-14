@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.impl.UnmodifiableMap;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.NavigableMap;
 
@@ -34,7 +33,6 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -144,9 +142,10 @@ class TxStateIndexChanges
         return LongDiffSets.EMPTY;
     }
 
-    static LongDiffSets indexUpdatesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor, ValueGroup valueGroup, Value lower,
-            boolean includeLower, Value upper, boolean includeUpper )
+    static LongDiffSets indexUpdatesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
     {
+        Value lower = predicate.fromValue();
+        Value upper = predicate.toValue();
         if ( lower == null || upper == null )
         {
             throw new IllegalStateException( "Use Values.NO_VALUE to encode the lack of a bound" );
@@ -166,46 +165,48 @@ class TxStateIndexChanges
 
         if ( lower == NO_VALUE )
         {
-            selectedLower = ValueTuple.of( Values.minValue( valueGroup, upper ) );
+            selectedLower = ValueTuple.of( Values.minValue( predicate.valueGroup(), upper ) );
             selectedIncludeLower = true;
         }
         else
         {
             selectedLower = ValueTuple.of( lower );
-            selectedIncludeLower = includeLower;
+            selectedIncludeLower = predicate.fromInclusive();
         }
 
         if ( upper == NO_VALUE )
         {
-            selectedUpper = ValueTuple.of( Values.maxValue( valueGroup, lower ) );
+            selectedUpper = ValueTuple.of( Values.maxValue( predicate.valueGroup(), lower ) );
             selectedIncludeUpper = false;
         }
         else
         {
             selectedUpper = ValueTuple.of( upper );
-            selectedIncludeUpper = includeUpper;
+            selectedIncludeUpper = predicate.toInclusive();
         }
 
-        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-    }
-
-    private static LongDiffSets indexUpdatesForRangeSeek( NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates, ValueTuple lower, boolean includeLower,
-            ValueTuple upper, boolean includeUpper )
-    {
         MutableLongDiffSetsImpl diffs = new MutableLongDiffSetsImpl();
 
-        Collection<? extends LongDiffSets> inRange = sortedUpdates.subMap( lower, includeLower, upper, includeUpper ).values();
-        for ( LongDiffSets diffForSpecificValue : inRange )
+        Map<ValueTuple,? extends LongDiffSets> inRange = sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : inRange.entrySet() )
         {
-            diffs.addAll( diffForSpecificValue.getAdded() );
-            diffs.removeAll( diffForSpecificValue.getRemoved() );
+            ValueTuple values = entry.getKey();
+            LongDiffSets diffForSpecificValue = entry.getValue();
+            // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
+            if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
+            {
+                diffs.addAll( diffForSpecificValue.getAdded() );
+                diffs.removeAll( diffForSpecificValue.getRemoved() );
+            }
         }
         return diffs;
     }
 
     static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor,
-            ValueGroup valueGroup, Value lower, boolean includeLower, Value upper, boolean includeUpper )
+            IndexQuery.RangePredicate<?> predicate )
     {
+        Value lower = predicate.fromValue();
+        Value upper = predicate.toValue();
         if ( lower == null || upper == null )
         {
             throw new IllegalStateException( "Use Values.NO_VALUE to encode the lack of a bound" );
@@ -225,32 +226,26 @@ class TxStateIndexChanges
 
         if ( lower == NO_VALUE )
         {
-            selectedLower = ValueTuple.of( Values.minValue( valueGroup, upper ) );
+            selectedLower = ValueTuple.of( Values.minValue( predicate.valueGroup(), upper ) );
             selectedIncludeLower = true;
         }
         else
         {
             selectedLower = ValueTuple.of( lower );
-            selectedIncludeLower = includeLower;
+            selectedIncludeLower = predicate.fromInclusive();
         }
 
         if ( upper == NO_VALUE )
         {
-            selectedUpper = ValueTuple.of( Values.maxValue( valueGroup, lower ) );
+            selectedUpper = ValueTuple.of( Values.maxValue( predicate.valueGroup(), lower ) );
             selectedIncludeUpper = false;
         }
         else
         {
             selectedUpper = ValueTuple.of( upper );
-            selectedIncludeUpper = includeUpper;
+            selectedIncludeUpper = predicate.toInclusive();
         }
 
-        return indexUpdatesWithValuesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-    }
-
-    private static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates,
-            ValueTuple selectedLower, boolean selectedIncludeLower, ValueTuple selectedUpper, boolean selectedIncludeUpper )
-    {
         DiffSets<NodeWithPropertyValues> diffs = new DiffSets<>();
 
         Map<ValueTuple,? extends LongDiffSets> inRange = sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
@@ -260,8 +255,12 @@ class TxStateIndexChanges
             Value[] valuesArray = values.getValues();
             LongDiffSets diffForSpecificValue = entry.getValue();
 
-            diffForSpecificValue.getAdded().each( nodeId -> diffs.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
-            diffForSpecificValue.getRemoved().each( nodeId -> diffs.remove( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
+            // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
+            if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
+            {
+                diffForSpecificValue.getAdded().each( nodeId -> diffs.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
+                diffForSpecificValue.getRemoved().each( nodeId -> diffs.remove( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
+            }
         }
         return diffs;
     }
