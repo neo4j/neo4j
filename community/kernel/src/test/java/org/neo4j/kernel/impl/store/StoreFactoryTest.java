@@ -50,7 +50,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
 public class StoreFactoryTest
@@ -79,7 +78,7 @@ public class StoreFactoryTest
         LogProvider logProvider = NullLogProvider.getInstance();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fsRule, pageCache, logProvider );
-        return new StoreFactory( databaseLayout, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fsRule.get(),
                 recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 

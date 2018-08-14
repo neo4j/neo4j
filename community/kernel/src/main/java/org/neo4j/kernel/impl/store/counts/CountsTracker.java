@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -72,7 +73,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * The pattern of immutable store files, and rotation strategy, et.c. is defined in the
  * {@code kvstore}-package, see {@link org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile} for a good entry point.
  */
-@Rotation( value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT} )
+@Rotation( value = Rotation.Strategy.LEFT_RIGHT )
 public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         implements CountsVisitor.Visitable, CountsAccessor
 {
@@ -81,20 +82,18 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                                           'S', 't', 'o', 'r', 'e', /**/0, 2, 'V'};
     @SuppressWarnings( "unchecked" )
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
-    public static final String LEFT = ".a";
-    public static final String RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
-            File baseFile, VersionContextSupplier versionContextSupplier )
+            DatabaseLayout databaseLayout, VersionContextSupplier versionContextSupplier )
     {
-        this( logProvider, fs, pages, config, baseFile, Clocks.nanoClock(), versionContextSupplier );
+        this( logProvider, fs, pages, config, databaseLayout, Clocks.nanoClock(), versionContextSupplier );
     }
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
-                          File baseFile, SystemNanoClock clock, VersionContextSupplier versionContextSupplier )
+                          DatabaseLayout databaseLayout, SystemNanoClock clock, VersionContextSupplier versionContextSupplier )
     {
-        super( fs, pages, baseFile, new CountsTrackerRotationMonitor( logProvider ),
+        super( fs, pages, databaseLayout, new CountsTrackerRotationMonitor( logProvider ),
                 new RotationTimerFactory( clock, config.get( counts_store_rotation_timeout ).toMillis() ),
                 versionContextSupplier, 16, 16, HEADER_FIELDS );
     }

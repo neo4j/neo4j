@@ -81,7 +81,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -169,7 +168,7 @@ public class CsvInputEstimateCalculationIT
 
     private long sizeOf( StoreType type )
     {
-        return directory.databaseLayout().file( DEFAULT_NAME + type.getStoreName() ).length();
+        return directory.databaseLayout().file( type.getStoreName() ).length();
     }
 
     private Input generateData() throws IOException

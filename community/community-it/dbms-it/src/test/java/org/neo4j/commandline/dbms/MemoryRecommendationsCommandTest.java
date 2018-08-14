@@ -41,6 +41,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -193,7 +194,7 @@ public class MemoryRecommendationsCommandTest
         assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
         assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
 
-        long[] expectedSizes = calculatePageCacheFileSize( databaseDirectory );
+        long[] expectedSizes = calculatePageCacheFileSize( DatabaseLayout.of( databaseDirectory ) );
         long expectedPageCacheSize = expectedSizes[0];
         long expectedLuceneSize = expectedSizes[1];
         assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( expectedLuceneSize ) ) );
@@ -205,7 +206,7 @@ public class MemoryRecommendationsCommandTest
         return both( greaterThanOrEqualTo( lowerBound ) ).and( lessThanOrEqualTo( upperBound ) );
     }
 
-    private static long[] calculatePageCacheFileSize( File databaseDirectory ) throws IOException
+    private static long[] calculatePageCacheFileSize( DatabaseLayout databaseLayout ) throws IOException
     {
         MutableLong pageCacheTotal = new MutableLong();
         MutableLong luceneTotal = new MutableLong();
@@ -213,13 +214,13 @@ public class MemoryRecommendationsCommandTest
         {
             if ( storeType.isRecordStore() )
             {
-                File file = new File( databaseDirectory, storeType.getStoreFile().storeFileName() );
+                File file = databaseLayout.file( storeType.getDatabaseStore() );
                 long length = file.length();
                 pageCacheTotal.add( length );
             }
         }
 
-        Files.walkFileTree( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDirectory ).toPath(), new SimpleFileVisitor<Path>()
+        Files.walkFileTree( IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() ).toPath(), new SimpleFileVisitor<Path>()
         {
             @Override
             public FileVisitResult visitFile( Path path, BasicFileAttributes attrs )

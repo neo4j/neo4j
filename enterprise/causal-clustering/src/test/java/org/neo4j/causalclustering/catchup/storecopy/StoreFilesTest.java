@@ -266,7 +266,7 @@ public class StoreFilesTest
     {
         File dir = getBaseDir();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout( dir );
-        File neostore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+        File neostore = databaseLayout.metadataStore();
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         long time = rng.nextLong();
         long randomNumber = rng.nextLong();

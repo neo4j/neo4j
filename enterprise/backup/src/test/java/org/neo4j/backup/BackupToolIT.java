@@ -38,6 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -67,11 +68,13 @@ public class BackupToolIT
     private PageCache pageCache;
     private Path backupDir;
     private BackupTool backupTool;
+    private DatabaseLayout backupLayout;
 
     @Before
     public void setUp()
     {
-        backupDir = testDirectory.databaseDir( "backups" ).toPath();
+        backupLayout = testDirectory.databaseLayout( "backups" );
+        backupDir = backupLayout.databaseDirectory().toPath();
         fs = new DefaultFileSystemAbstraction();
         pageCache = StandalonePageCacheFactory.createPageCache( fs );
         backupTool = new BackupTool( new BackupProtocolService(), mock( PrintStream.class ) );
@@ -128,8 +131,7 @@ public class BackupToolIT
 
     private File createNeoStoreFile() throws Exception
     {
-        fs.mkdirs( backupDir.toFile() );
-        File neoStoreFile = new File( backupDir.toFile(), MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = backupLayout.metadataStore();
         fs.create( neoStoreFile ).close();
         return neoStoreFile;
     }

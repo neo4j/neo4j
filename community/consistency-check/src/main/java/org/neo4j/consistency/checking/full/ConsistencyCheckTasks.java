@@ -241,7 +241,7 @@ public class ConsistencyCheckTasks
             {
                 if ( ((NativeLabelScanStore)labelScanStore).isDirty() )
                 {
-                    reporter.report( new LabelScanIndex(), ConsistencyReport.LabelScanConsistencyReport.class,
+                    reporter.report( new LabelScanIndex( labelScanStore.getLabelScanStoreFile() ), ConsistencyReport.LabelScanConsistencyReport.class,
                             RecordType.LABEL_SCAN_DOCUMENT ).dirtyIndex();
                 }
             }

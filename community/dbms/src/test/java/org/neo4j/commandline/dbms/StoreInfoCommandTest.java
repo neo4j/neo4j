@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -67,12 +68,14 @@ public class StoreInfoCommandTest
     private ArgumentCaptor<String> outCaptor;
     private StoreInfoCommand command;
     private Consumer<String> out;
+    private DatabaseLayout databaseLayout;
 
     @Before
     public void setUp() throws Exception
     {
         Path homeDir = testDirectory.directory( "home-dir" ).toPath();
         databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
         Files.createDirectories( databaseDirectory );
 
         outCaptor = ArgumentCaptor.forClass( String.class );
@@ -197,8 +200,7 @@ public class StoreInfoCommandTest
 
     private File createNeoStoreFile() throws IOException
     {
-        fsRule.get().mkdir( databaseDirectory.toFile() );
-        File neoStoreFile = new File( databaseDirectory.toFile(), MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = databaseLayout.metadataStore();
         fsRule.get().create( neoStoreFile ).close();
         return neoStoreFile;
     }

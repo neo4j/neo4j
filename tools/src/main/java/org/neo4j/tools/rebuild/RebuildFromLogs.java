@@ -41,6 +41,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -141,7 +142,7 @@ class RebuildFromLogs
 
     private static boolean directoryContainsDb( Path path )
     {
-        return Files.exists( path.resolve( MetaDataStore.DEFAULT_NAME ) );
+        return Files.exists( DatabaseLayout.of( path.toFile() ).metadataStore().toPath() );
     }
 
     public void rebuild( File source, File target, long txId ) throws Exception, InconsistentStoreException
@@ -163,7 +164,7 @@ class RebuildFromLogs
             }
 
             // set last tx id in neostore otherwise the db is not usable
-            MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, DatabaseLayout.of( target ).metadataStore(),
                     MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
 
             checkConsistency( target, pageCache );

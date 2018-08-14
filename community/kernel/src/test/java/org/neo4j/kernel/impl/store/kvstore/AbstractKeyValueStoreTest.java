@@ -58,12 +58,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
-import static org.neo4j.test.rule.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
 public class AbstractKeyValueStoreTest
 {
     private final ExpectedException expectedException = ExpectedException.none();
-    private final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
+    private final Resources resourceManager = new Resources();
     private final ThreadingRule threading = new ThreadingRule();
     private final Timeout timeout = Timeout.builder()
                                            .withTimeout( 20, TimeUnit.SECONDS )
@@ -607,7 +606,7 @@ public class AbstractKeyValueStoreTest
 
         private Store( long rotationTimeout, HeaderField<?>... headerFields )
         {
-            super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testPath(), null,
+            super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testDirectory().databaseLayout(), null,
                     new RotationTimerFactory( Clocks.nanoClock(), rotationTimeout ),
                     EmptyVersionContextSupplier.EMPTY, 16, 16, headerFields );
             this.headerFields = headerFields;

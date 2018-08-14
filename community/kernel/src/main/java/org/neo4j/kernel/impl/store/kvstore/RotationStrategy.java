@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 
 abstract class RotationStrategy
@@ -165,25 +166,27 @@ abstract class RotationStrategy
     static class Incrementing extends RotationStrategy implements FilenameFilter
     {
         private static final Pattern SUFFIX = Pattern.compile( "\\.[0-9]+" );
-        private final File base;
+        private final DatabaseLayout databaseLayout;
+        private final String baseName;
 
         Incrementing( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, RotationMonitor monitor,
-                File base )
+                DatabaseLayout databaseLayout )
         {
             super( fs, pages, format, monitor );
-            this.base = base;
+            this.databaseLayout = databaseLayout;
+            baseName = databaseLayout.countStoreA().getName();
         }
 
         @Override
         protected File initialFile()
         {
-            return new File( base.getParent(), base.getName() + ".0" );
+            return databaseLayout.file( baseName + ".0" );
         }
 
         @Override
         protected Iterable<File> candidateFiles()
         {
-            return Arrays.asList( fs.listFiles( base.getParentFile(), this ) );
+            return Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory(), this ) );
         }
 
         @Override
@@ -195,8 +198,8 @@ abstract class RotationStrategy
             try
             {
                 int number = Integer.parseInt( name.substring( pos + 1 ) );
-                if ( !base.getParent().equals( previous.getParent() ) ||
-                     !base.getName().equals( name.substring( 0, pos ) ) )
+                if ( !databaseLayout.databaseDirectory().equals( previous.getParentFile() ) ||
+                     !baseName.equals( name.substring( 0, pos ) ) )
                 {
                     throw new IllegalStateException( "Invalid path: " + previous );
                 }
@@ -206,14 +209,14 @@ abstract class RotationStrategy
             {
                 throw new IllegalStateException( "Invalid path: " + previous, e );
             }
-            return new File( base.getParent(), base.getName() + "." + next );
+            return databaseLayout.file( baseName + "." + next );
         }
 
         @Override
         public boolean accept( File dir, String name )
         {
-            return name.startsWith( base.getName() ) &&
-                   SUFFIX.matcher( name.substring( base.getName().length() ) ).matches();
+            return name.startsWith( baseName ) &&
+                   SUFFIX.matcher( name.substring( baseName.length() ) ).matches();
         }
     }
 }

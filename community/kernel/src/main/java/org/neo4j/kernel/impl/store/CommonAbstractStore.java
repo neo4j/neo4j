@@ -685,6 +685,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return storageFileName;
     }
 
+    //TODO:remove
     private File getIdFileName()
     {
         return new File( getStorageFileName().getPath() + ".id" );

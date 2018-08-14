@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
-import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
@@ -68,7 +67,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
 public class NativeLabelScanStoreMigratorTest
@@ -97,7 +95,7 @@ public class NativeLabelScanStoreMigratorTest
     {
         databaseLayout = testDirectory.databaseLayout();
         storeDir = databaseLayout.databaseDirectory();
-        nativeLabelIndex = databaseLayout.file( NativeLabelScanStore.FILE_NAME );
+        nativeLabelIndex = databaseLayout.labelScanStore();
         migrationLayout = testDirectory.databaseLayout( "migrationDir" );
         luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
@@ -124,7 +122,7 @@ public class NativeLabelScanStoreMigratorTest
     public void failMigrationWhenNodeIdFileIsBroken() throws Exception
     {
         prepareEmpty23Database();
-        File nodeIdFile = databaseLayout.file( StoreFile.NODE_STORE.storeFileName() + ".id" );
+        File nodeIdFile = databaseLayout.idNodeStore();
         writeFile( nodeIdFile, new byte[]{1, 2, 3} );
 
         indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
@@ -136,7 +134,7 @@ public class NativeLabelScanStoreMigratorTest
         // given
         prepareEmpty23Database();
         initializeNativeLabelScanStoreWithContent( migrationLayout );
-        File toBeDeleted = migrationLayout.file( NativeLabelScanStore.FILE_NAME );
+        File toBeDeleted = migrationLayout.labelScanStore();
         assertTrue( fileSystem.fileExists( toBeDeleted ) );
 
         // when
@@ -162,7 +160,7 @@ public class NativeLabelScanStoreMigratorTest
     {
         prepareEmpty23Database();
         indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
-        File migrationNativeIndex = migrationLayout.file( NativeLabelScanStore.FILE_NAME );
+        File migrationNativeIndex = migrationLayout.labelScanStore();
         ByteBuffer migratedFileContent = writeFile( migrationNativeIndex, new byte[]{5, 4, 3, 2, 1} );
 
         indexMigrator.moveMigratedFiles( migrationLayout, databaseLayout, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
@@ -272,7 +270,7 @@ public class NativeLabelScanStoreMigratorTest
     {
         new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
         fileSystem.deleteFile( nativeLabelIndex );
-        MetaDataStore.setRecord( pageCache, databaseLayout.file( DEFAULT_NAME ),
+        MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
                 Position.STORE_VERSION, versionStringToLong( StandardV2_3.STORE_VERSION ) );
     }
 

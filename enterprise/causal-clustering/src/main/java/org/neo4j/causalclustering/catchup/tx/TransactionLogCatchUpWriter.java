@@ -173,7 +173,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
             // Recovery will treat that as last checkpoint and will not try to recover store till new
             // last closed transaction offset will not overcome old one. Till that happens it will be
             // impossible for recovery process to restore the store
-            File neoStore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+            File neoStore = databaseLayout.metadataStore();
             MetaDataStore.setRecord(
                     pageCache,
                     neoStore,
@@ -185,7 +185,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
 
         if ( lastTxId != -1 )
         {
-            File neoStoreFile = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+            File neoStoreFile = databaseLayout.metadataStore();
             MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, lastTxId );
         }
         stores.close();

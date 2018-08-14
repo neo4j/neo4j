@@ -22,137 +22,130 @@ package org.neo4j.kernel.impl.store;
 import java.io.IOException;
 import java.util.Optional;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.io.layout.DatabaseFileNames;
+import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.id.IdType;
 
 public enum StoreType
 {
-    NODE_LABEL( StoreFile.NODE_LABEL_STORE, true, false )
+    NODE_LABEL( DatabaseStore.NODE_LABEL_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createDynamicArrayStore( getStoreName(), IdType.NODE_LABELS,
-                            GraphDatabaseSettings.label_block_size );
+                    return neoStores.createNodeLabelStore();
                 }
             },
-    NODE( StoreFile.NODE_STORE, true, false )
+    NODE( DatabaseStore.NODE_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createNodeStore( getStoreName() );
+                    return neoStores.createNodeStore();
                 }
             },
-    PROPERTY_KEY_TOKEN_NAME( StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE, true, true )
+    PROPERTY_KEY_TOKEN_NAME( DatabaseStore.PROPERTY_KEY_TOKEN_NAMES_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createDynamicStringStore( getStoreName(), IdType.PROPERTY_KEY_TOKEN_NAME,
-                            TokenStore.NAME_STORE_BLOCK_SIZE );
+                    return neoStores.createPropertyKeyTokenNamesStore();
                 }
             },
-    PROPERTY_KEY_TOKEN( StoreFile.PROPERTY_KEY_TOKEN_STORE, true, true )
+    PROPERTY_KEY_TOKEN( DatabaseStore.PROPERTY_KEY_TOKEN_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createPropertyKeyTokenStore( getStoreName() );
+                    return neoStores.createPropertyKeyTokenStore();
                 }
             },
-    PROPERTY_STRING( StoreFile.PROPERTY_STRING_STORE, true, false )
+    PROPERTY_STRING( DatabaseStore.PROPERTY_STRING_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createDynamicStringStore( getStoreName(), IdType.STRING_BLOCK,
-                            GraphDatabaseSettings.string_block_size );
+                    return neoStores.createPropertyStringStore();
                 }
             },
-    PROPERTY_ARRAY( StoreFile.PROPERTY_ARRAY_STORE, true, false )
+    PROPERTY_ARRAY( DatabaseStore.PROPERTY_ARRAY_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createDynamicArrayStore( getStoreName(), IdType.ARRAY_BLOCK,
-                            GraphDatabaseSettings.array_block_size );
+                    return neoStores.createPropertyArrayStore();
                 }
             },
-    PROPERTY( StoreFile.PROPERTY_STORE, true, false )
+    PROPERTY( DatabaseStore.PROPERTY_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createPropertyStore( getStoreName() );
+                    return neoStores.createPropertyStore();
                 }
             },
-    RELATIONSHIP( StoreFile.RELATIONSHIP_STORE, true, false )
+    RELATIONSHIP( DatabaseStore.RELATIONSHIP_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createRelationshipStore( getStoreName() );
+                    return neoStores.createRelationshipStore();
                 }
             },
-    RELATIONSHIP_TYPE_TOKEN_NAME( StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, true, true )
+    RELATIONSHIP_TYPE_TOKEN_NAME( DatabaseStore.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createDynamicStringStore( getStoreName(), IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                            TokenStore.NAME_STORE_BLOCK_SIZE );
+                    return neoStores.createRelationshipTypeTokenNamesStore();
                 }
             },
-    RELATIONSHIP_TYPE_TOKEN( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, true, true )
+    RELATIONSHIP_TYPE_TOKEN( DatabaseStore.RELATIONSHIP_TYPE_TOKEN_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createRelationshipTypeTokenStore( getStoreName() );
+                    return neoStores.createRelationshipTypeTokenStore();
                 }
             },
-    LABEL_TOKEN_NAME( StoreFile.LABEL_TOKEN_NAMES_STORE, true, true )
+    LABEL_TOKEN_NAME( DatabaseStore.LABEL_TOKEN_NAMES_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createDynamicStringStore( getStoreName(), IdType.LABEL_TOKEN_NAME,
-                            TokenStore.NAME_STORE_BLOCK_SIZE );
+                    return neoStores.createLabelTokenNamesStore();
                 }
             },
-    LABEL_TOKEN( StoreFile.LABEL_TOKEN_STORE, true, true )
+    LABEL_TOKEN( DatabaseStore.LABEL_TOKEN_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createLabelTokenStore( getStoreName() );
+                    return neoStores.createLabelTokenStore();
                 }
             },
-    SCHEMA( StoreFile.SCHEMA_STORE, true, true )
+    SCHEMA( DatabaseStore.SCHEMA_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createSchemaStore( getStoreName() );
+                    return neoStores.createSchemaStore();
                 }
             },
-    RELATIONSHIP_GROUP( StoreFile.RELATIONSHIP_GROUP_STORE, true, false )
+    RELATIONSHIP_GROUP( DatabaseStore.RELATIONSHIP_GROUP_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createRelationshipGroupStore( getStoreName() );
+                    return neoStores.createRelationshipGroupStore();
                 }
             },
     COUNTS( null, false, false )
             {
                 @Override
-                public CountsTracker open( final NeoStores neoStores )
+                public CountsTracker open( NeoStores neoStores )
                 {
-                    return neoStores.createCountStore( StoreFactory.COUNTS_STORE );
+                    return neoStores.createCountStore();
                 }
 
                 @Override
@@ -169,19 +162,13 @@ public enum StoreType
                 }
 
                 @Override
-                public String getStoreName()
-                {
-                    return StoreFactory.COUNTS_STORE;
-                }
-
-                @Override
                 protected boolean isStoreFile( String fileName )
                 {
-                    return matchStoreName( fileName, getStoreName() + CountsTracker.RIGHT ) ||
-                           matchStoreName( fileName, getStoreName() + CountsTracker.LEFT );
+                    return matchStoreName( fileName, DatabaseFileNames.COUNTS_STORE_A ) ||
+                           matchStoreName( fileName, DatabaseFileNames.COUNTS_STORE_B );
                 }
             },
-    META_DATA( StoreFile.NEO_STORE, true, true ) // Make sure this META store is last
+    META_DATA( DatabaseStore.NEO_STORE, true, true ) // Make sure this META store is last
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -192,11 +179,11 @@ public enum StoreType
 
     private final boolean recordStore;
     private final boolean limitedIdStore;
-    private final StoreFile storeFile;
+    private final DatabaseStore databaseStore;
 
-    StoreType( StoreFile storeFile, boolean recordStore, boolean limitedIdStore )
+    StoreType( DatabaseStore databaseStore, boolean recordStore, boolean limitedIdStore )
     {
-        this.storeFile = storeFile;
+        this.databaseStore = databaseStore;
         this.recordStore = recordStore;
         this.limitedIdStore = limitedIdStore;
     }
@@ -219,12 +206,12 @@ public enum StoreType
 
     public String getStoreName()
     {
-        return storeFile.fileNamePart();
+        return databaseStore.getName();
     }
 
-    public StoreFile getStoreFile()
+    public DatabaseStore getDatabaseStore()
     {
-        return storeFile;
+        return databaseStore;
     }
 
     void close( Object object )
@@ -260,7 +247,7 @@ public enum StoreType
      */
     public static boolean canBeManagedByPageCache( String storeFileName )
     {
-        boolean isLabelScanStore = NativeLabelScanStore.FILE_NAME.equals( storeFileName );
+        boolean isLabelScanStore = DatabaseFileNames.LABEL_SCAN_STORE.equals( storeFileName );
         return isLabelScanStore || StoreType.typeOf( storeFileName ).map( StoreType::isRecordStore ).orElse( Boolean.FALSE );
     }
 
@@ -278,6 +265,6 @@ public enum StoreType
      */
     protected boolean matchStoreName( String fileName, String storeName )
     {
-        return fileName.equals( MetaDataStore.DEFAULT_NAME + storeName );
+        return fileName.equals( storeName );
     }
 }

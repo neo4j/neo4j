@@ -39,7 +39,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
@@ -93,7 +92,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         someData();
         db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
-        copyFile( databaseLayout.file( NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+        copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -103,7 +102,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         db.shutdownAndKeepStore();
 
-        copyFile( labelIndexFileCopy, databaseLayout.file( NativeLabelScanStore.FILE_NAME ) );
+        copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( "Expected consistency check to fail", result.isSuccessful() );
@@ -118,11 +117,11 @@ public class AllNodesInStoreExistInLabelIndexTest
         someData();
         db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
-        copyFile( databaseLayout.file( NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+        copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
         db.shutdownAndKeepStore();
 
-        copyFile( labelIndexFileCopy, databaseLayout.file( NativeLabelScanStore.FILE_NAME ) );
+        copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( "Expected consistency check to fail", result.isSuccessful() );
@@ -270,8 +269,8 @@ public class AllNodesInStoreExistInLabelIndexTest
         db.restartDatabase( ( fs, directory ) ->
         {
             DatabaseLayout databaseLayout = db.databaseLayout();
-            fs.deleteFile( databaseLayout.file( NativeLabelScanStore.FILE_NAME ) );
-            fs.copyFile( labelIndexFileCopy, databaseLayout.file( NativeLabelScanStore.FILE_NAME ) );
+            fs.deleteFile( databaseLayout.labelScanStore() );
+            fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
         } );
     }
 
@@ -280,7 +279,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         DatabaseLayout databaseLayout = db.databaseLayout();
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         db.restartDatabase( ( fs, directory ) ->
-                fs.copyFile( databaseLayout.file( NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy ) );
+                fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy ) );
         return labelIndexFileCopy;
     }
 

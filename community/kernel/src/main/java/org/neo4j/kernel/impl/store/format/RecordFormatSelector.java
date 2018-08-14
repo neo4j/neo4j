@@ -136,13 +136,13 @@ public class RecordFormatSelector
      * @param dbDirectoryStructure directory with the store
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
-     * @return record format of the given store or <code>null</code> if {@value MetaDataStore#DEFAULT_NAME} file not
+     * @return record format of the given store or <code>null</code> if {@link DatabaseLayout#metadataStore()} file not
      * found or can't be read
      */
     @Nullable
     static RecordFormats selectForStore( DatabaseLayout dbDirectoryStructure, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
-        File neoStoreFile = dbDirectoryStructure.file( MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = dbDirectoryStructure.metadataStore();
         if ( fs.fileExists( neoStoreFile ) )
         {
             try

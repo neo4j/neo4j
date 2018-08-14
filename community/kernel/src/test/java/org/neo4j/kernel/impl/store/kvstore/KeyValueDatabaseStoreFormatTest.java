@@ -47,11 +47,11 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.Data.data;
-import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.DataEntry.entry;
+import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreFormatTest.Data.data;
+import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreFormatTest.DataEntry.entry;
 import static org.neo4j.test.rule.ResourceRule.testPath;
 
-public class KeyValueStoreFileFormatTest
+public class KeyValueDatabaseStoreFormatTest
 {
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

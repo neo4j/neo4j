@@ -56,8 +56,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.store.StoreFile.NEO_STORE;
-import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class StoreMigratorTest
 {
@@ -84,7 +82,7 @@ public class StoreMigratorTest
             // For test code sanity
             String fromStoreVersion = StoreVersion.HIGH_LIMIT_V3_0_0.versionString();
             Result hasVersionResult = new StoreVersionCheck( pageCache ).hasVersion(
-                    databaseLayout.file( NEO_STORE.fileName( STORE ) ), fromStoreVersion );
+                    databaseLayout.metadataStore(), fromStoreVersion );
             assertTrue( hasVersionResult.actualVersion, hasVersionResult.outcome.isSuccessful() );
 
             // WHEN

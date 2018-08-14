@@ -56,7 +56,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -95,8 +94,8 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        File databaseDir = directory.databaseDir();
-        File neoStore = new File( databaseDir, DEFAULT_NAME );
+        DatabaseLayout databaseLayout = directory.databaseLayout();
+        File neoStore = databaseLayout.metadataStore();
         neoStore.createNewFile();
 
         // ... and mocks
@@ -122,8 +121,8 @@ public class StoreMigratorTest
     {
         // given
         long txId = 42;
-        File databaseDir = directory.databaseDir();
-        File neoStore = new File( databaseDir, DEFAULT_NAME );
+        DatabaseLayout databaseLayout = directory.databaseLayout();
+        File neoStore = databaseLayout.metadataStore();
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
@@ -162,7 +161,7 @@ public class StoreMigratorTest
     private void extractTransactionalInformationFromLogs( String path, File customLogLocation, DatabaseLayout databaseLayout, File storeDir ) throws IOException
     {
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        File neoStore = databaseLayout.file( DEFAULT_NAME );
+        File neoStore = databaseLayout.metadataStore();
 
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( logical_logs_location, path ).newGraphDatabase();
@@ -193,8 +192,8 @@ public class StoreMigratorTest
     {
         // given
         long txId = 1;
-        File databaseDir = directory.databaseDir();
-        File neoStore = new File( databaseDir, DEFAULT_NAME );
+        DatabaseLayout databaseLayout = directory.databaseLayout();
+        File neoStore = databaseLayout.metadataStore();
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
@@ -246,7 +245,7 @@ public class StoreMigratorTest
         // Prepare migrator and file
         StoreMigrator migrator = newStoreMigrator();
         DatabaseLayout dbLayout = directory.databaseLayout();
-        File neoStore = dbLayout.file( DEFAULT_NAME );
+        File neoStore = dbLayout.metadataStore();
         neoStore.createNewFile();
 
         // Monitor what happens

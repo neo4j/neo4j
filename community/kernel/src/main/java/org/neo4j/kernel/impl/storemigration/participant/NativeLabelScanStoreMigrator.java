@@ -94,7 +94,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     {
         if ( nativeLabelScanStoreMigrated )
         {
-            File nativeLabelIndex = migrationDirectoryStructure.file( NativeLabelScanStore.FILE_NAME );
+            File nativeLabelIndex = migrationDirectoryStructure.labelScanStore();
             moveNativeIndexFile( storeStructure, nativeLabelIndex );
             deleteLuceneLabelIndex( getLuceneStoreDirectory( storeStructure ) );
         }
@@ -122,7 +122,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         Optional<FileHandle> nativeIndexFileHandle = fileSystem.streamFilesRecursive( nativeLabelIndex ).findFirst();
         if ( nativeIndexFileHandle.isPresent() )
         {
-            nativeIndexFileHandle.get().rename( storeStructure.file( NativeLabelScanStore.FILE_NAME ) );
+            nativeIndexFileHandle.get().rename( storeStructure.labelScanStore() );
         }
     }
 
@@ -146,7 +146,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
 
     private boolean isNativeLabelScanStoreMigrationRequired( DatabaseLayout directoryStructure ) throws IOException
     {
-        return fileSystem.streamFilesRecursive( directoryStructure.file( NativeLabelScanStore.FILE_NAME ) )
+        return fileSystem.streamFilesRecursive( directoryStructure.labelScanStore() )
                 .noneMatch( Predicates.alwaysTrue() );
     }
 

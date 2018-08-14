@@ -22,6 +22,7 @@
  */
 package org.neo4j.backup.impl;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
@@ -75,8 +76,6 @@ import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
@@ -125,13 +124,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_LEFT;
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_RIGHT;
 
 public class BackupProtocolServiceIT
 {
-    private static final String NODE_STORE = StoreFactory.NODE_STORE_NAME;
-    private static final String RELATIONSHIP_STORE = StoreFactory.RELATIONSHIP_STORE_NAME;
     private static final String BACKUP_HOST = "localhost";
     private static final OutputStream NULL_OUTPUT = new OutputStream()
     {
@@ -424,17 +419,16 @@ public class BackupProtocolServiceIT
         File[] files = backupDatabaseLayout.databaseDirectory().listFiles();
         assertTrue( files.length > 0 );
 
-        for ( final StoreFile storeFile : StoreFile.values() )
+        for ( final File storeFile : backupDatabaseLayout.storeFiles() )
         {
-            if ( storeFile == COUNTS_STORE_LEFT ||
-                 storeFile == COUNTS_STORE_RIGHT )
+            if ( backupDatabaseLayout.countStoreA().equals( storeFile ) || backupDatabaseLayout.countStoreB().equals( storeFile ) )
             {
-                assertThat( files, anyOf( hasFile( COUNTS_STORE_LEFT.storeFileName() ),
-                                          hasFile( COUNTS_STORE_RIGHT.storeFileName() ) ) );
+                assertThat( files, anyOf( hasFile( backupDatabaseLayout.countStoreA() ),
+                                          hasFile( backupDatabaseLayout.countStoreB() ) ) );
             }
             else
             {
-                assertThat( files, hasFile( storeFile.storeFileName() ) );
+                assertThat( files, hasFile( storeFile ) );
             }
         }
 
@@ -884,7 +878,7 @@ public class BackupProtocolServiceIT
         long expectedLastTxId = resolver.resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
         // This monitor is added server-side...
-        monitors.addMonitorListener( new StoreSnoopingMonitor( barrier ) );
+        monitors.addMonitorListener( new StoreSnoopingMonitor( barrier, db.databaseLayout() ) );
 
         Dependencies dependencies = new Dependencies( resolver );
         dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
@@ -916,7 +910,7 @@ public class BackupProtocolServiceIT
 
         // then
         checkPreviousCommittedTxIdFromLog( 0, expectedLastTxId );
-        Path neoStore = db.databaseLayout().file( MetaDataStore.DEFAULT_NAME ).toPath();
+        Path neoStore = db.databaseLayout().metadataStore().toPath();
         PageCache pageCache = resolver.resolveDependency( PageCache.class );
         long txIdFromOrigin = MetaDataStore.getRecord( pageCache, neoStore.toFile(), Position.LAST_TRANSACTION_ID );
         checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId + 1, txIdFromOrigin );
@@ -1059,7 +1053,7 @@ public class BackupProtocolServiceIT
         }
     }
 
-    private static BaseMatcher<File[]> hasFile( final String fileName )
+    private static BaseMatcher<File[]> hasFile( File file )
     {
         return new BaseMatcher<File[]>()
         {
@@ -1071,20 +1065,13 @@ public class BackupProtocolServiceIT
                 {
                     return false;
                 }
-                for ( File file : files )
-                {
-                    if ( file.getAbsolutePath().contains( fileName ) )
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                return ArrayUtils.contains( files, file );
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( String.format( "[%s] in list of copied files", fileName ) );
+                description.appendText( String.format( "[%s] in list of copied files", file.getAbsolutePath() ) );
             }
         };
     }
@@ -1123,7 +1110,7 @@ public class BackupProtocolServiceIT
 
     private long getLastTxChecksum( PageCache pageCache ) throws IOException
     {
-        Path neoStore = backupDatabaseLayout.file( MetaDataStore.DEFAULT_NAME ).toPath();
+        Path neoStore = backupDatabaseLayout.metadataStore().toPath();
         return MetaDataStore.getRecord( pageCache, neoStore.toFile(), Position.LAST_TRANSACTION_CHECKSUM );
     }
 
@@ -1166,17 +1153,18 @@ public class BackupProtocolServiceIT
     private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter
     {
         private final Barrier barrier;
+        private final DatabaseLayout databaseLayout;
 
-        private StoreSnoopingMonitor( Barrier barrier )
+        private StoreSnoopingMonitor( Barrier barrier, DatabaseLayout databaseLayout )
         {
             this.barrier = barrier;
+            this.databaseLayout = databaseLayout;
         }
 
         @Override
         public void finishStreamingStoreFile( File storefile, String storeCopyIdentifier )
         {
-            if ( storefile.getAbsolutePath().contains( NODE_STORE ) ||
-                    storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
+            if ( databaseLayout.nodeStore().equals( storefile ) || databaseLayout.relationshipStore().equals( storefile ) )
             {
                 barrier.reached(); // multiple calls to this barrier will not block
             }

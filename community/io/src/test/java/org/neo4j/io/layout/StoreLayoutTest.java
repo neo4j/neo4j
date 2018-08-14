@@ -66,4 +66,13 @@ class StoreLayoutTest
         StoreLayout storeLayout = StoreLayout.of( notCanonicalPath.toFile() );
         assertEquals( testDirectory.directory( "anotherLocation" ), storeLayout.storeDirectory() );
     }
+
+    @Test
+    void storeLockFileLocation()
+    {
+        StoreLayout storeLayout = testDirectory.storeLayout();
+        File storeLockFile = storeLayout.storeLockFile();
+        assertEquals( "store_lock", storeLockFile.getName() );
+        assertEquals( storeLayout.storeDirectory(), storeLockFile.getParentFile() );
+    }
 }

@@ -31,6 +31,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.configuration.Config;
@@ -227,9 +228,10 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
         String databaseName = arguments.get( ARG_DATABASE );
         File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
-        File storeDir = getConfig( configFile, databaseName ).get( database_path );
-        long pageCacheSize = dbSpecificPageCacheSize( storeDir );
-        long luceneSize = dbSpecificLuceneSize( storeDir );
+        File databaseDirectory = getConfig( configFile, databaseName ).get( database_path );
+        DatabaseLayout layout = DatabaseLayout.of( databaseDirectory );
+        long pageCacheSize = dbSpecificPageCacheSize( layout );
+        long luceneSize = dbSpecificLuceneSize( databaseDirectory );
 
         print( "#" );
         print( "# The numbers below have been derived based on your current data volume in database and index configuration of database '" + databaseName +
@@ -239,14 +241,15 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( "# Data volume and native indexes: " + bytesToString( pageCacheSize ) );
     }
 
-    private long dbSpecificPageCacheSize( File storeDir )
+    private long dbSpecificPageCacheSize( DatabaseLayout databaseLayout )
     {
-        return sumStoreFiles( storeDir ) + sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( false ) );
+        return sumStoreFiles( databaseLayout ) +
+                sumIndexFiles( baseSchemaIndexFolder( databaseLayout.databaseDirectory() ), getNativeIndexFileFilter( false ) );
     }
 
-    private long dbSpecificLuceneSize( File storeDir )
+    private long dbSpecificLuceneSize( File databaseDirectory )
     {
-        return sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( true ) );
+        return sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ), getNativeIndexFileFilter( true ) );
     }
 
     private FilenameFilter getNativeIndexFileFilter( boolean inverse )
@@ -278,14 +281,14 @@ public class MemoryRecommendationsCommand implements AdminCommand
         };
     }
 
-    private long sumStoreFiles( File storeDir )
+    private long sumStoreFiles( DatabaseLayout databaseLayout )
     {
         long total = 0;
         for ( StoreType type : StoreType.values() )
         {
             if ( type.isRecordStore() )
             {
-                File file = new File( storeDir, type.getStoreFile().storeFileName() );
+                File file = databaseLayout.file( type.getDatabaseStore() );
                 if ( outsideWorld.fileSystem().fileExists( file ) )
                 {
                     total += outsideWorld.fileSystem().getFileSize( file );

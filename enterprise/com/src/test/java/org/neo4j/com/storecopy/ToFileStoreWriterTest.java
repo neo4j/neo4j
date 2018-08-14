@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.com.DataProducer;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -40,7 +39,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class ToFileStoreWriterTest
 {
@@ -64,11 +62,11 @@ public class ToFileStoreWriterTest
         {
             if ( type.isRecordStore() )
             {
-                String fileName = type.getStoreFile().fileName( STORE );
-                writeAndVerify( writer, tempBuffer, fileName );
+                File file = directory.databaseLayout().file( type.getDatabaseStore() );
+                writeAndVerify( writer, tempBuffer, file );
             }
         }
-        writeAndVerify( writer, tempBuffer, NativeLabelScanStore.FILE_NAME );
+        writeAndVerify( writer, tempBuffer, directory.databaseLayout().labelScanStore() );
     }
 
     @Test
@@ -98,12 +96,11 @@ public class ToFileStoreWriterTest
         assertTrue( wasActivated.get() );
     }
 
-    private void writeAndVerify( ToFileStoreWriter writer, ByteBuffer tempBuffer, String fileName )
+    private void writeAndVerify( ToFileStoreWriter writer, ByteBuffer tempBuffer, File file )
             throws IOException
     {
-        File expectedFile = new File( directory.absolutePath(), fileName );
-        writer.write( fileName, new DataProducer( 16 ), tempBuffer, true, 16 );
-        assertTrue( "File created by writer should exist." , fs.fileExists( expectedFile ) );
-        assertEquals( 16, fs.getFileSize( expectedFile ) );
+        writer.write( file.getName(), new DataProducer( 16 ), tempBuffer, true, 16 );
+        assertTrue( "File created by writer should exist." , fs.fileExists( file ) );
+        assertEquals( 16, fs.getFileSize( file ) );
     }
 }

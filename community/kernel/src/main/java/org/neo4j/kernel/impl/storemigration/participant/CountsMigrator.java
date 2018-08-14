@@ -26,6 +26,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreFailureException;
-import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -55,10 +54,10 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
+import static org.neo4j.kernel.impl.storemigration.participant.StoreMigratorFileOperation.fileOperation;
 
 /**
  * Rebuilds the count store during migration.
@@ -73,8 +72,8 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
  */
 public class CountsMigrator extends AbstractStoreMigrationParticipant
 {
-    private static final Iterable<StoreFile> COUNTS_STORE_FILES = Iterables
-            .iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
+    private static final Iterable<DatabaseStore> COUNTS_STORE_FILES = Iterables
+            .iterable( DatabaseStore.COUNTS_STORE_A, DatabaseStore.COUNTS_STORE_B );
 
     private final Config config;
     private final FileSystemAbstraction fileSystem;
@@ -96,10 +95,9 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
         if ( countStoreRebuildRequired( versionToMigrateFrom ) )
         {
             // create counters from scratch
-            StoreFile.fileOperation( DELETE, fileSystem, migrationStructure.databaseDirectory(),
-                    migrationStructure.databaseDirectory(), COUNTS_STORE_FILES, true, null,
-                    StoreFileType.STORE );
-            File neoStore = sourceStructure.file( DEFAULT_NAME );
+            fileOperation( DELETE, fileSystem, migrationStructure,
+                    migrationStructure, COUNTS_STORE_FILES, true, null );
+            File neoStore = sourceStructure.metadataStore();
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             try
             {
@@ -126,14 +124,11 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
         if ( migrated )
         {
             // Delete any current count files in the store directory.
-            File databaseDirectory = directoryStructure.databaseDirectory();
-            StoreFile.fileOperation( DELETE, fileSystem, databaseDirectory, null, COUNTS_STORE_FILES, true, null,
-                    StoreFileType.values() );
+            fileOperation( DELETE, fileSystem, directoryStructure, null, COUNTS_STORE_FILES, true, null );
             // Move the migrated ones into the store directory
-            StoreFile.fileOperation( MOVE, fileSystem, migrationStructure.databaseDirectory(), databaseDirectory, COUNTS_STORE_FILES, true,
+            fileOperation( MOVE, fileSystem, migrationStructure, directoryStructure, COUNTS_STORE_FILES, true,
                     // allow to skip non existent source files
-                    ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
-                    StoreFileType.values() );
+                    ExistingTargetStrategy.OVERWRITE );
             // We do not need to move files with the page cache, as the count files always reside on the normal file system.
         }
     }
@@ -163,8 +158,6 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
             ProgressReporter progressMonitor, String expectedStoreVersion, PageCache pageCache,
             LogProvider logProvider )
     {
-        final File storeFileBase = migrationStructure.file( MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
-
         RecordFormats recordFormats = selectForVersion( expectedStoreVersion );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory = new StoreFactory( sourceStructure, config, idGeneratorFactory, pageCache,
@@ -183,7 +176,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 CountsComputer initializer = new CountsComputer( lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId,
                         NumberArrayFactory.auto( pageCache, migrationStructure.databaseDirectory(), true, NumberArrayFactory.NO_MONITOR ), progressMonitor );
                 life.add( new CountsTracker( logProvider, fileSystem, pageCache, config,
-                        storeFileBase, EmptyVersionContextSupplier.EMPTY ).setInitializer( initializer ) );
+                        migrationStructure, EmptyVersionContextSupplier.EMPTY ).setInitializer( initializer ) );
             }
         }
     }

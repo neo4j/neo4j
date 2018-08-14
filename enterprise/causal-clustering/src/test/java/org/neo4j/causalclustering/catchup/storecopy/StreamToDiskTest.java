@@ -28,7 +28,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.PageCacheRule;
@@ -37,7 +36,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class StreamToDiskTest
 {
@@ -62,21 +60,20 @@ public class StreamToDiskTest
         {
             if ( type.isRecordStore() )
             {
-                String fileName = type.getStoreFile().fileName( STORE );
-                writeAndVerify( writerProvider, fileName );
+                File file = directory.databaseLayout().file( type.getDatabaseStore() );
+                writeAndVerify( writerProvider, file );
             }
         }
-        writeAndVerify( writerProvider, NativeLabelScanStore.FILE_NAME );
+        writeAndVerify( writerProvider, directory.databaseLayout().labelScanStore() );
     }
 
-    private void writeAndVerify( StreamToDiskProvider writerProvider, String fileName ) throws Exception
+    private void writeAndVerify( StreamToDiskProvider writerProvider, File file ) throws Exception
     {
-        try ( StoreFileStream acquire = writerProvider.acquire( fileName, 16 ) )
+        try ( StoreFileStream acquire = writerProvider.acquire( file.getName(), 16 ) )
         {
             acquire.write( DATA );
         }
-        File expectedFile = new File( directory.absolutePath(), fileName );
-        assertTrue( "Streamed file created.", fs.fileExists( expectedFile ) );
-        assertEquals( DATA.length, fs.getFileSize( expectedFile ) );
+        assertTrue( "Streamed file created.", fs.fileExists( file ) );
+        assertEquals( DATA.length, fs.getFileSize( file ) );
     }
 }

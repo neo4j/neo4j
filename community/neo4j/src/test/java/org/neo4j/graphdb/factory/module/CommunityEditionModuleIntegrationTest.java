@@ -26,14 +26,12 @@ import java.util.function.Predicate;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.layout.DatabaseFileNames;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
@@ -74,8 +72,8 @@ class CommunityEditionModuleIntegrationTest
     void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
-        assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
-        assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
+        assertFalse( filter.test( DatabaseFileNames.METADATA_STORE ) );
+        assertFalse( filter.test( DatabaseFileNames.NODE_STORE ) );
         assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
     }

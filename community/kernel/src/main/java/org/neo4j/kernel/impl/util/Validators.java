@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 
 public class Validators
 {
@@ -119,7 +118,7 @@ public class Validators
 
     private static boolean isExistingDatabase( FileSystemAbstraction fileSystem, DatabaseLayout layout )
     {
-        return fileSystem.fileExists( layout.file( MetaDataStore.DEFAULT_NAME ) );
+        return fileSystem.fileExists( layout.metadataStore() );
     }
 
     public static Validator<String> inList( String[] validStrings )

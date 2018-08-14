@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -70,7 +69,7 @@ public class FreeIdsAfterRecoveryTest
         }
 
         // populating its .id file with a bunch of ids
-        File nodeIdFile = databaseLayout.file( StoreFile.NODE_STORE.fileName( StoreFileType.ID ) );
+        File nodeIdFile = databaseLayout.idNodeStore();
         try ( IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false, IdType.NODE, () -> highId ) )
         {
             for ( long id = 0; id < 15; id++ )

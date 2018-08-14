@@ -37,7 +37,6 @@ import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 
 import static java.lang.String.format;
@@ -102,7 +101,7 @@ class BackupCopyService
 
     boolean backupExists( DatabaseLayout databaseLayout )
     {
-        return databaseLayout.file( MetaDataStore.DEFAULT_NAME ).exists();
+        return databaseLayout.metadataStore().exists();
     }
 
     Path findNewBackupLocationForBrokenExisting( Path existingBackup )

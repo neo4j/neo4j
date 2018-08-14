@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -91,13 +92,13 @@ public class DatabaseRebuildToolTest
 
         // GIVEN
         File from = directory.directory( "from" );
-        File to = directory.directory( "to" );
+        DatabaseLayout to = directory.databaseLayout( "to" );
         databaseWithSomeTransactions( from );
         DatabaseRebuildTool tool = new DatabaseRebuildTool( input( "apply next", "apply next", "cc", "exit" ),
                 NULL_PRINT_STREAM, NULL_PRINT_STREAM );
 
         // WHEN
-        tool.run( "--from", from.getAbsolutePath(), "--to", to.getAbsolutePath(), "-i" );
+        tool.run( "--from", from.getAbsolutePath(), "--to", to.databaseDirectory().getPath(), "-i" );
 
         // THEN
         assertEquals( TransactionIdStore.BASE_TX_ID + 2, lastAppliedTx( to ) );
@@ -178,12 +179,12 @@ public class DatabaseRebuildToolTest
         return directory.databaseDir( storeDir );
     }
 
-    private static long lastAppliedTx( File storeDir )
+    private static long lastAppliedTx( DatabaseLayout databaseLayout )
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = createPageCache( fileSystem ) )
         {
-            return MetaDataStore.getRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
+            return MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(),
                     MetaDataStore.Position.LAST_TRANSACTION_ID );
         }
         catch ( IOException e )

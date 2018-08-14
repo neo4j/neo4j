@@ -59,24 +59,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_LEFT;
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_RIGHT;
-import static org.neo4j.kernel.impl.store.StoreFile.LABEL_TOKEN_NAMES_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.LABEL_TOKEN_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.NODE_LABEL_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.NODE_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_ARRAY_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_KEY_TOKEN_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_STRING_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_GROUP_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.SCHEMA_STORE;
-import static org.neo4j.kernel.impl.storemigration.StoreFileType.ID;
-import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class StoreSizeBeanTest
@@ -138,42 +120,42 @@ class StoreSizeBeanTest
 
     private void createFakeStoreDirectory() throws IOException
     {
-        Map<String,Integer> dummyStore = new HashMap<>();
-        dummyStore.put( NODE_STORE.fileName( STORE ), 1 );
-        dummyStore.put( NODE_STORE.fileName( ID ), 2 );
-        dummyStore.put( NODE_LABEL_STORE.fileName( STORE ), 3 );
-        dummyStore.put( NODE_LABEL_STORE.fileName( ID ), 4 );
-        dummyStore.put( PROPERTY_STORE.fileName( STORE ), 5 );
-        dummyStore.put( PROPERTY_STORE.fileName( ID ), 6 );
-        dummyStore.put( PROPERTY_KEY_TOKEN_STORE.fileName( STORE ), 7 );
-        dummyStore.put( PROPERTY_KEY_TOKEN_STORE.fileName( ID ), 8 );
-        dummyStore.put( PROPERTY_KEY_TOKEN_NAMES_STORE.fileName( STORE ), 9 );
-        dummyStore.put( PROPERTY_KEY_TOKEN_NAMES_STORE.fileName( ID ), 10 );
-        dummyStore.put( PROPERTY_STRING_STORE.fileName( STORE ), 11 );
-        dummyStore.put( PROPERTY_STRING_STORE.fileName( ID ), 12 );
-        dummyStore.put( PROPERTY_ARRAY_STORE.fileName( STORE ), 13 );
-        dummyStore.put( PROPERTY_ARRAY_STORE.fileName( ID ), 14 );
-        dummyStore.put( RELATIONSHIP_STORE.fileName( STORE ), 15 );
-        dummyStore.put( RELATIONSHIP_STORE.fileName( ID ), 16 );
-        dummyStore.put( RELATIONSHIP_GROUP_STORE.fileName( STORE ), 17 );
-        dummyStore.put( RELATIONSHIP_GROUP_STORE.fileName( ID ), 18 );
-        dummyStore.put( RELATIONSHIP_TYPE_TOKEN_STORE.fileName( STORE ), 19 );
-        dummyStore.put( RELATIONSHIP_TYPE_TOKEN_STORE.fileName( ID ), 20 );
-        dummyStore.put( RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.fileName( STORE ), 21 );
-        dummyStore.put( RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.fileName( ID ), 22 );
-        dummyStore.put( LABEL_TOKEN_STORE.fileName( STORE ), 23 );
-        dummyStore.put( LABEL_TOKEN_STORE.fileName( ID ), 24 );
-        dummyStore.put( LABEL_TOKEN_NAMES_STORE.fileName( STORE ), 25 );
-        dummyStore.put( LABEL_TOKEN_NAMES_STORE.fileName( ID ), 26 );
-        dummyStore.put( SCHEMA_STORE.fileName( STORE ), 27 );
-        dummyStore.put( SCHEMA_STORE.fileName( ID ), 28 );
-        dummyStore.put( COUNTS_STORE_LEFT.fileName( STORE ), 29 );
-        // COUNTS_STORE_RIGHT is created in the test
+        Map<File,Integer> dummyStore = new HashMap<>();
+        DatabaseLayout layout = testDirectory.databaseLayout();
+        dummyStore.put( layout.nodeStore(), 1 );
+        dummyStore.put( layout.idNodeStore(), 2 );
+        dummyStore.put( layout.nodeLabelStore(), 3 );
+        dummyStore.put( layout.idNodeLabelStore(), 4 );
+        dummyStore.put( layout.propertyStore(), 5 );
+        dummyStore.put( layout.idPropertyStore(), 6 );
+        dummyStore.put( layout.propertyKeyTokenStore(), 7 );
+        dummyStore.put( layout.idPropertyKeyTokenStore(), 8 );
+        dummyStore.put( layout.propertyKeyTokenNamesStore(), 9 );
+        dummyStore.put( layout.idPropertyKeyTokenNamesStore(), 10 );
+        dummyStore.put( layout.propertyStringStore(), 11 );
+        dummyStore.put( layout.idPropertyStringStore(), 12 );
+        dummyStore.put( layout.propertyArrayStore(), 13 );
+        dummyStore.put( layout.idPropertyArrayStore(), 14 );
+        dummyStore.put( layout.relationshipStore(), 15 );
+        dummyStore.put( layout.idRelationshipStore(), 16 );
+        dummyStore.put( layout.relationshipGroupStore(), 17 );
+        dummyStore.put( layout.idRelationshipGroupStore(), 18 );
+        dummyStore.put( layout.relationshipTypeTokenStore(), 19 );
+        dummyStore.put( layout.idRelationshipTypeTokenStore(), 20 );
+        dummyStore.put( layout.relationshipTypeTokenNamesStore(), 21 );
+        dummyStore.put( layout.idRelationshipTypeTokenNamesStore(), 22 );
+        dummyStore.put( layout.labelTokenStore(), 23 );
+        dummyStore.put( layout.idLabelTokenStore(), 24 );
+        dummyStore.put( layout.labelTokenNamesStore(), 25 );
+        dummyStore.put( layout.idLabelTokenNamesStore(), 26 );
+        dummyStore.put( layout.schemaStore(), 27 );
+        dummyStore.put( layout.idSchemaStore(), 28 );
+        dummyStore.put( layout.countStoreB(), 29 );
+        // COUNTS_STORE_B is created in the test
 
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        for ( Map.Entry<String,Integer> dummyFile : dummyStore.entrySet() )
+        for ( Map.Entry<File,Integer> fileEntry : dummyStore.entrySet() )
         {
-            createFileOfSize( databaseLayout.file( dummyFile.getKey() ), dummyFile.getValue() );
+            createFileOfSize( fileEntry.getKey(), fileEntry.getValue() );
         }
     }
 
@@ -224,7 +206,7 @@ class StoreSizeBeanTest
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 29, 29), storeSizeBean.getCountStoreSize() );
-        createFileOfSize( testDirectory.databaseLayout().file( COUNTS_STORE_RIGHT.fileName( STORE ) ), 30 );
+        createFileOfSize( testDirectory.databaseLayout().countStoreA(), 30 );
         assertEquals( getExpected( 29, 30), storeSizeBean.getCountStoreSize() );
     }
 

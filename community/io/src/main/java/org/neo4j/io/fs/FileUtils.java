@@ -496,12 +496,12 @@ public class FileUtils
         }
     }
 
-    public interface FileOperation
+    public interface Operation
     {
         void perform() throws IOException;
     }
 
-    public static void windowsSafeIOOperation( FileOperation operation ) throws IOException
+    public static void windowsSafeIOOperation( Operation operation ) throws IOException
     {
         IOException storedIoe = null;
         for ( int i = 0; i < NUMBER_OF_RETRIES; i++ )

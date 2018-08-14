@@ -547,7 +547,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             throw new UnderlyingStorageException( e );
         }
 
-        CountsComputer.recomputeCounts( neoStores, pageCache );
+        CountsComputer.recomputeCounts( neoStores, pageCache, databaseLayout );
     }
 
     private StoreIndexDescriptor[] getIndexesNeedingPopulation()

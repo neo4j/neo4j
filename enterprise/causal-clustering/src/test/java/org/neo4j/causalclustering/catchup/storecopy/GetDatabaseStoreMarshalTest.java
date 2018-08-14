@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 
 import static org.junit.Assert.assertEquals;
 
-public class GetStoreFileMarshalTest
+public class GetDatabaseStoreMarshalTest
 {
     EmbeddedChannel embeddedChannel;
 

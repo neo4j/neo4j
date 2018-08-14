@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.util.Optional;
 
+import org.neo4j.io.layout.DatabaseFileNames;
+
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -40,7 +42,7 @@ public class StoreTypeTest
     public void storeTypeOfMetaDataStoreFile()
     {
         //noinspection OptionalGetWithoutIsPresent
-        String fileName = MetaDataStore.DEFAULT_NAME;
+        String fileName = DatabaseFileNames.METADATA_STORE;
         assertEquals( StoreType.META_DATA, StoreType.typeOf( fileName ).get() );
     }
 

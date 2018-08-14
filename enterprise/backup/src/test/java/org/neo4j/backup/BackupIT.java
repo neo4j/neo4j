@@ -58,6 +58,7 @@ import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -68,11 +69,9 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -119,6 +118,8 @@ public class BackupIT
     private File otherServerPath;
     private File backupDatabasePath;
     private List<ServerInterface> servers;
+    private DatabaseLayout backupDatabaseLayout;
+    private DatabaseLayout serverStoreLayout;
 
     @Parameters( name = "{0}" )
     public static List<String> recordFormatNames()
@@ -130,9 +131,11 @@ public class BackupIT
     public void before()
     {
         servers = new ArrayList<>();
-        serverStorePath = testDir.storeDir( "server" );
+        serverStoreLayout = testDir.databaseLayout( "server" );
+        serverStorePath = serverStoreLayout.databaseDirectory();
         otherServerPath = testDir.directory( "server2" );
-        backupDatabasePath = testDir.databaseDir( "backedup-serverdb" );
+        backupDatabaseLayout = testDir.databaseLayout( "backedup-serverdb" );
+        backupDatabasePath = backupDatabaseLayout.databaseDirectory();
     }
 
     @After
@@ -200,8 +203,8 @@ public class BackupIT
             server = null;
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
 
-            long firstChecksum = lastTxChecksumOf( serverStorePath, pageCache );
-            assertEquals( firstChecksum, lastTxChecksumOf( backupDatabasePath, pageCache ) );
+            long firstChecksum = lastTxChecksumOf( serverStoreLayout, pageCache );
+            assertEquals( firstChecksum, lastTxChecksumOf( backupDatabaseLayout, pageCache ) );
 
             addMoreData( serverStorePath );
             server = startServer( serverStorePath, backupPort );
@@ -210,8 +213,8 @@ public class BackupIT
             shutdownServer( server );
             server = null;
 
-            long secondChecksum = lastTxChecksumOf( serverStorePath, pageCache );
-            assertEquals( secondChecksum, lastTxChecksumOf( backupDatabasePath, pageCache ) );
+            long secondChecksum = lastTxChecksumOf( serverStoreLayout, pageCache );
+            assertEquals( secondChecksum, lastTxChecksumOf( backupDatabaseLayout, pageCache ) );
             assertTrue( firstChecksum != secondChecksum );
         }
         finally
@@ -334,7 +337,7 @@ public class BackupIT
             backup.full( backupDatabasePath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-            long lastCommittedTx = getLastCommittedTx( backupDatabasePath.getPath(), pageCache );
+            long lastCommittedTx = getLastCommittedTx( backupDatabaseLayout, pageCache );
 
             for ( int i = 0; i < 5; i++ )
             {
@@ -346,7 +349,7 @@ public class BackupIT
                 }
                 backup = backup.incremental( backupDatabasePath.getPath() );
                 assertTrue( "Should be consistent", backup.isConsistent() );
-                assertEquals( lastCommittedTx + i + 1, getLastCommittedTx( backupDatabasePath.getPath(), pageCache ) );
+                assertEquals( lastCommittedTx + i + 1, getLastCommittedTx( backupDatabaseLayout, pageCache ) );
             }
         }
         finally
@@ -387,9 +390,9 @@ public class BackupIT
         }
     }
 
-    private static long getLastCommittedTx( String path, PageCache pageCache ) throws IOException
+    private static long getLastCommittedTx( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException
     {
-        File neoStore = new File( path, MetaDataStore.DEFAULT_NAME );
+        File neoStore = databaseLayout.metadataStore();
         return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
     }
 
@@ -552,12 +555,12 @@ public class BackupIT
 
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort );
             backup.full( backupDatabasePath.getPath() );
-            ensureStoresHaveIdFiles( backupDatabasePath );
+            ensureStoresHaveIdFiles( backupDatabaseLayout );
 
             DbRepresentation representation = addLotsOfData( db );
             backup.incremental( backupDatabasePath.getPath() );
             assertEquals( representation, getDbRepresentation() );
-            ensureStoresHaveIdFiles( backupDatabasePath );
+            ensureStoresHaveIdFiles( backupDatabaseLayout );
         }
         finally
         {
@@ -593,17 +596,13 @@ public class BackupIT
         }
     }
 
-    private void ensureStoresHaveIdFiles( File path ) throws IOException
+    private void ensureStoresHaveIdFiles( DatabaseLayout databaseLayout ) throws IOException
     {
-        for ( StoreFile file : StoreFile.values() )
+        for ( File idFile : databaseLayout.idFiles() )
         {
-            if ( file.isRecordStore() )
-            {
-                File idFile = new File( path, file.fileName( StoreFileType.ID ) );
-                assertTrue( "Missing id file " + idFile, idFile.exists() );
-                assertTrue( "Id file " + idFile + " had 0 highId",
-                        IdGeneratorImpl.readHighId( fileSystemRule.get(), idFile ) > 0 );
-            }
+            assertTrue( "Missing id file " + idFile, idFile.exists() );
+            assertTrue( "Id file " + idFile + " had 0 highId",
+                    IdGeneratorImpl.readHighId( fileSystemRule.get(), idFile ) > 0 );
         }
     }
 
@@ -640,9 +639,9 @@ public class BackupIT
         return Config.defaults( logs_directory, directory ).get( store_internal_log_path ).exists();
     }
 
-    private static long lastTxChecksumOf( File storeDir, PageCache pageCache ) throws IOException
+    private static long lastTxChecksumOf( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException
     {
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStore = databaseLayout.metadataStore();
         return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 

@@ -19,19 +19,24 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import java.io.File;
+
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class LabelScanIndex extends AbstractBaseRecord
 {
-    public LabelScanIndex()
+
+    private final String fineName;
+
+    public LabelScanIndex( File storeFile )
     {
         super( NO_ID );
+        fineName = storeFile.getName();
     }
 
     @Override
     public String toString()
     {
-        return "Label index: " + NativeLabelScanStore.FILE_NAME;
+        return "Label index: " + fineName;
     }
 }

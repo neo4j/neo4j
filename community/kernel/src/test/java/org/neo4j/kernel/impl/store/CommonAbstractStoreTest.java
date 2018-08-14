@@ -35,6 +35,8 @@ import java.util.function.LongSupplier;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -52,7 +54,6 @@ import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
 import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
 import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
@@ -210,22 +211,23 @@ public class CommonAbstractStoreTest
     public void shouldDeleteOnCloseIfOpenOptionsSaysSo()
     {
         // GIVEN
-        File file = dir.file( "store" ).getAbsoluteFile();
-        File idFile = new File( file.getParentFile(), StoreFileType.ID.augment( file.getName() ) );
+        DatabaseLayout databaseLayout = dir.databaseLayout();
+        File nodeStore = databaseLayout.nodeStore();
+        File idFile = databaseLayout.idFile( DatabaseStore.NODE_STORE );
         FileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs, Config.defaults() );
-        TheStore store = new TheStore( file, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
+        TheStore store = new TheStore( nodeStore, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
                 NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
         store.initialise( true );
         store.makeStoreOk();
-        assertTrue( fs.fileExists( file ) );
+        assertTrue( fs.fileExists( nodeStore ) );
         assertTrue( fs.fileExists( idFile ) );
 
         // WHEN
         store.close();
 
         // THEN
-        assertFalse( fs.fileExists( file ) );
+        assertFalse( fs.fileExists( nodeStore ) );
         assertFalse( fs.fileExists( idFile ) );
     }
 
@@ -244,12 +246,12 @@ public class CommonAbstractStoreTest
 
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>
     {
-        TheStore( File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
+        TheStore( File file, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache, LogProvider logProvider, RecordFormat<TheRecord> recordFormat,
                 OpenOption... openOptions )
         {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType", recordFormat,
-                    NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, file, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
+                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
         }
 
         @Override

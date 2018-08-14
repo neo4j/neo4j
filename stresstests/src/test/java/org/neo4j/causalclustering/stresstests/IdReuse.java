@@ -40,13 +40,12 @@ import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helper.Workload;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.id.IdContainer;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.causalclustering.stresstests.TxHelp.isInterrupted;
 import static org.neo4j.causalclustering.stresstests.TxHelp.isTransient;
-import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 
 /**
  * Resources for stress testing ID-reuse scenarios.
@@ -111,8 +110,8 @@ class IdReuse
 
         void visitAllIds( ClusterMember member, Consumer<Long> idConsumer )
         {
-            String databasePath = member.databaseDirectory().getAbsolutePath();
-            File idFile = new File( databasePath, MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME + ".id" );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( member.databaseDirectory() );
+            File idFile = databaseLayout.idNodeStore();
             IdContainer idContainer = new IdContainer( fs, idFile, 1024, true );
             idContainer.init();
             log.info( idFile.getAbsolutePath() + " has " + idContainer.getFreeIdCount() + " free ids" );

@@ -246,7 +246,7 @@ public class StoreCopyClient
                 // Recovery will treat that as last checkpoint and will not try to recover store till new
                 // last closed transaction offset will not overcome old one. Till that happens it will be
                 // impossible for recovery process to restore the store
-                File neoStore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+                File neoStore = databaseLayout.metadataStore();
                 MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, LOG_HEADER_SIZE );
             }
         }

@@ -206,7 +206,7 @@ public class UpgradableDatabaseTest
             // doesn't matter which version we pick we are changing it to the wrong one...
             MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_3.STORE_VERSION, databaseLayout.databaseDirectory() );
             changeVersionNumber( fileSystem, databaseLayout.file( neostoreFilename ), version );
-            File metadataStore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+            File metadataStore = databaseLayout.metadataStore();
             PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );
             VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();

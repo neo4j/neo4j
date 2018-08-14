@@ -42,6 +42,7 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.ha.HaSettings;
@@ -290,10 +291,10 @@ public class ClusterIT
             cluster.sync();
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            File databaseDir = slave.databaseLayout().databaseDirectory();
+            DatabaseLayout databaseLayout = slave.databaseLayout();
             ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
 
-            clearLastTransactionCommitTimestampField( databaseDir );
+            clearLastTransactionCommitTimestampField( databaseLayout );
 
             HighlyAvailableGraphDatabase repairedSlave = slaveRepairKit.repair();
             cluster.await( allSeesAllAsAvailable() );
@@ -324,11 +325,11 @@ public class ClusterIT
             cluster.sync();
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            File databaseDir = slave.databaseLayout().databaseDirectory();
+            DatabaseLayout databaseLayout = slave.databaseLayout();
             ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
 
-            clearLastTransactionCommitTimestampField( databaseDir );
-            deleteLogs( databaseDir );
+            clearLastTransactionCommitTimestampField( databaseLayout );
+            deleteLogs( databaseLayout );
 
             HighlyAvailableGraphDatabase repairedSlave = slaveRepairKit.repair();
             cluster.await( allSeesAllAsAvailable() );
@@ -372,11 +373,11 @@ public class ClusterIT
         }
     }
 
-    private static void deleteLogs( File storeDir ) throws IOException
+    private static void deleteLogs( DatabaseLayout databaseLayout ) throws IOException
     {
         try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystem ).build();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem ).build();
             for ( File file : logFiles.logFiles() )
             {
                 fileSystem.deleteFile( file );
@@ -399,12 +400,12 @@ public class ClusterIT
         }
     }
 
-    private static void clearLastTransactionCommitTimestampField( File databaseDirectory ) throws IOException
+    private static void clearLastTransactionCommitTimestampField( DatabaseLayout databaseLayout ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = createPageCache( fileSystem ) )
         {
-            File neoStore = new File( databaseDirectory, MetaDataStore.DEFAULT_NAME );
+            File neoStore = databaseLayout.metadataStore();
             MetaDataStore.setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP,
                     MetaDataStore.BASE_TX_COMMIT_TIMESTAMP );
         }

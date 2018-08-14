@@ -35,7 +35,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -50,7 +49,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 
 public class RebuildReplicatedIdGeneratorsTest
 {
@@ -67,7 +65,7 @@ public class RebuildReplicatedIdGeneratorsTest
     {
         DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
         File stickyGenerator = new File( testDirectory.databaseDir(), "stickyGenerator" );
-        File nodeStoreIdGenerator = new File( testDirectory.databaseDir(), MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME + ".id" );
+        File nodeStoreIdGenerator = testDirectory.databaseLayout().idNodeStore();
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
                 getIdGenerationFactory( fileSystem ), pageCacheRule.getPageCache( fileSystem ), fileSystem,

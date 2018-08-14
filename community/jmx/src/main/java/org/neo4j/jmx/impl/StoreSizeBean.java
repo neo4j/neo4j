@@ -27,34 +27,32 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.store.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_LEFT;
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_RIGHT;
-import static org.neo4j.kernel.impl.store.StoreFile.LABEL_TOKEN_NAMES_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.LABEL_TOKEN_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.NODE_LABEL_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.NODE_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_ARRAY_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_KEY_TOKEN_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.PROPERTY_STRING_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_GROUP_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE;
-import static org.neo4j.kernel.impl.store.StoreFile.SCHEMA_STORE;
+import static org.neo4j.io.layout.DatabaseStore.COUNTS_STORE_A;
+import static org.neo4j.io.layout.DatabaseStore.COUNTS_STORE_B;
+import static org.neo4j.io.layout.DatabaseStore.LABEL_TOKEN_NAMES_STORE;
+import static org.neo4j.io.layout.DatabaseStore.LABEL_TOKEN_STORE;
+import static org.neo4j.io.layout.DatabaseStore.NODE_LABEL_STORE;
+import static org.neo4j.io.layout.DatabaseStore.NODE_STORE;
+import static org.neo4j.io.layout.DatabaseStore.PROPERTY_ARRAY_STORE;
+import static org.neo4j.io.layout.DatabaseStore.PROPERTY_KEY_TOKEN_STORE;
+import static org.neo4j.io.layout.DatabaseStore.PROPERTY_STORE;
+import static org.neo4j.io.layout.DatabaseStore.PROPERTY_STRING_STORE;
+import static org.neo4j.io.layout.DatabaseStore.RELATIONSHIP_GROUP_STORE;
+import static org.neo4j.io.layout.DatabaseStore.RELATIONSHIP_STORE;
+import static org.neo4j.io.layout.DatabaseStore.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE;
+import static org.neo4j.io.layout.DatabaseStore.RELATIONSHIP_TYPE_TOKEN_STORE;
+import static org.neo4j.io.layout.DatabaseStore.SCHEMA_STORE;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class StoreSizeBean extends ManagementBeanProvider
@@ -142,14 +140,15 @@ public final class StoreSizeBean extends ManagementBeanProvider
         @Override
         public long getRelationshipStoreSize()
         {
-            return sizeOfStoreFiles( RELATIONSHIP_STORE, RELATIONSHIP_GROUP_STORE, RELATIONSHIP_TYPE_TOKEN_STORE,
+            return sizeOfStoreFiles( RELATIONSHIP_STORE, RELATIONSHIP_GROUP_STORE,
+                    RELATIONSHIP_TYPE_TOKEN_STORE,
                     RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
         }
 
         @Override
         public long getPropertyStoreSize()
         {
-            return sizeOfStoreFiles( PROPERTY_STORE, PROPERTY_KEY_TOKEN_STORE, PROPERTY_KEY_TOKEN_NAMES_STORE );
+            return sizeOfStoreFiles( PROPERTY_STORE, PROPERTY_KEY_TOKEN_STORE, RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
         }
 
         @Override
@@ -173,7 +172,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         @Override
         public long getCountStoreSize()
         {
-            return sizeOfStoreFiles( COUNTS_STORE_LEFT, COUNTS_STORE_RIGHT );
+            return sizeOfStoreFiles( COUNTS_STORE_A, COUNTS_STORE_B );
         }
 
         @Override
@@ -218,9 +217,9 @@ public final class StoreSizeBean extends ManagementBeanProvider
             return databaseLayout == null ? 0L : FileUtils.size( fs, databaseLayout.databaseDirectory() );
         }
 
-        private long sizeOf( String name )
+        private long sizeOf( File file )
         {
-            return databaseLayout == null ? 0L : FileUtils.size( fs, databaseLayout.file( name ) );
+            return FileUtils.size( fs, file );
         }
 
         private static class TotalSizeVersionVisitor implements LogVersionVisitor
@@ -246,23 +245,19 @@ public final class StoreSizeBean extends ManagementBeanProvider
         }
 
         /**
-         * Count the total file size, including id files, of {@link StoreFile}s.
+         * Count the total file size, including id files, of {@link DatabaseStore}s.
          * Missing files will be counted as 0 bytes.
          *
-         * @param files the file types to count
+         * @param databaseStores the store types to count
          * @return the total size in bytes of the files
          */
-        private long sizeOfStoreFiles( StoreFile... files )
+        private long sizeOfStoreFiles( DatabaseStore... databaseStores )
         {
             long size = 0L;
-            for ( StoreFile file : files )
+            for ( DatabaseStore store : databaseStores )
             {
-                // Get size of both store and id file
-                size += sizeOf( file.fileName( StoreFileType.STORE ) );
-                if ( file.isRecordStore() )
-                {
-                    size += sizeOf( file.fileName( StoreFileType.ID ) );
-                }
+                size += sizeOf( databaseLayout.file( store ) );
+                size += sizeOf( databaseLayout.idFile( store ) );
             }
             return size;
         }

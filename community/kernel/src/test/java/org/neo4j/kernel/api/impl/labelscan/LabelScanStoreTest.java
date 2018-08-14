@@ -46,6 +46,7 @@ import java.util.TreeSet;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -63,7 +64,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -140,12 +140,12 @@ public abstract class LabelScanStoreTest
         createAndStartReadOnly();
         try ( ResourceIterator<File> indexFiles = store.snapshotStoreFiles() )
         {
-            List<String> filesNames = indexFiles.stream().map( File::getName ).collect( toList() );
-            assertThat( "Should have at least index segment file.", filesNames, hasBareMinimumFileList() );
+            List<File> files = Iterators.asList( indexFiles );
+            assertThat( "Should have at least index segment file.", files, hasLabelScanStore() );
         }
     }
 
-    protected abstract Matcher<Iterable<? super String>> hasBareMinimumFileList();
+    protected abstract Matcher<Iterable<? super File>> hasLabelScanStore();
 
     @Test
     public void shouldUpdateIndexOnLabelChange() throws Exception

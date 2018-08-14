@@ -23,7 +23,6 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import java.io.File;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -38,9 +37,6 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-
-import static org.neo4j.test.rule.ResourceRule.existingDirectory;
-import static org.neo4j.test.rule.ResourceRule.fileInExistingDirectory;
 
 public final class Resources implements TestRule
 {
@@ -73,42 +69,15 @@ public final class Resources implements TestRule
         abstract void initialize( LifeRule life );
     }
 
-    public enum TestPath
-    {
-        EXISTING_DIRECTORY, FILE_IN_EXISTING_DIRECTORY
-    }
-
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final ResourceRule<PageCache> pageCache = ResourceRule.pageCache( fs );
-    private final ResourceRule<File> testPath;
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final LifeRule life = new LifeRule();
-
-    public Resources( TestPath path )
-    {
-        if ( path != null )
-        {
-            switch ( path )
-            {
-            case EXISTING_DIRECTORY:
-                this.testPath = existingDirectory( fs );
-                return;
-            case FILE_IN_EXISTING_DIRECTORY:
-                this.testPath = fileInExistingDirectory( fs );
-                return;
-            default:
-                throw new IllegalArgumentException( "Unknown path: " + path );
-            }
-        }
-        this.testPath = ResourceRule.testPath();
-    }
 
     @Override
     public Statement apply( Statement base, Description description )
     {
-        return fs.apply( testPath.apply( pageCache.apply( lifeStatement( base, description ),
-                                                          description ),
-                                         description ),
-                         description );
+        return fs.apply( testDirectory.apply( pageCache.apply( lifeStatement( base, description ), description ), description ), description );
     }
 
     private Statement lifeStatement( Statement base, Description description )
@@ -144,24 +113,14 @@ public final class Resources implements TestRule
         return pageCache.get();
     }
 
-    public File testPath()
+    public TestDirectory testDirectory()
     {
-        return testPath.get();
-    }
-
-    public void lifeInitialises() throws LifecycleException
-    {
-        life.init();
+        return testDirectory;
     }
 
     public void lifeStarts() throws LifecycleException
     {
         life.start();
-    }
-
-    public void lifeStops() throws LifecycleException
-    {
-        life.stop();
     }
 
     public void lifeShutsDown() throws LifecycleException

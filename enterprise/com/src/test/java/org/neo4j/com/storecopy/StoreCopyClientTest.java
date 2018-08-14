@@ -277,7 +277,7 @@ public class StoreCopyClientTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         createInitialDatabase( initialLayout.databaseDirectory() );
 
-        long originalTransactionOffset = MetaDataStore.getRecord( pageCache, initialLayout.file( MetaDataStore.DEFAULT_NAME ),
+        long originalTransactionOffset = MetaDataStore.getRecord( pageCache, initialLayout.metadataStore(),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         GraphDatabaseService initialDatabase = startDatabase( initialLayout.databaseDirectory() );
 
@@ -294,7 +294,7 @@ public class StoreCopyClientTest
 
         // THEN
         long updatedTransactionOffset =
-                MetaDataStore.getRecord( pageCache, backupLayout.file( MetaDataStore.DEFAULT_NAME ),
+                MetaDataStore.getRecord( pageCache, backupLayout.metadataStore(),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         assertNotEquals( originalTransactionOffset, updatedTransactionOffset );
         assertEquals( LogHeader.LOG_HEADER_SIZE, updatedTransactionOffset );

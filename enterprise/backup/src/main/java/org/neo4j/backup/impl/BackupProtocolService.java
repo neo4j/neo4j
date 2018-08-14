@@ -64,7 +64,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.UnexpectedStoreVersionException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -344,7 +343,7 @@ public class BackupProtocolService
 
     private static boolean directoryContainsDb( DatabaseLayout databaseLayout )
     {
-        return Files.isRegularFile( databaseLayout.file( MetaDataStore.DEFAULT_NAME ).toPath() );
+        return Files.isRegularFile( databaseLayout.metadataStore().toPath() );
     }
 
     private static boolean directoryIsEmpty( DatabaseLayout databaseLayout ) throws IOException

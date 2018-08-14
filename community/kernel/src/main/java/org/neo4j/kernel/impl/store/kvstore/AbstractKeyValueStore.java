@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -44,7 +45,6 @@ import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
  *
  * @param <Key> a base type for the keys stored in this store.
  */
-@Rotation( Rotation.Strategy.LEFT_RIGHT )
 @State( State.Strategy.CONCURRENT_HASH_MAP )
 public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 {
@@ -59,7 +59,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     final int valueSize;
     private volatile boolean stopped;
 
-    public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
+    public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, DatabaseLayout databaseLayout, RotationMonitor monitor,
             RotationTimerFactory timerFactory, VersionContextSupplier versionContextSupplier, int keySize,
             int valueSize, HeaderField<?>... headerFields )
     {
@@ -72,7 +72,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             monitor = RotationMonitor.NONE;
         }
         this.format = new Format( headerFields );
-        this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, base, rotation.parameters() );
+        this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, databaseLayout, rotation.parameters() );
         this.rotationTimerFactory = timerFactory;
         this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value(),
                 versionContextSupplier );

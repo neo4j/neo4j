@@ -30,11 +30,11 @@ import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreTest.CataloguePage.findPage;
+import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreTest.CataloguePage.page;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile.maxPage;
-import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileTest.CataloguePage.findPage;
-import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileTest.CataloguePage.page;
 
-public class KeyValueStoreFileTest
+public class KeyValueDatabaseStoreTest
 {
     @Test
     public void shouldFindPageInPageCatalogue()

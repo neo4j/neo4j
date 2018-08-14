@@ -36,7 +36,6 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -59,20 +58,6 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
-import static org.neo4j.kernel.impl.store.StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.LABEL_TOKEN_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.NODE_LABELS_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STRINGS_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_GROUP_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.SCHEMA_STORE_NAME;
 import static org.neo4j.kernel.impl.store.id.IdType.ARRAY_BLOCK;
 import static org.neo4j.kernel.impl.store.id.IdType.LABEL_TOKEN;
 import static org.neo4j.kernel.impl.store.id.IdType.LABEL_TOKEN_NAME;
@@ -109,7 +94,7 @@ public class CoreBootstrapper
         this.logProvider = logProvider;
     }
 
-    public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
+    public CoreSnapshot bootstrap( Set<MemberId> members ) throws Exception
     {
         StoreFactory factory = new StoreFactory( databaseLayout, config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
@@ -151,7 +136,7 @@ public class CoreBootstrapper
             channel.prepareForFlush().flush();
         }
 
-        File neoStoreFile = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = databaseLayout.metadataStore();
         MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, dummyTransactionId );
     }
 
@@ -159,36 +144,32 @@ public class CoreBootstrapper
     {
         DefaultIdGeneratorFactory factory = new DefaultIdGeneratorFactory( fs );
 
+        String databaseName = databaseLayout.getDatabaseName();
         long[] highIds = new long[]{
-                getHighId( databaseLayout, factory, NODE, NODE_STORE_NAME ),
-                getHighId( databaseLayout, factory, RELATIONSHIP, RELATIONSHIP_STORE_NAME ),
-                getHighId( databaseLayout, factory, PROPERTY, PROPERTY_STORE_NAME ),
-                getHighId( databaseLayout, factory, STRING_BLOCK, PROPERTY_STRINGS_STORE_NAME ),
-                getHighId( databaseLayout, factory, ARRAY_BLOCK, PROPERTY_ARRAYS_STORE_NAME ),
-                getHighId( databaseLayout, factory, PROPERTY_KEY_TOKEN, PROPERTY_KEY_TOKEN_STORE_NAME ),
-                getHighId( databaseLayout, factory, PROPERTY_KEY_TOKEN_NAME, PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
-                getHighId( databaseLayout, factory, RELATIONSHIP_TYPE_TOKEN, RELATIONSHIP_TYPE_TOKEN_STORE_NAME ),
-                getHighId( databaseLayout, factory, RELATIONSHIP_TYPE_TOKEN_NAME, RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
-                getHighId( databaseLayout, factory, LABEL_TOKEN, LABEL_TOKEN_STORE_NAME ),
-                getHighId( databaseLayout, factory, LABEL_TOKEN_NAME, LABEL_TOKEN_NAMES_STORE_NAME ),
-                getHighId( databaseLayout, factory, NEOSTORE_BLOCK, "" ),
-                getHighId( databaseLayout, factory, SCHEMA, SCHEMA_STORE_NAME ),
-                getHighId( databaseLayout, factory, NODE_LABELS, NODE_LABELS_STORE_NAME ),
-                getHighId( databaseLayout, factory, RELATIONSHIP_GROUP, RELATIONSHIP_GROUP_STORE_NAME )};
+                getHighId( factory, NODE, databaseLayout.idNodeStore(), databaseName ),
+                getHighId( factory, RELATIONSHIP, databaseLayout.idRelationshipStore(), databaseName ),
+                getHighId( factory, PROPERTY, databaseLayout.idPropertyStore(), databaseName ),
+                getHighId( factory, STRING_BLOCK, databaseLayout.idPropertyStringStore(), databaseName ),
+                getHighId( factory, ARRAY_BLOCK, databaseLayout.idPropertyArrayStore(), databaseName ),
+                getHighId( factory, PROPERTY_KEY_TOKEN, databaseLayout.idPropertyKeyTokenStore(), databaseName ),
+                getHighId( factory, PROPERTY_KEY_TOKEN_NAME, databaseLayout.idPropertyKeyTokenNamesStore(), databaseName ),
+                getHighId( factory, RELATIONSHIP_TYPE_TOKEN, databaseLayout.relationshipTypeTokenStore(), databaseName ),
+                getHighId( factory, RELATIONSHIP_TYPE_TOKEN_NAME, databaseLayout.relationshipTypeTokenNamesStore(), databaseName ),
+                getHighId( factory, LABEL_TOKEN, databaseLayout.labelTokenStore(), databaseName ),
+                getHighId( factory, LABEL_TOKEN_NAME, databaseLayout.labelTokenNamesStore(), databaseName ),
+                getHighId( factory, NEOSTORE_BLOCK, databaseLayout.idMetadataStore(), databaseName ),
+                getHighId( factory, SCHEMA, databaseLayout.idSchemaStore(), databaseName ),
+                getHighId( factory, NODE_LABELS, databaseLayout.idNodeLabelStore(), databaseName ),
+                getHighId( factory, RELATIONSHIP_GROUP, databaseLayout.idRelationshipGroupStore(), databaseName )};
 
         return new IdAllocationState( highIds, FIRST_INDEX );
     }
 
-    private static long getHighId( DatabaseLayout databaseLayout, DefaultIdGeneratorFactory factory, IdType idType, String store )
+    private static long getHighId( DefaultIdGeneratorFactory factory, IdType idType, File idFile, String databaseName )
     {
-        IdGenerator idGenerator = factory.open( databaseLayout.databaseDirectory().getName(), databaseLayout.file( idFile( store ) ), idType, () -> -1L, Long.MAX_VALUE );
+        IdGenerator idGenerator = factory.open( databaseName, idFile, idType, () -> -1L, Long.MAX_VALUE );
         long highId = idGenerator.getHighId();
         idGenerator.close();
         return highId;
-    }
-
-    private static String idFile( String store )
-    {
-        return MetaDataStore.DEFAULT_NAME + store + ".id";
     }
 }

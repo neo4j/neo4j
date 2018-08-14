@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -90,12 +89,12 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
+import static org.neo4j.kernel.impl.storemigration.participant.StoreMigratorFileOperation.fileOperation;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
@@ -140,7 +139,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         // Extract information about the last transaction from legacy neostore
-        File neoStore = sourceStructure.file( DEFAULT_NAME );
+        File neoStore = sourceStructure.metadataStore();
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
         TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId );
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, sourceStructure, lastTxId );
@@ -285,7 +284,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
      * @param lastTransactionId last committed transaction id
      * @return supplier of custom id records.
      */
-    private TransactionId specificTransactionInformationSupplier( long lastTransactionId )
+    private static TransactionId specificTransactionInformationSupplier( long lastTransactionId )
     {
         return lastTransactionId == TransactionIdStore.BASE_TX_ID
                                           ? new TransactionId( lastTransactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP )
@@ -373,31 +372,31 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             // which stores needs migration. Node, relationship, relationship group stores are always written
             // anyways and cannot be avoided with the importer, but delete the store files that weren't written
             // (left empty) so that we don't overwrite those in the real store directory later.
-            Collection<StoreFile> storesToDeleteFromMigratedDirectory = new ArrayList<>();
-            storesToDeleteFromMigratedDirectory.add( StoreFile.NEO_STORE );
+            Collection<DatabaseStore> storesToDeleteFromMigratedDirectory = new ArrayList<>();
+            storesToDeleteFromMigratedDirectory.add( DatabaseStore.NEO_STORE );
             if ( !requiresPropertyMigration )
             {
                 // We didn't migrate properties, so the property stores in the migrated store are just empty/bogus
                 storesToDeleteFromMigratedDirectory.addAll( asList(
-                        StoreFile.PROPERTY_STORE,
-                        StoreFile.PROPERTY_STRING_STORE,
-                        StoreFile.PROPERTY_ARRAY_STORE ) );
+                        DatabaseStore.PROPERTY_STORE,
+                        DatabaseStore.PROPERTY_STRING_STORE,
+                        DatabaseStore.PROPERTY_ARRAY_STORE ) );
             }
             if ( !requiresDynamicStoreMigration )
             {
                 // We didn't migrate labels (dynamic node labels) or any other dynamic store
                 storesToDeleteFromMigratedDirectory.addAll( asList(
-                        StoreFile.NODE_LABEL_STORE,
-                        StoreFile.LABEL_TOKEN_STORE,
-                        StoreFile.LABEL_TOKEN_NAMES_STORE,
-                        StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
-                        StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
-                        StoreFile.PROPERTY_KEY_TOKEN_STORE,
-                        StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                        StoreFile.SCHEMA_STORE ) );
+                        DatabaseStore.NODE_LABEL_STORE,
+                        DatabaseStore.LABEL_TOKEN_STORE,
+                        DatabaseStore.LABEL_TOKEN_NAMES_STORE,
+                        DatabaseStore.RELATIONSHIP_TYPE_TOKEN_STORE,
+                        DatabaseStore.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                        DatabaseStore.PROPERTY_KEY_TOKEN_STORE,
+                        DatabaseStore.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                        DatabaseStore.SCHEMA_STORE ) );
             }
-            StoreFile.fileOperation( DELETE, fileSystem, migrationDirectoryStructure.databaseDirectory(), null, storesToDeleteFromMigratedDirectory,
-                    true, null, StoreFileType.values() );
+            fileOperation( DELETE, fileSystem, migrationDirectoryStructure, null, storesToDeleteFromMigratedDirectory,
+                    true, null );
         }
     }
 
@@ -427,15 +426,15 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         // The token stores also need to be migrated because we use those as-is and ask for their high ids
         // when using the importer in the store migration scenario.
-        StoreFile[] storesFilesToMigrate = {
-                StoreFile.LABEL_TOKEN_STORE, StoreFile.LABEL_TOKEN_NAMES_STORE,
-                StoreFile.PROPERTY_KEY_TOKEN_STORE, StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
-                StoreFile.NODE_LABEL_STORE};
+        DatabaseStore[] storesFilesToMigrate = {
+                DatabaseStore.LABEL_TOKEN_STORE, DatabaseStore.LABEL_TOKEN_NAMES_STORE,
+                DatabaseStore.PROPERTY_KEY_TOKEN_STORE, DatabaseStore.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                DatabaseStore.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseStore.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                DatabaseStore.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
-            StoreFile.fileOperation( COPY, fileSystem, sourceDirectoryStructure.databaseDirectory(), migrationStrcuture.databaseDirectory(),
-                    Arrays.asList( storesFilesToMigrate ), true, ExistingTargetStrategy.FAIL, StoreFileType.values());
+            fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture,
+                    Arrays.asList( storesFilesToMigrate ), true, ExistingTargetStrategy.FAIL);
         }
         else
         {
@@ -475,8 +474,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum,
-            final long lastTxLogVersion, final long lastTxLogByteOffset )
+    private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum, final long lastTxLogVersion,
+            final long lastTxLogByteOffset )
     {
         return new AdditionalInitialIds()
         {
@@ -506,15 +505,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         };
     }
 
-    private ExecutionMonitor migrationBatchImporterMonitor( NeoStores legacyStore,
-            final ProgressReporter progressReporter, Configuration config )
+    private static ExecutionMonitor migrationBatchImporterMonitor( NeoStores legacyStore, final ProgressReporter progressReporter, Configuration config )
     {
         return new BatchImporterProgressMonitor(
                 legacyStore.getNodeStore().getHighId(), legacyStore.getRelationshipStore().getHighId(),
                 config, progressReporter );
     }
 
-    private InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
+    private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
         return new StoreScanAsInputIterator<RelationshipRecord>( legacyStore.getRelationshipStore() )
         {
@@ -526,7 +524,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         };
     }
 
-    private InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
+    private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
         return new StoreScanAsInputIterator<NodeRecord>( legacyStore.getNodeStore() )
         {
@@ -543,20 +541,19 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             String versionToUpgradeTo ) throws IOException
     {
         // Move the migrated ones into the store directory
-        StoreFile.fileOperation( MOVE, fileSystem, migrationStrcture.databaseDirectory(), storeDirectoryStructure.databaseDirectory(),
-                StoreFile.currentStoreFiles(), true, // allow to skip non existent source files
-                ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
-                StoreFileType.values() );
+        fileOperation( MOVE, fileSystem, migrationStrcture, storeDirectoryStructure,
+                Iterables.iterable( DatabaseStore.values() ), true, // allow to skip non existent source files
+                ExistingTargetStrategy.OVERWRITE );
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
             String versionToMigrateTo, LogPosition lastClosedTxLogPosition ) throws IOException
     {
-        final File storeDirNeoStore = sourceDirectoryStructure.file( DEFAULT_NAME );
-        final File migrationDirNeoStore = migrationStructure.file(  DEFAULT_NAME );
-        StoreFile.fileOperation( COPY, fileSystem, sourceDirectoryStructure.databaseDirectory(),
-                migrationStructure.databaseDirectory(), Iterables.iterable( StoreFile.NEO_STORE ), true,
-                ExistingTargetStrategy.SKIP, StoreFileType.STORE );
+        final File storeDirNeoStore = sourceDirectoryStructure.metadataStore();
+        final File migrationDirNeoStore = migrationStructure.metadataStore();
+        fileOperation( COPY, fileSystem, sourceDirectoryStructure,
+                migrationStructure, Iterables.iterable( DatabaseStore.NEO_STORE ), true,
+                ExistingTargetStrategy.SKIP );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
                 MetaDataStore.getRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );

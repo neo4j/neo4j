@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -35,13 +36,13 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
-    public static void recomputeCounts( NeoStores stores, PageCache pageCache )
+    public static void recomputeCounts( NeoStores stores, PageCache pageCache, DatabaseLayout databaseLayout )
     {
         MetaDataStore metaDataStore = stores.getMetaDataStore();
         CountsTracker counts = stores.getCounts();
         try ( CountsAccessor.Updater updater = counts.reset( metaDataStore.getLastCommittedTransactionId() ) )
         {
-            new CountsComputer( stores, pageCache ).initialize( updater );
+            new CountsComputer( stores, pageCache, databaseLayout ).initialize( updater );
         }
     }
 
@@ -53,13 +54,13 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final ProgressReporter progressMonitor;
     private final NumberArrayFactory numberArrayFactory;
 
-    CountsComputer( NeoStores stores, PageCache pageCache )
+    CountsComputer( NeoStores stores, PageCache pageCache, DatabaseLayout databaseLayout )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
                 stores.getNodeStore(), stores.getRelationshipStore(),
                 (int) stores.getLabelTokenStore().getHighId(),
                 (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactory.auto( pageCache, stores.getStoreDir(), true, NumberArrayFactory.NO_MONITOR ) );
+                NumberArrayFactory.auto( pageCache, databaseLayout.databaseDirectory(), true, NumberArrayFactory.NO_MONITOR ) );
     }
 
     private CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,

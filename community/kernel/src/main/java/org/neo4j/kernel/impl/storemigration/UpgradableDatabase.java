@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -69,7 +68,7 @@ public class UpgradableDatabase
      */
     public RecordFormats checkUpgradable( DatabaseLayout dbDirectoryStructure )
     {
-        File neostoreFile = dbDirectoryStructure.file( MetaDataStore.DEFAULT_NAME );
+        File neostoreFile = dbDirectoryStructure.metadataStore();
         Result result = storeVersionCheck.hasVersion( neostoreFile, format.storeVersion() );
         if ( result.outcome.isSuccessful() )
         {
@@ -152,7 +151,7 @@ public class UpgradableDatabase
 
     boolean hasCurrentVersion( DatabaseLayout dbDirectoryStructure )
     {
-        File neoStore = dbDirectoryStructure.file( MetaDataStore.DEFAULT_NAME );
+        File neoStore = dbDirectoryStructure.metadataStore();
         Result result = storeVersionCheck.hasVersion( neoStore, format.storeVersion() );
         switch ( result.outcome )
         {

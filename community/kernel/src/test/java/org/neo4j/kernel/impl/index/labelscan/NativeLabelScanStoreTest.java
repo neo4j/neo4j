@@ -71,15 +71,15 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     }
 
     @Override
-    protected Matcher<Iterable<? super String>> hasBareMinimumFileList()
+    protected Matcher<Iterable<? super File>> hasLabelScanStore()
     {
-        return Matchers.hasItem( Matchers.equalTo( NativeLabelScanStore.FILE_NAME ) );
+        return Matchers.hasItem( Matchers.equalTo( testDirectory.databaseLayout().labelScanStore() ) );
     }
 
     @Override
     protected void corruptIndex( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        File lssFile = databaseLayout.file( NativeLabelScanStore.FILE_NAME );
+        File lssFile = databaseLayout.labelScanStore();
         scrambleFile( lssFile );
     }
 

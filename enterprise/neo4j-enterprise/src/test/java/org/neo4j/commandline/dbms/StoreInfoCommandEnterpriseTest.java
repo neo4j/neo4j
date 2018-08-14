@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.test.rule.PageCacheRule;
@@ -106,7 +107,7 @@ public class StoreInfoCommandEnterpriseTest
     private File createNeoStoreFile() throws IOException
     {
         fsRule.get().mkdir( databaseDirectory.toFile() );
-        File neoStoreFile = new File( databaseDirectory.toFile(), MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = DatabaseLayout.of( databaseDirectory.toFile() ).metadataStore();
         fsRule.get().create( neoStoreFile ).close();
         return neoStoreFile;
     }

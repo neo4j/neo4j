@@ -99,7 +99,7 @@ public class HighLimitStoreMigrationTest
 
     private static File createNeoStoreFile( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        File neoStoreFile = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = databaseLayout.metadataStore();
         fileSystem.create( neoStoreFile ).close();
         return neoStoreFile;
     }

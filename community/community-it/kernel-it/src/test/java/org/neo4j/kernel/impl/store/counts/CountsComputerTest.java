@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -71,7 +70,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class CountsComputerTest
 {
-    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final Config CONFIG = Config.defaults();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -304,12 +302,12 @@ public class CountsComputerTest
 
     private File alphaStoreFile()
     {
-        return testDir.databaseLayout().file( COUNTS_STORE_BASE + CountsTracker.LEFT );
+        return testDir.databaseLayout().countStoreA();
     }
 
     private File betaStoreFile()
     {
-        return testDir.databaseLayout().file( COUNTS_STORE_BASE + CountsTracker.RIGHT );
+        return testDir.databaseLayout().countStoreB();
     }
 
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
@@ -335,8 +333,7 @@ public class CountsComputerTest
 
     private CountsTracker createCountsTracker()
     {
-        return new CountsTracker( LOG_PROVIDER, fs, pageCache,
-                CONFIG, testDir.databaseLayout().file( COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
+        return new CountsTracker( LOG_PROVIDER, fs, pageCache, CONFIG, testDir.databaseLayout(), EmptyVersionContextSupplier.EMPTY );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId )

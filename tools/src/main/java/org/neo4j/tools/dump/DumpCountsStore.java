@@ -88,7 +88,8 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             Config config = Config.defaults();
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( DatabaseLayout.of( path ), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+                DatabaseLayout databaseLayout = DatabaseLayout.of( path );
+                StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
                         pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();
@@ -98,7 +99,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             else
             {
                 VisitableCountsTracker tracker = new VisitableCountsTracker(
-                        logProvider, fs, pages, config, path );
+                        logProvider, fs, pages, config, DatabaseLayout.of( path.getParentFile() ) );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );
@@ -330,9 +331,9 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     {
 
         VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
-                PageCache pages, Config config, File baseFile )
+                PageCache pages, Config config, DatabaseLayout databaseLayout )
         {
-            super( logProvider, fs, pages, config, baseFile, EmptyVersionContextSupplier.EMPTY );
+            super( logProvider, fs, pages, config, databaseLayout, EmptyVersionContextSupplier.EMPTY );
         }
 
         @Override

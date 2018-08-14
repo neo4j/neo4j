@@ -27,11 +27,9 @@ import org.junit.Test;
 import java.util.function.Predicate;
 
 import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.io.layout.DatabaseFileNames;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 
 import static org.junit.Assert.assertFalse;
@@ -43,12 +41,12 @@ public class EnterpriseReadReplicaEditionModuleTest
     public void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = EnterpriseReadReplicaEditionModule.fileWatcherFileNameFilter();
-        assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
-        assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
+        assertFalse( filter.test( DatabaseFileNames.METADATA_STORE ) );
+        assertFalse( filter.test( DatabaseFileNames.NODE_STORE ) );
         assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
         assertTrue( filter.test( StoreUtil.BRANCH_SUBDIRECTORY ) );
         assertTrue( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
-        assertTrue( filter.test( MetaDataStore.DEFAULT_NAME + PageCacheWarmer.SUFFIX_CACHEPROF ) );
+        assertTrue( filter.test( DatabaseFileNames.METADATA_STORE + PageCacheWarmer.SUFFIX_CACHEPROF ) );
     }
 }

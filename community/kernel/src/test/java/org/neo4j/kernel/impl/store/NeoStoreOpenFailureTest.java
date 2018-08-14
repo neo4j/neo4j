@@ -27,6 +27,7 @@ import java.nio.file.OpenOption;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -53,8 +54,7 @@ public class NeoStoreOpenFailureTest
     public void mustCloseAllStoresIfNeoStoresFailToOpen()
     {
         PageCache pageCache = rules.pageCache();
-        File dir = rules.directory().directory( "dir" );
-        File neoStoreFile = new File( dir, MetaDataStore.DEFAULT_NAME );
+        DatabaseLayout databaseLayout = rules.directory().databaseLayout();
         Config config = Config.defaults();
         FileSystemAbstraction fs = rules.fileSystem();
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
@@ -65,8 +65,9 @@ public class NeoStoreOpenFailureTest
         boolean create = true;
         StoreType[] storeTypes = StoreType.values();
         OpenOption[] openOptions = new OpenOption[0];
-        NeoStores neoStores = new NeoStores( DatabaseManager.DEFAULT_DATABASE_NAME, neoStoreFile, config, idGenFactory, pageCache, logProvider, fs, versions,
-                formats, create, storeTypes, openOptions );
+        NeoStores neoStores = new NeoStores(
+                databaseLayout, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create, storeTypes,
+                openOptions );
         File schemaStore = neoStores.getSchemaStore().getStorageFileName();
         neoStores.close();
 
@@ -78,7 +79,7 @@ public class NeoStoreOpenFailureTest
         {
             // This should fail due to the permissions we changed above.
             // And when it fails, the already-opened stores should be closed.
-            new NeoStores( DatabaseManager.DEFAULT_DATABASE_NAME, neoStoreFile, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create,
+            new NeoStores( databaseLayout, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create,
                     storeTypes, openOptions );
             fail( "Opening NeoStores should have thrown." );
         }

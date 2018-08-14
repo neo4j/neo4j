@@ -38,7 +38,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
             new BufferingIdGenerator[IdType.values().length];
     private Supplier<KernelTransactionsSnapshot> boundaries;
-    private Predicate<KernelTransactionsSnapshot> safeThreshold;
+    private final Predicate<KernelTransactionsSnapshot> safeThreshold;
     private final IdGeneratorFactory delegate;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 

@@ -22,7 +22,6 @@ package org.neo4j.index;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,9 +35,6 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -246,8 +242,7 @@ public class IndexSamplingIntegrationTest
     private void triggerIndexResamplingOnNextStartup()
     {
         // Trigger index resampling on next at startup
-        String baseName = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
-        FileUtils.deleteFile( new File( testDirectory.databaseDir(), baseName + CountsTracker.LEFT ) );
-        FileUtils.deleteFile( new File( testDirectory.databaseDir(), baseName + CountsTracker.RIGHT ) );
+        FileUtils.deleteFile( testDirectory.databaseLayout().countStoreA() );
+        FileUtils.deleteFile( testDirectory.databaseLayout().countStoreB() );
     }
 }

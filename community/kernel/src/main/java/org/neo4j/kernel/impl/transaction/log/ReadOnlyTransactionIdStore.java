@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -46,7 +45,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
         long byteOffset = 0;
         if ( NeoStores.isStorePresent( pageCache, databaseLayout ) )
         {
-            File neoStore = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+            File neoStore = databaseLayout.metadataStore();
             id = getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             checksum = getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
             logVersion = getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );

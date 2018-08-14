@@ -24,13 +24,13 @@ package org.neo4j.causalclustering;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -68,9 +68,9 @@ public class TestStoreId
         return storeIds;
     }
 
-    private static StoreId doReadStoreId( File coreStoreDir, PageCache pageCache ) throws IOException
+    private static StoreId doReadStoreId( File databaseDirectory, PageCache pageCache ) throws IOException
     {
-        File metadataStore = new File( coreStoreDir, MetaDataStore.DEFAULT_NAME );
+        File metadataStore = DatabaseLayout.of( databaseDirectory ).metadataStore();
 
         long creationTime = MetaDataStore.getRecord( pageCache, metadataStore, TIME );
         long randomNumber = MetaDataStore.getRecord( pageCache, metadataStore, RANDOM_NUMBER );

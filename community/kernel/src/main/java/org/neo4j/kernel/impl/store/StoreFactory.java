@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
@@ -40,35 +39,11 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForS
  */
 public class StoreFactory
 {
-    public static final String LABELS_PART = ".labels";
-    public static final String NAMES_PART = ".names";
-    public static final String INDEX_PART = ".index";
-    public static final String KEYS_PART = ".keys";
-    public static final String ARRAYS_PART = ".arrays";
-    public static final String STRINGS_PART = ".strings";
-    public static final String NODE_STORE_NAME = ".nodestore.db";
-    public static final String NODE_LABELS_STORE_NAME = NODE_STORE_NAME + LABELS_PART;
-    public static final String PROPERTY_STORE_NAME = ".propertystore.db";
-    public static final String PROPERTY_KEY_TOKEN_STORE_NAME = PROPERTY_STORE_NAME + INDEX_PART;
-    public static final String PROPERTY_KEY_TOKEN_NAMES_STORE_NAME = PROPERTY_STORE_NAME + INDEX_PART + KEYS_PART;
-    public static final String PROPERTY_STRINGS_STORE_NAME = PROPERTY_STORE_NAME + STRINGS_PART;
-    public static final String PROPERTY_ARRAYS_STORE_NAME = PROPERTY_STORE_NAME + ARRAYS_PART;
-    public static final String RELATIONSHIP_STORE_NAME = ".relationshipstore.db";
-    public static final String RELATIONSHIP_TYPE_TOKEN_STORE_NAME = ".relationshiptypestore.db";
-    public static final String RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME = RELATIONSHIP_TYPE_TOKEN_STORE_NAME +
-                                                                          NAMES_PART;
-    public static final String LABEL_TOKEN_STORE_NAME = ".labeltokenstore.db";
-    public static final String LABEL_TOKEN_NAMES_STORE_NAME = LABEL_TOKEN_STORE_NAME + NAMES_PART;
-    public static final String SCHEMA_STORE_NAME = ".schemastore.db";
-    public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
-    public static final String COUNTS_STORE = ".counts.db";
-
-    private final String databaseName;
+    private final DatabaseLayout databaseLayout;
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final LogProvider logProvider;
-    private final File neoStoreFileName;
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
     private final OpenOption[] openOptions;
@@ -82,19 +57,11 @@ public class StoreFactory
                 logProvider, versionContextSupplier );
     }
 
-    public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider,
-            VersionContextSupplier versionContextSupplier )
-    {
-        this( directoryStructure, MetaDataStore.DEFAULT_NAME, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                recordFormats, logProvider, versionContextSupplier );
-    }
-
-    public StoreFactory( DatabaseLayout directoryStructure, String storeName, Config config, IdGeneratorFactory idGeneratorFactory,
+    public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats,
             LogProvider logProvider, VersionContextSupplier versionContextSupplier, OpenOption... openOptions )
     {
-        this.databaseName = directoryStructure.databaseDirectory().getName();
+        this.databaseLayout = databaseLayout;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -104,7 +71,6 @@ public class StoreFactory
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
 
         this.logProvider = logProvider;
-        this.neoStoreFileName = directoryStructure.file( storeName );
         this.pageCache = pageCache;
     }
 
@@ -152,15 +118,15 @@ public class StoreFactory
         {
             try
             {
-                fileSystemAbstraction.mkdirs( neoStoreFileName.getParentFile() );
+                fileSystemAbstraction.mkdirs( databaseLayout.databaseDirectory() );
             }
             catch ( IOException e )
             {
                 throw new UnderlyingStorageException(
-                        "Could not create store directory: " + neoStoreFileName.getParent(), e );
+                        "Could not create database directory: " + databaseLayout.databaseDirectory(), e );
             }
         }
-        return new NeoStores( databaseName, neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
+        return new NeoStores( databaseLayout, config, idGeneratorFactory, pageCache, logProvider,
                 fileSystemAbstraction, versionContextSupplier, recordFormats, createStoreIfNotExists, storeTypes,
                 openOptions );
     }

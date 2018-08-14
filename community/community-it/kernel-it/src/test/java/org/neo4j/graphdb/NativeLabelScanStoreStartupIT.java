@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -143,7 +142,7 @@ public class NativeLabelScanStoreStartupIT
 
     private static File storeFile( DatabaseLayout databaseLayout )
     {
-        return databaseLayout.file( NativeLabelScanStore.FILE_NAME );
+        return databaseLayout.labelScanStore();
     }
 
     private void corruptLabelScanStoreFiles( DatabaseLayout databaseLayout ) throws IOException

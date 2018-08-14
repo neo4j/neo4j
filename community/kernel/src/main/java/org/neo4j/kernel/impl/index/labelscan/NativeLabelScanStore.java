@@ -50,7 +50,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 
 /**
  * {@link LabelScanStore} which is implemented using {@link GBPTree} atop a {@link PageCache}.
@@ -76,11 +75,6 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
  */
 public class NativeLabelScanStore implements LabelScanStore
 {
-    /**
-     * Name of the file used for the native label scan store.
-     */
-    public static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
-
     /**
      * Written in header to indicate native label scan store is clean
      */
@@ -200,7 +194,7 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     public static File getLabelScanStoreFile( DatabaseLayout directoryStructure )
     {
-        return directoryStructure.file( FILE_NAME );
+        return directoryStructure.labelScanStore();
     }
 
     /**

@@ -189,7 +189,7 @@ public class NeoStoresTest
 
         try ( NeoStores neoStores = sf.openNeoStores( true ) )
         {
-            neoStores.createDynamicArrayStore( "someStore", IdType.ARRAY_BLOCK, -2 );
+            neoStores.createDynamicArrayStore( new File( "someStore" ), IdType.ARRAY_BLOCK, -2 );
         }
     }
 
@@ -534,8 +534,8 @@ public class NeoStoresTest
         File storeDir = dir.directory();
         createTestDatabase( fileSystem, storeDir ).shutdown();
         DatabaseLayout databaseLayout = dir.databaseLayout();
-        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.file( MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
-        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.file( MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
+        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10 ) );
+        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12 ) );
 
         Config config = Config.defaults();
         StoreFactory sf = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
@@ -565,7 +565,7 @@ public class NeoStoresTest
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
 
-        File file = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+        File file = databaseLayout.metadataStore();
         try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE ) )
         {
             channel.position( 0 );
@@ -651,7 +651,7 @@ public class NeoStoresTest
         {
             neoStores.getMetaDataStore();
         }
-        File file = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+        File file = databaseLayout.metadataStore();
         fileSystem.deleteFile( file );
 
         exception.expect( StoreNotFoundException.class );
@@ -680,7 +680,7 @@ public class NeoStoresTest
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
 
-        File file = databaseLayout.file( MetaDataStore.DEFAULT_NAME );
+        File file = databaseLayout.metadataStore();
 
         assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID ) );
         assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM ) );

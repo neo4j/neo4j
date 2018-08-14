@@ -69,7 +69,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      *  9 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest
      *  constraint tx | upgrade time | upgrade id
      */
-    public static final String DEFAULT_NAME = "neostore";
     // Positions of meta-data records
 
     public enum Position

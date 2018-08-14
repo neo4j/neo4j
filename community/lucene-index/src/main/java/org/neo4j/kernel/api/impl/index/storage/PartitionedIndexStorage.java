@@ -221,7 +221,7 @@ public class PartitionedIndexStorage
      * since we cleanup the folder using {@link FileSystemAbstraction file system} but in fact for testing we often use
      * in-memory directories whose content can't be removed via the file system.
      * <p>
-     * Uses {@link FileUtils#windowsSafeIOOperation(FileUtils.FileOperation)} underneath.
+     * Uses {@link FileUtils#windowsSafeIOOperation(FileUtils.Operation)} underneath.
      *
      * @param folder the path to the directory to cleanup.
      * @throws IOException if removal operation fails.

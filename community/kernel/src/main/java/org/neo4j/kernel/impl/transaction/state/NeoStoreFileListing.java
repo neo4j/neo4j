@@ -95,7 +95,7 @@ public class NeoStoreFileListing
         Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
     }
 
-    private void placeMetaDataStoreLast( List<StoreFileMetadata> files )
+    private static void placeMetaDataStoreLast( List<StoreFileMetadata> files )
     {
         int index = 0;
         for ( StoreFileMetadata file : files )

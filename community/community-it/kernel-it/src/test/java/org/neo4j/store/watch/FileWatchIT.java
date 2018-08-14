@@ -49,8 +49,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
@@ -96,7 +94,7 @@ public class FileWatchIT
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
 
-        String fileName = MetaDataStore.DEFAULT_NAME;
+        String fileName = testDirectory.databaseLayout().metadataStore().getName();
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
@@ -144,7 +142,8 @@ public class FileWatchIT
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkPointer = getCheckpointer( database );
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( monitoredDirectory );
-        ModificationEventListener modificationEventListener = new ModificationEventListener( MetaDataStore.DEFAULT_NAME );
+        String metadataStore = testDirectory.databaseLayout().metadataStore().getName();
+        ModificationEventListener modificationEventListener = new ModificationEventListener( metadataStore );
         fileWatcher.addFileWatchEventListener( deletionListener );
         fileWatcher.addFileWatchEventListener( modificationEventListener );
 
@@ -169,7 +168,7 @@ public class FileWatchIT
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkPointer = dependencyResolver.resolveDependency( CheckPointer.class );
 
-        String propertyStoreName = MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME;
+        String propertyStoreName = testDirectory.databaseLayout().propertyStore().getName();
         AccumulativeDeletionEventListener accumulativeListener = new AccumulativeDeletionEventListener();
         ModificationEventListener modificationListener = new ModificationEventListener( propertyStoreName );
         fileWatcher.addFileWatchEventListener( modificationListener );
@@ -208,8 +207,9 @@ public class FileWatchIT
 
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
+        String metadataStore = testDirectory.databaseLayout().metadataStore().getName();
         ModificationEventListener modificationEventListener =
-                new ModificationEventListener( MetaDataStore.DEFAULT_NAME );
+                new ModificationEventListener( metadataStore );
         fileWatcher.addFileWatchEventListener( modificationEventListener );
 
         do
@@ -236,7 +236,7 @@ public class FileWatchIT
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
 
-        String fileName = MetaDataStore.DEFAULT_NAME;
+        String fileName = testDirectory.databaseLayout().metadataStore().getName();
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
 

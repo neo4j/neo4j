@@ -389,7 +389,7 @@ public class RecordFormatSelectorTest
 
     private File createNeoStoreFile() throws IOException
     {
-        File neoStoreFile = testDirectory.databaseLayout().file( MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = testDirectory.databaseLayout().metadataStore();
         fs.create( neoStoreFile ).close();
         return neoStoreFile;
     }

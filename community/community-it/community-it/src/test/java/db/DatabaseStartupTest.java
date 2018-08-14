@@ -64,7 +64,7 @@ public class DatabaseStartupTest
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().file( MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().metadataStore(),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
@@ -102,7 +102,7 @@ public class DatabaseStartupTest
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().file( MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().metadataStore(),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 

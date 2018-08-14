@@ -147,7 +147,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final int recordIdBatchSize;
 
     public RecordStorageEngine(
-            DatabaseLayout directoryStructure,
+            DatabaseLayout databaseLayout,
             Config config,
             PageCache pageCache,
             FileSystemAbstraction fs,
@@ -181,7 +181,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
 
         this.idController = idController;
-        StoreFactory factory = new StoreFactory( directoryStructure, config, idGeneratorFactory, pageCache, fs, logProvider,
+        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider,
                 versionContextSupplier );
         neoStores = factory.openAllNeoStores( true );
 
@@ -194,7 +194,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
-            labelScanStore = new NativeLabelScanStore( pageCache, directoryStructure, fs, new FullLabelStream( neoStoreIndexStoreView ),
+            labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
             // We need to load the property tokens here, since we need them before we load the indexes.

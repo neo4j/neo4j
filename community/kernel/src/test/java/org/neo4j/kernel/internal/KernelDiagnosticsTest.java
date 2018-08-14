@@ -24,7 +24,7 @@ import org.mockito.Mockito;
 
 import java.io.File;
 
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.io.layout.DatabaseFileNames;
 import org.neo4j.logging.AssertableLogProvider;
 
 public class KernelDiagnosticsTest
@@ -58,7 +58,7 @@ public class KernelDiagnosticsTest
 
         File dbFile = Mockito.mock( File.class );
         Mockito.when( dbFile.isDirectory() ).thenReturn( false );
-        Mockito.when( dbFile.getName() ).thenReturn( MetaDataStore.DEFAULT_NAME );
+        Mockito.when( dbFile.getName() ).thenReturn( DatabaseFileNames.METADATA_STORE );
         Mockito.when( dbFile.length() ).thenReturn( 3 * 1024L );
 
         File storeDir = Mockito.mock( File.class );

@@ -29,7 +29,6 @@ import java.util.Set;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -76,7 +75,7 @@ public class NativeLabelScanStoreChaosIT
 
     private static File storeFile( DatabaseLayout databaseLayout )
     {
-        return databaseLayout.file( NativeLabelScanStore.FILE_NAME );
+        return databaseLayout.labelScanStore();
     }
 
     private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()

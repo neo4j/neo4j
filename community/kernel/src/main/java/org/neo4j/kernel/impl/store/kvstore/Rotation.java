@@ -27,6 +27,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 
 @Inherited
@@ -44,18 +45,15 @@ public @interface Rotation
         {
             @Override
             RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                                     RotationMonitor monitor, File base,
+                                     RotationMonitor monitor, DatabaseLayout databaseLayout,
                                      String[] parameters )
             {
                 if ( parameters == null || parameters.length != 2 )
                 {
                     throw new IllegalArgumentException( "Expected exactly 2 format parameters." );
                 }
-                String parent = base.getParent();
-                String l = base.getName() + parameters[0];
-                String r = base.getName() + parameters[1];
-                final File left = new File( parent, l );
-                final File right = new File( parent, r );
+                final File left = databaseLayout.countStoreA();
+                final File right = databaseLayout.countStoreB();
                 return new RotationStrategy.LeftRight( fs, pages, format, monitor, left, right );
             }
         },
@@ -63,14 +61,14 @@ public @interface Rotation
         {
             @Override
             RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                                     RotationMonitor monitor, File base,
+                                     RotationMonitor monitor, DatabaseLayout databaseLayout,
                                      String[] parameters )
             {
-                return new RotationStrategy.Incrementing( fs, pages, format, monitor, base );
+                return new RotationStrategy.Incrementing( fs, pages, format, monitor, databaseLayout );
             }
         };
 
         abstract RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                                          RotationMonitor monitor, File base, String... parameters );
+                                          RotationMonitor monitor, DatabaseLayout databaseLayout, String... parameters );
     }
 }

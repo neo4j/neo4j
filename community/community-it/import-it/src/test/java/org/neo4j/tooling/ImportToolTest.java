@@ -55,7 +55,6 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -93,7 +92,6 @@ import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 
@@ -1311,7 +1309,7 @@ public class ImportToolTest
         {
             if ( storeType.isRecordStore() )
             {
-                dbRule.databaseLayout().file( DEFAULT_NAME + storeType.getStoreName() ).delete();
+                dbRule.databaseLayout().file( storeType.getStoreName() ).delete();
             }
         }
     }
@@ -1943,7 +1941,7 @@ public class ImportToolTest
             {
                 if ( storeType.isRecordStore() )
                 {
-                    assertTrue( new File( databaseDir, MetaDataStore.DEFAULT_NAME + storeType.getStoreName() ).exists() );
+                    assertTrue( new File( databaseDir, storeType.getStoreName() ).exists() );
                 }
             }
 

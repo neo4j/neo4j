@@ -35,9 +35,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_LEFT;
-import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_RIGHT;
-import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class CountsMigratorTest
 {
@@ -52,8 +49,8 @@ public class CountsMigratorTest
         // given
         CountsMigrator migrator = new CountsMigrator( fs, null, Config.defaults() );
         DatabaseLayout sourceLayout  = directory.databaseLayout();
-        File countsStoreFileA = sourceLayout.file( COUNTS_STORE_LEFT.fileName( STORE ) );
-        File countsStoreFileB = sourceLayout.file( COUNTS_STORE_RIGHT.fileName( STORE ) );
+        File countsStoreFileA = sourceLayout.countStoreA();
+        File countsStoreFileB = sourceLayout.countStoreB();
         fs.create( countsStoreFileA );
         fs.create( countsStoreFileB );
         DatabaseLayout migrationLayout = directory.databaseLayout( "migration" );

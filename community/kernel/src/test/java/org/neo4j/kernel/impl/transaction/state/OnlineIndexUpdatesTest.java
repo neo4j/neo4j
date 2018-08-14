@@ -30,6 +30,7 @@ import java.util.Iterator;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -107,13 +108,14 @@ public class OnlineIndexUpdatesTest
     {
         life = new LifeSupport();
         PageCache pageCache = storage.pageCache();
+        DatabaseLayout databaseLayout = storage.directory().databaseLayout();
         StoreFactory storeFactory =
-                new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
+                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
                         storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
         neoStores.getCounts().start();
-        CountsComputer.recomputeCounts( neoStores, pageCache );
+        CountsComputer.recomputeCounts( neoStores, pageCache, databaseLayout );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
