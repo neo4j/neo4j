@@ -104,7 +104,7 @@ public class CommonAbstractStoreTest
     @Before
     public void setUpMocks() throws IOException
     {
-        when( idGeneratorFactory.open( DatabaseManager.DEFAULT_DATABASE_NAME, any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) )
+        when( idGeneratorFactory.open( eq( DatabaseManager.DEFAULT_DATABASE_NAME ), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) )
                 .thenReturn( idGenerator );
 
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );

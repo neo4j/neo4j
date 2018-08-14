@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -50,7 +51,6 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -125,8 +125,9 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = Config.defaults();
-            StoreFactory storeFactory = new StoreFactory( DEFAULT_DATABASE_NAME, storeDir, config, idGeneratorFactory, pageCache, fs,
-                    logProvider(), EmptyVersionContextSupplier.EMPTY );
+            StoreFactory storeFactory =
+                    new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config, idGeneratorFactory, pageCache, fs, logProvider(),
+                            EmptyVersionContextSupplier.EMPTY );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( getStoreTypes() ) )
             {

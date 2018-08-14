@@ -54,7 +54,7 @@ public class FreeIdFilteredIdGeneratorFactoryTest
         LongSupplier highIdSupplier = () -> highId;
         IdGenerator idGenerator = filteredGenerator.open( DEFAULT_DATABASE_NAME, file, idType, highIdSupplier, maxId );
 
-        verify( idGeneratorFactory ).open( DEFAULT_DATABASE_NAME, eq( file ), eq( idType ), any( LongSupplier.class ), eq( maxId ) );
+        verify( idGeneratorFactory ).open( eq( DEFAULT_DATABASE_NAME ), eq( file ), eq( idType ), any( LongSupplier.class ), eq( maxId ) );
         assertThat( idGenerator, instanceOf( FreeIdFilteredIdGenerator.class ) );
     }
 

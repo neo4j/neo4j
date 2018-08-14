@@ -34,7 +34,6 @@ import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
 import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -210,9 +209,8 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.read_only, TRUE );
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
-        StoreFactory factory =
-                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                        logProvider, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory = new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config,
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );

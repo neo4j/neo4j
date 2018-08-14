@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -408,7 +408,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
     {
-        return new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
+        return new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
                 format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores( true );
     }
 
@@ -460,7 +460,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME,
+        StoreFactory storeFactory = new StoreFactory( config.get( GraphDatabaseSettings.active_database ),
                 migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider,
                 EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )

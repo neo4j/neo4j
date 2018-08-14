@@ -25,7 +25,6 @@ package org.neo4j.causalclustering.catchup.tx;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -77,9 +76,8 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         this.asPartOfStoreCopy = asPartOfStoreCopy;
         this.rotateTransactionsManually = forceTransactionRotations;
         RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( Config.defaults(), storeDir, fs, pageCache, logProvider );
-        this.stores =
-                new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats,
-                        logProvider, EMPTY )
+        this.stores = new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache,
+                fs, recordFormats, logProvider, EMPTY )
                 .openNeoStores( META_DATA );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( stores.getMetaDataStore() );

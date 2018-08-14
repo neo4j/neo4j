@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.storemigration.participant;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -165,8 +165,8 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
 
         RecordFormats recordFormats = selectForVersion( expectedStoreVersion );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
-        StoreFactory storeFactory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, storeDirToReadFrom, config, idGeneratorFactory, pageCache,
-                fileSystem, recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( config.get( GraphDatabaseSettings.active_database ), storeDirToReadFrom, config, idGeneratorFactory,
+                pageCache, fileSystem, recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory
                 .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN ) )

@@ -36,7 +36,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -110,7 +110,7 @@ public class CoreBootstrapper
 
     public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
     {
-        StoreFactory factory = new StoreFactory( DatabaseManager.DEFAULT_DATABASE_NAME, databaseDirectory, config,
+        StoreFactory factory = new StoreFactory( config.get( GraphDatabaseSettings.active_database ), databaseDirectory, config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = factory.openAllNeoStores( true );
@@ -178,10 +178,10 @@ public class CoreBootstrapper
         return new IdAllocationState( highIds, FIRST_INDEX );
     }
 
-    private static long getHighId( File coreDir, DefaultIdGeneratorFactory factory, IdType idType, String store )
+    private long getHighId( File coreDir, DefaultIdGeneratorFactory factory, IdType idType, String store )
     {
         IdGenerator idGenerator =
-                factory.open( DatabaseManager.DEFAULT_DATABASE_NAME, new File( coreDir, idFile( store ) ), idType, () -> -1L, Long.MAX_VALUE );
+                factory.open( config.get( GraphDatabaseSettings.active_database ) , new File( coreDir, idFile( store ) ), idType, () -> -1L, Long.MAX_VALUE );
         long highId = idGenerator.getHighId();
         idGenerator.close();
         return highId;
