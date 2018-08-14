@@ -65,8 +65,7 @@ public class KernelTransactionTimeoutMonitor implements Runnable
         }
     }
 
-    private boolean isTransactionExpired( KernelTransactionHandle activeTransaction, long nowMillis,
-            long transactionTimeoutMillis )
+    private static boolean isTransactionExpired( KernelTransactionHandle activeTransaction, long nowMillis, long transactionTimeoutMillis )
     {
         return nowMillis > (activeTransaction.startTime() + transactionTimeoutMillis);
     }

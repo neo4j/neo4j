@@ -110,9 +110,9 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class TransactionGuardIT
 {
     @ClassRule
-    public static CleanupRule cleanupRule = new CleanupRule();
+    public static final CleanupRule cleanupRule = new CleanupRule();
     @ClassRule
-    public static TestDirectory testDirectory = TestDirectory.testDirectory();
+    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private static final String BOLT_CONNECTOR_KEY = "bolt";
 
@@ -264,10 +264,10 @@ public class TransactionGuardIT
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
+        SameJvmClient client = getShellClient( shellServer );
+        CollectingOutput commandOutput = new CollectingOutput();
         try
         {
-            SameJvmClient client = getShellClient( shellServer );
-            CollectingOutput commandOutput = new CollectingOutput();
             execute( shellServer, commandOutput, client.getId(), "begin Transaction" );
             fakeClock.forward( 3, TimeUnit.SECONDS );
             timeoutMonitor.run();
@@ -278,6 +278,7 @@ public class TransactionGuardIT
         catch ( ShellException e )
         {
             assertThat( e.getMessage(), containsString( "The transaction has not completed within the specified timeout (dbms.transaction.timeout)" ) );
+            execute( shellServer, commandOutput, client.getId(), "rollback" );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
