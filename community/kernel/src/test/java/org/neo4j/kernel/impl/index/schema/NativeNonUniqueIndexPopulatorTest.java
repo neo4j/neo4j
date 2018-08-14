@@ -92,7 +92,6 @@ public abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexS
             {
                 IndexEntryUpdate<IndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( value ) );
                 updater.process( update );
-                populator.includeSample( update );
             }
         }
 
@@ -100,9 +99,21 @@ public abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexS
         IndexSample sample = populator.sampleResult();
 
         // THEN
-        assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
-        assertEquals( updates.length, sample.indexSize() );
+        Object[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );
+        System.arraycopy( asValues( scanUpdates ), 0, allValues, updates.length, scanUpdates.length );
+        assertEquals( updates.length + scanUpdates.length, sample.sampleSize() );
+        assertEquals( countUniqueValues( allValues ), sample.uniqueValues() );
+        assertEquals( updates.length + scanUpdates.length, sample.indexSize() );
         populator.close( true );
+    }
+
+    private Object[] asValues( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        Object[] values = new Object[updates.length];
+        for ( int i = 0; i < updates.length; i++ )
+        {
+            values[i] = updates[i].values()[0].asObject();
+        }
+        return values;
     }
 }
