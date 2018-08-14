@@ -39,6 +39,12 @@ public class NodeReference extends VirtualNodeValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "NodeReference";
+    }
+
+    @Override
     public String toString()
     {
         return format( "(%d)", id );

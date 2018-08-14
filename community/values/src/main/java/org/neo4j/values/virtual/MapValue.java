@@ -179,6 +179,12 @@ public final class MapValue extends VirtualValue
         return mapper.mapMap( this );
     }
 
+    @Override
+    public String getTypeName()
+    {
+        return "Map";
+    }
+
     public void foreach( BiConsumer<String,AnyValue> f )
     {
         map.forEach( f );
@@ -207,7 +213,7 @@ public final class MapValue extends VirtualValue
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( "Map{" );
+        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
         String sep = "";
         for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {

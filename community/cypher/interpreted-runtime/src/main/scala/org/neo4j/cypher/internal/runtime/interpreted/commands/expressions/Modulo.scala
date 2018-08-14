@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.values._
 import org.neo4j.values.storable.{DoubleValue, FloatValue, NumberValue, Values}
 
@@ -36,4 +37,8 @@ case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  def throwTypeError(bVal: AnyValue, aVal: AnyValue): Nothing = {
+    throw new CypherTypeException("Cannot modulo `" + aVal.getTypeName + "` by `" + bVal.getTypeName + "`")
+  }
 }

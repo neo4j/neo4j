@@ -63,6 +63,12 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return null;
+    }
+
+    @Override
     public void writeTo( AnyValueWriter writer )
     {
     }

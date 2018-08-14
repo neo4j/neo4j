@@ -45,4 +45,8 @@ case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  def throwTypeError(bVal: AnyValue, aVal: AnyValue): Nothing = {
+    throw new CypherTypeException("Cannot subtract `" + bVal.getTypeName + "` from `" + aVal.getTypeName + "`")
+  }
 }

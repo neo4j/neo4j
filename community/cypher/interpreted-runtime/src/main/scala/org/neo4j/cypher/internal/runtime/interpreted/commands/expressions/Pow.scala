@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 
 case class Pow(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -27,4 +29,9 @@ case class Pow(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Pow(a.rewrite(f), b.rewrite(f)))
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  def throwTypeError(bVal: AnyValue, aVal: AnyValue): Nothing = {
+    throw new CypherTypeException("Cannot raise `" + aVal.getTypeName + "` to the power of `" + bVal.getTypeName + "`")
+
+  }
 }

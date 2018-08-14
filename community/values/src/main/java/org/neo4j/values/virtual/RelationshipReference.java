@@ -39,6 +39,12 @@ public class RelationshipReference extends VirtualRelationshipValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "RelationshipReference";
+    }
+
+    @Override
     public String toString()
     {
         return format( "-[%d]-", id );

@@ -100,4 +100,101 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       innerExecuteDeprecated("with [1a-1] as list return list", Map())
     }
   }
+
+  // Operations on incompatible types
+  test("should provide sensible error message when trying to add incompatible types") {
+    // We want to deliberately fail after semantic checking (at runtime), thus the need for CREATE
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {loc: point({x:22, y:44}), num: 2}) RETURN n.num + n.loc", List("Cannot add `Long` and `Point`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {dur: duration({ days: 1, hours: 12 }), num: 2}) RETURN n.num + n.dur", List("Cannot add `Long` and `Duration`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {dat: datetime('2015-07-21T21:40:32.142+0100'), num: 2}) RETURN n.num + n.dat", List("Cannot add `Long` and `DateTime`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {bool: true, num: 2.9}) RETURN n.num + n.bool", List("Cannot add `Double` and `Boolean`"))
+  }
+
+  test("should provide sensible error message when trying to multiply incompatible types") {
+    // We want to deliberately fail after semantic checking (at runtime), thus the need for CREATE
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {loc: point({x:22, y:44}), num: 2}) RETURN n.num * n.loc", List("Cannot multiply `Long` and `Point`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {dat: datetime('2015-07-21T21:40:32.142+0100'), num: 2}) RETURN n.num * n.dat", List("Cannot multiply `Long` and `DateTime`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {bool: true, num: 2.9}) RETURN n.num * n.bool", List("Cannot multiply `Double` and `Boolean`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], str: 's'}) RETURN n.lst * n.str", List("Cannot multiply `LongArray` and `String`"))
+  }
+
+  test("should provide sensible error message when trying to subtract incompatible types") {
+    // We want to deliberately fail after semantic checking (at runtime), thus the need for CREATE
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {loc: point({x:22, y:44}), num: 2}) RETURN n.num - n.loc", List("Cannot subtract `Point` from `Long`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {dat: datetime('2015-07-21T21:40:32.142+0100'), num: 2}) RETURN n.num - n.dat", List("Cannot subtract `DateTime` from `Long`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {bool: true, num: 2.9}) RETURN n.num - n.bool", List("Cannot subtract `Boolean` from `Double`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], str: 's'}) RETURN n.lst - n.str", List("Cannot subtract `String` from `LongArray`"))
+  }
+
+  test("should provide sensible error message when trying to modulo incompatible types") {
+    // We want to deliberately fail after semantic checking (at runtime), thus the need for CREATE
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {loc: point({x:22, y:44}), num: 2}) RETURN n.num % n.loc", List("Cannot modulo `Long` by `Point`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {dat: datetime('2015-07-21T21:40:32.142+0100'), num: 2}) RETURN n.num % n.dat", List("Cannot modulo `Long` by `DateTime`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {bool: true, num: 2.9}) RETURN n.num % n.bool", List("Cannot modulo `Double` by `Boolean`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], str: 's'}) RETURN n.lst % n.str", List("Cannot modulo `LongArray` by `String`"))
+  }
+
+  test("should provide sensible error message when trying to divide incompatible types") {
+    // We want to deliberately fail after semantic checking (at runtime), thus the need for CREATE
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {loc: point({x:22, y:44}), num: 2}) RETURN n.num / n.loc", List("Cannot divide `Long` by `Point`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {dat: datetime('2015-07-21T21:40:32.142+0100'), num: 2}) RETURN n.num / n.dat", List("Cannot divide `Long` by `DateTime`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {bool: true, num: 2.9}) RETURN n.num / n.bool", List("Cannot divide `Double` by `Boolean`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], str: 's'}) RETURN n.lst / n.str", List("Cannot divide `LongArray` by `String`"))
+  }
+
+  test("should provide sensible error message when trying to raise to the power of incompatible types") {
+    // We want to deliberately fail after semantic checking (at runtime), thus the need for CREATE
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {loc: point({x:22, y:44}), num: 2}) RETURN n.num ^ n.loc", List("Cannot raise `Long` to the power of `Point`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {dat: datetime('2015-07-21T21:40:32.142+0100'), num: 2}) RETURN n.num ^ n.dat", List("Cannot raise `Long` to the power of `DateTime`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {bool: true, num: 2.9}) RETURN n.num ^ n.bool", List("Cannot raise `Double` to the power of `Boolean`"))
+
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+      "CREATE (n:Test {lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], str: 's'}) RETURN n.lst ^ n.str", List("Cannot raise `LongArray` to the power of `String`"))
+  }
 }

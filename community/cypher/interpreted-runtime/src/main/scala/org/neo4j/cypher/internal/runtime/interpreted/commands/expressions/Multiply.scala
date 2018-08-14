@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DurationValue, NumberValue}
 
@@ -42,4 +43,8 @@ case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Multiply(a.rewrite(f), b.rewrite(f)))
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  def throwTypeError(bVal: AnyValue, aVal: AnyValue): Nothing = {
+    throw new CypherTypeException("Cannot multiply `" + aVal.getTypeName + "` and `" + bVal.getTypeName + "`")
+  }
 }

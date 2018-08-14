@@ -48,7 +48,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
       case (x: TemporalValue[_,_], y: DurationValue) => x.plus(y)
       case (x: DurationValue, y: TemporalValue[_,_]) => y.plus(x)
       case (x: DurationValue, y: DurationValue) => x.add(y)
-      case _                      => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
+      case _                      => throw new CypherTypeException("Cannot add `" + aVal.getTypeName + "` and `" + bVal.getTypeName + "`")
     }
   }
 

@@ -69,6 +69,12 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
         return node == startNode().id() ? endNode().id() : startNode().id();
     }
 
+    @Override
+    public String getTypeName()
+    {
+        return "Relationship";
+    }
+
     static class DirectRelationshipValue extends RelationshipValue
     {
         private final NodeValue startNode;
