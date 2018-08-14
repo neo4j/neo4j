@@ -118,7 +118,7 @@ public class OnlineBackupCommandTest
     {
         // given backup directory is not a directory
         fileSystemAbstraction.deleteRecursively( backupDirectory.toFile() );
-        fileSystemAbstraction.create( backupDirectory.toFile() );
+        fileSystemAbstraction.create( backupDirectory.toFile() ).close();
 
         // then
         expected.expect( CommandFailed.class );
@@ -133,7 +133,7 @@ public class OnlineBackupCommandTest
     {
         // given report directory is not a directory
         fileSystemAbstraction.deleteRecursively( reportDirectory.toFile() );
-        fileSystemAbstraction.create( reportDirectory.toFile() );
+        fileSystemAbstraction.create( reportDirectory.toFile() ).close();
 
         // then
         expected.expect( CommandFailed.class );
