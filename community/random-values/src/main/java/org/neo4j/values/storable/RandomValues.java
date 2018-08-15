@@ -865,6 +865,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link ArrayValue} of local-time elements.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue} of local-time elements.
+     */
+    public ArrayValue nextLocalTimeArray()
+    {
+        return nextLocalTimeArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of local-time elements.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -885,6 +898,19 @@ public class RandomValues
             array[i] = ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) );
         }
         return array;
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of time elements.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue} of time elements.
+     */
+    public ArrayValue nextTimeArray()
+    {
+        return nextTimeArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
@@ -913,6 +939,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link ArrayValue} of local date-time elements.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue} of local date-time elements.
+     */
+    public ArrayValue nextDateTimeArray()
+    {
+        return nextDateTimeArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of local date-time elements.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -933,6 +972,19 @@ public class RandomValues
             array[i] = ZonedDateTime.ofInstant( randomInstant(), UTC );
         }
         return array;
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of local-date-time elements.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue} of local-date-time elements.
+     */
+    public ArrayValue nextLocalDateTimeArray()
+    {
+        return nextLocalDateTimeArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
@@ -961,6 +1013,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link ArrayValue} of date elements.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue} of date elements.
+     */
+    public ArrayValue nextDateArray()
+    {
+        return nextDateArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of date elements.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -981,6 +1046,19 @@ public class RandomValues
             array[i] = ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) );
         }
         return array;
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of period elements.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue} of period elements.
+     */
+    public ArrayValue nextPeriodArray()
+    {
+        return nextPeriodArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
@@ -1009,6 +1087,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link ArrayValue} of duration elements.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue} of duration elements.
+     */
+    public ArrayValue nextDurationArray()
+    {
+        return nextDurationArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of duration elements.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -1033,6 +1124,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link DoubleArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link DoubleArray}.
+     */
+    public DoubleArray nextDoubleArray()
+    {
+        return nextDoubleArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link DoubleArray}.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -1053,6 +1157,19 @@ public class RandomValues
             doubles[i] = generator.nextDouble();
         }
         return doubles;
+    }
+
+    /**
+     * Returns the next pseudorandom {@link FloatArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link FloatArray}.
+     */
+    public FloatArray nextFloatArray()
+    {
+        return nextFloatArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
@@ -1118,6 +1235,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link IntArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link IntArray}.
+     */
+    public IntArray nextIntArray()
+    {
+        return nextIntArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link IntArray}.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -1142,6 +1272,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link BooleanArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link BooleanArray}.
+     */
+    public BooleanArray nextBooleanArray()
+    {
+        return nextBooleanArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link BooleanArray}.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -1162,6 +1305,19 @@ public class RandomValues
             booleans[i] = generator.nextBoolean();
         }
         return booleans;
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ByteArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ByteArray}.
+     */
+    public ByteArray nextByteArray()
+    {
+        return nextByteArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
@@ -1202,6 +1358,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link ShortArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ShortArray}.
+     */
+    public ShortArray nextShortArray()
+    {
+        return nextShortArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link ShortArray}.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -1222,6 +1391,50 @@ public class RandomValues
             shorts[i] = (short) generator.nextInt();
         }
         return shorts;
+    }
+
+    /**
+     * Returns the next pseudorandom alpha-numeric {@link TextArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link TextArray}.
+     */
+    public TextArray nextAlphaNumericStringArray()
+    {
+        return nextAlphaNumericStringArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom alpha-numeric {@link TextArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link TextArray}.
+     */
+    public TextArray nextAlphaNumericStringArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        String[] strings = new String[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            strings[i] = nextAlphaNumericTextValue().stringValue();
+        }
+        return Values.stringArray( strings );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link TextArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link TextArray}.
+     */
+    public TextArray nextStringArray()
+    {
+        return nextStringArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
