@@ -22,9 +22,10 @@ package org.neo4j.io.layout;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 
@@ -163,15 +164,20 @@ public class DatabaseLayout
         return file( DatabaseFile.LABEL_TOKEN_NAMES_STORE );
     }
 
-    //TODO:
     public List<File> idFiles()
     {
-        return Collections.emptyList();
+        return Arrays.stream( DatabaseFile.values() )
+                     .filter( DatabaseFile::hasIdFile )
+                     .map( this::file )
+                     .collect( Collectors.toList() );
     }
 
     public List<File> storeFiles()
     {
-        return Collections.emptyList();
+        return Arrays.stream( DatabaseFile.values() )
+                .filter( f -> !f.hasIdFile() )
+                .map( this::file )
+                .collect( Collectors.toList() );
     }
 
     public List<File> listFiles()

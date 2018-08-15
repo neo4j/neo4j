@@ -49,18 +49,25 @@ public enum DatabaseFile
 
     SCHEMA_STORE( DatabaseFileNames.SCHEMA_STORE ),
 
-    COUNTS_STORE_A( DatabaseFileNames.COUNTS_STORE_A ),
-    COUNTS_STORE_B( DatabaseFileNames.COUNTS_STORE_B ),
+    COUNTS_STORE_A( DatabaseFileNames.COUNTS_STORE_A, false ),
+    COUNTS_STORE_B( DatabaseFileNames.COUNTS_STORE_B, false ),
 
     METADATA_STORE( DatabaseFileNames.METADATA_STORE ),
 
-    LABEL_SCAN_STORE( DatabaseFileNames.LABEL_SCAN_STORE );
+    LABEL_SCAN_STORE( DatabaseFileNames.LABEL_SCAN_STORE, false );
 
     private final String name;
+    private final boolean hasIdFile;
 
     DatabaseFile( String name )
     {
+        this( name, true );
+    }
+
+    DatabaseFile( String name, boolean hasIdFile )
+    {
         this.name = name;
+        this.hasIdFile = hasIdFile;
     }
 
     String getName()
@@ -68,4 +75,8 @@ public enum DatabaseFile
         return name;
     }
 
+    public boolean hasIdFile()
+    {
+        return hasIdFile;
+    }
 }
