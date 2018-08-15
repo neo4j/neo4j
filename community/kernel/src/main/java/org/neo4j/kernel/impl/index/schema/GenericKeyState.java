@@ -1178,7 +1178,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         for ( int i = 0; i < arrayLength; i++ )
         {
             short bytesLength = cursor.getShort();
-            if ( bytesLength <= 0 || bytesLength > maxSize )
+            if ( bytesLength < 0 || bytesLength > maxSize )
             {
                 setCursorException( cursor, "non-valid bytes length, " + bytesLength );
                 return false;
