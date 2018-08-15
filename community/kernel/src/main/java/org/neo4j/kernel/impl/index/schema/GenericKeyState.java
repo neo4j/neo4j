@@ -1112,25 +1112,25 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
                 return true;
             };
         case RawBits.INT:
-            return c->
+            return c ->
             {
                 writeInteger( c.getInt() );
                 return true;
             };
         case RawBits.LONG:
-            return c->
+            return c ->
             {
                 writeInteger( c.getLong() );
                 return true;
             };
         case RawBits.FLOAT:
-            return c->
+            return c ->
             {
                 writeFloatingPoint( Float.intBitsToFloat( c.getInt() ) );
                 return true;
             };
         case RawBits.DOUBLE:
-            return c->
+            return c ->
             {
                 writeFloatingPoint( Double.longBitsToDouble( c.getLong() ) );
                 return true;
