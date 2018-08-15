@@ -214,7 +214,7 @@ public class MemoryRecommendationsCommandTest
         {
             if ( storeType.isRecordStore() )
             {
-                File file = databaseLayout.file( storeType.getDatabaseStore() );
+                File file = databaseLayout.file( storeType.getDatabaseFile() );
                 long length = file.length();
                 pageCacheTotal.add( length );
             }

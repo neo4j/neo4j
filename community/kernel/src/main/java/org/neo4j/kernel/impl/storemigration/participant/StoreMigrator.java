@@ -37,8 +37,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -372,28 +372,28 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             // which stores needs migration. Node, relationship, relationship group stores are always written
             // anyways and cannot be avoided with the importer, but delete the store files that weren't written
             // (left empty) so that we don't overwrite those in the real store directory later.
-            Collection<DatabaseStore> storesToDeleteFromMigratedDirectory = new ArrayList<>();
-            storesToDeleteFromMigratedDirectory.add( DatabaseStore.NEO_STORE );
+            Collection<DatabaseFile> storesToDeleteFromMigratedDirectory = new ArrayList<>();
+            storesToDeleteFromMigratedDirectory.add( DatabaseFile.METADATA_STORE );
             if ( !requiresPropertyMigration )
             {
                 // We didn't migrate properties, so the property stores in the migrated store are just empty/bogus
                 storesToDeleteFromMigratedDirectory.addAll( asList(
-                        DatabaseStore.PROPERTY_STORE,
-                        DatabaseStore.PROPERTY_STRING_STORE,
-                        DatabaseStore.PROPERTY_ARRAY_STORE ) );
+                        DatabaseFile.PROPERTY_STORE,
+                        DatabaseFile.PROPERTY_STRING_STORE,
+                        DatabaseFile.PROPERTY_ARRAY_STORE ) );
             }
             if ( !requiresDynamicStoreMigration )
             {
                 // We didn't migrate labels (dynamic node labels) or any other dynamic store
                 storesToDeleteFromMigratedDirectory.addAll( asList(
-                        DatabaseStore.NODE_LABEL_STORE,
-                        DatabaseStore.LABEL_TOKEN_STORE,
-                        DatabaseStore.LABEL_TOKEN_NAMES_STORE,
-                        DatabaseStore.RELATIONSHIP_TYPE_TOKEN_STORE,
-                        DatabaseStore.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
-                        DatabaseStore.PROPERTY_KEY_TOKEN_STORE,
-                        DatabaseStore.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                        DatabaseStore.SCHEMA_STORE ) );
+                        DatabaseFile.NODE_LABEL_STORE,
+                        DatabaseFile.LABEL_TOKEN_STORE,
+                        DatabaseFile.LABEL_TOKEN_NAMES_STORE,
+                        DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE,
+                        DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                        DatabaseFile.PROPERTY_KEY_TOKEN_STORE,
+                        DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                        DatabaseFile.SCHEMA_STORE ) );
             }
             fileOperation( DELETE, fileSystem, migrationDirectoryStructure, null, storesToDeleteFromMigratedDirectory,
                     true, null );
@@ -426,11 +426,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         // The token stores also need to be migrated because we use those as-is and ask for their high ids
         // when using the importer in the store migration scenario.
-        DatabaseStore[] storesFilesToMigrate = {
-                DatabaseStore.LABEL_TOKEN_STORE, DatabaseStore.LABEL_TOKEN_NAMES_STORE,
-                DatabaseStore.PROPERTY_KEY_TOKEN_STORE, DatabaseStore.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                DatabaseStore.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseStore.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
-                DatabaseStore.NODE_LABEL_STORE};
+        DatabaseFile[] storesFilesToMigrate = {
+                DatabaseFile.LABEL_TOKEN_STORE, DatabaseFile.LABEL_TOKEN_NAMES_STORE,
+                DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                DatabaseFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
             fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture,
@@ -542,7 +542,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         // Move the migrated ones into the store directory
         fileOperation( MOVE, fileSystem, migrationStrcture, storeDirectoryStructure,
-                Iterables.iterable( DatabaseStore.values() ), true, // allow to skip non existent source files
+                Iterables.iterable( DatabaseFile.values() ), true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE );
     }
 
@@ -552,7 +552,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         final File storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final File migrationDirNeoStore = migrationStructure.metadataStore();
         fileOperation( COPY, fileSystem, sourceDirectoryStructure,
-                migrationStructure, Iterables.iterable( DatabaseStore.NEO_STORE ), true,
+                migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
                 ExistingTargetStrategy.SKIP );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.UPGRADE_TRANSACTION_ID,

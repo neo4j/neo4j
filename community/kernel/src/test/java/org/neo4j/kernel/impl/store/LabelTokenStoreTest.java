@@ -45,6 +45,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class LabelTokenStoreTest
 {
     private final File file = mock( File.class );
+    private final File idFile = mock( File.class );
     private final IdGeneratorFactory generatorFactory = mock( IdGeneratorFactory.class );
     private final PageCache cache = mock( PageCache.class );
     private final LogProvider logProvider = mock( LogProvider.class );
@@ -73,12 +74,12 @@ public class LabelTokenStoreTest
     {
         UnusedLabelTokenStore() throws IOException
         {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, file, config, generatorFactory, cache, logProvider, dynamicStringStore,
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, file, idFile, config, generatorFactory, cache, logProvider, dynamicStringStore,
                     RecordFormatSelector.defaultFormat() );
-            storeFile = mock( PagedFile.class );
+            pagedFile = mock( PagedFile.class );
 
-            when( storeFile.io( any( Long.class ), any( Integer.class ) ) ).thenReturn( pageCursor );
-            when( storeFile.pageSize() ).thenReturn( 1 );
+            when( pagedFile.io( any( Long.class ), any( Integer.class ) ) ).thenReturn( pageCursor );
+            when( pagedFile.pageSize() ).thenReturn( 1 );
             when( pageCursor.next() ).thenReturn( true );
         }
     }

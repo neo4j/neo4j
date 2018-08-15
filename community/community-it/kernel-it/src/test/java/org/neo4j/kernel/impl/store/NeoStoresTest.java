@@ -189,7 +189,7 @@ public class NeoStoresTest
 
         try ( NeoStores neoStores = sf.openNeoStores( true ) )
         {
-            neoStores.createDynamicArrayStore( new File( "someStore" ), IdType.ARRAY_BLOCK, -2 );
+            neoStores.createDynamicArrayStore( new File( "someStore" ), new File( "someIdFile" ), IdType.ARRAY_BLOCK, -2 );
         }
     }
 

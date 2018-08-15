@@ -68,7 +68,7 @@ public class NeoStoreOpenFailureTest
         NeoStores neoStores = new NeoStores(
                 databaseLayout, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create, storeTypes,
                 openOptions );
-        File schemaStore = neoStores.getSchemaStore().getStorageFileName();
+        File schemaStore = neoStores.getSchemaStore().getStorageFile();
         neoStores.close();
 
         // Make the schema store inaccessible, to sabotage the next initialisation we'll do.

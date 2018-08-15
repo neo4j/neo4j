@@ -241,7 +241,7 @@ public class CommonAbstractStoreBehaviourTest
     @Test
     public void rebuildIdGeneratorSlowMustThrowOnPageOverflow() throws Exception
     {
-        config.augment( CommonAbstractStore.Configuration.rebuild_idgenerators_fast, "false" );
+        config.augment( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         createStore();
         store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
@@ -269,7 +269,7 @@ public class CommonAbstractStoreBehaviourTest
         createStore();
         int headerSizeInRecords = store.getNumberOfReservedLowIds();
         int headerSizeInBytes = headerSizeInRecords * store.getRecordSize();
-        try ( PageCursor cursor = store.storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
             for ( int i = 0; i < headerSizeInBytes; i++ )
@@ -277,9 +277,9 @@ public class CommonAbstractStoreBehaviourTest
                 cursor.putByte( (byte) 0 );
             }
         }
-        int pageSize = store.storeFile.pageSize();
+        int pageSize = store.pagedFile.pageSize();
         store.close();
-        store.pageCache.map( store.getStorageFileName(), pageSize, StandardOpenOption.TRUNCATE_EXISTING ).close();
+        store.pageCache.map( store.getStorageFile(), pageSize, StandardOpenOption.TRUNCATE_EXISTING ).close();
         createStore();
     }
 
@@ -397,7 +397,8 @@ public class CommonAbstractStoreBehaviourTest
 
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, new File( "store" ), config, IdType.NODE, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, new File( "store" ), new File( "idFile" ), config, IdType.NODE,
+                    new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                     NullLogProvider.getInstance(), "T", format, format, "XYZ" );
         }
 

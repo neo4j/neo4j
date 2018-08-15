@@ -29,9 +29,9 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseFileNames;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -216,9 +216,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         {
             if ( type.isRecordStore() && !storesToKeep.test( type ) )
             {
-                DatabaseStore databaseStore = type.getDatabaseStore();
-                fileSystem.deleteFile( databaseLayout.file( databaseStore ) );
-                fileSystem.deleteFile( databaseLayout.idFile( databaseStore ) );
+                DatabaseFile databaseFile = type.getDatabaseFile();
+                fileSystem.deleteFile( databaseLayout.file( databaseFile ) );
+                fileSystem.deleteFile( databaseLayout.idFile( databaseFile ) );
             }
         }
     }
@@ -507,7 +507,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             if ( type.isRecordStore() )
             {
                 RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
-                idGeneratorFactory.create( databaseLayout.idFile( type.getDatabaseStore() ), recordStore.getHighId(), false );
+                idGeneratorFactory.create( databaseLayout.idFile( type.getDatabaseFile() ), recordStore.getHighId(), false );
             }
         }
     }

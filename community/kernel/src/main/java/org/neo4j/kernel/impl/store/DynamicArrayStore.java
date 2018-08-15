@@ -100,13 +100,23 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
     private final boolean allowStorePointsAndTemporal;
 
-    public DynamicArrayStore( String databaseName, File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache, LogProvider logProvider, int dataSizeFromConfiguration, RecordFormats recordFormats, OpenOption... openOptions )
+    public DynamicArrayStore(
+            String databaseName,
+            File file,
+            File idFile,
+            Config configuration,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            LogProvider logProvider,
+            int dataSizeFromConfiguration,
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
-        super( databaseName, fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration,
-                recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
-        allowStorePointsAndTemporal =
-                recordFormats.hasCapability( Capability.POINT_PROPERTIES ) && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
+        super( databaseName, file, idFile, configuration, idType, idGeneratorFactory, pageCache,
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
+        allowStorePointsAndTemporal = recordFormats.hasCapability( Capability.POINT_PROPERTIES )
+                && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
     }
 
     @Override

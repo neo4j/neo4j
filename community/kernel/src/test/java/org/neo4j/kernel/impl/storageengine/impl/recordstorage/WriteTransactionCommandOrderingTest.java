@@ -25,25 +25,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -56,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -189,83 +183,6 @@ public class WriteTransactionCommandOrderingTest
 
         return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
                 0, null, null, null, null, null );
-    }
-
-    private static class RecordingPropertyStore extends PropertyStore
-    {
-        private final AtomicReference<List<String>> currentRecording;
-
-        RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
-        {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, null, Config.defaults(), null, null, NullLogProvider.getInstance(), null, null, null,
-                    Standard.LATEST_RECORD_FORMATS );
-            this.currentRecording = currentRecording;
-        }
-
-        @Override
-        public void updateRecord( PropertyRecord record )
-        {
-            currentRecording.get().add( commandActionToken( record ) + " property" );
-        }
-
-        @Override
-        protected void checkAndLoadStorage( boolean createIfNotExists )
-        {
-        }
-    }
-
-    private static class RecordingNodeStore extends NodeStore
-    {
-        private final AtomicReference<List<String>> currentRecording;
-
-        RecordingNodeStore( AtomicReference<List<String>> currentRecording )
-        {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, null, Config.defaults(), null, null, NullLogProvider.getInstance(), null,
-                    Standard.LATEST_RECORD_FORMATS );
-            this.currentRecording = currentRecording;
-        }
-
-        @Override
-        public void updateRecord( NodeRecord record )
-        {
-            currentRecording.get().add( commandActionToken( record ) + " node" );
-        }
-
-        @Override
-        protected void checkAndLoadStorage( boolean createIfNotExists )
-        {
-        }
-
-        @Override
-        public NodeRecord getRecord( long id, NodeRecord record, RecordLoad mode )
-        {
-            record.initialize( true, -1, false, -1, 0 );
-            record.setId( id );
-            return record;
-        }
-    }
-
-    private static class RecordingRelationshipStore extends RelationshipStore
-    {
-        private final AtomicReference<List<String>> currentRecording;
-
-        RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
-        {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, null, Config.defaults(), null, null, NullLogProvider.getInstance(), Standard.LATEST_RECORD_FORMATS );
-            this.currentRecording = currentRecording;
-        }
-
-        @Override
-        public void updateRecord( RelationshipRecord record )
-        {
-            currentRecording.get().add( commandActionToken( record ) + " relationship" );
-        }
-
-        @Override
-        protected void checkAndLoadStorage( boolean createIfNotExists )
-        {
-        }
-
     }
 
     private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter

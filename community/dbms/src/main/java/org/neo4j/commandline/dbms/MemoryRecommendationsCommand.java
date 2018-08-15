@@ -288,7 +288,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         {
             if ( type.isRecordStore() )
             {
-                File file = databaseLayout.file( type.getDatabaseStore() );
+                File file = databaseLayout.file( type.getDatabaseFile() );
                 if ( outsideWorld.fileSystem().fileExists( file ) )
                 {
                     total += outsideWorld.fileSystem().getFileSize( file );

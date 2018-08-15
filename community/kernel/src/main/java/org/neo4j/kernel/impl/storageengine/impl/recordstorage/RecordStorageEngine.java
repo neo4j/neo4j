@@ -364,7 +364,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         satisfier.satisfyDependency( integrityValidator );
         satisfier.satisfyDependency( labelScanStore );
         satisfier.satisfyDependency( indexingService );
-        // providing TransactionIdStore, LogVersionRepository
         satisfier.satisfyDependency( neoStores.getMetaDataStore() );
         satisfier.satisfyDependency( indexStoreView );
     }
@@ -475,7 +474,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             {
                 final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
                 StoreFileMetadata metadata =
-                        new StoreFileMetadata( recordStore.getStorageFileName(), recordStore.getRecordSize() );
+                        new StoreFileMetadata( recordStore.getStorageFile(), recordStore.getRecordSize() );
                 files.add( metadata );
             }
         }

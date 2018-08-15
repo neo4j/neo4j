@@ -50,7 +50,7 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
         this.processor = processor;
         this.distribution = distribution;
         this.progressListener = builder.progressForPart( name +
-                indexedPartName( store.getStorageFileName().getName(), builderPrefix ), store.getHighId() );
+                indexedPartName( store.getStorageFile().getName(), builderPrefix ), store.getHighId() );
     }
 
     private String indexedPartName( String storeFileName, String prefix )

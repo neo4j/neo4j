@@ -155,12 +155,22 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     // capabilities) has ceased, the variable can be removed.
     private final boolean allowStorePointsAndTemporal;
 
-    public PropertyStore( String databaseName, File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            LogProvider logProvider, DynamicStringStore stringPropertyStore, PropertyKeyTokenStore propertyKeyTokenStore, DynamicArrayStore arrayPropertyStore,
-            RecordFormats recordFormats, OpenOption... openOptions )
+    public PropertyStore(
+            String databaseName,
+            File file,
+            File idFile,
+            Config configuration,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            LogProvider logProvider,
+            DynamicStringStore stringPropertyStore,
+            PropertyKeyTokenStore propertyKeyTokenStore,
+            DynamicArrayStore arrayPropertyStore,
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
-        super( databaseName, fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.property(),
-                NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
+        super( databaseName, file, idFile, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+                recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;

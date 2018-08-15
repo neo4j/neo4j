@@ -64,7 +64,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     /**
      * @return the {@link File} that backs this store.
      */
-    File getStorageFileName();
+    File getStorageFile();
 
     /**
      * @return high id of this store, i.e an id higher than any in use record.
@@ -351,9 +351,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public File getStorageFileName()
+        public File getStorageFile()
         {
-            return actual.getStorageFileName();
+            return actual.getStorageFile();
         }
 
         @Override

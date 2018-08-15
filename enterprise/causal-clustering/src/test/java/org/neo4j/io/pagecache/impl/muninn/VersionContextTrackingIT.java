@@ -130,7 +130,7 @@ public class VersionContextTrackingIT
         DependencyResolver dependencyResolver = databaseFacade.getDependencyResolver();
         PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
         NeoStores neoStores = dependencyResolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        File storeFile = neoStores.getNodeStore().getStorageFileName();
+        File storeFile = neoStores.getNodeStore().getStorageFile();
         long maxTransactionId = Long.MIN_VALUE;
         try ( PagedFile pageFile = pageCache.getExistingMapping( storeFile ).get() )
         {

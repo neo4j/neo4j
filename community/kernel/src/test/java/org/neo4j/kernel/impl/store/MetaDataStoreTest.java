@@ -405,7 +405,7 @@ public class MetaDataStoreTest
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            PagedFile pf = store.storeFile;
+            PagedFile pf = store.pagedFile;
             store.setUpgradeTransaction( 0, 0, 0 );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
@@ -491,7 +491,7 @@ public class MetaDataStoreTest
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            PagedFile pf = store.storeFile;
+            PagedFile pf = store.pagedFile;
             store.transactionCommitted( 2, 2, 2 );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
@@ -546,7 +546,7 @@ public class MetaDataStoreTest
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            PagedFile pf = store.storeFile;
+            PagedFile pf = store.pagedFile;
             int initialValue = 2;
             store.transactionClosed( initialValue, initialValue, initialValue );
             AtomicLong writeCount = new AtomicLong();

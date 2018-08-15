@@ -216,7 +216,7 @@ public class RsdrMain
             RecordStore store, long fromId, long toId, Pattern pattern ) throws IOException
     {
         toId = Math.min( toId, store.getHighId() );
-        try ( StoreChannel channel = fileSystem.open( store.getStorageFileName(), OpenMode.READ ) )
+        try ( StoreChannel channel = fileSystem.open( store.getStorageFile(), OpenMode.READ ) )
         {
             int recordSize = store.getRecordSize();
             ByteBuffer buf = ByteBuffer.allocate( recordSize );

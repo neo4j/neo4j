@@ -38,10 +38,19 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     // Historical type descriptor, should be called PropertyKeyTokenStore
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
-    public PropertyKeyTokenStore( String databaseName, File fileName, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            LogProvider logProvider, DynamicStringStore nameStore, RecordFormats recordFormats, OpenOption... openOptions )
+    public PropertyKeyTokenStore(
+            String databaseName,
+            File file,
+            File idFile,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            LogProvider logProvider,
+            DynamicStringStore nameStore,
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
-        super( databaseName, fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
+        super( databaseName, file, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
                 recordFormats.propertyKeyToken(), recordFormats.storeVersion(), openOptions );
     }
 

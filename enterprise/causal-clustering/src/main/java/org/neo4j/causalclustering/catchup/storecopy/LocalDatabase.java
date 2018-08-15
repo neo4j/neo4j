@@ -31,8 +31,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -191,9 +191,9 @@ public class LocalDatabase implements Lifecycle
     public boolean isEmpty() throws IOException
     {
         List<File> filesToLookFor = Arrays.stream( StoreType.values() )
-                .map( StoreType::getDatabaseStore )
+                .map( StoreType::getDatabaseFile )
                 .filter( Objects::nonNull )
-                .map( DatabaseStore::getName ).map( databaseLayout::file )
+                .map( DatabaseFile::getName ).map( databaseLayout::file )
                 .collect( Collectors.toList() );
         return storeFiles.isEmpty( databaseLayout.databaseDirectory(), filesToLookFor );
     }

@@ -152,11 +152,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private final CappedLogger transactionCloseWaitLogger;
 
-    MetaDataStore( String databaseName, File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache, LogProvider logProvider,
-            RecordFormat<MetaDataRecord> recordFormat, String storeVersion, OpenOption... openOptions )
+    MetaDataStore( String databaseName, File file, File idFile, Config conf,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
+            String storeVersion,
+            OpenOption... openOptions )
     {
-        super( databaseName, fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat,
-                NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
+        super( databaseName, file, idFile, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
+                TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clocks.systemClock() );
     }
@@ -169,7 +172,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         long storeVersionAsLong = MetaDataStore.versionStringToLong( storeVersion );
         StoreId storeId = new StoreId( storeVersionAsLong );
 
-        storeFile = file;
+        pagedFile = file;
         setCreationTime( storeId.getCreationTime() );
         setRandomNumber( storeId.getRandomId() );
         // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID
@@ -184,7 +187,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setLatestConstraintIntroducingTx( 0 );
 
         flush();
-        storeFile = null;
+        pagedFile = null;
     }
 
     @Override
@@ -364,7 +367,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         assert pageId == pageIdForRecord( Position.UPGRADE_TRANSACTION_CHECKSUM.id );
         synchronized ( upgradeTransactionLock )
         {
-            try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
             {
                 if ( !cursor.next() )
                 {
@@ -455,7 +458,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         long version;
         synchronized ( logVersionLock )
         {
-            try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
             {
                 if ( cursor.next() )
                 {
@@ -568,7 +571,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             throw new UnderlyingStorageException(
                     "Out of page bounds when reading all meta-data fields. The page in question is page " +
-                    cursor.getCurrentPageId() + " of file " + storageFileName.getAbsolutePath() + ", which is " +
+                    cursor.getCurrentPageId() + " of file " + storageFile.getAbsolutePath() + ", which is " +
                     cursor.getCurrentPageSize() + " bytes in size" );
         }
     }
@@ -608,7 +611,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void scanAllFields( int pf_flags, Visitor<PageCursor,IOException> visitor )
     {
-        try ( PageCursor cursor = storeFile.io( 0, pf_flags ) )
+        try ( PageCursor cursor = pagedFile.io( 0, pf_flags ) )
         {
             if ( cursor.next() )
             {
@@ -744,7 +747,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 {
                     long pageId = pageIdForRecord( Position.LAST_TRANSACTION_ID.id );
                     assert pageId == pageIdForRecord( Position.LAST_TRANSACTION_CHECKSUM.id );
-                    try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+                    try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
                     {
                         if ( cursor.next() )
                         {
@@ -832,7 +835,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             assert pageId == pageIdForRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET.id );
             synchronized ( transactionClosedLock )
             {
-                try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
                 {
                     if ( cursor.next() )
                     {

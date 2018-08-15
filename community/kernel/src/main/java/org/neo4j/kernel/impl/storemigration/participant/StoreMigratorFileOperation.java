@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 
@@ -40,9 +40,9 @@ class StoreMigratorFileOperation
      * @throws IOException if any of the operations fail for any reason.
      */
     static void fileOperation( FileOperation operation, FileSystemAbstraction fs, DatabaseLayout fromLayout, DatabaseLayout toLayout,
-            Iterable<DatabaseStore> databaseFiles, boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy ) throws IOException
+            Iterable<DatabaseFile> databaseFiles, boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy ) throws IOException
     {
-        for ( DatabaseStore databaseStore : databaseFiles )
+        for ( DatabaseFile databaseStore : databaseFiles )
         {
             perform( operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, fromLayout.file( databaseStore ),
                     fromLayout.idFile( databaseStore ) );

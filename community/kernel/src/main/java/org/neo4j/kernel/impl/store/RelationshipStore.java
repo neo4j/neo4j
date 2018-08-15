@@ -39,11 +39,20 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
-    public RelationshipStore( String databaseName, File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            LogProvider logProvider, RecordFormats recordFormats, OpenOption... openOptions )
+    public RelationshipStore(
+            String databaseName,
+            File file,
+            File idFile,
+            Config configuration,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            LogProvider logProvider,
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
-        super( databaseName, fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.relationship(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
+        super( databaseName, file, idFile, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
+                pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,
+                recordFormats.storeVersion(), openOptions );
     }
 
     @Override

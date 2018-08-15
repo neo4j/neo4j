@@ -38,12 +38,22 @@ public class DynamicStringStore extends AbstractDynamicStore
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
 
-    public DynamicStringStore( String databaseName, File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache, LogProvider logProvider, int dataSizeFromConfiguration, RecordFormat<DynamicRecord> recordFormat, String storeVersion,
+    public DynamicStringStore(
+            String databaseName,
+            File file,
+            File idFile,
+            Config configuration,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            LogProvider logProvider,
+            int dataSizeFromConfiguration,
+            RecordFormat<DynamicRecord> recordFormat,
+            String storeVersion,
             OpenOption... openOptions )
     {
-        super( databaseName, fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration,
-                recordFormat, storeVersion, openOptions );
+        super( databaseName, file, idFile, configuration, idType, idGeneratorFactory, pageCache,
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, openOptions );
     }
 
     @Override

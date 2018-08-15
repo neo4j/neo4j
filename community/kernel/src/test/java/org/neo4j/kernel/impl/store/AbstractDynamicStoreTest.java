@@ -58,7 +58,8 @@ public class AbstractDynamicStoreTest
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
-    private final File fileName = new File( "store" );
+    private final File storeFile = new File( "store" );
+    private final File idFile = new File( "idStore" );
     private final RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
     private PageCache pageCache;
     private FileSystemAbstraction fs;
@@ -68,7 +69,7 @@ public class AbstractDynamicStoreTest
     {
         fs = fsr.get();
         pageCache = pageCacheRule.getPageCache( fsr.get() );
-        try ( StoreChannel channel = fs.create( fileName ) )
+        try ( StoreChannel channel = fs.create( storeFile ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 4 );
             buffer.putInt( BLOCK_SIZE );
@@ -146,21 +147,21 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        AbstractDynamicStore store =
-                new AbstractDynamicStore( DatabaseManager.DEFAULT_DATABASE_NAME, fileName, Config.defaults(), IdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
-                        NullLogProvider.getInstance(), "test", BLOCK_SIZE, formats.dynamic(), formats.storeVersion() )
-                {
-                    @Override
-                    public void accept( Processor processor, DynamicRecord record )
-                    {   // Ignore
-                    }
+        AbstractDynamicStore store = new AbstractDynamicStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK,
+                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
+                formats.dynamic(), formats.storeVersion() )
+        {
+            @Override
+            public void accept( Processor processor, DynamicRecord record )
+            {   // Ignore
+            }
 
-                    @Override
-                    public String getTypeDescriptor()
-                    {
-                        return "TestDynamicStore";
-                    }
-                };
+            @Override
+            public String getTypeDescriptor()
+            {
+                return "TestDynamicStore";
+            }
+        };
         store.initialise( true );
         return store;
     }

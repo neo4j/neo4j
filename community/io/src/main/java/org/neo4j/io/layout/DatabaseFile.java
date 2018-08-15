@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.layout;
 
-public enum DatabaseStore
+public enum DatabaseFile
 {
     NODE_STORE( DatabaseFileNames.NODE_STORE ),
 
@@ -52,11 +52,13 @@ public enum DatabaseStore
     COUNTS_STORE_A( DatabaseFileNames.COUNTS_STORE_A ),
     COUNTS_STORE_B( DatabaseFileNames.COUNTS_STORE_B ),
 
-    NEO_STORE( DatabaseFileNames.METADATA_STORE );
+    METADATA_STORE( DatabaseFileNames.METADATA_STORE ),
+
+    LABEL_SCAN_STORE( DatabaseFileNames.LABEL_SCAN_STORE );
 
     private final String name;
 
-    DatabaseStore( String name )
+    DatabaseFile( String name )
     {
         this.name = name;
     }

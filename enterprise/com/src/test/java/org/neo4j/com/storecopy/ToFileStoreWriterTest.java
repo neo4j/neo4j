@@ -62,7 +62,7 @@ public class ToFileStoreWriterTest
         {
             if ( type.isRecordStore() )
             {
-                File file = directory.databaseLayout().file( type.getDatabaseStore() );
+                File file = directory.databaseLayout().file( type.getDatabaseFile() );
                 writeAndVerify( writer, tempBuffer, file );
             }
         }

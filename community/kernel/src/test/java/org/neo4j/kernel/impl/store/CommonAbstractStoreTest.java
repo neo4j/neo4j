@@ -35,8 +35,8 @@ import java.util.function.LongSupplier;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -89,6 +89,7 @@ public class CommonAbstractStoreTest
     private final PageCache pageCache = mock( PageCache.class );
     private final Config config = Config.defaults();
     private final File storeFile = new File( "store" );
+    private final File idStoreFile = new File( "isStore" );
     private final RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
@@ -132,6 +133,7 @@ public class CommonAbstractStoreTest
     public void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException
     {
         File storeFile = dir.file( "a" );
+        File idFile = dir.file( "idFile" );
         PageCache pageCache = mock( PageCache.class );
         PagedFile pagedFile = mock( PagedFile.class );
         PageCursor pageCursor = mock( PageCursor.class );
@@ -145,7 +147,7 @@ public class CommonAbstractStoreTest
         expectedException.expect( StoreNotFoundException.class );
         expectedException.expectMessage( "Fail to read header record of store file: " + storeFile.getAbsolutePath() );
 
-        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, config, IdType.NODE_LABELS,
+        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, config, IdType.NODE_LABELS,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
                 Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ), recordFormats ) )
         {
@@ -213,10 +215,10 @@ public class CommonAbstractStoreTest
         // GIVEN
         DatabaseLayout databaseLayout = dir.databaseLayout();
         File nodeStore = databaseLayout.nodeStore();
-        File idFile = databaseLayout.idFile( DatabaseStore.NODE_STORE );
+        File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE );
         FileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs, Config.defaults() );
-        TheStore store = new TheStore( nodeStore, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
+        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
                 NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
         store.initialise( true );
         store.makeStoreOk();
@@ -234,7 +236,7 @@ public class CommonAbstractStoreTest
     private TheStore newStore()
     {
         LogProvider log = NullLogProvider.getInstance();
-        TheStore store = new TheStore( storeFile, config, idType, idGeneratorFactory, pageCache, log, recordFormat );
+        TheStore store = new TheStore( storeFile, idStoreFile, config, idType, idGeneratorFactory, pageCache, log, recordFormat );
         store.initialise( false );
         return store;
     }
@@ -246,11 +248,11 @@ public class CommonAbstractStoreTest
 
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>
     {
-        TheStore( File file, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
+        TheStore( File file, File idFile, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache, LogProvider logProvider, RecordFormat<TheRecord> recordFormat,
                 OpenOption... openOptions )
         {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, file, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
+            super( DatabaseManager.DEFAULT_DATABASE_NAME, file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
                     recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
         }
 

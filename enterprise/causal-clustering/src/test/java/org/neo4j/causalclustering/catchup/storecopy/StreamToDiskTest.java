@@ -60,7 +60,7 @@ public class StreamToDiskTest
         {
             if ( type.isRecordStore() )
             {
-                File file = directory.databaseLayout().file( type.getDatabaseStore() );
+                File file = directory.databaseLayout().file( type.getDatabaseFile() );
                 writeAndVerify( writerProvider, file );
             }
         }

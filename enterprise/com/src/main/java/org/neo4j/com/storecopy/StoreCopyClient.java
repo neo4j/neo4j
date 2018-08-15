@@ -117,7 +117,7 @@ public class StoreCopyClient
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest, MoveAfterCopy moveAfterCopy ) throws Exception
     {
         // Create a temp directory (or clean if present)
-        File tempDatabaseDirectory = databaseLayout.directory( StoreUtil.TEMP_COPY_DIRECTORY_NAME );
+        File tempDatabaseDirectory = databaseLayout.file( StoreUtil.TEMP_COPY_DIRECTORY_NAME );
         try
         {
             cleanDirectory( tempDatabaseDirectory );

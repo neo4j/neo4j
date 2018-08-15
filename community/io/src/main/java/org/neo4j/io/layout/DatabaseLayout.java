@@ -74,94 +74,95 @@ public class DatabaseLayout
 
     public File metadataStore()
     {
-        return file( DatabaseFileNames.METADATA_STORE );
+        return file( DatabaseFile.METADATA_STORE );
     }
 
     public File labelScanStore()
     {
-        return file( DatabaseFileNames.LABEL_SCAN_STORE );
+        return file( DatabaseFile.LABEL_SCAN_STORE );
     }
 
     public File countStoreA()
     {
-        return file( DatabaseFileNames.COUNTS_STORE_A );
+        return file( DatabaseFile.COUNTS_STORE_A );
     }
 
     public File countStoreB()
     {
-        return file( DatabaseFileNames.COUNTS_STORE_B );
+        return file( DatabaseFile.COUNTS_STORE_B );
     }
 
     public File propertyStringStore()
     {
-        return file( DatabaseFileNames.PROPERTY_STRING_STORE );
+        return file( DatabaseFile.PROPERTY_STRING_STORE );
     }
 
     public File relationshipStore()
     {
-        return file( DatabaseFileNames.RELATIONSHIP_STORE );
+        return file( DatabaseFile.RELATIONSHIP_STORE );
     }
 
     public File propertyStore()
     {
-        return file( DatabaseFileNames.PROPERTY_STORE );
+        return file( DatabaseFile.PROPERTY_STORE );
     }
 
     public File nodeStore()
     {
-        return file( DatabaseFileNames.NODE_STORE );
+        return file( DatabaseFile.NODE_STORE );
     }
 
     public File nodeLabelStore()
     {
-        return file( DatabaseFileNames.NODE_LABELS_STORE );
+        return file( DatabaseFile.NODE_LABEL_STORE );
     }
 
     public File propertyArrayStore()
     {
-        return file( DatabaseFileNames.PROPERTY_ARRAY_STORE );
+        return file( DatabaseFile.PROPERTY_ARRAY_STORE );
     }
 
     public File propertyKeyTokenStore()
     {
-        return file( DatabaseFileNames.PROPERTY_KEY_TOKEN_STORE );
+        return file( DatabaseFile.PROPERTY_KEY_TOKEN_STORE );
     }
 
     public File propertyKeyTokenNamesStore()
     {
-        return file( DatabaseFileNames.PROPERTY_KEY_TOKEN_NAMES_STORE );
+        return file( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
     }
 
     public File relationshipTypeTokenStore()
     {
-        return file( DatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_STORE );
+        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE );
     }
 
     public File relationshipTypeTokenNamesStore()
     {
-        return file( DatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
+        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
     }
 
     public File labelTokenStore()
     {
-        return file( DatabaseFileNames.LABEL_TOKEN_STORE );
+        return file( DatabaseFile.LABEL_TOKEN_STORE );
     }
 
     public File schemaStore()
     {
-        return file( DatabaseFileNames.SCHEMA_STORE );
+        return file( DatabaseFile.SCHEMA_STORE );
     }
 
     public File relationshipGroupStore()
     {
-        return file( DatabaseFileNames.RELATIONSHIP_GROUP_STORE );
+        return file( DatabaseFile.RELATIONSHIP_GROUP_STORE );
     }
 
     public File labelTokenNamesStore()
     {
-        return file( DatabaseFileNames.LABEL_TOKEN_NAMES_STORE );
+        return file( DatabaseFile.LABEL_TOKEN_NAMES_STORE );
     }
 
+    //TODO:
     public List<File> idFiles()
     {
         return Collections.emptyList();
@@ -172,9 +173,106 @@ public class DatabaseLayout
         return Collections.emptyList();
     }
 
-    public File idFile( DatabaseStore store )
+    public File idFile( DatabaseFile store )
     {
         return idFile( store.getName() );
+    }
+
+    public File file( String fileName )
+    {
+        return new File( databaseDirectory, fileName );
+    }
+
+    public File file( DatabaseFile databaseFile )
+    {
+        return file( databaseFile.getName() );
+    }
+
+    public File[] listDatabaseFiles( FilenameFilter filter )
+    {
+        File[] files = databaseDirectory.listFiles( filter );
+        return files != null ? files : EMPTY_FILES_ARRAY;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( databaseDirectory, storeLayout );
+    }
+
+    public File idMetadataStore()
+    {
+        return idFile( DatabaseFile.METADATA_STORE );
+    }
+
+    public File idNodeStore()
+    {
+        return idFile( DatabaseFile.NODE_STORE );
+    }
+
+    public File idNodeLabelStore()
+    {
+        return idFile( DatabaseFile.NODE_LABEL_STORE );
+    }
+
+    public File idPropertyStore()
+    {
+        return idFile( DatabaseFile.PROPERTY_STORE );
+    }
+
+    public File idPropertyKeyTokenStore()
+    {
+        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_STORE );
+    }
+
+    public File idPropertyKeyTokenNamesStore()
+    {
+        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+    }
+
+    public File idPropertyStringStore()
+    {
+        return idFile( DatabaseFile.PROPERTY_STRING_STORE );
+    }
+
+    public File idPropertyArrayStore()
+    {
+        return idFile( DatabaseFile.PROPERTY_ARRAY_STORE );
+    }
+
+    public File idRelationshipStore()
+    {
+        return idFile( DatabaseFile.RELATIONSHIP_STORE );
+    }
+
+    public File idRelationshipGroupStore()
+    {
+        return idFile( DatabaseFile.RELATIONSHIP_GROUP_STORE );
+    }
+
+    public File idRelationshipTypeTokenStore()
+    {
+        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE );
+    }
+
+    public File idRelationshipTypeTokenNamesStore()
+    {
+        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
+    }
+
+    public File idLabelTokenStore()
+    {
+        return idFile( DatabaseFile.LABEL_TOKEN_STORE );
+    }
+
+    public File idLabelTokenNamesStore()
+    {
+        return idFile( DatabaseFile.LABEL_TOKEN_NAMES_STORE );
+    }
+
+    public File idSchemaStore()
+    {
+        return idFile( DatabaseFile.SCHEMA_STORE );
     }
 
     private File idFile( String name )
@@ -185,29 +283,6 @@ public class DatabaseLayout
     private static String idFileName( String storeName )
     {
         return storeName + ".id";
-    }
-
-    //TODO: can we remove this now?
-    public File file( String fileName )
-    {
-        return new File( databaseDirectory, fileName );
-    }
-
-    public File file( DatabaseStore databaseStore )
-    {
-        return new File( databaseDirectory, databaseStore.getName() );
-    }
-
-    //TODO: can we remove this now?
-    public File directory( String directoryName )
-    {
-        return file( directoryName );
-    }
-
-    public File[] listDatabaseFiles( FilenameFilter filter )
-    {
-        File[] files = databaseDirectory.listFiles( filter );
-        return files != null ? files : EMPTY_FILES_ARRAY;
     }
 
     @Override
@@ -229,86 +304,5 @@ public class DatabaseLayout
         }
         DatabaseLayout that = (DatabaseLayout) o;
         return Objects.equals( databaseDirectory, that.databaseDirectory ) && Objects.equals( storeLayout, that.storeLayout );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( databaseDirectory, storeLayout );
-    }
-
-    public File idMetadataStore()
-    {
-        return idFile( DatabaseFileNames.METADATA_STORE );
-    }
-
-    public File idNodeStore()
-    {
-        return idFile( DatabaseFileNames.NODE_STORE );
-    }
-
-    public File idNodeLabelStore()
-    {
-        return idFile( DatabaseFileNames.NODE_LABELS_STORE );
-    }
-
-    public File idPropertyStore()
-    {
-        return idFile( DatabaseFileNames.PROPERTY_STORE );
-    }
-
-    public File idPropertyKeyTokenStore()
-    {
-        return idFile( DatabaseFileNames.PROPERTY_KEY_TOKEN_STORE );
-    }
-
-    public File idPropertyKeyTokenNamesStore()
-    {
-        return idFile( DatabaseFileNames.PROPERTY_KEY_TOKEN_NAMES_STORE );
-    }
-
-    public File idPropertyStringStore()
-    {
-        return idFile( DatabaseFileNames.PROPERTY_STRING_STORE );
-    }
-
-    public File idPropertyArrayStore()
-    {
-        return idFile( DatabaseFileNames.PROPERTY_ARRAY_STORE );
-    }
-
-    public File idRelationshipStore()
-    {
-        return idFile( DatabaseFileNames.RELATIONSHIP_STORE );
-    }
-
-    public File idRelationshipGroupStore()
-    {
-        return idFile( DatabaseFileNames.RELATIONSHIP_GROUP_STORE );
-    }
-
-    public File idRelationshipTypeTokenStore()
-    {
-        return idFile( DatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_STORE );
-    }
-
-    public File idRelationshipTypeTokenNamesStore()
-    {
-        return idFile( DatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
-    }
-
-    public File idLabelTokenStore()
-    {
-        return idFile( DatabaseFileNames.LABEL_TOKEN_STORE );
-    }
-
-    public File idLabelTokenNamesStore()
-    {
-        return idFile( DatabaseFileNames.LABEL_TOKEN_NAMES_STORE );
-    }
-
-    public File idSchemaStore()
-    {
-        return idFile( DatabaseFileNames.SCHEMA_STORE );
     }
 }

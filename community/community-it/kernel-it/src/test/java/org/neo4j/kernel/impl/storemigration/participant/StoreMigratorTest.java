@@ -146,7 +146,7 @@ public class StoreMigratorTest
     public void extractTransactionInformationFromLogsInCustomRelativeLocation() throws Exception
     {
         DatabaseLayout databaseLayout = directory.databaseLayout();
-        File customLogLocation = databaseLayout.directory( "customLogLocation" );
+        File customLogLocation = databaseLayout.file( "customLogLocation" );
         extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, databaseLayout, directory.databaseDir() );
     }
 
@@ -154,7 +154,7 @@ public class StoreMigratorTest
     public void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
         DatabaseLayout databaseLayout = directory.databaseLayout();
-        File customLogLocation = databaseLayout.directory( "customLogLocation" );
+        File customLogLocation = databaseLayout.file( "customLogLocation" );
         extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, databaseLayout, directory.databaseDir() );
     }
 

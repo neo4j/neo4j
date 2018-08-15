@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,11 +73,12 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         File storeFile = testDirectory.file( "nodes" );
+        File idFile = testDirectory.file( "idNodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store =
-                new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, config, new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ),
-                        NullLogProvider.getInstance(), labelStore, RecordFormatSelector.defaultFormat() );
+        NodeStore store = new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                RecordFormatSelector.defaultFormat() );
         store.initialise( true );
         store.makeStoreOk();
 
@@ -142,7 +144,7 @@ public class TestIdGeneratorRebuilding
             {
                 sb.append( 'a' );
             }
-            record.setData( sb.toString().getBytes( "UTF-16" ) );
+            record.setData( sb.toString().getBytes( StandardCharsets.UTF_16 ) );
             store.updateRecord( record );
         }
         store.setHighestPossibleIdInUse( highestId );
@@ -176,11 +178,12 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         File storeFile = testDirectory.file( "nodes" );
+        File idFile = testDirectory.file( "idNodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store =
-                new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, config, new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ),
-                        NullLogProvider.getInstance(), labelStore, RecordFormatSelector.defaultFormat() );
+        NodeStore store = new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                RecordFormatSelector.defaultFormat() );
         store.initialise( true );
         store.makeStoreOk();
 

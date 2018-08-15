@@ -65,12 +65,24 @@ import org.neo4j.logging.LogProvider;
 public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord,IntStoreHeader>
         implements DynamicRecordAllocator
 {
-    public AbstractDynamicStore( String databaseName, File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache, LogProvider logProvider, String typeDescriptor, int dataSizeFromConfiguration, RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion, OpenOption... openOptions )
+    public AbstractDynamicStore(
+            String databaseName,
+            File file,
+            File idFile,
+            Config conf,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            LogProvider logProvider,
+            String typeDescriptor,
+            int dataSizeFromConfiguration,
+            RecordFormat<DynamicRecord> recordFormat,
+            String storeVersion,
+            OpenOption... openOptions )
     {
-        super( databaseName, fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor, recordFormat,
-                new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ), storeVersion, openOptions );
+        super( databaseName, file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
+                recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
+                storeVersion, openOptions );
     }
 
     public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src,
@@ -184,7 +196,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     @Override
     public String toString()
     {
-        return super.toString() + "[fileName:" + storageFileName.getName() +
+        return super.toString() + "[fileName:" + storageFile.getName() +
                 ", blockSize:" + getRecordDataSize() + "]";
     }
 

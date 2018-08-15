@@ -35,10 +35,18 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 
-    public RelationshipGroupStore( String databaseName, File fileName, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            LogProvider logProvider, RecordFormats recordFormats, OpenOption... openOptions )
+    public RelationshipGroupStore(
+            String databaseName,
+            File file,
+            File idFile,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            LogProvider logProvider,
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
-        super( databaseName, fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+        super( databaseName, file, idFile, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
                 recordFormats.relationshipGroup(), new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
                 recordFormats.storeVersion(), openOptions );
     }

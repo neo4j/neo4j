@@ -25,8 +25,8 @@ import java.io.IOException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.DatabaseStore;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -72,8 +72,8 @@ import static org.neo4j.kernel.impl.storemigration.participant.StoreMigratorFile
  */
 public class CountsMigrator extends AbstractStoreMigrationParticipant
 {
-    private static final Iterable<DatabaseStore> COUNTS_STORE_FILES = Iterables
-            .iterable( DatabaseStore.COUNTS_STORE_A, DatabaseStore.COUNTS_STORE_B );
+    private static final Iterable<DatabaseFile> COUNTS_STORE_FILES = Iterables
+            .iterable( DatabaseFile.COUNTS_STORE_A, DatabaseFile.COUNTS_STORE_B );
 
     private final Config config;
     private final FileSystemAbstraction fileSystem;
