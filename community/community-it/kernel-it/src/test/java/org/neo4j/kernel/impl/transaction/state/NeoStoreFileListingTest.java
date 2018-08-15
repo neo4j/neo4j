@@ -27,23 +27,20 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -113,8 +110,6 @@ public class NeoStoreFileListingTest
             "store_lock"};
 
     private static final String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
-    private static final Function<StoreFileMetadata,Optional<StoreType>> toStoreType =
-            fileMetaData -> StoreType.typeOf( fileMetaData.file().getName() );
 
     @Before
     public void setUp() throws IOException
@@ -155,21 +150,15 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldListMetaDataStoreLast() throws Exception
     {
-        assertTrue( neoStoreDataSource.listStoreFiles( false ).stream()
-                .reduce( ( a, b ) -> b )
-                .flatMap( toStoreType )
-                .filter( StoreType.META_DATA::equals )
-                .isPresent() );
+        StoreFileMetadata fileMetadata = Iterators.last( neoStoreDataSource.listStoreFiles( false ) );
+        assertEquals( fileMetadata.file(), neoStoreDataSource.getDatabaseLayout().metadataStore() );
     }
 
     @Test
     public void shouldListMetaDataStoreLastWithTxLogs() throws Exception
     {
-        assertTrue( neoStoreDataSource.listStoreFiles( true ).stream()
-                .reduce( ( a, b ) -> b )
-                .flatMap( toStoreType )
-                .filter( StoreType.META_DATA::equals )
-                .isPresent() );
+        StoreFileMetadata fileMetadata = Iterators.last( neoStoreDataSource.listStoreFiles( true ) );
+        assertEquals( fileMetadata.file(), neoStoreDataSource.getDatabaseLayout().metadataStore() );
     }
 
     @Test
@@ -205,14 +194,12 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldListNeostoreFiles() throws Exception
     {
-        StoreType[] values = StoreType.values();
+        List<File> expectedFiles = neoStoreDataSource.getDatabaseLayout().storeFiles();
         ResourceIterator<StoreFileMetadata> storeFiles = neoStoreDataSource.listStoreFiles( false );
-        List<StoreType> listedStoreFiles = storeFiles.stream()
-                .map( toStoreType )
-                .filter( Optional::isPresent )
-                .map( Optional::get )
+        List<File> listedStoreFiles = storeFiles.stream()
+                .map( StoreFileMetadata::file )
                 .collect( Collectors.toList() );
-        assertEquals( Arrays.asList(values), listedStoreFiles );
+        assertEquals( expectedFiles, listedStoreFiles );
     }
 
     @Test

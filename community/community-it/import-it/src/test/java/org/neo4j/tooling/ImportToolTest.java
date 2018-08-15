@@ -1309,7 +1309,7 @@ public class ImportToolTest
         {
             if ( storeType.isRecordStore() )
             {
-                dbRule.databaseLayout().file( storeType.getStoreName() ).delete();
+                dbRule.databaseLayout().file( storeType.getDatabaseFile() ).delete();
             }
         }
     }
@@ -1941,7 +1941,7 @@ public class ImportToolTest
             {
                 if ( storeType.isRecordStore() )
                 {
-                    assertTrue( new File( databaseDir, storeType.getStoreName() ).exists() );
+                    assertTrue( dbRule.databaseLayout().file( storeType.getDatabaseFile() ).exists() );
                 }
             }
 

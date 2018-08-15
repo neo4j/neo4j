@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.io.fs.FileUtils.relativePath;
@@ -70,8 +70,8 @@ public class PrepareStoreCopyFiles implements AutoCloseable
                 .includeSchemaIndexStoreFiles()
                 .build() );
 
-        return Stream.concat( neoStoreFilesIterator.stream().filter( isCountFile() ), indexIterator.stream() ).map( mapToStoreResource() ).toArray(
-                StoreResource[]::new );
+        return Stream.concat( neoStoreFilesIterator.stream().filter( isCountFile( neoStoreDataSource.getDatabaseLayout() ) ), indexIterator.stream() ).map(
+                mapToStoreResource() ).toArray( StoreResource[]::new );
     }
 
     private Function<StoreFileMetadata,StoreResource> mapToStoreResource()
@@ -94,13 +94,14 @@ public class PrepareStoreCopyFiles implements AutoCloseable
         try ( Stream<StoreFileMetadata> stream = neoStoreDataSource.getNeoStoreFileListing().builder().excludeLogFiles()
                 .excludeExplicitIndexStoreFiles().excludeSchemaIndexStoreFiles().excludeAdditionalProviders().build().stream() )
         {
-            return stream.filter( isCountFile().negate() ).map( StoreFileMetadata::file ).toArray( File[]::new );
+            return stream.filter( isCountFile( neoStoreDataSource.getDatabaseLayout() ).negate() ).map( StoreFileMetadata::file ).toArray( File[]::new );
         }
     }
 
-    private static Predicate<StoreFileMetadata> isCountFile()
+    private static Predicate<StoreFileMetadata> isCountFile( DatabaseLayout databaseLayout )
     {
-        return storeFileMetadata -> StoreType.typeOf( storeFileMetadata.file().getName() ).filter( f -> f == StoreType.COUNTS ).isPresent();
+        return storeFileMetadata -> databaseLayout.countStoreB().equals( storeFileMetadata.file() ) ||
+                databaseLayout.countStoreA().equals( storeFileMetadata.file() );
     }
 
     private StoreResource toStoreResource( StoreFileMetadata storeFileMetadata ) throws IOException

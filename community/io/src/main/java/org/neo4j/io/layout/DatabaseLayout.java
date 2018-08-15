@@ -21,6 +21,7 @@ package org.neo4j.io.layout;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -173,9 +174,16 @@ public class DatabaseLayout
         return Collections.emptyList();
     }
 
-    public File idFile( DatabaseFile store )
+    public List<File> listFiles()
     {
-        return idFile( store.getName() );
+        ArrayList<File> files = new ArrayList<>( storeFiles() );
+        files.addAll( idFiles() );
+        return files;
+    }
+
+    public File idFile( DatabaseFile file )
+    {
+        return idFile( file.getName() );
     }
 
     public File file( String fileName )

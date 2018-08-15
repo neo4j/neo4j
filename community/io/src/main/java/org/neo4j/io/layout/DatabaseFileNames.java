@@ -23,27 +23,27 @@ public class DatabaseFileNames
 {
     public static final String METADATA_STORE = "neostore";
 
-    public static final String LABEL_SCAN_STORE = "neostore.labelscanstore.db";
+    static final String LABEL_SCAN_STORE = "neostore.labelscanstore.db";
 
-    public static final String COUNTS_STORE_A = "neostore.counts.db.a";
-    public static final String COUNTS_STORE_B = "neostore.counts.db.b";
+    static final String COUNTS_STORE_A = "neostore.counts.db.a";
+    static final String COUNTS_STORE_B = "neostore.counts.db.b";
 
     public static final String NODE_STORE = "neostore.nodestore.db";
-    public static final String NODE_LABELS_STORE = "neostore.nodestore.db.labels";
+    static final String NODE_LABELS_STORE = "neostore.nodestore.db.labels";
 
-    public static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";
-    public static final String RELATIONSHIP_GROUP_STORE = "neostore.relationshipgroupstore.db";
-    public static final String RELATIONSHIP_TYPE_TOKEN_STORE = "neostore.relationshiptypestore.db";
-    public static final String RELATIONSHIP_TYPE_TOKEN_NAMES_STORE = "neostore.relationshiptypestore.db.names";
+    static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";
+    static final String RELATIONSHIP_GROUP_STORE = "neostore.relationshipgroupstore.db";
+    static final String RELATIONSHIP_TYPE_TOKEN_STORE = "neostore.relationshiptypestore.db";
+    static final String RELATIONSHIP_TYPE_TOKEN_NAMES_STORE = "neostore.relationshiptypestore.db.names";
 
-    public static final String PROPERTY_STORE = "neostore.propertystore.db";
-    public static final String PROPERTY_ARRAY_STORE = "neostore.propertystore.db.arrays";
-    public static final String PROPERTY_STRING_STORE = "neostore.propertystore.db.strings";
-    public static final String PROPERTY_KEY_TOKEN_STORE = "neostore.propertystore.db.index";
-    public static final String PROPERTY_KEY_TOKEN_NAMES_STORE = "neostore.propertystore.db.index.keys";
+    static final String PROPERTY_STORE = "neostore.propertystore.db";
+    static final String PROPERTY_ARRAY_STORE = "neostore.propertystore.db.arrays";
+    static final String PROPERTY_STRING_STORE = "neostore.propertystore.db.strings";
+    static final String PROPERTY_KEY_TOKEN_STORE = "neostore.propertystore.db.index";
+    static final String PROPERTY_KEY_TOKEN_NAMES_STORE = "neostore.propertystore.db.index.keys";
 
-    public static final String LABEL_TOKEN_STORE = "neostore.labeltokenstore.db";
-    public static final String LABEL_TOKEN_NAMES_STORE = "neostore.labeltokenstore.db.names";
+    static final String LABEL_TOKEN_STORE = "neostore.labeltokenstore.db";
+    static final String LABEL_TOKEN_NAMES_STORE = "neostore.labeltokenstore.db.names";
 
-    public static final String SCHEMA_STORE = "neostore.schemastore.db";
+    static final String SCHEMA_STORE = "neostore.schemastore.db";
 }

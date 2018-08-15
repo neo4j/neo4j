@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,7 +37,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.util.MultiResource;
@@ -49,7 +47,7 @@ import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
 public class NeoStoreFileListing
 {
-    private final DatabaseLayout directoryStructure;
+    private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
     private static final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
@@ -59,11 +57,11 @@ public class NeoStoreFileListing
     private final NeoStoreFileIndexListing neoStoreFileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
-    public NeoStoreFileListing( DatabaseLayout directoryStructure, LogFiles logFiles,
+    public NeoStoreFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
             LabelScanStore labelScanStore, IndexingService indexingService,
             ExplicitIndexProvider explicitIndexProviders, StorageEngine storageEngine )
     {
-        this.directoryStructure = directoryStructure;
+        this.databaseLayout = databaseLayout;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
         this.neoStoreFileIndexListing = new NeoStoreFileIndexListing( labelScanStore, indexingService, explicitIndexProviders );
@@ -95,13 +93,12 @@ public class NeoStoreFileListing
         Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
     }
 
-    private static void placeMetaDataStoreLast( List<StoreFileMetadata> files )
+    private void placeMetaDataStoreLast( List<StoreFileMetadata> files )
     {
         int index = 0;
         for ( StoreFileMetadata file : files )
         {
-            Optional<StoreType> storeType = StoreType.typeOf( file.file().getName() );
-            if ( storeType.isPresent() && storeType.get().equals( StoreType.META_DATA ) )
+            if ( databaseLayout.metadataStore().equals( file.file() ) )
             {
                 break;
             }
@@ -116,7 +113,7 @@ public class NeoStoreFileListing
 
     private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )
     {
-        File[] indexFiles = directoryStructure.listDatabaseFiles( ( dir, name ) -> name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) );
+        File[] indexFiles = databaseLayout.listDatabaseFiles( ( dir, name ) -> name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) );
         if ( indexFiles != null )
         {
             for ( File file : indexFiles )

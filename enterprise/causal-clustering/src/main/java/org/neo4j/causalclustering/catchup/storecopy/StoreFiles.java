@@ -93,12 +93,12 @@ public class StoreFiles
         }
     }
 
-    private Stream<FileHandle> acceptedPageCachedFiles( File storeDir ) throws IOException
+    private Stream<FileHandle> acceptedPageCachedFiles( File databaseDirectory ) throws IOException
     {
         try
         {
-            Stream<FileHandle> stream = fs.streamFilesRecursive( storeDir );
-            Predicate<FileHandle> acceptableFiles = fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
+            Stream<FileHandle> stream = fs.streamFilesRecursive( databaseDirectory );
+            Predicate<FileHandle> acceptableFiles = fh -> fileFilter.accept( databaseDirectory, fh.getRelativeFile().getPath() );
             return stream.filter( acceptableFiles );
         }
         catch ( NoSuchFileException e )

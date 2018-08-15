@@ -24,9 +24,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -66,6 +67,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -89,7 +91,7 @@ public class RecordStorageEngineTest
 
     private static final Function<Optional<StoreType>,StoreType> assertIsPresentAndGet = optional ->
     {
-        assert optional.isPresent() : "Expected optional to be present";
+        assertTrue( "Expected optional to be present", optional.isPresent() );
         return optional.get();
     };
 
@@ -187,16 +189,11 @@ public class RecordStorageEngineTest
     public void shouldListAllStoreFiles()
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
-
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
-        Set<StoreType> expectedStoreTypes = Arrays.stream( StoreType.values() ).collect( Collectors.toSet() );
+        Set<File> actualFiles = files.stream().map( StoreFileMetadata::file ).collect( Collectors.toSet() );
+        List<File> expectedFiles = testDirectory.databaseLayout().listFiles();
 
-        Set<StoreType> actualStoreTypes = files.stream()
-                .map( storeFileMetadata -> StoreType.typeOf( storeFileMetadata.file().getName() ) )
-                .map( assertIsPresentAndGet )
-                .collect( Collectors.toSet() );
-
-        assertEquals( expectedStoreTypes, actualStoreTypes );
+        assertEquals( expectedFiles, actualFiles );
     }
 
     private RecordStorageEngine buildRecordStorageEngine()

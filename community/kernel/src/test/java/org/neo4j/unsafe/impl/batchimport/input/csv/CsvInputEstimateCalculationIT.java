@@ -37,6 +37,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -163,12 +163,12 @@ public class CsvInputEstimateCalculationIT
 
     private long propertyStorageSize()
     {
-        return sizeOf( StoreType.PROPERTY ) + sizeOf( StoreType.PROPERTY_ARRAY ) + sizeOf( StoreType.PROPERTY_STRING );
+        return sizeOf( DatabaseFile.PROPERTY_STORE ) + sizeOf( DatabaseFile.PROPERTY_ARRAY_STORE ) + sizeOf( DatabaseFile.PROPERTY_STRING_STORE );
     }
 
-    private long sizeOf( StoreType type )
+    private long sizeOf( DatabaseFile file )
     {
-        return directory.databaseLayout().file( type.getStoreName() ).length();
+        return directory.databaseLayout().file( file ).length();
     }
 
     private Input generateData() throws IOException

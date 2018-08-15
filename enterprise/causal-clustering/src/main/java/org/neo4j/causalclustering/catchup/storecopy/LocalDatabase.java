@@ -24,21 +24,16 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -190,11 +185,7 @@ public class LocalDatabase implements Lifecycle
 
     public boolean isEmpty() throws IOException
     {
-        List<File> filesToLookFor = Arrays.stream( StoreType.values() )
-                .map( StoreType::getDatabaseFile )
-                .filter( Objects::nonNull )
-                .map( DatabaseFile::getName ).map( databaseLayout::file )
-                .collect( Collectors.toList() );
+        List<File> filesToLookFor = databaseLayout.storeFiles();
         return storeFiles.isEmpty( databaseLayout.databaseDirectory(), filesToLookFor );
     }
 

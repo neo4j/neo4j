@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.Optional;
 
-import org.neo4j.io.layout.DatabaseFileNames;
+import org.neo4j.io.layout.DatabaseFile;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -35,20 +35,19 @@ public class StoreTypeTest
     public void storeTypeOfValidStoreFile()
     {
         //noinspection OptionalGetWithoutIsPresent
-        assertEquals( StoreType.NODE, StoreType.typeOf( "neostore.nodestore.db" ).get() );
+        assertEquals( StoreType.NODE, StoreType.typeOf( DatabaseFile.NODE_STORE ).get() );
     }
 
     @Test
     public void storeTypeOfMetaDataStoreFile()
     {
         //noinspection OptionalGetWithoutIsPresent
-        String fileName = DatabaseFileNames.METADATA_STORE;
-        assertEquals( StoreType.META_DATA, StoreType.typeOf( fileName ).get() );
+        assertEquals( StoreType.META_DATA, StoreType.typeOf( DatabaseFile.METADATA_STORE ).get() );
     }
 
     @Test
     public void storeTypeofSomeInvalidFile()
     {
-        assertThat( StoreType.typeOf( "test.txt" ), is( Optional.empty() ) );
+        assertThat( StoreType.typeOf( DatabaseFile.LABEL_SCAN_STORE ), is( Optional.empty() ) );
     }
 }

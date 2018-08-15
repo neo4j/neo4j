@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.io.layout.DatabaseFile;
-import org.neo4j.io.layout.DatabaseFileNames;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 
 public enum StoreType
@@ -160,13 +159,6 @@ public enum StoreType
                         throw new UnderlyingStorageException( e );
                     }
                 }
-
-                @Override
-                protected boolean isStoreFile( String fileName )
-                {
-                    return matchStoreName( fileName, DatabaseFileNames.COUNTS_STORE_A ) ||
-                           matchStoreName( fileName, DatabaseFileNames.COUNTS_STORE_B );
-                }
             },
     META_DATA( DatabaseFile.METADATA_STORE, true, true ) // Make sure this META store is last
             {
@@ -204,11 +196,6 @@ public enum StoreType
         return limitedIdStore;
     }
 
-    public String getStoreName()
-    {
-        return databaseFile.getName();
-    }
-
     public DatabaseFile getDatabaseFile()
     {
         return databaseFile;
@@ -220,51 +207,22 @@ public enum StoreType
     }
 
     /**
-     * Determine type of a store base on a store file name.
+     * Determine type of a store base on provided database file.
      *
-     * @param fileName - exact file name of the store to map
+     * @param databaseFile - database file to map
      * @return an {@link Optional} that wraps the matching store type of the specified file,
-     * or {@link Optional#empty()} if the given file name does not match any store file name.
+     * or {@link Optional#empty()} if the given file name does not match any store files.
      */
-    public static Optional<StoreType> typeOf( String fileName )
+    public static Optional<StoreType> typeOf( DatabaseFile databaseFile )
     {
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
         {
-            if ( value.isStoreFile( fileName ) )
+            if ( value.getDatabaseFile().equals( databaseFile ) )
             {
                 return Optional.of( value );
             }
         }
         return Optional.empty();
-    }
-
-    /**
-     * Returns whether or not store file by given file name should be managed by the page cache.
-     *
-     * @param storeFileName file name of the store file to check.
-     * @return Returns whether or not store file by given file name should be managed by the page cache.
-     */
-    public static boolean canBeManagedByPageCache( String storeFileName )
-    {
-        boolean isLabelScanStore = DatabaseFileNames.LABEL_SCAN_STORE.equals( storeFileName );
-        return isLabelScanStore || StoreType.typeOf( storeFileName ).map( StoreType::isRecordStore ).orElse( Boolean.FALSE );
-    }
-
-    protected boolean isStoreFile( String fileName )
-    {
-        return matchStoreName( fileName, getStoreName() );
-    }
-
-    /**
-     * Helper method for {@link #isStoreFile(String)}. Given a file name and store name, see if they match.
-     *
-     * @param fileName File name to match.
-     * @param storeName Name of store to match with.
-     * @return {@code true} if file name match with store name, otherwise false.
-     */
-    protected boolean matchStoreName( String fileName, String storeName )
-    {
-        return fileName.equals( storeName );
     }
 }

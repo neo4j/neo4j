@@ -27,13 +27,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.neo4j.helpers.Format;
 import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
-import org.neo4j.helpers.Format;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StoreId;
+
+import static java.util.stream.Collectors.toList;
 
 public abstract class KernelDiagnostics implements DiagnosticsProvider
 {
@@ -58,13 +61,13 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
 
     public static class StoreFiles extends KernelDiagnostics
     {
-        private final File storeDir;
+        private final DatabaseLayout databaseLayout;
         private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
         private final SimpleDateFormat dateFormat;
 
-        public StoreFiles( File storeDir )
+        public StoreFiles( DatabaseLayout databaseLayout )
         {
-            this.storeDir = storeDir;
+            this.databaseLayout = databaseLayout;
             TimeZone tz = TimeZone.getDefault();
             dateFormat = new SimpleDateFormat( FORMAT_DATE_ISO );
             dateFormat.setTimeZone( tz );
@@ -73,10 +76,10 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            logger.log( getDiskSpace( storeDir ) );
+            logger.log( getDiskSpace( databaseLayout ) );
             logger.log( "Storage files: (filename : modification date - size)" );
-            MappedFileCounter mappedCounter = new MappedFileCounter();
-            long totalSize = logStoreFiles( logger, "  ", storeDir, mappedCounter );
+            MappedFileCounter mappedCounter = new MappedFileCounter( databaseLayout );
+            long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
             logger.log( "Storage summary: " );
             logger.log( "  Total size of store: " + Format.bytes( totalSize ) );
             logger.log( "  Total size of mapped files: " + Format.bytes( mappedCounter.getSize() ) );
@@ -132,21 +135,34 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
             return dateFormat.format( modifiedDate );
         }
 
-        private String getDiskSpace( File storeDir )
+        private static String getDiskSpace( DatabaseLayout databaseLayout )
         {
-            long free = storeDir.getFreeSpace();
-            long total = storeDir.getTotalSpace();
+            File directory = databaseLayout.databaseDirectory();
+            long free = directory.getFreeSpace();
+            long total = directory.getTotalSpace();
             long percentage = total != 0 ? (free * 100 / total) : 0;
             return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
         }
 
         private static class MappedFileCounter
         {
+            private final DatabaseLayout layout;
             private long size;
+            private final List<File> mappedCandidates;
+
+            MappedFileCounter( DatabaseLayout layout )
+            {
+                this.layout = layout;
+                mappedCandidates = Arrays.stream( StoreType.values() )
+                                         .filter( StoreType::isRecordStore )
+                                         .map( StoreType::getDatabaseFile )
+                                         .map( layout::file )
+                                         .collect( toList() );
+            }
 
             void addFile( File file )
             {
-                if ( StoreType.canBeManagedByPageCache( file.getName() ) )
+                if ( canBeManagedByPageCache( file ) )
                 {
                     size += file.length();
                 }
@@ -156,8 +172,19 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
             {
                 return size;
             }
-        }
 
+            /**
+             * Returns whether or not store file by given file name should be managed by the page cache.
+             *
+             * @param storeFile file of the store file to check.
+             * @return Returns whether or not store file by given file name should be managed by the page cache.
+             */
+            boolean canBeManagedByPageCache( File storeFile )
+            {
+                boolean isLabelScanStore = layout.labelScanStore().equals( storeFile );
+                return isLabelScanStore || mappedCandidates.contains( storeFile );
+            }
+        }
     }
 
     @Override
@@ -180,6 +207,5 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
             dump( log );
         }
     }
-
     abstract void dump( Logger logger );
 }

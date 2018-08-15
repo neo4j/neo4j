@@ -29,6 +29,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -101,7 +102,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
               PageCache pageCache = createPageCache( fs ) )
         {
             final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( DatabaseLayout.of( file.getParentFile() ),
+            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( DatabaseLayout.of( file ),
                     Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider(), EmptyVersionContextSupplier.EMPTY );
 
             for ( String arg : args )
@@ -141,7 +142,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
                 throw new IllegalArgumentException( "No such file: " + fileName );
             }
         }
-        StoreType storeType = StoreType.typeOf( file.getName() ).orElseThrow(
+        DatabaseFile databaseFile = DatabaseFile.valueOf( file.getName() );
+        StoreType storeType = StoreType.typeOf( databaseFile ).orElseThrow(
                 () -> new IllegalArgumentException( "Not a store file: " + fileName ) );
         try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStores( storeType ) )
         {

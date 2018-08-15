@@ -46,9 +46,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -293,7 +293,8 @@ public class CatchupServerIT
                 Stream<StoreFileMetadata> explicitIndexStream = neoStoreDataSource.getNeoStoreFileListing().builder().excludeAll()
                          .includeExplicitIndexStoreStoreFiles().build().stream() )
         {
-            return Stream.concat( countStoreStream.filter( isCountFile() ), explicitIndexStream ).map( StoreFileMetadata::file ).collect( toList() );
+            return Stream.concat( countStoreStream.filter( isCountFile( neoStoreDataSource.getDatabaseLayout() ) ), explicitIndexStream ).map(
+                    StoreFileMetadata::file ).collect( toList() );
         }
     }
 
@@ -303,13 +304,14 @@ public class CatchupServerIT
         builder.excludeLogFiles().excludeExplicitIndexStoreFiles().excludeSchemaIndexStoreFiles().excludeAdditionalProviders();
         try ( Stream<StoreFileMetadata> stream = builder.build().stream() )
         {
-            return stream.filter( isCountFile().negate() ).map( sfm -> sfm.file().getName() ).collect( toList() );
+            return stream.filter( isCountFile( neoStoreDataSource.getDatabaseLayout() ).negate() ).map( sfm -> sfm.file().getName() ).collect( toList() );
         }
     }
 
-    private static Predicate<StoreFileMetadata> isCountFile()
+    private static Predicate<StoreFileMetadata> isCountFile( DatabaseLayout databaseLayout )
     {
-        return storeFileMetadata -> StoreType.typeOf( storeFileMetadata.file().getName() ).filter( f -> f == StoreType.COUNTS ).isPresent();
+        return storeFileMetadata -> databaseLayout.countStoreA().equals( storeFileMetadata.file() ) ||
+                databaseLayout.countStoreB().equals( storeFileMetadata.file() );
     }
 
     private static void addData( GraphDatabaseAPI graphDb )

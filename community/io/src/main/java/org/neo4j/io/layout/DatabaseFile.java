@@ -63,8 +63,7 @@ public enum DatabaseFile
         this.name = name;
     }
 
-    //TODO:should not be public
-    public String getName()
+    String getName()
     {
         return name;
     }

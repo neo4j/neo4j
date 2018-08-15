@@ -30,7 +30,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
-import org.neo4j.io.layout.DatabaseFileNames;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -97,7 +96,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     // Basically decided by picking a maxId of pointer (as well as node ids) in the relationship record and randomizing its data,
     // seeing which is a maxId where records starts to require a secondary unit.
     static final long DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD = 1L << 33;
-    private static final String TEMP_NEOSTORE_NAME = "temp." + DatabaseFileNames.METADATA_STORE;
+//    private static final String TEMP_NEOSTORE_NAME = "temp.";
     private static final StoreType[] TEMP_STORE_TYPES = {RELATIONSHIP_GROUP, PROPERTY, PROPERTY_ARRAY, PROPERTY_STRING};
 
     private final FileSystemAbstraction fileSystem;
@@ -156,7 +155,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             return false;
         }
 
-        try ( NeoStores stores = newStoreFactory( DatabaseFileNames.METADATA_STORE ).openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP ) )
+        try ( NeoStores stores = newStoreFactory().openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP ) )
         {
             return stores.getNodeStore().getHighId() > 0 || stores.getRelationshipStore().getHighId() > 0;
         }
@@ -204,13 +203,13 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
      */
     public void pruneAndOpenExistingStore( Predicate<StoreType> mainStoresToKeep, Predicate<StoreType> tempStoresToKeep ) throws IOException
     {
-        deleteStoreFiles( TEMP_NEOSTORE_NAME, tempStoresToKeep );
-        deleteStoreFiles( DatabaseFileNames.METADATA_STORE, mainStoresToKeep );
+        deleteStoreFiles( tempStoresToKeep );
+        deleteStoreFiles( mainStoresToKeep );
         instantiateStores();
         neoStores.startCountStore();
     }
 
-    private void deleteStoreFiles( String storeName, Predicate<StoreType> storesToKeep )
+    private void deleteStoreFiles( Predicate<StoreType> storesToKeep )
     {
         for ( StoreType type : StoreType.values() )
         {
@@ -234,7 +233,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void instantiateStores()
     {
-        neoStores = newStoreFactory( DatabaseFileNames.METADATA_STORE).openAllNeoStores( true );
+        neoStores = newStoreFactory().openAllNeoStores( true );
         propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
                 neoStores.getPropertyKeyTokenStore() );
         labelRepository = new BatchingLabelTokenRepository(
@@ -258,7 +257,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private NeoStores instantiateTempStores()
     {
-        return newStoreFactory( TEMP_NEOSTORE_NAME ).openNeoStores( true, TEMP_STORE_TYPES );
+        return newStoreFactory().openNeoStores( true, TEMP_STORE_TYPES );
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
@@ -300,7 +299,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     //TODO: this is broken then
-    private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
+    private StoreFactory newStoreFactory( OpenOption... openOptions )
     {
         return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider,
                         EmptyVersionContextSupplier.EMPTY, openOptions );
@@ -397,7 +396,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void cleanup()
     {
-        deleteStoreFiles( TEMP_NEOSTORE_NAME, Predicates.alwaysFalse() );
+        deleteStoreFiles( Predicates.alwaysFalse() );
     }
 
     public long getLastCommittedTransactionId()

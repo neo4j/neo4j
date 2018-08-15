@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 import java.io.File;
 
 import org.neo4j.io.layout.DatabaseFileNames;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
 
 public class KernelDiagnosticsTest
@@ -32,12 +33,13 @@ public class KernelDiagnosticsTest
     @Test
     public void shouldPrintDiskUsage()
     {
-        File storeDir = Mockito.mock( File.class );
-        Mockito.when( storeDir.getTotalSpace() ).thenReturn( 100L );
-        Mockito.when( storeDir.getFreeSpace() ).thenReturn( 40L );
+        File databaseDir = Mockito.mock( File.class );
+        DatabaseLayout layout = DatabaseLayout.of( databaseDir );
+        Mockito.when( databaseDir.getTotalSpace() ).thenReturn( 100L );
+        Mockito.when( databaseDir.getFreeSpace() ).thenReturn( 40L );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( storeDir );
+        KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "100 / 40 / 40" );
@@ -61,14 +63,15 @@ public class KernelDiagnosticsTest
         Mockito.when( dbFile.getName() ).thenReturn( DatabaseFileNames.METADATA_STORE );
         Mockito.when( dbFile.length() ).thenReturn( 3 * 1024L );
 
-        File storeDir = Mockito.mock( File.class );
-        Mockito.when( storeDir.isDirectory() ).thenReturn( true );
-        Mockito.when( storeDir.listFiles()).thenReturn( new File[] {indexDir, dbFile} );
-        Mockito.when( storeDir.getName() ).thenReturn( "storeDir" );
-        Mockito.when( storeDir.getAbsolutePath() ).thenReturn( "/test/storeDir" );
+        File databaseDir = Mockito.mock( File.class );
+        DatabaseLayout layout = DatabaseLayout.of( databaseDir );
+        Mockito.when( databaseDir.isDirectory() ).thenReturn( true );
+        Mockito.when( databaseDir.listFiles()).thenReturn( new File[] {indexDir, dbFile} );
+        Mockito.when( databaseDir.getName() ).thenReturn( "storeDir" );
+        Mockito.when( databaseDir.getAbsolutePath() ).thenReturn( "/test/storeDir" );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( storeDir );
+        KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "Total size of store: 4.00 kB" );
