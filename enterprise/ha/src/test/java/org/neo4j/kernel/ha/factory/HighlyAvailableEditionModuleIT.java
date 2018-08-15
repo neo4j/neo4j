@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.io.layout.DatabaseFileNames;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 public class HighlyAvailableEditionModuleIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule();
+    public final ClusterRule clusterRule = new ClusterRule();
 
     @Test
     public void createBufferedIdComponentsByDefault()
@@ -66,13 +66,16 @@ public class HighlyAvailableEditionModuleIT
     @Test
     public void fileWatcherFileNameFilter()
     {
+        DatabaseLayout databaseLayout = clusterRule.getTestDirectory().databaseLayout();
         Predicate<String> filter = HighlyAvailableEditionModule.fileWatcherFileNameFilter();
-        assertFalse( filter.test( DatabaseFileNames.METADATA_STORE ) );
-        assertFalse( filter.test( DatabaseFileNames.NODE_STORE ) );
+        String metadataStoreName = databaseLayout.metadataStore().getName();
+
+        assertFalse( filter.test( metadataStoreName ) );
+        assertFalse( filter.test( databaseLayout.nodeStore().getName() ) );
         assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
         assertTrue( filter.test( StoreUtil.BRANCH_SUBDIRECTORY ) );
         assertTrue( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
-        assertTrue( filter.test( DatabaseFileNames.METADATA_STORE + PageCacheWarmer.SUFFIX_CACHEPROF ) );
+        assertTrue( filter.test( metadataStoreName + PageCacheWarmer.SUFFIX_CACHEPROF ) );
     }
 }

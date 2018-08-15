@@ -19,16 +19,16 @@
  */
 package org.neo4j.io.layout;
 
-public class DatabaseFileNames
+class DatabaseFileNames
 {
-    public static final String METADATA_STORE = "neostore";
+    static final String METADATA_STORE = "neostore";
 
     static final String LABEL_SCAN_STORE = "neostore.labelscanstore.db";
 
     static final String COUNTS_STORE_A = "neostore.counts.db.a";
     static final String COUNTS_STORE_B = "neostore.counts.db.b";
 
-    public static final String NODE_STORE = "neostore.nodestore.db";
+    static final String NODE_STORE = "neostore.nodestore.db";
     static final String NODE_LABELS_STORE = "neostore.nodestore.db.labels";
 
     static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";

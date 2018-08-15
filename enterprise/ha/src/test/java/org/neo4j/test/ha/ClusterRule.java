@@ -185,6 +185,11 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
         return this;
     }
 
+    public TestDirectory getTestDirectory()
+    {
+        return testDirectory;
+    }
+
     /**
      * Starts cluster with the configuration provided at instantiation time. This method will not return until the
      * cluster is up and all members report each other as available.

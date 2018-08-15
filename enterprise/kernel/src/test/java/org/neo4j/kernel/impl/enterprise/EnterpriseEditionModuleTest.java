@@ -22,28 +22,39 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Predicate;
 
-import org.neo4j.io.layout.DatabaseFileNames;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class EnterpriseEditionModuleTest
+@ExtendWith( TestDirectoryExtension.class )
+class EnterpriseEditionModuleTest
 {
+    @Inject
+    private TestDirectory testDirectory;
+
     @Test
-    public void fileWatcherFileNameFilter()
+    void fileWatcherFileNameFilter()
     {
+        DatabaseLayout layout = testDirectory.databaseLayout();
         Predicate<String> filter = EnterpriseEditionModule.enterpriseNonClusterFileWatcherFileNameFilter();
-        assertFalse( filter.test( DatabaseFileNames.METADATA_STORE ) );
-        assertFalse( filter.test( DatabaseFileNames.NODE_STORE ) );
+        String metadataStoreName = layout.metadataStore().getName();
+
+        assertFalse( filter.test( metadataStoreName ) );
+        assertFalse( filter.test( layout.nodeStore().getName() ) );
         assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
-        assertTrue( filter.test( DatabaseFileNames.METADATA_STORE + PageCacheWarmer.SUFFIX_CACHEPROF ) );
+        assertTrue( filter.test( metadataStoreName + PageCacheWarmer.SUFFIX_CACHEPROF ) );
     }
 }

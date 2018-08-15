@@ -26,7 +26,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.io.layout.DatabaseFileNames;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -71,9 +71,10 @@ class CommunityEditionModuleIntegrationTest
     @Test
     void fileWatcherFileNameFilter()
     {
+        DatabaseLayout layout = testDirectory.databaseLayout();
         Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
-        assertFalse( filter.test( DatabaseFileNames.METADATA_STORE ) );
-        assertFalse( filter.test( DatabaseFileNames.NODE_STORE ) );
+        assertFalse( filter.test( layout.metadataStore().getName() ) );
+        assertFalse( filter.test( layout.nodeStore().getName() ) );
         assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
     }
