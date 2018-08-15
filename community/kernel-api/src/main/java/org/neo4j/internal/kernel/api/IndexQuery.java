@@ -425,7 +425,8 @@ public abstract class IndexQuery
                 PointValue point = (PointValue) value;
                 if ( point.getCoordinateReferenceSystem().equals( crs ) )
                 {
-                    return point.withinRange( from, fromInclusive, to, toInclusive );
+                    Boolean within = point.withinRange( from, fromInclusive, to, toInclusive );
+                    return within == null ? false : within;
                 }
             }
             return false;
