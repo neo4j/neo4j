@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.opencypher.v9_0.util.attribution.{IdGen, SameId}
 
 /**
   * Produces one or zero rows containing the node with the given label and property values.
@@ -47,4 +47,7 @@ case class NodeUniqueIndexSeek(idName: String,
         (Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName)
     }.toMap
   }
+
+  override def copyWithoutGettingValues: NodeUniqueIndexSeek =
+    NodeUniqueIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds)(SameId(this.id))
 }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.opencypher.v9_0.util.attribution.{IdGen, SameId}
 
 /**
   * This operator does a full scan of an index, producing rows for all entries that contain a string value
@@ -53,4 +53,7 @@ case class NodeIndexContainsScan(idName: String,
       case _ => Map.empty
     }
   }
+
+  override def copyWithoutGettingValues: NodeIndexContainsScan =
+    NodeIndexContainsScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds)(SameId(this.id))
 }

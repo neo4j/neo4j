@@ -29,8 +29,9 @@ import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
-  // TODO plans Node index scans right now, this should be fixed
-  ignore("should plan index seek with GetValue when the property is projected in an OR index plan") {
+  // or planner between two indexes
+
+  test("in an OR index plan should not get values for range predicates") {
     val plan = new given {
       indexWithValuesOn("Awesome", "prop1")
       indexWithValuesOn("Awesome", "prop2")
@@ -40,61 +41,31 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Distinct(
           Union(
-            NodeIndexSeek(
+            Selection(Ands(Set(GreaterThan(prop("n", "prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
+              NodeIndexScan(
+                "n",
+                LabelToken("Awesome", LabelId(0)),
+                IndexedProperty(PropertyKeyToken(PropertyKeyName("prop1") _, PropertyKeyId(0)), DoNotGetValue),
+                Set.empty)),
+            Selection(Ands(Set(GreaterThan(prop("n", "prop2"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
+              NodeIndexScan(
               "n",
               LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), GetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("3")(pos)))))(pos)),
-              Set.empty),
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop1") _, PropertyKeyId(0)), GetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("42")(pos)))))(pos)),
-              Set.empty)
+                IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), DoNotGetValue),
+                Set.empty))
           ),
           Map("n" -> Variable("n")(pos))
         ),
-        Map("n.prop1" -> Variable("n.prop1")(pos), "n.prop2" -> Variable("n.prop2")(pos))
+        Map("n.prop1" -> Property(Variable("n")(pos), PropertyKeyName("prop1")(pos))(pos), "n.prop2" -> Property(Variable("n")(pos), PropertyKeyName("prop2")(pos))(pos))
       )
     )
   }
 
-  test("for exact seeks, should even plan index seek with GetValue when the index does not provide values in an OR index plan") {
+  test("in an OR index plan should not get values for equality predicates") {
     val plan = new given {
       indexOn("Awesome", "prop1")
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
-
-    plan._2 should equal(
-      Projection(
-        Distinct(
-          Union(
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), GetValue)),
-              SingleQueryExpression(SignedDecimalIntegerLiteral("3") _),
-              Set.empty),
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop1") _, PropertyKeyId(0)), GetValue)),
-              SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-              Set.empty)
-          ),
-          Map("n" -> Variable("n")(pos))
-        ),
-        Map("n.prop1" -> Variable("n.prop1")(pos), "n.prop2" -> Variable("n.prop2")(pos))
-      )
-    )
-  }
-
-  test("should plan projection and index seek with DoNotGetValue when another property is projected in an OR index plan") {
-    val plan = new given {
-      indexOn("Awesome", "prop1")
-      indexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.foo"
 
     plan._2 should equal(
       Projection(
@@ -115,7 +86,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           ),
           Map("n" -> Variable("n")(pos))
         ),
-        Map("n.foo" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos))
+        Map("n.prop1" -> Property(Variable("n")(pos), PropertyKeyName("prop1")(pos))(pos), "n.prop2" -> Property(Variable("n")(pos), PropertyKeyName("prop2")(pos))(pos))
       )
     )
   }

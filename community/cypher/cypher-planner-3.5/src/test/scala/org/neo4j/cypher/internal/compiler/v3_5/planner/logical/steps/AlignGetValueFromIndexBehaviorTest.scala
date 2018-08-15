@@ -147,6 +147,27 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
       }
     }
 
+    test(s"should set DoNotGetValue on ${withValues.getClass.getSimpleName} if plan inside a union") {
+      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
+        // Given
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
+
+        updater(Union(withValues, withValues)) should equal(Union(withoutValues, withoutValues))
+      }
+    }
+
+    test(s"should set DoNotGetValue on ${withValues.getClass.getSimpleName} if plan inside a selection inside union") {
+      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
+        // Given
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
+
+        val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
+        updater(Union(Selection(ands, withValues), Selection(ands, withValues))) should equal(
+          Union(Selection(ands, withoutValues), Selection(ands, withoutValues)))
+      }
+    }
   }
 
 }

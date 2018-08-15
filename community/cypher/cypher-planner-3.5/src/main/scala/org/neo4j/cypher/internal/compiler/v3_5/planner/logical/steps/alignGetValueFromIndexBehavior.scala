@@ -64,6 +64,16 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
 
   private val rewriter: Rewriter = topDown(Rewriter.lift {
 
+    // We can't get values in a union that is planned by OrLeafPlanner
+    case union@Union(l1:IndexLeafPlan, l2:IndexLeafPlan) =>
+      Union(l1.copyWithoutGettingValues, l2.copyWithoutGettingValues)(attributes.copy(union.id))
+
+    case union@Union(s1@Selection(pred1, l1:IndexLeafPlan), s2@Selection(pred2, l2:IndexLeafPlan)) =>
+      Union(
+        Selection(pred1, l1.copyWithoutGettingValues)(attributes.copy(s1.id)),
+        Selection(pred2, l2.copyWithoutGettingValues)(attributes.copy(s2.id))
+      )(attributes.copy(union.id))
+
     case seek@NodeIndexSeek(idName, _, properties, _, _) =>
       val newProperties = properties.map(setGetValueBehavior(idName, _))
       NodeIndexSeek(idName, seek.label, newProperties, seek.valueExpr, seek.argumentIds)(attributes.copy(seek.id))
