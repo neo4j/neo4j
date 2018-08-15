@@ -275,7 +275,6 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     //When
     val result = executeWith(config, "CALL db.indexes")
 
-
     // Then
     result.toList should equal(
       List(Map("description" -> "INDEX ON :A(prop)",
@@ -346,7 +345,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
 
     listResult.toList should equal(
       List(Map("description" -> "INDEX ON :Person(name)",
-        "indexName" -> "index_25",
+        "indexName" -> "index_28",
         "tokenNames" -> List("Person"),
         "properties" -> List( "name" ),
         "state" -> "ONLINE",
@@ -376,7 +375,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
 
     listResult.toList should equal(
       List(Map("description" -> "INDEX ON :Person(name)",
-        "indexName" -> "index_25",
+        "indexName" -> "index_28",
         "tokenNames" -> List("Person"),
         "properties" -> List( "name" ),
         "state" -> "ONLINE",

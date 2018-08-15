@@ -156,8 +156,9 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
 
     graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
 
-    val result = executeWith(Configs.Procs,
-      "CALL org.neo4j.aNodeWithLabel", params = Map("label" -> "Cat"))
+    val result = executeWith(Configs.Procs + Configs.Cost3_1,
+      "CALL org.neo4j.aNodeWithLabel", params = Map("label" -> "Cat"),
+      expectedDifferentResults = Configs.Cost3_1) // this bugfix is not backported to 3.1?
 
     result.size should equal(1)
   }

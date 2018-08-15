@@ -90,7 +90,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
           .run(queryContext(TransactionalContextWrapper(transactionalContext)), transactionalContext.statement, innerExecutionMode, params)
 
         new ExecutionResult(
-          ClosingExecutionResult.wrapAndInitiate(
+          new CompatibilityClosingExecutionResult(
             query,
             new ExecutionResultWrapper(
               innerResult,
@@ -99,8 +99,8 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
               preParsingNotifications,
               Some(offSet)
             ),
-            exceptionHandler.runSafely,
-            executionMonitor)
+            exceptionHandler.runSafely
+          )(executionMonitor)
         )
       }
     }

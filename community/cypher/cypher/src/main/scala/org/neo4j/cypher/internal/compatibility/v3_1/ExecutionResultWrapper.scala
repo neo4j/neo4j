@@ -24,6 +24,7 @@ import java.util
 
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compatibility.CompatibilityInternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification
 import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult => InternalExecutionResult3_1, _}
@@ -34,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDir
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, InternalPlanDescription => InternalPlanDescription3_4}
-import org.neo4j.cypher.internal.runtime.{CloseReason, ExplainMode, NormalMode, ProfileMode, QueryStatistics, InternalExecutionResult => InternalExecutionResult3_5}
+import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, ProfileMode, QueryStatistics}
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
@@ -55,9 +56,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult3_1,
                              val runtime: RuntimeName,
                              val preParsingNotification: Set[org.neo4j.graphdb.Notification],
                              val offset : Option[frontend.v3_1.InputPosition])
-  extends InternalExecutionResult3_5  {
-
-  override def initiate(): Unit = {} // done in inner constructor
+  extends CompatibilityInternalExecutionResult  {
 
   override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] =
     inner.javaIterator.asInstanceOf[ResourceIterator[util.Map[String, AnyRef]]]
@@ -167,9 +166,11 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult3_1,
     case symbols3_1.ListType(t) => symbolsv3_5.ListType(lift(t))
   }
 
-  override def isClosed: Boolean = !inner.hasNext
+  override def hasNext: Boolean = inner.hasNext
 
-  override def close(reason: CloseReason): Unit = inner.close()
+  override def next(): Map[String, AnyRef] = inner.next().asInstanceOf[Map[String, AnyRef]]
+
+  override def close(): Unit = inner.close()
 
   override def queryType: internal.runtime.InternalQueryType = inner.executionType match {
       case READ_ONLY => internal.runtime.READ_ONLY

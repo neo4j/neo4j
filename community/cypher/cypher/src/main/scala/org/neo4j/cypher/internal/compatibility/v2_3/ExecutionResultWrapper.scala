@@ -29,13 +29,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, planDescription => planDescriptionv2_3, _}
 import org.neo4j.cypher.internal.frontend.v2_3
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
-import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition, SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
+import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition, SemanticDirection => SemanticDirection2_3}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, Argument => Argument3_4, InternalPlanDescription => InternalPlanDescription3_4}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, SCHEMA_WRITE, ExecutionMode => ExecutionModev3_5, _}
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -43,6 +41,8 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
+import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.opencypher.v9_0.util.attribution.Id
 
 import scala.collection.JavaConverters._
 
@@ -99,9 +99,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult,
                              val runtime: RuntimeName,
                              val preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                              val offset : Option[v2_3.InputPosition])
-  extends internal.runtime.InternalExecutionResult {
-
-  override def initiate(): Unit = {} // done in inner constructor
+  extends CompatibilityInternalExecutionResult {
 
   override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] =
     inner.javaIterator.asInstanceOf[ResourceIterator[util.Map[String, AnyRef]]]
@@ -192,9 +190,11 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult,
     PlanDescriptionImpl(Id.INVALID_ID, name, children, arguments, planDescription.identifiers)
   }
 
-  override def isClosed: Boolean = !inner.hasNext
+  override def hasNext: Boolean = inner.hasNext
 
-  override def close(reason: CloseReason): Unit = inner.close()
+  override def next(): Map[String, AnyRef] = inner.next().asInstanceOf[Map[String, AnyRef]]
+
+  override def close(): Unit = inner.close()
 
   def queryType: InternalQueryType = inner.executionType.queryType() match {
     case QueryExecutionType.QueryType.READ_ONLY => READ_ONLY

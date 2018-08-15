@@ -92,7 +92,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
         val innerResult: InternalExecutionResult3_1 =
           inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ExecutionResult( // javacompat
-          ClosingExecutionResult.wrapAndInitiate( // closing
+          new CompatibilityClosingExecutionResult( // closing
             transactionalContext.executingQuery(),
             new ExecutionResultWrapper( // 3.5 wrapping
               innerResult, // 3.1
@@ -101,8 +101,8 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
               preParsingNotifications,
               Some(offSet)
             ),
-            exceptionHandler.runSafely,
-            executionMonitor)
+            exceptionHandler.runSafely
+          )(executionMonitor)
         )
       }
     }
