@@ -47,7 +47,6 @@ import static org.junit.Assert.assertThat;
 
 public class IndexValuesValidationTest
 {
-
     @ClassRule
     public static final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
@@ -117,7 +116,8 @@ public class IndexValuesValidationTest
             try ( Transaction ignored = database.beginTx() )
             {
                 String indexFailure = database.schema().getIndexFailure( indexDefinition );
-                assertThat( "", indexFailure, Matchers.containsString( "java.lang.IllegalArgumentException: Max supported key size" ) );
+                assertThat( "", indexFailure, Matchers.containsString(
+                        "java.lang.IllegalArgumentException: Index key-value size it to large. Please see index documentation for limitations." ) );
             }
         }
     }
