@@ -143,10 +143,10 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Read key
         long keyValueSize = readKeyValueSize( cursor );
         int keySize = extractKeySize( keyValueSize );
-        if ( keySize > keyValueSizeCap || keySize < 0 )
+        int valueSize = extractValueSize( keyValueSize );
+        if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
         {
-            cursor.setCursorException( format( "Read unreliable key, keySize=%d, keyValueSizeCap=%d, keyHasTombstone=%b, offset=%d, pos=%d",
-                    keySize, keyValueSizeCap, extractTombstone( keyValueSize ), offset, pos ) );
+            readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
             return into;
         }
         layout.readKey( cursor, into, keySize );
@@ -162,10 +162,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         long keyValueSize = readKeyValueSize( cursor );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
-        if ( keySize + valueSize > keyValueSizeCap || keySize < 0 || valueSize < 0 )
+        if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
         {
-            cursor.setCursorException( format( "Read unreliable key, keySize=%d, valueSize=%d, keyValueSizeCap=%d, keyHasTombstone=%b, offset=%d, pos=%d",
-                    keySize, valueSize, keyValueSizeCap, extractTombstone( keyValueSize ), offset, pos ) );
+            readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
             return;
         }
         layout.readKey( cursor, intoKey, keySize );
@@ -290,11 +289,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, pos, INTERNAL );
 
-        int oldKeySize = extractKeySize( readKeyValueSize( cursor ) );
-        if ( oldKeySize > keyValueSizeCap )
+        long keyValueSize = readKeyValueSize( cursor );
+        int oldKeySize = extractKeySize( keyValueSize );
+        int oldValueSize = extractValueSize( keyValueSize );
+        if ( keyValueSizeTooLarge( oldKeySize, oldValueSize ) )
         {
-            cursor.setCursorException( format( "Read unreliable key size greater than cap: keySize=%d, keyValueSizeCap=%d",
-                    oldKeySize, keyValueSizeCap ) );
+            readUnreliableKeyValueSize( cursor, oldKeySize, oldValueSize, keyValueSize, pos );
         }
         int newKeySize = layout.keySize( key );
         if ( newKeySize == oldKeySize )
@@ -315,11 +315,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         long keyValueSize = readKeyValueSize( cursor );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
-        if ( keySize + valueSize > keyValueSizeCap || keySize < 0 || valueSize < 0 )
+        if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
         {
-            cursor.setCursorException(
-                    format( "Read unreliable key, value size greater than cap: keySize=%d, valueSize=%d, keyValueSizeCap=%d",
-                            keySize, valueSize, keyValueSizeCap ) );
+            readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
             return into;
         }
         progressCursor( cursor, keySize );
@@ -369,6 +367,17 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     public int keyValueSizeCap()
     {
         return keyValueSizeCap;
+    }
+
+    @Override
+    void validateKeyValueSize( KEY key, VALUE value )
+    {
+        int keySize = layout.keySize( key );
+        int valueSize = layout.valueSize( value );
+        if ( keyValueSizeTooLarge( keySize, valueSize ) )
+        {
+            throw new IllegalArgumentException( "Index key-value size it to large. Please see index documentation for limitations." );
+        }
     }
 
     @Override
@@ -1156,6 +1165,17 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         cursor.setOffset( keyOffset );
     }
 
+    private void readUnreliableKeyValueSize( PageCursor cursor, int keySize, int valueSize, long keyValueSize, int pos )
+    {
+        cursor.setCursorException( format( "Read unreliable key, keySize=%d, valueSize=%d, keyValueSizeCap=%d, keyHasTombstone=%b, pos=%d",
+                keySize, valueSize, keyValueSizeCap(), extractTombstone( keyValueSize ), pos ) );
+    }
+
+    private boolean keyValueSizeTooLarge( int keySize, int valueSize )
+    {
+        return keySize + valueSize > keyValueSizeCap();
+    }
+
     private int keyPosOffset( int pos, Type type )
     {
         if ( type == LEAF )
@@ -1202,7 +1222,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     public String toString()
     {
-        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap + "]";
+        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap() + "]";
     }
 
     private String asString( PageCursor cursor, boolean includeValue, boolean includeAllocSpace,

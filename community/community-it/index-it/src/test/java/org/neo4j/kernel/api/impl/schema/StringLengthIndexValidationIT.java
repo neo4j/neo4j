@@ -24,11 +24,14 @@ import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.DatabaseRule;
@@ -37,6 +40,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 public class StringLengthIndexValidationIT
@@ -56,22 +60,26 @@ public class StringLengthIndexValidationIT
         long expectedNodeId;
 
         // Write
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode( LABEL_ONE );
-            node.setProperty( propKey, propValue );
-            expectedNodeId = node.getId();
-            tx.success();
-        }
+        expectedNodeId = createNode( propValue );
 
         // Read
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.findNode( LABEL_ONE, propKey, propValue );
-            assertNotNull( node );
-            assertEquals( "node id", expectedNodeId, node.getId() );
-            tx.success();
-        }
+        assertReadNode( propValue, expectedNodeId );
+    }
+
+    @Test
+    public void shouldSuccessfullyPopulateIndexWithinIndexKeySizeLimit()
+    {
+        String propValue = getString( keySizeLimit );
+        long expectedNodeId;
+
+        // Write
+        expectedNodeId = createNode( propValue );
+
+        // Populate
+        createIndex();
+
+        // Read
+        assertReadNode( propValue, expectedNodeId );
     }
 
     @Test
@@ -93,6 +101,44 @@ public class StringLengthIndexValidationIT
         }
     }
 
+    @Test
+    public void indexPopulationMustFailIfExceedingIndexKeySizeLimit()
+    {
+        // Write
+        String propValue = getString( keySizeLimit + 1 );
+        createNode( propValue );
+
+        // Create index should be fine
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
+            tx.success();
+        }
+
+        // Waiting for it to come online should fail
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e.getMessage(), Matchers.containsString( "Index entered a FAILED state." ) );
+        }
+
+        // Index should be in failed state
+        try ( Transaction tx = db.beginTx() )
+        {
+            Iterator<IndexDefinition> iterator = db.schema().getIndexes( LABEL_ONE ).iterator();
+            assertTrue( iterator.hasNext() );
+            IndexDefinition next = iterator.next();
+            assertEquals( "state is FAILED", Schema.IndexState.FAILED, db.schema().getIndexState( next ) );
+            assertThat( db.schema().getIndexFailure( next ),
+                    Matchers.containsString( "Index key-value size it to large. Please see index documentation for limitations." ) );
+            tx.success();
+        }
+    }
+
     // Each char in string need to fit in one byte
     private String getString( int byteArraySize )
     {
@@ -109,6 +155,30 @@ public class StringLengthIndexValidationIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+    }
+
+    private long createNode( String propValue )
+    {
+        long expectedNodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL_ONE );
+            node.setProperty( propKey, propValue );
+            expectedNodeId = node.getId();
+            tx.success();
+        }
+        return expectedNodeId;
+    }
+
+    private void assertReadNode( String propValue, long expectedNodeId )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.findNode( LABEL_ONE, propKey, propValue );
+            assertNotNull( node );
+            assertEquals( "node id", expectedNodeId, node.getId() );
             tx.success();
         }
     }

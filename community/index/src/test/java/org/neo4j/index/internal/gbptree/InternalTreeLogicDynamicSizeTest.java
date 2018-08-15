@@ -19,17 +19,17 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.junit.Assert.assertThat;
 
 public class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawBytes,RawBytes>
 {
-    private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
-
     @Override
     protected ValueMerger<RawBytes,RawBytes> getAdder()
     {
@@ -50,7 +50,53 @@ public class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<
     @Override
     protected TestLayout<RawBytes,RawBytes> getLayout()
     {
-        return layout;
+        return new SimpleByteArrayLayout();
+    }
+
+    @Test
+    public void shouldFailToInsertTooLargeKeys() throws IOException
+    {
+        RawBytes key = layout.newKey();
+        RawBytes value = layout.newValue();
+        key.bytes = new byte[node.keyValueSizeCap() + 1];
+        value.bytes = new byte[0];
+
+        shouldFailToInsertTooLargeKeyAndValue( key, value );
+    }
+
+    @Test
+    public void shouldFailToInsertTooLargeKeyAndValueLargeKey() throws IOException
+    {
+        RawBytes key = layout.newKey();
+        RawBytes value = layout.newValue();
+        key.bytes = new byte[node.keyValueSizeCap()];
+        value.bytes = new byte[1];
+
+        shouldFailToInsertTooLargeKeyAndValue( key, value );
+    }
+
+    @Test
+    public void shouldFailToInsertTooLargeKeyAndValueLargeValue() throws IOException
+    {
+        RawBytes key = layout.newKey();
+        RawBytes value = layout.newValue();
+        key.bytes = new byte[1];
+        value.bytes = new byte[node.keyValueSizeCap()];
+
+        shouldFailToInsertTooLargeKeyAndValue( key, value );
+    }
+
+    private void shouldFailToInsertTooLargeKeyAndValue( RawBytes key, RawBytes value ) throws IOException
+    {
+        initialize();
+        try
+        {
+            insert( key, value );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            assertThat( e.getMessage(), CoreMatchers.containsString( "Index key-value size it to large. Please see index documentation for limitations." ) );
+        }
     }
 
     @Test

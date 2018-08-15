@@ -56,13 +56,14 @@ import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 @RunWith( Parameterized.class )
 public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 {
+    protected TestLayout<KEY,VALUE> layout;
+    protected TreeNode<KEY,VALUE> node;
+
     private final int pageSize = 256;
     private PageAwareByteArrayCursor cursor;
     private PageAwareByteArrayCursor readCursor;
     private SimpleIdProvider id;
 
-    private TestLayout<KEY,VALUE> layout;
-    private TreeNode<KEY,VALUE> node;
     private ValueMerger<KEY,VALUE> adder;
     private InternalTreeLogic<KEY,VALUE> treeLogic;
     private VALUE dontCare;

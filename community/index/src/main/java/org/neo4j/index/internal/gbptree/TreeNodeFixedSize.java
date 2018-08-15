@@ -194,6 +194,17 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
+    int keyValueSizeCap()
+    {
+        return NO_KEY_VALUE_SIZE_CAP;
+    }
+
+    @Override
+    void validateKeyValueSize( KEY key, VALUE value )
+    {   // no-op for fixed size
+    }
+
+    @Override
     boolean reasonableKeyCount( int keyCount )
     {
         return keyCount >= 0 && keyCount <= Math.max( internalMaxKeyCount(), leafMaxKeyCount() );

@@ -275,10 +275,13 @@ abstract class TreeNode<KEY,VALUE>
 
     // HELPERS
 
-    public int keyValueSizeCap()
-    {
-        return NO_KEY_VALUE_SIZE_CAP;
-    }
+    abstract int keyValueSizeCap();
+
+    /**
+     * This method can throw and should not be used on read path.
+     * Throws {@link IllegalArgumentException} if key and value combined violate key-value size limit.
+     */
+    abstract void validateKeyValueSize( KEY key, VALUE value );
 
     abstract boolean reasonableKeyCount( int keyCount );
 
