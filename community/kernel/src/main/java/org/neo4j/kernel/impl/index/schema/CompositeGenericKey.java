@@ -154,7 +154,8 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     {
         if ( keySize < ENTITY_ID_SIZE )
         {
-            initializeToDummyValue( cursor, format( "keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
+            initializeToDummyValue( cursor );
+            cursor.setCursorException( format( "Failed to read CompositeGenericKey due to keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
             return;
         }
 
@@ -165,7 +166,7 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         {
             if ( !state.read( cursor, keySize ) )
             {
-                initializeToDummyValue( cursor, format( "Unable to read state[%d] from offset:%d and keySize:%d", stateOffset, offset, keySize ) );
+                initializeToDummyValue( cursor );
                 return;
             }
             int offsetAfterRead = cursor.getOffset();
@@ -175,14 +176,13 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         }
     }
 
-    private void initializeToDummyValue( PageCursor cursor, String reason )
+    private void initializeToDummyValue( PageCursor cursor )
     {
         setEntityId( Long.MIN_VALUE );
         for ( GenericKeyState state : states )
         {
             state.initializeToDummyValue();
         }
-        cursor.setCursorException( format( "Initializing key state to dummy value due to %s", reason ) );
     }
 
     @Override

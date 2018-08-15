@@ -47,6 +47,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Integer.min;
+import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
@@ -1011,13 +1012,13 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     {
         if ( size <= TYPE_ID_SIZE )
         {
-            return false;
+            return setCursorException( cursor, "slot size less than TYPE_ID_SIZE, " + size );
         }
 
         byte typeId = cursor.getByte();
         if ( typeId < 0 || typeId >= GenericLayout.TYPES.length )
         {
-            return false;
+            return setCursorException( cursor, "non-valid typeId, " + typeId );
         }
 
         size -= TYPE_ID_SIZE;
@@ -1062,7 +1063,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case NUMBER_ARRAY:
             return readNumberArray( cursor );
         default:
-            return false;
+            return setCursorException( cursor, "non-valid type, " + type );
         }
     }
 
@@ -1090,7 +1091,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         ArrayType numberType = numberArrayTypeOf( (byte) long1 );
         if ( numberType == null )
         {
-            return false;
+            return setCursorException( cursor, "non-valid number type for array, " + long1 );
         }
         return readArray( cursor, numberType, numberArrayElementReader( long1 ) );
     }
@@ -1174,7 +1175,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             short bytesLength = cursor.getShort();
             if ( bytesLength <= 0 || bytesLength > maxSize )
             {
-                return false;
+                return setCursorException( cursor, "non-valid bytes length, " + bytesLength );
             }
 
             byteArrayArray[i] = ensureBigEnough( byteArrayArray[i], bytesLength );
@@ -1188,7 +1189,11 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private boolean setArrayLengthWhenReading( PageCursor cursor )
     {
         arrayLength = cursor.getInt();
-        return arrayLength >= 0 && arrayLength < BIGGEST_REASONABLE_ARRAY_LENGTH;
+        if ( arrayLength < 0 || arrayLength > BIGGEST_REASONABLE_ARRAY_LENGTH )
+        {
+            return setCursorException( cursor, "non-valid array length, " + arrayLength );
+        }
+        return true;
     }
 
     private boolean readNumber( PageCursor cursor )
@@ -1227,7 +1232,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         short bytesLength = cursor.getShort();
         if ( bytesLength < 0 || bytesLength > maxSize )
         {
-            return false;
+            return setCursorException( cursor, "non-valid bytes length for text, " + bytesLength );
         }
         setBytesLength( bytesLength );
         cursor.getBytes( byteArray, 0, bytesLength );
@@ -1832,6 +1837,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     /* </copyFrom.helpers> */
 
     /* <helpers> */
+    private boolean setCursorException( PageCursor cursor, String reason )
+    {
+        cursor.setCursorException( format( "Unable to read generic key slot due to %s", reason ) );
+        return false;
+    }
+
     private void setBytesLength( int length )
     {
         if ( booleanOf( long1 ) || byteArray == null || byteArray.length < length )
