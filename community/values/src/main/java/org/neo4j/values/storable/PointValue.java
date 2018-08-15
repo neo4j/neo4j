@@ -170,26 +170,49 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             return Comparison.UNDEFINED;
         }
 
-        int result = 0;
+        int eq = 0;
+        int gt = 0;
+        int lt = 0;
         for ( int i = 0; i < coordinate.length; i++ )
         {
             int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
-            if ( cmpVal == 0 && result != 0 )
+            if ( cmpVal > 0 )
             {
-                // Equal on one dimension, but not others, is not defined
-                return Comparison.UNDEFINED;
+                gt++;
             }
-            if ( cmpVal != result )
+            else if ( cmpVal < 0 )
             {
-                if ( (cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0) || (i > 0 && result == 0) )
-                {
-                    return Comparison.UNDEFINED;
-                }
-                result = cmpVal;
+                lt++;
+            }
+            else
+            {
+                eq++;
             }
         }
-
-        return Comparison.from( result );
+        if ( eq == coordinate.length )
+        {
+            return Comparison.EQUAL;
+        }
+        else if ( gt == coordinate.length )
+        {
+            return Comparison.GREATER_THAN;
+        }
+        else if ( lt == coordinate.length )
+        {
+            return Comparison.SMALLER_THAN;
+        }
+        else if ( lt == 0 )
+        {
+            return Comparison.GREATER_THAN_AND_EQUAL;
+        }
+        else if ( gt == 0 )
+        {
+            return Comparison.SMALLER_THAN_AND_EQUAL;
+        }
+        else
+        {
+            return Comparison.UNDEFINED;
+        }
     }
 
     @Override
@@ -282,40 +305,41 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
      * @param includeUpper governs if the upper comparison should be inclusive
      * @return true if this value is within the described range
      */
-    public boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
+    public Boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
     {
         if ( lower == null && upper == null )
         {
             return true;
         }
-        if ( (lower != null) && (this.crs.getCode() != lower.crs.getCode() || this.coordinate.length != lower.coordinate.length) )
+
+        if ( lower != null )
         {
-            return false;
-        }
-        if ( (upper != null) && (this.crs.getCode() != upper.crs.getCode() || this.coordinate.length != upper.coordinate.length) )
-        {
-            return false;
+            Comparison comparison = this.unsafeTernaryCompareTo( lower );
+            if ( comparison == Comparison.UNDEFINED )
+            {
+                return null;
+            }
+            else if ( comparison == Comparison.SMALLER_THAN || comparison == Comparison.SMALLER_THAN_AND_EQUAL ||
+                    (comparison == Comparison.EQUAL || comparison == Comparison.GREATER_THAN_AND_EQUAL) && !includeLower )
+            {
+                return false;
+            }
         }
 
-        for ( int i = 0; i < coordinate.length; i++ )
+        if ( upper != null )
         {
-            if ( lower != null )
+            Comparison comparison = this.unsafeTernaryCompareTo( upper );
+            if ( comparison == Comparison.UNDEFINED )
             {
-                int cmpVal = Double.compare( this.coordinate[i], lower.coordinate[i] );
-                if ( !includeLower && cmpVal == 0 || cmpVal < 0 )
-                {
-                    return false;
-                }
+                return null;
             }
-            if ( upper != null )
+            else if ( comparison == Comparison.GREATER_THAN || comparison == Comparison.GREATER_THAN_AND_EQUAL ||
+                    (comparison == Comparison.EQUAL || comparison == Comparison.SMALLER_THAN_AND_EQUAL) && !includeUpper )
             {
-                int cmpVal = Double.compare( this.coordinate[i], upper.coordinate[i] );
-                if ( !includeUpper && cmpVal == 0 || cmpVal > 0 )
-                {
-                    return false;
-                }
+                return false;
             }
         }
+
         return true;
     }
 

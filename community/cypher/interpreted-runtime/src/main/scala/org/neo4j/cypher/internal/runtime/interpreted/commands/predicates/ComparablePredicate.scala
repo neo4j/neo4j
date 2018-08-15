@@ -42,8 +42,10 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
       case (n1: BooleanValue, n2: BooleanValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       case (n1: PointValue, n2: PointValue) => this match {
           // The ternary comparator cannot handle the '='  part of the >= and <= cases, so we need to switch to the within function
-        case _: LessThanOrEqual => Some(n1.withinRange(null, false, n2, true))
-        case _: GreaterThanOrEqual => Some(n1.withinRange(n2, true, null, false))
+        case _: LessThanOrEqual => asOption(n1.withinRange(null, false, n2, true))
+        case _: GreaterThanOrEqual => asOption(n1.withinRange(n2, true, null, false))
+        case _: LessThan => asOption(n1.withinRange(null, false, n2, false))
+        case _: GreaterThan => asOption(n1.withinRange(n2, false, null, false))
         case _ => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       }
       case (n1: DateValue, n2: DateValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
@@ -56,11 +58,17 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     res
   }
 
-  private def undefinedToNone(i: Comparison) : Option[Int] = {
-    // Do NOT use Option here (as suggested by the warning).
-    // This would lead to NullPointerExceptions when i == null
-    if(i == Comparison.UNDEFINED) None
-    else Some(i.value())
+  private def asOption(result: Any): Option[Boolean] = result match {
+    case true => Some(true)
+    case false => Some(false)
+    case _ => None
+  }
+
+  private def undefinedToNone(comparison: Comparison): Option[Int] = comparison match {
+    case Comparison.UNDEFINED => None
+    case Comparison.GREATER_THAN_AND_EQUAL => None
+    case Comparison.SMALLER_THAN_AND_EQUAL => None
+    case _ => Some(comparison.value())
   }
 
   def sign: String
