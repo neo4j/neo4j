@@ -65,7 +65,6 @@ public final class CompiledIndexUtils
         {
             NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor();
             IndexQuery.ExactPredicate query = exact( index.properties()[0], makeValueNeoSafe( value ) );
-            //TODO figure out how to deal with indexes that provide values
             read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, query );
             return cursor;
         }

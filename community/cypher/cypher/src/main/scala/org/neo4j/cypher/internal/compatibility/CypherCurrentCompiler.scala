@@ -91,7 +91,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                logicalPlanResult.plannerContext.planContext,
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
-                                               queryType == READ_ONLY)
+                                               queryType == READ_ONLY,
+                                               logicalPlanResult.plannerContext.logicalPlanIdGen)
 
     val executionPlan3_5 = runtime.compileToExecutable(planState, runtimeContext)
 

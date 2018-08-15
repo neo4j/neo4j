@@ -734,8 +734,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")._2
 
     val propPredicate = SingleQueryExpression(StringLiteral("val")(pos))
-    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val prop1 = IndexedProperty(PropertyKeyToken("prop1", PropertyKeyId(0)), DoNotGetValue)
+    val prop2 = IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)
     val labelPredicate1 = HasLabels(Variable("n")(pos), Seq(LabelName("Label1")(pos)))(pos)
     val labelPredicate2 = HasLabels(Variable("n")(pos), Seq(LabelName("Label2")(pos)))(pos)
     val labelToken1 = LabelToken("Label1", LabelId(0))
@@ -760,8 +760,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")._2
 
     val propPredicate = SingleQueryExpression(StringLiteral("val")(pos))
-    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val prop1 = IndexedProperty(PropertyKeyToken("prop1", PropertyKeyId(0)), DoNotGetValue)
+    val prop2 = IndexedProperty(PropertyKeyToken("prop2", PropertyKeyId(1)), DoNotGetValue)
     val labelPredicate1 = HasLabels(Variable("n")(pos), Seq(LabelName("Label1")(pos)))(pos)
     val labelPredicate2 = HasLabels(Variable("n")(pos), Seq(LabelName("Label2")(pos)))(pos)
     val labelToken1 = LabelToken("Label1", LabelId(0))

@@ -26,7 +26,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
 import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
-import org.neo4j.cypher.internal.compatibility.{CypherCurrentCompiler, CypherPlanner, CypherRuntimeConfiguration, RuntimeContext, RuntimeContextCreator}
+import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
@@ -41,6 +41,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 import org.neo4j.scheduler.{Group, JobScheduler}
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.opencypher.v9_0.util.attribution.IdGen
 
 class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
                                 graph: GraphDatabaseQueryService,
@@ -138,6 +139,7 @@ case class RuntimeEnvironment(config:CypherRuntimeConfiguration, jobScheduler: J
 case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogger,
                                     tokenContext: TokenContext,
                                     readOnly: Boolean,
+                                    logicalPlanIdGen: IdGen,
                                     codeStructure: CodeStructure[GeneratedQuery],
                                     log: Log,
                                     clock: Clock,
@@ -158,10 +160,12 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                       tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
-                      readOnly: Boolean): EnterpriseRuntimeContext =
+                      readOnly: Boolean,
+                      logicalPlanIdGen: IdGen): EnterpriseRuntimeContext =
     EnterpriseRuntimeContext(notificationLogger,
                              tokenContext,
                              readOnly,
+                             logicalPlanIdGen,
                              codeStructure,
                              log,
                              clock,

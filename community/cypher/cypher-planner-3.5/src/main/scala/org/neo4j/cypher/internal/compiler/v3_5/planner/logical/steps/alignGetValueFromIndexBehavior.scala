@@ -93,8 +93,5 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
     case scan@NodeIndexScan(idName, _, property, _) =>
       val newProperty = setGetValueBehavior(idName, property)
       NodeIndexScan(idName, scan.label, newProperty, scan.argumentIds)(attributes.copy(scan.id))
-
-    // Don't update other plans
-    case x => x
   })
 }

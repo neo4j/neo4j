@@ -256,7 +256,6 @@ object LogicalPlanConverter {
     }
   }
 
-  // TODO
   private def nodeIndexSeekAsCodeGenPlan(indexSeek: plans.NodeIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =
@@ -266,7 +265,6 @@ object LogicalPlanConverter {
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName, indexSeek.valueExpr, indexSeek)
   }
 
-  // TODO
   private def nodeUniqueIndexSeekAsCodeGen(indexSeek: plans.NodeUniqueIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =

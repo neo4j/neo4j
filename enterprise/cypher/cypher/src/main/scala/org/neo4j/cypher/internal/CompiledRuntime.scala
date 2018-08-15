@@ -29,21 +29,25 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CompiledRuntimeName
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.compiled.CompiledPlan
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
+import org.neo4j.cypher.internal.runtime.compiled.{CompiledPlan, projectIndexProperties}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.util.attribution.Attributes
 
 object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
   @throws[CantCompileQueryException]
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlanv3_5 = {
+    val attributes = Attributes(context.logicalPlanIdGen, state.solveds, state.cardinalities)
+    val (newPlan, newSemanticTable) = projectIndexProperties(attributes)(state.logicalPlan, state.semanticTable())
+
     val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
     val compiled: CompiledPlan = codeGen.generate(
-      state.logicalPlan,
+      newPlan,
       context.tokenContext,
-      state.semanticTable(),
+      newSemanticTable,
       state.plannerName,
       context.readOnly,
       state.cardinalities)
