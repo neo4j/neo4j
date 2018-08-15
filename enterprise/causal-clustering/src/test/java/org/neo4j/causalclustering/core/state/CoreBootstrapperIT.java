@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.causalclustering.backup.RestoreClusterUtils;
@@ -112,7 +111,7 @@ public class CoreBootstrapperIT
     }
 
     private static void bootstrapAndVerify( long nodeCount, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache, Config config,
-            CoreBootstrapper bootstrapper ) throws IOException
+            CoreBootstrapper bootstrapper ) throws Exception
     {
         // when
         Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
