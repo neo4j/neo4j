@@ -35,7 +35,6 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
 public class NodeCountInputs implements Input
@@ -57,7 +56,7 @@ public class NodeCountInputs implements Input
     @Override
     public InputIterable nodes()
     {
-        return replayable( () -> new GeneratingInputIterator<>( nodeCount, 1_000, batch -> null,
+        return () -> new GeneratingInputIterator<>( nodeCount, 1_000, batch -> null,
                 (GeneratingInputIterator.Generator<Void>) ( state, visitor, id ) -> {
                     visitor.id( id, Group.GLOBAL );
                     visitor.labels( labels );
@@ -65,7 +64,7 @@ public class NodeCountInputs implements Input
                     {
                         visitor.property( (String) properties[i++], properties[i] );
                     }
-                }, 0 ) );
+                }, 0 );
     }
 
     @Override

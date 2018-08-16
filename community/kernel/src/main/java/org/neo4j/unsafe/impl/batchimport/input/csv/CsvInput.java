@@ -41,7 +41,6 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.input.Collector.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.calculatePropertySize;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
@@ -167,13 +166,13 @@ public class CsvInput implements Input
     @Override
     public InputIterable nodes()
     {
-        return replayable( () -> stream( nodeDataFactory, nodeHeaderFactory ) );
+        return () -> stream( nodeDataFactory, nodeHeaderFactory );
     }
 
     @Override
     public InputIterable relationships()
     {
-        return replayable( () -> stream( relationshipDataFactory, relationshipHeaderFactory ) );
+        return () -> stream( relationshipDataFactory, relationshipHeaderFactory );
     }
 
     private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory )

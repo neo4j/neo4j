@@ -54,25 +54,21 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.PageCacheArrayFactoryMonitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.CachedInput;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
-import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.lang.Long.max;
-import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.calculateMaxMemoryUsage;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
@@ -159,7 +155,6 @@ public class ImportLogic implements Closeable
     private NodeRelationshipCache nodeRelationshipCache;
     private NodeLabelsCache nodeLabelsCache;
     private long startTime;
-    private InputCache inputCache;
     private NumberArrayFactory numberArrayFactory;
     private Collector badCollector;
     private IdMapper idMapper;
@@ -195,8 +190,7 @@ public class ImportLogic implements Closeable
     {
         log.info( "Import starting" );
         startTime = currentTimeMillis();
-        inputCache = new InputCache( fileSystem, storeDir, recordFormats, toIntExact( mebiBytes( 1 ) ) );
-        this.input = CachedInput.cacheAsNecessary( input, inputCache );
+        this.input = input;
         PageCacheArrayFactoryMonitor numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
         numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
         badCollector = input.badCollector();
@@ -517,7 +511,7 @@ public class ImportLogic implements Closeable
         String additionalInformation = Objects.toString( state, "Data statistics is not available." );
         executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
         log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
-        closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper, inputCache );
+        closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper );
     }
 
     private void updatePeakMemoryUsage()

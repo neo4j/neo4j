@@ -84,7 +84,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
@@ -527,7 +526,7 @@ public class ParallelBatchImporterTest
     private InputIterable relationships( final long randomSeed, final long count, int batchSize,
             final InputIdGenerator idGenerator, final IdGroupDistribution groups )
     {
-        return replayable( () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
+        return () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
                 ( randoms, visitor, id ) -> {
                     randomProperties( randoms, "Name " + id, visitor );
                     ExistingId startNodeExistingId = idGenerator.randomExisting( randoms );
@@ -550,20 +549,20 @@ public class ParallelBatchImporterTest
                         type += "_odd";
                     }
                     visitor.type( type );
-                }, 0 ) );
+                }, 0 );
     }
 
     private InputIterable nodes( final long randomSeed, final long count, int batchSize,
             final InputIdGenerator inputIdGenerator, final IdGroupDistribution groups )
     {
-        return replayable( () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
+        return () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
                 ( randoms, visitor, id ) -> {
                     Object nodeId = inputIdGenerator.nextNodeId( randoms, id );
                     Group group = groups.groupOf( id );
                     visitor.id( nodeId, group );
                     randomProperties( randoms, uniqueId( group, nodeId ), visitor );
                     visitor.labels( randoms.selection( TOKENS, 0, TOKENS.length, true ) );
-                }, 0 ) );
+                }, 0 );
     }
 
     private static final String[] TOKENS = {"token1", "token2", "token3", "token4", "token5", "token6", "token7"};

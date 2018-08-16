@@ -132,7 +132,7 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
     {   // here's nothing
     };
 
-    public static final InputIterable EMPTY_ITERABLE = InputIterable.replayable( () -> EMPTY );
+    public static final InputIterable EMPTY_ITERABLE = () -> EMPTY;
 
     public interface Generator<CHUNKSTATE>
     {

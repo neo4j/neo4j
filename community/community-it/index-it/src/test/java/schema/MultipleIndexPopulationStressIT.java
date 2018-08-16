@@ -334,14 +334,14 @@ public class MultipleIndexPopulationStressIT
         @Override
         public InputIterable nodes()
         {
-            return InputIterable.replayable( () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
+            return () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
                 String[] keys = random.randomValues().selection( TOKENS, 1, TOKENS.length, false );
                 for ( String key : keys )
                 {
                     visitor.property( key, random.nextValueAsObject() );
                 }
                 visitor.labels( random.selection( TOKENS, 1, TOKENS.length, false ) );
-            } ) );
+            } );
         }
 
         @Override

@@ -39,8 +39,6 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
-
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
  * and then a function for generating the nodes and another for generating the relationships.
@@ -104,15 +102,15 @@ public class DataGeneratorInput implements Input
     @Override
     public InputIterable nodes()
     {
-        return replayable( () -> new RandomEntityDataGenerator( nodes, nodes, 10_000, seed, startId, nodeHeader, labels, relationshipTypes,
-                factorBadNodeData, factorBadRelationshipData ) );
+        return () -> new RandomEntityDataGenerator( nodes, nodes, 10_000, seed, startId, nodeHeader, labels, relationshipTypes,
+                factorBadNodeData, factorBadRelationshipData );
     }
 
     @Override
     public InputIterable relationships()
     {
-        return replayable( () -> new RandomEntityDataGenerator( nodes, relationships, 10_000, seed, startId, relationshipHeader,
-                labels, relationshipTypes, factorBadNodeData, factorBadRelationshipData ) );
+        return () -> new RandomEntityDataGenerator( nodes, relationships, 10_000, seed, startId, relationshipHeader,
+                labels, relationshipTypes, factorBadNodeData, factorBadRelationshipData );
     }
 
     @Override
