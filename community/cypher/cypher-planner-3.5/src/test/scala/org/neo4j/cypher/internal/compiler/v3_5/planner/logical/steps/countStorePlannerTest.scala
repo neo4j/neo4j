@@ -178,7 +178,8 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       aggregationExpressions = Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
   }
 
-  private def countStoreP(query: PlannerQuery, context: LogicalPlanningContext) = countStorePlanner(query, context, new StubSolveds, new StubCardinalities)
+  private def countStoreP(query: PlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] =
+    countStorePlanner(query, context, new StubSolveds, new StubCardinalities).map(_._1)
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {
 
@@ -199,7 +200,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     }
   }
 
-  private def beCountPlanFor(variable: String) = IsCountPlan(variable, false)
-  private def notBeCountPlan = new IsCountPlan("", true)
+  private def beCountPlanFor(variable: String) = IsCountPlan(variable, noneExpected = false)
+  private def notBeCountPlan = IsCountPlan("", noneExpected = true)
 
 }

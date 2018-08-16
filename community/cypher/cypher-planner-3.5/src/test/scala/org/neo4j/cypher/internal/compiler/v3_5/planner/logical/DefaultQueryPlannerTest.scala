@@ -72,7 +72,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val union = UnionQuery(Seq(pq), distinct = false, columns, periodicCommit = None)
 
-    val (_, result) = queryPlanner.plan(union, planningContext, solveds, cardinalities, idGen)
+    val (_, result, _) = queryPlanner.plan(union, planningContext, solveds, cardinalities, idGen)
 
     result shouldBe a [ProduceResult]
 
@@ -123,8 +123,8 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     verify(context, times(1)).withStrictness(LazyMode)
   }
 
-  class FakePlanner(result: LogicalPlan) extends ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => LogicalPlan) {
-    def apply(input: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, idGen: IdGen): LogicalPlan = result
+  class FakePlanner(result: LogicalPlan) extends ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => (LogicalPlan, LogicalPlanningContext)) {
+    def apply(input: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = (result, context)
   }
 
   private def mockLogicalPlanningContext(semanticTable: SemanticTable, solveds: Solveds, cardinalities: Cardinalities) = LogicalPlanningContext(

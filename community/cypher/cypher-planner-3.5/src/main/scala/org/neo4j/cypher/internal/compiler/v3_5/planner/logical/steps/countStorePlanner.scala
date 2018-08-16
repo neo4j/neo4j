@@ -28,7 +28,7 @@ import org.opencypher.v9_0.expressions.{functions, _}
 
 case object countStorePlanner {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Option[LogicalPlan] = {
+  def apply(query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Option[(LogicalPlan, LogicalPlanningContext)] = {
     implicit val semanticTable = context.semanticTable
     query.horizon match {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _)

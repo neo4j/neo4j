@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ResolvedCall}
@@ -33,48 +34,51 @@ away when going from a string query to a QueryGraph. The remaining WITHs are the
 aggregation and UNWIND.
  */
 case object PlanEventHorizon
-  extends ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan) {
+  extends ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) {
 
-  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
     val selectedPlan = context.config.applySelections(plan, query.queryGraph, context, solveds, cardinalities)
 
-    val projectedPlan = query.horizon match {
+    val (projectedPlan, contextAfterHorizon) = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, context, solveds, cardinalities)
-        sortSkipAndLimit(aggregationPlan, query, context, solveds, cardinalities)
+        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, context, solveds, cardinalities)
+        sortSkipAndLimit(aggregationPlan, query, newContext, solveds, cardinalities)
 
       case queryProjection: RegularQueryProjection =>
-        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query, context, solveds, cardinalities)
+        val (sortedAndLimited, contextAfterSort) = sortSkipAndLimit(selectedPlan, query, context, solveds, cardinalities)
         if (queryProjection.projections.isEmpty && query.tail.isEmpty) {
-          context.logicalPlanProducer.planEmptyProjection(plan, context)
+          (contextAfterSort.logicalPlanProducer.planEmptyProjection(plan, contextAfterSort), contextAfterSort)
         } else {
-          projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, context, solveds, cardinalities)
+          val (newPlan, newContext) = projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, contextAfterSort, solveds, cardinalities)
+          (newPlan, newContext)
         }
 
       case queryProjection: DistinctQueryProjection =>
-        val distinctPlan = distinct(selectedPlan, queryProjection, context, solveds, cardinalities)
-        sortSkipAndLimit(distinctPlan, query, context, solveds, cardinalities)
+        val (distinctPlan, newContext) = distinct(selectedPlan, queryProjection, context, solveds, cardinalities)
+        sortSkipAndLimit(distinctPlan, query, newContext, solveds, cardinalities)
 
       case UnwindProjection(variable, expression) =>
-        val rewrittenExpression = replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(expression).asInstanceOf[Expression]
+        val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(expression, context.semanticTable))
+        val newContext = context.withUpdatedSemanticTable(newSemanticTable)
         val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), context, solveds, cardinalities)
-        context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
+        (newContext.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, newContext), newContext)
 
       case ProcedureCallProjection(call) =>
-        val rewrittenCall = replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(call).asInstanceOf[ResolvedCall]
-        context.logicalPlanProducer.planCallProcedure(plan, rewrittenCall, call, context)
+        val (rewrittenCall, newSemanticTable) = firstAs[ResolvedCall](replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(call, context.semanticTable))
+        val newContext = context.withUpdatedSemanticTable(newSemanticTable)
+        (newContext.logicalPlanProducer.planCallProcedure(plan, rewrittenCall, call, newContext), newContext)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
-        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
+        (context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context), context)
 
       case PassthroughAllHorizon() =>
-        context.logicalPlanProducer.planPassAll(plan, context)
+        (context.logicalPlanProducer.planPassAll(plan, context), context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")
     }
 
     // We need to check if reads introduced in the horizon conflicts with future writes
-    Eagerness.horizonReadWriteEagerize(projectedPlan, query, context)
+    (Eagerness.horizonReadWriteEagerize(projectedPlan, query, contextAfterHorizon), contextAfterHorizon)
   }
 }

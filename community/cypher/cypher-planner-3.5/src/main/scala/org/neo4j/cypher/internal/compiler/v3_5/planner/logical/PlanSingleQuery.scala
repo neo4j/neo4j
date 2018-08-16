@@ -30,29 +30,30 @@ This coordinates PlannerQuery planning and delegates work to the classes that do
 QueryGraphs and EventHorizons
  */
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = planPart,
-                           planEventHorizon: (PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = PlanEventHorizon,
-                           planWithTail: (LogicalPlan, Option[PlannerQuery], LogicalPlanningContext, Solveds, Cardinalities, Attributes) => LogicalPlan = PlanWithTail(),
+                           planEventHorizon: (PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext) = PlanEventHorizon,
+                           planWithTail: (LogicalPlan, Option[PlannerQuery], LogicalPlanningContext, Solveds, Cardinalities, Attributes) => (LogicalPlan, LogicalPlanningContext) = PlanWithTail(),
                            planUpdates: (PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext) = PlanUpdates)
-  extends ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => LogicalPlan) {
+  extends ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => (LogicalPlan, LogicalPlanningContext)) {
 
   override def apply(in: PlannerQuery, context: LogicalPlanningContext,
-                     solveds: Solveds, cardinalities: Cardinalities, idGen: IdGen): LogicalPlan = {
-    val (completePlan, ctx) = countStorePlanner(in, context, solveds, cardinalities) match {
-      case Some(plan) =>
-        (plan, context.withUpdatedCardinalityInformation(plan, solveds, cardinalities))
-      case None =>
+                     solveds: Solveds, cardinalities: Cardinalities, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
+    val (completePlan, ctx) =
+      countStorePlanner(in, context, solveds, cardinalities) match {
+        case Some((plan, afterCountStoreContext)) =>
+          (plan, afterCountStoreContext.withUpdatedCardinalityInformation(plan, solveds, cardinalities))
+        case None =>
 
-        // context for this query, which aligns getValueFromIndexBehavior
-        val queryContext = context.withLeafPlanUpdater(alignGetValueFromIndexBehavior(in, context.logicalPlanProducer, Attributes(context.logicalPlanProducer.idGen, solveds, cardinalities)))
+          // context for this query, which aligns getValueFromIndexBehavior
+          val queryContext = context.withLeafPlanUpdater(alignGetValueFromIndexBehavior(in, context.logicalPlanProducer, Attributes(context.logicalPlanProducer.idGen, solveds, cardinalities)))
 
-        val partPlan = planPart(in, queryContext, solveds, cardinalities)
-        val (planWithUpdates, newContext) = planUpdates(in, partPlan, true /*first QG*/, queryContext, solveds, cardinalities)
-        val projectedPlan = planEventHorizon(in, planWithUpdates, newContext, solveds, cardinalities)
-        val projectedContext = newContext.withUpdatedCardinalityInformation(projectedPlan, solveds, cardinalities)
-        (projectedPlan, projectedContext)
-    }
+          val partPlan = planPart(in, queryContext, solveds, cardinalities)
+          val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, true /*first QG*/ , queryContext, solveds, cardinalities)
+          val (projectedPlan, contextAfterHorizon) = planEventHorizon(in, planWithUpdates, contextAfterUpdates, solveds, cardinalities)
+          val projectedContext = contextAfterHorizon.withUpdatedCardinalityInformation(projectedPlan, solveds, cardinalities)
+          (projectedPlan, projectedContext)
+      }
 
-    val finalPlan = planWithTail(completePlan, in.tail, ctx, solveds, cardinalities, Attributes(idGen))
-    verifyBestPlan(finalPlan, in, context, solveds, cardinalities)
+    val (finalPlan, finalContext) = planWithTail(completePlan, in.tail, ctx, solveds, cardinalities, Attributes(idGen))
+    (verifyBestPlan(finalPlan, in, finalContext, solveds, cardinalities), finalContext)
   }
 }

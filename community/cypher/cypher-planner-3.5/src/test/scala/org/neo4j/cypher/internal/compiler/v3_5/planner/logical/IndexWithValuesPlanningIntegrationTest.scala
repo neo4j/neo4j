@@ -160,7 +160,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   }
 
   // This can change to GetValue if alignGetValueFromIndexBehavior gets cleverer
-  test("should plan projection and index seek with DoNotGetValue when another predicate that uses the property") {
+  test("should plan projection and index seek with DoNotGetValue when another predicate uses the property") {
     val plan = new given {
       indexWithValuesOn("Awesome", "prop")
       indexWithValuesOn("Awesome", "foo")
@@ -236,7 +236,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
-  test("should plan index seek with GetValue when the property is projectedbefore the property access") {
+  test("should plan index seek with GetValue when the property is projected before the property access") {
     val plan = new given {
       indexWithValuesOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n MATCH (m)-[r]-(n) RETURN n.prop"

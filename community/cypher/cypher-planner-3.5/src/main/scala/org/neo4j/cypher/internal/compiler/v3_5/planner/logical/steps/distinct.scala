@@ -20,24 +20,26 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
 import org.neo4j.cypher.internal.ir.v3_5.DistinctQueryProjection
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object distinct {
-  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
 
     // We want to leverage if we got the value from an index already
-    val distinctWithRenames = replacePropertyLookupsWithVariables(plan.availablePropertiesFromIndexes)(distinctQueryProjection)
-      .asInstanceOf[DistinctQueryProjection]
+    val (distinctWithRenames, newSemanticTable) = firstAs[DistinctQueryProjection](replacePropertyLookupsWithVariables(plan.availablePropertiesFromIndexes)(distinctQueryProjection, context.semanticTable))
+    val newContext = context.withUpdatedSemanticTable(newSemanticTable)
 
     val expressionSolver = PatternExpressionSolver()
-    val (rewrittenPlan, groupingKeys) = expressionSolver(plan, distinctWithRenames.groupingKeys, context, solveds, cardinalities)
+    val (rewrittenPlan, groupingKeys) = expressionSolver(plan, distinctWithRenames.groupingKeys, newContext, solveds, cardinalities)
 
-    context.logicalPlanProducer.planDistinct(
+    val finalPlan = newContext.logicalPlanProducer.planDistinct(
       rewrittenPlan,
       groupingKeys,
       distinctQueryProjection.groupingKeys,
-      context)
+      newContext)
+    (finalPlan, newContext)
   }
 }

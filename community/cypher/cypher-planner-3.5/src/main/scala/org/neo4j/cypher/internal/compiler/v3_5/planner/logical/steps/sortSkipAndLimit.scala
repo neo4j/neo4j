@@ -27,14 +27,14 @@ import org.opencypher.v9_0.ast.{AscSortItem, DescSortItem, SortItem}
 import org.opencypher.v9_0.expressions.{Expression, Variable}
 import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
 
-object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
+object sortSkipAndLimit extends PlanAndContextTransformer[PlannerQuery] {
 
-  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = query.horizon match {
+  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
-      val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
+       (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
         case (Nil, skip, limit) =>
-          addLimit(limit, addSkip(skip, plan, context), context)
+          (addLimit(limit, addSkip(skip, plan, context), context), context)
 
         case (sortItems, skip, limit) =>
           /* Collect one map and two seq while examining the sort items:
@@ -89,21 +89,19 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
           // Project all variables needed for sort in two steps
           // First the ones that are part of projection list and may introduce variables that are needed for the second projection
-          val preProjected1 = projection(plan, projectItemsForAliases, projectItemsForAliases, context, solveds, cardinalities)
+          val (preProjected1, context1) = projection(plan, projectItemsForAliases, projectItemsForAliases, context, solveds, cardinalities)
           // And then all the ones from unaliased sort items that may refer to newly introduced variables
-          val preProjected2 = projection(preProjected1, projectItemsForUnaliasedSortItems.toMap, Map.empty, context, solveds, cardinalities)
+          val (preProjected2, context2) = projection(preProjected1, projectItemsForUnaliasedSortItems.toMap, Map.empty, context1, solveds, cardinalities)
 
           // plan the actual sort
           val newSortItems = aliasedSortItems ++ newUnaliasedSortItems
           val columnOrders = newSortItems.map(columnOrder)
-          val sortedPlan = context.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, context)
+          val sortedPlan = context2.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, context2)
 
-          addLimit(limit, addSkip(skip, sortedPlan, context), context)
+          (addLimit(limit, addSkip(skip, sortedPlan, context2), context2), context2)
       }
 
-      producedPlan
-
-    case _ => plan
+    case _ => (plan, context)
   }
 
   private def columnOrder(in: SortItem): ColumnOrder = in match {

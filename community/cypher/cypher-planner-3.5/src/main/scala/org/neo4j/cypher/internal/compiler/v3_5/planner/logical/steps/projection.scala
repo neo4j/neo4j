@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
 import org.neo4j.cypher.internal.ir.v3_5.QueryProjection
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
@@ -27,21 +28,62 @@ import org.opencypher.v9_0.expressions._
 
 object projection {
 
-  def apply(in: LogicalPlan, projectionsToPlan: Map[String, Expression], projectionsToMarkSolved: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+  /**
+    * This method can be used instead of apply, if we know that no properties lookups
+    * will be able to be replaced with variables. Or if we tolerate the fact that we
+    * miss these replacement opportunities.
+    *
+    * The advantage is that we do not need to update the semantic table.
+    */
+  def withoutPropertiesFromIndex(in: LogicalPlan,
+                                 projectionsToPlan: Map[String, Expression],
+                                 projectionsToMarkSolved: Map[String, Expression],
+                                 context: LogicalPlanningContext,
+                                 solveds: Solveds,
+                                 cardinalities: Cardinalities): LogicalPlan = {
+    val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, solveds)
+    createPlan(in, stillToSolveProjection, projectionsToMarkSolved, context, solveds, cardinalities)
+  }
 
+  def apply(in: LogicalPlan,
+            projectionsToPlan: Map[String, Expression],
+            projectionsToMarkSolved: Map[String, Expression],
+            context: LogicalPlanningContext,
+            solveds: Solveds, cardinalities:
+            Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
+    val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, solveds)
+
+    // We want to leverage if we got the value from an index already
+    val (stillToSolveProjectionWithRenames, newSemanticTable) = firstAs[Map[String, Expression]](replacePropertyLookupsWithVariables(in.availablePropertiesFromIndexes)(stillToSolveProjection, context.semanticTable))
+    val newContext = context.withUpdatedSemanticTable(newSemanticTable)
+
+    val finalPlan = createPlan(in, stillToSolveProjectionWithRenames, projectionsToMarkSolved, newContext, solveds, cardinalities)
+    (finalPlan, newContext)
+  }
+
+  /**
+    * Computes the projections that are not yet marked as solved.
+    */
+  private def projectionsLeft(in: LogicalPlan, projectionsToPlan: Map[String, Expression], solveds: Solveds): Map[String, Expression] = {
     // if we had a previous projection it might have projected something already
     // we only want to project what's left from that previous projection
     val alreadySolvedProjections = solveds.get(in.id).tailOrSelf.horizon match {
       case solvedProjection: QueryProjection => solvedProjection.projections
       case _ => Map.empty[String, Expression]
     }
-    val stillToSolveProjection = projectionsToPlan -- alreadySolvedProjections.keys
+    projectionsToPlan -- alreadySolvedProjections.keys
+  }
 
-    // We want to leverage if we got the value from an index already
-    val stillToSolveProjectionWithRenames = replacePropertyLookupsWithVariables(in.availablePropertiesFromIndexes)(stillToSolveProjection)
-      .asInstanceOf[Map[String, Expression]]
-
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjectionWithRenames, context, solveds, cardinalities)
+  /**
+    * Solve pattern expressions, and plan a projection for everything that is not yet covered by coveredIds.
+    */
+  private def createPlan(in: LogicalPlan,
+                         projectionsToPlan: Map[String, Expression],
+                         projectionsToMarkSolved: Map[String, Expression],
+                         context: LogicalPlanningContext,
+                         solveds: Solveds,
+                         cardinalities: Cardinalities): LogicalPlan = {
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, projectionsToPlan, context, solveds, cardinalities)
 
     val ids = plan.availableSymbols
 

@@ -43,7 +43,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -58,7 +58,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projectionsToMarkSolved, context, solveds, cardinalities)
+    val result = projection(startPlan, projections, projectionsToMarkSolved, context, solveds, cardinalities)._1
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -71,7 +71,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
     result should equal(startPlan)
@@ -84,7 +84,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
     val actualProjections = Map("42" -> SignedDecimalIntegerLiteral("42")(pos))
@@ -98,7 +98,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -115,7 +115,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
       availablePropertiesFromIndexes = Map(prop -> "n.prop"))
 
     // when
-    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
     result should equal(startPlan)
@@ -132,7 +132,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
       availablePropertiesFromIndexes = Map(prop -> "n.prop"))
 
     // when
-    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)
+    val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
     val actualProjections = Map("foo" -> Variable("n.prop")(pos))

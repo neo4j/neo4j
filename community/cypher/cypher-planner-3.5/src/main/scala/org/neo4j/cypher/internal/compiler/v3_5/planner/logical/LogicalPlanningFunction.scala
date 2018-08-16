@@ -29,6 +29,8 @@ trait CandidateGenerator[T] extends ((T, QueryGraph, LogicalPlanningContext, Sol
 
 trait PlanTransformer[-T] extends ((LogicalPlan, T, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan)
 
+trait PlanAndContextTransformer[-T] extends ((LogicalPlan, T, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext))
+
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner extends ((QueryGraph, LogicalPlanningContext, Solveds, Cardinalities) => Seq[LogicalPlan])

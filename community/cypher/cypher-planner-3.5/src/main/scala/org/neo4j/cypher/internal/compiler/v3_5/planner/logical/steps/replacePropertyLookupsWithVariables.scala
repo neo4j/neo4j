@@ -19,14 +19,38 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.{Property, Variable}
 import org.opencypher.v9_0.util.{Rewriter, topDown}
 
-case class replacePropertyLookupsWithVariables(availablePropertyVariables: Map[Property, String]) extends Rewriter {
+case class replacePropertyLookupsWithVariables(availablePropertyVariables: Map[Property, String])  {
 
-  override def apply(that: AnyRef) = instance(that)
+  /**
+    * Rewrites any object to replace property lookups with variables, if they are available.
+    * Registers these new variables with the given semantic table and returns a copy
+    * of that semantic table where the new variables are known.
+    */
+  def apply(that: AnyRef, semanticTable: SemanticTable): (AnyRef, SemanticTable) = {
+    var currentTypes = semanticTable.types
 
-  private val instance: Rewriter = topDown(Rewriter.lift {
-    case property:Property if availablePropertyVariables.contains(property) => Variable(availablePropertyVariables(property))(property.position)
-  })
+    val rewriter = topDown(Rewriter.lift {
+      case property:Property if availablePropertyVariables.contains(property) =>
+        val newVar = Variable(availablePropertyVariables(property))(property.position)
+        // Register the new variables in the semantic table
+        currentTypes = currentTypes.updated(newVar, currentTypes(property))
+        newVar
+    })
+
+    val rewritten = rewriter(that)
+    val newSemanticTable = if(currentTypes == semanticTable.types) semanticTable else semanticTable.copy(types = currentTypes)
+    (rewritten, newSemanticTable)
+  }
+}
+
+object replacePropertyLookupsWithVariables {
+
+  /**
+    * Cast the first argument of the tuple to the desired type.
+    */
+  def firstAs[T <: AnyRef](arg: (AnyRef, SemanticTable)): (T, SemanticTable) = (arg._1.asInstanceOf[T], arg._2)
 }
