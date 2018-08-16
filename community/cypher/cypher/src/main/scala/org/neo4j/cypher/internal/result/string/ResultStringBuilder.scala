@@ -186,27 +186,31 @@ class ResultStringBuilder private(columns: Array[String],
   private def props(n: Node): String = {
     if (deletedInTx.node(n.getId))
       "{deleted}"
-    else if (isVirtualEntityHack(n))
-      "{}"
-    else {
-      propertiesAsTextValue(n.getAllProperties)
-    }
+    else entityProps(n)
   }
 
   private def props(r: Relationship): String = {
     if (deletedInTx.relationship(r.getId))
       "{deleted}"
-    else if (isVirtualEntityHack(r))
+    else entityProps(r)
+  }
+
+  private def entityProps(e: Entity): String = {
+    if (isVirtualEntityHack(e))
       "{}"
     else {
-      propertiesAsTextValue(r.getAllProperties)
+      try {
+        propertiesAsTextValue(e.getAllProperties)
+      } catch {
+        case e: NotFoundException => "{}"
+      }
     }
   }
 
   private def propertiesAsTextValue(properties: java.util.Map[String, Object]): String = {
     val keyValues = new ArrayBuffer[String]
     val propertyIterator = properties.entrySet().iterator()
-    while (propertyIterator.hasNext()) {
+    while (propertyIterator.hasNext) {
       val entry = propertyIterator.next()
       val key = entry.getKey
       val value = asTextValue(entry.getValue)
