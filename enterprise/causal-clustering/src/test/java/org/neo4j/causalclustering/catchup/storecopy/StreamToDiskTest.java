@@ -53,15 +53,18 @@ public class StreamToDiskTest
     {
         // GIVEN
         Monitors monitors = new Monitors();
-        StreamToDiskProvider writerProvider = new StreamToDiskProvider( directory.absolutePath(), fs, monitors );
+        StreamToDiskProvider writerProvider = new StreamToDiskProvider( directory.databaseDir(), fs, monitors );
 
         // WHEN
         for ( StoreType type : StoreType.values() )
         {
             if ( type.isRecordStore() )
             {
-                File file = directory.databaseLayout().file( type.getDatabaseFile() );
-                writeAndVerify( writerProvider, file );
+                File[] files = directory.databaseLayout().file( type.getDatabaseFile() ).toArray( File[]::new );
+                for ( File file : files )
+                {
+                    writeAndVerify( writerProvider, file );
+                }
             }
         }
         writeAndVerify( writerProvider, directory.databaseLayout().labelScanStore() );

@@ -34,15 +34,15 @@ public class StoreTypeTest
     @Test
     public void storeTypeOfValidStoreFile()
     {
-        //noinspection OptionalGetWithoutIsPresent
-        assertEquals( StoreType.NODE, StoreType.typeOf( DatabaseFile.NODE_STORE ).get() );
+        StoreType matchedType = StoreType.typeOf( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
+        assertEquals( StoreType.NODE, matchedType );
     }
 
     @Test
     public void storeTypeOfMetaDataStoreFile()
     {
-        //noinspection OptionalGetWithoutIsPresent
-        assertEquals( StoreType.META_DATA, StoreType.typeOf( DatabaseFile.METADATA_STORE ).get() );
+        StoreType matchedType = StoreType.typeOf( DatabaseFile.METADATA_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
+        assertEquals( StoreType.META_DATA, matchedType );
     }
 
     @Test

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.io.layout.DatabaseFile;
@@ -139,7 +140,7 @@ public enum StoreType
                     return neoStores.createRelationshipGroupStore();
                 }
             },
-    COUNTS( null, false, false )
+    COUNTS( DatabaseFile.COUNTS_STORES, false, false )
             {
                 @Override
                 public CountsTracker open( NeoStores neoStores )
@@ -215,6 +216,7 @@ public enum StoreType
      */
     public static Optional<StoreType> typeOf( DatabaseFile databaseFile )
     {
+        Objects.requireNonNull( databaseFile );
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
         {

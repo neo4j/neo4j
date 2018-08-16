@@ -28,7 +28,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -201,6 +200,9 @@ public class IdGeneratorRebuildFailureEmulationTest
         @Override
         protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
+            File databasesRoot = storeDir.getParentFile();
+            params.put( GraphDatabaseSettings.active_database.name(), storeDir.getName() );
+            params.put( GraphDatabaseSettings.databases_root_path.name(), databasesRoot.getAbsolutePath() );
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
@@ -215,62 +217,61 @@ public class IdGeneratorRebuildFailureEmulationTest
                         }
                     };
                 }
-            }.initFacade( storeDir, params, dependencies, this );
+            }.initFacade( databasesRoot, params, dependencies, this );
         }
-
     }
 
     @Test
     public void neostore()
     {
-        performTest( databaseLayout.metadataStore() );
+        performTest( databaseLayout.idMetadataStore() );
     }
 
     @Test
     public void neostore_nodestore_db()
     {
-        performTest( databaseLayout.nodeStore() );
+        performTest( databaseLayout.idNodeStore() );
     }
 
     @Test
     public void neostore_propertystore_db_arrays()
     {
-        performTest( databaseLayout.propertyArrayStore() );
+        performTest( databaseLayout.idPropertyArrayStore() );
     }
 
     @Test
     public void neostore_propertystore_db()
     {
-        performTest( databaseLayout.propertyStore() );
+        performTest( databaseLayout.idPropertyStore() );
     }
 
     @Test
     public void neostore_propertystore_db_index()
     {
-        performTest( databaseLayout.propertyKeyTokenStore() );
+        performTest( databaseLayout.idPropertyKeyTokenStore() );
     }
 
     @Test
     public void neostore_propertystore_db_index_keys()
     {
-        performTest( databaseLayout.propertyKeyTokenNamesStore() );
+        performTest( databaseLayout.idPropertyKeyTokenNamesStore() );
     }
 
     @Test
     public void neostore_propertystore_db_strings()
     {
-        performTest( databaseLayout.propertyStringStore() );
+        performTest( databaseLayout.idPropertyStringStore() );
     }
 
     @Test
     public void neostore_relationshipstore_db()
     {
-        performTest( databaseLayout.relationshipStore() );
+        performTest( databaseLayout.idRelationshipStore() );
     }
 
     @Test
     public void neostore_relationshiptypestore_db()
     {
-        performTest( databaseLayout.relationshipTypeTokenNamesStore() );
+        performTest( databaseLayout.idRelationshipTypeTokenNamesStore() );
     }
 }

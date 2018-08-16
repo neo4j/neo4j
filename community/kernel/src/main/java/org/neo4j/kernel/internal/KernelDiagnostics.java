@@ -156,7 +156,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
                 mappedCandidates = Arrays.stream( StoreType.values() )
                                          .filter( StoreType::isRecordStore )
                                          .map( StoreType::getDatabaseFile )
-                                         .map( layout::file )
+                                         .flatMap( layout::file )
                                          .collect( toList() );
             }
 

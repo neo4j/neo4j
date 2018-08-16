@@ -19,6 +19,11 @@
  */
 package org.neo4j.io.layout;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.neo4j.util.Preconditions;
+
 public enum DatabaseFile
 {
     NODE_STORE( DatabaseFileNames.NODE_STORE ),
@@ -49,33 +54,40 @@ public enum DatabaseFile
 
     SCHEMA_STORE( DatabaseFileNames.SCHEMA_STORE ),
 
-    COUNTS_STORE_A( DatabaseFileNames.COUNTS_STORE_A, false ),
-    COUNTS_STORE_B( DatabaseFileNames.COUNTS_STORE_B, false ),
+    COUNTS_STORES( false, DatabaseFileNames.COUNTS_STORE_A, DatabaseFileNames.COUNTS_STORE_B ),
+    COUNTS_STORE_A( false, DatabaseFileNames.COUNTS_STORE_A ),
+    COUNTS_STORE_B( false, DatabaseFileNames.COUNTS_STORE_B ),
 
     METADATA_STORE( DatabaseFileNames.METADATA_STORE ),
 
-    LABEL_SCAN_STORE( DatabaseFileNames.LABEL_SCAN_STORE, false );
+    LABEL_SCAN_STORE( false, DatabaseFileNames.LABEL_SCAN_STORE );
 
-    private final String name;
+    private final List<String> names;
     private final boolean hasIdFile;
 
     DatabaseFile( String name )
     {
-        this( name, true );
+        this( true, name );
     }
 
-    DatabaseFile( String name, boolean hasIdFile )
+    DatabaseFile( boolean hasIdFile, String... names )
     {
-        this.name = name;
+        this.names = Arrays.asList( names );
         this.hasIdFile = hasIdFile;
+    }
+
+    Iterable<String> getNames()
+    {
+        return names;
     }
 
     String getName()
     {
-        return name;
+        Preconditions.checkState( names.size() == 1, "Database file has more then one file names." );
+        return names.get( 0 );
     }
 
-    public boolean hasIdFile()
+    boolean hasIdFile()
     {
         return hasIdFile;
     }

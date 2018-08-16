@@ -545,7 +545,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createPropertyKeyTokenStore()
     {
-        return initialize( new PropertyKeyTokenStore( layout.getDatabaseName(), layout.propertyKeyTokenStore(), layout.idPropertyKeyTokenNamesStore(), config,
+        return initialize( new PropertyKeyTokenStore( layout.getDatabaseName(), layout.propertyKeyTokenStore(), layout.idPropertyKeyTokenStore(), config,
                 idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN_NAME ), recordFormats,
                 openOptions ) );
     }

@@ -45,6 +45,7 @@ import static org.neo4j.io.layout.DatabaseFile.LABEL_TOKEN_STORE;
 import static org.neo4j.io.layout.DatabaseFile.NODE_LABEL_STORE;
 import static org.neo4j.io.layout.DatabaseFile.NODE_STORE;
 import static org.neo4j.io.layout.DatabaseFile.PROPERTY_ARRAY_STORE;
+import static org.neo4j.io.layout.DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE;
 import static org.neo4j.io.layout.DatabaseFile.PROPERTY_KEY_TOKEN_STORE;
 import static org.neo4j.io.layout.DatabaseFile.PROPERTY_STORE;
 import static org.neo4j.io.layout.DatabaseFile.PROPERTY_STRING_STORE;
@@ -148,7 +149,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         @Override
         public long getPropertyStoreSize()
         {
-            return sizeOfStoreFiles( PROPERTY_STORE, PROPERTY_KEY_TOKEN_STORE, RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
+            return sizeOfStoreFiles( PROPERTY_STORE, PROPERTY_KEY_TOKEN_STORE, PROPERTY_KEY_TOKEN_NAMES_STORE );
         }
 
         @Override
@@ -256,8 +257,8 @@ public final class StoreSizeBean extends ManagementBeanProvider
             long size = 0L;
             for ( DatabaseFile store : databaseFiles )
             {
-                size += sizeOf( databaseLayout.file( store ) );
-                size += sizeOf( databaseLayout.idFile( store ) );
+                size += databaseLayout.file( store ).mapToLong( this::sizeOf ).sum();
+                size += databaseLayout.idFile( store ).map( this::sizeOf ).orElse( 0L );
             }
             return size;
         }

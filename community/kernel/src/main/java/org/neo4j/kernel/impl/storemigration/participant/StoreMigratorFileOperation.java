@@ -21,12 +21,15 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
+
+import static org.neo4j.stream.Streams.ofOptional;
 
 class StoreMigratorFileOperation
 {
@@ -44,18 +47,21 @@ class StoreMigratorFileOperation
     {
         for ( DatabaseFile databaseStore : databaseFiles )
         {
-            perform( operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, fromLayout.file( databaseStore ),
-                    fromLayout.idFile( databaseStore ) );
+            File[] files = Stream.concat( fromLayout.file( databaseStore ), ofOptional( fromLayout.idFile( databaseStore ) ) ).toArray( File[]::new );
+            perform( operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, files );
         }
     }
 
     private static void perform( FileOperation operation, FileSystemAbstraction fs, DatabaseLayout fromLayout, DatabaseLayout toLayout,
-            boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy, File... files ) throws IOException
+            boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy, File[] files ) throws IOException
     {
         for ( File file : files )
         {
-            operation.perform( fs, file.getName(), fromLayout.databaseDirectory(), allowSkipNonExistentFiles, toLayout.databaseDirectory(),
-                    existingTargetStrategy );
+            if ( file != null )
+            {
+                operation.perform( fs, file.getName(), fromLayout.databaseDirectory(), allowSkipNonExistentFiles, toLayout.databaseDirectory(),
+                        existingTargetStrategy );
+            }
         }
     }
 }

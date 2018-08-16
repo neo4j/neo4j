@@ -53,7 +53,7 @@ public class ToFileStoreWriterTest
     public void shouldLetPageCacheHandleRecordStoresAndNativeLabelScanStoreFiles() throws Exception
     {
         // GIVEN
-        ToFileStoreWriter writer = new ToFileStoreWriter( directory.absolutePath(), fs,
+        ToFileStoreWriter writer = new ToFileStoreWriter( directory.databaseDir(), fs,
                 new StoreCopyClientMonitor.Adapter() );
         ByteBuffer tempBuffer = ByteBuffer.allocate( 128 );
 
@@ -62,8 +62,11 @@ public class ToFileStoreWriterTest
         {
             if ( type.isRecordStore() )
             {
-                File file = directory.databaseLayout().file( type.getDatabaseFile() );
-                writeAndVerify( writer, tempBuffer, file );
+                File[] files = directory.databaseLayout().file( type.getDatabaseFile() ).toArray( File[]::new );
+                for ( File file : files )
+                {
+                    writeAndVerify( writer, tempBuffer, file );
+                }
             }
         }
         writeAndVerify( writer, tempBuffer, directory.databaseLayout().labelScanStore() );

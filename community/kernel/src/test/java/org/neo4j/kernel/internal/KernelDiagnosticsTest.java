@@ -23,9 +23,13 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class KernelDiagnosticsTest
 {
@@ -33,9 +37,10 @@ public class KernelDiagnosticsTest
     public void shouldPrintDiskUsage()
     {
         File databaseDir = Mockito.mock( File.class );
-        DatabaseLayout layout = DatabaseLayout.of( databaseDir );
-        Mockito.when( databaseDir.getTotalSpace() ).thenReturn( 100L );
-        Mockito.when( databaseDir.getFreeSpace() ).thenReturn( 40L );
+        DatabaseLayout layout = mock( DatabaseLayout.class );
+        when( layout.databaseDirectory() ).thenReturn( databaseDir );
+        when( databaseDir.getTotalSpace() ).thenReturn( 100L );
+        when( databaseDir.getFreeSpace() ).thenReturn( 40L );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
@@ -45,29 +50,31 @@ public class KernelDiagnosticsTest
     }
 
     @Test
-    public void shouldCountFileSizeRecursively()
+    public void shouldCountFileSizeRecursively() throws IOException
     {
         File indexFile = Mockito.mock( File.class );
-        Mockito.when( indexFile.isDirectory() ).thenReturn( false );
-        Mockito.when( indexFile.getName() ).thenReturn( "indexFile" );
-        Mockito.when( indexFile.length() ).thenReturn( 1024L );
+        when( indexFile.isDirectory() ).thenReturn( false );
+        when( indexFile.getName() ).thenReturn( "indexFile" );
+        when( indexFile.length() ).thenReturn( 1024L );
 
         File indexDir = Mockito.mock( File.class );
-        Mockito.when( indexDir.isDirectory() ).thenReturn( true );
-        Mockito.when( indexDir.listFiles()).thenReturn( new File[] {indexFile} );
-        Mockito.when( indexDir.getName() ).thenReturn( "indexDir" );
+        when( indexDir.isDirectory() ).thenReturn( true );
+        when( indexDir.listFiles()).thenReturn( new File[] {indexFile} );
+        when( indexDir.getName() ).thenReturn( "indexDir" );
 
         File dbFile = Mockito.mock( File.class );
-        Mockito.when( dbFile.isDirectory() ).thenReturn( false );
-        Mockito.when( dbFile.getName() ).thenReturn( "store" );
-        Mockito.when( dbFile.length() ).thenReturn( 3 * 1024L );
+        when( dbFile.isDirectory() ).thenReturn( false );
+        when( dbFile.getName() ).thenReturn( "store" );
+        when( dbFile.length() ).thenReturn( 3 * 1024L );
 
         File databaseDir = Mockito.mock( File.class );
-        DatabaseLayout layout = DatabaseLayout.of( databaseDir );
-        Mockito.when( databaseDir.isDirectory() ).thenReturn( true );
-        Mockito.when( databaseDir.listFiles()).thenReturn( new File[] {indexDir, dbFile} );
-        Mockito.when( databaseDir.getName() ).thenReturn( "storeDir" );
-        Mockito.when( databaseDir.getAbsolutePath() ).thenReturn( "/test/storeDir" );
+        DatabaseLayout layout = mock( DatabaseLayout.class );
+        when( layout.databaseDirectory() ).thenReturn( databaseDir );
+        when( layout.labelScanStore() ).thenReturn( dbFile );
+        when( databaseDir.isDirectory() ).thenReturn( true );
+        when( databaseDir.listFiles()).thenReturn( new File[] {indexDir, dbFile} );
+        when( databaseDir.getName() ).thenReturn( "storeDir" );
+        when( databaseDir.getAbsolutePath() ).thenReturn( "/test/storeDir" );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );

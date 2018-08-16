@@ -71,7 +71,7 @@ public final class Resources implements TestRule
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final ResourceRule<PageCache> pageCache = ResourceRule.pageCache( fs );
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
     private final LifeRule life = new LifeRule();
 
     @Override

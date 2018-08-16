@@ -21,11 +21,15 @@ package org.neo4j.io.layout;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.stream.Streams;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 
@@ -76,120 +80,112 @@ public class DatabaseLayout
 
     public File metadataStore()
     {
-        return file( DatabaseFile.METADATA_STORE );
+        return file( DatabaseFile.METADATA_STORE.getName() );
     }
 
     public File labelScanStore()
     {
-        return file( DatabaseFile.LABEL_SCAN_STORE );
+        return file( DatabaseFile.LABEL_SCAN_STORE.getName() );
     }
 
     public File countStoreA()
     {
-        return file( DatabaseFile.COUNTS_STORE_A );
+        return file( DatabaseFile.COUNTS_STORE_A.getName() );
     }
 
     public File countStoreB()
     {
-        return file( DatabaseFile.COUNTS_STORE_B );
+        return file( DatabaseFile.COUNTS_STORE_B.getName() );
     }
 
     public File propertyStringStore()
     {
-        return file( DatabaseFile.PROPERTY_STRING_STORE );
+        return file( DatabaseFile.PROPERTY_STRING_STORE.getName() );
     }
 
     public File relationshipStore()
     {
-        return file( DatabaseFile.RELATIONSHIP_STORE );
+        return file( DatabaseFile.RELATIONSHIP_STORE.getName() );
     }
 
     public File propertyStore()
     {
-        return file( DatabaseFile.PROPERTY_STORE );
+        return file( DatabaseFile.PROPERTY_STORE.getName() );
     }
 
     public File nodeStore()
     {
-        return file( DatabaseFile.NODE_STORE );
+        return file( DatabaseFile.NODE_STORE.getName() );
     }
 
     public File nodeLabelStore()
     {
-        return file( DatabaseFile.NODE_LABEL_STORE );
+        return file( DatabaseFile.NODE_LABEL_STORE.getName() );
     }
 
     public File propertyArrayStore()
     {
-        return file( DatabaseFile.PROPERTY_ARRAY_STORE );
+        return file( DatabaseFile.PROPERTY_ARRAY_STORE.getName() );
     }
 
     public File propertyKeyTokenStore()
     {
-        return file( DatabaseFile.PROPERTY_KEY_TOKEN_STORE );
+        return file( DatabaseFile.PROPERTY_KEY_TOKEN_STORE.getName() );
     }
 
     public File propertyKeyTokenNamesStore()
     {
-        return file( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+        return file( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE.getName() );
     }
 
     public File relationshipTypeTokenStore()
     {
-        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE );
+        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE.getName() );
     }
 
     public File relationshipTypeTokenNamesStore()
     {
-        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
+        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.getName() );
     }
 
     public File labelTokenStore()
     {
-        return file( DatabaseFile.LABEL_TOKEN_STORE );
+        return file( DatabaseFile.LABEL_TOKEN_STORE.getName() );
     }
 
     public File schemaStore()
     {
-        return file( DatabaseFile.SCHEMA_STORE );
+        return file( DatabaseFile.SCHEMA_STORE.getName() );
     }
 
     public File relationshipGroupStore()
     {
-        return file( DatabaseFile.RELATIONSHIP_GROUP_STORE );
+        return file( DatabaseFile.RELATIONSHIP_GROUP_STORE.getName() );
     }
 
     public File labelTokenNamesStore()
     {
-        return file( DatabaseFile.LABEL_TOKEN_NAMES_STORE );
+        return file( DatabaseFile.LABEL_TOKEN_NAMES_STORE.getName() );
     }
 
-    public List<File> idFiles()
+    public Set<File> idFiles()
     {
         return Arrays.stream( DatabaseFile.values() )
                      .filter( DatabaseFile::hasIdFile )
-                     .map( this::file )
-                     .collect( Collectors.toList() );
+                    .flatMap( value -> Streams.ofOptional( idFile( value ) ) )
+                     .collect( Collectors.toSet() );
     }
 
-    public List<File> storeFiles()
+    public Set<File> storeFiles()
     {
         return Arrays.stream( DatabaseFile.values() )
-                .filter( f -> !f.hasIdFile() )
-                .map( this::file )
-                .collect( Collectors.toList() );
+                .flatMap( this::file )
+                .collect( Collectors.toSet() );
     }
 
-    public List<File> listFiles()
+    public Optional<File> idFile( DatabaseFile file )
     {
-        ArrayList<File> files = new ArrayList<>( storeFiles() );
-        files.addAll( idFiles() );
-        return files;
-    }
-
-    public File idFile( DatabaseFile file )
-    {
-        return idFile( file.getName() );
+        return file.hasIdFile() ? Optional.of( idFile( file.getName() ) ) : Optional.empty();
     }
 
     public File file( String fileName )
@@ -197,9 +193,10 @@ public class DatabaseLayout
         return new File( databaseDirectory, fileName );
     }
 
-    public File file( DatabaseFile databaseFile )
+    public Stream<File> file( DatabaseFile databaseFile )
     {
-        return file( databaseFile.getName() );
+        Iterable<String> names = databaseFile.getNames();
+        return Iterables.stream( names ).map( this::file );
     }
 
     public File[] listDatabaseFiles( FilenameFilter filter )
@@ -216,77 +213,77 @@ public class DatabaseLayout
 
     public File idMetadataStore()
     {
-        return idFile( DatabaseFile.METADATA_STORE );
+        return idFile( DatabaseFile.METADATA_STORE.getName() );
     }
 
     public File idNodeStore()
     {
-        return idFile( DatabaseFile.NODE_STORE );
+        return idFile( DatabaseFile.NODE_STORE.getName() );
     }
 
     public File idNodeLabelStore()
     {
-        return idFile( DatabaseFile.NODE_LABEL_STORE );
+        return idFile( DatabaseFile.NODE_LABEL_STORE.getName() );
     }
 
     public File idPropertyStore()
     {
-        return idFile( DatabaseFile.PROPERTY_STORE );
+        return idFile( DatabaseFile.PROPERTY_STORE.getName() );
     }
 
     public File idPropertyKeyTokenStore()
     {
-        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_STORE );
+        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_STORE.getName() );
     }
 
     public File idPropertyKeyTokenNamesStore()
     {
-        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE.getName() );
     }
 
     public File idPropertyStringStore()
     {
-        return idFile( DatabaseFile.PROPERTY_STRING_STORE );
+        return idFile( DatabaseFile.PROPERTY_STRING_STORE.getName() );
     }
 
     public File idPropertyArrayStore()
     {
-        return idFile( DatabaseFile.PROPERTY_ARRAY_STORE );
+        return idFile( DatabaseFile.PROPERTY_ARRAY_STORE.getName() );
     }
 
     public File idRelationshipStore()
     {
-        return idFile( DatabaseFile.RELATIONSHIP_STORE );
+        return idFile( DatabaseFile.RELATIONSHIP_STORE.getName() );
     }
 
     public File idRelationshipGroupStore()
     {
-        return idFile( DatabaseFile.RELATIONSHIP_GROUP_STORE );
+        return idFile( DatabaseFile.RELATIONSHIP_GROUP_STORE.getName() );
     }
 
     public File idRelationshipTypeTokenStore()
     {
-        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE );
+        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE.getName() );
     }
 
     public File idRelationshipTypeTokenNamesStore()
     {
-        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
+        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.getName() );
     }
 
     public File idLabelTokenStore()
     {
-        return idFile( DatabaseFile.LABEL_TOKEN_STORE );
+        return idFile( DatabaseFile.LABEL_TOKEN_STORE.getName() );
     }
 
     public File idLabelTokenNamesStore()
     {
-        return idFile( DatabaseFile.LABEL_TOKEN_NAMES_STORE );
+        return idFile( DatabaseFile.LABEL_TOKEN_NAMES_STORE.getName() );
     }
 
     public File idSchemaStore()
     {
-        return idFile( DatabaseFile.SCHEMA_STORE );
+        return idFile( DatabaseFile.SCHEMA_STORE.getName() );
     }
 
     private File idFile( String name )

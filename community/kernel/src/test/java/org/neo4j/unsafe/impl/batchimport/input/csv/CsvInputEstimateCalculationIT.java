@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -168,7 +167,7 @@ public class CsvInputEstimateCalculationIT
 
     private long sizeOf( DatabaseFile file )
     {
-        return directory.databaseLayout().file( file ).length();
+        return directory.databaseLayout().file( file ).mapToLong( File::length ).sum();
     }
 
     private Input generateData() throws IOException

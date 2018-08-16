@@ -215,7 +215,7 @@ public class CommonAbstractStoreTest
         // GIVEN
         DatabaseLayout databaseLayout = dir.databaseLayout();
         File nodeStore = databaseLayout.nodeStore();
-        File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE );
+        File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
         FileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs, Config.defaults() );
         TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,

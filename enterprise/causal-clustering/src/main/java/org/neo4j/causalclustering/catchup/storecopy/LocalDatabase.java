@@ -24,7 +24,7 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.identity.StoreId;
@@ -185,7 +185,7 @@ public class LocalDatabase implements Lifecycle
 
     public boolean isEmpty() throws IOException
     {
-        List<File> filesToLookFor = databaseLayout.storeFiles();
+        Set<File> filesToLookFor = databaseLayout.storeFiles();
         return storeFiles.isEmpty( databaseLayout.databaseDirectory(), filesToLookFor );
     }
 

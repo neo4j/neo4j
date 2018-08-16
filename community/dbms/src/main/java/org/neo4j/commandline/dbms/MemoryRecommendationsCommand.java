@@ -31,6 +31,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
@@ -288,11 +289,8 @@ public class MemoryRecommendationsCommand implements AdminCommand
         {
             if ( type.isRecordStore() )
             {
-                File file = databaseLayout.file( type.getDatabaseFile() );
-                if ( outsideWorld.fileSystem().fileExists( file ) )
-                {
-                    total += outsideWorld.fileSystem().getFileSize( file );
-                }
+                FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
+                total += databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).mapToLong( fileSystem::getFileSize ).sum();
             }
         }
         return total;

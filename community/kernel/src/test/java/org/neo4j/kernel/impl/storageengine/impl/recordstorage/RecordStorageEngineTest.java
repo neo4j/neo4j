@@ -27,7 +27,6 @@ import org.mockito.ArgumentCaptor;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,6 +37,7 @@ import java.util.stream.Collectors;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -190,10 +190,14 @@ public class RecordStorageEngineTest
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
-        Set<File> actualFiles = files.stream().map( StoreFileMetadata::file ).collect( Collectors.toSet() );
-        List<File> expectedFiles = testDirectory.databaseLayout().listFiles();
+        Set<File> currentFiles = files.stream().map( StoreFileMetadata::file ).collect( Collectors.toSet() );
+        // current engine files should contain everything except another count store file and label scan store
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        Set<File> allPossibleFiles = databaseLayout.storeFiles();
+        allPossibleFiles.remove( databaseLayout.countStoreB() );
+        allPossibleFiles.remove( databaseLayout.labelScanStore() );
 
-        assertEquals( expectedFiles, actualFiles );
+        assertEquals( currentFiles, allPossibleFiles );
     }
 
     private RecordStorageEngine buildRecordStorageEngine()

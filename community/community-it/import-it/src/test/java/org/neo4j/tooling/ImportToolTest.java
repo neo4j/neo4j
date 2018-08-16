@@ -1309,7 +1309,7 @@ public class ImportToolTest
         {
             if ( storeType.isRecordStore() )
             {
-                dbRule.databaseLayout().file( storeType.getDatabaseFile() ).delete();
+                dbRule.databaseLayout().file( storeType.getDatabaseFile() ).forEach( File::delete );
             }
         }
     }
@@ -1941,7 +1941,7 @@ public class ImportToolTest
             {
                 if ( storeType.isRecordStore() )
                 {
-                    assertTrue( dbRule.databaseLayout().file( storeType.getDatabaseFile() ).exists() );
+                    dbRule.databaseLayout().file( storeType.getDatabaseFile() ).forEach( f -> assertTrue( f.exists() ) );
                 }
             }
 

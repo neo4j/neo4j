@@ -56,7 +56,7 @@ public class StoreFactoryTest
 {
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory(fsRule);
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory ).around( pageCacheRule );

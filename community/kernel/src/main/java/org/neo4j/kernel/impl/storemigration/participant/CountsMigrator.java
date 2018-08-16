@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration.participant;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
@@ -124,7 +123,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
         if ( migrated )
         {
             // Delete any current count files in the store directory.
-            fileOperation( DELETE, fileSystem, directoryStructure, null, COUNTS_STORE_FILES, true, null );
+            fileOperation( DELETE, fileSystem, directoryStructure, directoryStructure, COUNTS_STORE_FILES, true, null );
             // Move the migrated ones into the store directory
             fileOperation( MOVE, fileSystem, migrationStructure, directoryStructure, COUNTS_STORE_FILES, true,
                     // allow to skip non existent source files

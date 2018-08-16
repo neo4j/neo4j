@@ -29,7 +29,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Resource;
@@ -58,6 +58,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.kernel.impl.index.IndexConfigStore.INDEX_DB_FILE_NAME;
 
 public class NeoStoreFileListingTest
 {
@@ -126,11 +127,12 @@ public class NeoStoreFileListingTest
         IndexingService indexingService = mock( IndexingService.class );
         ExplicitIndexProvider explicitIndexes = mock( ExplicitIndexProvider.class );
         when( explicitIndexes.allIndexProviders() ).thenReturn( Collections.emptyList() );
-        DatabaseLayout storeDir = mock( DatabaseLayout.class );
+        DatabaseLayout databaseLayout = mock( DatabaseLayout.class );
+        when( databaseLayout.metadataStore() ).thenReturn( mock( File.class ) );
         LogFiles logFiles = mock( LogFiles.class );
-        filesInStoreDirAre( storeDir, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
+        filesInStoreDirAre( databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
-        NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, logFiles, labelScanStore,
+        NeoStoreFileListing fileListing = new NeoStoreFileListing( databaseLayout, logFiles, labelScanStore,
                 indexingService, explicitIndexes, storageEngine );
 
         ResourceIterator<File> scanSnapshot = scanStoreFilesAre( labelScanStore,
@@ -194,11 +196,15 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldListNeostoreFiles() throws Exception
     {
-        List<File> expectedFiles = neoStoreDataSource.getDatabaseLayout().storeFiles();
+        DatabaseLayout layout = neoStoreDataSource.getDatabaseLayout();
+        Set<File> expectedFiles = layout.storeFiles();
+        // there was no rotation
+        expectedFiles.remove( layout.countStoreB() );
         ResourceIterator<StoreFileMetadata> storeFiles = neoStoreDataSource.listStoreFiles( false );
-        List<File> listedStoreFiles = storeFiles.stream()
+        Set<File> listedStoreFiles = storeFiles.stream()
                 .map( StoreFileMetadata::file )
-                .collect( Collectors.toList() );
+                .filter( file -> !file.getName().equals( INDEX_DB_FILE_NAME ) )
+                .collect( Collectors.toSet() );
         assertEquals( expectedFiles, listedStoreFiles );
     }
 

@@ -27,7 +27,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
+import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -124,7 +124,7 @@ public class StoreFiles
         }
     }
 
-    public boolean isEmpty( File storeDir, List<File> filesToLookFor ) throws IOException
+    public boolean isEmpty( File storeDir, Collection<File> filesToLookFor ) throws IOException
     {
         // 'files' can be null if the directory doesn't exist. This is fine, we just ignore it then.
         File[] files = fs.listFiles( storeDir, fileFilter );
