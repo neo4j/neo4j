@@ -1112,6 +1112,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             ValueTuple values = entry.getKey();
             PrimitiveLongDiffSets diffForSpecificValue = entry.getValue();
             // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
+            // TODO: If the composite index starts to be able to handle spatial types the line below needs enhancement
             if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
             {
                 diffs.addAll( diffForSpecificValue.getAdded().iterator() );
