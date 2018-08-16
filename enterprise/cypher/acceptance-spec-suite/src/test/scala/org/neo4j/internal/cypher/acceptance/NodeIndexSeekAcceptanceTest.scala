@@ -338,6 +338,37 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     result should useOperationTimes("NodeUniqueIndexSeek", 1)
   }
 
+  test("should not return any rows for or predicates with different labels gh#12017") {
+    // Given
+    graph.createIndex("Label1", "prop1")
+    graph.createIndex("Label2", "prop2")
+    graph.execute("CREATE(:Label1 {prop1: 'val'})" )
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")
+
+    // Then
+    result.toList should be (empty)
+    result should useOperationTimes("NodeIndexSeek", 2)
+    result should useOperationTimes("Filter", 1)
+  }
+
+  test("should be able to solve or predicates with same label without filter") {
+    // Given
+    graph.createIndex("Label1", "prop1")
+    graph.createIndex("Label1", "prop2")
+    val node1 = createLabeledNode(Map("prop1" -> "val"), "Label1")
+    val node2 = createLabeledNode(Map("prop2" -> "anotherVal"), "Label1")
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Label1) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")
+
+    // Then
+    result.toList should equal(List(Map("n" -> node1)))
+    result should useOperationTimes("NodeIndexSeek", 2)
+    result should useOperationTimes("Filter", 0)
+  }
+
   private def setUpDatabaseForTests() {
     updateWithBothPlannersAndCompatibilityMode(
       """CREATE (architect:Matrix { name:'The Architect' }),
