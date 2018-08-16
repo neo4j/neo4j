@@ -41,12 +41,14 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  */
 class CrashGenerationCleaner
 {
+    static final long MIN_BATCH_SIZE = 10;
+    static final long MAX_BATCH_SIZE = 1000;
     private final PagedFile pagedFile;
     private final TreeNode<?,?> treeNode;
     private final long lowTreeNodeId;
     private final long highTreeNodeId;
-    private final int availableProcessors;
-    private final long batchSize;
+    private int threads;
+    private long batchSize;
     private final long stableGeneration;
     private final long unstableGeneration;
     private final Monitor monitor;
@@ -59,13 +61,25 @@ class CrashGenerationCleaner
         this.treeNode = treeNode;
         this.lowTreeNodeId = lowTreeNodeId;
         this.highTreeNodeId = highTreeNodeId;
-        this.availableProcessors = Runtime.getRuntime().availableProcessors();
-        this.batchSize = // Each processor will get roughly 100 batches each
-                min( 1000, max( 10, (highTreeNodeId - lowTreeNodeId) / (100 * availableProcessors) ) );
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
         this.internalMaxKeyCount = treeNode.internalMaxKeyCount();
+        long pagesToClean = highTreeNodeId - lowTreeNodeId;
+        this.threads = threads( pagesToClean, Runtime.getRuntime().availableProcessors() );
+        this.batchSize = batchSize( pagesToClean, threads );
+    }
+
+    static int threads( long pagesToClean, long availableProcessors )
+    {
+        // Thread count at most equal to availableProcessors, at least one and each thread should have at least one batch of work
+        return (int) min( availableProcessors, max( 1, pagesToClean / MIN_BATCH_SIZE ) );
+    }
+
+    static long batchSize( long pagesToClean, int threads )
+    {
+        // Batch size at most maxBatchSize, at least minBatchSize and trying to give each thread 100 batches each
+        return min( MAX_BATCH_SIZE, max( MIN_BATCH_SIZE, pagesToClean / (100 * threads) ) );
     }
 
     // === Methods about the execution and threading ===
@@ -77,7 +91,6 @@ class CrashGenerationCleaner
         assert unstableGeneration - stableGeneration > 1 : unexpectedGenerations();
 
         long startTime = currentTimeMillis();
-        int threads = availableProcessors;
         ExecutorService executor = Executors.newFixedThreadPool( threads );
         AtomicLong nextId = new AtomicLong( lowTreeNodeId );
         AtomicReference<Throwable> error = new AtomicReference<>();
