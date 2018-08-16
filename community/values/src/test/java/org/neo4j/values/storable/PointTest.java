@@ -177,18 +177,18 @@ class PointTest
                 pointValue( Cartesian, 1, 2 ).withinRange( null, false, pointValue( Cartesian, 2, 1 ), true ), equalTo( null ) );
 
         // Lower and upper bounds
-        assertThat( "Not within same bounds if inclusive on lower", pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), false ),
-                equalTo( false ) );
-        assertThat( "Not within same bounds if inclusive on upper", pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), false, pointValue( Cartesian, 1, 2 ), true ),
-                equalTo( false ) );
-        assertThat( "Within same bounds if inclusive on both", pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), true ),
-                equalTo( true ) );
+        assertThat( "Not within same bounds if inclusive on lower",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), false ), equalTo( false ) );
+        assertThat( "Not within same bounds if inclusive on upper",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), false, pointValue( Cartesian, 1, 2 ), true ), equalTo( false ) );
+        assertThat( "Within same bounds if inclusive on both",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), true ), equalTo( true ) );
         assertThat( "Not within same bounds if not inclusive",
                 pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), false, pointValue( Cartesian, 1, 2 ), false ), equalTo( false ) );
-        assertThat( "Within smaller lower bound if inclusive", pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 0, 1 ), true, pointValue( Cartesian, 1, 2 ), true ),
-                equalTo( true ) );
-        assertThat( "Within smaller lower bound if inclusive on upper", pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 0, 1 ), false, pointValue( Cartesian, 1, 2 ), true ),
-                equalTo( true ) );
+        assertThat( "Within smaller lower bound if inclusive",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 0, 1 ), true, pointValue( Cartesian, 1, 2 ), true ), equalTo( true ) );
+        assertThat( "Within smaller lower bound if inclusive on upper",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 0, 1 ), false, pointValue( Cartesian, 1, 2 ), true ), equalTo( true ) );
         assertThat( "Not within smaller lower bound if not inclusive",
                 pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 0, 1 ), false, pointValue( Cartesian, 1, 2 ), false ), equalTo( false ) );
         assertThat( "Within partially smaller lower bound if inclusive",
