@@ -7,7 +7,6 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Caffeine cache
   ConcurrentLinkedHashMap
-  FindBugs-jsr305
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
