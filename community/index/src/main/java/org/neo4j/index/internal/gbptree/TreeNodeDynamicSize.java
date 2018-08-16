@@ -130,7 +130,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     KEY keyAt( PageCursor cursor, KEY into, int pos, Type type )
     {
         placeCursorAtActualKey( cursor, pos, type );
-        int offset = cursor.getOffset();
 
         // Read key
         long keyValueSize = readKeyValueSize( cursor );
@@ -149,7 +148,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos )
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
-        int offset = cursor.getOffset();
 
         long keyValueSize = readKeyValueSize( cursor );
         int keySize = extractKeySize( keyValueSize );
@@ -638,7 +636,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         // Find middle
         int keyCountAfterInsert = leftKeyCount + 1;
-        int middlePos = middleLeaf( leftCursor, insertPos, newKey, newValue, keyCountAfterInsert );
+        int middlePos = middlePosInLeaf( leftCursor, insertPos, newKey, newValue, keyCountAfterInsert );
 
         if ( middlePos == insertPos )
         {
@@ -1018,38 +1016,69 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return middle;
     }
 
-    private int middleLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue, int keyCountAfterInsert )
+    /**
+     * Calculates a valid and as optimal as possible position where to split a leaf if inserting a key overflows.
+     * There are a couple of goals/conditions which drives the search for it:
+     * <ul>
+     *     <li>The returned position will be one where the keys ending up in the left and right leaves respectively are guaranteed to fit.</li>
+     *     <li>Out of those possible positions the one which is closest to the "halfSpace" of a leaf will be selected</li>
+     * </ul>
+     *
+     * @param cursor {@link PageCursor} to use for reading sizes of existing entries.
+     * @param insertPos the pos which the new key will be inserted at.
+     * @param newKey key to be inserted.
+     * @param newValue value to be inserted.
+     * @param keyCountAfterInsert key count including the new key.
+     * @return the pos where to split.
+     */
+    private int middlePosInLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue, int keyCountAfterInsert )
     {
         int halfSpace = this.halfSpace;
         int middle = 0;
         int currentPos = 0;
-        int middleSpace = 0;
+        int accumulatedSpace = 0;
         int currentDelta = halfSpace;
         int prevDelta;
+        int spaceOfNewKey = totalSpaceOfKeyValue( newKey, newValue );
+        int totalSpaceIncludingNewKey = totalActiveSpace( cursor, keyCountAfterInsert - 1 ) + spaceOfNewKey;
         boolean includedNew = false;
+        boolean prevPosPossible;
+
+        if ( totalSpaceIncludingNewKey > totalSpace * 2 )
+        {
+            throw new IllegalStateException(
+                    format( "There's not enough space to insert new key, even when splitting the leaf. Space needed:%d, max space allowed:%d",
+                            totalSpaceIncludingNewKey, totalSpace * 2 ) );
+        }
 
         do
         {
+            prevPosPossible = totalSpaceIncludingNewKey - accumulatedSpace <= totalSpace;
+
             // We may come closer to split by keeping one more in left
-            int space;
+            int currentSpace;
             if ( currentPos == insertPos & !includedNew )
             {
-                space = totalSpaceOfKeyValue( newKey, newValue );
+                currentSpace = spaceOfNewKey;
                 includedNew = true;
                 currentPos--;
             }
             else
             {
-                space = totalSpaceOfKeyValue( cursor, currentPos );
+                currentSpace = totalSpaceOfKeyValue( cursor, currentPos );
             }
-            middleSpace += space;
+            accumulatedSpace += currentSpace;
             prevDelta = currentDelta;
-            currentDelta = Math.abs( middleSpace - halfSpace );
+            currentDelta = Math.abs( accumulatedSpace - halfSpace );
             currentPos++;
             middle++;
         }
         while ( currentDelta < prevDelta && currentPos < keyCountAfterInsert );
-        middle--; // Step back to the pos that most equally divide the available space in two
+        // If previous position is possible then step back one pos since it divides the space most equally
+        if ( prevPosPossible )
+        {
+            middle--;
+        }
         return middle;
     }
 

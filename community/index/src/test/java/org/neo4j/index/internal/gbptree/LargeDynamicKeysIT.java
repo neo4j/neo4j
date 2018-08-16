@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +39,8 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.test.Randoms.CSA_LETTERS_AND_DIGITS;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -54,7 +55,7 @@ public class LargeDynamicKeysIT
     @Test
     public void mustStayCorrectWhenInsertingValuesOfIncreasingLength() throws IOException
     {
-        Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout();
+        Layout<RawBytes,RawBytes> layout = layout();
         try ( GBPTree<RawBytes,RawBytes> index = createIndex( layout );
               Writer<RawBytes,RawBytes> writer = index.writer() )
         {
@@ -70,30 +71,60 @@ public class LargeDynamicKeysIT
     }
 
     @Test
-    public void shouldWriteAndReadKeysOfSizesCloseToTheLimits() throws IOException
+    public void shouldWriteAndReadSmallToSemiLargeEntries() throws IOException
+    {
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( PAGE_SIZE );
+        int minValueSize = 0;
+        int maxValueSize = random.nextInt( 200 );
+        int minKeySize = 4;
+        int maxKeySize = keyValueSizeCap / 5;
+        shouldWriteAndReadEntriesOfRandomSizes( minKeySize, maxKeySize, minValueSize, maxValueSize );
+    }
+
+    @Test
+    public void shouldWriteAndReadSmallToLargeEntries() throws IOException
+    {
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( PAGE_SIZE );
+        int minValueSize = 0;
+        int maxValueSize = random.nextInt( 200 );
+        int minKeySize = 4;
+        int maxKeySize = keyValueSizeCap - maxValueSize;
+        shouldWriteAndReadEntriesOfRandomSizes( minKeySize, maxKeySize, minValueSize, maxValueSize );
+    }
+
+    @Test
+    public void shouldWriteAndReadSemiLargeToLargeEntries() throws IOException
+    {
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( PAGE_SIZE );
+        int minValueSize = 0;
+        int maxValueSize = random.nextInt( 200 );
+        int minKeySize = keyValueSizeCap / 5;
+        int maxKeySize = keyValueSizeCap - maxValueSize;
+        shouldWriteAndReadEntriesOfRandomSizes( minKeySize, maxKeySize, minValueSize, maxValueSize );
+    }
+
+    private void shouldWriteAndReadEntriesOfRandomSizes( int minKeySize, int maxKeySize, int minValueSize, int maxValueSize ) throws IOException
     {
         // given
-        try ( GBPTree<RawBytes,RawBytes> tree = createIndex( new SimpleByteArrayLayout() ) )
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex( layout() ) )
         {
             // when
             Set<String> generatedStrings = new HashSet<>();
             List<Pair<RawBytes,RawBytes>> entries = new ArrayList<>();
-            int keyValueSizeCap = tree.keyValueSizeCap();
             try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
             {
                 for ( int i = 0; i < 1_000; i++ )
                 {
                     // value, based on i
                     RawBytes value = new RawBytes();
-                    value.bytes = new byte[Integer.BYTES];
-                    ByteBuffer.wrap( value.bytes ).putInt( i );
+                    value.bytes = new byte[random.nextInt( minValueSize, maxValueSize )];
+                    random.nextBytes( value.bytes );
 
                     // key, randomly generated
                     String string;
                     do
                     {
-                        int keySizeCap = keyValueSizeCap - value.bytes.length;
-                        string = random.string( keySizeCap - 1000, keySizeCap, CSA_LETTERS_AND_DIGITS );
+                        string = random.string( minKeySize, maxKeySize, CSA_LETTERS_AND_DIGITS );
                     }
                     while ( !generatedStrings.add( string ) );
                     RawBytes key = new RawBytes();
@@ -117,6 +148,11 @@ public class LargeDynamicKeysIT
                 }
             }
         }
+    }
+
+    private SimpleByteArrayLayout layout()
+    {
+        return new SimpleByteArrayLayout( false );
     }
 
     private GBPTree<RawBytes,RawBytes> createIndex( Layout<RawBytes,RawBytes> layout ) throws IOException
