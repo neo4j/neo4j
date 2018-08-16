@@ -150,7 +150,7 @@ class TxStateIndexChangesTest
                 nodeWithPropertyValues( 45L, 530 ),
                 nodeWithPropertyValues( 47L, 540 )
         ) );
-        tests.add( rangeTest( state, NO_VALUE, false, Values.of( 550 ), true,
+        tests.add( rangeTest( state, null, false, Values.of( 550 ), true,
                 nodeWithPropertyValues( 42L, 500 ),
                 nodeWithPropertyValues( 43L, 510 ),
                 nodeWithPropertyValues( 44L, 520 ),
@@ -158,7 +158,7 @@ class TxStateIndexChangesTest
                 nodeWithPropertyValues( 47L, 540 ),
                 nodeWithPropertyValues( 48L, 550 )
         ) );
-        tests.add( rangeTest( state, NO_VALUE, true, Values.of( 550 ), true,
+        tests.add( rangeTest( state, null, true, Values.of( 550 ), true,
                 nodeWithPropertyValues( 42L, 500 ),
                 nodeWithPropertyValues( 43L, 510 ),
                 nodeWithPropertyValues( 44L, 520 ),
@@ -166,44 +166,35 @@ class TxStateIndexChangesTest
                 nodeWithPropertyValues( 47L, 540 ),
                 nodeWithPropertyValues( 48L, 550 )
         ) );
-        tests.add( rangeTest( state, NO_VALUE, false, Values.of( 550 ), false,
+        tests.add( rangeTest( state, null, false, Values.of( 550 ), false,
                 nodeWithPropertyValues( 42L, 500 ),
                 nodeWithPropertyValues( 43L, 510 ),
                 nodeWithPropertyValues( 44L, 520 ),
                 nodeWithPropertyValues( 45L, 530 ),
                 nodeWithPropertyValues( 47L, 540 )
         ) );
-        tests.add( rangeTest( state, NO_VALUE, true, Values.of( 550 ), false,
+        tests.add( rangeTest( state, null, true, Values.of( 550 ), false,
                 nodeWithPropertyValues( 42L, 500 ),
                 nodeWithPropertyValues( 43L, 510 ),
                 nodeWithPropertyValues( 44L, 520 ),
                 nodeWithPropertyValues( 45L, 530 ),
                 nodeWithPropertyValues( 47L, 540 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), true, NO_VALUE, true,
+        tests.add( rangeTest( state, Values.of( 540 ), true, null, true,
                 nodeWithPropertyValues( 47L, 540 ),
                 nodeWithPropertyValues( 48L, 550 ),
                 nodeWithPropertyValues( 49L, 560 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), true, NO_VALUE, false,
+        tests.add( rangeTest( state, Values.of( 540 ), true, null, false,
                 nodeWithPropertyValues( 47L, 540 ),
                 nodeWithPropertyValues( 48L, 550 ),
                 nodeWithPropertyValues( 49L, 560 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), false, NO_VALUE, true,
+        tests.add( rangeTest( state, Values.of( 540 ), false, null, true,
                 nodeWithPropertyValues( 48L, 550 ),
                 nodeWithPropertyValues( 49L, 560 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), false, NO_VALUE, false,
-                nodeWithPropertyValues( 48L, 550 ),
-                nodeWithPropertyValues( 49L, 560 )
-        ) );
-        tests.add( rangeTest( state, NO_VALUE, true, NO_VALUE, true,
-                nodeWithPropertyValues( 42L, 500 ),
-                nodeWithPropertyValues( 43L, 510 ),
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 ),
+        tests.add( rangeTest( state, Values.of( 540 ), false, null, false,
                 nodeWithPropertyValues( 48L, 550 ),
                 nodeWithPropertyValues( 49L, 560 )
         ) );
@@ -217,6 +208,9 @@ class TxStateIndexChangesTest
     {
         return DynamicTest.dynamicTest( String.format( "range seek: lo=%s (incl: %s), hi=%s (incl: %s)", lo, includeLo, hi, includeHi ), () ->
         {
+            // Internal production code relies on null for unbounded, and cannot cope with NO_VALUE in this case
+            assert lo != NO_VALUE;
+            assert hi != NO_VALUE;
             final LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
             final ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
                     TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
@@ -225,6 +219,15 @@ class TxStateIndexChangesTest
             assertEquals( expectedNodeIds, diffSets.getAdded() );
             assertEquals( UnifiedSet.newSetWith( expected ), diffSets2.getAdded() );
         } );
+    }
+
+    private static Value nullify( Value value )
+    {
+        if ( value == NO_VALUE )
+        {
+            return null;
+        }
+        return value;
     }
 
     @Nested
