@@ -69,7 +69,7 @@ public class GenericIndexKeyValidatorTest
         // given
         Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
         when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3 ) );
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 50, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, layout );
 
         // when
         try
