@@ -233,8 +233,7 @@ public final class CypherBoolean
         }
         else if ( lhs instanceof PointValue && rhs instanceof PointValue )
         {
-            // The ternary comparator cannot handle the '='  part of the >= and <= cases, so we need to switch to the within function
-            return ((PointValue) lhs).withinRange( null, false, (PointValue) rhs, true ) ? TRUE : FALSE;
+            return lessThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
         }
         else if ( lhs instanceof DateValue && rhs instanceof DateValue )
         {
@@ -330,8 +329,7 @@ public final class CypherBoolean
         }
         else if ( lhs instanceof PointValue && rhs instanceof PointValue )
         {
-            // The ternary comparator cannot handle the '='  part of the >= and <= cases, so we need to switch to the within function
-            return ((PointValue) lhs).withinRange( (PointValue) rhs, true, null, false ) ? TRUE : FALSE;
+            return greaterThanOrEqual( AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs ) );
         }
         else if ( lhs instanceof DateValue && rhs instanceof DateValue )
         {
@@ -368,8 +366,10 @@ public final class CypherBoolean
     {
         switch ( comparison )
         {
+        case GREATER_THAN_AND_EQUAL:
         case GREATER_THAN:
         case EQUAL:
+        case SMALLER_THAN_AND_EQUAL:
             return FALSE;
         case SMALLER_THAN:
             return TRUE;
@@ -384,9 +384,11 @@ public final class CypherBoolean
     {
         switch ( comparison )
         {
+        case GREATER_THAN_AND_EQUAL:
         case GREATER_THAN:
             return FALSE;
         case EQUAL:
+        case SMALLER_THAN_AND_EQUAL:
         case SMALLER_THAN:
             return TRUE;
         case UNDEFINED:
@@ -400,9 +402,11 @@ public final class CypherBoolean
     {
         switch ( comparison )
         {
+        case GREATER_THAN_AND_EQUAL:
         case GREATER_THAN:
         case EQUAL:
             return TRUE;
+        case SMALLER_THAN_AND_EQUAL:
         case SMALLER_THAN:
             return FALSE;
         case UNDEFINED:
@@ -418,7 +422,9 @@ public final class CypherBoolean
         {
         case GREATER_THAN:
             return TRUE;
+        case GREATER_THAN_AND_EQUAL:
         case EQUAL:
+        case SMALLER_THAN_AND_EQUAL:
         case SMALLER_THAN:
             return FALSE;
         case UNDEFINED:

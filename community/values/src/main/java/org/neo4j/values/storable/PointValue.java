@@ -158,7 +158,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     }
 
     @Override
-    Comparison unsafeTernaryCompareTo( Value otherValue )
+    public Comparison unsafeTernaryCompareTo( Value otherValue )
     {
         PointValue other = (PointValue) otherValue;
 
