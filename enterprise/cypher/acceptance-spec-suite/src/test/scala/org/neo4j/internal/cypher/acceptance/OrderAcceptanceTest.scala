@@ -25,6 +25,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
+// TODO this should actually be a PlanningIntegrationTest, or it should have some assertions on the results
 class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   override def beforeEach(): Unit = {
