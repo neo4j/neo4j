@@ -192,7 +192,9 @@ class TxStateIndexChanges
         {
             ValueTuple values = entry.getKey();
             LongDiffSets diffForSpecificValue = entry.getValue();
+
             // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
+            // TODO: If the composite index starts to be able to handle spatial types the line below needs enhancement
             if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
             {
                 diffs.addAll( diffForSpecificValue.getAdded() );
@@ -256,6 +258,7 @@ class TxStateIndexChanges
             LongDiffSets diffForSpecificValue = entry.getValue();
 
             // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
+            // TODO: If the composite index starts to be able to handle spatial types the line below needs enhancement
             if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
             {
                 diffForSpecificValue.getAdded().each( nodeId -> diffs.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );

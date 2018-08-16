@@ -451,6 +451,7 @@ public abstract class IndexQuery
          * The order defined for spatial types cannot be used for bounds comparisons.
          * @return false
          */
+        @Override
         public boolean isRegularOrder()
         {
             return false;
