@@ -578,9 +578,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
     //slotted operations
     case ReferenceFromSlot(offset, name) =>
-//      Some(IntermediateExpression(getRefAt(offset), Seq.empty, Seq.empty,
-//                                  slots.get(name).filter(_.nullable).map(_ => equal(getRefAt(offset), noValue)).toSet))
-
       val localName = namer.variableName(name)
       val nullCheck = slots.get(name).filter(_.nullable).map(_ => equal(getRefAt(offset), noValue))
       val localVariable = variable[AnyValue](localName, nullCheck.map(c => ternary(c, noValue, getRefAt(offset))).getOrElse(getRefAt(offset)))
@@ -588,9 +585,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       Some(IntermediateExpression(load(localName), Seq.empty, Seq(localVariable), Set(equal(load(localName), noValue))))
 
     case IdFromSlot(offset) =>
-      val name = slots.nameAtOffset(offset).get
-      val localName = namer.variableName(name)
-      val nullCheck = slots.get(name).filter(_.nullable).map(_ => equal(getLongAt(offset), constant(-1L)))
+      val localName = slots.nameOfLongSlot(offset).map(namer.variableName).getOrElse(namer.nextVariableName())
+      val nullCheck = slots.get(localName).filter(_.nullable).map(_ => equal(getLongAt(offset), constant(-1L)))
       val value = invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset))
       val localVariable = variable[AnyValue](localName, nullCheck.map(c => ternary(c, noValue, value)).getOrElse(value))
 

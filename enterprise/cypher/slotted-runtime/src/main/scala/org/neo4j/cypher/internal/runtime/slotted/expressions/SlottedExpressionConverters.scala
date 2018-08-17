@@ -32,8 +32,7 @@ case class SlottedExpressionConverters(slots: SlotConfiguration) extends Express
 
   override def toCommandProjection(projections: Map[String, Expression],
                                    self: ExpressionConverters): Option[CommandProjection] = {
-    val projected = for {(k, v) <- projections
-                                    if slots.refSlotAndNotAlias(k)} yield slots.get(k).get.offset -> self.toCommandExpression(v)
+    val projected = for {(k, v) <- projections} yield slots.get(k).get.offset -> self.toCommandExpression(v)
     Some(SlottedCommandProjection(projected))
   }
 

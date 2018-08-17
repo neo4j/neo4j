@@ -442,7 +442,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a property container", container ), null );
+            throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", container.toString() ), null );
         }
     }
 

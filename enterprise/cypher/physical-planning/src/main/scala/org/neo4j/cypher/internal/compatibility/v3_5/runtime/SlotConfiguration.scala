@@ -183,8 +183,8 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
 
   def apply(key: String): Slot = slots.apply(key)
 
-  def nameAtOffset(offset: Int): Option[String] = slots.collectFirst {
-    case (name, s) if s.offset == offset && !aliases(name) => name
+  def nameOfLongSlot(offset: Int): Option[String] = slots.collectFirst {
+    case (name, LongSlot(o, _, _)) if o == offset && !aliases(name) => name
   }
 
   def get(key: String): Option[Slot] = slots.get(key)
@@ -193,8 +193,6 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     case LongSlot(_, nullable, typ) => newLong(key, nullable, typ)
     case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)
   }
-
-  def refSlotAndNotAlias(k: String): Boolean = !isAlias(k) && get(k).forall(_.isInstanceOf[RefSlot])
 
   def copy(): SlotConfiguration = {
     val newPipeline = new SlotConfiguration(this.slots.clone(), numberOfLongs, numberOfReferences)

@@ -182,7 +182,7 @@ object CodeGeneration {
 
     //run multiple ops in a block, the value of the block is the last expression
     case Block(ops) =>
-      ops.map(compileExpression(_, block)).last
+      if (ops.isEmpty) Expression.EMPTY else ops.map(compileExpression(_, block)).last
 
     //if (test) {onTrue}
     case Condition(test, onTrue) =>

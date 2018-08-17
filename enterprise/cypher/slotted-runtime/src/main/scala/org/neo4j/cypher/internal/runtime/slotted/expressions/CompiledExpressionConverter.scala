@@ -59,13 +59,11 @@ class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends Ex
                                    self: ExpressionConverters): Option[CommandProjection] = {
     try {
       val compiler = new IntermediateCodeGeneration(slots)
-      val projected = for {(k, v) <- projections
-                           if slots.refSlotAndNotAlias(k)
-                           compiled <- compiler.compileExpression(v)}
-        yield slots.get(k).get.offset -> compiled
+      val compiled = for {(k, v) <- projections
+                          c <- compiler.compileExpression(v)} yield slots.get(k).get.offset -> c
 
-      if (projected.size < projections.size) None
-      else Some(CompileWrappingProjection(CodeGeneration.compileProjection(compiler.compileProjection(projected)), projections.isEmpty))
+      if (compiled.size < projections.size) None
+      else Some(CompileWrappingProjection(CodeGeneration.compileProjection(compiler.compileProjection(compiled)), projections.isEmpty))
     }
     catch {
       case t: Throwable =>
