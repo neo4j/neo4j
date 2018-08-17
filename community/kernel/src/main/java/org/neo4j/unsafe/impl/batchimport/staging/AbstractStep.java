@@ -73,7 +73,6 @@ public abstract class AbstractStep<T> implements Step<T>
     protected long startTime;
     protected long endTime;
     protected final List<StatsProvider> additionalStatsProvider;
-    protected final Runnable healthChecker = this::assertHealthy;
     protected final Configuration config;
 
     public AbstractStep( StageControl control, String name, Configuration config,

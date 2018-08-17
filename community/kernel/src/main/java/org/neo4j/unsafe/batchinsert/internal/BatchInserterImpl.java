@@ -1077,11 +1077,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return this.indexStore;
     }
 
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return idGeneratorFactory;
-    }
-
     private static void dumpConfiguration( Map<String,String> config, PrintStream out )
     {
         for ( Entry<String,String> entry : config.entrySet() )

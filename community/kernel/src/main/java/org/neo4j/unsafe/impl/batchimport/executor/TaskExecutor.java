@@ -48,11 +48,6 @@ public interface TaskExecutor<LOCAL> extends Parallelizable, AutoCloseable, Pani
     void close();
 
     /**
-     * @return {@code true} if {@link #close()} has been called, otherwise {@code false}.
-     */
-    boolean isClosed();
-
-    /**
      * Asserts that this {@link TaskExecutor} is healthy. Useful to call when deciding to wait on a condition
      * this executor is expected to fulfill.
      *

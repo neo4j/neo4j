@@ -59,11 +59,11 @@ public class ExecutionSupervisors
      * @param config {@link Configuration} of the import.
      * @param stage {@link Stage} to supervise.
      *
-     * @see #superviseExecution(ExecutionMonitor, Configuration, Stage)
+     * @see #superviseExecution(ExecutionMonitor, Stage)
      */
     public static void superviseDynamicExecution( ExecutionMonitor monitor, Configuration config, Stage stage )
     {
-        superviseExecution( withDynamicProcessorAssignment( monitor, config ), config, stage );
+        superviseExecution( withDynamicProcessorAssignment( monitor, config ), stage );
     }
 
     /**
@@ -71,10 +71,9 @@ public class ExecutionSupervisors
      * execution.
      *
      * @param monitor {@link ExecutionMonitor} to get insight into the execution.
-     * @param config {@link Configuration} for the execution.
      * @param stage {@link Stage stages} to execute.
      */
-    public static void superviseExecution( ExecutionMonitor monitor, Configuration config, Stage stage )
+    public static void superviseExecution( ExecutionMonitor monitor, Stage stage )
     {
         ExecutionSupervisor supervisor = new ExecutionSupervisor( Clocks.systemClock(), monitor );
         StageExecution execution = null;

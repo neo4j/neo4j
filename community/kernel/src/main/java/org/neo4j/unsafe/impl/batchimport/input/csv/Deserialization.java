@@ -31,12 +31,6 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
  */
 public interface Deserialization<ENTITY>
 {
-    /**
-     * Called before any other call. Introduced to reduce complexity in error handling where too
-     * much happened in constructors and so resources weren't even assigned when error struck and
-     * cleanup would be tricky and involve duplication.
-     */
-    void initialize();
 
     /**
      * Handles one value of a type described by the {@code entry}. One or more values will be able to

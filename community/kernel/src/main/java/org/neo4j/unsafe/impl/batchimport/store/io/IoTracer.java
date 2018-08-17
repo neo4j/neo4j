@@ -25,6 +25,4 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
 public interface IoTracer
 {
     long countBytesWritten();
-
-    IoTracer NONE = () -> 0;
 }

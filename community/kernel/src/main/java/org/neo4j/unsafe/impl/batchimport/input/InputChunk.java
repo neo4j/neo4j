@@ -28,19 +28,6 @@ import java.io.IOException;
  */
 public interface InputChunk extends Closeable
 {
-    InputChunk EMPTY = new InputChunk()
-    {
-        @Override
-        public boolean next( InputEntityVisitor visitor )
-        {
-            return false;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
 
     boolean next( InputEntityVisitor visitor ) throws IOException;
 }

@@ -102,11 +102,6 @@ public class LongBitsManipulator
         return slots;
     }
 
-    public int slots()
-    {
-        return slots.length;
-    }
-
     public long set( long field, int slotIndex, long value )
     {
         return slot( slotIndex ).set( field, value );

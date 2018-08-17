@@ -37,7 +37,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
-
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
  * and then a function for generating the nodes and another for generating the relationships.

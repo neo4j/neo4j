@@ -169,12 +169,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         }
     }
 
-    @Override
-    public boolean isClosed()
-    {
-        return shutDown;
-    }
-
     private boolean anyAlive()
     {
         for ( Processor processor : processors )

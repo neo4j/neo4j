@@ -191,11 +191,6 @@ public class FileSystemClosingBatchInserter implements BatchInserter, IndexConfi
         return delegate.getStoreDir();
     }
 
-    public FileSystemAbstraction getFileSystem()
-    {
-        return fileSystem;
-    }
-
     private void closeFileSystem()
     {
         try

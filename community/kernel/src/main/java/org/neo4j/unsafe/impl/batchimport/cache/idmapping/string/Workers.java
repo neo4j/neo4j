@@ -74,18 +74,6 @@ public class Workers<R extends Runnable> implements Iterable<R>
         return error;
     }
 
-    public Throwable awaitStrict()
-    {
-        try
-        {
-            return await();
-        }
-        catch ( InterruptedException e )
-        {
-            throw handleInterrupted( e );
-        }
-    }
-
     public void awaitAndThrowOnError() throws InterruptedException
     {
         Throwable error = await();

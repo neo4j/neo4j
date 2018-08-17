@@ -113,11 +113,6 @@ public class DataImporter
             return this.properties.sum();
         }
 
-        public long relationshipsImported()
-        {
-            return this.relationships.sum();
-        }
-
         @Override
         public String toString()
         {

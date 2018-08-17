@@ -33,7 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 /**
  * Iterates over groups of input data, each group containing one or more input files. A whole group conforms has each its own header.
  */
-public class CsvGroupInputIterator extends InputIterator.Adapter
+public class CsvGroupInputIterator implements InputIterator
 {
     private final Iterator<DataFactory> source;
     private final Header.Factory headerFactory;

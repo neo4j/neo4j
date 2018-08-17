@@ -64,23 +64,6 @@ public class Header implements Cloneable
         return entries;
     }
 
-    public Entry entry( Type type )
-    {
-        Entry result = null;
-        for ( Entry entry : entries )
-        {
-            if ( entry.type() == type )
-            {
-                if ( result != null )
-                {
-                    throw new IllegalStateException( "Multiple header entries of type " + type );
-                }
-                result = entry;
-            }
-        }
-        return result;
-    }
-
     @Override
     public String toString()
     {

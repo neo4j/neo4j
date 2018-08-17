@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +46,6 @@ import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
-import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import org.neo4j.values.storable.CSVHeaderInformation;
 import org.neo4j.values.storable.PointValue;
@@ -256,7 +256,7 @@ public class DataFactories
             {
                 if ( !singletonEntries.containsKey( type ) )
                 {
-                    throw new MissingHeaderException( type, entries );
+                    throw new HeaderException( format( "Missing header of type %s, among entries %s", type, Arrays.toString( entries ) ) );
                 }
             }
         }

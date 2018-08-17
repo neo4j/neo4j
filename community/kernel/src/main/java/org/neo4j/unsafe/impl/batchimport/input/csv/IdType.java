@@ -36,7 +36,7 @@ public enum IdType
     /**
      * Used when node ids int input data are any string identifier.
      */
-    STRING( true )
+    STRING
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
@@ -55,7 +55,7 @@ public enum IdType
      * Used when node ids int input data are any integer identifier. It uses 8b longs for storage,
      * but as a user facing enum a better name is integer
      */
-    INTEGER( true )
+    INTEGER
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
@@ -74,7 +74,7 @@ public enum IdType
      * Used when node ids int input data are specified as long values and points to actual record ids.
      * ADVANCED usage. Performance advantage, but requires carefully planned input data.
      */
-    ACTUAL( false )
+    ACTUAL
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
@@ -89,19 +89,7 @@ public enum IdType
         }
     };
 
-    private final boolean idsAreExternal;
-
-    IdType( boolean idsAreExternal )
-    {
-        this.idsAreExternal = idsAreExternal;
-    }
-
     public abstract IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups );
-
-    public boolean idsAreExternal()
-    {
-        return idsAreExternal;
-    }
 
     public abstract Extractor<?> extractor( Extractors extractors );
 }

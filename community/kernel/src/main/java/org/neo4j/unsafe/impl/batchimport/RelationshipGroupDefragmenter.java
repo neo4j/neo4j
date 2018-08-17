@@ -119,6 +119,6 @@ public class RelationshipGroupDefragmenter
 
     private void executeStage( Stage stage )
     {
-        superviseExecution( executionMonitor, config, stage );
+        superviseExecution( executionMonitor, stage );
     }
 }

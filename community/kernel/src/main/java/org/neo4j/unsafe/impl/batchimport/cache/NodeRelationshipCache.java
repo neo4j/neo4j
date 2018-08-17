@@ -240,11 +240,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         this.chunkChangedArray = new byte[chunkOf( nodeCount ) + 1];
     }
 
-    public long getHighNodeId()
-    {
-        return this.highNodeId;
-    }
-
     /**
      * @see #setCount(ByteArray, long, int, long) setCount for description on how bigCounts work
      */
