@@ -34,8 +34,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -81,7 +81,7 @@ public class ForeignStoreIdIT
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
-        File foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 0 );
+        File foreignDbStoreDir = createAnotherStore( testDirectory.databaseDir( "2" ), 0 );
 
         // WHEN
         // -- the other joins
@@ -117,7 +117,7 @@ public class ForeignStoreIdIT
                 .newGraphDatabase();
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
-        File foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 1 );
+        File foreignDbStoreDir = createAnotherStore( testDirectory.databaseDir( "2" ), 1 );
 
         // WHEN
         // -- the other joins

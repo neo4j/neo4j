@@ -151,7 +151,7 @@ public class HardKillIT
         }
     }
 
-    private long getNamedNode( HighlyAvailableGraphDatabase db, String name )
+    private static long getNamedNode( HighlyAvailableGraphDatabase db, String name )
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -168,7 +168,7 @@ public class HardKillIT
         }
     }
 
-    private long createNamedNode( HighlyAvailableGraphDatabase db, String name )
+    private static long createNamedNode( HighlyAvailableGraphDatabase db, String name )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -272,6 +272,6 @@ public class HardKillIT
 
     private File path( int i )
     {
-        return new File( testDirectory.databaseDir(), "" + i );
+        return testDirectory.databaseDir( "" + i );
     }
 }

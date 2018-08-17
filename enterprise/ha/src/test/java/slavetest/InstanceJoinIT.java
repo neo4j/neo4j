@@ -64,8 +64,8 @@ public class InstanceJoinIT
 
         HighlyAvailableGraphDatabase master = null;
         HighlyAvailableGraphDatabase slave = null;
-        File masterDir = testDirectory.directory( "master" );
-        File slaveDir = testDirectory.directory( "slave" );
+        File masterDir = testDirectory.databaseDir( "master" );
+        File slaveDir = testDirectory.databaseDir( "slave" );
         try
         {
             int masterClusterPort = PortAuthority.allocatePort();
@@ -136,19 +136,19 @@ public class InstanceJoinIT
         }
     }
 
-    private void rotateLog( HighlyAvailableGraphDatabase db ) throws IOException
+    private static void rotateLog( HighlyAvailableGraphDatabase db ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
-    private void checkPoint( HighlyAvailableGraphDatabase db ) throws IOException
+    private static void checkPoint( HighlyAvailableGraphDatabase db ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
                 new SimpleTriggerInfo( "test" )
         );
     }
 
-    private int nodesHavingProperty( HighlyAvailableGraphDatabase slave, String key, String value )
+    private static int nodesHavingProperty( HighlyAvailableGraphDatabase slave, String key, String value )
     {
         try ( Transaction tx = slave.beginTx() )
         {
@@ -165,7 +165,7 @@ public class InstanceJoinIT
         }
     }
 
-    private void createNode( HighlyAvailableGraphDatabase db, String key, String value )
+    private static void createNode( HighlyAvailableGraphDatabase db, String key, String value )
     {
         try ( Transaction tx = db.beginTx() )
         {

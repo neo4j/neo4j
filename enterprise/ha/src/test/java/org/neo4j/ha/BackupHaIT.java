@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -61,7 +62,7 @@ public class BackupHaIT
     @Before
     public void setup() throws Exception
     {
-        backupPath = clusterRule.cleanDirectory( "backup-db" );
+        backupPath = clusterRule.getTestDirectory().storeDir( "backup-db" );
         createSomeData( clusterRule.startCluster().getMaster() );
     }
 
@@ -85,7 +86,7 @@ public class BackupHaIT
         Config config = Config.builder()
                 .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .withSetting( GraphDatabaseSettings.active_database, databaseName ).build();
-        DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, config );
+        DbRepresentation backupRepresentation = DbRepresentation.of( DatabaseLayout.of( backupPath, databaseName ).databaseDirectory(), config );
         assertEquals( beforeChange, backupRepresentation );
         assertNotEquals( backupRepresentation, afterChange );
     }
@@ -113,7 +114,7 @@ public class BackupHaIT
             Config config = Config.builder()
                     .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                     .withSetting( GraphDatabaseSettings.active_database, databaseName ).build();
-            DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, config );
+            DbRepresentation backupRepresentation = DbRepresentation.of( DatabaseLayout.of( backupPath, databaseName ).databaseDirectory(), config );
             assertEquals( beforeChange, backupRepresentation );
             assertNotEquals( backupRepresentation, afterChange );
         }

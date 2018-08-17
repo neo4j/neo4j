@@ -97,11 +97,10 @@ public class BranchedDataIT
             Thread.sleep( 1 ); // To make sure we get different timestamps
         }
 
-        File storeDirectory = directory.directory();
         File databaseDirectory = directory.databaseDir();
         int clusterPort = PortAuthority.allocatePort();
         new TestHighlyAvailableGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( storeDirectory )
+                newEmbeddedDatabaseBuilder( databaseDirectory )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                 .setConfig( ClusterSettings.initial_hosts, "localhost:" + clusterPort )

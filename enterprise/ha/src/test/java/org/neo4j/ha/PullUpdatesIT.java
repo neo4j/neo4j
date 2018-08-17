@@ -205,7 +205,7 @@ public class PullUpdatesIT
         try
         {
             File testRootDir = clusterRule.cleanDirectory( "shouldPullUpdatesOnStartupNoMatterWhat" );
-            File masterDir = new File( testRootDir, "master" );
+            File masterDir = clusterRule.getTestDirectory().databaseDir( "master" );
             int masterClusterPort = PortAuthority.allocatePort();
             master = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( masterDir )
@@ -217,7 +217,7 @@ public class PullUpdatesIT
                     .newGraphDatabase();
 
             // Copy the store, then shutdown, so update pulling later makes sense
-            File slaveDir = new File( testRootDir, "slave" );
+            File slaveDir = clusterRule.getTestDirectory().databaseDir( "slave" );
             slave =  (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( slaveDir )
                     .setConfig( ClusterSettings.server_id, "2" )

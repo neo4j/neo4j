@@ -22,6 +22,7 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -48,7 +49,6 @@ import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -87,6 +87,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
@@ -115,6 +116,9 @@ public class SwitchToSlaveCopyThenBranchTest
     private final MasterClient masterClient = mock( MasterClient.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
     private final StoreId storeId = newStoreIdForCurrentVersion( 42, 42, 42, 42 );
+
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void shouldRestartServicesIfCopyStoreFails() throws Throwable
@@ -272,7 +276,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
         inOrder.verify( storeCopyClient ).copyStore( any( StoreCopyClient.StoreCopyRequester.class ),
                 any( CancellationRequest.class ), any( MoveAfterCopy.class ) ) ;
-        inOrder.verify( branchPolicy ).handle( new File( "" ), pageCacheMock, NullLogService.getInstance() );
+        inOrder.verify( branchPolicy ).handle( testDirectory.databaseDir(), pageCacheMock, NullLogService.getInstance() );
     }
 
     @Test
@@ -387,7 +391,7 @@ public class SwitchToSlaveCopyThenBranchTest
         when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
                 argThat( storeId -> true ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
-        return spy( new SwitchToSlaveCopyThenBranch( DatabaseLayout.of( new File( "" ) ), NullLogService.getInstance(),
+        return spy( new SwitchToSlaveCopyThenBranch( testDirectory.databaseLayout(), NullLogService.getInstance(),
                 configMock(),
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
@@ -408,12 +412,12 @@ public class SwitchToSlaveCopyThenBranchTest
                 }, updatePuller, pageCacheMock, mock( Monitors.class ), () -> transactionCounters ) );
     }
 
-    private Config configMock()
+    private static Config configMock()
     {
         return Config.defaults( ClusterSettings.server_id, "1" );
     }
 
-    private <T> T mockWithLifecycle( Class<T> clazz )
+    private static <T> T mockWithLifecycle( Class<T> clazz )
     {
         return mock( clazz, withSettings().extraInterfaces( Lifecycle.class ) );
     }

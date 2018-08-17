@@ -120,6 +120,6 @@ public class ConflictingServerIdIT
 
     private File path( int i )
     {
-        return new File( testDirectory.databaseDir(), "" + i );
+        return testDirectory.databaseDir( "" + i );
     }
 }

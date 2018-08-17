@@ -115,7 +115,7 @@ public class PullUpdatesAppliedIT
                 {
                     int clusterPort = PortAuthority.allocatePort();
                     int haPort = PortAuthority.allocatePort();
-                    File directory = testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile();
+                    File directory = testDirectory.databaseDir( Integer.toString( serverId ) ).getAbsoluteFile();
 
                     configurations.put( serverId, new Configuration( serverId, clusterPort, haPort, directory ) );
                 } );
@@ -220,8 +220,7 @@ public class PullUpdatesAppliedIT
         Thread.sleep( 15000 );
 
         restart( serverIdOfDatabaseToKill ); // recovery and branching.
-        File databaseDirectory = testDirectory.databaseDir( storeDirectory );
-        boolean hasBranchedData = new File( databaseDirectory, "branched" ).listFiles().length > 0;
+        boolean hasBranchedData = new File( storeDirectory, "branched" ).listFiles().length > 0;
         assertFalse( hasBranchedData );
     }
 
