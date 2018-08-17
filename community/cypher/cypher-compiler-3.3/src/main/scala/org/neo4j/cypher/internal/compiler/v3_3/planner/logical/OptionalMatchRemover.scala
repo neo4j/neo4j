@@ -160,7 +160,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
     def nextPosition(): InputPosition = {
       val current = pos
-      pos = pos.bumped()
+      //this is not nice but we want to make sure don't collide with "real positions"
+      pos = pos.copy(offset = current.offset - 1)
       current
     }
   }
