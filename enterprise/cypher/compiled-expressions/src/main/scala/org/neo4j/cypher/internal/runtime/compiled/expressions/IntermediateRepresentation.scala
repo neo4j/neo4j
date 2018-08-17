@@ -53,6 +53,16 @@ case class Invoke(target: IntermediateRepresentation, method: Method, params: Se
   extends IntermediateRepresentation
 
 /**
+  * Invoke a void method
+  *
+  * @param target the target to call the method on
+  * @param method the method to invoke
+  * @param params the parameter to the method
+  */
+case class InvokeVoid(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
+  extends IntermediateRepresentation
+
+/**
   * Load a local variable by name
   *
   * @param variable the name of the variable
@@ -252,7 +262,7 @@ case class Method(owner: Class[_], output: Class[_], name: String, params: Class
 }
 
 case class IntermediateExpression(ir: IntermediateRepresentation, fields: Seq[Field],
-                                  variables: Set[LocalVariable], nullCheck: Set[IntermediateRepresentation])
+                                  variables: Seq[LocalVariable], nullCheck: Set[IntermediateRepresentation])
 
 case class Field(typ: Class[_], name: String, initializer: Option[IntermediateRepresentation] = None)
 
@@ -292,6 +302,10 @@ object IntermediateRepresentation {
   def invoke(owner: IntermediateRepresentation, method: Method,
              params: IntermediateRepresentation*): IntermediateRepresentation =
     Invoke(owner, method, params)
+
+  def invokeVoid(owner: IntermediateRepresentation, method: Method,
+             params: IntermediateRepresentation*): IntermediateRepresentation =
+    InvokeVoid(owner, method, params)
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
 

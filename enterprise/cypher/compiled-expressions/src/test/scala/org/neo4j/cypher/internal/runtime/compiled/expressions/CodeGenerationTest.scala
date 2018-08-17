@@ -27,11 +27,12 @@ import java.time.{Clock, Duration}
 import java.util.concurrent.ThreadLocalRandom
 
 import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
@@ -1185,7 +1186,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     when(ctx.getLongAt(offset)).thenReturn(42L)
 
     // When
-    val compiled = compile(expression)
+    val compiled = compile(expression, SlotConfiguration(Map("a" -> LongSlot(offset, nullable = false, symbols.CTNode)), 1, 0))
 
     // Then
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(longValue(42))
@@ -1381,6 +1382,20 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     }
   }
 
+  test("should project") {
+    //given
+    val projections = Map(0 -> literal("hello"), 1 -> function("sin", parameter("param")))
+    val compiled = compileProjection(projections)
+
+    //when
+    compiled.project(ctx, db, map(Array("param"), Array(NO_VALUE)))
+
+    //then
+    Mockito.verify(ctx).setRefAt(0, stringValue("hello"))
+    Mockito.verify(ctx).setRefAt(1, NO_VALUE)
+    Mockito.verifyNoMoreInteractions(ctx)
+  }
+
   private def path(size: Int) =
     VirtualValues.path((0 to size).map(i => node(i)).toArray, (0 until size).map(i => relationship(i)).toArray)
 
@@ -1389,8 +1404,17 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def relationship(id: Int, props: MapValue = EMPTY_MAP) =
     relationshipValue(id, node(id-1), node(id + 1), stringValue("R"), EMPTY_MAP)
 
+  private def compile(e: Expression, slots: SlotConfiguration) =
+    CodeGeneration.compileExpression(new IntermediateCodeGeneration(slots).compileExpression(e).getOrElse(fail()))
+
   private def compile(e: Expression) =
-    CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).getOrElse(fail()))
+    CodeGeneration.compileExpression(new IntermediateCodeGeneration(SlotConfiguration.empty).compileExpression(e).getOrElse(fail()))
+
+  private def compileProjection(projections: Map[Int, Expression]) = {
+    val compiler = new IntermediateCodeGeneration(SlotConfiguration.empty)
+    val compiled = projections.mapValues(e => compiler.compileExpression(e).getOrElse(fail(s"failed to compile $e")))
+    CodeGeneration.compileProjection(compiler.compileProjection(compiled))
+  }
 
   private def function(name: String, es: Expression*) =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, es.toIndexedSeq)(pos)
@@ -1550,7 +1574,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
         left.isInstanceOf[String] && right.isInstanceOf[Number]
     }
 
-    def buildResult(result: Boolean, actual: Any) = {
+    def buildResult(result: Boolean, actual: Any): MatchResult = {
       MatchResult(
         result,
         s"Expected $left $operator $right to compare as $result but it was $actual",

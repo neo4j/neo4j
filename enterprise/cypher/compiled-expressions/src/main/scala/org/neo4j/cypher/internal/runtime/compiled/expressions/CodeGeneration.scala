@@ -53,30 +53,25 @@ object CodeGeneration {
   private val DOUBLE = classOf[DoubleValue]
   private val TEXT = classOf[TextValue]
   private val PACKAGE_NAME = "org.neo4j.cypher.internal.compiler.v3_5.generated"
-  private val INTERFACE = classOf[CompiledExpression]
-  private val COMPUTE_METHOD = method(classOf[AnyValue], "evaluate",
-                                      param(classOf[ExecutionContext], "context"),
-                                      param(classOf[DbAccess], "dbAccess"),
-                                      param(classOf[MapValue], "params"))
+  private val EXPRESSION = classOf[CompiledExpression]
+  private val PROJECTION = classOf[CompiledProjection]
+  private val COMPUTE_METHOD: MethodDeclaration.Builder = method(classOf[AnyValue], "evaluate",
+                                                                 param(classOf[ExecutionContext], "context"),
+                                                                 param(classOf[DbAccess], "dbAccess"),
+                                                                 param(classOf[MapValue], "params"))
+  private val PROJECT_METHOD: MethodDeclaration.Builder = method(classOf[Unit], "project",
+                                                                 param(classOf[ExecutionContext], "context"),
+                                                                 param(classOf[DbAccess], "dbAccess"),
+                                                                 param(classOf[MapValue], "params"))
 
   private def className(): String = "Expression" + System.nanoTime()
 
-  def compile(expression: IntermediateExpression): CompiledExpression = {
-    val handle = using(generator.generateClass(PACKAGE_NAME, className(), INTERFACE)) { clazz: ClassGenerator =>
+  def compileExpression(expression: IntermediateExpression): CompiledExpression = {
+    val handle = using(generator.generateClass(PACKAGE_NAME, className(), EXPRESSION)) { clazz: ClassGenerator =>
 
-      using(clazz.generateConstructor()) { block =>
-        block.expression(invokeSuper(OBJECT))
-        expression.fields.foreach { f =>
-          val reference = clazz.field(f.typ, f.name)
-          //if fields has initializer set them in the constructor
-          val initializer = f.initializer.map(ir => compileExpression(ir, block))
-          initializer.foreach { value =>
-            block.put(block.self(), reference, value)
-          }
-        }
-      }
+      generateConstructor(clazz, expression)
       using(clazz.generate(COMPUTE_METHOD)) { block =>
-        expression.variables.foreach{ v =>
+        expression.variables.distinct.foreach{ v =>
           block.assign(v.typ, v.name, compileExpression(v.value, block))
         }
         val noValue = getStatic(staticField(classOf[Values], classOf[Value], "NO_VALUE"))
@@ -93,6 +88,36 @@ object CodeGeneration {
     handle.loadClass().newInstance().asInstanceOf[CompiledExpression]
   }
 
+  def compileProjection(expression: IntermediateExpression): CompiledProjection = {
+    val handle = using(generator.generateClass(PACKAGE_NAME, className(), PROJECTION)) { clazz: ClassGenerator =>
+
+      generateConstructor(clazz, expression)
+      using(clazz.generate(PROJECT_METHOD)) { block =>
+        expression.variables.distinct.foreach{ v =>
+          block.assign(v.typ, v.name, compileExpression(v.value, block))
+        }
+        block.expression(compileExpression(expression.ir, block))
+      }
+      clazz.handle()
+    }
+
+    handle.loadClass().newInstance().asInstanceOf[CompiledProjection]
+  }
+
+  private def generateConstructor(clazz: ClassGenerator, expression: IntermediateExpression): Unit = {
+    using(clazz.generateConstructor()) { block =>
+      block.expression(invokeSuper(OBJECT))
+      expression.fields.foreach { f =>
+        val reference = clazz.field(f.typ, f.name)
+        //if fields has initializer set them in the constructor
+        val initializer = f.initializer.map(ir => compileExpression(ir, block))
+        initializer.foreach { value =>
+          block.put(block.self(), reference, value)
+        }
+      }
+    }
+  }
+
   private def generator = {
     if (DEBUG) generateCode(classOf[CompiledExpression].getClassLoader, SOURCECODE, PRINT_SOURCE)
     else generateCode(classOf[CompiledExpression].getClassLoader, BYTECODE)
@@ -105,6 +130,10 @@ object CodeGeneration {
     //target.method(p1,p2,...)
     case Invoke(target, method, params) =>
       invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
+    //target.method(p1,p2,...)
+    case InvokeVoid(target, method, params) =>
+      block.expression(invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*))
+      Expression.EMPTY
     //loads local variable by name
     case Load(variable) => block.load(variable)
     //loads field

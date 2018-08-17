@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, CompiledExpression, IntermediateCodeGeneration}
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, CompiledExpression, CompiledProjection, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ExtendedExpression, RandFunction}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.{CommandProjection, ExecutionContext}
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.expressions.FunctionInvocation
@@ -34,7 +34,7 @@ import org.opencypher.v9_0.{expressions => ast}
 class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends ExpressionConverter {
 
   //uses an inner converter to simplify compliance with Expression trait
-  private val inner = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
+  private val inner = new ExpressionConverters(SlottedExpressionConverters(slots), CommunityExpressionConverter)
 
   override def toCommandExpression(expression: ast.Expression,
                                    self: ExpressionConverters): Option[Expression] = expression match {
@@ -43,8 +43,8 @@ class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends Ex
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
     case e => try {
-      new IntermediateCodeGeneration(slots).compile(e).map(i => CompileWrappingExpression(CodeGeneration.compile(i),
-                                                                                inner.toCommandExpression(expression)))
+      new IntermediateCodeGeneration(slots).compileExpression(e).map(i => CompileWrappingExpression(CodeGeneration.compileExpression(i),
+                                                                                                    inner.toCommandExpression(expression)))
     } catch {
       case t: Throwable =>
         //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried
@@ -54,6 +54,35 @@ class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends Ex
         None
     }
   }
+
+  override def toCommandProjection(projections: Map[String, ast.Expression],
+                                   self: ExpressionConverters): Option[CommandProjection] = {
+    try {
+      val compiler = new IntermediateCodeGeneration(slots)
+      val projected = for {(k, v) <- projections
+                           if slots.refSlotAndNotAlias(k)
+                           compiled <- compiler.compileExpression(v)}
+        yield slots.get(k).get.offset -> compiled
+
+      if (projected.size < projections.size) None
+      else Some(CompileWrappingProjection(CodeGeneration.compileProjection(compiler.compileProjection(projected)), projections.isEmpty))
+    }
+    catch {
+      case t: Throwable =>
+        //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried
+        //to load invalid bytecode, whatever is the case we should silently fallback to the next expression
+        //converter
+        log.debug(s"Failed to compile projection: $projections", t)
+         None
+    }
+  }
+}
+
+case class CompileWrappingProjection(projection: CompiledProjection, isEmpty: Boolean) extends CommandProjection {
+
+  override def registerOwningPipe(pipe: Pipe): Unit = {}
+
+  override def project(ctx: ExecutionContext, state: QueryState): Unit = projection.project(ctx, state.query, state.params)
 }
 
 case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression) extends ExtendedExpression {
