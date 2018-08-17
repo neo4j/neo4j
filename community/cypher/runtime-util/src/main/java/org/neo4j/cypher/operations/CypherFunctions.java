@@ -41,6 +41,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -402,6 +403,46 @@ public final class CypherFunctions
         else
         {
             throw new CypherTypeException( format( "Expected %s to be a property container", container), null );
+        }
+    }
+
+    public static AnyValue propertyGet( String key, AnyValue container, DbAccess dbAccess )
+    {
+        if ( container instanceof VirtualNodeValue )
+        {
+            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( key ) );
+        }
+        else if ( container instanceof VirtualRelationshipValue )
+        {
+            return dbAccess
+                    .relationshipProperty( ((VirtualRelationshipValue) container).id(), dbAccess.propertyKey( key ) );
+        }
+        else if ( container instanceof MapValue )
+        {
+            return ((MapValue) container).get( key );
+        }
+        else if ( container instanceof TemporalValue<?,?> )
+        {
+            return ((TemporalValue) container).get( key );
+        }
+        else if ( container instanceof DurationValue )
+        {
+            return ((DurationValue) container).get( key );
+        }
+        else if ( container instanceof PointValue )
+        {
+            try
+            {
+                return ((PointValue) container).get( key );
+            }
+            catch ( InvalidValuesArgumentException e )
+            {
+                throw new InvalidArgumentException( e.getMessage(), e );
+            }
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected %s to be a property container", container ), null );
         }
     }
 

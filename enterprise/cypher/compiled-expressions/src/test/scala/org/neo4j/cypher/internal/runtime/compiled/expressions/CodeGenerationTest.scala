@@ -1382,6 +1382,71 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     }
   }
 
+  test("access property on node") {
+    val compiled = compile(property(parameter("a"), "prop"))
+
+    val node = nodeValue(1, EMPTY_TEXT_ARRAY, map(Array("prop"), Array(stringValue("hello"))))
+    when(db.propertyKey("prop")).thenReturn(42)
+    when(db.nodeProperty(1, 42)).thenReturn(stringValue("hello"))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(stringValue("hello"))
+  }
+
+  test("access property on relationship") {
+    val compiled = compile(property(parameter("a"), "prop"))
+
+    val rel = relationshipValue(43,
+                                nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                stringValue("R"), map(Array("prop"), Array(stringValue("hello"))))
+    when(db.propertyKey("prop")).thenReturn(42)
+    when(db.relationshipProperty(43, 42)).thenReturn(stringValue("hello"))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(stringValue("hello"))
+  }
+
+  test("access property on map") {
+    val compiled = compile(property(parameter("a"), "prop"))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(map(Array("a"), Array(stringValue("hello")))))) should equal(stringValue("hello"))
+  }
+
+  test("access property on temporal") {
+    val value = TimeValue.now(Clock.systemUTC())
+    val compiled = compile(property(parameter("a"), "timezone"))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(value))) should equal(value.get("timezone"))
+  }
+
+  test("access property on duration") {
+    val value = durationValue(Duration.ofHours(3))
+    val compiled = compile(property(parameter("a"), "seconds"))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(value))) should equal(value.get("seconds"))
+  }
+
+  test("access property on point") {
+    val value = pointValue(Cartesian, 1.0, 3.6)
+
+    val compiled = compile(property(parameter("a"), "x"))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(value))) should equal(doubleValue(1.0))
+  }
+
+  test("access property on point with invalid key") {
+    val value = pointValue(Cartesian, 1.0, 3.6)
+
+    val compiled = compile(property(parameter("a"), "foobar"))
+
+    an[InvalidArgumentException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a"), Array(value)))
+  }
+
   test("should project") {
     //given
     val projections = Map(0 -> literal("hello"), 1 -> function("sin", parameter("param")))
