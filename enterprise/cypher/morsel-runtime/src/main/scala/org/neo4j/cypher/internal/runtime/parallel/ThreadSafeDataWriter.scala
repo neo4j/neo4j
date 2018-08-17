@@ -29,11 +29,13 @@ import scala.collection.mutable.ArrayBuffer
   * <br/>
   * NOTE: in its present form this class is primarily a utility for developer-support.
   */
-class ThreadSafeDataWriter(delegate: DataPointWriter) extends DataPointWriter {
+class ThreadSafeDataWriter(delegate: DataPointWriter,
+                           ringBufferBitSize: Int = RingBuffer.defaultBitSize,
+                           ringBufferMaxRetries: Int = RingBuffer.defaultMaxRetries) extends DataPointWriter {
 
   private val MAX_CLIENT_THREADS: Int = 1024
   private val buffersByThread: Array[RingBuffer] =
-    (0 until MAX_CLIENT_THREADS).map(_ => new RingBuffer).toArray
+    (0 until MAX_CLIENT_THREADS).map(_ => new RingBuffer(ringBufferBitSize, ringBufferMaxRetries)).toArray
 
   private var t0: Long = -1
 
@@ -46,6 +48,9 @@ class ThreadSafeDataWriter(delegate: DataPointWriter) extends DataPointWriter {
   }
 
   /**
+    * Flush all data to the inner data writer.
+    * <br/>
+    * <br/>
     * WARNING: method is synchronized!
     * <br/>
     * <br/>
@@ -88,17 +93,33 @@ class ThreadSafeDataWriter(delegate: DataPointWriter) extends DataPointWriter {
 }
 
 object RingBuffer {
-  val defaultSize: Int = 1 << 10 // 1024
-  val defaultMaxRetries: Int = 10
+  val defaultBitSize: Int = 10 // buffer size 1024
+  val defaultMaxRetries: Int = 1000
 }
 
-class RingBuffer(private val size: Int = RingBuffer.defaultSize, private val maxRetries: Int = RingBuffer.defaultMaxRetries) {
+/**
+  * Single producer, single consumer ring buffer.
+  *
+  * This means that the ring buffer is safe to use with one thread producing values, and another one consuming them.
+  *
+  * @param bitSize size of the ringbuffer in number of bits
+  * @param maxRetries number of retries to attempt if the buffer is full
+  */
+class RingBuffer(bitSize: Int = RingBuffer.defaultBitSize,
+                 private val maxRetries: Int = RingBuffer.defaultMaxRetries) {
+
   @volatile private var produceCount: Int = 0
   @volatile private var consumeCount: Int = 0
 
+  val size: Int = 1 << bitSize
   private val mask: Int = size - 1
   private val buffer = new Array[DataPoint](size)
 
+  /**
+    * Produce (add) one additional DataPoint into this RingBuffer. Not Thread-safe.
+    *
+    * @param dp the DataPoint to produce
+    */
   def produce(dp: DataPoint): Unit = {
     var claimed = -1
     val snapshotProduce = produceCount
@@ -122,11 +143,7 @@ class RingBuffer(private val size: Int = RingBuffer.defaultSize, private val max
   }
 
   /**
-    * This is only called from ThreadSafeDataWriter.flush(), which is synchronized.
-    * If ThreadSafeDataWriter.flush() was not synchronized, consumeCount could be concurrently modified (overwritten) by multiple threads.
-    * <br/>
-    * At present this is not thread safe as the volatile fields are read into local variables of potentially multiple threads,
-    * this can lead to the same data points being consumed multiple times (once by each thread).
+    * Consume all available DataPoints from this RingBuffer. Not thread-safe.
     */
   def consume(f: DataPoint => Unit): Unit = {
     var snapshotConsume = consumeCount
@@ -135,7 +152,6 @@ class RingBuffer(private val size: Int = RingBuffer.defaultSize, private val max
       f(buffer(snapshotConsume & mask))
       snapshotConsume += 1
     }
-    // read & written by multiple threads, potential for threads overwriting each other
     consumeCount = snapshotConsume
   }
 }

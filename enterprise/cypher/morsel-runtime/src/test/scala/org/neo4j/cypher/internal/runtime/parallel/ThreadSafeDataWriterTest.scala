@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{CountDownLatch, ThreadLocalRandom, TimeUnit}
 
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -31,16 +31,14 @@ import scala.collection.mutable.ArrayBuffer
 class ThreadSafeDataWriterTest extends CypherFunSuite {
 
   test("ringbuffer should produce correctly when empty") {
-    val ringBufferSize = 1024
-    val ringBuffer = new RingBuffer(ringBufferSize)
+    val ringBuffer = new RingBuffer(10)
     val points = ArrayBuffer[DataPoint]()
     ringBuffer.consume(points += _)
     points.length should equal(0)
   }
 
   test("ringbuffer should produce correctly with partially filled") {
-    val ringBufferSize = 1024
-    val ringBuffer = new RingBuffer(ringBufferSize)
+    val ringBuffer = new RingBuffer(10)
     val points = ArrayBuffer[DataPoint]()
     ringBuffer.produce(dataPointFor(1, 1))
     ringBuffer.consume(points += _)
@@ -48,10 +46,10 @@ class ThreadSafeDataWriterTest extends CypherFunSuite {
   }
 
   test("ringbuffer should produce correctly when full") {
-    val ringBufferSize = 1024
-    val ringBuffer = new RingBuffer(ringBufferSize)
+    val ringBufferBitSize = 10
+    val ringBuffer = new RingBuffer(ringBufferBitSize)
 
-    val expectedPoints: Seq[DataPoint] = dataPointsFor(0, ringBufferSize, 1)
+    val expectedPoints: Seq[DataPoint] = dataPointsFor(0, ringBuffer.size, 1)
     val points = ArrayBuffer[DataPoint]()
 
     expectedPoints.foreach(point => ringBuffer.produce(point))
@@ -62,10 +60,10 @@ class ThreadSafeDataWriterTest extends CypherFunSuite {
   }
 
   test("ringbuffer should be reusable after consuming full buffer") {
-    val ringBufferSize = 1024
-    val ringBuffer = new RingBuffer(ringBufferSize)
+    val ringBufferBitSize = 10
+    val ringBuffer = new RingBuffer(ringBufferBitSize)
 
-    val expectedPoints: Seq[DataPoint] = dataPointsFor(0, ringBufferSize, 1)
+    val expectedPoints: Seq[DataPoint] = dataPointsFor(0, ringBuffer.size, 1)
     val points = ArrayBuffer[DataPoint]()
 
     expectedPoints.foreach(point => ringBuffer.produce(point))
@@ -83,10 +81,10 @@ class ThreadSafeDataWriterTest extends CypherFunSuite {
   }
 
   test("ringbuffer should error when overfilling") {
-    val ringBufferSize = 1024
-    val ringBuffer = new RingBuffer(ringBufferSize)
+    val ringBufferBitSize = 10
+    val ringBuffer = new RingBuffer(ringBufferBitSize)
 
-    val expectedPoints: Seq[DataPoint] = dataPointsFor(0, ringBufferSize, 1)
+    val expectedPoints: Seq[DataPoint] = dataPointsFor(0, ringBuffer.size, 1)
 
     expectedPoints.foreach(point => ringBuffer.produce(point))
 
@@ -95,35 +93,42 @@ class ThreadSafeDataWriterTest extends CypherFunSuite {
 
   test("writer should not lose data points when concurrently written and flushed by many threads") {
     val innerWriter = new CollectingDataPointWriter
-    val writer = new ThreadSafeDataWriter(innerWriter)
+    val writer = new ThreadSafeDataWriter(innerWriter, ringBufferBitSize = 4)
 
-    val pointsPerThread = 512
-    val threadCount = 32
-    val latch = new CountDownLatch(threadCount)
-    val threads = (0 until threadCount)
-      .map(i => {
-        val min = i * pointsPerThread
-        val max = min + pointsPerThread
-        ProduceConsumeThread(min, max, latch, writer)
+    val random = ThreadLocalRandom.current()
+    val maxPointsPerThread = 16
+    val produceThreadCount = 32
+    val latch = new CountDownLatch(produceThreadCount)
+    val threads = (0 until produceThreadCount)
+      .map(threadId => {
+        val min = threadId * maxPointsPerThread
+        val max = min + 1 + random.nextInt(maxPointsPerThread - 1)
+        ProduceConsumeThread(min, max, threadId, latch, writer)
       })
-
     threads.foreach(_.start)
 
     val isFinished = latch.await(10, TimeUnit.SECONDS)
 
-    if (!isFinished) {
-      throw new RuntimeException("Test threads did not finish on time")
-    }
+    if (!isFinished)
+      fail("Test threads did not finish on time")
 
-    val expectedPoints = threads.flatMap(thread => dataPointsFor(thread.min, thread.max, thread.getId.toInt))
+    val expectedPoints = threads.flatMap(thread => dataPointsFor(thread.min, thread.max, thread.threadId))
 
     innerWriter.points.size should equal(expectedPoints.size)
-    innerWriter.points.toSet should equal(expectedPoints.toSet)
+
+    val resultSet = innerWriter.points.toSet
+    val expectSet = expectedPoints.toSet
+    val intersect = resultSet.intersect(expectSet)
+
+    resultSet -- intersect should be(empty) // Unwanted result data points
+    expectSet -- intersect should be(empty) // Missing result data points
   }
+
+  // HELPERS
 
   private def dataPointsFor(min: Int, max: Int, threadId: Int): Seq[DataPoint] = (min until max).map(i => dataPointFor(i, threadId))
 
-  private def dataPointFor(i: Int, threadId: Int) = DataPoint(i, i, i, i, i, threadId, i, i, NOP)
+  private def dataPointFor(i: Int, threadId: Int) = DataPoint(i, 0, 0, 0, 0, threadId, 0, 0, NOP)
 
   class CollectingDataPointWriter extends DataPointWriter {
     val points: ArrayBuffer[DataPoint] = ArrayBuffer[DataPoint]()
@@ -133,15 +138,20 @@ class ThreadSafeDataWriterTest extends CypherFunSuite {
     override def flush(): Unit = {}
   }
 
-  case class ProduceConsumeThread(min: Int, max: Int, latch: CountDownLatch, dataPointWriter: DataPointWriter) extends Thread {
+  case class ProduceConsumeThread(min: Int,
+                           max: Int,
+                           threadId: Int,
+                           latch: CountDownLatch,
+                           dataPointWriter: DataPointWriter) extends Thread {
+
     override def run(): Unit = {
-      dataPointsFor(min, max, getId.toInt).foreach(dataPointWriter.write)
+      dataPointsFor(min, max, threadId).foreach(dataPointWriter.write)
       dataPointWriter.flush()
       latch.countDown()
     }
   }
 
-  object NOP extends Task {
+  case object NOP extends Task {
     override def executeWorkUnit(): Seq[Task] = Nil
 
     override def canContinue: Boolean = false
