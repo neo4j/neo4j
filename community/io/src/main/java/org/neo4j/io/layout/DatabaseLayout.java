@@ -33,6 +33,15 @@ import org.neo4j.stream.Streams;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 
+/**
+ * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
+ * Any file retrieved from a layout can be considered a canonical file.
+ * <br/>
+ * No assumption should be made about where and how files of a particular database are positioned and all those details should be encapsulated inside.
+ *
+ * @see StoreLayout
+ * @see DatabaseFile
+ */
 public class DatabaseLayout
 {
     private static final File[] EMPTY_FILES_ARRAY = new File[0];
@@ -205,12 +214,6 @@ public class DatabaseLayout
         return files != null ? files : EMPTY_FILES_ARRAY;
     }
 
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( databaseDirectory, storeLayout );
-    }
-
     public File idMetadataStore()
     {
         return idFile( DatabaseFile.METADATA_STORE.getName() );
@@ -294,6 +297,12 @@ public class DatabaseLayout
     private static String idFileName( String storeName )
     {
         return storeName + ".id";
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( databaseDirectory, storeLayout );
     }
 
     @Override

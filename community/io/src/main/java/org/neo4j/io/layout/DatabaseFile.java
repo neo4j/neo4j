@@ -24,6 +24,16 @@ import java.util.List;
 
 import org.neo4j.util.Preconditions;
 
+/**
+ * Enumeration of storage implementation specific files for particular database.
+ * Any internal details of this enumeration is hidden and should not be visible to anyone except of implementation of specific database layout.
+ * Should be used only for referencing back specific files in the database layout based on different store types.
+ *
+ * Any database file that represented here can have internal details like several actual file names, other internal characteristic that are store specific.
+ *
+ * @see DatabaseLayout
+ * @see StoreLayout
+ */
 public enum DatabaseFile
 {
     NODE_STORE( DatabaseFileNames.NODE_STORE ),

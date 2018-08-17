@@ -19,7 +19,10 @@
  */
 package org.neo4j.io.layout;
 
-class DatabaseFileNames
+/**
+ * List of file names for a database.
+ */
+final class DatabaseFileNames
 {
     static final String METADATA_STORE = "neostore";
 

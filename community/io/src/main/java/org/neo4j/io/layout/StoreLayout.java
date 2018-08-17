@@ -24,6 +24,22 @@ import java.util.Objects;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 
+/**
+ * File layout representation of neo4j store that provides the ability to reference any store
+ * specific file that can be created by particular store implementation.
+ * <br/>
+ * <b>Any file lookup should use provided store layout or particular {@link DatabaseLayout database layout}.</b>
+ * <br/>
+ * Any user-provided store directory will be transformed to canonical file form and any subsequent store layout file
+ * lookup should be considered as operations that provide canonical file form.
+ * <br/>
+ * Store lock file is global per store and should be looked from specific store layout.
+ * <br/>
+ * <br/>
+ * The current implementation does not keep references to all requested and provided files and requested layouts but can be easily enhanced to do so.
+ *
+ * @see DatabaseLayout
+ */
 public class StoreLayout
 {
     private static final String STORE_LOCK_FILENAME = "store_lock";
@@ -40,6 +56,13 @@ public class StoreLayout
         this.storeDirectory = rootStoreDirectory;
     }
 
+    /**
+     * Provide layout for a database with provided name.
+     * No assumptions whatsoever should be taken in regards of database location.
+     * Newly created layout should be used to any kind of file related requests in scope of a database.
+     * @param databaseName database name to provide layout for
+     * @return requested database layout
+     */
     public DatabaseLayout databaseLayout( String databaseName )
     {
         return DatabaseLayout.of( storeDirectory, databaseName );
