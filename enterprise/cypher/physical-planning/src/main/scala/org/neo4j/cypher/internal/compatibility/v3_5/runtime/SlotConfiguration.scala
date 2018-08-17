@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.symbols.CypherType
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.values.AnyValue
 
 import scala.collection.{immutable, mutable}
 
@@ -183,12 +183,18 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
 
   def apply(key: String): Slot = slots.apply(key)
 
+  def nameAtOffset(offset: Int): Option[String] = slots.collectFirst {
+    case (name, s) if s.offset == offset && !aliases(name) => name
+  }
+
   def get(key: String): Option[Slot] = slots.get(key)
 
   def add(key: String, slot: Slot): Unit = slot match {
     case LongSlot(_, nullable, typ) => newLong(key, nullable, typ)
     case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)
   }
+
+  def refSlotAndNotAlias(k: String): Boolean = !isAlias(k) && get(k).forall(_.isInstanceOf[RefSlot])
 
   def copy(): SlotConfiguration = {
     val newPipeline = new SlotConfiguration(this.slots.clone(), numberOfLongs, numberOfReferences)

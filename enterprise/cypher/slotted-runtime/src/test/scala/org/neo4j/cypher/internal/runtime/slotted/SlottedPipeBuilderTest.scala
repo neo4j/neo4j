@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.slotted.expressions.{NodeProperty, RelationshipProperty, SlottedExpressionConverters}
+import org.neo4j.cypher.internal.runtime.slotted.expressions.{NodeProperty, RelationshipProperty, SlottedCommandProjection, SlottedExpressionConverters}
 import org.neo4j.cypher.internal.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -55,7 +55,8 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, table)
     val slottedRewriter = new SlottedRewriter(planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
-    val converters = new ExpressionConverters(CommunityExpressionConverter, SlottedExpressionConverters)
+    val converters = new ExpressionConverters(SlottedExpressionConverters(physicalPlan.slotConfigurations(beforeRewrite.id)),
+                                                                          CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(SlottedPipeBuilder.Factory(physicalPlan), converters)
     val context = PipeExecutionBuilderContext(table, true)
     executionPlanBuilder.build(logicalPlan)(context, planContext)
@@ -314,9 +315,9 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     val expectedSlots = SlotConfiguration(Map("x" -> refSlot), numberOfLongs = 0, numberOfReferences = 1)
     pipe should equal(OptionalSlottedPipe(
-      ProjectionSlottedPipe(
+      ProjectionPipe(
         ArgumentSlottedPipe(expectedSlots, Size.zero)(),
-        Map(0 -> Literal(1))
+        SlottedCommandProjection(Map(0 -> Literal(1)))
       )(),
       Array(refSlot),
       expectedSlots,
@@ -617,9 +618,9 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .newLong("x", false, CTNode)
       .newReference("x.propertyKey", true, CTAny)
 
-    pipe should equal(ProjectionSlottedPipe(
+    pipe should equal(ProjectionPipe(
       NodesByLabelScanSlottedPipe("x", LazyLabel("label"), slots, Size.zero)(),
-      Map(0 -> NodeProperty(slots("x.propertyKey").offset, 0))
+      SlottedCommandProjection(Map(0 -> NodeProperty(slots("x.propertyKey").offset, 0)))
     )())
   }
 
@@ -637,9 +638,9 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .addAlias("A", "x")
       .newReference("x.propertyKey", true, CTAny)
 
-    pipe should equal(ProjectionSlottedPipe(
+    pipe should equal(ProjectionPipe(
       NodesByLabelScanSlottedPipe("x", LazyLabel("label"), slots, Size.zero)(),
-      Map(0 -> NodeProperty(slots("x.propertyKey").offset, 0))
+      SlottedCommandProjection(Map(0 -> NodeProperty(slots("x.propertyKey").offset, 0)))
     )())
   }
 

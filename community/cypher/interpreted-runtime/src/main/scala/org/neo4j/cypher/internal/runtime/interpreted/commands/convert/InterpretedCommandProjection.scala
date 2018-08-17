@@ -17,32 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.pipes
+package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{CommandProjection, ExecutionContext}
-import org.opencypher.v9_0.util.attribution.Id
 
-case class ProjectionPipe(source: Pipe, projection: CommandProjection)
-                         (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class InterpretedCommandProjection(expressions: Map[String, Expression]) extends CommandProjection {
 
-  projection.registerOwningPipe(this)
+  override def isEmpty: Boolean = expressions.isEmpty
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    if (projection.isEmpty)
-      input
-    else {
-      input.map {
-        ctx =>
-          projection.project(ctx, state)
-          ctx
-      }
-    }
+  override def registerOwningPipe(pipe: Pipe): Unit = expressions.values.foreach(_.registerOwningPipe(pipe))
+
+  override def project(ctx: ExecutionContext, state: QueryState): Unit = expressions.foreach {
+    case (name, expression) =>
+      val result = expression(ctx, state)
+      ctx.put(name, result)
   }
-}
-
-object ProjectionPipe {
-  def apply(source: Pipe, projections: Map[String, Expression]): ProjectionPipe =
-    ProjectionPipe(source, InterpretedCommandProjection(projections))()
 }

@@ -17,21 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.slotted.pipes
+package org.neo4j.cypher.internal.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.{CommandProjection, ExecutionContext}
 
-/*
-Projection evaluates expressions and stores their values into new slots in the execution context.
-It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
- */
-case class ProjectionSlottedPipe(source: Pipe, introducedExpressions: Map[Int, Expression])
-                                (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class SlottedCommandProjection(introducedExpressions: Map[Int, Expression]) extends CommandProjection {
 
-  introducedExpressions.values.foreach(_.registerOwningPipe(this))
+  override def isEmpty: Boolean = introducedExpressions.isEmpty
+
+  override def registerOwningPipe(pipe: Pipe): Unit = introducedExpressions.values.foreach(_.registerOwningPipe(pipe))
 
   private val projectionFunctions: Iterable[(ExecutionContext, QueryState) => Unit] = introducedExpressions map {
     case (offset, expression) =>
@@ -40,15 +36,5 @@ case class ProjectionSlottedPipe(source: Pipe, introducedExpressions: Map[Int, E
         ctx.setRefAt(offset, result)
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    if (projectionFunctions.isEmpty)
-      input
-    else {
-      input.map {
-        ctx =>
-          projectionFunctions.foreach(_ (ctx, state))
-          ctx
-      }
-    }
-  }
+  override def project(ctx: ExecutionContext, state: QueryState): Unit = projectionFunctions.foreach(_ (ctx, state))
 }

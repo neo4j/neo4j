@@ -19,15 +19,24 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{ast => runtimeAst}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, ast => runtimeAst}
+import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commands}
-import org.neo4j.cypher.internal.runtime.slotted.{expressions => runtimeExpression}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath._
+import org.neo4j.cypher.internal.runtime.slotted.{expressions => runtimeExpression}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.{expressions => ast}
 
-object SlottedExpressionConverters extends ExpressionConverter {
+case class SlottedExpressionConverters(slots: SlotConfiguration) extends ExpressionConverter {
+
+  override def toCommandProjection(projections: Map[String, Expression],
+                                   self: ExpressionConverters): Option[CommandProjection] = {
+    val projected = for {(k, v) <- projections
+                                    if slots.refSlotAndNotAlias(k)} yield slots.get(k).get.offset -> self.toCommandExpression(v)
+    Some(SlottedCommandProjection(projected))
+  }
+
   override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
     expression match {
       case runtimeAst.NodeFromSlot(offset, _) =>

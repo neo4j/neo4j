@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
-import org.opencypher.v9_0.util._
+import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
-import org.opencypher.v9_0.{expressions => ast}
-import org.opencypher.v9_0.expressions.{SemanticDirection, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ManySeekableArgs, SeekableArgs, SingleSeekableArg}
 import org.neo4j.graphdb.Direction
+import org.opencypher.v9_0.expressions.{SemanticDirection, Variable}
+import org.opencypher.v9_0.util._
+import org.opencypher.v9_0.{expressions => ast}
 
 trait ExpressionConverter {
   def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[CommandExpression]
+  def toCommandProjection(projections: Map[String, ast.Expression], self: ExpressionConverters): Option[CommandProjection]
 }
 
 class ExpressionConverters(converters: ExpressionConverter*) {
@@ -48,6 +50,23 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
     throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }
+
+    def toCommandProjection(projections: Map[String, ast.Expression]): CommandProjection = {
+      converters foreach { c: ExpressionConverter =>
+        c.toCommandProjection(projections, this) match {
+          case Some(x) => return x
+          case None =>
+        }
+      }
+
+    throw new InternalException(s"Unknown projection type during transformation ($projections)")
+  }
+
+  //ctx.setRefAt(1,map.get("foo"))
+  //ctx.setRefAt(4,map.get("bar"))
+  //ctx.setRefAt(5,map.get("baz"))
+  //ctx.setRefAt(6,map.get("foo"))
+  //ctx.setRefAt(42,map.get("foo"))
 
   def toCommandPredicate(in: ast.Expression): Predicate = in match {
     case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(e))

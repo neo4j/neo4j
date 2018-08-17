@@ -61,7 +61,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
       Argument(), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))
     val pipe = build(logicalPlan)
 
-    pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> legacy.Literal(42)))())
+    pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> legacy.Literal(42))))
   }
 
   test("simple pattern query") {

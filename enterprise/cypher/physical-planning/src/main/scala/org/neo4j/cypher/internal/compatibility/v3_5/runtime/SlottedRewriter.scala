@@ -47,6 +47,11 @@ class SlottedRewriter(tokenContext: TokenContext) {
     case _ => false
   }
 
+  private def refSlotAndNotAlias(slots: SlotConfiguration, k: String) = {
+    !slots.isAlias(k) &&
+      slots.get(k).forall(_.isInstanceOf[RefSlot])
+  }
+
   def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations): LogicalPlan = {
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*

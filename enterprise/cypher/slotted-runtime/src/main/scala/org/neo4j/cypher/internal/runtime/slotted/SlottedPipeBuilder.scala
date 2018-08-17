@@ -203,12 +203,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         OptionalSlottedPipe(source, nullableSlots, slots, argumentSize)(id)
 
       case Projection(_, expressions) =>
-        val expressionsWithSlots: Map[Int, commandExpressions.Expression] = expressions collect {
-          case (k, e) if refSlotAndNotAlias(slots, k) =>
-            val slot = slots.get(k).get
-            slot.offset -> convertExpressions(e)
-        }
-        ProjectionSlottedPipe(source, expressionsWithSlots)(id)
+        ProjectionPipe(source, expressionConverters.toCommandProjection(expressions.mapValues(rewriteAstExpression)))(id)
 
       case Create(_, nodes, relationships) =>
         CreateSlottedPipe(
@@ -361,10 +356,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     pipe
   }
 
-  private def refSlotAndNotAlias(slots: SlotConfiguration, k: String) = {
-    !slots.isAlias(k) &&
-      slots.get(k).forall(_.isInstanceOf[RefSlot])
-  }
 
   private def translateColumnOrder(slots: SlotConfiguration, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
     case plans.Ascending(name) =>

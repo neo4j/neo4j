@@ -23,11 +23,12 @@
 package org.neo4j.cypher.internal.runtime.vectorized.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression
-import org.opencypher.v9_0.expressions.{functions, _}
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
+import org.opencypher.v9_0.expressions.{functions, _}
 import org.opencypher.v9_0.{expressions => ast}
 
 object MorselExpressionConverters extends ExpressionConverter {
@@ -53,6 +54,9 @@ object MorselExpressionConverters extends ExpressionConverter {
 
     case _ => None
   }
+
+  override def toCommandProjection(projections: Map[String, ast.Expression],
+                                   self: ExpressionConverters): Option[CommandProjection] = None
 }
 
 
