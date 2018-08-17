@@ -87,10 +87,11 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     createLabeledNode(Map("id" -> "139dbf46f0dc8a325e27ffd118331ca2947e34f0", "label" -> "z"), "phone_type", "timed")
 
     // When
-    val result = executeWith(expectedToSucceed, "MATCH (n:phone_type:timed) where n.label =~ 'a.' return count(n)",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexScan"), expectPlansToFail = Configs.AllRulePlanners))
+    // This test is flaky on 2.3 so we don't want to run with compatibility here
+    val result = execute("MATCH (n:phone_type:timed) where n.label =~ 'a.' return count(n)")
 
     // Then
+    result.executionPlanDescription() should includeSomewhere.aPlan("NodeIndexScan")
     result should evaluateTo(List(Map("count(n)" -> 3)))
   }
 
