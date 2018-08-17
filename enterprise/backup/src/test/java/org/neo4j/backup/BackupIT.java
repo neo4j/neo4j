@@ -134,7 +134,7 @@ public class BackupIT
         serverStoreLayout = testDir.databaseLayout( "server" );
         serverStorePath = serverStoreLayout.databaseDirectory();
         otherServerPath = testDir.directory( "server2" );
-        backupDatabaseLayout = testDir.databaseLayout( "backedup-serverdb" );
+        backupDatabaseLayout = DatabaseLayout.of( testDir.storeDir( "backedup-serverdb" ), "backupDb" );
         backupDatabasePath = backupDatabaseLayout.databaseDirectory();
     }
 
