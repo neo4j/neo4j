@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
-import org.opencypher.v9_0.{expressions => ast}
 import org.opencypher.v9_0.parser.{Expressions, ParserTest}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.{expressions => ast}
 import org.parboiled.scala._
 
 class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
@@ -48,5 +49,5 @@ class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with 
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter)
-  def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(astNode)
+  def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

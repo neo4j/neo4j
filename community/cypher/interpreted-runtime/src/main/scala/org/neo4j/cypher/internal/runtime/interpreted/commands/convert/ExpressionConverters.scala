@@ -29,20 +29,21 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{ManySeekableArgs, SeekableA
 import org.neo4j.graphdb.Direction
 import org.opencypher.v9_0.expressions.{SemanticDirection, Variable}
 import org.opencypher.v9_0.util._
+import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.{expressions => ast}
 
 trait ExpressionConverter {
-  def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[CommandExpression]
-  def toCommandProjection(projections: Map[String, ast.Expression], self: ExpressionConverters): Option[CommandProjection]
+  def toCommandExpression(id: Id, expression: ast.Expression, self: ExpressionConverters): Option[CommandExpression]
+  def toCommandProjection(id: Id, projections: Map[String, ast.Expression], self: ExpressionConverters): Option[CommandProjection]
 }
 
 class ExpressionConverters(converters: ExpressionConverter*) {
 
   self =>
 
-  def toCommandExpression(expression: ast.Expression): CommandExpression = {
+  def toCommandExpression(id: Id, expression: ast.Expression): CommandExpression = {
     converters foreach { c: ExpressionConverter =>
-        c.toCommandExpression(expression, this) match {
+        c.toCommandExpression(id, expression, this) match {
           case Some(x) => return x
           case None =>
         }
@@ -51,9 +52,9 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }
 
-    def toCommandProjection(projections: Map[String, ast.Expression]): CommandProjection = {
+    def toCommandProjection(id: Id, projections: Map[String, ast.Expression]): CommandProjection = {
       converters foreach { c: ExpressionConverter =>
-        c.toCommandProjection(projections, this) match {
+        c.toCommandProjection(id, projections, this) match {
           case Some(x) => return x
           case None =>
         }
@@ -68,32 +69,32 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   //ctx.setRefAt(6,map.get("foo"))
   //ctx.setRefAt(42,map.get("foo"))
 
-  def toCommandPredicate(in: ast.Expression): Predicate = in match {
-    case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(e))
-    case e: ast.FilterExpression => predicates.NonEmpty(toCommandExpression(e))
-    case e: ast.ExtractExpression => predicates.NonEmpty(toCommandExpression(e))
-    case e: ast.ListComprehension => predicates.NonEmpty(toCommandExpression(e))
-    case e => toCommandExpression(e) match {
+  def toCommandPredicate(id: Id, in: ast.Expression): Predicate = in match {
+    case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(id, e))
+    case e: ast.FilterExpression => predicates.NonEmpty(toCommandExpression(id, e))
+    case e: ast.ExtractExpression => predicates.NonEmpty(toCommandExpression(id, e))
+    case e: ast.ListComprehension => predicates.NonEmpty(toCommandExpression(id, e))
+    case e => toCommandExpression(id, e) match {
       case c: Predicate => c
       case c => predicates.CoercedPredicate(c)
     }
   }
 
-  def toCommandPredicate(e: Option[ast.Expression]): Predicate =
-    e.map(self.toCommandPredicate).getOrElse(predicates.True())
+  def toCommandPredicate(id: Id, expression: Option[ast.Expression]): Predicate =
+    expression.map(e => self.toCommandPredicate(id, e)).getOrElse(predicates.True())
 
-  def toCommandSeekArgs(seek: SeekableArgs): SeekArgs = seek match {
-    case SingleSeekableArg(expr) => SingleSeekArg(toCommandExpression(expr))
+  def toCommandSeekArgs(id: Id, seek: SeekableArgs): SeekArgs = seek match {
+    case SingleSeekableArg(expr) => SingleSeekArg(toCommandExpression(id, expr))
     case ManySeekableArgs(expr) => expr match {
       case coll: ast.ListLiteral =>
         ZeroOneOrMany(coll.expressions) match {
           case Zero => SeekArgs.empty
-          case One(value) => SingleSeekArg(toCommandExpression(value))
-          case Many(_) => ManySeekArgs(toCommandExpression(coll))
+          case One(value) => SingleSeekArg(toCommandExpression(id, value))
+          case Many(_) => ManySeekArgs(toCommandExpression(id, coll))
         }
 
       case _ =>
-        ManySeekArgs(toCommandExpression(expr))
+        ManySeekArgs(toCommandExpression(id, expr))
     }
   }
 

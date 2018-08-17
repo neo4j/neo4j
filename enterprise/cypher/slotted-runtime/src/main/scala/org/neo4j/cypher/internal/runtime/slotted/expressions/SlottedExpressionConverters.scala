@@ -19,24 +19,27 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, ast => runtimeAst}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{ast => runtimeAst}
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commands}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath._
 import org.neo4j.cypher.internal.runtime.slotted.{expressions => runtimeExpression}
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.{expressions => ast}
 
-case class SlottedExpressionConverters(slots: SlotConfiguration) extends ExpressionConverter {
+case class SlottedExpressionConverters(physicalPlan: PhysicalPlan) extends ExpressionConverter {
 
-  override def toCommandProjection(projections: Map[String, Expression],
+  override def toCommandProjection(id: Id, projections: Map[String, Expression],
                                    self: ExpressionConverters): Option[CommandProjection] = {
-    val projected = for {(k, v) <- projections} yield slots.get(k).get.offset -> self.toCommandExpression(v)
+    val slots = physicalPlan.slotConfigurations(id)
+    val projected = for {(k, v) <- projections} yield slots.get(k).get.offset -> self.toCommandExpression(id, v)
     Some(SlottedCommandProjection(projected))
   }
 
-  override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
+  override def toCommandExpression(id: Id, expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
     expression match {
       case runtimeAst.NodeFromSlot(offset, _) =>
         Some(runtimeExpression.NodeFromSlot(offset))
@@ -55,8 +58,8 @@ case class SlottedExpressionConverters(slots: SlotConfiguration) extends Express
       case runtimeAst.RelationshipPropertyLate(offset, propKey, _) =>
         Some(runtimeExpression.RelationshipPropertyLate(offset, propKey))
       case runtimeAst.PrimitiveEquals(a, b) =>
-        val lhs = self.toCommandExpression(a)
-        val rhs = self.toCommandExpression(b)
+        val lhs = self.toCommandExpression(id, a)
+        val rhs = self.toCommandExpression(id, b)
         Some(runtimeExpression.PrimitiveEquals(lhs, rhs))
       case runtimeAst.GetDegreePrimitive(offset, typ, direction) =>
         Some(runtimeExpression.GetDegreePrimitive(offset, typ, direction))
@@ -69,45 +72,45 @@ case class SlottedExpressionConverters(slots: SlotConfiguration) extends Express
       case runtimeAst.RelationshipPropertyExistsLate(offset, token, _) =>
         Some(runtimeExpression.RelationshipPropertyExistsLate(offset, token))
       case runtimeAst.NullCheck(offset, inner) =>
-        val a = self.toCommandExpression(inner)
+        val a = self.toCommandExpression(id, inner)
         Some(runtimeExpression.NullCheck(offset, a))
       case runtimeAst.NullCheckVariable(offset, inner) =>
-        val a = self.toCommandExpression(inner)
+        val a = self.toCommandExpression(id, inner)
         Some(runtimeExpression.NullCheck(offset, a))
       case runtimeAst.NullCheckProperty(offset, inner) =>
-        val a = self.toCommandExpression(inner)
+        val a = self.toCommandExpression(id, inner)
         Some(runtimeExpression.NullCheck(offset, a))
       case e: ast.PathExpression =>
-        Some(toCommandProjectedPath(e, self))
+        Some(toCommandProjectedPath(id, e, self))
       case runtimeAst.IsPrimitiveNull(offset) =>
         Some(runtimeExpression.IsPrimitiveNull(offset))
       case _ =>
         None
     }
 
-  def toCommandProjectedPath(e: ast.PathExpression, self: ExpressionConverters): SlottedProjectedPath = {
+  def toCommandProjectedPath(id:Id, e: ast.PathExpression, self: ExpressionConverters): SlottedProjectedPath = {
     def project(pathStep: PathStep): Projector = pathStep match {
 
       case NodePathStep(nodeExpression, next) =>
-        singleNodeProjector(toCommandExpression(nodeExpression, self).get, project(next))
+        singleNodeProjector(toCommandExpression(id, nodeExpression, self).get, project(next))
 
       case SingleRelationshipPathStep(relExpression, SemanticDirection.INCOMING, next) =>
-        singleIncomingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+        singleIncomingRelationshipProjector(toCommandExpression(id, relExpression, self).get, project(next))
 
       case SingleRelationshipPathStep(relExpression, SemanticDirection.OUTGOING, next) =>
-        singleOutgoingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+        singleOutgoingRelationshipProjector(toCommandExpression(id, relExpression, self).get, project(next))
 
       case SingleRelationshipPathStep(relExpression, SemanticDirection.BOTH, next) =>
-        singleUndirectedRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+        singleUndirectedRelationshipProjector(toCommandExpression(id, relExpression, self).get, project(next))
 
       case MultiRelationshipPathStep(relExpression, SemanticDirection.INCOMING, next) =>
-        multiIncomingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+        multiIncomingRelationshipProjector(toCommandExpression(id, relExpression, self).get, project(next))
 
       case MultiRelationshipPathStep(relExpression, SemanticDirection.OUTGOING, next) =>
-        multiOutgoingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+        multiOutgoingRelationshipProjector(toCommandExpression(id, relExpression, self).get, project(next))
 
       case MultiRelationshipPathStep(relExpression, SemanticDirection.BOTH, next) =>
-        multiUndirectedRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+        multiUndirectedRelationshipProjector(toCommandExpression(id, relExpression, self).get, project(next))
 
       case NilPathStep =>
         nilProjector

@@ -55,9 +55,9 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
 
   val logicalToExecutable: PartialFunction[LogicalPlan, ExecutionPlan] = {
     // Global call: CALL foo.bar.baz("arg1", 2)
-    case StandAloneProcedureCall(signature, args, types, indices) =>
+    case plan@StandAloneProcedureCall(signature, args, types, indices) =>
       val converters = new ExpressionConverters(CommunityExpressionConverter)
-      ProcedureCallExecutionPlan(signature, args, types, indices, converters)
+      ProcedureCallExecutionPlan(signature, args, types, indices, converters, plan.id)
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case CreateNodeKeyConstraint(_, label, props) =>

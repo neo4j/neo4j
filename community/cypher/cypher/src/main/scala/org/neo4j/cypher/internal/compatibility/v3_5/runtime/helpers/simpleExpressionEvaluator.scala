@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
-import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NullPipeDecorator, QueryState}
-import org.opencypher.v9_0.expressions.Expression
 import org.neo4j.values.virtual.VirtualValues
+import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
 
 import scala.collection.mutable
 
@@ -34,7 +35,7 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
   // Returns Some(value) if the expression can be independently evaluated in an empty context/query state, otherwise None
   def evaluateExpression(expr: Expression): Option[Any] = {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
-    val commandExpr = converters.toCommandExpression(expr)
+    val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
 
     val emptyQueryState =
       new QueryState(

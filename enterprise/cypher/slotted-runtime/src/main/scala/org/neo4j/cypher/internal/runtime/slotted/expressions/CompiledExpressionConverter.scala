@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, CompiledExpression, CompiledProjection, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ExtendedExpression, RandFunction}
@@ -29,22 +29,23 @@ import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.expressions.FunctionInvocation
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
+import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.{expressions => ast}
 
-class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends ExpressionConverter {
+class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan) extends ExpressionConverter {
 
   //uses an inner converter to simplify compliance with Expression trait
-  private val inner = new ExpressionConverters(SlottedExpressionConverters(slots), CommunityExpressionConverter)
+  private val inner = new ExpressionConverters(SlottedExpressionConverters(physicalPlan), CommunityExpressionConverter)
 
-  override def toCommandExpression(expression: ast.Expression,
+  override def toCommandExpression(id: Id, expression: ast.Expression,
                                    self: ExpressionConverters): Option[Expression] = expression match {
 
     //we don't deal with aggregations
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
     case e => try {
-      new IntermediateCodeGeneration(slots).compileExpression(e).map(i => CompileWrappingExpression(CodeGeneration.compileExpression(i),
-                                                                                                    inner.toCommandExpression(expression)))
+      new IntermediateCodeGeneration(physicalPlan.slotConfigurations(id)).compileExpression(e).map(i => CompileWrappingExpression(CodeGeneration.compileExpression(i),
+                                                                                                    inner.toCommandExpression(id, expression)))
     } catch {
       case t: Throwable =>
         //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried
@@ -55,9 +56,10 @@ class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends Ex
     }
   }
 
-  override def toCommandProjection(projections: Map[String, ast.Expression],
+  override def toCommandProjection(id: Id, projections: Map[String, ast.Expression],
                                    self: ExpressionConverters): Option[CommandProjection] = {
     try {
+      val slots = physicalPlan.slotConfigurations(id)
       val compiler = new IntermediateCodeGeneration(slots)
       val compiled = for {(k, v) <- projections
                           c <- compiler.compileExpression(v)} yield slots.get(k).get.offset -> c

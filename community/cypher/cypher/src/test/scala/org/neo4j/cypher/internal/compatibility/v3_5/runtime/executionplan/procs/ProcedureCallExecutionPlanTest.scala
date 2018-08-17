@@ -25,6 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{CloseableResource, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.{CloseableResource, NormalMode, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.Procedures
@@ -36,15 +37,19 @@ import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 import scala.collection.JavaConverters._
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter)
+  private val idGen = new SequentialIdGen()
 
   test("should be able to call procedure with single argument") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          converters)
+                                          converters, idGen.id())
 
     // When
     val res = proc.run(ctx, false, EMPTY_MAP)
@@ -57,7 +62,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          converters)
+                                          converters, idGen.id())
 
     // When
     proc.run(ctx, false, EMPTY_MAP)
@@ -70,7 +75,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          converters)
+                                          converters, idGen.id())
 
     // When
     proc.run(ctx, false, EMPTY_MAP)

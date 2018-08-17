@@ -19,26 +19,27 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
-import org.opencypher.v9_0.util.{SyntaxException, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{Pattern, SingleNode, values => commandvalues}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{SyntaxException, UnNamedNameGenerator}
 import org.opencypher.v9_0.{expressions => ast}
 
 object PatternConverters {
 
   implicit class RelationshipsPatternConverter(val pattern: ast.RelationshipsPattern) extends AnyVal {
-    def asLegacyPatterns(converter: ExpressionConverters): Seq[Pattern] =
-      pattern.element.asLegacyPatterns(converter)
+    def asLegacyPatterns(id: Id, converter: ExpressionConverters): Seq[Pattern] =
+      pattern.element.asLegacyPatterns(id, converter)
   }
 
   implicit class ShortestPathsConverter(val part: ast.ShortestPaths) extends AnyVal {
-    def asLegacyPatterns(maybePathName: Option[String], converter: ExpressionConverters): Seq[commands.ShortestPath] = {
+    def asLegacyPatterns(id: Id, maybePathName: Option[String], converter: ExpressionConverters): Seq[commands.ShortestPath] = {
       val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
       val (leftName, rel, rightName) = part.element match {
         case ast.RelationshipChain(leftNode: ast.NodePattern, relationshipPattern, rightNode) =>
-          (leftNode.asLegacyNode(converter), relationshipPattern, rightNode.asLegacyNode(converter))
+          (leftNode.asLegacyNode(id, converter), relationshipPattern, rightNode.asLegacyNode(id, converter))
         case _                                                                        =>
           throw new IllegalStateException("This should be caught during semantic checking")
       }
@@ -54,24 +55,24 @@ object PatternConverters {
   }
 
   implicit class RelationshipChainConverter(val chain: ast.RelationshipChain) extends AnyVal {
-    def asLegacyPatterns(converter: ExpressionConverters): Seq[commands.Pattern] = {
+    def asLegacyPatterns(id: Id, converter: ExpressionConverters): Seq[commands.Pattern] = {
       val (patterns, leftNode) = chain.element match {
         case node: ast.NodePattern            =>
           (Vector(), node)
         case leftChain: ast.RelationshipChain =>
-          (leftChain.asLegacyPatterns(converter), leftChain.rightNode)
+          (leftChain.asLegacyPatterns(id, converter), leftChain.rightNode)
       }
 
-      patterns :+ chain.relationship.asLegacyPattern(leftNode, chain.rightNode, converter)
+      patterns :+ chain.relationship.asLegacyPattern(leftNode, chain.rightNode, id, converter)
     }
   }
 
   implicit class NodePatternConverter(val node: ast.NodePattern) extends AnyVal {
 
 
-    def asLegacyNode(converter: ExpressionConverters): SingleNode = {
+    def asLegacyNode(id: Id, converter: ExpressionConverters): SingleNode = {
       val labelTokens: Seq[KeyToken] = labels.map(x => commandvalues.UnresolvedLabel(x.name))
-      val properties: Map[String, CommandExpression] = node.legacyProperties(converter)
+      val properties: Map[String, CommandExpression] = node.legacyProperties(id, converter)
       commands.SingleNode(node.legacyName, labelTokens, properties = properties)
     }
 
@@ -79,16 +80,16 @@ object PatternConverters {
 
     private def labels = node.labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label))
 
-    def legacyProperties(converter: ExpressionConverters): Map[String, CommandExpression] = node.properties match {
-      case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, converter.toCommandExpression(p._2))).toMap
-      case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> converter.toCommandExpression(p))
+    def legacyProperties(id:Id, converter: ExpressionConverters): Map[String, CommandExpression] = node.properties match {
+      case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, converter.toCommandExpression(id, p._2))).toMap
+      case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> converter.toCommandExpression(id, p))
       case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
       case None                       => Map[String, CommandExpression]()
     }
   }
 
   implicit class RelationshipPatternConverter(val relationship: ast.RelationshipPattern) extends AnyVal {
-    def asLegacyPattern(leftNode: ast.NodePattern, rightNode: ast.NodePattern, converter: ExpressionConverters): commands.Pattern = {
+    def asLegacyPattern(leftNode: ast.NodePattern, rightNode: ast.NodePattern, id:Id, converter: ExpressionConverters): commands.Pattern = {
       relationship.length match {
         case Some(maybeRange) =>
           val pathName = UnNamedNameGenerator.name(relationship.position)
@@ -97,20 +98,20 @@ object PatternConverters {
             case None        => (None, None)
           }
           val relIterator = relationship.variable.map(_.name)
-          commands.VarLengthRelatedTo(pathName, leftNode.asLegacyNode(converter), rightNode.asLegacyNode(converter), min, max,
-            relationship.types.map(_.name).distinct, relationship.direction, relIterator, properties = legacyProperties(converter))
+          commands.VarLengthRelatedTo(pathName, leftNode.asLegacyNode(id, converter), rightNode.asLegacyNode(id, converter), min, max,
+            relationship.types.map(_.name).distinct, relationship.direction, relIterator, properties = legacyProperties(id, converter))
         case None             =>
-          commands.RelatedTo(leftNode.asLegacyNode(converter), rightNode.asLegacyNode(converter), relationship.legacyName,
-            relationship.types.map(_.name).distinct, relationship.direction, legacyProperties(converter))
+          commands.RelatedTo(leftNode.asLegacyNode(id, converter), rightNode.asLegacyNode(id, converter), relationship.legacyName,
+            relationship.types.map(_.name).distinct, relationship.direction, legacyProperties(id, converter))
       }
     }
 
     def legacyName: String = relationship.variable.fold(UnNamedNameGenerator.name(relationship.position))(_.name)
 
-    def legacyProperties(converter: ExpressionConverters): Map[String, CommandExpression] = relationship.properties match {
+    def legacyProperties(id: Id, converter: ExpressionConverters): Map[String, CommandExpression] = relationship.properties match {
       case None                       => Map.empty[String, CommandExpression]
-      case Some(m: ast.MapExpression) => m.items.map(p => p._1.name -> converter.toCommandExpression(p._2))(collection.breakOut)
-      case Some(p: ast.Parameter)     => Map("*" -> converter.toCommandExpression(p))
+      case Some(m: ast.MapExpression) => m.items.map(p => p._1.name -> converter.toCommandExpression(id, p._2))(collection.breakOut)
+      case Some(p: ast.Parameter)     => Map("*" -> converter.toCommandExpression(id, p))
       case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
     }
   }

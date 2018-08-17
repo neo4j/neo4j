@@ -29,23 +29,24 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
 import org.opencypher.v9_0.expressions.{functions, _}
+import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.{expressions => ast}
 
 object MorselExpressionConverters extends ExpressionConverter {
 
-  override def toCommandExpression(expression: ast.Expression,
+  override def toCommandExpression(id: Id, expression: ast.Expression,
                                    self: ExpressionConverters): Option[Expression] = expression match {
 
     case c: FunctionInvocation if c.function == functions.Count =>
-      Some(CountOperatorExpression(self.toCommandExpression(c.arguments.head)))
+      Some(CountOperatorExpression(self.toCommandExpression(id, c.arguments.head)))
     case c: FunctionInvocation if c.function == functions.Avg =>
-      Some(AvgOperatorExpression(self.toCommandExpression(c.arguments.head)))
+      Some(AvgOperatorExpression(self.toCommandExpression(id, c.arguments.head)))
     case c: FunctionInvocation if c.function == functions.Max =>
-      Some(MaxOperatorExpression(self.toCommandExpression(c.arguments.head)))
+      Some(MaxOperatorExpression(self.toCommandExpression(id, c.arguments.head)))
     case c: FunctionInvocation if c.function == functions.Min =>
-      Some(MinOperatorExpression(self.toCommandExpression(c.arguments.head)))
+      Some(MinOperatorExpression(self.toCommandExpression(id, c.arguments.head)))
     case c: FunctionInvocation if c.function == functions.Collect =>
-      Some(CollectOperatorExpression(self.toCommandExpression(c.arguments.head)))
+      Some(CollectOperatorExpression(self.toCommandExpression(id, c.arguments.head)))
     case _: CountStar => Some(CountStarOperatorExpression)
 
     //Queries containing these expression cant be handled by morsel runtime yet
@@ -55,7 +56,7 @@ object MorselExpressionConverters extends ExpressionConverter {
     case _ => None
   }
 
-  override def toCommandProjection(projections: Map[String, ast.Expression],
+  override def toCommandProjection(id: Id, projections: Map[String, ast.Expression],
                                    self: ExpressionConverters): Option[CommandProjection] = None
 }
 

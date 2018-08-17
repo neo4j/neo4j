@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
-import org.opencypher.v9_0.{expressions => ast}
 import org.opencypher.v9_0.parser.{Expressions, ParserTest}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.{expressions => ast}
 import org.parboiled.scala._
 
 class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {
@@ -46,5 +47,5 @@ class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Exp
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter)
-  def convert(astNode: ast.ListComprehension): legacy.Expression = converters.toCommandExpression(astNode)
+  def convert(astNode: ast.ListComprehension): legacy.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

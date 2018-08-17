@@ -1411,7 +1411,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(property(parameter("a"), "prop"))
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
-    compiled.evaluate(ctx, db, map(Array("a"), Array(map(Array("a"), Array(stringValue("hello")))))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(map(Array("prop"), Array(stringValue("hello")))))) should equal(stringValue("hello"))
   }
 
   test("access property on temporal") {
@@ -1449,16 +1449,17 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("should project") {
     //given
+    val context = mock[ExecutionContext]
     val projections = Map(0 -> literal("hello"), 1 -> function("sin", parameter("param")))
     val compiled = compileProjection(projections)
 
     //when
-    compiled.project(ctx, db, map(Array("param"), Array(NO_VALUE)))
+    compiled.project(context, db, map(Array("param"), Array(NO_VALUE)))
 
     //then
-    Mockito.verify(ctx).setRefAt(0, stringValue("hello"))
-    Mockito.verify(ctx).setRefAt(1, NO_VALUE)
-    Mockito.verifyNoMoreInteractions(ctx)
+    Mockito.verify(context).setRefAt(0, stringValue("hello"))
+    Mockito.verify(context).setRefAt(1, NO_VALUE)
+    Mockito.verifyNoMoreInteractions(context)
   }
 
   private def path(size: Int) =

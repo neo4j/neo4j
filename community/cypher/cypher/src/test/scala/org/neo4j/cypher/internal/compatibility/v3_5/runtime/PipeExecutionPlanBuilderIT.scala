@@ -93,7 +93,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astCollection), Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(converters.toCommandExpression(astCollection)))())
+    pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)))())
   }
 
   test("simple relationship by id seek query") {
@@ -115,7 +115,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(astCollection)), toNode, fromNode)())
+    pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)), toNode, fromNode)())
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
@@ -127,7 +127,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val logicalPlan = UndirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(astCollection)), toNode, fromNode)())
+    pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)), toNode, fromNode)())
   }
 
   test("simple cartesian product") {

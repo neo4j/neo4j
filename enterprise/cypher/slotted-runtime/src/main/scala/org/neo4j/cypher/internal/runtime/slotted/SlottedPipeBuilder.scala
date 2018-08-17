@@ -51,15 +51,15 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
                         (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext)
   extends PipeBuilder {
 
-  private val convertExpressions: frontEndAst.Expression => commandExpressions.Expression =
-    rewriteAstExpression andThen expressionConverters.toCommandExpression
+
 
   override def onLeaf(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.id
-    val slots = physicalPlan.slotConfigurations(plan.id)
-    val argumentSize = physicalPlan.argumentSizes(plan.id)
+    val convertExpressions = rewriteAstExpression andThen ((e) => expressionConverters.toCommandExpression(id, e))
+    val slots = physicalPlan.slotConfigurations(id)
+    val argumentSize = physicalPlan.argumentSizes(id)
     generateSlotAccessorFunctions(slots)
 
     val pipe = plan match {
@@ -136,7 +136,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.id
-    val slots = physicalPlan.slotConfigurations(plan.id)
+    val convertExpressions = rewriteAstExpression andThen ((e) => expressionConverters.toCommandExpression(id, e))
+    val slots = physicalPlan.slotConfigurations(id)
     generateSlotAccessorFunctions(slots)
 
     val pipe = plan match {
@@ -160,7 +161,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val fromSlot = slots(fromName)
         val relOffset = slots.getLongOffsetFor(relName)
         val toOffset = slots.getLongOffsetFor(toName)
-        val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
+        val predicate: Predicate = predicates.map(buildPredicate(id, _)).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllSlottedPipe(source, fromSlot, relOffset, toOffset, dir, LazyTypes(types.toArray), predicate,
           slots)(id)
 
@@ -168,7 +169,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val fromSlot = slots(fromName)
         val relOffset = slots.getLongOffsetFor(relName)
         val toSlot = slots(toName)
-        val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
+        val predicate = predicates.map(buildPredicate(id, _)).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoSlottedPipe(source, fromSlot, relOffset, toSlot, dir, LazyTypes(types.toArray), predicate,
           slots)(id)
 
@@ -192,8 +193,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           max, shouldExpandAll, slots,
           tempNodeOffset = tempNodeOffset,
           tempEdgeOffset = tempEdgeOffset,
-          nodePredicate = buildPredicate(nodePredicate),
-          edgePredicate = buildPredicate(edgePredicate),
+          nodePredicate = buildPredicate(id, nodePredicate),
+          edgePredicate = buildPredicate(id, edgePredicate),
           argumentSize = argumentSize)(id)
 
       case Optional(inner, symbols) =>
@@ -206,7 +207,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val toProject = expressions collect {
           case (k, e) if refSlotAndNotAlias(slots, k) => k -> rewriteAstExpression(e)
         }
-        ProjectionPipe(source, expressionConverters.toCommandProjection(toProject))(id)
+        ProjectionPipe(source, expressionConverters.toCommandProjection(id, toProject))(id)
 
       case Create(_, nodes, relationships) =>
         CreateSlottedPipe(
@@ -391,12 +392,12 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     identifier -> SlottedPipeBuilder.projectSlotExpression(slot)
   }
 
-  private def buildPredicate(expr: frontEndAst.Expression)
+  private def buildPredicate(id: Id, expr: frontEndAst.Expression)
                             (implicit context: PipeExecutionBuilderContext): Predicate = {
     val rewrittenExpr: frontEndAst.Expression = rewriteAstExpression(expr)
 
     expressionConverters
-      .toCommandPredicate(rewrittenExpr)
+      .toCommandPredicate(id, rewrittenExpr)
       .rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext))
       .asInstanceOf[Predicate]
   }
@@ -406,7 +407,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
     val slotConfigs = physicalPlan.slotConfigurations
     val id = plan.id
-    val slots = slotConfigs(plan.id)
+    val convertExpressions = rewriteAstExpression andThen ((e) => expressionConverters.toCommandExpression(id, e))
+    val slots = slotConfigs(id)
     generateSlotAccessorFunctions(slots)
 
     val pipe = plan match {
@@ -522,6 +524,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
                                  slots: SlotConfiguration,
                                  source: Pipe,
                                  id: Id): Pipe = {
+
+    val convertExpressions = rewriteAstExpression andThen ((e) => expressionConverters.toCommandExpression(id, e))
 
     /**
       * We use these objects to figure out:

@@ -47,11 +47,10 @@ import org.opencypher.v9_0.ast.semantics.SemanticTable
 object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
       val (logicalPlan,physicalPlan) = rewritePlan(context, state.logicalPlan, state.semanticTable())
-    val slots = physicalPlan.slotConfigurations(state.logicalPlan.id)
     val converters: ExpressionConverters = new ExpressionConverters(
-        new CompiledExpressionConverter(context.log, slots),
+        new CompiledExpressionConverter(context.log, physicalPlan),
         MorselExpressionConverters,
-        SlottedExpressionConverters(slots),
+        SlottedExpressionConverters(physicalPlan),
         CommunityExpressionConverter)
       val operatorBuilder = new PipelineBuilder(physicalPlan, converters, context.readOnly)
 

@@ -46,8 +46,9 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
   }
 
   override protected def build(plan: LogicalPlan): Pipeline = {
-    val slots = physicalPlan.slotConfigurations(plan.id)
-    val argumentSize = physicalPlan.argumentSizes(plan.id)
+    val id = plan.id
+    val slots = physicalPlan.slotConfigurations(id)
+    val argumentSize = physicalPlan.argumentSizes(id)
 
     val thisOp = plan match {
       case plans.AllNodesScan(column, _) =>
@@ -75,7 +76,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           labelToken.nameId.id,
           propertyKey.nameId.id,
           getMaybeIndexedValueOffset(column, slots, propertyKey),
-          converters.toCommandExpression(valueExpr),
+          converters.toCommandExpression(id, valueExpr),
           argumentSize)
 
       case plans.NodeIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
@@ -85,7 +86,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           label,
           getIndexedProperties(column, propertyKeys, slots),
           argumentSize,
-          valueExpr.map(converters.toCommandExpression),
+          valueExpr.map(converters.toCommandExpression(id, _)),
           indexSeekMode)
 
       case plans.NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
@@ -95,7 +96,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           label,
           getIndexedProperties(column, propertyKeys, slots),
           argumentSize,
-          valueExpr.map(converters.toCommandExpression),
+          valueExpr.map(converters.toCommandExpression(id, _)),
           indexSeekMode)
 
       case plans.Argument(_) =>
@@ -130,14 +131,15 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
     var source = from
-    val slots = physicalPlan.slotConfigurations(plan.id)
+    val id = plan.id
+    val slots = physicalPlan.slotConfigurations(id)
 
       val thisOp = plan match {
         case plans.ProduceResult(_, columns) =>
           new ProduceResultOperator(slots, columns.toArray)
 
         case plans.Selection(predicate, _) =>
-          new FilterOperator(converters.toCommandPredicate(predicate))
+          new FilterOperator(converters.toCommandPredicate(id, predicate))
 
         case plans.Expand(lhs, fromName, dir, types, to, relName, ExpandAll) =>
           val fromOffset = slots.getLongOffsetFor(fromName)
@@ -148,7 +150,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
 
         case plans.Projection(_, expressions) =>
           val projectionOps = expressions.map {
-            case (key, e) => slots(key) -> converters.toCommandExpression(e)
+            case (key, e) => slots(key) -> converters.toCommandExpression(id, e)
           }
           new ProjectOperator(projectionOps)
 
@@ -160,7 +162,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
 
         case Top(_, sortItems, limit) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
-          val countExpression = converters.toCommandExpression(limit)
+          val countExpression = converters.toCommandExpression(id, limit)
           val preTop = new PreSortOperator(ordering, Some(countExpression))
           source.addOperator(preTop)
           new MergeSortOperator(ordering, Some(countExpression))
@@ -173,7 +175,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
               //source slot
               source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
               AggregationOffsets(source.slots.getReferenceOffsetFor(key), currentSlot.offset,
-                                 converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator])
+                                 converters.toCommandExpression(id, expression).asInstanceOf[AggregationExpressionOperator])
           }.toArray
 
           //add mapper to source
@@ -189,7 +191,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
                 source.slots.newLong(key, currentSlot.nullable, currentSlot.typ)
               else
                 source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
-              GroupingOffsets(source.slots(key), currentSlot, converters.toCommandExpression(expression))
+              GroupingOffsets(source.slots(key), currentSlot, converters.toCommandExpression(id, expression))
           }.toArray
 
           val aggregations = aggregationExpression.map {
@@ -199,7 +201,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
               //source slot
               source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
               AggregationOffsets(source.slots.getReferenceOffsetFor(key), currentSlot.offset,
-                                 converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator])
+                                 converters.toCommandExpression(id, expression).asInstanceOf[AggregationExpressionOperator])
           }.toArray
 
           //add mapper to source
@@ -212,7 +214,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
             case _ =>
               throw new InternalException("Weird slot found for UNWIND")
           }
-          val runtimeExpression = converters.toCommandExpression(collection)
+          val runtimeExpression = converters.toCommandExpression(id, collection)
           new UnwindOperator(runtimeExpression, offset)
 
         case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")

@@ -32,6 +32,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.InvalidArgumentException
+import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.symbols.CypherType
 
 /**
@@ -48,7 +49,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
                                       resultSymbols: Seq[(String, CypherType)],
                                       resultIndices: Seq[(Int, String)],
-                                      converter: ExpressionConverters)
+                                      converter: ExpressionConverters,
+                                      id: Id)
   extends ExecutionPlan {
 
   assert(resultSymbols.size == resultIndices.size)
@@ -58,7 +60,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     (r._1, r._2, resultSymbols(i)._2)
   })
 
-  private val actualArgs: Seq[CommandExpression] =  argExprs.map(converter.toCommandExpression) // This list can be shorter than signature.inputSignature.length
+  private val actualArgs: Seq[CommandExpression] =  argExprs.map(converter.toCommandExpression(id, _)) // This list can be shorter than signature.inputSignature.length
   private val parameterArgs: Seq[ParameterExpression] =  signature.inputSignature.map(s => ParameterExpression(s.name))
   private val maybeDefaultArgs: Seq[Option[CommandExpression]] =  signature.inputSignature.map(_.default).map(option => option.map( df => Literal(df.value)))
   private val zippedArgCandidates = actualArgs.map(Some(_)).zipAll(parameterArgs.zip(maybeDefaultArgs), None, null).map { case (a, (b, c)) => (a, b, c)}

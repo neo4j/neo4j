@@ -459,7 +459,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     case Property(mapExpression, PropertyKeyName(key)) =>
       for (map <- compileExpression(mapExpression)) yield {
         val variableName = namer.nextVariableName()
-        val local = variable[Value](variableName,
+        val local = variable[AnyValue](variableName,
                                     ternary(map.nullCheck.reduceLeft((acc,current) => or(acc, current)), noValue,
                                     invokeStatic(method[CypherFunctions, AnyValue, String, AnyValue, DbAccess]("propertyGet"), constant(key), map.ir, DB_ACCESS)))
         IntermediateExpression(load(variableName), Seq.empty, map.variables :+ local, Set(equal(load(variableName), noValue)))

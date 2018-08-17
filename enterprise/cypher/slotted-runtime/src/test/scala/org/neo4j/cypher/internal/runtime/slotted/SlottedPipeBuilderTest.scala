@@ -55,7 +55,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, table)
     val slottedRewriter = new SlottedRewriter(planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
-    val converters = new ExpressionConverters(SlottedExpressionConverters(physicalPlan.slotConfigurations(beforeRewrite.id)),
+    val converters = new ExpressionConverters(SlottedExpressionConverters(physicalPlan),
                                                                           CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(SlottedPipeBuilder.Factory(physicalPlan), converters)
     val context = PipeExecutionBuilderContext(table, true)
