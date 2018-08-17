@@ -103,15 +103,15 @@ public class StoreUpgrader
         }
     }
 
-    public void migrateIfNeeded( DatabaseLayout dbDirectoryStructure )
+    public void migrateIfNeeded( DatabaseLayout layout )
     {
-        DatabaseLayout migrationStructure = DatabaseLayout.of( dbDirectoryStructure.databaseDirectory(), MIGRATION_DIRECTORY );
+        DatabaseLayout migrationStructure = DatabaseLayout.of( layout.databaseDirectory(), MIGRATION_DIRECTORY );
 
-        cleanupLegacyLeftOverDirsIn( dbDirectoryStructure.databaseDirectory() );
+        cleanupLegacyLeftOverDirsIn( layout.databaseDirectory() );
 
         File migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
         // if migration directory exists than we might have failed to move files into the store dir so do it again
-        if ( upgradableDatabase.hasCurrentVersion( dbDirectoryStructure ) && !fileSystem.fileExists( migrationStateFile ) )
+        if ( upgradableDatabase.hasCurrentVersion( layout ) && !fileSystem.fileExists( migrationStateFile ) )
         {
             // No migration needed
             return;
@@ -119,15 +119,15 @@ public class StoreUpgrader
 
         if ( isUpgradeAllowed() )
         {
-            migrateStore( dbDirectoryStructure, migrationStructure, migrationStateFile );
+            migrateStore( layout, migrationStructure, migrationStateFile );
         }
-        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, dbDirectoryStructure, fileSystem, pageCache, logProvider ) )
+        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider ) )
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }
     }
 
-    private void migrateStore( DatabaseLayout dbDirectoryStructure, DatabaseLayout migrationStructure, File migrationStateFile )
+    private void migrateStore( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile )
     {
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );
@@ -138,10 +138,10 @@ public class StoreUpgrader
         // and it's just a matter of moving over the files to the storeDir.
         if ( MigrationStatus.migrating.isNeededFor( migrationStatus ) )
         {
-            versionToMigrateFrom = upgradableDatabase.checkUpgradable( dbDirectoryStructure ).storeVersion();
-            cleanMigrationDirectory( migrationStructure.databaseDirectory() );
+            versionToMigrateFrom = upgradableDatabase.checkUpgradable( dbDirectoryLayout ).storeVersion();
+            cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
-            migrateToIsolatedDirectory( dbDirectoryStructure, migrationStructure, versionToMigrateFrom );
+            migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );
             MigrationStatus.moving.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
         }
 
@@ -149,11 +149,11 @@ public class StoreUpgrader
         {
             versionToMigrateFrom =
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
-            moveMigratedFilesToStoreDirectory( participants, migrationStructure, dbDirectoryStructure,
+            moveMigratedFilesToStoreDirectory( participants, migrationLayout, dbDirectoryLayout,
                     versionToMigrateFrom, upgradableDatabase.currentVersion() );
         }
 
-        cleanup( participants, migrationStructure );
+        cleanup( participants, migrationLayout );
 
         progressMonitor.completed();
     }
@@ -196,14 +196,14 @@ public class StoreUpgrader
         }
     }
 
-    private static void moveMigratedFilesToStoreDirectory( Iterable<StoreMigrationParticipant> participants, DatabaseLayout migrationStructure,
-            DatabaseLayout directoryStructure, String versionToMigrateFrom, String versionToMigrateTo )
+    private static void moveMigratedFilesToStoreDirectory( Iterable<StoreMigrationParticipant> participants, DatabaseLayout migrationLayout,
+            DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
     {
         try
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.moveMigratedFiles( migrationStructure, directoryStructure, versionToMigrateFrom,
+                participant.moveMigratedFiles( migrationLayout, directoryLayout, versionToMigrateFrom,
                         versionToMigrateTo );
             }
         }
@@ -213,14 +213,14 @@ public class StoreUpgrader
         }
     }
 
-    private void migrateToIsolatedDirectory( DatabaseLayout directoryStructure, DatabaseLayout migrationStrcture, String versionToMigrateFrom )
+    private void migrateToIsolatedDirectory( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, String versionToMigrateFrom )
     {
         try
         {
             for ( StoreMigrationParticipant participant : participants )
             {
                 ProgressReporter progressReporter = progressMonitor.startSection( participant.getName() );
-                participant.migrate( directoryStructure, migrationStrcture, progressReporter, versionToMigrateFrom,
+                participant.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
                 progressReporter.completed();
             }

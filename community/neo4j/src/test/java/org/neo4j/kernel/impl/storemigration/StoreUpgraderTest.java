@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -358,7 +357,7 @@ public class StoreUpgraderTest
         return new AbstractStoreMigrationParticipant( "Failing" )
         {
             @Override
-            public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout storeLayout, String versionToUpgradeFrom,
+            public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
                     String versionToMigrateTo ) throws IOException
             {
                 throw new IOException( failureMessage );

@@ -54,6 +54,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -486,6 +487,6 @@ public class OnlineBackupCommandHaIT
     private DbRepresentation getBackupDbRepresentation( String name )
     {
         Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        return DbRepresentation.of( new File( backupDir, name ), config );
+        return DbRepresentation.of( DatabaseLayout.of( backupDir, name ).databaseDirectory(), config );
     }
 }

@@ -509,7 +509,7 @@ public class OnlineBackupCommandCcIT
     {
         Config config = Config.defaults();
         config.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        return DbRepresentation.of( new File( storeDir, name ), config );
+        return DbRepresentation.of( DatabaseLayout.of( storeDir, name ).databaseDirectory(), config );
     }
 
     private int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception

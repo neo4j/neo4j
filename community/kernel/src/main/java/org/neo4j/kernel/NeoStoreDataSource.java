@@ -222,7 +222,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public NeoStoreDataSource( DatabaseCreationContext context )
     {
         this.databaseName = context.getDatabaseName();
-        this.databaseLayout = context.getDatabaseDirectoryStructure();
+        this.databaseLayout = context.getDatabaseLayout();
         this.config = context.getConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();

@@ -25,7 +25,6 @@ import java.nio.file.NoSuchFileException;
 import java.util.Optional;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -67,21 +66,21 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     }
 
     @Override
-    public void migrate( DatabaseLayout storeStructure, DatabaseLayout migrationStructure, ProgressReporter progressReporter,
+    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        if ( isNativeLabelScanStoreMigrationRequired( storeStructure ) )
+        if ( isNativeLabelScanStoreMigrationRequired( directoryLayout ) )
         {
-            StoreFactory storeFactory = getStoreFactory( storeStructure, versionToMigrateFrom );
+            StoreFactory storeFactory = getStoreFactory( directoryLayout, versionToMigrateFrom );
             try ( NeoStores neoStores = storeFactory.openAllNeoStores();
                     Lifespan lifespan = new Lifespan() )
             {
                 neoStores.verifyStoreOk();
                 // Remove any existing file to ensure we always do migration
-                deleteNativeIndexFile( migrationStructure );
+                deleteNativeIndexFile( migrationLayout );
 
                 progressReporter.start( neoStores.getNodeStore().getNumberOfIdsInUse() );
-                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationStructure, progressReporter, neoStores );
+                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationLayout, progressReporter, neoStores );
                 lifespan.add( nativeLabelScanStore );
             }
             nativeLabelScanStoreMigrated = true;
@@ -89,14 +88,14 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationDirectoryStructure, DatabaseLayout storeStructure,
+    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout,
             String versionToUpgradeFrom, String versionToMigrateTo ) throws IOException
     {
         if ( nativeLabelScanStoreMigrated )
         {
-            File nativeLabelIndex = migrationDirectoryStructure.labelScanStore();
-            moveNativeIndexFile( storeStructure, nativeLabelIndex );
-            deleteLuceneLabelIndex( getLuceneStoreDirectory( storeStructure ) );
+            File nativeLabelIndex = migrationLayout.labelScanStore();
+            moveNativeIndexFile( directoryLayout, nativeLabelIndex );
+            deleteLuceneLabelIndex( getLuceneStoreDirectory( directoryLayout ) );
         }
     }
 

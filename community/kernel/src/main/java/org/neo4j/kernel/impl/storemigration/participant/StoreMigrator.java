@@ -134,17 +134,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout sourceStructure, DatabaseLayout migrationStructure, ProgressReporter progressReporter,
+    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         // Extract information about the last transaction from legacy neostore
-        File neoStore = sourceStructure.metadataStore();
+        File neoStore = directoryLayout.metadataStore();
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
         TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId );
-        LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, sourceStructure, lastTxId );
+        LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId );
         // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
-        writeLastTxInformation( migrationStructure, lastTxInfo );
-        writeLastTxLogPosition( migrationStructure, lastTxLogPosition );
+        writeLastTxInformation( migrationLayout, lastTxInfo );
+        writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
 
         if ( versionToMigrateFrom.equals( "vE.H.0" ) )
         {
@@ -176,13 +176,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             // after migration, because now we're rewriting the relationship ids.
 
             // Some form of migration is required (a fallback/catch-all option)
-            migrateWithBatchImporter( sourceStructure, migrationStructure,
+            migrateWithBatchImporter( directoryLayout, migrationLayout,
                     lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
                     lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat );
         }
         // update necessary neostore records
-        LogPosition logPosition = readLastTxLogPosition( migrationStructure );
-        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationStructure, sourceStructure, versionToMigrateTo, logPosition );
+        LogPosition logPosition = readLastTxLogPosition( migrationLayout );
+        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition );
     }
 
     private static boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
@@ -536,11 +536,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationStrcture, DatabaseLayout storeDirectoryStructure, String versionToUpgradeFrom,
+    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
             String versionToUpgradeTo ) throws IOException
     {
         // Move the migrated ones into the store directory
-        fileOperation( MOVE, fileSystem, migrationStrcture, storeDirectoryStructure,
+        fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
                 Iterables.iterable( DatabaseFile.values() ), true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE );
     }
@@ -594,9 +594,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void cleanup( DatabaseLayout migrationStructure ) throws IOException
+    public void cleanup( DatabaseLayout migrationLayout ) throws IOException
     {
-        fileSystem.deleteRecursively( migrationStructure.databaseDirectory() );
+        fileSystem.deleteRecursively( migrationLayout.databaseDirectory() );
     }
 
     @Override

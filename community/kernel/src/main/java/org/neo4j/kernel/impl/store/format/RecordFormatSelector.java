@@ -133,16 +133,16 @@ public class RecordFormatSelector
      * <p>
      * <b>Note:</b> package private only for testing.
      *
-     * @param dbDirectoryStructure directory with the store
+     * @param databaseLayout directory with the store
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @return record format of the given store or <code>null</code> if {@link DatabaseLayout#metadataStore()} file not
      * found or can't be read
      */
     @Nullable
-    static RecordFormats selectForStore( DatabaseLayout dbDirectoryStructure, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+    static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
-        File neoStoreFile = dbDirectoryStructure.metadataStore();
+        File neoStoreFile = databaseLayout.metadataStore();
         if ( fs.fileExists( neoStoreFile ) )
         {
             try
@@ -156,7 +156,7 @@ public class RecordFormatSelector
                     {
                         if ( format.storeVersion().equals( storeVersion ) )
                         {
-                            info( logProvider, "Selected " + format + " record format from store " + dbDirectoryStructure.databaseDirectory() );
+                            info( logProvider, "Selected " + format + " record format from store " + databaseLayout.databaseDirectory() );
                             return format;
                         }
                     }
@@ -175,7 +175,7 @@ public class RecordFormatSelector
      * record format is not configured than {@link #DEFAULT_FORMAT} is selected.
      *
      * @param config configuration parameters
-     * @param dbDirectoryStructure database directory structure
+     * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
@@ -183,12 +183,12 @@ public class RecordFormatSelector
      */
     @Nonnull
     public static RecordFormats selectForStoreOrConfig(
-            Config config, DatabaseLayout dbDirectoryStructure, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+            Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
         RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
         boolean formatConfigured = configuredFormat != null;
 
-        RecordFormats currentFormat = selectForStore( dbDirectoryStructure, fs, pageCache, logProvider );
+        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider );
         boolean storeWithFormatExists = currentFormat != null;
 
         if ( formatConfigured && storeWithFormatExists )
@@ -223,18 +223,18 @@ public class RecordFormatSelector
      * Check if store and configured formats are compatible. In case if format is not configured or store does not
      * exist yet - we consider formats as compatible.
      * @param config configuration parameters
-     * @param dbDirectoryStructure database directory structure
+     * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @param logProvider log provider
      * @return true if configured and actual format is compatible, false otherwise.
      */
     public static boolean isStoreAndConfigFormatsCompatible(
-            Config config, DatabaseLayout dbDirectoryStructure, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+            Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
         RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
 
-        RecordFormats currentFormat = selectForStore( dbDirectoryStructure, fs, pageCache, logProvider );
+        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider );
 
         return (configuredFormat == null) || (currentFormat == null) ||
                 (currentFormat.getFormatFamily().equals( configuredFormat.getFormatFamily() ) &&
@@ -247,7 +247,7 @@ public class RecordFormatSelector
      * {@link #DEFAULT_FORMAT}.
      *
      * @param config configuration parameters
-     * @param directoryStructure database directory structure
+     * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
@@ -255,7 +255,7 @@ public class RecordFormatSelector
      */
     @Nonnull
     public static RecordFormats selectNewestFormat(
-            Config config, DatabaseLayout directoryStructure, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+            Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
         boolean formatConfigured = StringUtils.isNotEmpty( configuredRecordFormat( config ) );
         if ( formatConfigured )
@@ -265,7 +265,7 @@ public class RecordFormatSelector
         }
         else
         {
-            RecordFormats result = selectForStore( directoryStructure, fs, pageCache, logProvider );
+            RecordFormats result = selectForStore( databaseLayout, fs, pageCache, logProvider );
             if ( result == null )
             {
                 // format was not explicitly configured and store does not exist, select default format

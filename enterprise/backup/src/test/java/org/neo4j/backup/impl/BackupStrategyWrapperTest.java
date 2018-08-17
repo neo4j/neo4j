@@ -523,8 +523,8 @@ public class BackupStrategyWrapperTest
     private OnlineBackupRequiredArguments requiredArguments( boolean fallbackToFull )
     {
         File databaseDirectory = desiredBackupLayout.databaseDirectory();
-        return new OnlineBackupRequiredArguments( userProvidedAddress, databaseDirectory.getParentFile().toPath(), databaseDirectory.getName(),
-                SelectedBackupProtocol.ANY, fallbackToFull, true, 1000, reportDir );
+        return new OnlineBackupRequiredArguments( userProvidedAddress, desiredBackupLayout.getStoreLayout().storeDirectory().toPath(),
+                databaseDirectory.getName(), SelectedBackupProtocol.ANY, fallbackToFull, true, 1000, reportDir );
     }
 
     private static ConsistencyFlags consistencyFlags()

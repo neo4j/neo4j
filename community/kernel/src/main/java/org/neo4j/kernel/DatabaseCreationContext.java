@@ -66,7 +66,7 @@ public interface DatabaseCreationContext
 {
     String getDatabaseName();
 
-    DatabaseLayout getDatabaseDirectoryStructure();
+    DatabaseLayout getDatabaseLayout();
 
     Config getConfig();
 

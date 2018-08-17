@@ -37,21 +37,14 @@ public @interface Rotation
 {
     Strategy value();
 
-    String[] parameters() default {".a", ".b"};
-
     enum Strategy
     {
         LEFT_RIGHT
         {
             @Override
             RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                                     RotationMonitor monitor, DatabaseLayout databaseLayout,
-                                     String[] parameters )
+                                     RotationMonitor monitor, DatabaseLayout databaseLayout )
             {
-                if ( parameters == null || parameters.length != 2 )
-                {
-                    throw new IllegalArgumentException( "Expected exactly 2 format parameters." );
-                }
                 final File left = databaseLayout.countStoreA();
                 final File right = databaseLayout.countStoreB();
                 return new RotationStrategy.LeftRight( fs, pages, format, monitor, left, right );
@@ -61,14 +54,13 @@ public @interface Rotation
         {
             @Override
             RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                                     RotationMonitor monitor, DatabaseLayout databaseLayout,
-                                     String[] parameters )
+                                     RotationMonitor monitor, DatabaseLayout databaseLayout )
             {
                 return new RotationStrategy.Incrementing( fs, pages, format, monitor, databaseLayout );
             }
         };
 
         abstract RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                                          RotationMonitor monitor, DatabaseLayout databaseLayout, String... parameters );
+                                          RotationMonitor monitor, DatabaseLayout databaseLayout );
     }
 }

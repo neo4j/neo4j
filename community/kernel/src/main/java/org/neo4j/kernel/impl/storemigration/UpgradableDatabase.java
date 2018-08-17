@@ -55,7 +55,7 @@ public class UpgradableDatabase
     /**
      * Assumed to only be called if {@link #hasCurrentVersion(DatabaseLayout)} returns {@code false}.
      *
-     * @param dbDirectoryStructure database directory structure.
+     * @param dbDirectoryLayout database directory structure.
      * @return the {@link RecordFormats} the current store (which is upgradable) is currently in.
      * @throws UpgradeMissingStoreFilesException if store cannot be upgraded due to some store files are missing.
      * @throws UpgradingStoreVersionNotFoundException if store cannot be upgraded due to store
@@ -66,9 +66,9 @@ public class UpgradableDatabase
      * format found.
      * @throws DatabaseNotCleanlyShutDownException if store cannot be upgraded due to not being cleanly shut down.
      */
-    public RecordFormats checkUpgradable( DatabaseLayout dbDirectoryStructure )
+    public RecordFormats checkUpgradable( DatabaseLayout dbDirectoryLayout )
     {
-        File neostoreFile = dbDirectoryStructure.metadataStore();
+        File neostoreFile = dbDirectoryLayout.metadataStore();
         Result result = storeVersionCheck.hasVersion( neostoreFile, format.storeVersion() );
         if ( result.outcome.isSuccessful() )
         {
@@ -111,10 +111,10 @@ public class UpgradableDatabase
         switch ( result.outcome )
         {
         case missingStoreFile:
-            throw new StoreUpgrader.UpgradeMissingStoreFilesException( getPathToStoreFile( dbDirectoryStructure, result ) );
+            throw new StoreUpgrader.UpgradeMissingStoreFilesException( getPathToStoreFile( dbDirectoryLayout, result ) );
         case storeVersionNotFound:
             throw new StoreUpgrader.UpgradingStoreVersionNotFoundException(
-                    getPathToStoreFile( dbDirectoryStructure, result ) );
+                    getPathToStoreFile( dbDirectoryLayout, result ) );
         case attemptedStoreDowngrade:
             throw new StoreUpgrader.AttemptedDowngradeException();
         case unexpectedStoreVersion:
@@ -144,14 +144,14 @@ public class UpgradableDatabase
         return new Result( Result.Outcome.storeNotCleanlyShutDown, null, null );
     }
 
-    private static String getPathToStoreFile( DatabaseLayout directoryStructure, Result result )
+    private static String getPathToStoreFile( DatabaseLayout directoryLayout, Result result )
     {
-        return directoryStructure.file( result.storeFilename ).getAbsolutePath();
+        return directoryLayout.file( result.storeFilename ).getAbsolutePath();
     }
 
-    boolean hasCurrentVersion( DatabaseLayout dbDirectoryStructure )
+    boolean hasCurrentVersion( DatabaseLayout dbDirectoryLayout )
     {
-        File neoStore = dbDirectoryStructure.metadataStore();
+        File neoStore = dbDirectoryLayout.metadataStore();
         Result result = storeVersionCheck.hasVersion( neoStore, format.storeVersion() );
         switch ( result.outcome )
         {

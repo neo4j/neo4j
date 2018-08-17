@@ -328,7 +328,6 @@ public class FileWatchIT
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "testForceCheckPoint" ) );
     }
 
-    //TODO:
     private static String getExplicitIndexDirectory( DatabaseLayout databaseLayout )
     {
         File schemaIndexDirectory = LuceneDataSource.getLuceneIndexStoreDirectory( databaseLayout );

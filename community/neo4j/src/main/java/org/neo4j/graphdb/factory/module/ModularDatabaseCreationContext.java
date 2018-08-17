@@ -109,7 +109,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
-    private final DatabaseLayout directoryStructure;
+    private final DatabaseLayout databaseLayout;
 
     ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionModule editionModule,
             Procedures procedures, GraphDatabaseFacade facade, TokenHolders tokenHolders )
@@ -117,7 +117,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseName = databaseName;
         this.config = platformModule.config;
         this.idGeneratorFactory = editionModule.idGeneratorFactory;
-        this.directoryStructure = platformModule.storeLayout.databaseLayout( databaseName );
+        this.databaseLayout = platformModule.storeLayout.databaseLayout( databaseName );
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
         this.globalDependencies =  platformModule.dependencies;
@@ -135,7 +135,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.transactionHeaderInformationFactory = editionModule.headerInformationFactory;
         this.commitProcessFactory = editionModule.commitProcessFactory;
         this.autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
-        this.indexConfigStore = new IndexConfigStore( directoryStructure, fs );
+        this.indexConfigStore = new IndexConfigStore( databaseLayout, fs );
         this.explicitIndexProvider = new DefaultExplicitIndexProvider();
         this.pageCache = platformModule.pageCache;
         this.constraintSemantics = editionModule.constraintSemantics;
@@ -164,9 +164,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DatabaseLayout getDatabaseDirectoryStructure()
+    public DatabaseLayout getDatabaseLayout()
     {
-        return directoryStructure;
+        return databaseLayout;
     }
 
     @Override

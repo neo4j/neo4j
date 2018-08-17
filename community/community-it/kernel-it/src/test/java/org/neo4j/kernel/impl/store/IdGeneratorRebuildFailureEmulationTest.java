@@ -272,6 +272,12 @@ public class IdGeneratorRebuildFailureEmulationTest
     @Test
     public void neostore_relationshiptypestore_db()
     {
+        performTest( databaseLayout.idRelationshipTypeTokenStore() );
+    }
+
+    @Test
+    public void neostore_relationshiptypestore_db_names()
+    {
         performTest( databaseLayout.idRelationshipTypeTokenNamesStore() );
     }
 }

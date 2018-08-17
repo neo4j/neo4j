@@ -291,7 +291,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         }
 
         @Override
-        public DatabaseLayout getDatabaseDirectoryStructure()
+        public DatabaseLayout getDatabaseLayout()
         {
             return databaseLayout;
         }

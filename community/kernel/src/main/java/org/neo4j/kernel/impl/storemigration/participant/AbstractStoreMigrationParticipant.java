@@ -41,19 +41,19 @@ public class AbstractStoreMigrationParticipant implements StoreMigrationParticip
     }
 
     @Override
-    public void migrate( DatabaseLayout sourceStructure, DatabaseLayout migrationStructure, ProgressReporter progressMonitor,
+    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout directoryStructure, String versionToMigrateFrom,
+    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom,
             String versionToMigrateTo ) throws IOException
     {
     }
 
     @Override
-    public void cleanup( DatabaseLayout migrationStructure ) throws IOException
+    public void cleanup( DatabaseLayout migrationLayout ) throws IOException
     {
     }
 

@@ -258,7 +258,7 @@ class StoreSizeBeanTest
         when( indexProvider2.directoryStructure() ).thenReturn( directoryStructure2 );
 
         // Label scan store
-        File labelScan = testDirectory.databaseLayout().file("labelScanStore" );
+        File labelScan = testDirectory.databaseLayout().labelScanStore();
         createFileOfSize( labelScan, 4 );
         when( labelScanStore.getLabelScanStoreFile() ).thenReturn( labelScan );
 

@@ -40,36 +40,36 @@ public interface StoreMigrationParticipant
      * Migrated data should go into {@code targetStoreDir}, where source and target dirs are
      * highest level database store dirs.
      *
-     * @param directoryStructure data to migrate.
-     * @param migrationStructure place to migrate to.
+     * @param directoryLayout data to migrate.
+     * @param migrationLayout place to migrate to.
      * @param progress migration progress monitor
      * @param versionToMigrateFrom the version to migrate from
      * @param versionToMigrateTo the version to migrate to
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
-    void migrate( DatabaseLayout directoryStructure, DatabaseLayout migrationStructure, ProgressReporter progress,
+    void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
-     * @param migrationStructure directory where the
+     * @param migrationLayout directory where the
      * {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, String, String) migration} put its files.
-     * @param directoryStructure directory the store directory of the to move the migrated files to.
+     * @param directoryLayout directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from
      * @param versionToMigrateTo the version we want to migrate to
      * @throws IOException if unable to move one or more files.
      */
-    void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout directoryStructure, String versionToMigrateFrom, String versionToMigrateTo )
+    void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
             throws IOException;
 
     /**
-     * Delete any file from {@code migrationStructure} produced during migration.
-     * @param migrationStructure the directory where migrated files end up.
+     * Delete any file from {@code migrationLayout} produced during migration.
+     * @param migrationLayout the directory where migrated files end up.
      * @throws IOException if unable to clean up one or more files.
      */
-    void cleanup( DatabaseLayout migrationStructure ) throws IOException;
+    void cleanup( DatabaseLayout migrationLayout ) throws IOException;
 
     /**
      * @return descriptive name of this migration participant.

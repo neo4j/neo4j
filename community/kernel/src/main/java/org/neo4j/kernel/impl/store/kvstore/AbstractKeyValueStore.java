@@ -72,7 +72,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             monitor = RotationMonitor.NONE;
         }
         this.format = new Format( headerFields );
-        this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, databaseLayout, rotation.parameters() );
+        this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, databaseLayout );
         this.rotationTimerFactory = timerFactory;
         this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value(),
                 versionContextSupplier );

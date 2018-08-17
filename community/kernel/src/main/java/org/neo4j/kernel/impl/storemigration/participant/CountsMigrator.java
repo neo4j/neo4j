@@ -88,19 +88,18 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout sourceStructure, DatabaseLayout migrationStructure, ProgressReporter progressMonitor,
+    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         if ( countStoreRebuildRequired( versionToMigrateFrom ) )
         {
             // create counters from scratch
-            fileOperation( DELETE, fileSystem, migrationStructure,
-                    migrationStructure, COUNTS_STORE_FILES, true, null );
-            File neoStore = sourceStructure.metadataStore();
+            fileOperation( DELETE, fileSystem, migrationLayout, migrationLayout, COUNTS_STORE_FILES, true, null );
+            File neoStore = directoryLayout.metadataStore();
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             try
             {
-                rebuildCountsFromScratch( sourceStructure, migrationStructure, lastTxId, progressMonitor, versionToMigrateTo,
+                rebuildCountsFromScratch( directoryLayout, migrationLayout, lastTxId, progressMonitor, versionToMigrateTo,
                         pageCache, NullLogProvider.getInstance() );
             }
             catch ( StoreFailureException e )
@@ -108,7 +107,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 //This means that we did not perform a full migration, as the formats had the same capabilities. Thus
                 // we should use the store directory for information when rebuilding the count store. Note that we
                 // still put the new count store in the migration directory.
-                rebuildCountsFromScratch( sourceStructure, migrationStructure, lastTxId, progressMonitor, versionToMigrateFrom,
+                rebuildCountsFromScratch( directoryLayout, migrationLayout, lastTxId, progressMonitor, versionToMigrateFrom,
                         pageCache, NullLogProvider.getInstance() );
             }
             migrated = true;
@@ -116,16 +115,16 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout directoryStructure, String versionToUpgradeFrom,
+    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
             String versionToUpgradeTo ) throws IOException
     {
 
         if ( migrated )
         {
             // Delete any current count files in the store directory.
-            fileOperation( DELETE, fileSystem, directoryStructure, directoryStructure, COUNTS_STORE_FILES, true, null );
+            fileOperation( DELETE, fileSystem, directoryLayout, directoryLayout, COUNTS_STORE_FILES, true, null );
             // Move the migrated ones into the store directory
-            fileOperation( MOVE, fileSystem, migrationStructure, directoryStructure, COUNTS_STORE_FILES, true,
+            fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout, COUNTS_STORE_FILES, true,
                     // allow to skip non existent source files
                     ExistingTargetStrategy.OVERWRITE );
             // We do not need to move files with the page cache, as the count files always reside on the normal file system.
@@ -133,9 +132,9 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void cleanup( DatabaseLayout migrationStructure ) throws IOException
+    public void cleanup( DatabaseLayout migrationLayout ) throws IOException
     {
-        fileSystem.deleteRecursively( migrationStructure.databaseDirectory() );
+        fileSystem.deleteRecursively( migrationLayout.databaseDirectory() );
     }
 
     @Override

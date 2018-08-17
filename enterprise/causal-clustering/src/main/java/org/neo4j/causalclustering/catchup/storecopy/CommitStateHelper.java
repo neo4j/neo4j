@@ -101,7 +101,6 @@ public class CommitStateHelper
 
     public boolean hasTxLogs( DatabaseLayout databaseLayout )
     {
-        //TODO incorrect lookup of transaction logs
         File[] files = fs.listFiles( databaseLayout.databaseDirectory(), TransactionLogFiles.DEFAULT_FILENAME_FILTER );
         if ( files == null )
         {

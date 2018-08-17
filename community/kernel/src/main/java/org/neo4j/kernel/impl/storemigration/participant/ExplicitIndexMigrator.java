@@ -61,7 +61,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout sourceStructure, DatabaseLayout migrationStructure, ProgressReporter progressMonitor,
+    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         IndexImplementation indexImplementation = explicitIndexProvider.getProviderByName( LUCENE_EXPLICIT_INDEX_PROVIDER_NAME );
@@ -71,8 +71,8 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
             RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
             if ( !from.hasCompatibleCapabilities( to, CapabilityType.INDEX ) )
             {
-                originalExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( sourceStructure );
-                migrationExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationStructure );
+                originalExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( directoryLayout );
+                migrationExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationLayout );
                 if ( isNotEmptyDirectory( originalExplicitIndexesRoot ) )
                 {
                     migrateExplicitIndexes( progressMonitor );
@@ -87,7 +87,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout storeStructure, String versionToMigrateFrom,
+    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom,
             String versionToMigrateTo ) throws IOException
     {
         if ( explicitIndexMigrated )
@@ -98,7 +98,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void cleanup( DatabaseLayout migrationStructure ) throws IOException
+    public void cleanup( DatabaseLayout migrationLayout ) throws IOException
     {
         if ( isIndexMigrationDirectoryExists() )
         {

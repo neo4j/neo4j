@@ -44,8 +44,7 @@ public class TemporaryStoreDirectory implements AutoCloseable
     public TemporaryStoreDirectory( FileSystemAbstraction fs, PageCache pageCache, File parent ) throws IOException
     {
         this.tempStoreDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
-        // TODO
-        this.tempDatabaseLayout = DatabaseLayout.of( new File( tempStoreDir, DatabaseManager.DEFAULT_DATABASE_NAME ) );
+        this.tempDatabaseLayout = DatabaseLayout.of( tempStoreDir, DatabaseManager.DEFAULT_DATABASE_NAME );
         storeFiles = new StoreFiles( fs, pageCache, ( directory, name ) -> true );
         tempLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( tempDatabaseLayout.databaseDirectory(), fs ).build();
         storeFiles.delete( tempStoreDir, tempLogFiles );

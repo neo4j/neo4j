@@ -39,10 +39,10 @@ public interface IndexImplementation extends Lifecycle
 
     /**
      * Get index implementation root directory based on a store directory
-     * @param directoryStructure database directory structure
+     * @param directoryLayout database directory structure
      * @return index implementation root directory
      */
-    File getIndexImplementationDirectory( DatabaseLayout directoryStructure );
+    File getIndexImplementationDirectory( DatabaseLayout directoryLayout );
 
     /**
      * Returns a {@link ExplicitIndexProviderTransaction} that keeps transaction state for all

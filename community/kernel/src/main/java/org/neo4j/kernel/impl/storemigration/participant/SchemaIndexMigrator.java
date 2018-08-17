@@ -51,7 +51,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout sourceStructure, DatabaseLayout migrationStructure, ProgressReporter progressReporter,
+    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo )
     {
         RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
@@ -68,7 +68,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationStructure, DatabaseLayout storeStrcture, String versionToUpgradeFrom,
+    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
             String versionToMigrateTo ) throws IOException
     {
         if ( deleteObsoleteIndexes )

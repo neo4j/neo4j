@@ -118,11 +118,11 @@ public class StoreUpgraderInterruptionTestIT
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService )
         {
             @Override
-            public void migrate( DatabaseLayout sourceLayout, DatabaseLayout targetLayout,
+            public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
                     ProgressReporter progressReporter,
                     String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
             {
-                super.migrate( sourceLayout, targetLayout, progressReporter, versionToMigrateFrom,
+                super.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom,
                         versionToMigrateTo );
                 throw new RuntimeException( "This upgrade is failing" );
             }
@@ -177,10 +177,10 @@ public class StoreUpgraderInterruptionTestIT
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService )
         {
             @Override
-            public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout storeLayout, String versionToUpgradeFrom,
+            public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
                     String versionToMigrateTo ) throws IOException
             {
-                super.moveMigratedFiles( migrationLayout, storeLayout, versionToUpgradeFrom, versionToMigrateTo );
+                super.moveMigratedFiles( migrationLayout, directoryLayout, versionToUpgradeFrom, versionToMigrateTo );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
