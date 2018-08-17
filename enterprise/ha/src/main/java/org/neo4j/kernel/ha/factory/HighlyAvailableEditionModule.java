@@ -437,10 +437,8 @@ public class HighlyAvailableEditionModule extends EditionModule
                         platformModule.dataSourceManager.getDataSource(),
                         logging.getInternalLogProvider() );
 
-        final Factory<ConversationSPI> conversationSPIFactory =
-                () -> new DefaultConversationSPI( lockManager, platformModule.jobScheduler );
-        Factory<ConversationManager> conversationManagerFactory =
-                () -> new ConversationManager( conversationSPIFactory.newInstance(), config );
+        Function<Locks,ConversationSPI> conversationSPIFactory = locks -> new DefaultConversationSPI( locks, platformModule.jobScheduler );
+        Function<Locks,ConversationManager> conversationManagerFactory = locks -> new ConversationManager( conversationSPIFactory.apply( locks ), config );
 
         BiFunction<ConversationManager, LifeSupport, Master> masterFactory = ( conversationManager, life1 ) ->
                 life1.add( new MasterImpl( masterSPIFactory.newInstance(),
@@ -496,11 +494,9 @@ public class HighlyAvailableEditionModule extends EditionModule
                 SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
 
         // Create HA services
-        lockManager = dependencies.satisfyDependency(
-                createLockManager( componentSwitcherContainer, config, masterDelegateInvocationHandler,
-                        requestContextFactory, platformModule.availabilityGuard, platformModule.clock, logging ) );
-
-        statementLocksFactory = createStatementLocksFactory( componentSwitcherContainer, config, logging );
+        locksSupplier = () -> createLockManager( componentSwitcherContainer, config, masterDelegateInvocationHandler,
+                        requestContextFactory, platformModule.availabilityGuard, platformModule.clock, logging );
+        statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, componentSwitcherContainer, config, logging );
 
         DelegatingTokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
                 createPropertyKeyCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
@@ -563,10 +559,10 @@ public class HighlyAvailableEditionModule extends EditionModule
         procedures.registerProcedure( EnterpriseBuiltInProcedures.class, true );
     }
 
-    private StatementLocksFactory createStatementLocksFactory( ComponentSwitcherContainer componentSwitcherContainer,
-            Config config, LogService logging )
+    private static StatementLocksFactory createStatementLocksFactory( Locks locks, ComponentSwitcherContainer componentSwitcherContainer, Config config,
+            LogService logging )
     {
-        StatementLocksFactory configuredStatementLocks = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+        StatementLocksFactory configuredStatementLocks = new StatementLocksFactorySelector( locks, config, logging ).select();
 
         DelegateInvocationHandler<StatementLocksFactory> locksFactoryDelegate =
                 new DelegateInvocationHandler<>( StatementLocksFactory.class );

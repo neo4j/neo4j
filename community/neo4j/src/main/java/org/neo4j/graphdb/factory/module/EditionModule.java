@@ -92,9 +92,9 @@ public abstract class EditionModule
 
     public Supplier<TokenHolders> tokenHoldersSupplier;
 
-    public Locks lockManager;
+    public Supplier<Locks> locksSupplier;
 
-    public StatementLocksFactory statementLocksFactory;
+    public Function<Locks, StatementLocksFactory> statementLocksFactoryProvider;
 
     public CommitProcessFactory commitProcessFactory;
 

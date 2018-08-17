@@ -344,6 +344,11 @@ public class NeoStoreDataSourceRule extends ExternalResource
         }
 
         @Override
+        public Locks getLocks()
+        {
+            return mock( Locks.class );
+        }
+
         public StatementLocksFactory getStatementLocksFactory()
         {
             return statementLocksFactory;

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -77,6 +78,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final TokenNameLookup tokenNameLookup;
     private final DependencyResolver globalDependencies;
     private final TokenHolders tokenHolders;
+    private final Locks locks;
     private final StatementLocksFactory statementLocksFactory;
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
@@ -123,7 +125,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.globalDependencies =  platformModule.dependencies;
         this.tokenHolders = tokenHolders;
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        this.statementLocksFactory = editionModule.statementLocksFactory;
+        this.locks = editionModule.locksSupplier.get();
+        this.statementLocksFactory = editionModule.statementLocksFactoryProvider.apply( locks );
         this.schemaWriteGuard = editionModule.schemaWriteGuard;
         this.transactionEventHandlers = new TransactionEventHandlers( facade );
         this.monitors = new Monitors( platformModule.monitors );
@@ -209,6 +212,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public TokenHolders getTokenHolders()
     {
         return tokenHolders;
+    }
+
+    @Override
+    public Locks getLocks()
+    {
+        return locks;
     }
 
     @Override

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -81,6 +82,8 @@ public interface DatabaseCreationContext
     DependencyResolver getGlobalDependencies();
 
     TokenHolders getTokenHolders();
+
+    Locks getLocks();
 
     StatementLocksFactory getStatementLocksFactory();
 

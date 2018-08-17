@@ -97,8 +97,8 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, platformModule.clock, logging ) );
-        statementLocksFactory = createStatementLocksFactory( lockManager, config, logging );
+        locksSupplier = () -> createLockManager( config, platformModule.clock, logging );
+        statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, config, logging );
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;

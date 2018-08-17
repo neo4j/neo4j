@@ -176,9 +176,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherServiceFactory );
 
-        lockManager = dependencies.satisfyDependency( new ReadReplicaLockManager() );
-
-        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+        ReadReplicaLockManager emptyLockManager = new ReadReplicaLockManager();
+        locksSupplier = () -> emptyLockManager;
+        statementLocksFactoryProvider = locks -> new StatementLocksFactorySelector( locks, config, logging ).select();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
         idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );

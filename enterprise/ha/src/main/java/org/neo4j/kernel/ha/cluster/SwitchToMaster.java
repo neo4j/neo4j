@@ -26,13 +26,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.function.Factory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
@@ -50,7 +51,7 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 
 public class SwitchToMaster implements AutoCloseable
 {
-    Factory<ConversationManager> conversationManagerFactory;
+    Function<Locks, ConversationManager> conversationManagerFactory;
     BiFunction<ConversationManager, LifeSupport, Master> masterFactory;
     BiFunction<Master, ConversationManager, MasterServer> masterServerFactory;
     private Log userLog;
@@ -63,7 +64,7 @@ public class SwitchToMaster implements AutoCloseable
 
     public SwitchToMaster( LogService logService,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
-            Factory<ConversationManager> conversationManagerFactory,
+            Function<Locks, ConversationManager> conversationManagerFactory,
             BiFunction<ConversationManager, LifeSupport, Master> masterFactory,
             BiFunction<Master, ConversationManager, MasterServer> masterServerFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
@@ -104,10 +105,10 @@ public class SwitchToMaster implements AutoCloseable
         //   the switch until then.
 
         idGeneratorFactory.switchToMaster();
-        NeoStoreDataSource neoStoreXaDataSource = dataSourceSupplier.get();
-        neoStoreXaDataSource.afterModeSwitch();
+        NeoStoreDataSource dataSource = dataSourceSupplier.get();
+        dataSource.afterModeSwitch();
 
-        ConversationManager conversationManager = conversationManagerFactory.newInstance();
+        ConversationManager conversationManager = conversationManagerFactory.apply( dataSource.getDependencyResolver().resolveDependency( Locks.class ) );
         Master master = masterFactory.apply( conversationManager, haCommunicationLife );
 
         MasterServer masterServer = masterServerFactory.apply( master, conversationManager );
@@ -118,10 +119,10 @@ public class SwitchToMaster implements AutoCloseable
         haCommunicationLife.start();
 
         URI masterHaURI = getMasterUri( me, masterServer, config );
-        clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
+        clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, dataSource.getStoreId() );
         userLog.info( "I am %s, successfully moved to master", myId( config ) );
 
-        slaveFactorySupplier.get().setStoreId( neoStoreXaDataSource.getStoreId() );
+        slaveFactorySupplier.get().setStoreId( dataSource.getStoreId() );
 
         return masterHaURI;
     }

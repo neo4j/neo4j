@@ -310,7 +310,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...
         this.tokenHoldersSupplier = () -> coreStateMachinesModule.tokenHolders;
-        this.lockManager = coreStateMachinesModule.lockManager;
+        this.locksSupplier = coreStateMachinesModule.locksSupplier;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
@@ -333,8 +333,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         serverInstalledProtocols = serverInstalledProtocolHandler::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );
-
-        dependencies.satisfyDependency( lockManager );
 
         life.add( coreServerModule.membershipWaiterLifecycle );
     }
@@ -417,7 +415,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,
             LogService logging, LifeSupport life )
     {
-        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+        statementLocksFactoryProvider = locks -> new StatementLocksFactorySelector( locks, config, logging ).select();
 
         dependencies.satisfyDependency(
                 createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeLayout.storeDirectory(),

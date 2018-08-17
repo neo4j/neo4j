@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -196,18 +197,19 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final ExplicitIndexProvider explicitIndexProvider;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
-
-    private Dependencies dataSourceDependencies;
-    private LifeSupport life;
-    private IndexProviderMap indexProviderMap;
+    private final Locks locks;
     private final String databaseName;
-    private DatabaseLayout databaseLayout;
-    private boolean readOnly;
+    private final DatabaseLayout databaseLayout;
+    private final boolean readOnly;
     private final IdController idController;
     private final DatabaseInfo databaseInfo;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
+
+    private Dependencies dataSourceDependencies;
+    private LifeSupport life;
+    private IndexProviderMap indexProviderMap;
 
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
@@ -235,6 +237,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
         this.logProvider = context.getLogService().getInternalLogProvider();
         this.tokenHolders = context.getTokenHolders();
+        this.locks = context.getLocks();
         this.statementLocksFactory = context.getStatementLocksFactory();
         this.schemaWriteGuard = context.getSchemaWriteGuard();
         this.transactionEventHandlers = context.getTransactionEventHandlers();
@@ -287,6 +290,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( databaseHealth );
         dataSourceDependencies.satisfyDependency( storeCopyCheckPointMutex );
         dataSourceDependencies.satisfyDependency( transactionMonitor );
+        dataSourceDependencies.satisfyDependency( locks );
 
         life = new LifeSupport();
         dataSourceDependencies.satisfyDependency( explicitIndexProvider );

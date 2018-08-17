@@ -103,7 +103,7 @@ public class CoreStateMachinesModule
     public final IdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
     public final TokenHolders tokenHolders;
-    public final Locks lockManager;
+    public final Supplier<Locks> locksSupplier;
     public final CommitProcessFactory commitProcessFactory;
 
     public final CoreStateMachines coreStateMachines;
@@ -184,7 +184,7 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, raftMachine,
+        locksSupplier = () -> createLockManager( config, platformModule.clock, logging, replicator, myself, raftMachine,
                 replicatedLockTokenStateMachine );
 
         RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( localDatabase, logProvider );
