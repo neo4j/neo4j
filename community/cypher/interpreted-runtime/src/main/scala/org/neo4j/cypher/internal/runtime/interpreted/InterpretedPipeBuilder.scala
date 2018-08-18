@@ -200,8 +200,9 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
 
       case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
         val commandExpressions = Eagerly.immutableMapValues(groupingExpressions, buildExpression)
+        val projection = InterpretedCommandProjection(commandExpressions)
         source match {
-          case ProjectionPipe(inner, es) if es == commandExpressions =>
+          case ProjectionPipe(inner, p) if p == projection =>
             DistinctPipe(inner, commandExpressions)(id = id)
           case _ =>
             DistinctPipe(source, commandExpressions)(id = id)
