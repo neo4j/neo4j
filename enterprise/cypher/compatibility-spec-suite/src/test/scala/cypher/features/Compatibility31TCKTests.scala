@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import org.opencypher.tools.tck.api.Scenario
 
 @RunWith(classOf[JUnitPlatform])
 class Compatibility31TCKTests extends BaseTCKTests {
@@ -38,7 +39,24 @@ class Compatibility31TCKTests extends BaseTCKTests {
 
   @TestFactory
   def runCompatibility31(): util.Collection[DynamicTest] = {
-    createTests(scenarios, Compatibility31TestConfig)
+    val filteredScenarios = scenarios.filterNot(testsWithProblems)
+    createTests(filteredScenarios, Compatibility31TestConfig)
+  }
+
+  //TODO: Fix Schroedinger's test cases in TCK or find way to handle here
+  /*
+    These tests run with parameters multiple times under the same name.
+    The run with the first parameter will succeed and the next ones fail because they try to put e.g. date() inside arrays, which is not possible for
+    non-property types in 3.1.
+    So they both succeed AND fail -> Thus we cannot "just" blacklist them and need to ignore them completely
+   */
+  def testsWithProblems(scenario: Scenario): Boolean = {
+    (scenario.name.equals("Should store date") && scenario.featureName.equals("TemporalCreateAcceptance")) ||
+      (scenario.name.equals("Should store local time") && scenario.featureName.equals("TemporalCreateAcceptance")) ||
+      (scenario.name.equals("Should store time") && scenario.featureName.equals("TemporalCreateAcceptance")) ||
+      (scenario.name.equals("Should store local date time") && scenario.featureName.equals("TemporalCreateAcceptance")) ||
+      (scenario.name.equals("Should store date time") && scenario.featureName.equals("TemporalCreateAcceptance")) ||
+      (scenario.name.equals("Should store duration") && scenario.featureName.equals("TemporalCreateAcceptance"))
   }
 
   @Ignore
