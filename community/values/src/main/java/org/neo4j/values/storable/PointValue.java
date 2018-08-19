@@ -304,11 +304,23 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
      */
     public Boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
     {
+        // Unbounded
         if ( lower == null && upper == null )
         {
             return true;
         }
 
+        // Invalid bounds (lower greater than upper)
+        if ( lower != null && upper != null )
+        {
+            Comparison comparison = lower.unsafeTernaryCompareTo( upper );
+            if ( comparison == Comparison.UNDEFINED || comparison == Comparison.GREATER_THAN || comparison == Comparison.GREATER_THAN_AND_EQUAL )
+            {
+                return null;
+            }
+        }
+
+        // Lower bound defined
         if ( lower != null )
         {
             Comparison comparison = this.unsafeTernaryCompareTo( lower );
@@ -319,10 +331,18 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             else if ( comparison == Comparison.SMALLER_THAN || comparison == Comparison.SMALLER_THAN_AND_EQUAL ||
                     (comparison == Comparison.EQUAL || comparison == Comparison.GREATER_THAN_AND_EQUAL) && !includeLower )
             {
-                return false;
+                if ( upper != null && this.unsafeTernaryCompareTo( upper ) == Comparison.UNDEFINED )
+                {
+                    return null;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
 
+        // Upper bound defined
         if ( upper != null )
         {
             Comparison comparison = this.unsafeTernaryCompareTo( upper );

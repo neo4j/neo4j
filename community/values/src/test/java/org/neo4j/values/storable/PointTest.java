@@ -176,7 +176,11 @@ class PointTest
         assertThat( "Invalid if upper bound both greater and less than even when inclusive",
                 pointValue( Cartesian, 1, 2 ).withinRange( null, false, pointValue( Cartesian, 2, 1 ), true ), equalTo( null ) );
 
-        // Lower and upper bounds
+        // Lower and upper bounds invalid
+        assertThat( "Undefined if lower bound greater than upper bound",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 2, 1 ), true, pointValue( Cartesian, 1, 2 ), true ), equalTo( null) );
+
+        // Lower and upper bounds equal
         assertThat( "Not within same bounds if inclusive on lower",
                 pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), false ), equalTo( false ) );
         assertThat( "Not within same bounds if inclusive on upper",
@@ -185,6 +189,18 @@ class PointTest
                 pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), true ), equalTo( true ) );
         assertThat( "Not within same bounds if not inclusive",
                 pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), false, pointValue( Cartesian, 1, 2 ), false ), equalTo( false ) );
+
+        // Lower and upper bounds define 0x1 range
+        assertThat( "Not within same bounds if inclusive on lower",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), false ), equalTo( false ) );
+        assertThat( "Not within same bounds if inclusive on upper",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), false, pointValue( Cartesian, 1, 2 ), true ), equalTo( false ) );
+        assertThat( "Within same bounds if inclusive on both",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), true, pointValue( Cartesian, 1, 2 ), true ), equalTo( true ) );
+        assertThat( "Not within same bounds if not inclusive",
+                pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 1, 2 ), false, pointValue( Cartesian, 1, 2 ), false ), equalTo( false ) );
+
+        // Lower and upper bounds define 1x1 range
         assertThat( "Within smaller lower bound if inclusive",
                 pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 0, 1 ), true, pointValue( Cartesian, 1, 2 ), true ), equalTo( true ) );
         assertThat( "Within smaller lower bound if inclusive on upper",
@@ -199,7 +215,52 @@ class PointTest
                 pointValue( Cartesian, 1, 2 ).withinRange( pointValue( Cartesian, 0, 1 ), false, pointValue( Cartesian, 2, 3 ), false ), equalTo( true ) );
     }
 
-    //-------------------------------------------------------------
+    @Test
+    public void shouldComparePointWithinTwoBoundsExhaustive()
+    {
+        for ( int minx = -5; minx < 5; minx++ )
+        {
+            for ( int maxx = -5; maxx < 5; maxx++ )
+            {
+                for ( int miny = -5; miny < 5; miny++ )
+                {
+                    for ( int maxy = -5; maxy < 5; maxy++ )
+                    {
+                        PointValue min = pointValue( Cartesian, minx, miny );
+                        PointValue max = pointValue( Cartesian, maxx, maxy );
+                        for ( int x = -5; x < 5; x++ )
+                        {
+                            for ( int y = -5; y < 5; y++ )
+                            {
+                                PointValue point = pointValue( Cartesian, x, y );
+                                boolean invalidRange = minx > maxx || miny > maxy;
+                                boolean undefinedMin = x > minx && y < miny || y > miny && x < minx;
+                                boolean undefinedMax = x < maxx && y > maxy || y < maxy && x > maxx;
+                                Boolean ii = (invalidRange || undefinedMin || undefinedMax) ? null : x >= minx && y >= miny && x <= maxx && y <= maxy;
+                                Boolean ix = (invalidRange || undefinedMin || undefinedMax) ? null : x >= minx && y >= miny && x < maxx && y < maxy;
+                                Boolean xi = (invalidRange || undefinedMin || undefinedMax) ? null : x > minx && y > miny && x <= maxx && y <= maxy;
+                                Boolean xx = (invalidRange || undefinedMin || undefinedMax) ? null : x > minx && y > miny && x < maxx && y < maxy;
+                                // inclusive:inclusive
+                                assertThat( "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, true, {" + maxx + "," + maxy + "}, true",
+                                        point.withinRange( min, true, max, true ), equalTo( ii ) );
+                                // inclusive:exclusive
+                                assertThat( "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, true, {" + maxx + "," + maxy + "}, false",
+                                        point.withinRange( min, true, max, false ), equalTo( ix ) );
+                                // exclusive:inclusive
+                                assertThat( "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, false, {" + maxx + "," + maxy + "}, true",
+                                        point.withinRange( min, false, max, true ), equalTo( xi ) );
+                                // exclusive:exclusive
+                                assertThat( "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, false, {" + maxx + "," + maxy + "}, false",
+                                        point.withinRange( min, false, max, false ), equalTo( xx ) );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+        //-------------------------------------------------------------
     // Parser tests
 
     @Test
