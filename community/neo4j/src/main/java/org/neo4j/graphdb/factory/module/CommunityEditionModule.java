@@ -20,12 +20,10 @@
 package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -52,10 +50,9 @@ import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -69,6 +66,9 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.udc.UsageData;
+
+import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
+import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 
 /**
  * This implementation of {@link EditionModule} creates the implementations of services
@@ -97,7 +97,8 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
 
-        locksSupplier = () -> createLockManager( config, platformModule.clock, logging );
+        LocksFactory lockFactory = createLockFactory( config, logging );
+        locksSupplier = () -> createLockManager( lockFactory, config, platformModule.clock );
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, config, logging );
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
@@ -213,38 +214,6 @@ public class CommunityEditionModule extends EditionModule
             IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         return new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
-    }
-
-    public static Locks createLockManager( Config config, Clock clock, LogService logging )
-    {
-        String key = config.get( GraphDatabaseSettings.lock_manager );
-        for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
-        {
-            String candidateId = candidate.getKeys().iterator().next();
-            if ( key.equals( candidateId ) )
-            {
-                return candidate.newInstance( config, clock, ResourceTypes.values() );
-            }
-            else if ( key.equals( "" ) )
-            {
-                logging.getInternalLog( CommunityEditionModule.class )
-                        .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
-                return candidate.newInstance( config, clock, ResourceTypes.values() );
-            }
-        }
-
-        if ( key.equals( "community" ) )
-        {
-            return new CommunityLockManger( config, clock );
-        }
-        else if ( key.equals( "" ) )
-        {
-            logging.getInternalLog( CommunityEditionModule.class )
-                    .info( "No locking implementation specified, defaulting to 'community'" );
-            return new CommunityLockManger( config, clock );
-        }
-
-        throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

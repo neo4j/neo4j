@@ -59,8 +59,8 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.EditionLocksFactories;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.HostnamePort;
@@ -157,6 +157,7 @@ import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
@@ -191,6 +192,7 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
+import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
@@ -494,7 +496,8 @@ public class HighlyAvailableEditionModule extends EditionModule
                 SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
 
         // Create HA services
-        locksSupplier = () -> createLockManager( componentSwitcherContainer, config, masterDelegateInvocationHandler,
+        LocksFactory lockFactory = createLockFactory( config, logging );
+        locksSupplier = () -> createLockManager( lockFactory, componentSwitcherContainer, config, masterDelegateInvocationHandler,
                         requestContextFactory, platformModule.availabilityGuard, platformModule.clock, logging );
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, componentSwitcherContainer, config, logging );
 
@@ -689,7 +692,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         return idGeneratorFactory;
     }
 
-    private static Locks createLockManager( ComponentSwitcherContainer componentSwitcherContainer, Config config,
+    private static Locks createLockManager( LocksFactory lockFactory, ComponentSwitcherContainer componentSwitcherContainer, Config config,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
             Clock clock, LogService logService )
     {
@@ -697,7 +700,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(), new Class[]{Locks.class},
                 lockManagerDelegate );
 
-        Factory<Locks> locksFactory = () -> CommunityEditionModule.createLockManager( config, clock, logService );
+        Factory<Locks> locksFactory = () -> EditionLocksFactories.createLockManager( lockFactory, config, clock );
 
         LockManagerSwitcher lockManagerModeSwitcher = new LockManagerSwitcher(
                 lockManagerDelegate, masterDelegateInvocationHandler, requestContextFactory, availabilityGuard,

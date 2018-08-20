@@ -54,7 +54,7 @@ import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionSt
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.module.CommunityEditionModule;
+import org.neo4j.graphdb.factory.EditionLocksFactories;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.core.TokenRegistry;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -94,6 +95,7 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.replicate
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.schema_id_allocation_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.state_machine_apply_max_batch_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.string_block_id_allocation_size;
+import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 
 public class CoreStateMachinesModule
 {
@@ -184,7 +186,8 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        locksSupplier = () -> createLockManager( config, platformModule.clock, logging, replicator, myself, raftMachine,
+        LocksFactory lockFactory = createLockFactory( config, logging );
+        locksSupplier = () -> createLockManager( lockFactory, config, platformModule.clock, replicator, myself, raftMachine,
                 replicatedLockTokenStateMachine );
 
         RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( localDatabase, logProvider );
@@ -232,11 +235,11 @@ public class CoreStateMachinesModule
                 logProvider, idTypeConfigurationProvider );
     }
 
-    private Locks createLockManager( final Config config, Clock clock, final LogService logging,
-                                     final Replicator replicator, MemberId myself, LeaderLocator leaderLocator,
+    private Locks createLockManager( LocksFactory locksFactory, Config config, Clock clock,
+                                     Replicator replicator, MemberId myself, LeaderLocator leaderLocator,
                                      ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
-        Locks localLocks = CommunityEditionModule.createLockManager( config, clock, logging );
+        Locks localLocks = EditionLocksFactories.createLockManager( locksFactory, config, clock );
         return new LeaderOnlyLockManager( myself, replicator, leaderLocator, localLocks, lockTokenStateMachine );
     }
 }
