@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -105,8 +104,6 @@ public abstract class EditionModule
     public SchemaWriteGuard schemaWriteGuard;
 
     public ConstraintSemantics constraintSemantics;
-
-    public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
     public AccessCapability accessCapability;
 

@@ -111,7 +111,6 @@ import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -430,9 +429,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = new EnterpriseConstraintSemantics();
-
-        coreAPIAvailabilityGuard =
-                new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 

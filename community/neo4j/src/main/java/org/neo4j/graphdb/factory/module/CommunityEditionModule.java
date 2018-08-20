@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.ReadOnly;
@@ -125,8 +124,6 @@ public class CommunityEditionModule extends EditionModule
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = createSchemaRuleVerifier();
-
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         ioLimiter = IOLimiter.UNLIMITED;
 

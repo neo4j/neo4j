@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StoreId;
@@ -37,22 +37,28 @@ public class DataSourceModule
 
     public final Supplier<StoreId> storeId;
 
-    public final TokenHolders tokenHolders;
+    public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
     public DataSourceModule( String databaseName, final PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        tokenHolders = editionModule.tokenHoldersSupplier.get();
 
         platformModule.diagnosticsManager.prependProvider( platformModule.config );
 
-        neoStoreDataSource = new NeoStoreDataSource( new ModularDatabaseCreationContext( databaseName, platformModule, editionModule,
-                procedures, graphDatabaseFacade, tokenHolders ) );
+        ModularDatabaseCreationContext context =
+                new ModularDatabaseCreationContext( databaseName, platformModule, editionModule, procedures, graphDatabaseFacade );
+        neoStoreDataSource = new NeoStoreDataSource( context );
 
+        this.coreAPIAvailabilityGuard = context.getCoreAPIAvailabilityGuard();
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
 
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, editionModule.coreAPIAvailabilityGuard, tokenHolders );
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders() );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
+    }
+
+    public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()
+    {
+        return coreAPIAvailabilityGuard;
     }
 }

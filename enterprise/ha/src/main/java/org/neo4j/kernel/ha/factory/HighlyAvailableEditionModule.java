@@ -145,7 +145,6 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
@@ -539,8 +538,6 @@ public class HighlyAvailableEditionModule extends EditionModule
         config.augment( GraphDatabaseSettings.allow_upgrade, Settings.FALSE );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
-
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
 

@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -99,6 +100,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
     private final SystemNanoClock clock;
     private final AccessCapability accessCapability;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -114,7 +116,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseLayout databaseLayout;
 
     ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionModule editionModule,
-            Procedures procedures, GraphDatabaseFacade facade, TokenHolders tokenHolders )
+            Procedures procedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;
         this.config = platformModule.config;
@@ -123,7 +125,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
         this.globalDependencies =  platformModule.dependencies;
-        this.tokenHolders = tokenHolders;
+        this.tokenHolders = editionModule.tokenHoldersSupplier.get();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = editionModule.locksSupplier.get();
         this.statementLocksFactory = editionModule.statementLocksFactoryProvider.apply( locks );
@@ -147,6 +149,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.ioLimiter = editionModule.ioLimiter;
         this.clock = platformModule.clock;
         this.databaseAvailabilityGuard = new DatabaseAvailabilityGuard( databaseName, clock, logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
+        this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionModule.transactionStartTimeout );
         this.accessCapability = editionModule.accessCapability;
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.recoveryCleanupWorkCollector = platformModule.recoveryCleanupWorkCollector;
@@ -338,6 +341,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
     {
         return databaseAvailabilityGuard;
+    }
+
+    @Override
+    public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()
+    {
+        return coreAPIAvailabilityGuard;
     }
 
     @Override

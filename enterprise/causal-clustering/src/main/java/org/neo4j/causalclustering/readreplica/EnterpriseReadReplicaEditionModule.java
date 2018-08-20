@@ -107,7 +107,6 @@ import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -204,8 +203,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = new EnterpriseConstraintSemantics();
-
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
         commitProcessFactory = readOnly();

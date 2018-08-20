@@ -804,6 +804,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return autoIndexing;
     }
 
+    public TokenHolders getTokenHolders()
+    {
+        return tokenHolders;
+    }
+
     public TransactionEventHandlers getTransactionEventHandlers()
     {
         return transactionEventHandlers;

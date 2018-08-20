@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
@@ -467,6 +468,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
         public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
         {
             return databaseAvailabilityGuard;
+        }
+
+        @Override
+        public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()
+        {
+            return null;
         }
 
         @Override
