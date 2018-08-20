@@ -51,7 +51,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 public class NativeSchemaNumberIndexProviderTest
@@ -361,12 +361,12 @@ public class NativeSchemaNumberIndexProviderTest
 
     private NativeSchemaNumberIndexProvider newProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, false );
+        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate(), false );
     }
 
     private NativeSchemaNumberIndexProvider newReadOnlyProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, true );
+        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate(), true );
     }
 
     private PageCache pageCache()

@@ -20,46 +20,31 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.List;
-
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith( Parameterized.class )
 public class CrashGenerationCleanerConfigTest
 {
-    @Parameterized.Parameters
-    public static List<Object[]> parameters()
-    {
-        return Arrays.asList(
-                new Object[]{1},
-                new Object[]{8},
-                new Object[]{32},
-                new Object[]{64},
-                new Object[]{128}
-        );
-    }
-
-    @Parameterized.Parameter
-    public int availableProcessors;
-
     @Test
     public void everyThreadShouldHaveAtLeastOneBatchToWorkOn()
     {
         long pagesToClean = 1;
         long multiplier = 5;
-
-        int threads = 1;
-        long batchSize = 1;
-        while ( threads < availableProcessors || batchSize < CrashGenerationCleaner.MAX_BATCH_SIZE )
+        int threads = 0;
+        int prevThreads;
+        long batchSize;
+        do
         {
-            threads = CrashGenerationCleaner.threads( pagesToClean, availableProcessors );
+            prevThreads = threads;
+            threads = CrashGenerationCleaner.threads( pagesToClean );
             batchSize = CrashGenerationCleaner.batchSize( pagesToClean, threads );
             assertTrue( "at least one batch per thread", (pagesToClean + batchSize) / batchSize >= threads );
             pagesToClean *= multiplier;
         }
+        while ( threads != prevThreads || batchSize < CrashGenerationCleaner.MAX_BATCH_SIZE );
+        long aLotMorePages = 100 * pagesToClean;
+        assertEquals( threads, CrashGenerationCleaner.threads( aLotMorePages ) );
+        assertEquals( batchSize, CrashGenerationCleaner.batchSize( aLotMorePages, threads ) );
     }
 }

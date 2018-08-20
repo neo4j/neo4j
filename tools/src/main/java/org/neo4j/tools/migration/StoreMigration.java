@@ -124,7 +124,7 @@ public class StoreMigration
         {
             Dependencies deps = new Dependencies();
             deps.satisfyDependencies( fs, config, explicitIndexProvider, pageCache, logService, new Monitors(),
-                    RecoveryCleanupWorkCollector.IMMEDIATE );
+                    RecoveryCleanupWorkCollector.immediate() );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
             KernelExtensions kernelExtensions = life.add( new KernelExtensions(

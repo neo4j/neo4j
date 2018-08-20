@@ -42,6 +42,6 @@ public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
         return NativeLuceneFusionSchemaIndexProviderFactory
                 .newInstance( pageCache, graphDbDir, fs, monitor, config, OperationalMode.single,
-                        RecoveryCleanupWorkCollector.IMMEDIATE );
+                        RecoveryCleanupWorkCollector.immediate() );
     }
 }

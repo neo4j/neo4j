@@ -172,7 +172,7 @@ public class NonUniqueIndexTest
         if ( useFusionIndex )
         {
             indexProvider = NativeLuceneFusionSchemaIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.immediate() );
         }
         else
         {

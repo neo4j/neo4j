@@ -120,7 +120,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
-                RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
+                RecoveryCleanupWorkCollector.immediate(), OperationalMode.single ) );
     }
 
     @Override

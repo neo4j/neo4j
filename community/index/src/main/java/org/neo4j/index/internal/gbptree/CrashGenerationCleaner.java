@@ -20,12 +20,13 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -41,14 +42,12 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  */
 class CrashGenerationCleaner
 {
-    static final long MIN_BATCH_SIZE = 10;
+    private static final long MIN_BATCH_SIZE = 10;
     static final long MAX_BATCH_SIZE = 1000;
     private final PagedFile pagedFile;
     private final TreeNode<?,?> treeNode;
     private final long lowTreeNodeId;
     private final long highTreeNodeId;
-    private int threads;
-    private long batchSize;
     private final long stableGeneration;
     private final long unstableGeneration;
     private final Monitor monitor;
@@ -65,14 +64,12 @@ class CrashGenerationCleaner
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
         this.internalMaxKeyCount = treeNode.internalMaxKeyCount();
-        long pagesToClean = highTreeNodeId - lowTreeNodeId;
-        this.threads = threads( pagesToClean, Runtime.getRuntime().availableProcessors() );
-        this.batchSize = batchSize( pagesToClean, threads );
     }
 
-    static int threads( long pagesToClean, long availableProcessors )
+    static int threads( long pagesToClean )
     {
         // Thread count at most equal to availableProcessors, at least one and each thread should have at least one batch of work
+        long availableProcessors = Runtime.getRuntime().availableProcessors();
         return (int) min( availableProcessors, max( 1, pagesToClean / MIN_BATCH_SIZE ) );
     }
 
@@ -84,33 +81,35 @@ class CrashGenerationCleaner
 
     // === Methods about the execution and threading ===
 
-    public void clean() throws IOException
+    public void clean( ExecutorService executor ) throws IOException
     {
         monitor.cleanupStarted();
         assert unstableGeneration > stableGeneration : unexpectedGenerations();
         assert unstableGeneration - stableGeneration > 1 : unexpectedGenerations();
 
         long startTime = currentTimeMillis();
-        ExecutorService executor = Executors.newFixedThreadPool( threads );
+        long pagesToClean = highTreeNodeId - lowTreeNodeId;
+        int threads = threads( pagesToClean );
+        long batchSize = batchSize( pagesToClean, threads );
         AtomicLong nextId = new AtomicLong( lowTreeNodeId );
         AtomicReference<Throwable> error = new AtomicReference<>();
         AtomicInteger cleanedPointers = new AtomicInteger();
+        CountDownLatch activeThreadLatch = new CountDownLatch( threads );
         for ( int i = 0; i < threads; i++ )
         {
-            executor.submit( cleaner( nextId, error, cleanedPointers ) );
+            executor.submit( cleaner( nextId, batchSize, cleanedPointers, activeThreadLatch, error ) );
         }
-        executor.shutdown();
 
         try
         {
             long lastProgression = nextId.get();
             // Have max no-progress-timeout quite high to be able to cope with huge
             // I/O congestion spikes w/o failing in vain.
-            while ( !executor.awaitTermination( 30, SECONDS ) )
+            while ( !activeThreadLatch.await( 30, SECONDS ) )
             {
                 if ( lastProgression == nextId.get() )
                 {
-                    // No progression at all, abort?
+                    // No progression at all, abort
                     error.compareAndSet( null, new IOException( "No progress, so forcing abort" ) );
                 }
                 lastProgression = nextId.get();
@@ -128,10 +127,11 @@ class CrashGenerationCleaner
         }
 
         long endTime = currentTimeMillis();
-        monitor.cleanupFinished( highTreeNodeId - lowTreeNodeId, cleanedPointers.get(), endTime - startTime );
+        monitor.cleanupFinished( pagesToClean, cleanedPointers.get(), endTime - startTime );
     }
 
-    private Runnable cleaner( AtomicLong nextId, AtomicReference<Throwable> error, AtomicInteger cleanedPointers )
+    private Runnable cleaner( AtomicLong nextId, long batchSize, AtomicInteger cleanedPointers, CountDownLatch activeThreadLatch,
+            AtomicReference<Throwable> error )
     {
         return () ->
         {
@@ -162,7 +162,11 @@ class CrashGenerationCleaner
             }
             catch ( Throwable e )
             {
-                error.compareAndSet( null, e );
+                error.accumulateAndGet( e, Exceptions::chain );
+            }
+            finally
+            {
+                activeThreadLatch.countDown();
             }
         };
     }

@@ -198,7 +198,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         NativeLabelScanStore labelScanStore =
                 new NativeLabelScanStore( pageCache, directory, new FullLabelStream( indexStoreView ), false, monitors,
-                        RecoveryCleanupWorkCollector.IMMEDIATE );
+                        RecoveryCleanupWorkCollector.immediate() );
         try
         {
             labelScanStore.init();
@@ -216,7 +216,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
-                pageCache, RecoveryCleanupWorkCollector.IGNORE, DatabaseInfo.COMMUNITY, monitors ) );
+                pageCache, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors ) );
         return loadSchemaIndexProviders( extensions );
     }
 

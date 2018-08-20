@@ -19,6 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -32,55 +36,102 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <p>
  * Take full responsibility for closing added {@link CleanupJob CleanupJobs} as soon as possible after run.
  */
-public interface RecoveryCleanupWorkCollector extends Lifecycle
+public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
 {
+    private static ImmediateRecoveryCleanupWorkCollector immediateInstance;
+    private static IgnoringRecoveryCleanupWorkCollector ignoringInstance;
+
     /**
      * Adds {@link CleanupJob} to this collector.
      *
      * @param job cleanup job to perform, now or at some point in the future.
      */
-    void add( CleanupJob job );
+    abstract void add( CleanupJob job );
+
+    void executeWithExecutor( CleanupJobGroupAction action )
+    {
+        ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+        try
+        {
+            action.execute( executor );
+        }
+        finally
+        {
+            shutdownExecutorAndVerifyNoLeaks( executor );
+        }
+    }
+    private void shutdownExecutorAndVerifyNoLeaks( ExecutorService executor )
+    {
+        List<Runnable> leakedTasks = executor.shutdownNow();
+        if ( leakedTasks.size() != 0 )
+        {
+            throw new IllegalStateException( "Tasks leaked from CleanupJob. Tasks where " + leakedTasks.toString() );
+        }
+    }
 
     /**
-     * {@link CleanupJob#run() Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
+     * {@link CleanupJob#run( ExecutorService ) Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
      * calling {@link #add(CleanupJob)}.
      */
-    RecoveryCleanupWorkCollector IMMEDIATE = new ImmediateRecoveryCleanupWorkCollector();
+    public static RecoveryCleanupWorkCollector immediate()
+    {
+        if ( immediateInstance == null )
+        {
+            immediateInstance = new ImmediateRecoveryCleanupWorkCollector();
+        }
+        return immediateInstance;
+    }
 
     /**
      * Ignore all clean jobs.
      */
-    RecoveryCleanupWorkCollector IGNORE = new IgnoringRecoveryCleanupWorkCollector();
+    public static RecoveryCleanupWorkCollector ignore()
+    {
+        if ( ignoringInstance == null )
+        {
+            ignoringInstance = new IgnoringRecoveryCleanupWorkCollector();
+        }
+        return ignoringInstance;
+    }
 
     /**
      * {@link RecoveryCleanupWorkCollector} which runs added {@link CleanupJob} as part of the {@link #add(CleanupJob)}
      * call in the caller thread.
      */
-    class ImmediateRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
+    static class ImmediateRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
     {
         @Override
         public void add( CleanupJob job )
         {
-            try
+            executeWithExecutor( executor ->
             {
-                job.run();
-            }
-            finally
-            {
-                job.close();
-            }
+                try
+                {
+                    job.run( executor );
+                }
+                finally
+                {
+                    job.close();
+                }
+            } );
         }
     }
 
     /**
      * {@link RecoveryCleanupWorkCollector} ignoring all {@link CleanupJob} added to it.
      */
-    class IgnoringRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
+    static class IgnoringRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
     {
         @Override
         public void add( CleanupJob job )
         {
             job.close();
         }
+    }
+
+    @FunctionalInterface
+    interface CleanupJobGroupAction
+    {
+        void execute( ExecutorService executor );
     }
 }

@@ -19,12 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * A job cleaning something up after recovery. Usually added to {@link RecoveryCleanupWorkCollector}.
  * <p>
  * Report state of cleaning progress.
  */
-public interface CleanupJob extends Runnable
+public interface CleanupJob
 {
     /**
      * @return {@code true} if gbptree still needs cleaning, meaning job is not yet finished or has not started at all.
@@ -48,12 +50,18 @@ public interface CleanupJob extends Runnable
     void close();
 
     /**
+     * Run cleanup job and use provided executor for parallel tasks.
+     * This method will wait for all jobs passed to executor to finish before returning.
+     */
+    void run( ExecutorService executor );
+
+    /**
      * A {@link CleanupJob} that doesn't need cleaning, i.e. it's already clean.
      */
     CleanupJob CLEAN = new CleanupJob()
     {
         @Override
-        public void run()
+        public void run( ExecutorService executor )
         {   // no-op
         }
 

@@ -65,7 +65,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -634,7 +633,7 @@ public class GBPTreeTest
         makeDirty( pageCache );
 
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
-        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
         {
             index.checkpoint( IOLimiter.unlimited(), headerWriter );
         }
@@ -971,7 +970,7 @@ public class GBPTreeTest
     {
         makeDirty();
 
-        try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.ignore() ).build() )
         {
             assertTrue( index.wasDirtyOnStartup() );
         }
@@ -1742,28 +1741,30 @@ public class GBPTreeTest
         }
     }
 
-    private class ControlledRecoveryCleanupWorkCollector extends LifecycleAdapter
-            implements RecoveryCleanupWorkCollector
+    private class ControlledRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
     {
         Queue<CleanupJob> jobs = new LinkedList<>();
         List<CleanupJob> startedJobs = new LinkedList<>();
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
-            CleanupJob job;
-            while ( (job = jobs.poll()) != null )
+            executeWithExecutor( executor ->
             {
-                try
+                CleanupJob job;
+                while ( (job = jobs.poll()) != null )
                 {
-                    job.run();
-                    startedJobs.add( job );
+                    try
+                    {
+                        job.run( executor );
+                        startedJobs.add( job );
+                    }
+                    finally
+                    {
+                        job.close();
+                    }
                 }
-                finally
-                {
-                    job.close();
-                }
-            }
+            } );
         }
 
         @Override

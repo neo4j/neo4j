@@ -292,7 +292,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
         deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
-                RecoveryCleanupWorkCollector.IMMEDIATE );
+                RecoveryCleanupWorkCollector.immediate() );
 
         KernelExtensions extensions = life.add( new KernelExtensions(
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
@@ -302,7 +302,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 HighestSelectionStrategy.INSTANCE );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
-                RecoveryCleanupWorkCollector.IMMEDIATE );
+                deps.resolveDependency( RecoveryCleanupWorkCollector.class ) );
         life.add( labelScanStore );
         actions = new BatchSchemaActions();
 

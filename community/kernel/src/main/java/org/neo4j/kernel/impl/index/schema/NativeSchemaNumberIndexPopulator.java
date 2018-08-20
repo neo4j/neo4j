@@ -80,7 +80,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     public synchronized void create() throws IOException
     {
         gbpTreeFileUtil.deleteFileIfPresent( storeFile );
-        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
+        instantiateTree( RecoveryCleanupWorkCollector.immediate(), new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
@@ -219,7 +219,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     {
         if ( tree == null )
         {
-            instantiateTree( RecoveryCleanupWorkCollector.IGNORE, NO_HEADER_WRITER );
+            instantiateTree( RecoveryCleanupWorkCollector.ignore(), NO_HEADER_WRITER );
         }
     }
 

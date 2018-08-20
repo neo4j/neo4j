@@ -33,7 +33,7 @@ import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
  * <p>
  * Also see {@link RecoveryCleanupWorkCollector}
  */
-public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWorkCollector
+public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
 {
     private final Queue<CleanupJob> jobs;
     private final JobScheduler jobScheduler;
@@ -85,18 +85,21 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     {
         return () ->
         {
-            CleanupJob job;
-            while ( (job = jobs.poll()) != null )
+            executeWithExecutor( executor ->
             {
-                try
+                CleanupJob job;
+                while ( (job = jobs.poll()) != null )
                 {
-                    job.run();
+                    try
+                    {
+                        job.run( executor );
+                    }
+                    finally
+                    {
+                        job.close();
+                    }
                 }
-                finally
-                {
-                    job.close();
-                }
-            }
+            } );
         };
     }
 

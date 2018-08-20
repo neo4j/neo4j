@@ -65,7 +65,7 @@ import static org.neo4j.function.Predicates.all;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.helpers.collection.Iterables.asUniqueSet;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
@@ -96,7 +96,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
     private void createAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
         accessor = new NativeSchemaNumberIndexAccessor<>(
-                pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
+                pageCache, fs, indexFile, layout, immediate(), monitor, indexDescriptor, indexId, samplingConfig );
     }
 
     @After

@@ -124,7 +124,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends SchemaNumberKey,VALU
     GBPTree<KEY,VALUE> getTree() throws IOException
     {
         return new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
-                NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
+                NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() );
     }
 
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException

@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -48,18 +50,18 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class CrashGenerationCleanerTest
 {
-    private FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
-    private RandomRule randomRule = new RandomRule();
+    private static final String FILE_NAME = "index";
+    private static final int PAGE_SIZE = 256;
+
+    private final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
+    private final RandomRule randomRule = new RandomRule();
     @Rule
     public RuleChain ruleChain = RuleChain
             .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
 
-    private static final String FILE_NAME = "index";
-    private static final int PAGE_SIZE = 256;
-
-    private PagedFile pagedFile;
+    private final ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final CorruptableTreeNode corruptableTreeNode = new CorruptableTreeNode( PAGE_SIZE, layout );
     private final int oldStableGeneration = 9;
@@ -82,6 +84,8 @@ public class CrashGenerationCleanerTest
             crashed( rightSibling() ),
             crashed( successor() )
     );
+
+    private PagedFile pagedFile;
 
     @Before
     public void setupPagedFile() throws IOException
@@ -107,7 +111,7 @@ public class CrashGenerationCleanerTest
 
         // WHEN
         SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
-        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean( executor );
 
         // THEN
         assertPagesVisisted( monitor, pages.length );
@@ -126,7 +130,7 @@ public class CrashGenerationCleanerTest
 
         // WHEN
         SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
-        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean( executor );
 
         // THEN
         assertPagesVisisted( monitor, 2 );
@@ -159,7 +163,7 @@ public class CrashGenerationCleanerTest
 
         // WHEN
         SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
-        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean( executor );
 
         // THEN
         assertPagesVisisted( monitor, pages.length );
@@ -187,7 +191,7 @@ public class CrashGenerationCleanerTest
 
         // WHEN
         SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
-        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean( executor );
 
         // THEN
         assertPagesVisisted( monitor, pages.length );
@@ -212,7 +216,7 @@ public class CrashGenerationCleanerTest
 
         // WHEN
         SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
-        crashGenerationCleaner( pagedFile, 0, numberOfPages, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, numberOfPages, monitor ).clean( executor );
 
         // THEN
         assertPagesVisisted( monitor, numberOfPages );
@@ -318,7 +322,7 @@ public class CrashGenerationCleanerTest
         }
 
         private void write( PageCursor cursor, CorruptableTreeNode node, int stableGeneration, int unstableGeneration,
-                int crashGeneration ) throws IOException
+                int crashGeneration )
         {
             type.write( cursor, node, oldStableGeneration, stableGeneration );
             Arrays.stream( pageCorruptions )

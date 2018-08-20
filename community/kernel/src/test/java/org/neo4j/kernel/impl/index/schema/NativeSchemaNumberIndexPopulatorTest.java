@@ -514,7 +514,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
         try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
-                headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE ) )
+                headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() ) )
         {
             if ( online )
             {
