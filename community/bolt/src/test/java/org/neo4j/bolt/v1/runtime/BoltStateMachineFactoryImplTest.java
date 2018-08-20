@@ -51,6 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 
 class BoltStateMachineFactoryImplTest
 {
@@ -98,7 +99,7 @@ class BoltStateMachineFactoryImplTest
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager databaseManager )
     {
         return new BoltStateMachineFactoryImpl( databaseManager, new UsageData( new OnDemandJobScheduler() ),
-                new DatabaseAvailabilityGuard( CLOCK, NullLog.getInstance() ), mock( Authentication.class ), CLOCK, Config.defaults(),
+                new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, CLOCK, NullLog.getInstance() ), mock( Authentication.class ), CLOCK, Config.defaults(),
                 NullLogService.getInstance() );
     }
 
@@ -111,7 +112,7 @@ class BoltStateMachineFactoryImplTest
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         DatabaseManager databaseManager = mock( DatabaseManager.class );
-        when( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( db ) );
+        when( databaseManager.getDatabaseFacade( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( db ) );
         return databaseManager;
     }
 }

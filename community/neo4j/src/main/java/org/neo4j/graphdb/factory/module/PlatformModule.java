@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -238,7 +239,7 @@ public class PlatformModule
 
     protected DatabaseAvailabilityGuard createAvailabilityGuard()
     {
-        return new DatabaseAvailabilityGuard( clock, logging.getInternalLog( DatabaseAvailabilityGuard.class ) );
+        return new DatabaseAvailabilityGuard( DatabaseManager.DEFAULT_DATABASE_NAME, clock, logging.getInternalLog( DatabaseAvailabilityGuard.class ) );
     }
 
     protected StoreLocker createStoreLocker()

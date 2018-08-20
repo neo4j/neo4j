@@ -65,6 +65,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class RaftReplicatorTest
@@ -82,7 +83,8 @@ public class RaftReplicatorTest
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private TimeoutStrategy noWaitTimeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
-    private DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
+    private DatabaseAvailabilityGuard databaseAvailabilityGuard =
+            new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, Clocks.systemClock(), NullLog.getInstance() );
 
     @Test
     public void shouldSendReplicatedContentToLeader() throws Exception

@@ -145,8 +145,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.tracers = platformModule.tracers;
         this.procedures = procedures;
         this.ioLimiter = editionModule.ioLimiter;
-        this.databaseAvailabilityGuard = platformModule.databaseAvailabilityGuard;
         this.clock = platformModule.clock;
+        this.databaseAvailabilityGuard = new DatabaseAvailabilityGuard( databaseName, clock, logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
         this.accessCapability = editionModule.accessCapability;
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.recoveryCleanupWorkCollector = platformModule.recoveryCleanupWorkCollector;

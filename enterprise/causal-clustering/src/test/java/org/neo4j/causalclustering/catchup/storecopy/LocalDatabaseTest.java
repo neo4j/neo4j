@@ -47,6 +47,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 
 public class LocalDatabaseTest
 {
@@ -166,7 +167,7 @@ public class LocalDatabaseTest
 
     private static DatabaseAvailabilityGuard newAvailabilityGuard()
     {
-        return new DatabaseAvailabilityGuard( Clock.systemUTC(), NullLog.getInstance() );
+        return new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, Clock.systemUTC(), NullLog.getInstance() );
     }
 
     private static void assertDatabaseIsStoppedAndUnavailable( DatabaseAvailabilityGuard guard )

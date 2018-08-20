@@ -39,20 +39,23 @@ import org.neo4j.logging.Log;
  */
 public class DatabaseAvailabilityGuard
 {
-    private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database available: ";
-    private static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database unavailable: ";
+    private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database %s available: ";
+    private static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database %s unavailable: ";
 
     private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
     private final AtomicBoolean isShutdown = new AtomicBoolean( false );
     private final Listeners<AvailabilityListener> listeners = new Listeners<>();
+    private final String databaseName;
     private final Clock clock;
     private final Log log;
 
-    public DatabaseAvailabilityGuard( Clock clock, Log log )
+    public DatabaseAvailabilityGuard( String databaseName, Clock clock, Log log )
     {
+        this.databaseName = databaseName;
         this.clock = clock;
         this.log = log;
+        this.listeners.add( new LoggingAvailabilityListener( log, databaseName ) );
     }
 
     /**
@@ -71,7 +74,7 @@ public class DatabaseAvailabilityGuard
         {
             if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
-                log.info( DATABASE_UNAVAILABLE_MSG + requirement.description() );
+                log.info( DATABASE_UNAVAILABLE_MSG + requirement.description(), databaseName );
                 listeners.notify( AvailabilityListener::unavailable );
             }
         }
@@ -93,7 +96,7 @@ public class DatabaseAvailabilityGuard
         {
             if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
-                log.info( DATABASE_AVAILABLE_MSG + requirement.description() );
+                log.info( DATABASE_AVAILABLE_MSG + requirement.description(), databaseName );
                 listeners.notify( AvailabilityListener::available );
             }
         }
@@ -261,5 +264,29 @@ public class DatabaseAvailabilityGuard
             return requirementCount.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
+    }
+
+    private static class LoggingAvailabilityListener implements AvailabilityListener
+    {
+        private final Log log;
+        private final String databaseName;
+
+        LoggingAvailabilityListener( Log log, String databaseName )
+        {
+            this.log = log;
+            this.databaseName = databaseName;
+        }
+
+        @Override
+        public void available()
+        {
+            log.info( "Database %s is now ready.", databaseName );
+        }
+
+        @Override
+        public void unavailable()
+        {
+            log.info( "Database %s is now unavailable.", databaseName );
+        }
     }
 }

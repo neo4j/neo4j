@@ -39,9 +39,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.availability.AvailabilityListener;
 import org.neo4j.kernel.availability.DatabaseAvailability;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
@@ -198,10 +196,6 @@ public class GraphDatabaseFacadeFactory
         RuntimeException error = null;
         try
         {
-            // Done after create to avoid a redundant
-            // "database is now unavailable"
-            enableAvailabilityLogging( platform.databaseAvailabilityGuard, msgLog );
-
             platform.life.start();
         }
         catch ( final Throwable throwable )
@@ -239,24 +233,6 @@ public class GraphDatabaseFacadeFactory
     protected PlatformModule createPlatform( File storeDir, Config config, final Dependencies dependencies )
     {
         return new PlatformModule( storeDir, config, databaseInfo, dependencies );
-    }
-
-    private void enableAvailabilityLogging( DatabaseAvailabilityGuard databaseAvailabilityGuard, final Logger msgLog )
-    {
-        databaseAvailabilityGuard.addListener( new AvailabilityListener()
-        {
-            @Override
-            public void available()
-            {
-                msgLog.log( "Database is now ready" );
-            }
-
-            @Override
-            public void unavailable()
-            {
-                msgLog.log( "Database is now unavailable" );
-            }
-        } );
     }
 
     private static Procedures setupProcedures( PlatformModule platform, EditionModule editionModule, GraphDatabaseFacade facade )

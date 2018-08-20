@@ -48,6 +48,7 @@ import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.NullLog.getInstance;
 
 public class DatabaseAvailabilityGuardTest
@@ -62,7 +63,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
 
         // When starting out
         verifyZeroInteractions( log );
@@ -105,7 +106,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
@@ -121,7 +122,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
@@ -142,7 +143,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
@@ -165,7 +166,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
@@ -181,7 +182,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
@@ -206,7 +207,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
@@ -222,7 +223,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
         final AtomicBoolean notified = new AtomicBoolean();
@@ -254,7 +255,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
         final AtomicBoolean notified = new AtomicBoolean();
@@ -287,7 +288,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Clock clock = Mockito.mock( Clock.class );
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, NullLog.getInstance() );
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, NullLog.getInstance() );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
         // When
@@ -303,7 +304,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, log );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
 
         // When
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
@@ -317,7 +318,7 @@ public class DatabaseAvailabilityGuardTest
     public void shouldExplainBlockersOnCheckAvailable() throws Exception
     {
         // GIVEN
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( Clocks.systemClock(), getInstance() );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( Clocks.systemClock(), getInstance() );
         // At this point it should be available
         databaseAvailabilityGuard.checkAvailable();
 
@@ -334,5 +335,10 @@ public class DatabaseAvailabilityGuardTest
         {
             assertThat( e.getMessage(), containsString( REQUIREMENT_1.description() ) );
         }
+    }
+
+    private static DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )
+    {
+        return new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, log );
     }
 }

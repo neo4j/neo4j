@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.function.Function;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -94,6 +93,7 @@ import org.neo4j.time.SystemNanoClock;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService.EMPTY_WATCHER;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
@@ -138,23 +138,23 @@ public class NeoStoreDataSourceRule extends ExternalResource
         TransactionMonitor transactionMonitor = dependency( mutableDependencies, TransactionMonitor.class,
                 deps -> new DatabaseTransactionStats() );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = dependency( mutableDependencies, DatabaseAvailabilityGuard.class,
-                deps -> new DatabaseAvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ), NullLog.getInstance() ) );
+                deps -> new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, deps.resolveDependency( SystemNanoClock.class ),
+                        NullLog.getInstance() ) );
         dependency( mutableDependencies, DiagnosticsManager.class,
                 deps -> new DiagnosticsManager( NullLog.getInstance() ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> IndexProvider.EMPTY );
 
-        dataSource = new NeoStoreDataSource(
-                new TestDatabaseCreationContext( DatabaseManager.DEFAULT_DATABASE_NAME, databaseLayout, config, idGeneratorFactory, logService,
-                        mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
-                        mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs, transactionMonitor,
-                        databaseHealth, mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
-                        mock( InternalAutoIndexing.class ), mock( IndexConfigStore.class ), mock( ExplicitIndexProvider.class ), pageCache,
-                        new StandardConstraintSemantics(), monitors, new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
-                        mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
-                        RecoveryCleanupWorkCollector.immediate(),
-                        new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
-                                jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
-                        file -> EMPTY_WATCHER, new GraphDatabaseFacade(), Iterables.empty() ) );
+        dataSource = new NeoStoreDataSource( new TestDatabaseCreationContext( DEFAULT_DATABASE_NAME, databaseLayout, config, idGeneratorFactory, logService,
+                mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
+                mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs, transactionMonitor, databaseHealth,
+                mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
+                mock( InternalAutoIndexing.class ), mock( IndexConfigStore.class ), mock( ExplicitIndexProvider.class ), pageCache,
+                new StandardConstraintSemantics(), monitors, new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
+                mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
+                RecoveryCleanupWorkCollector.immediate(),
+                new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
+                        jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
+                file -> EMPTY_WATCHER, new GraphDatabaseFacade(), Iterables.empty() ) );
         return dataSource;
     }
 
