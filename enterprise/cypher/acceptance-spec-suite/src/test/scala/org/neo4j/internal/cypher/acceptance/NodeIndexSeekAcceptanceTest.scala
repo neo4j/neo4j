@@ -338,7 +338,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     result should useOperationTimes("NodeUniqueIndexSeek", 1)
   }
 
-  test("should not return any rows for or predicates with different labels gh#12017") {
+  test("should not return any rows for OR predicates with different labels gh#12017") {
     // Given
     graph.createIndex("Label1", "prop1")
     graph.createIndex("Label2", "prop2")
@@ -350,10 +350,9 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     // Then
     result.toList should be (empty)
     result should useOperationTimes("NodeIndexSeek", 2)
-    result should useOperationTimes("Filter", 1)
   }
 
-  test("should be able to solve or predicates with same label without filter") {
+  test("should be able to solve OR predicates with same label") {
     // Given
     graph.createIndex("Label1", "prop1")
     graph.createIndex("Label1", "prop2")
@@ -366,7 +365,26 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     // Then
     result.toList should equal(List(Map("n" -> node1)))
     result should useOperationTimes("NodeIndexSeek", 2)
-    result should useOperationTimes("Filter", 0)
+  }
+
+  test("should not return any rows for OR predicates with four indexes") {
+    // Given
+    graph.createIndex("Label1", "prop1")
+    graph.createIndex("Label1", "prop2")
+    graph.createIndex("Label2", "prop1")
+    graph.createIndex("Label2", "prop2")
+
+    for( i <- 1 to 10 ) {
+      graph.execute("CREATE(:Label1 {prop1: 'val', prop2: 'val'})" )
+      graph.execute("CREATE(:Label2 {prop1: 'val', prop2: 'val'})" )
+    }
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")
+
+    // Then
+    result.toList should be (empty)
+    result should useOperationTimes("NodeIndexSeek", 4)
   }
 
   private def setUpDatabaseForTests() {
