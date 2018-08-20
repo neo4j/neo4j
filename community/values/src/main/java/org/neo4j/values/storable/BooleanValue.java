@@ -47,6 +47,7 @@ public abstract class BooleanValue extends ScalarValue
         return mapper.mapBoolean( this );
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.BOOLEAN;
@@ -93,6 +94,7 @@ public abstract class BooleanValue extends ScalarValue
             return 1231;
         }
 
+        @Override
         public boolean booleanValue()
         {
             return true;
@@ -151,6 +153,7 @@ public abstract class BooleanValue extends ScalarValue
             return 1237;
         }
 
+        @Override
         public boolean booleanValue()
         {
             return false;

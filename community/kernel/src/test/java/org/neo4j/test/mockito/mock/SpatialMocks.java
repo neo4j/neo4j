@@ -68,16 +68,19 @@ public class SpatialMocks
     {
         return new CRS()
         {
+            @Override
             public int getCode()
             {
                 return code;
             }
 
+            @Override
             public String getType()
             {
                 return type;
             }
 
+            @Override
             public String getHref()
             {
                 return href;

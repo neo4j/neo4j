@@ -43,6 +43,7 @@ public class SrvRecordResolverImpl extends SrvRecordResolver
 
     private Optional<InitialDirContext> _idc = Optional.empty();
 
+    @Override
     public Stream<SrvRecord> resolveSrvRecord( String url ) throws NamingException
     {
         Attributes attrs = _idc.orElseGet( this::setIdc ).getAttributes( url, SRV_RECORDS );
@@ -72,11 +73,13 @@ public class SrvRecordResolverImpl extends SrvRecordResolver
     {
         return StreamSupport.stream( Spliterators.spliteratorUnknownSize( new Iterator<T>()
         {
+            @Override
             public T next()
             {
                 return e.nextElement();
             }
 
+            @Override
             public boolean hasNext()
             {
                 return e.hasMoreElements();

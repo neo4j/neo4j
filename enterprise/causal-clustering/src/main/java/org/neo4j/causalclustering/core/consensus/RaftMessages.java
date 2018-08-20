@@ -1092,6 +1092,7 @@ public interface RaftMessages
             this.message = message;
         }
 
+        @Override
         public ClusterId clusterId()
         {
             return clusterId;

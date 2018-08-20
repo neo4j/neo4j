@@ -30,5 +30,6 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClu
 public interface ComposableMessageHandler
         extends Function<LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>>, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>>>
 {
+    @Override
     LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> apply( LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandler );
 }

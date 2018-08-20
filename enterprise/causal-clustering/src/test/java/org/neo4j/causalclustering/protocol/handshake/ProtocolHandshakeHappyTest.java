@@ -307,11 +307,13 @@ public class ProtocolHandshakeHappyTest
     {
         private boolean closed;
 
+        @Override
         public boolean isDisposed()
         {
             return closed;
         }
 
+        @Override
         public void dispose()
         {
             closed = true;
@@ -323,8 +325,10 @@ public class ProtocolHandshakeHappyTest
             return true;
         }
 
+        @Override
         public abstract CompletableFuture<Void> write( Object msg );
 
+        @Override
         public CompletableFuture<Void> writeAndFlush( Object msg )
         {
             return write( msg );

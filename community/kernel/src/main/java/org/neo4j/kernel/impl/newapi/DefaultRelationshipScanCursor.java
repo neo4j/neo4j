@@ -113,6 +113,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         }
     }
 
+    @Override
     protected void collectAddedTxStateSnapshot()
     {
         if ( isSingle() )

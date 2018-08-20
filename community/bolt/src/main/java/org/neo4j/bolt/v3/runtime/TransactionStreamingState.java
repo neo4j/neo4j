@@ -30,6 +30,7 @@ public class TransactionStreamingState extends AbstractStreamingState
         return "TX_STREAMING";
     }
 
+    @Override
     protected BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws Throwable
     {
         context.connectionState().getStatementProcessor().streamResult(

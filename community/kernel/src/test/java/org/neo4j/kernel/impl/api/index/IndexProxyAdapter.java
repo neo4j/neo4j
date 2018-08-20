@@ -57,6 +57,7 @@ public class IndexProxyAdapter implements IndexProxy
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void force( IOLimiter ioLimiter )
     {
     }

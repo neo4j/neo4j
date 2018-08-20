@@ -96,6 +96,7 @@ public abstract class TextValue extends ScalarValue
         return false;
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.TEXT;

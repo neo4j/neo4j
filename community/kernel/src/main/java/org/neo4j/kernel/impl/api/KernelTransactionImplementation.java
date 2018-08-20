@@ -384,6 +384,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return context == null ? AuthSubject.ANONYMOUS : context.subject();
     }
 
+    @Override
     public void setMetaData( Map<String, Object> data )
     {
         this.userMetaData = data;

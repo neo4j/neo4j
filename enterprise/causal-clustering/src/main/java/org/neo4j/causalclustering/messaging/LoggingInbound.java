@@ -44,6 +44,7 @@ public class LoggingInbound<M extends RaftMessages.RaftMessage> implements Inbou
     {
         inbound.registerHandler( new MessageHandler<M>()
         {
+            @Override
             public synchronized void handle( M message )
             {
                 messageLogger.logInbound( message.from(), message, me );

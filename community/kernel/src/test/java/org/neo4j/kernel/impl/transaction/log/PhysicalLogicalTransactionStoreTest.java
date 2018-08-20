@@ -221,6 +221,7 @@ public class PhysicalLogicalTransactionStoreTest
                 return txStore.getTransactionsInReverseOrder( position );
             }
 
+            @Override
             public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
                     LogPosition positionAfterLastRecoveredTransaction )
             {

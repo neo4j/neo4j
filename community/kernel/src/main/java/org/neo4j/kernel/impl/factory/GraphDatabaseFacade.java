@@ -1105,6 +1105,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             this.cursor = cursor;
         }
 
+        @Override
         long fetchNext()
         {
             if ( cursor.next() )
@@ -1165,6 +1166,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             return nodeProxy;
         }
 
+        @Override
         public void close()
         {
             if ( !closed )

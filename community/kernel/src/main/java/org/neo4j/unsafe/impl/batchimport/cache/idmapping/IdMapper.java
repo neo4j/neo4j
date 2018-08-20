@@ -83,6 +83,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
     /**
      * Releases all resources used by this {@link IdMapper}.
      */
+    @Override
     void close();
 
     /**

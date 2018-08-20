@@ -215,6 +215,7 @@ public class ChunkedOutput implements PackOutput
         return writeBytes( ByteBuffer.wrap( data, offset, length ) );
     }
 
+    @Override
     public synchronized void close()
     {
         if ( buffer != null )

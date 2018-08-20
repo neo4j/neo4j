@@ -70,6 +70,7 @@ public interface ValuesIterator extends DocValuesAccess, LongIterator
          *
          * @return The score of the value, or 0 if scoring is not kept or applicable.
          */
+        @Override
         public abstract float currentScore();
 
         Adapter( int size )
@@ -80,6 +81,7 @@ public interface ValuesIterator extends DocValuesAccess, LongIterator
         /**
          * @return the number of docs left in this iterator.
          */
+        @Override
         public int remaining()
         {
             return size - index;

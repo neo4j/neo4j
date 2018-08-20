@@ -177,6 +177,7 @@ public class RecordStorageReader implements StorageReader
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
+    @Override
     public IndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy indexProxy = indexService.getIndexProxy( descriptor.schema() );

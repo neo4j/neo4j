@@ -77,6 +77,7 @@ public class BoltStateMachineV3 extends BoltStateMachineV1
         return new States( connected, failed );
     }
 
+    @Override
     protected void after()
     {
         if ( connectionState.isTerminated() )

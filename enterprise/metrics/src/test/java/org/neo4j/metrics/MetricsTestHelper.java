@@ -54,6 +54,7 @@ public class MetricsTestHelper
             this.header = header;
         }
 
+        @Override
         public String header()
         {
             return header;
@@ -69,6 +70,7 @@ public class MetricsTestHelper
         MEAN_RATE,M1_RATE,M5_RATE,M15_RATE,
         RATE_UNIT,DURATION_UNIT;
 
+        @Override
         public String header()
         {
             return name().toLowerCase();

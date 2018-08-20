@@ -188,6 +188,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
                 : target;
     }
 
+    @Override
     public void close()
     {
         cache.close();

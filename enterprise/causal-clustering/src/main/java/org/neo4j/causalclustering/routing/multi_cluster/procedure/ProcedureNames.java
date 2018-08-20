@@ -47,11 +47,13 @@ public enum ProcedureNames implements ProcedureNamesEnum
         this.name = name;
     }
 
+    @Override
     public String procedureName()
     {
         return name;
     }
 
+    @Override
     public String[] procedureNameSpace()
     {
         return nameSpace;

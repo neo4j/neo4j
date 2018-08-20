@@ -313,6 +313,7 @@ public class TransportTestUtil
 
     private static class MessageEncoderV1 implements MessageEncoder
     {
+        @Override
         public byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
         {
             return serialize( neo4jPack, messages );

@@ -77,6 +77,7 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,Native
         return typeCompare;
     }
 
+    @Override
     IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );

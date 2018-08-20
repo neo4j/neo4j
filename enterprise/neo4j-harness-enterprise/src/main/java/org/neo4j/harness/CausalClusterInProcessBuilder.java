@@ -72,18 +72,21 @@ public class CausalClusterInProcessBuilder
         private List<String> databases = new ArrayList<>( Collections.singletonList( "default" ) );
         private DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
 
+        @Override
         public WithReplicas withCores( int n )
         {
             numCoreHosts = n;
             return this;
         }
 
+        @Override
         public WithLogger withReplicas( int n )
         {
             numReadReplicas = n;
             return this;
         }
 
+        @Override
         public WithPath withLogger( LogProvider l )
         {
             log = l.getLog( "org.neo4j.harness.CausalCluster" );
@@ -96,6 +99,7 @@ public class CausalClusterInProcessBuilder
             return this;
         }
 
+        @Override
         public Builder atPath( Path p )
         {
             path = p;

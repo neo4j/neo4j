@@ -133,6 +133,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */
+    @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return format( "Index( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );

@@ -307,6 +307,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             {
                 UpdateWorker worker = new UpdateWorker( i, filePages, shouldStop, pagedFile )
                 {
+                    @Override
                     protected void performReadOrUpdate( ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
                     {
                         try

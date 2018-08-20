@@ -48,6 +48,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
         return getType();
     }
 
+    @Override
     public boolean hasProperties()
     {
         return nextProp != NO_ID;
@@ -65,6 +66,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
         return getSecondNode();
     }
 
+    @Override
     public long propertiesReference()
     {
         return getNextProp();

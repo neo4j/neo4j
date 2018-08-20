@@ -47,5 +47,6 @@ public interface StorageRelationshipCursor extends RelationshipVisitor<RuntimeEx
     /**
      * Used to visit transaction state, for simplifying implementation of higher-level cursor that consider transaction-state.
      */
+    @Override
     void visit( long relationshipId, int typeId, long startNodeId, long endNodeId );
 }

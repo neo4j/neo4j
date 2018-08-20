@@ -90,6 +90,7 @@ class SpatialIndexKey extends NativeIndexSingleValueKey<SpatialIndexKey>
      * for comparison within the space filling index as long as the original spatial range has already
      * been decomposed into a collection of 1D curve ranges before calling down into the GPTree.
      */
+    @Override
     int compareValueTo( SpatialIndexKey other )
     {
         return Long.compare( rawValueBits, other.rawValueBits );

@@ -85,6 +85,7 @@ public abstract class MapValue extends VirtualValue
             this.map = map;
         }
 
+        @Override
         public Iterable<String> keySet()
         {
             return map.keySet();
@@ -99,16 +100,19 @@ public abstract class MapValue extends VirtualValue
             }
         }
 
+        @Override
         public boolean containsKey( String key )
         {
             return map.containsKey( key );
         }
 
+        @Override
         public AnyValue get( String key )
         {
             return map.getOrDefault( key, NO_VALUE );
         }
 
+        @Override
         public int size()
         {
             return map.size();
@@ -153,6 +157,7 @@ public abstract class MapValue extends VirtualValue
             } );
         }
 
+        @Override
         public boolean containsKey( String key )
         {
             AnyValue value = map.get( key );
@@ -166,6 +171,7 @@ public abstract class MapValue extends VirtualValue
             }
         }
 
+        @Override
         public AnyValue get( String key )
         {
             AnyValue value = map.get( key );
@@ -183,6 +189,7 @@ public abstract class MapValue extends VirtualValue
             }
         }
 
+        @Override
         public int size()
         {
             if ( size < 0 )
@@ -211,11 +218,13 @@ public abstract class MapValue extends VirtualValue
             this.mapFunction = mapFunction;
         }
 
+        @Override
         public ListValue keys()
         {
             return map.keys();
         }
 
+        @Override
         public Iterable<String> keySet()
         {
             return map.keySet();
@@ -227,16 +236,19 @@ public abstract class MapValue extends VirtualValue
             map.foreach( ( s, anyValue ) -> f.accept( s, mapFunction.apply( s, anyValue ) ) );
         }
 
+        @Override
         public boolean containsKey( String key )
         {
             return map.containsKey( key );
         }
 
+        @Override
         public AnyValue get( String key )
         {
             return mapFunction.apply( key, map.get( key ) );
         }
 
+        @Override
         public int size()
         {
             return map.size();
@@ -277,6 +289,7 @@ public abstract class MapValue extends VirtualValue
             return VirtualValues.concat( map.keys(), VirtualValues.fromArray( Values.stringArray( updatedKeys ) ) );
         }
 
+        @Override
         public Iterable<String> keySet()
         {
             return () -> new Iterator<String>()
@@ -326,6 +339,7 @@ public abstract class MapValue extends VirtualValue
             }
         }
 
+        @Override
         public boolean containsKey( String key )
         {
             for ( String updatedKey : updatedKeys )
@@ -339,6 +353,7 @@ public abstract class MapValue extends VirtualValue
             return map.containsKey( key );
         }
 
+        @Override
         public AnyValue get( String key )
         {
             for ( int i = 0; i < updatedKeys.length; i++ )
@@ -351,6 +366,7 @@ public abstract class MapValue extends VirtualValue
             return map.get( key );
         }
 
+        @Override
         public int size()
         {
             return map.size() + updatedKeys.length;
@@ -411,6 +427,7 @@ public abstract class MapValue extends VirtualValue
             }
         }
 
+        @Override
         public boolean containsKey( String key )
         {
             for ( MapValue map : maps )
@@ -423,6 +440,7 @@ public abstract class MapValue extends VirtualValue
             return false;
         }
 
+        @Override
         public AnyValue get( String key )
         {
             for ( int i = maps.length - 1; i >= 0; i-- )
@@ -436,6 +454,7 @@ public abstract class MapValue extends VirtualValue
             return NO_VALUE;
         }
 
+        @Override
         public int size()
         {
             int[] size = {0};

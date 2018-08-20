@@ -50,6 +50,7 @@ public class InMemoryStoreStreamProvider implements StoreFileStreamProvider
             this.stringBuffer = stringBuffer;
         }
 
+        @Override
         public void write( byte[] data )
         {
             for ( byte b : data )

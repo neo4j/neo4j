@@ -43,6 +43,7 @@ public class BoltProtocolV3 extends BoltProtocolV1
         super( channel, connectionFactory, stateMachineFactory, logging );
     }
 
+    @Override
     protected Neo4jPack createPack()
     {
         return new Neo4jPackV2();
@@ -54,6 +55,7 @@ public class BoltProtocolV3 extends BoltProtocolV1
         return VERSION;
     }
 
+    @Override
     protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
     {
         BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging );

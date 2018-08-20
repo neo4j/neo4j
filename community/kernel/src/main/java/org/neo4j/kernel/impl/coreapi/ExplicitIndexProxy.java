@@ -587,6 +587,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
             cursor.close();
         }
 
+        @Override
         protected long fetchNext()
         {
             ktx.assertOpen();
@@ -646,6 +647,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
             cursor.close();
         }
 
+        @Override
         protected long fetchNext()
         {
             ktx.assertOpen();

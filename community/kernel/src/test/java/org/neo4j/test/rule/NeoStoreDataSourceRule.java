@@ -24,10 +24,10 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -289,31 +289,37 @@ public class NeoStoreDataSourceRule extends ExternalResource
             return databaseName;
         }
 
+        @Override
         public File getDatabaseDirectory()
         {
             return databaseDirectory;
         }
 
+        @Override
         public Config getConfig()
         {
             return config;
         }
 
+        @Override
         public IdGeneratorFactory getIdGeneratorFactory()
         {
             return idGeneratorFactory;
         }
 
+        @Override
         public LogService getLogService()
         {
             return logService;
         }
 
+        @Override
         public JobScheduler getScheduler()
         {
             return scheduler;
         }
 
+        @Override
         public TokenNameLookup getTokenNameLookup()
         {
             return tokenNameLookup;
@@ -330,166 +336,199 @@ public class NeoStoreDataSourceRule extends ExternalResource
             return dependencyResolver;
         }
 
+        @Override
         public TokenHolders getTokenHolders()
         {
             return tokenHolders;
         }
 
+        @Override
         public StatementLocksFactory getStatementLocksFactory()
         {
             return statementLocksFactory;
         }
 
+        @Override
         public SchemaWriteGuard getSchemaWriteGuard()
         {
             return schemaWriteGuard;
         }
 
+        @Override
         public TransactionEventHandlers getTransactionEventHandlers()
         {
             return transactionEventHandlers;
         }
 
+        @Override
         public IndexingService.Monitor getIndexingServiceMonitor()
         {
             return indexingServiceMonitor;
         }
 
+        @Override
         public FileSystemAbstraction getFs()
         {
             return fs;
         }
 
+        @Override
         public TransactionMonitor getTransactionMonitor()
         {
             return transactionMonitor;
         }
 
+        @Override
         public DatabaseHealth getDatabaseHealth()
         {
             return databaseHealth;
         }
 
+        @Override
         public LogFileCreationMonitor getPhysicalLogMonitor()
         {
             return physicalLogMonitor;
         }
 
+        @Override
         public TransactionHeaderInformationFactory getTransactionHeaderInformationFactory()
         {
             return transactionHeaderInformationFactory;
         }
 
+        @Override
         public CommitProcessFactory getCommitProcessFactory()
         {
             return commitProcessFactory;
         }
 
+        @Override
         public AutoIndexing getAutoIndexing()
         {
             return autoIndexing;
         }
 
+        @Override
         public IndexConfigStore getIndexConfigStore()
         {
             return indexConfigStore;
         }
 
+        @Override
         public ExplicitIndexProvider getExplicitIndexProvider()
         {
             return explicitIndexProvider;
         }
 
+        @Override
         public PageCache getPageCache()
         {
             return pageCache;
         }
 
+        @Override
         public ConstraintSemantics getConstraintSemantics()
         {
             return constraintSemantics;
         }
 
+        @Override
         public Monitors getMonitors()
         {
             return monitors;
         }
 
+        @Override
         public Tracers getTracers()
         {
             return tracers;
         }
 
+        @Override
         public Procedures getProcedures()
         {
             return procedures;
         }
 
+        @Override
         public IOLimiter getIoLimiter()
         {
             return ioLimiter;
         }
 
+        @Override
         public AvailabilityGuard getAvailabilityGuard()
         {
             return availabilityGuard;
         }
 
+        @Override
         public SystemNanoClock getClock()
         {
             return clock;
         }
 
+        @Override
         public AccessCapability getAccessCapability()
         {
             return accessCapability;
         }
 
+        @Override
         public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
         {
             return storeCopyCheckPointMutex;
         }
 
+        @Override
         public RecoveryCleanupWorkCollector getRecoveryCleanupWorkCollector()
         {
             return recoveryCleanupWorkCollector;
         }
 
+        @Override
         public IdController getIdController()
         {
             return idController;
         }
 
+        @Override
         public DatabaseInfo getDatabaseInfo()
         {
             return databaseInfo;
         }
 
+        @Override
         public VersionContextSupplier getVersionContextSupplier()
         {
             return versionContextSupplier;
         }
 
+        @Override
         public CollectionsFactorySupplier getCollectionsFactorySupplier()
         {
             return collectionsFactorySupplier;
         }
 
+        @Override
         public Iterable<KernelExtensionFactory<?>> getKernelExtensionFactories()
         {
             return kernelExtensionFactories;
         }
 
+        @Override
         public Function<File,FileSystemWatcherService> getWatcherServiceFactory()
         {
             return watcherServiceFactory;
         }
 
+        @Override
         public GraphDatabaseFacade getFacade()
         {
             return facade;
         }
 
+        @Override
         public Iterable<QueryEngineProvider> getEngineProviders()
         {
             return engineProviders;

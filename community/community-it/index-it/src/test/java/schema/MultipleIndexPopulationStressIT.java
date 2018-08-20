@@ -374,6 +374,7 @@ public class MultipleIndexPopulationStressIT
             return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
         }
 
+        @Override
         public void close()
         {
             badCollector.close();

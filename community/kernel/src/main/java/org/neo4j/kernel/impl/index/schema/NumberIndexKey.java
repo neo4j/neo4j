@@ -80,6 +80,7 @@ class NumberIndexKey extends NativeIndexSingleValueKey<NumberIndexKey>
      * @param other the {@link NumberIndexKey} to compare to.
      * @return comparison against the {@code other} {@link NumberIndexKey}.
      */
+    @Override
     int compareValueTo( NumberIndexKey other )
     {
         return RawBits.compare( rawValueBits, type, other.rawValueBits, other.type );

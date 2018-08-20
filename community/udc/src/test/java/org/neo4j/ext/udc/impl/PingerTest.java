@@ -70,6 +70,7 @@ public class PingerTest extends LocalServerTestBase
         serverUrl = "http://" + hostname + ":" + target.getPort();
     }
 
+    @Override
     @After
     public void shutDown() throws Exception
     {

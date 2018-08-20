@@ -212,6 +212,7 @@ class Follower implements RaftMessageHandler
 
     private static class PreVoteSupportedHandler implements ElectionTimeoutHandler
     {
+        @Override
         public Outcome handle( RaftMessages.Timeout.Election election, Outcome outcome, ReadableRaftState ctx, Log log ) throws IOException
         {
             log.info( "Election timeout triggered" );

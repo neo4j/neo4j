@@ -387,6 +387,7 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<Receiv
             return Optional.of( newMessage );
         }
 
+        @Override
         public Optional<ReceivedInstantClusterIdAwareMessage> handle( AppendEntries.Request request ) throws
                 RuntimeException
         {

@@ -50,6 +50,7 @@ public class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Override
     protected boolean restartGraphDbBetweenTests()
     {
         return true;
