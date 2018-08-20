@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsList}
+import org.neo4j.cypher.internal.runtime.interpreted.IsList
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.values._
@@ -29,13 +28,6 @@ import org.neo4j.values.utils.UTF8Utils
 import org.neo4j.values.virtual.VirtualValues
 
 case class Add(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val aVal = a(ctx, state)
-    val bVal = b(ctx, state)
-
-    applyWithValues(aVal, bVal)
-  }
-
   override def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
