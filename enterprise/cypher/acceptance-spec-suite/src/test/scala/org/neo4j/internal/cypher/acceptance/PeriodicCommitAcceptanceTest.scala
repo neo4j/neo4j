@@ -216,4 +216,39 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     // then
     e.getMessage should include("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.")
   }
+
+  test("should read committed properties in later transactions") {
+
+    val csvFile = """name,flows,kbytes
+                    |a,1,10.0
+                    |b,1,10.0
+                    |c,1,10.0
+                    |d,1,10.0
+                    |e,1,10.0
+                    |f,1,10.0""".stripMargin
+
+    val url = createFile(writer => writer.print(csvFile))
+
+    val query = s"""CYPHER runtime=interpreted USING PERIODIC COMMIT 2 LOAD CSV WITH HEADERS FROM '$url' AS row
+                  |MERGE (n {name: row.name})
+                  |ON CREATE SET
+                  |n.flows = toInt(row.flows),
+                  |n.kbytes = toFloat(row.kbytes)
+                  |
+                  |ON MATCH SET
+                  |n.flows = n.flows + toInt(row.flows),
+                  |n.kbytes = n.kbytes + toFloat(row.kbytes)""".stripMargin
+
+    def nodesWithFlow(i: Int) = s"MATCH (n {flows: $i}) RETURN count(*)"
+
+    // Given
+    execute(query)
+    executeScalar[Int](nodesWithFlow(1)) should be(6)
+
+    // When
+    execute(query)
+
+    // Then
+    executeScalar[Int](nodesWithFlow(2)) should be(6)
+  }
 }
