@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
@@ -44,7 +44,7 @@ class TxStateCheckerTestSupport
 
         FakeBridge()
         {
-            super( mock( AvailabilityGuard.class ) );
+            super( mock( DatabaseAvailabilityGuard.class ) );
             when( tx.acquireStatement() ).thenReturn( statement );
             when( statement.hasTxStateWithChanges() ).thenReturn( false );
         }

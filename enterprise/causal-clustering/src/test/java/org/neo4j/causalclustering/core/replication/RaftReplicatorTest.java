@@ -44,7 +44,8 @@ import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -81,7 +82,7 @@ public class RaftReplicatorTest
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private TimeoutStrategy noWaitTimeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
-    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
+    private DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
 
     @Test
     public void shouldSendReplicatedContentToLeader() throws Exception
@@ -195,9 +196,9 @@ public class RaftReplicatorTest
         // when
         replicatingThread.start();
 
-        availabilityGuard.shutdown();
+        databaseAvailabilityGuard.shutdown();
         replicatingThread.join();
-        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
+        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( UnavailableException.class ) );
 
         verify( replicationMonitor, times( 1 ) ).startReplication();
         verify( replicationMonitor, atLeast( 1 ) ).replicationAttempt();
@@ -220,9 +221,9 @@ public class RaftReplicatorTest
         // when
         replicatingThread.start();
 
-        availabilityGuard.require( () -> "Database not unavailable" );
+        databaseAvailabilityGuard.require( () -> "Database not unavailable" );
         replicatingThread.join();
-        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
+        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( UnavailableException.class ) );
     }
 
     @Test
@@ -276,7 +277,7 @@ public class RaftReplicatorTest
     private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, CapturingProgressTracker capturedProgress, Monitors monitors )
     {
         return new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                10, availabilityGuard, NullLogProvider.getInstance(), REPLICATION_LIMIT, monitors );
+                10, databaseAvailabilityGuard, NullLogProvider.getInstance(), REPLICATION_LIMIT, monitors );
     }
 
     private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )

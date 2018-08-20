@@ -38,8 +38,8 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -81,14 +81,14 @@ public class SlaveLocksClientTest
     private Locks lockManager;
     private Locks.Client local;
     private SlaveLocksClient client;
-    private AvailabilityGuard availabilityGuard;
+    private DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private AssertableLogProvider logProvider;
 
     @Before
     public void setUp()
     {
         master = mock( Master.class );
-        availabilityGuard = new AvailabilityGuard( Clocks.fakeClock(), getInstance() );
+        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( Clocks.fakeClock(), getInstance() );
 
         lockManager = new CommunityLockManger( Config.defaults(), Clocks.systemClock() );
         local = spy( lockManager.newClient() );
@@ -102,8 +102,7 @@ public class SlaveLocksClientTest
 
         whenMasterAcquireExclusive().thenReturn( responseOk );
 
-        client = new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
-                availabilityGuard, logProvider );
+        client = new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ), databaseAvailabilityGuard, logProvider );
     }
 
     private OngoingStubbing<Response<LockResult>> whenMasterAcquireShared()
@@ -317,7 +316,7 @@ public class SlaveLocksClientTest
     @Test( expected = org.neo4j.graphdb.TransientDatabaseFailureException.class )
     public void mustThrowTransientTransactionFailureIfDatabaseUnavailable()
     {
-        availabilityGuard.shutdown();
+        databaseAvailabilityGuard.shutdown();
 
         client.acquireExclusive( LockTracer.NONE, NODE, 1 );
     }
@@ -326,7 +325,7 @@ public class SlaveLocksClientTest
     public void shouldFailWithTransientErrorOnDbUnavailable()
     {
         // GIVEN
-        availabilityGuard.shutdown();
+        databaseAvailabilityGuard.shutdown();
 
         // WHEN
         try
@@ -598,8 +597,7 @@ public class SlaveLocksClientTest
 
     private SlaveLocksClient newSlaveLocksClient( Locks lockManager )
     {
-        return new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
-                availabilityGuard, logProvider );
+        return new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ), databaseAvailabilityGuard, logProvider );
     }
 
     private SlaveLocksClient stoppedClient()

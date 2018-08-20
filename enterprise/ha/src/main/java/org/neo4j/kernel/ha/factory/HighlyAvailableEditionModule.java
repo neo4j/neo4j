@@ -72,9 +72,9 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
@@ -356,7 +356,7 @@ public class HighlyAvailableEditionModule extends EditionModule
                 clusterClient, clusterClient, clusterEvents, config.get( ClusterSettings.server_id ) );
 
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext,
-                platformModule.availabilityGuard, observedMembers, clusterEvents, clusterClient,
+                platformModule.databaseAvailabilityGuard, observedMembers, clusterEvents, clusterClient,
                 logging.getInternalLogProvider() );
 
         members = dependencies.satisfyDependency( new ClusterMembers( observedMembers, memberStateMachine ) );
@@ -367,7 +367,7 @@ public class HighlyAvailableEditionModule extends EditionModule
 
         HighAvailabilityLogger highAvailabilityLogger = new HighAvailabilityLogger( logging.getUserLogProvider(),
                 config.get( ClusterSettings.server_id ) );
-        platformModule.availabilityGuard.addListener( highAvailabilityLogger );
+        platformModule.databaseAvailabilityGuard.addListener( highAvailabilityLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityLogger );
         clusterClient.addClusterListener( highAvailabilityLogger );
 
@@ -415,7 +415,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         PullerFactory pullerFactory = new PullerFactory( requestContextFactory, master, lastUpdateTime,
                 logging.getInternalLogProvider(), serverId, invalidEpochHandler,
                 config.get( HaSettings.pull_interval ).toMillis(), platformModule.jobScheduler,
-                dependencies, platformModule.availabilityGuard, memberStateMachine, monitors );
+                dependencies, platformModule.databaseAvailabilityGuard, memberStateMachine, monitors );
 
         dependencies.satisfyDependency( paxosLife.add( pullerFactory.createObligationFulfiller( updatePullerProxy ) ) );
 
@@ -498,7 +498,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         // Create HA services
         LocksFactory lockFactory = createLockFactory( config, logging );
         locksSupplier = () -> createLockManager( lockFactory, componentSwitcherContainer, config, masterDelegateInvocationHandler,
-                        requestContextFactory, platformModule.availabilityGuard, platformModule.clock, logging );
+                        requestContextFactory, platformModule.databaseAvailabilityGuard, platformModule.clock, logging );
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, componentSwitcherContainer, config, logging );
 
         DelegatingTokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
@@ -540,7 +540,7 @@ public class HighlyAvailableEditionModule extends EditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
 
@@ -693,8 +693,8 @@ public class HighlyAvailableEditionModule extends EditionModule
     }
 
     private static Locks createLockManager( LocksFactory lockFactory, ComponentSwitcherContainer componentSwitcherContainer, Config config,
-            DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-            Clock clock, LogService logService )
+            DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory,
+            DatabaseAvailabilityGuard databaseAvailabilityGuard, Clock clock, LogService logService )
     {
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(), new Class[]{Locks.class},
@@ -703,7 +703,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         Factory<Locks> locksFactory = () -> EditionLocksFactories.createLockManager( lockFactory, config, clock );
 
         LockManagerSwitcher lockManagerModeSwitcher = new LockManagerSwitcher(
-                lockManagerDelegate, masterDelegateInvocationHandler, requestContextFactory, availabilityGuard,
+                lockManagerDelegate, masterDelegateInvocationHandler, requestContextFactory, databaseAvailabilityGuard,
                 locksFactory, logService.getInternalLogProvider(), config );
 
         componentSwitcherContainer.add( lockManagerModeSwitcher );

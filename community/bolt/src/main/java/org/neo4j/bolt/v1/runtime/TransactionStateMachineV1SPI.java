@@ -34,10 +34,10 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -68,12 +68,12 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final Duration txAwaitDuration;
     private final Clock clock;
 
-    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, AvailabilityGuard availabilityGuard, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, DatabaseAvailabilityGuard databaseAvailabilityGuard, Duration txAwaitDuration, Clock clock )
     {
         this.db = db;
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = db.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( db, availabilityGuard );
+        this.transactionIdTracker = newTransactionIdTracker( db, databaseAvailabilityGuard );
         this.contextFactory = newTransactionalContextFactory( db );
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
@@ -155,7 +155,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return tx;
     }
 
-    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI db, AvailabilityGuard guard )
+    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI db, DatabaseAvailabilityGuard guard )
     {
         Supplier<TransactionIdStore> transactionIdStoreSupplier = db.getDependencyResolver().provideDependency( TransactionIdStore.class );
         return new TransactionIdTracker( transactionIdStoreSupplier, guard );

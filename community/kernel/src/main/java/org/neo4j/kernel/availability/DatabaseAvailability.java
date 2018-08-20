@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.availability;
 
 import java.time.Clock;
 
@@ -26,8 +26,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
-import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 /**
  * This class handles whether the database as a whole is available to use at all.
@@ -36,29 +34,29 @@ import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
  */
 public class DatabaseAvailability extends LifecycleAdapter
 {
-    private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = availabilityRequirement( "Database available" );
-    private final AvailabilityGuard availabilityGuard;
+    private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = new DescriptiveAvailabilityRequirement( "Database available" );
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final TransactionCounters transactionCounters;
     private final Clock clock;
     private final long awaitActiveTransactionDeadlineMillis;
     private volatile boolean started;
 
-    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionCounters transactionCounters, Clock clock,
+    public DatabaseAvailability( DatabaseAvailabilityGuard databaseAvailabilityGuard, TransactionCounters transactionCounters, Clock clock,
             long awaitActiveTransactionDeadlineMillis )
     {
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.transactionCounters = transactionCounters;
         this.awaitActiveTransactionDeadlineMillis = awaitActiveTransactionDeadlineMillis;
         this.clock = clock;
 
         // On initial setup, deny availability
-        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
+        databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
     public void start()
     {
-        availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
+        databaseAvailabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
         started = true;
     }
 
@@ -68,7 +66,7 @@ public class DatabaseAvailability extends LifecycleAdapter
         started = false;
         // Database is no longer available for use
         // Deny beginning new transactions
-        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
+        databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
 
         // Await transactions stopped
         awaitTransactionsClosedWithinTimeout();

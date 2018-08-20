@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.availability;
 
 import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 
 /**
@@ -39,78 +37,10 @@ import org.neo4j.logging.Log;
  * Consumers determine if it is ok to call the database using {@link #isAvailable()},
  * or await availability using {@link #isAvailable(long)}.
  */
-public class AvailabilityGuard
+public class DatabaseAvailabilityGuard
 {
     private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database available: ";
     private static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database unavailable: ";
-
-    public static class UnavailableException extends Exception implements Status.HasStatus
-    {
-        UnavailableException( String message )
-        {
-            super( message );
-        }
-
-        @Override
-        public Status status()
-        {
-            return Status.General.DatabaseUnavailable;
-        }
-    }
-
-    public interface AvailabilityListener
-    {
-        void available();
-
-        void unavailable();
-    }
-
-    /**
-     * Represents a description of why someone is denying access to the database, to help debugging. Components
-     * granting and revoking access should use the same denial reason for both method calls, as it is used to track
-     * who is blocking access to the database.
-     */
-    public interface AvailabilityRequirement
-    {
-        String description();
-    }
-
-    public static AvailabilityRequirement availabilityRequirement( final String descriptionWhenBlocking )
-    {
-        return new AvailabilityRequirement()
-        {
-            @Override
-            public String description()
-            {
-                return descriptionWhenBlocking;
-            }
-
-            @Override
-            public boolean equals( Object o )
-            {
-                if ( this == o )
-                {
-                    return true;
-                }
-                if ( o == null || getClass() != o.getClass() )
-                {
-                    return false;
-                }
-
-                AvailabilityRequirement that = (AvailabilityRequirement) o;
-
-                return descriptionWhenBlocking == null ?
-                        that.description() == null :
-                        descriptionWhenBlocking.equals( that.description() );
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return descriptionWhenBlocking != null ? descriptionWhenBlocking.hashCode() : 0;
-            }
-        };
-    }
 
     private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
@@ -119,7 +49,7 @@ public class AvailabilityGuard
     private final Clock clock;
     private final Log log;
 
-    public AvailabilityGuard( Clock clock, Log log )
+    public DatabaseAvailabilityGuard( Clock clock, Log log )
     {
         this.clock = clock;
         this.log = log;
@@ -327,12 +257,9 @@ public class AvailabilityGuard
     {
         if ( blockingRequirements.size() > 0 || requirementCount.get() > 0 )
         {
-            String causes = Iterables.join( ", ", Iterables.map( DESCRIPTION, blockingRequirements ) );
+            String causes = Iterables.join( ", ", Iterables.map( AvailabilityRequirement::description, blockingRequirements ) );
             return requirementCount.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
     }
-
-    public static final Function<AvailabilityRequirement, String> DESCRIPTION =
-            AvailabilityRequirement::description;
 }

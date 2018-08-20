@@ -29,8 +29,8 @@ import org.junit.Test;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -58,7 +58,7 @@ public class UnavailableIT
         ClusterMember member = cluster.getCoreMemberById( 1 );
 
         // when
-        member.database().getDependencyResolver().resolveDependency( AvailabilityGuard.class )
+        member.database().getDependencyResolver().resolveDependency( DatabaseAvailabilityGuard.class )
                 .require( () -> "Not doing long operation" );
 
         // then

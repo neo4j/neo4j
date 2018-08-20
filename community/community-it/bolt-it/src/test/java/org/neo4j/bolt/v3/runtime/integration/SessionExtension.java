@@ -39,9 +39,9 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -83,7 +83,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         boltFactory = new BoltStateMachineFactoryImpl(
                 resolver.resolveDependency( DatabaseManager.class ),
                 new UsageData( null ),
-                resolver.resolveDependency( AvailabilityGuard.class ),
+                resolver.resolveDependency( DatabaseAvailabilityGuard.class ),
                 authentication,
                 Clock.systemUTC(),
                 Config.defaults(),

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.availability;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -29,18 +29,18 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class StartupWaiter extends LifecycleAdapter
 {
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final long timeout;
 
-    public StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
+    public StartupWaiter( DatabaseAvailabilityGuard databaseAvailabilityGuard, long timeout )
     {
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.timeout = timeout;
     }
 
     @Override
     public void start()
     {
-        availabilityGuard.isAvailable( timeout );
+        databaseAvailabilityGuard.isAvailable( timeout );
     }
 }

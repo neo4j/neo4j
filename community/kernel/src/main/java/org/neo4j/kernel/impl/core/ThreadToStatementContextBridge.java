@@ -24,10 +24,10 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 
 /**
  * This is meant to serve as the bridge that tie transactions to threads.
@@ -36,11 +36,11 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class ThreadToStatementContextBridge implements Supplier<Statement>
 {
     private final ThreadLocal<KernelTransaction> threadToTransactionMap = new ThreadLocal<>();
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
-    public ThreadToStatementContextBridge( AvailabilityGuard availabilityGuard )
+    public ThreadToStatementContextBridge( DatabaseAvailabilityGuard databaseAvailabilityGuard )
     {
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
     }
 
     public boolean hasTransaction()
@@ -91,7 +91,7 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
 
     private void assertInUnterminatedTransaction( KernelTransaction transaction )
     {
-        if ( availabilityGuard.isShutdown() )
+        if ( databaseAvailabilityGuard.isShutdown() )
         {
             throw new DatabaseShutdownException();
         }

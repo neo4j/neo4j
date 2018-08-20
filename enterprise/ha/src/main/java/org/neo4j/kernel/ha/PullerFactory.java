@@ -25,7 +25,7 @@ package org.neo4j.kernel.ha;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -51,14 +51,14 @@ public class PullerFactory
     private final long pullInterval;
     private final JobScheduler jobScheduler;
     private final DependencyResolver dependencyResolver;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final Monitors monitors;
 
     public PullerFactory( RequestContextFactory requestContextFactory, Master master,
             LastUpdateTime lastUpdateTime, LogProvider logging, InstanceId serverId,
             InvalidEpochExceptionHandler invalidEpochHandler, long pullInterval,
-            JobScheduler jobScheduler, DependencyResolver dependencyResolver, AvailabilityGuard availabilityGuard,
+            JobScheduler jobScheduler, DependencyResolver dependencyResolver, DatabaseAvailabilityGuard databaseAvailabilityGuard,
             HighAvailabilityMemberStateMachine memberStateMachine, Monitors monitors )
     {
 
@@ -71,16 +71,15 @@ public class PullerFactory
         this.pullInterval = pullInterval;
         this.jobScheduler = jobScheduler;
         this.dependencyResolver = dependencyResolver;
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.memberStateMachine = memberStateMachine;
         this.monitors = monitors;
     }
 
     public SlaveUpdatePuller createSlaveUpdatePuller()
     {
-        return new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
-                availabilityGuard, invalidEpochHandler, jobScheduler,
-                monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
+        return new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId, databaseAvailabilityGuard, invalidEpochHandler,
+                jobScheduler, monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
     }
 
     public UpdatePullingTransactionObligationFulfiller createObligationFulfiller( UpdatePuller updatePuller )

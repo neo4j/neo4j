@@ -25,7 +25,7 @@ package org.neo4j.kernel.ha.lock;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -48,14 +48,14 @@ public class SlaveLockManagerTest
 {
     private RequestContextFactory requestContextFactory;
     private Master master;
-    private AvailabilityGuard availabilityGuard;
+    private DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
     @Before
     public void setUp()
     {
         requestContextFactory = new RequestContextFactory( 1, singleton( mock( TransactionIdStore.class ) ) );
         master = mock( Master.class );
-        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), getInstance() );
+        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( Clocks.systemClock(), getInstance() );
     }
 
     @Test
@@ -92,7 +92,7 @@ public class SlaveLockManagerTest
 
     private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
-        return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard,
+        return new SlaveLockManager( localLocks, requestContextFactory, master, databaseAvailabilityGuard,
                 NullLogProvider.getInstance(), Config.defaults() );
     }
 }

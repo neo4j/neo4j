@@ -23,7 +23,7 @@
 package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.neo4j.function.Factory;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -37,19 +37,19 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
 {
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final Factory<Locks> locksFactory;
     private final LogProvider logProvider;
     private final Config config;
 
     public LockManagerSwitcher( DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
-                                RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
+                                RequestContextFactory requestContextFactory, DatabaseAvailabilityGuard databaseAvailabilityGuard,
                                 Factory<Locks> locksFactory, LogProvider logProvider, Config config )
     {
         super( delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.locksFactory = locksFactory;
         this.logProvider = logProvider;
         this.config = config;
@@ -64,8 +64,7 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     @Override
     protected Locks getSlaveImpl()
     {
-        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard, logProvider, config );
+        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(), databaseAvailabilityGuard, logProvider, config );
     }
 
     @Override

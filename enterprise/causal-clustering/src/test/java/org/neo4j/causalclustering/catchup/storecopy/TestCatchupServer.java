@@ -45,8 +45,8 @@ import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -80,7 +80,7 @@ class TestCatchupServer extends Server
         ModifierProtocolRepository modifierRepository = new ModifierProtocolRepository( ModifierProtocols.values(), singletonList( modifierProtocols ) );
 
         Supplier<CheckPointer> checkPointer = () -> graphDb.getDependencyResolver().resolveDependency( CheckPointer.class );
-        BooleanSupplier availability = () -> graphDb.getDependencyResolver().resolveDependency( AvailabilityGuard.class ).isAvailable();
+        BooleanSupplier availability = () -> graphDb.getDependencyResolver().resolveDependency( DatabaseAvailabilityGuard.class ).isAvailable();
         Supplier<NeoStoreDataSource> dataSource = () -> graphDb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         LogProvider logProvider = NullLogProvider.getInstance();
 

@@ -126,7 +126,7 @@ public class CommunityEditionModule extends EditionModule
 
         constraintSemantics = createSchemaRuleVerifier();
 
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         ioLimiter = IOLimiter.UNLIMITED;
 

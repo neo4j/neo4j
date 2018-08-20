@@ -40,12 +40,12 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -125,12 +125,12 @@ public class KernelTransactionsTest
 
     private static final long TEST_TIMEOUT = 10_000;
     private static final SystemNanoClock clock = Clocks.nanoClock();
-    private static AvailabilityGuard availabilityGuard;
+    private static DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
     @Before
     public void setUp()
     {
-        availabilityGuard = new AvailabilityGuard( clock, NullLog.getInstance() );
+        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( clock, NullLog.getInstance() );
     }
 
     @Test
@@ -447,7 +447,7 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        availabilityGuard.shutdown();
+        databaseAvailabilityGuard.shutdown();
 
         expectedException.expect( DatabaseShutdownException.class );
         kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, 0L );
@@ -591,12 +591,12 @@ public class KernelTransactionsTest
         if ( testKernelTransactions )
         {
             transactions = createTestTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
-                    statementLocksFactory, statementOperations, clock, availabilityGuard );
+                    statementLocksFactory, statementOperations, clock, databaseAvailabilityGuard );
         }
         else
         {
             transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
-                    statementLocksFactory, statementOperations, clock, availabilityGuard );
+                    statementLocksFactory, statementOperations, clock, databaseAvailabilityGuard );
         }
         transactions.start();
         return transactions;
@@ -605,11 +605,11 @@ public class KernelTransactionsTest
     private static KernelTransactions createTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
-            SystemNanoClock clock, AvailabilityGuard availabilityGuard )
+            SystemNanoClock clock, DatabaseAvailabilityGuard databaseAvailabilityGuard )
     {
         return new KernelTransactions( statementLocksFactory, null, statementOperations,
                 null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
-                mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
+                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(),
                 AutoIndexing.UNSUPPORTED,
@@ -621,12 +621,10 @@ public class KernelTransactionsTest
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
-            SystemNanoClock clock, AvailabilityGuard availabilityGuard )
+            SystemNanoClock clock, DatabaseAvailabilityGuard databaseAvailabilityGuard )
     {
-        return new TestKernelTransactions( statementLocksFactory, null, statementOperations,
-                null, DEFAULT,
-                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
-                availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
+        return new TestKernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
+                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new CanWrite(), AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies() );
     }
 
@@ -674,13 +672,13 @@ public class KernelTransactionsTest
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
                 ExplicitIndexProvider explicitIndexProviderLookup, TransactionHooks hooks,
-                TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
+                TransactionMonitor transactionMonitor, DatabaseAvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
                 AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
-                    indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
+                    indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, databaseAvailabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     accessCapability, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
                     ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),

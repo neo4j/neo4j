@@ -38,10 +38,11 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.StartupWaiter;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.availability.AvailabilityListener;
+import org.neo4j.kernel.availability.DatabaseAvailability;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -179,11 +180,12 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
-        DatabaseAvailability databaseAvailability = new DatabaseAvailability( platform.availabilityGuard, edition.globalTransactionCounter(), platform.clock,
-                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() );
+        DatabaseAvailability databaseAvailability =
+                new DatabaseAvailability( platform.databaseAvailabilityGuard, edition.globalTransactionCounter(), platform.clock,
+                        config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() );
         platform.dependencies.satisfyDependency( databaseAvailability );
         platform.life.add( databaseAvailability );
-        platform.life.add( new StartupWaiter( platform.availabilityGuard, edition.transactionStartTimeout ) );
+        platform.life.add( new StartupWaiter( platform.databaseAvailabilityGuard, edition.transactionStartTimeout ) );
         platform.dependencies.satisfyDependency( edition.schemaWriteGuard );
         platform.life.setLast( platform.eventHandlers );
 
@@ -198,7 +200,7 @@ public class GraphDatabaseFacadeFactory
         {
             // Done after create to avoid a redundant
             // "database is now unavailable"
-            enableAvailabilityLogging( platform.availabilityGuard, msgLog );
+            enableAvailabilityLogging( platform.databaseAvailabilityGuard, msgLog );
 
             platform.life.start();
         }
@@ -239,9 +241,9 @@ public class GraphDatabaseFacadeFactory
         return new PlatformModule( storeDir, config, databaseInfo, dependencies );
     }
 
-    private void enableAvailabilityLogging( AvailabilityGuard availabilityGuard, final Logger msgLog )
+    private void enableAvailabilityLogging( DatabaseAvailabilityGuard databaseAvailabilityGuard, final Logger msgLog )
     {
-        availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
+        databaseAvailabilityGuard.addListener( new AvailabilityListener()
         {
             @Override
             public void available()
@@ -311,7 +313,7 @@ public class GraphDatabaseFacadeFactory
 
     private static BoltServer createBoltServer( PlatformModule platform, EditionModule edition, DatabaseManager databaseManager )
     {
-        return new BoltServer( databaseManager, platform.fileSystem, platform.jobScheduler, platform.availabilityGuard,
+        return new BoltServer( databaseManager, platform.fileSystem, platform.jobScheduler, platform.databaseAvailabilityGuard,
                 platform.connectorPortRegister, edition.connectionTracker, platform.usageData, platform.config, platform.clock, platform.monitors,
                 platform.logging, platform.dependencies );
     }

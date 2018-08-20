@@ -39,9 +39,9 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -72,7 +72,7 @@ class SlaveLocksClient implements Locks.Client
     private final Locks.Client client;
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
     // Using atomic ints to avoid creating garbage through boxing.
     private final Log log;
@@ -80,13 +80,13 @@ class SlaveLocksClient implements Locks.Client
     private volatile boolean stopped;
 
     SlaveLocksClient( Master master, Locks.Client local, Locks localLockManager,
-            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard, LogProvider logProvider )
+            RequestContextFactory requestContextFactory, DatabaseAvailabilityGuard databaseAvailabilityGuard, LogProvider logProvider )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -441,7 +441,7 @@ class SlaveLocksClient implements Locks.Client
     {
         try
         {
-            availabilityGuard.checkAvailable();
+            databaseAvailabilityGuard.checkAvailable();
         }
         catch ( UnavailableException e )
         {

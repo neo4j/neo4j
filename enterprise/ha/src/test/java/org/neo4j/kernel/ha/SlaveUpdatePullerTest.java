@@ -37,15 +37,15 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.UpdatePuller.Condition;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
-import org.neo4j.kernel.impl.util.CountingJobScheduler;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.util.CountingJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.CleanupRule;
@@ -72,7 +72,7 @@ public class SlaveUpdatePullerTest
     private final AtomicInteger scheduledJobs = new AtomicInteger();
     private final InstanceId instanceId = new InstanceId( 1 );
     private final Config config = mock( Config.class );
-    private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
     private final Master master = mock( Master.class, RETURNS_MOCKS );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -81,7 +81,7 @@ public class SlaveUpdatePullerTest
     private final SlaveUpdatePuller.Monitor monitor = mock( SlaveUpdatePuller.Monitor.class );
     private final JobScheduler jobScheduler = new CountingJobScheduler( scheduledJobs, new CentralJobScheduler() );
     private final SlaveUpdatePuller updatePuller = new SlaveUpdatePuller( requestContextFactory, master,
-            lastUpdateTime, logProvider, instanceId, availabilityGuard, invalidEpochHandler, jobScheduler, monitor );
+            lastUpdateTime, logProvider, instanceId, databaseAvailabilityGuard, invalidEpochHandler, jobScheduler, monitor );
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
@@ -92,7 +92,7 @@ public class SlaveUpdatePullerTest
         when( requestContextFactory.newRequestContext() ).thenReturn( new RequestContext( 42, 42, 42, 42, 42 ) );
         when( config.get( HaSettings.pull_interval ) ).thenReturn( Duration.ofSeconds( 1 ) );
         when( config.get( ClusterSettings.server_id ) ).thenReturn( instanceId );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
+        when( databaseAvailabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
         jobScheduler.init();
         jobScheduler.start();
         updatePuller.start();
@@ -123,7 +123,7 @@ public class SlaveUpdatePullerTest
 
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
-        verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
+        verify( databaseAvailabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( ArgumentMatchers.any() );
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
@@ -132,7 +132,7 @@ public class SlaveUpdatePullerTest
         updatePuller.pullUpdates();
 
         // THEN
-        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
+        verifyNoMoreInteractions( lastUpdateTime, databaseAvailabilityGuard );
     }
 
     @Test
@@ -143,7 +143,7 @@ public class SlaveUpdatePullerTest
 
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
-        verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
+        verify( databaseAvailabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( ArgumentMatchers.any() );
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
@@ -152,7 +152,7 @@ public class SlaveUpdatePullerTest
 
         // THEN
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
-        verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
+        verify( databaseAvailabilityGuard, times( 2 ) ).isAvailable( anyLong() );
         verify( master, times( 2 ) ).pullUpdates( ArgumentMatchers.any() );
         verify( monitor, times( 2 ) ).pulledUpdates( anyLong() );
     }

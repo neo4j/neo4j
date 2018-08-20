@@ -47,10 +47,10 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
@@ -73,7 +73,7 @@ public class BoltServer extends LifecycleAdapter
     private final DatabaseManager databaseManager;
     private final FileSystemAbstraction fs;
     private final JobScheduler jobScheduler;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final ConnectorPortRegister connectorPortRegister;
     private final NetworkConnectionTracker connectionTracker;
     private final UsageData usageData;
@@ -87,14 +87,14 @@ public class BoltServer extends LifecycleAdapter
 
     private final LifeSupport life = new LifeSupport();
 
-    public BoltServer( DatabaseManager databaseManager, FileSystemAbstraction fs, JobScheduler jobScheduler, AvailabilityGuard availabilityGuard,
-            ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, UsageData usageData, Config config,
-            Clock clock, Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
+    public BoltServer( DatabaseManager databaseManager, FileSystemAbstraction fs, JobScheduler jobScheduler,
+            DatabaseAvailabilityGuard databaseAvailabilityGuard, ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
+            UsageData usageData, Config config, Clock clock, Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {
         this.databaseManager = databaseManager;
         this.fs = fs;
         this.jobScheduler = jobScheduler;
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.connectorPortRegister = connectorPortRegister;
         this.connectionTracker = connectionTracker;
         this.usageData = usageData;
@@ -232,6 +232,6 @@ public class BoltServer extends LifecycleAdapter
 
     private BoltStateMachineFactory createBoltFactory( Authentication authentication, Clock clock )
     {
-        return new BoltStateMachineFactoryImpl( databaseManager, usageData, availabilityGuard, authentication, clock, config, logService );
+        return new BoltStateMachineFactoryImpl( databaseManager, usageData, databaseAvailabilityGuard, authentication, clock, config, logService );
     }
 }

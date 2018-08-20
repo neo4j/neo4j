@@ -205,7 +205,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
         commitProcessFactory = readOnly();
@@ -271,7 +271,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LocalDatabase localDatabase =
                 new LocalDatabase( databaseLayout, storeFiles, logFiles, platformModule.dataSourceManager,
-                        databaseHealthSupplier, platformModule.availabilityGuard, logProvider );
+                        databaseHealthSupplier, platformModule.databaseAvailabilityGuard, logProvider );
 
         Supplier<TransactionCommitProcess> writableCommitProcess = () -> new TransactionRepresentationCommitProcess(
                 localDatabase.dataSource().getDependencyResolver().resolveDependency( TransactionAppender.class ),

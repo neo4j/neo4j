@@ -68,9 +68,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
@@ -460,9 +460,9 @@ public class ReadReplicaReplicationIT
     {
         Supplier<TransactionIdStore> transactionIdStore =
                 database.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        AvailabilityGuard availabilityGuard =
-                database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
-        return new TransactionIdTracker( transactionIdStore, availabilityGuard );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard =
+                database.getDependencyResolver().resolveDependency( DatabaseAvailabilityGuard.class );
+        return new TransactionIdTracker( transactionIdStore, databaseAvailabilityGuard );
     }
 
     private static LogFiles physicalLogFiles( ClusterMember clusterMember )

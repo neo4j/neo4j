@@ -34,7 +34,7 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -47,8 +47,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.System.currentTimeMillis;
@@ -145,7 +145,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, CancelListener
     private final CappedLogger comExceptionCappedLogger;
     private final LastUpdateTime lastUpdateTime;
     private final InstanceId instanceId;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final InvalidEpochExceptionHandler invalidEpochHandler;
     private final Monitor monitor;
     private final JobScheduler jobScheduler;
@@ -158,7 +158,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, CancelListener
             LastUpdateTime lastUpdateTime,
             LogProvider logging,
             InstanceId instanceId,
-            AvailabilityGuard availabilityGuard,
+            DatabaseAvailabilityGuard databaseAvailabilityGuard,
             InvalidEpochExceptionHandler invalidEpochHandler,
             JobScheduler jobScheduler,
             Monitor monitor )
@@ -167,7 +167,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, CancelListener
         this.master = master;
         this.lastUpdateTime = lastUpdateTime;
         this.instanceId = instanceId;
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.invalidEpochHandler = invalidEpochHandler;
         this.jobScheduler = jobScheduler;
         this.monitor = monitor;
@@ -247,7 +247,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, CancelListener
     @Override
     public void pullUpdates() throws InterruptedException
     {
-        if ( !isActive() || !availabilityGuard.isAvailable( AVAILABILITY_AWAIT_MILLIS ) )
+        if ( !isActive() || !databaseAvailabilityGuard.isAvailable( AVAILABILITY_AWAIT_MILLIS ) )
         {
             return;
         }

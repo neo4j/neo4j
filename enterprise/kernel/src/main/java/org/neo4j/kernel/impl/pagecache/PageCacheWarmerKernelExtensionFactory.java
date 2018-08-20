@@ -25,8 +25,8 @@ package org.neo4j.kernel.impl.pagecache;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -45,7 +45,7 @@ public class PageCacheWarmerKernelExtensionFactory
     {
         JobScheduler jobScheduler();
 
-        AvailabilityGuard availabilityGuard();
+        DatabaseAvailabilityGuard availabilityGuard();
 
         PageCache pageCache();
 
@@ -69,7 +69,7 @@ public class PageCacheWarmerKernelExtensionFactory
     public Lifecycle newInstance( KernelContext context, Dependencies deps )
     {
         JobScheduler scheduler = deps.jobScheduler();
-        AvailabilityGuard availabilityGuard = deps.availabilityGuard();
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = deps.availabilityGuard();
         PageCache pageCache = deps.pageCache();
         FileSystemAbstraction fs = deps.fileSystemAbstraction();
         LogService logService = deps.logService();
@@ -78,6 +78,6 @@ public class PageCacheWarmerKernelExtensionFactory
         PageCacheWarmerMonitor monitor = deps.monitors().newMonitor( PageCacheWarmerMonitor.class );
         Config config = deps.config();
         return new PageCacheWarmerKernelExtension(
-                scheduler, availabilityGuard, pageCache, fs, dataSourceManager, log, monitor, config );
+                scheduler, databaseAvailabilityGuard, pageCache, fs, dataSourceManager, log, monitor, config );
     }
 }

@@ -25,9 +25,9 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static java.time.Duration.ofMillis;
@@ -47,15 +47,15 @@ public class TransactionIdTrackerTest
     private static final Duration DEFAULT_DURATION = ofSeconds( 10 );
 
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-    private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
 
     private TransactionIdTracker transactionIdTracker;
 
     @Before
     public void setup()
     {
-        when( availabilityGuard.isAvailable() ).thenReturn( true );
-        transactionIdTracker = new TransactionIdTracker( () -> transactionIdStore, availabilityGuard );
+        when( databaseAvailabilityGuard.isAvailable() ).thenReturn( true );
+        transactionIdTracker = new TransactionIdTracker( () -> transactionIdStore, databaseAvailabilityGuard );
     }
 
     @Test
@@ -107,7 +107,7 @@ public class TransactionIdTrackerTest
     public void shouldNotWaitIfTheDatabaseIsUnavailable() throws Exception
     {
         // given
-        when( availabilityGuard.isAvailable() ).thenReturn( false );
+        when( databaseAvailabilityGuard.isAvailable() ).thenReturn( false );
 
         try
         {

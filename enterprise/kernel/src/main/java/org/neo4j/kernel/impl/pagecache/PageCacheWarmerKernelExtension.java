@@ -25,8 +25,8 @@ package org.neo4j.kernel.impl.pagecache;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -35,7 +35,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 class PageCacheWarmerKernelExtension extends LifecycleAdapter
 {
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final NeoStoreDataSource dataSource;
     private final Config config;
     private final PageCacheWarmer pageCacheWarmer;
@@ -43,10 +43,10 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     private volatile boolean started;
 
     PageCacheWarmerKernelExtension(
-            JobScheduler scheduler, AvailabilityGuard availabilityGuard, PageCache pageCache, FileSystemAbstraction fs,
+            JobScheduler scheduler, DatabaseAvailabilityGuard databaseAvailabilityGuard, PageCache pageCache, FileSystemAbstraction fs,
             NeoStoreDataSource dataSource, Log log, PageCacheWarmerMonitor monitor, Config config )
     {
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.dataSource = dataSource;
         this.config = config;
         pageCacheWarmer = new PageCacheWarmer( fs, pageCache, scheduler, dataSource.getDatabaseLayout().databaseDirectory() );
@@ -59,7 +59,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
         if ( config.get( GraphDatabaseSettings.pagecache_warmup_enabled ) )
         {
             pageCacheWarmer.start();
-            availabilityGuard.addListener( availabilityListener );
+            databaseAvailabilityGuard.addListener( availabilityListener );
             getNeoStoreFileListing().registerStoreFileProvider( pageCacheWarmer );
             started = true;
         }
@@ -70,7 +70,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     {
         if ( started )
         {
-            availabilityGuard.removeListener( availabilityListener );
+            databaseAvailabilityGuard.removeListener( availabilityListener );
             availabilityListener.unavailable(); // Make sure scheduled jobs get cancelled.
             pageCacheWarmer.stop();
             started = false;

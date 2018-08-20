@@ -35,7 +35,7 @@ import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.extension.GlobalKernelExtensions;
@@ -125,7 +125,7 @@ public class PlatformModule
 
     public final JobScheduler jobScheduler;
 
-    public final AvailabilityGuard availabilityGuard;
+    public final DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
     public final ThreadToStatementContextBridge threadToTransactionBridge;
 
@@ -210,8 +210,8 @@ public class PlatformModule
 
         dependencies.satisfyDependency( dataSourceManager );
 
-        availabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );
-        threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( availabilityGuard ) );
+        databaseAvailabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );
+        threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( databaseAvailabilityGuard ) );
 
         kernelExtensionFactories = externalDependencies.kernelExtensions();
         engineProviders = externalDependencies.executionEngines();
@@ -236,9 +236,9 @@ public class PlatformModule
                                                                   : EmptyVersionContextSupplier.EMPTY;
     }
 
-    protected AvailabilityGuard createAvailabilityGuard()
+    protected DatabaseAvailabilityGuard createAvailabilityGuard()
     {
-        return new AvailabilityGuard( clock, logging.getInternalLog( AvailabilityGuard.class ) );
+        return new DatabaseAvailabilityGuard( clock, logging.getInternalLog( DatabaseAvailabilityGuard.class ) );
     }
 
     protected StoreLocker createStoreLocker()

@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -62,7 +62,7 @@ public class SlaveLocksClientConcurrentTest
     private Master master;
     private ForsetiLockManager lockManager;
     private RequestContextFactory requestContextFactory;
-    private AvailabilityGuard availabilityGuard;
+    private DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
     @BeforeClass
     public static void initExecutor()
@@ -82,7 +82,7 @@ public class SlaveLocksClientConcurrentTest
         master = mock( Master.class, new LockedOnMasterAnswer() );
         lockManager = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
         requestContextFactory = mock( RequestContextFactory.class );
-        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), mock( Log.class ) );
+        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( Clocks.systemClock(), mock( Log.class ) );
 
         when( requestContextFactory.newRequestContext( Mockito.anyInt() ) )
                 .thenReturn( RequestContext.anonymous( 1 ) );
@@ -115,7 +115,7 @@ public class SlaveLocksClientConcurrentTest
     private SlaveLocksClient createClient()
     {
         return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
-                requestContextFactory, availabilityGuard, NullLogProvider.getInstance() );
+                requestContextFactory, databaseAvailabilityGuard, NullLogProvider.getInstance() );
     }
 
     private static class LockedOnMasterAnswer implements Answer

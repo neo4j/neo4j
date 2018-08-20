@@ -30,9 +30,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseCreationContext;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -98,7 +98,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Tracers tracers;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final SystemNanoClock clock;
     private final AccessCapability accessCapability;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -145,7 +145,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.tracers = platformModule.tracers;
         this.procedures = procedures;
         this.ioLimiter = editionModule.ioLimiter;
-        this.availabilityGuard = platformModule.availabilityGuard;
+        this.databaseAvailabilityGuard = platformModule.databaseAvailabilityGuard;
         this.clock = platformModule.clock;
         this.accessCapability = editionModule.accessCapability;
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
@@ -335,9 +335,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public AvailabilityGuard getAvailabilityGuard()
+    public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
     {
-        return availabilityGuard;
+        return databaseAvailabilityGuard;
     }
 
     @Override

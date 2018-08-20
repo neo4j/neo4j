@@ -34,11 +34,11 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseCreationContext;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -137,8 +137,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
         TransactionMonitor transactionMonitor = dependency( mutableDependencies, TransactionMonitor.class,
                 deps -> new DatabaseTransactionStats() );
-        AvailabilityGuard availabilityGuard = dependency( mutableDependencies, AvailabilityGuard.class,
-                deps -> new AvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ), NullLog.getInstance() ) );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = dependency( mutableDependencies, DatabaseAvailabilityGuard.class,
+                deps -> new DatabaseAvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ), NullLog.getInstance() ) );
         dependency( mutableDependencies, DiagnosticsManager.class,
                 deps -> new DiagnosticsManager( NullLog.getInstance() ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> IndexProvider.EMPTY );
@@ -150,7 +150,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                         databaseHealth, mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
                         mock( InternalAutoIndexing.class ), mock( IndexConfigStore.class ), mock( ExplicitIndexProvider.class ), pageCache,
                         new StandardConstraintSemantics(), monitors, new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
-                        mock( Procedures.class ), IOLimiter.UNLIMITED, availabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
+                        mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                         RecoveryCleanupWorkCollector.immediate(),
                         new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                                 jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
@@ -214,7 +214,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         private final Tracers tracers;
         private final Procedures procedures;
         private final IOLimiter ioLimiter;
-        private final AvailabilityGuard availabilityGuard;
+        private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
         private final SystemNanoClock clock;
         private final AccessCapability accessCapability;
         private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -235,11 +235,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth, LogFileCreationMonitor physicalLogMonitor,
                 TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing,
                 IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics,
-                Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock,
-                AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                IdController idController, DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier,
-                CollectionsFactorySupplier collectionsFactorySupplier, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                Function<File,FileSystemWatcherService> watcherServiceFactory, GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
+                Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
+                SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController, DatabaseInfo databaseInfo,
+                VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+                Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<File,FileSystemWatcherService> watcherServiceFactory,
+                GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
         {
             this.databaseName = databaseName;
             this.databaseLayout = databaseLayout;
@@ -269,7 +270,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
             this.tracers = tracers;
             this.procedures = procedures;
             this.ioLimiter = ioLimiter;
-            this.availabilityGuard = availabilityGuard;
+            this.databaseAvailabilityGuard = databaseAvailabilityGuard;
             this.clock = clock;
             this.accessCapability = accessCapability;
             this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
@@ -463,9 +464,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
         }
 
         @Override
-        public AvailabilityGuard getAvailabilityGuard()
+        public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
         {
-            return availabilityGuard;
+            return databaseAvailabilityGuard;
         }
 
         @Override

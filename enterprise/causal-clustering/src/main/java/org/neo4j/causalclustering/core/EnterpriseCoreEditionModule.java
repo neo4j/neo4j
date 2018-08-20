@@ -238,7 +238,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 logFiles,
                 platformModule.dataSourceManager,
                 databaseHealthSupplier,
-                platformModule.availabilityGuard,
+                platformModule.databaseAvailabilityGuard,
                 logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
@@ -432,7 +432,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         constraintSemantics = new EnterpriseConstraintSemantics();
 
         coreAPIAvailabilityGuard =
-                new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+                new CoreAPIAvailabilityGuard( platformModule.databaseAvailabilityGuard, transactionStartTimeout );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 

@@ -29,9 +29,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.availability.AvailabilityRequirement;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -43,21 +44,18 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
-
 public class LocalDatabase implements Lifecycle
 {
-    private static final AvailabilityRequirement NOT_STOPPED =
-            availabilityRequirement( "Database is stopped" );
+    private static final AvailabilityRequirement NOT_STOPPED = new DescriptiveAvailabilityRequirement( "Database is stopped" );
     private static final AvailabilityRequirement NOT_COPYING_STORE =
-            availabilityRequirement( "Database is stopped to copy store from another cluster member" );
+            new DescriptiveAvailabilityRequirement( "Database is stopped to copy store from another cluster member" );
 
     private final DatabaseLayout databaseLayout;
 
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final Log log;
 
     private volatile StoreId storeId;
@@ -65,14 +63,14 @@ public class LocalDatabase implements Lifecycle
     private volatile AvailabilityRequirement currentRequirement;
 
     private volatile TransactionCommitProcess localCommit;
-    private LogFiles logFiles;
+    private final LogFiles logFiles;
 
     public LocalDatabase( DatabaseLayout databaseLayout,
             StoreFiles storeFiles,
             LogFiles logFiles,
             DataSourceManager dataSourceManager,
             Supplier<DatabaseHealth> databaseHealthSupplier,
-            AvailabilityGuard availabilityGuard,
+            DatabaseAvailabilityGuard databaseAvailabilityGuard,
             LogProvider logProvider )
     {
         this.databaseLayout = databaseLayout;
@@ -80,7 +78,7 @@ public class LocalDatabase implements Lifecycle
         this.logFiles = logFiles;
         this.dataSourceManager = dataSourceManager;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.log = logProvider.getLog( getClass() );
         raiseAvailabilityGuard( NOT_STOPPED );
     }
@@ -113,7 +111,7 @@ public class LocalDatabase implements Lifecycle
     }
 
     /**
-     * Stop database to perform a store copy. This will raise {@link AvailabilityGuard} with
+     * Stop database to perform a store copy. This will raise {@link DatabaseAvailabilityGuard} with
      * a more friendly blocking requirement.
      *
      * @throws Throwable if any of the components are unable to stop.
@@ -231,7 +229,7 @@ public class LocalDatabase implements Lifecycle
     {
         // it is possible for the local database to be created and stopped right after that to perform a store copy
         // in this case we need to impose new requirement and drop the old one
-        availabilityGuard.require( requirement );
+        databaseAvailabilityGuard.require( requirement );
         if ( currentRequirement != null )
         {
             dropAvailabilityGuard();
@@ -241,7 +239,7 @@ public class LocalDatabase implements Lifecycle
 
     private void dropAvailabilityGuard()
     {
-        availabilityGuard.fulfill( currentRequirement );
+        databaseAvailabilityGuard.fulfill( currentRequirement );
         currentRequirement = null;
     }
 }

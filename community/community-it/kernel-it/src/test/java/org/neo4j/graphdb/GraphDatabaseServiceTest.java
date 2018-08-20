@@ -29,8 +29,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;

@@ -30,7 +30,9 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityRequirement;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -40,8 +42,6 @@ import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.String.format;
 import static org.neo4j.cluster.util.Quorums.isQuorum;
-import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
-import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 /**
  * State machine that listens for global cluster events, and coordinates
@@ -57,11 +57,11 @@ import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
 {
     public static final AvailabilityRequirement AVAILABILITY_REQUIREMENT =
-            availabilityRequirement( "High Availability member state not ready" );
+            new DescriptiveAvailabilityRequirement( "High Availability member state not ready" );
     private final HighAvailabilityMemberContext context;
-    private final AvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final ClusterMemberEvents events;
-    private Log log;
+    private final Log log;
 
     private final Listeners<HighAvailabilityMemberListener> memberListeners = new Listeners<>();
     private volatile HighAvailabilityMemberState state;
@@ -70,14 +70,14 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final Election election;
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
-                                               AvailabilityGuard availabilityGuard,
+                                               DatabaseAvailabilityGuard databaseAvailabilityGuard,
                                                ObservedClusterMembers members,
                                                ClusterMemberEvents events,
                                                Election election,
                                                LogProvider logProvider )
     {
         this.context = context;
-        this.availabilityGuard = availabilityGuard;
+        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.members = members;
         this.events = events;
         this.election = election;
@@ -90,7 +90,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     {
         events.addClusterMemberListener( eventsListener = new StateMachineClusterEventListener() );
         // On initial startup, disallow database access
-        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
+        databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
@@ -106,7 +106,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         // If we were previously in a state that allowed access, we must now deny access
         if ( oldState.isAccessAllowed() )
         {
-            availabilityGuard.require( AVAILABILITY_REQUIREMENT );
+            databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
         }
 
         context.setAvailableHaMasterId( null );
@@ -161,7 +161,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
                 if ( oldState.isAccessAllowed() && oldState != state )
                 {
-                    availabilityGuard.require( AVAILABILITY_REQUIREMENT );
+                    databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
                 }
 
                 log.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
@@ -198,7 +198,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
                             HighAvailabilityMemberState.MASTER )
                     {
-                        availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
+                        databaseAvailabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
                     }
                 }
                 else if ( role.equals( HighAvailabilityModeSwitcher.SLAVE ) )
@@ -217,7 +217,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&
                             state == HighAvailabilityMemberState.SLAVE )
                     {
-                        availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
+                        databaseAvailabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
                     }
                 }
             }
@@ -289,7 +289,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             if ( state.isAccessAllowed() )
             {
-                availabilityGuard.require( AVAILABILITY_REQUIREMENT );
+                databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
             }
 
             final HighAvailabilityMemberChangeEvent event =
