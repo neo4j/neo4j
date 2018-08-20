@@ -37,6 +37,7 @@ import org.neo4j.kernel.DatabaseCreationContext;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -381,7 +382,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         }
 
         @Override
-        public TransactionMonitor getTransactionMonitor()
+        public TransactionMonitor getTransactionStats()
         {
             return transactionMonitor;
         }
@@ -546,6 +547,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
         public Iterable<QueryEngineProvider> getEngineProviders()
         {
             return engineProviders;
+        }
+
+        @Override
+        public DatabaseAvailability getDatabaseAvailability()
+        {
+            return null;
         }
     }
 

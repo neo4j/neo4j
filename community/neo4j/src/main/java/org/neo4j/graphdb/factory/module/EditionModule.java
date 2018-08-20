@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -280,7 +279,7 @@ public abstract class EditionModule
         databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
     }
 
-    public TransactionMonitor createTransactionMonitor()
+    public DatabaseTransactionStats createTransactionMonitor()
     {
         return databaseStatistics;
     }

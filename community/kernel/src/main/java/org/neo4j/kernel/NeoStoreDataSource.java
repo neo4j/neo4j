@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
@@ -199,6 +200,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
+    private final DatabaseAvailability databaseAvailability;
+
+    private Dependencies dataSourceDependencies;
+    private LifeSupport life;
+    private IndexProviderMap indexProviderMap;
     private final String databaseName;
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
@@ -207,10 +213,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
-
-    private Dependencies dataSourceDependencies;
-    private LifeSupport life;
-    private IndexProviderMap indexProviderMap;
 
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
@@ -244,7 +246,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.transactionEventHandlers = context.getTransactionEventHandlers();
         this.indexingServiceMonitor = context.getIndexingServiceMonitor();
         this.fs = context.getFs();
-        this.transactionMonitor = context.getTransactionMonitor();
+        this.transactionMonitor = context.getTransactionStats();
         this.databaseHealth = context.getDatabaseHealth();
         this.physicalLogMonitor = context.getPhysicalLogMonitor();
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
@@ -272,6 +274,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.pageCache = context.getPageCache();
         this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
+        this.databaseAvailability = context.getDatabaseAvailability();
         this.failOnCorruptedLogFiles = context.getConfig().get( GraphDatabaseSettings.fail_on_corrupted_log_files );
     }
 
@@ -293,6 +296,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( transactionMonitor );
         dataSourceDependencies.satisfyDependency( locks );
         dataSourceDependencies.satisfyDependency( databaseAvailabilityGuard );
+        dataSourceDependencies.satisfyDependency( databaseAvailability );
 
         life = new LifeSupport();
         dataSourceDependencies.satisfyDependency( explicitIndexProvider );
@@ -410,6 +414,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         }
 
         life.add( new DatabaseDiagnostics( dataSourceDependencies.resolveDependency( DiagnosticsManager.class ), this, databaseInfo ) );
+        life.add( databaseAvailability );
         life.setLast( lifecycleToTriggerCheckPointOnShutdown() );
 
         try

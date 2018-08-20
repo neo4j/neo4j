@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,6 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.DatabaseCreationContext;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -60,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -85,7 +88,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final TransactionEventHandlers transactionEventHandlers;
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
-    private final TransactionMonitor transactionMonitor;
+    private final DatabaseTransactionStats transactionStats;
     private final DatabaseHealth databaseHealth;
     private final LogFileCreationMonitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
@@ -114,6 +117,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
+    private final DatabaseAvailability databaseAvailability;
 
     ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionModule editionModule,
             Procedures procedures, GraphDatabaseFacade facade )
@@ -135,7 +139,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.indexingServiceMonitor = monitors.newMonitor( IndexingService.Monitor.class );
         this.physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         this.fs = platformModule.fileSystem;
-        this.transactionMonitor = editionModule.createTransactionMonitor();
+        this.transactionStats = editionModule.createTransactionMonitor();
         this.databaseHealth = new DatabaseHealth( platformModule.panicEventGenerator, logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = editionModule.headerInformationFactory;
         this.commitProcessFactory = editionModule.commitProcessFactory;
@@ -149,6 +153,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.ioLimiter = editionModule.ioLimiter;
         this.clock = platformModule.clock;
         this.databaseAvailabilityGuard = new DatabaseAvailabilityGuard( databaseName, clock, logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
+        this.databaseAvailability =
+                new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, platformModule.clock, getAwaitActiveTransactionDeadlineMillis() );
         this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionModule.transactionStartTimeout );
         this.accessCapability = editionModule.accessCapability;
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
@@ -254,9 +260,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public TransactionMonitor getTransactionMonitor()
+    public TransactionMonitor getTransactionStats()
     {
-        return transactionMonitor;
+        return transactionStats;
     }
 
     @Override
@@ -419,5 +425,16 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public Iterable<QueryEngineProvider> getEngineProviders()
     {
         return engineProviders;
+    }
+
+    @Override
+    public DatabaseAvailability getDatabaseAvailability()
+    {
+        return databaseAvailability;
+    }
+
+    private long getAwaitActiveTransactionDeadlineMillis()
+    {
+        return config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
     }
 }

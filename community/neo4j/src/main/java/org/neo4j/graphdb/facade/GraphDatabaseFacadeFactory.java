@@ -39,7 +39,6 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
@@ -178,11 +177,6 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
-        DatabaseAvailability databaseAvailability =
-                new DatabaseAvailability( platform.databaseAvailabilityGuard, edition.globalTransactionCounter(), platform.clock,
-                        config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() );
-        platform.dependencies.satisfyDependency( databaseAvailability );
-        platform.life.add( databaseAvailability );
         platform.life.add( new StartupWaiter( platform.databaseAvailabilityGuard, edition.transactionStartTimeout ) );
         platform.dependencies.satisfyDependency( edition.schemaWriteGuard );
         platform.life.setLast( platform.eventHandlers );
