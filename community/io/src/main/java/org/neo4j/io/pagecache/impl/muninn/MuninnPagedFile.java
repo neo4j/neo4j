@@ -74,7 +74,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     final PageSwapper swapper;
     final int swapperId;
-    private final CursorPool cursorPool;
+    private final CursorFactory cursorFactory;
 
     // Guarded by the monitor lock on MuninnPageCache (map and unmap)
     private boolean deleteOnClose;
@@ -126,7 +126,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = new CursorPool( this, pageCursorTracerSupplier, pageCacheTracer, versionContextSupplier );
+        this.cursorFactory = new CursorFactory( this, pageCursorTracerSupplier, pageCacheTracer, versionContextSupplier );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap();
 
@@ -179,11 +179,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         MuninnPageCursor cursor;
         if ( lockFlags == PF_SHARED_READ_LOCK )
         {
-            cursor = cursorPool.takeReadCursor( pageId, pf_flags );
+            cursor = cursorFactory.takeReadCursor( pageId, pf_flags );
         }
         else if ( lockFlags == PF_SHARED_WRITE_LOCK )
         {
-            cursor = cursorPool.takeWriteCursor( pageId, pf_flags );
+            cursor = cursorFactory.takeWriteCursor( pageId, pf_flags );
         }
         else
         {
