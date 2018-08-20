@@ -12,8 +12,6 @@ Feature "OrderByAcceptance": Scenario "Ordering is well defined across all types
 Feature "OrderByAcceptance": Scenario "Ordering for lists, ascending"
 Feature "OrderByAcceptance": Scenario "Ordering for lists, descending"
 Feature "OrderByAcceptance": Scenario "ORDER BY node problem"
-Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
-Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 Feature "ReturnAcceptance": Scenario "LIMIT 0 should stop side effects"
 Feature "ReturnAcceptance": Scenario "RETURN true AND list"
 Feature "ReturnAcceptance": Scenario "RETURN false OR list"

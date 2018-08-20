@@ -169,8 +169,6 @@ Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with arg
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type FLOAT accepts value of type INTEGER"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with null argument"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
-Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
-Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 Feature "ReturnAcceptance": Scenario "Filter should work"
 Feature "ReturnAcceptance": Scenario "LIMIT 0 should stop side effects"
 Feature "ReturnAcceptance": Scenario "Accessing a list with null should return null"
