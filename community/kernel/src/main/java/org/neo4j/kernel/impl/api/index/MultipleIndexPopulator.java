@@ -373,6 +373,10 @@ public class MultipleIndexPopulator implements IndexPopulator
     {
         if ( !queue.isEmpty() )
         {
+            // Before applying updates from the updates queue any pending scan updates needs to be applied, i.e. flushed.
+            // This is because 'currentlyIndexedNodeId' is based on how far the scan has come.
+            flushAll();
+
             try ( MultipleIndexUpdater updater = newPopulatingUpdater( storeView ) )
             {
                 do

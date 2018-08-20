@@ -109,10 +109,15 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
         log.debug( "Populating from queue." + EOL + this );
-        flushAll();
-        awaitCompletion();
         super.populateFromQueue( currentlyIndexedNodeId );
         log.debug( "Drained queue and all batched updates." + EOL + this );
+    }
+
+    @Override
+    protected void flushAll()
+    {
+        super.flushAll();
+        awaitCompletion();
     }
 
     @Override
