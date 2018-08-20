@@ -31,8 +31,6 @@ import org.junit.Test;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLException;
 
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -46,7 +44,6 @@ import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 public class SslTrustTest
 {
     private static final int UNRELATED_ID = 5; // SslContextFactory requires us to trust something
-    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
 
     private static final byte[] REQUEST = {1, 2, 3, 4};
 

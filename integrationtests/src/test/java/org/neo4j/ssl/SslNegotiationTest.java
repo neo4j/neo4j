@@ -30,8 +30,6 @@ import org.junit.runners.Parameterized;
 
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.SslContextFactory.SslParameters;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;

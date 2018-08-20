@@ -29,8 +29,6 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -45,7 +43,6 @@ import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 public class SslPlatformTest
 {
     private static final byte[] REQUEST = {1, 2, 3, 4};
-    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
