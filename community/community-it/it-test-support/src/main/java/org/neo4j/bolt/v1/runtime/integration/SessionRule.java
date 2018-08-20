@@ -44,7 +44,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -77,7 +76,6 @@ public class SessionRule implements TestRule
                 boltFactory = new BoltStateMachineFactoryImpl(
                                         databaseManager,
                                         new UsageData( null ),
-                                        resolver.resolveDependency( DatabaseAvailabilityGuard.class ),
                                         authentication,
                                         Clock.systemUTC(),
                                         Config.defaults(),

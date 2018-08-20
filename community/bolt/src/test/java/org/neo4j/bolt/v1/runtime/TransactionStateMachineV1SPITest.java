@@ -140,6 +140,6 @@ public class TransactionStateMachineV1SPITest
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
 
-        return new TransactionStateMachineV1SPI( db, databaseAvailabilityGuard, txAwaitDuration, clock );
+        return new TransactionStateMachineV1SPI( db, txAwaitDuration, clock );
     }
 }

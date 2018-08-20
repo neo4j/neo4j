@@ -26,7 +26,6 @@ import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
@@ -34,9 +33,9 @@ import org.neo4j.values.virtual.MapValue;
 public class TransactionStateMachineV3SPI extends TransactionStateMachineV1SPI
 {
 
-    public TransactionStateMachineV3SPI( GraphDatabaseAPI db, DatabaseAvailabilityGuard databaseAvailabilityGuard, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV3SPI( GraphDatabaseAPI db, Duration txAwaitDuration, Clock clock )
     {
-        super( db, databaseAvailabilityGuard, txAwaitDuration, clock );
+        super( db, txAwaitDuration, clock );
     }
 
     @Override

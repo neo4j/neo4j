@@ -34,7 +34,6 @@ import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.udc.UsageData;
@@ -43,18 +42,16 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 {
     private final DatabaseManager databaseManager;
     private final UsageData usageData;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final LogService logging;
     private final Authentication authentication;
     private final Config config;
     private final Clock clock;
 
-    public BoltStateMachineFactoryImpl( DatabaseManager databaseManager, UsageData usageData, DatabaseAvailabilityGuard databaseAvailabilityGuard,
+    public BoltStateMachineFactoryImpl( DatabaseManager databaseManager, UsageData usageData,
             Authentication authentication, Clock clock, Config config, LogService logging )
     {
         this.databaseManager = databaseManager;
         this.usageData = usageData;
-        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.logging = logging;
         this.authentication = authentication;
         this.config = config;
@@ -81,7 +78,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
         TransactionStateMachineSPI transactionSPI =
-                new TransactionStateMachineV1SPI( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get(), databaseAvailabilityGuard,
+                new TransactionStateMachineV1SPI( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get(),
                         getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
@@ -90,7 +87,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
         TransactionStateMachineSPI transactionSPI =
-                new TransactionStateMachineV3SPI( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get(), databaseAvailabilityGuard,
+                new TransactionStateMachineV3SPI( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get(),
                         getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );

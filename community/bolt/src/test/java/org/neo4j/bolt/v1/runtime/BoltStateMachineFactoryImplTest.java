@@ -36,11 +36,9 @@ import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.NullLog;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.udc.UsageData;
 
@@ -99,7 +97,7 @@ class BoltStateMachineFactoryImplTest
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager databaseManager )
     {
         return new BoltStateMachineFactoryImpl( databaseManager, new UsageData( new OnDemandJobScheduler() ),
-                new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, CLOCK, NullLog.getInstance() ), mock( Authentication.class ), CLOCK, Config.defaults(),
+                mock( Authentication.class ), CLOCK, Config.defaults(),
                 NullLogService.getInstance() );
     }
 

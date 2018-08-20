@@ -292,6 +292,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( storeCopyCheckPointMutex );
         dataSourceDependencies.satisfyDependency( transactionMonitor );
         dataSourceDependencies.satisfyDependency( locks );
+        dataSourceDependencies.satisfyDependency( databaseAvailabilityGuard );
 
         life = new LifeSupport();
         dataSourceDependencies.satisfyDependency( explicitIndexProvider );

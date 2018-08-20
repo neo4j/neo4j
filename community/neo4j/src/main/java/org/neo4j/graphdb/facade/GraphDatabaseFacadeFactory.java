@@ -289,7 +289,7 @@ public class GraphDatabaseFacadeFactory
 
     private static BoltServer createBoltServer( PlatformModule platform, EditionModule edition, DatabaseManager databaseManager )
     {
-        return new BoltServer( databaseManager, platform.fileSystem, platform.jobScheduler, platform.databaseAvailabilityGuard,
+        return new BoltServer( databaseManager, platform.jobScheduler,
                 platform.connectorPortRegister, edition.connectionTracker, platform.usageData, platform.config, platform.clock, platform.monitors,
                 platform.logging, platform.dependencies );
     }

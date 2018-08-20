@@ -68,12 +68,12 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final Duration txAwaitDuration;
     private final Clock clock;
 
-    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, DatabaseAvailabilityGuard databaseAvailabilityGuard, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, Duration txAwaitDuration, Clock clock )
     {
         this.db = db;
-        this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        this.queryExecutionEngine = db.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( db, databaseAvailabilityGuard );
+        this.txBridge = resolveDependency( db, ThreadToStatementContextBridge.class );
+        this.queryExecutionEngine = resolveDependency( db, QueryExecutionEngine.class );
+        this.transactionIdTracker = newTransactionIdTracker( db );
         this.contextFactory = newTransactionalContextFactory( db );
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
@@ -155,16 +155,22 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return tx;
     }
 
-    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI db, DatabaseAvailabilityGuard guard )
+    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI db )
     {
         Supplier<TransactionIdStore> transactionIdStoreSupplier = db.getDependencyResolver().provideDependency( TransactionIdStore.class );
+        DatabaseAvailabilityGuard guard = resolveDependency( db, DatabaseAvailabilityGuard.class );
         return new TransactionIdTracker( transactionIdStoreSupplier, guard );
     }
 
     private static TransactionalContextFactory newTransactionalContextFactory( GraphDatabaseAPI db )
     {
-        GraphDatabaseQueryService queryService = db.getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class );
+        GraphDatabaseQueryService queryService = resolveDependency( db, GraphDatabaseQueryService.class );
         return Neo4jTransactionalContextFactory.create( queryService, locker );
+    }
+
+    private static <T> T resolveDependency( GraphDatabaseAPI db, Class<T> clazz )
+    {
+        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     public class BoltResultHandleV1 implements BoltResultHandle
