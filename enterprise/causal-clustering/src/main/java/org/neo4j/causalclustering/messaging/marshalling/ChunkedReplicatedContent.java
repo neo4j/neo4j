@@ -37,14 +37,21 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
     private static final int METADATA_SIZE = Integer.BYTES + 1;
 
     private final byte contentType;
+    private final ByteBufChunkHandler byteBufChunkHandler;
     private final ChunkedEncoder byteBufAwareMarshal;
     private boolean endOfInput;
     private int progress;
 
     ChunkedReplicatedContent( byte contentType, ChunkedEncoder byteBufAwareMarshal )
     {
+        this( contentType, byteBufAwareMarshal, new ByteBufChunkHandler.NoOp() );
+    }
+
+    ChunkedReplicatedContent( byte contentType, ChunkedEncoder byteBufAwareMarshal, ByteBufChunkHandler byteBufChunkHandler )
+    {
         this.byteBufAwareMarshal = byteBufAwareMarshal;
         this.contentType = contentType;
+        this.byteBufChunkHandler = byteBufChunkHandler;
     }
 
     @Override
@@ -93,6 +100,7 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
             allData.addComponent( true, 0, writeMetadata( isFirstChunk, allocator, data ) );
             progress += allData.readableBytes();
             assert progress > 0; // logic relies on this
+            byteBufChunkHandler.handle( data ); // ignores metadata
             return allData;
         }
         catch ( Throwable e )

@@ -65,8 +65,8 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
     {
         if ( content instanceof ReplicatedTransaction )
         {
-            return singleton( new ChunkedReplicatedContent( TX_CONTENT_TYPE, ((ReplicatedTransaction) content).marshal() ) );
-
+            return singleton(
+                    new ChunkedReplicatedContent( TX_CONTENT_TYPE, ((ReplicatedTransaction) content).marshal(), ByteBufChunkHandler.maxSizeHandler() ) );
         }
         else if ( content instanceof MemberIdSet )
         {
