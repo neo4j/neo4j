@@ -65,7 +65,7 @@ public class MyVirtualValue extends VirtualValue
     @Override
     public String getTypeName()
     {
-        return null;
+        return "MyVirtualValue";
     }
 
     @Override

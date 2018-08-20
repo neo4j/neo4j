@@ -520,7 +520,7 @@ public final class CompiledMathHelper
         AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : Values.of( lhs );
         AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : Values.of( rhs );
 
-        throw new CypherTypeException( String.format( "Cannot modulo `%s` by `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
+        throw new CypherTypeException( String.format( "Cannot calculate modulus of `%s` and `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
     }
 
     public static int transformToInt( Object value )

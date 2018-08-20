@@ -175,7 +175,7 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "MATCH (n:Test) RETURN n.lst - n.str", List("Cannot subtract `String` from `LongArray`"))
   }
 
-  test("should provide sensible error message when trying to modulo incompatible types") {
+  test("should provide sensible error message when trying to calculate modulus of incompatible types") {
     // We want to deliberately fail after semantic checking (at runtime), thus the need for CREATE
 
     graph.execute("CREATE (n:Test {" +
@@ -188,16 +188,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "str: 's' })")
 
     failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
-      "MATCH (n:Test) RETURN n.num % n.loc", List("Cannot modulo `Long` by `Point`"))
+      "MATCH (n:Test) RETURN n.num % n.loc", List("Cannot calculate modulus of `Long` and `Point`"))
 
     failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
-      "MATCH (n:Test) RETURN n.num % n.dat", List("Cannot modulo `Long` by `DateTime`"))
+      "MATCH (n:Test) RETURN n.num % n.dat", List("Cannot calculate modulus of `Long` and `DateTime`"))
 
     failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
-      "MATCH (n:Test) RETURN n.flo % n.bool", List("Cannot modulo `Double` by `Boolean`"))
+      "MATCH (n:Test) RETURN n.flo % n.bool", List("Cannot calculate modulus of `Double` and `Boolean`"))
 
     failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
-      "MATCH (n:Test) RETURN n.lst % n.str", List("Cannot modulo `LongArray` by `String`"))
+      "MATCH (n:Test) RETURN n.lst % n.str", List("Cannot calculate modulus of `LongArray` and `String`"))
   }
 
   test("should provide sensible error message when trying to divide incompatible types") {

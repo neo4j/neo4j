@@ -28,11 +28,15 @@ import org.neo4j.values.storable.{UTF8StringValue, _}
 import org.neo4j.values.utils.UTF8Utils
 import org.neo4j.values.virtual.VirtualValues
 
-case class Add(a: Expression, b: Expression) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+case class Add(a: Expression, b: Expression) extends Arithmetics(a, b) {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val aVal = a(ctx, state)
     val bVal = b(ctx, state)
 
+    applyWithValues(aVal, bVal)
+  }
+
+  override def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (x: NumberValue, y: NumberValue) => x.plus(y)
@@ -48,14 +52,11 @@ case class Add(a: Expression, b: Expression) extends Expression {
       case (x: TemporalValue[_,_], y: DurationValue) => x.plus(y)
       case (x: DurationValue, y: TemporalValue[_,_]) => y.plus(x)
       case (x: DurationValue, y: DurationValue) => x.add(y)
-      case _                      => throw new CypherTypeException("Cannot add `" + aVal.getTypeName + "` and `" + bVal.getTypeName + "`")
+      case _                      => throwTypeError(aVal.getTypeName, bVal.getTypeName)
     }
   }
 
   def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
-
-
-  def arguments = Seq(a, b)
 
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
     val collectionType = collection.asInstanceOf[ListType]
@@ -64,4 +65,10 @@ case class Add(a: Expression, b: Expression) extends Expression {
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  override def throwTypeError(aType: String, bType: String): Nothing = {
+    throw new CypherTypeException("Cannot add `" + aType + "` and `" + bType + "`")
+  }
+
+  override def calc(a: NumberValue, b: NumberValue): AnyValue = a.plus(b)
 }

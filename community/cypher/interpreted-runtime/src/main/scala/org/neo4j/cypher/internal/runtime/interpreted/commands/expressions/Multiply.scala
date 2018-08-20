@@ -44,7 +44,7 @@ case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 
-  def throwTypeError(bVal: AnyValue, aVal: AnyValue): Nothing = {
-    throw new CypherTypeException("Cannot multiply `" + aVal.getTypeName + "` and `" + bVal.getTypeName + "`")
+  def throwTypeError(aType: String, bType: String): Nothing = {
+    throw new CypherTypeException("Cannot multiply `" + aType + "` and `" + bType + "`")
   }
 }

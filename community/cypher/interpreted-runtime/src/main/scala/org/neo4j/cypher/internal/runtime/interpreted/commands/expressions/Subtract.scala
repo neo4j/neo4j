@@ -46,7 +46,7 @@ case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 
-  def throwTypeError(bVal: AnyValue, aVal: AnyValue): Nothing = {
-    throw new CypherTypeException("Cannot subtract `" + bVal.getTypeName + "` from `" + aVal.getTypeName + "`")
+  def throwTypeError(aType: String, bType: String): Nothing = {
+    throw new CypherTypeException("Cannot subtract `" + bType + "` from `" + aType + "`")
   }
 }

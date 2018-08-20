@@ -38,7 +38,7 @@ case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 
-  def throwTypeError(bVal: AnyValue, aVal: AnyValue): Nothing = {
-    throw new CypherTypeException("Cannot modulo `" + aVal.getTypeName + "` by `" + bVal.getTypeName + "`")
+  def throwTypeError(aType: String, bType: String): Nothing = {
+    throw new CypherTypeException("Cannot calculate modulus of `" + aType + "` and `" + bType + "`")
   }
 }
