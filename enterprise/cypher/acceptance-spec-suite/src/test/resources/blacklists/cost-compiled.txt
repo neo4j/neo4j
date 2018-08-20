@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Feature "AggregationAcceptance": Scenario "Using a optional match after aggregation and before an aggregation"
 Feature "AggregationAcceptance": Scenario "max() over strings"
 Feature "AggregationAcceptance": Scenario "min() over strings"
