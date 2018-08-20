@@ -41,7 +41,6 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  FindBugs-jsr305
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
