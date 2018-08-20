@@ -39,8 +39,8 @@ import org.neo4j.logging.Log;
  */
 public class DatabaseAvailabilityGuard
 {
-    private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database %s available: ";
-    private static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database %s unavailable: ";
+    private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database %s available: %s.";
+    private static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database %s unavailable: %s.";
 
     private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
@@ -74,7 +74,7 @@ public class DatabaseAvailabilityGuard
         {
             if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
-                log.info( DATABASE_UNAVAILABLE_MSG + requirement.description(), databaseName );
+                log.info( DATABASE_UNAVAILABLE_MSG, databaseName, requirement.description() );
                 listeners.notify( AvailabilityListener::unavailable );
             }
         }
@@ -96,7 +96,7 @@ public class DatabaseAvailabilityGuard
         {
             if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
-                log.info( DATABASE_AVAILABLE_MSG + requirement.description(), databaseName );
+                log.info( DATABASE_AVAILABLE_MSG, databaseName, requirement.description() );
                 listeners.notify( AvailabilityListener::available );
             }
         }

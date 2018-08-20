@@ -814,6 +814,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return transactionEventHandlers;
     }
 
+    public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
+    {
+        return databaseAvailabilityGuard;
+    }
+
     @VisibleForTesting
     public LifeSupport getLife()
     {

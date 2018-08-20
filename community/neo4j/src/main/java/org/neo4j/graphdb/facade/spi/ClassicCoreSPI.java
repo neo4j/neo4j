@@ -69,7 +69,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public boolean databaseIsAvailable( long timeout )
     {
-        return platform.databaseAvailabilityGuard.isAvailable( timeout );
+        return dataSource.neoStoreDataSource.getDatabaseAvailabilityGuard().isAvailable( timeout );
     }
 
     @Override
@@ -164,7 +164,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             msgLog.log( "Shutdown started" );
-            platform.databaseAvailabilityGuard.shutdown();
+            dataSource.neoStoreDataSource.getDatabaseAvailabilityGuard().shutdown();
             platform.life.shutdown();
         }
         catch ( LifecycleException throwable )
