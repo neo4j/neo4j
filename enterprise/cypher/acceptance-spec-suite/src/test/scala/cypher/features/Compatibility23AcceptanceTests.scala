@@ -25,9 +25,8 @@ package cypher.features
 import java.util
 
 import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
-import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
 
 class Compatibility23AcceptanceTests extends BaseAcceptanceTest {
 
@@ -38,7 +37,7 @@ class Compatibility23AcceptanceTests extends BaseAcceptanceTest {
     createTests(scenarios, Compatibility23TestConfig)
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCompatibility23(): Unit = {
     printComputedBlacklist(scenarios, Compatibility23TestConfig)
     fail("Do not forget to add @ignore to this method")

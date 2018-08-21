@@ -43,14 +43,14 @@ abstract class BaseAcceptanceTest extends BaseFeatureTest {
     filterScenarios(all, featureToRun, scenarioToRun)
   }
 
-    @Test
-    def debugTokensNeedToBeEmpty(): Unit = {
-      // besides the obvious reason this test is also here (and not using assert)
-      // to ensure that any import optimizer doesn't remove the correct import for fail (used by the commented out methods further down)
-      if (!scenarioToRun.equals(""))
-        fail("scenarioToRun is only for debugging and should not be committed")
+  @Test
+  def debugTokensNeedToBeEmpty(): Unit = {
+    // besides the obvious reason this test is also here (and not using assert)
+    // to ensure that any import optimizer doesn't remove the correct import for fail (used by the commented out methods further down)
+    if (!scenarioToRun.equals(""))
+      fail("scenarioToRun is only for debugging and should not be committed")
 
-      if (!featureToRun.equals(""))
-        fail("featureToRun is only for debugging and should not be committed")
-    }
+    if (!featureToRun.equals(""))
+      fail("featureToRun is only for debugging and should not be committed")
+  }
 }

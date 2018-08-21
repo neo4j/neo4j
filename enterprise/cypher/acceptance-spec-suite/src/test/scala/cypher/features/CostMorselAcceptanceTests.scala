@@ -22,12 +22,9 @@
  */
 package cypher.features
 
-import java.util
-
-import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
-import org.junit.Ignore
+import cypher.features.ScenarioTestHelper.printComputedBlacklist
 import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.junit.jupiter.api.Disabled
 
 class CostMorselAcceptanceTests extends BaseAcceptanceTest {
 
@@ -43,7 +40,7 @@ class CostMorselAcceptanceTests extends BaseAcceptanceTest {
 //    createTests(scenarios, CostMorselTestConfig)
 //  }
 
-  @Ignore
+  @Disabled
   def generateBlacklistTCKTestCostMorsel(): Unit = {
     printComputedBlacklist(scenarios, CostMorselTestConfig)
     fail("Do not forget to add @ignore to this method")

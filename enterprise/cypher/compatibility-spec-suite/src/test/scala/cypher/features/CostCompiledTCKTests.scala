@@ -25,9 +25,8 @@ package cypher.features
 import java.util
 
 import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
-import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
 
 class CostCompiledTCKTests extends BaseTCKTests {
 
@@ -38,7 +37,7 @@ class CostCompiledTCKTests extends BaseTCKTests {
     createTests(scenarios, CostCompiledTestConfig)
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCostCompiled(): Unit = {
     printComputedBlacklist(scenarios, CostCompiledTestConfig)
     fail("Do not forget to add @ignore to this method")
