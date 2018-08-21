@@ -76,4 +76,10 @@ public final class ErrorValue extends VirtualValue
     {
         throw e;
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Error";
+    }
 }

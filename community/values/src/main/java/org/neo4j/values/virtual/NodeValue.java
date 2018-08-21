@@ -56,6 +56,12 @@ public abstract class NodeValue extends VirtualNodeValue
         return format( "(%d)", id );
     }
 
+    @Override
+    public String getTypeName()
+    {
+        return "Node";
+    }
+
     static class DirectNodeValue extends NodeValue
     {
         private final TextArray labels;

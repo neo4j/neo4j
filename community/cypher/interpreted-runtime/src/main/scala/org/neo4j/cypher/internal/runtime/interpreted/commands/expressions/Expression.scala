@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
+import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.symbols.CypherType
-import org.opencypher.v9_0.util.{CypherTypeException, InternalException}
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
 
@@ -90,9 +90,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-  def throwTypeError(bVal: Any, aVal: Any): Nothing = {
-    throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
-  }
+  def throwTypeError(aType: String, bType: String): Nothing
 
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val aVal = left(ctx, state)
@@ -105,7 +103,7 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (x: NumberValue, y: NumberValue) => calc(x, y)
-      case _ => throwTypeError(bVal, aVal)
+      case _ => throwTypeError(aVal.getTypeName, bVal.getTypeName)
     }
   }
 

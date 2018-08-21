@@ -48,6 +48,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     @Override
     public abstract AnyValue value( int offset );
 
+    @Override
+    public String getTypeName()
+    {
+        return "List";
+    }
+
     static final class ArrayValueListValue extends ListValue
     {
         private final ArrayValue array;
@@ -655,7 +661,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( "List{" );
+        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
         int i = 0;
         for ( ; i < size() - 1; i++ )
         {

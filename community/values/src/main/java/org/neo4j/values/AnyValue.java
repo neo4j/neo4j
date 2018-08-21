@@ -58,4 +58,6 @@ public abstract class AnyValue
     public abstract Boolean ternaryEquals( AnyValue other );
 
     public abstract <T> T map( ValueMapper<T> mapper );
+
+    public abstract String getTypeName();
 }

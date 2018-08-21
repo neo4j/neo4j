@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.values.storable.{NumberValue, Values}
+import org.opencypher.v9_0.util.CypherTypeException
 
 case class Pow(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: NumberValue, b: NumberValue) = Values.doubleValue(math.pow(a.doubleValue(), b.doubleValue()))
@@ -27,4 +28,9 @@ case class Pow(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Pow(a.rewrite(f), b.rewrite(f)))
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  def throwTypeError(aType: String, bType: String): Nothing = {
+    throw new CypherTypeException("Cannot raise `" + aType + "` to the power of `" + bType + "`")
+
+  }
 }

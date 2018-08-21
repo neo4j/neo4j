@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.values._
 import org.neo4j.values.storable.{DoubleValue, FloatValue, NumberValue, Values}
+import org.opencypher.v9_0.util.CypherTypeException
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: NumberValue, b: NumberValue): AnyValue = (a, b) match {
@@ -36,4 +37,8 @@ case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  def throwTypeError(aType: String, bType: String): Nothing = {
+    throw new CypherTypeException("Cannot calculate modulus of `" + aType + "` and `" + bType + "`")
+  }
 }

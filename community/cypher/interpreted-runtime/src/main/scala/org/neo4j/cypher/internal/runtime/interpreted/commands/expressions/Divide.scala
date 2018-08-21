@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.opencypher.v9_0.util.ArithmeticException
 import org.neo4j.values._
 import org.neo4j.values.storable._
+import org.opencypher.v9_0.util.ArithmeticException
 
 case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def operand = "/"
@@ -47,4 +48,9 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  def throwTypeError(aType: String, bType: String): Nothing = {
+    throw new CypherTypeException("Cannot divide `" + aType + "` by `" + bType + "`")
+  }
+
 }

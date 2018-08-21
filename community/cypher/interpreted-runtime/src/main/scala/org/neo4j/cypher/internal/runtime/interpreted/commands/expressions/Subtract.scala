@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{NumberValue, Values}
+import org.neo4j.values.storable.Values
 
 case class Subtract(a: Expression, b: Expression) extends Expression {
 

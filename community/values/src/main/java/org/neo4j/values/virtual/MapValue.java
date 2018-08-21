@@ -651,10 +651,15 @@ public abstract class MapValue extends VirtualValue
         return new CombinedMapValue( this, other );
     }
 
+    public String getTypeName()
+    {
+        return "Map";
+    }
+
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( "Map{" );
+        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
         final String[] sep = new String[]{""};
         foreach( ( key, value ) ->
         {

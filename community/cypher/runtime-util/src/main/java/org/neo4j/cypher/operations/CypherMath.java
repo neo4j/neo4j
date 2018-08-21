@@ -32,7 +32,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -137,7 +136,7 @@ public final class CypherMath
         }
 
         throw new CypherTypeException(
-                String.format( "Don't know how to add `%s` and `%s`", lhs, rhs ), null );
+                String.format( "Cannot add `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
     }
 
     public static AnyValue subtract( AnyValue lhs, AnyValue rhs )
@@ -162,9 +161,8 @@ public final class CypherMath
                 return ((DurationValue) lhs).sub( (DurationValue) rhs );
             }
         }
-
         throw new CypherTypeException(
-                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs ), null );
+                String.format( "Cannot subtract `%s` from `%s`", rhs.getTypeName(), lhs.getTypeName() ), null );
     }
 
     public static AnyValue multiply( AnyValue lhs, AnyValue rhs )
@@ -189,6 +187,6 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Don't know how to multiply `%s` and `%s`", lhs, rhs ), null );
+                String.format( "Cannot multiply `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
     }
 }

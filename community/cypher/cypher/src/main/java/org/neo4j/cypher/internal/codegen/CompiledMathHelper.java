@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.opencypher.v9_0.util.ArithmeticException;
+import org.opencypher.v9_0.util.CypherTypeException;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opencypher.v9_0.util.ArithmeticException;
-import org.opencypher.v9_0.util.CypherTypeException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -254,8 +255,10 @@ public final class CompiledMathHelper
             }
         }
 
-        throw new CypherTypeException(
-                String.format( "Don't know how to add `%s` and `%s`", lhs, rhs), null );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : Values.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : Values.of( rhs );
+
+        throw new CypherTypeException( String.format( "Cannot add `%s` and `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
     }
 
     public static Object subtract( Object lhs, Object rhs )
@@ -319,8 +322,10 @@ public final class CompiledMathHelper
             }
         }
 
-        throw new CypherTypeException( "Cannot subtract " + lhs.getClass().getSimpleName() +
-                                       " and " + rhs.getClass().getSimpleName(), null );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : Values.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : Values.of( rhs );
+
+        throw new CypherTypeException( String.format( "Cannot subtract `%s` from `%s`", rhsValue.getTypeName(), lhsValue.getTypeName() ), null );
     }
 
     public static Object multiply( Object lhs, Object rhs )
@@ -392,8 +397,10 @@ public final class CompiledMathHelper
             // other numbers we cannot multiply
         }
 
-        throw new CypherTypeException( "Cannot multiply " + lhs.getClass().getSimpleName() +
-                                       " and " + rhs.getClass().getSimpleName(), null );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : Values.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : Values.of( rhs );
+
+        throw new CypherTypeException( String.format( "Cannot multiply `%s` and `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
     }
 
     public static Object divide( Object lhs, Object rhs )
@@ -463,8 +470,10 @@ public final class CompiledMathHelper
             // other numbers we cannot divide
         }
 
-        throw new CypherTypeException( "Cannot divide " + lhs.getClass().getSimpleName() +
-                                       " and " + rhs.getClass().getSimpleName(), null );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : Values.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : Values.of( rhs );
+
+        throw new CypherTypeException( String.format( "Cannot divide `%s` by `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
     }
 
     public static Object modulo( Object lhs, Object rhs )
@@ -509,8 +518,10 @@ public final class CompiledMathHelper
             // other numbers we cannot divide
         }
 
-        throw new CypherTypeException( "Cannot modulo " + lhs.getClass().getSimpleName() +
-                                       " and " + rhs.getClass().getSimpleName(), null );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : Values.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : Values.of( rhs );
+
+        throw new CypherTypeException( String.format( "Cannot calculate modulus of `%s` and `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
     }
 
     public static int transformToInt( Object value )
