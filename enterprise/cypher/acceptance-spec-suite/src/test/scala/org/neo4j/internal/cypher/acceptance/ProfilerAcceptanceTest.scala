@@ -593,31 +593,17 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("joins with identical scans") {
     //given
     val corp = createLabeledNode("Company")
-    val a1 = createLabeledNode("Artist")
-    val a2 = createLabeledNode("Artist")
-    val c = createLabeledNode("Concert")
-    val v = createLabeledNode("Venue")
-    relate(a1, corp, "SIGNED_WITH")
-    relate(a2, corp, "SIGNED_WITH")
-    relate(a1, c, "PERFORMED_AT")
-    relate(a2, c, "PERFORMED_AT")
-    relate(c, v, "IN")
 
     //force a plan to have a scan on corp in both the lhs and the rhs of join
     val query =
-      """PROFILE MATCH (corp:Company)<-[:SIGNED_WITH]-(a1:Artist)-[:PERFORMED_AT]->(c:Concert)-[:IN]->(v:Venue)
-        |MATCH (corp)<-[:SIGNED_WITH]-(a2:Artist)-[:PERFORMED_AT]->(c)
-        |USING JOIN ON c,corp
-        |RETURN a1, a2, v""".stripMargin
+    """PROFILE MATCH (a:Company) RETURN a
+      |UNION
+      |MATCH (a:Company) RETURN a""".stripMargin
 
     //when
     val result = innerExecuteDeprecated(query, Map.empty)
 
-    result.toSet should be(Set(
-      Map("a1" -> a1, "a2" -> a2, "v" -> v),
-      Map("a1" -> a1, "a2" -> a1, "v" -> v),
-      Map("a1" -> a2, "a2" -> a1, "v" -> v),
-      Map("a1" -> a2, "a2" -> a2, "v" -> v)))
+    result.toSet should be(Set(Map("a" -> corp), Map("a" -> corp)))
 
     //then
     result.executionPlanDescription() should includeSomewhere.aPlan("NodeByLabelScan").withRows(1).withDBHits(2)
