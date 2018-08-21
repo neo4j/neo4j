@@ -108,7 +108,8 @@ public class SwitchToMaster implements AutoCloseable
         NeoStoreDataSource dataSource = dataSourceSupplier.get();
         dataSource.afterModeSwitch();
 
-        ConversationManager conversationManager = conversationManagerFactory.apply( dataSource.getDependencyResolver().resolveDependency( Locks.class ) );
+        Locks locks = dataSource.getDependencyResolver().resolveDependency( Locks.class );
+        ConversationManager conversationManager = conversationManagerFactory.apply( locks );
         Master master = masterFactory.apply( conversationManager, haCommunicationLife );
 
         MasterServer masterServer = masterServerFactory.apply( master, conversationManager );

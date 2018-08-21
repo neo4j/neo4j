@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.time.Clock;
 
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
@@ -60,7 +62,7 @@ public final class EditionLocksFactories
         {
             return new CommunityLocksFactory();
         }
-        else if ( "".equals( key ) )
+        else if ( StringUtils.isEmpty( key ) )
         {
             logging.getInternalLog( CommunityEditionModule.class )
                     .info( "No locking implementation specified, defaulting to 'community'" );
