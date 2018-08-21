@@ -30,12 +30,23 @@ import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
  * <br/>
  * <b>Any file lookup should use provided store layout or particular {@link DatabaseLayout database layout}.</b>
  * <br/>
+ * Store layout represent layout of whole neo4j store while particular {@link DatabaseLayout database layout} represent single database.
+ * Store layout should be used as a factory of any layouts for particular database.
+ * <br/>
  * Any user-provided store directory will be transformed to canonical file form and any subsequent store layout file
  * lookup should be considered as operations that provide canonical file form.
  * <br/>
  * Store lock file is global per store and should be looked from specific store layout.
  * <br/>
- * <br/>
+ * Example of store layout for store with 2 databases:
+ * <pre>
+ *  store directory
+ *  | \ database directory (graph.db, represented by separate database layout)
+ *  |    \ particular database files
+ *  | \ database directory (other.db represented by separate database layout)
+ *  |    \ particular database files
+ *  store_lock
+ * <pre/>
  * The current implementation does not keep references to all requested and provided files and requested layouts but can be easily enhanced to do so.
  *
  * @see DatabaseLayout

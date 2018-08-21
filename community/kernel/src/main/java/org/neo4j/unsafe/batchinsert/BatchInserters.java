@@ -41,7 +41,7 @@ public final class BatchInserters
     /**
      * Get a {@link BatchInserter} given a store directory.
      *
-     * @param databaseDirectory the database directory
+     * @param databaseDirectory directory where particular neo4j database is located
      * @return a new {@link BatchInserter}
      * @throws IOException if there is an IO error
      */
