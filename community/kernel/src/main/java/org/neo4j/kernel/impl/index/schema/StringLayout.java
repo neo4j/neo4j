@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.index.schema.StringIndexKey.ENTITY_ID_SIZE;
 
@@ -92,18 +93,20 @@ class StringLayout extends IndexLayout<StringIndexKey,NativeIndexValue>
 
     static int firstPosToDiffer( byte[] leftBytes, int leftLength, byte[] rightBytes, int rightLength )
     {
-        int maxLength = Math.min( leftLength, rightLength );
-        int targetLength = 0;
-        for ( ; targetLength < maxLength; targetLength++ )
+        int lastEqualIndex = -1;
+        int maxLength = min( leftLength, rightLength );
+        for ( int index = 0; index < maxLength; index++ )
         {
-            if ( leftBytes[targetLength] != rightBytes[targetLength] )
+            if ( leftBytes[index] != rightBytes[index] )
             {
-                // Convert to length from array index
-                targetLength++;
                 break;
             }
+            lastEqualIndex++;
         }
-        return targetLength;
+        // Convert from last equal index to first index to differ +1
+        // Convert from index to length +1
+        // Total +2
+        return lastEqualIndex + 2;
     }
 
     @Override

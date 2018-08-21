@@ -279,7 +279,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     static Value assertCorrectType( Value value )
     {
-        if ( Values.isGeometryValue( value ) )
+        if ( Values.isGeometryValue( value ) || Values.isGeometryArray( value ) )
         {
             throw new IllegalArgumentException( "Unsupported value " + value );
         }
@@ -391,17 +391,23 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private static void minimalSplitterArray( GenericKeyState left, GenericKeyState right, GenericKeyState into,
             ArrayElementComparator comparator, ArrayCopier arrayCopier )
     {
-        int index = 0;
+        int lastEqualIndex = -1;
         if ( left.type == right.type )
         {
-            int compare = 0;
-            int length = min( left.arrayLength, right.arrayLength );
-            for ( ; compare == 0 && index < length; index++ )
+            int maxLength = min( left.arrayLength, right.arrayLength );
+            for ( int index = 0; index < maxLength; index++ )
             {
-                compare = comparator.compare( left, right, index );
+                if ( comparator.compare( left, right, index ) != 0 )
+                {
+                    break;
+                }
+                lastEqualIndex++;
             }
         }
-        arrayCopier.copyArray( into, right, index );
+        // Convert from last equal index to first index to differ +1
+        // Convert from index to length +1
+        // Total +2
+        arrayCopier.copyArray( into, right, lastEqualIndex + 2 );
     }
 
     private static void minimalSplitterText( GenericKeyState left, GenericKeyState right, GenericKeyState into )

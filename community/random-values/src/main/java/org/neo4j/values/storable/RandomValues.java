@@ -793,6 +793,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link PointArray} of cartesian two-dimensional points.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link PointArray} of cartesian points two-dimensional points.
+     */
+    public PointArray nextCartesianPointArray()
+    {
+        return nextCartesianPointArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link PointArray} of cartesian two-dimensional points.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -807,6 +820,19 @@ public class RandomValues
             array[i] = nextCartesianPoint();
         }
         return Values.pointArray( array );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link PointArray} of cartesian three-dimensional points.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link PointArray} of cartesian points three-dimensional points.
+     */
+    public PointArray nextCartesian3DPointArray()
+    {
+        return nextCartesian3DPointArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
@@ -829,6 +855,19 @@ public class RandomValues
 
     /**
      * Returns the next pseudorandom {@link PointArray} of geographic two-dimensional points.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link PointArray} of geographic two-dimensional points.
+     */
+    public PointArray nextGeographicPointArray()
+    {
+        return nextGeographicPointArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link PointArray} of geographic two-dimensional points.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -843,6 +882,19 @@ public class RandomValues
             array[i] = nextGeographicPoint();
         }
         return Values.pointArray( array );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link PointArray} of geographic three-dimensional points.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link PointArray} of geographic three-dimensional points.
+     */
+    public PointArray nextGeographic3DPointArray()
+    {
+        return nextGeographic3DPointArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
     /**
