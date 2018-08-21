@@ -133,6 +133,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     };
 
+    private static final ValueTuple MAX_STRING_TUPLE = ValueTuple.of( Values.MAX_STRING );
+
     private Map<Integer/*Token ID*/, String> createdLabelTokens;
     private Map<Integer/*Token ID*/, String> createdPropertyKeyTokens;
     private Map<Integer/*Token ID*/, String> createdRelationshipTypeTokens;
@@ -1140,7 +1142,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         //TODO: get working with composite indexes
         ValueTuple floor = ValueTuple.of( Values.stringValue( prefix ) );
         DiffSets<Long> diffs = new DiffSets<>();
-        for ( Map.Entry<ValueTuple,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        for ( Map.Entry<ValueTuple,DiffSets<Long>> entry : sortedUpdates.subMap( floor, MAX_STRING_TUPLE ).entrySet() )
         {
             ValueTuple key = entry.getKey();
             if ( ((TextValue)key.getOnlyValue()).stringValue().startsWith( prefix ) )
