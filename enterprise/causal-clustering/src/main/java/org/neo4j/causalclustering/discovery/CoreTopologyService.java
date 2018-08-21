@@ -55,6 +55,9 @@ public interface CoreTopologyService extends TopologyService
      */
     void setLeader( LeaderInfo leaderInfo, String dbName );
 
+    /** Fetches info for the current leader */
+    LeaderInfo getLeader();
+
     /**
      * Set the leader memberId to null for a given database (i.e. Raft consensus group).
      * This is intended to trigger state cleanup for informational procedures like {@link ClusterOverviewProcedure}

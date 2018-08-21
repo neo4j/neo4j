@@ -23,6 +23,8 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -38,8 +40,6 @@ public abstract class AbstractCoreTopologyService extends SafeLifecycle implemen
     protected final MemberId myself;
     protected final Log log;
     protected final Log userLog;
-
-    protected volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
 
     protected AbstractCoreTopologyService( Config config, MemberId myself, LogProvider logProvider, LogProvider userLogProvider )
     {
@@ -65,26 +65,34 @@ public abstract class AbstractCoreTopologyService extends SafeLifecycle implemen
     @Override
     public final void setLeader( LeaderInfo newLeader, String dbName )
     {
-        if ( this.leaderInfo.term() < newLeader.term() && newLeader.memberId() != null )
+        LeaderInfo currentLeaderInfo = getLeader();
+
+        if ( currentLeaderInfo.term() < newLeader.term() && localDBName().equals( dbName ) )
         {
-            this.leaderInfo = newLeader;
-            setLeader0( newLeader, dbName );
+            log.info( "Leader %s updating leader info for database %s and term %s", myself, dbName, newLeader.term() );
+            setLeader0( newLeader );
         }
     }
 
-    protected abstract void setLeader0( LeaderInfo newLeader, String dbName );
+    protected abstract void setLeader0( LeaderInfo newLeader );
 
     @Override
     public final void handleStepDown( long term, String dbName )
     {
-        boolean wasLeaderForTerm = Objects.equals( myself, leaderInfo.memberId() ) && term == leaderInfo.term();
-        if ( wasLeaderForTerm )
+        LeaderInfo localLeaderInfo = getLeader();
+
+        boolean wasLeaderForDbAndTerm =
+                Objects.equals( myself, localLeaderInfo.memberId() ) &&
+                localDBName().equals( dbName ) &&
+                term == localLeaderInfo.term();
+
+        if ( wasLeaderForDbAndTerm )
         {
             log.info( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
-                    "to follower.", myself, leaderInfo.term() );
-            handleStepDown0( term, dbName );
+                    "to follower.", myself, localLeaderInfo.term() );
+            handleStepDown0( localLeaderInfo.stepDown() );
         }
     }
 
-    protected abstract void handleStepDown0( long term, String dbName );
+    protected abstract void handleStepDown0( LeaderInfo steppingDown );
 }

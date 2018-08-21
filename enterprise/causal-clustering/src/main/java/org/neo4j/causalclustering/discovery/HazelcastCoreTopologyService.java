@@ -131,26 +131,21 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
     }
 
     @Override
-    public void setLeader0( LeaderInfo newLeaderInfo, String dbName )
+    public void setLeader0( LeaderInfo newLeaderInfo )
     {
-        leaderInfo.updateAndGet( currentLeaderInfo ->
-        {
-            if ( currentLeaderInfo.term() < newLeaderInfo.term() && localDBName.equals( dbName ) )
-            {
-                log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, newLeaderInfo.term() );
-                return newLeaderInfo;
-            }
-            else
-            {
-                return currentLeaderInfo;
-            }
-        } );
+        leaderInfo.set( newLeaderInfo );
     }
 
     @Override
-    public void handleStepDown0( long term, String dbName )
+    public LeaderInfo getLeader()
     {
-        HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo.get().stepDown(), dbName );
+        return leaderInfo.get();
+    }
+
+    @Override
+    public void handleStepDown0( LeaderInfo steppingDown )
+    {
+        stepDownInfo.set( Optional.of( steppingDown ) );
     }
 
     @Override
