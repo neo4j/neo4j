@@ -80,7 +80,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   }
 
   //We cannot assign to value because of periodic commit
-  protected def reads(): Read = txContext.kernelTransaction.stableDataRead
+  protected def reads(): Read = txContext.kernelTransaction.dataRead()
   private def writes() = txContext.kernelTransaction.dataWrite
   private lazy val nodeCursor = allocateAndTraceNodeCursor()
   private lazy val relationshipScanCursor = allocateAndTraceRelationshipScanCursor()

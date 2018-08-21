@@ -580,18 +580,6 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public Read stableDataRead()
-        {
-            return internal.stableDataRead();
-        }
-
-        @Override
-        public void markAsStable()
-        {
-            internal.markAsStable();
-        }
-
-        @Override
         public Write dataWrite() throws InvalidTransactionTypeKernelException
         {
             return internal.dataWrite();

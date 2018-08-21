@@ -341,10 +341,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def dataRead: Read = inner.dataRead
 
-  override def stableDataRead: Read = inner.stableDataRead
-
-  override def markAsStable(): Unit = inner.markAsStable()
-
   override def tokenRead: TokenRead = inner.tokenRead
 
   override def schemaRead: SchemaRead = inner.schemaRead

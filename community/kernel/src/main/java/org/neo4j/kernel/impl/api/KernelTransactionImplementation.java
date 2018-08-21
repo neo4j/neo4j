@@ -765,19 +765,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Read stableDataRead()
-    {
-        assertAllows( AccessMode::allowsReads, "Read" );
-        return operations.dataRead();
-    }
-
-    @Override
-    public void markAsStable()
-    {
-        // ignored until 2-layer tx-state is supported
-    }
-
-    @Override
     public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();

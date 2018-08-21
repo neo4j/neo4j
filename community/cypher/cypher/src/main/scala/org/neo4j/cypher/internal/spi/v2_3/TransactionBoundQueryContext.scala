@@ -75,7 +75,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
 
   def close(success: Boolean) { tc.close(success) }
   //We cannot assign to value because of periodic commit
-  protected def reads(): Read = tc.stableDataRead
+  protected def reads(): Read = tc.dataRead
   private def writes() = tc.dataWrite
   private lazy val nodeCursor = allocateAndTraceNodeCursor()
   private lazy val relationshipScanCursor = allocateAndTraceRelationshipScanCursor()

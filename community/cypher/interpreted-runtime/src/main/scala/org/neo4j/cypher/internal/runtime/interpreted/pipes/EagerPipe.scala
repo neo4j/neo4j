@@ -27,7 +27,6 @@ case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val buffer = input.toIndexedSeq
-    state.query.transactionalContext.markAsStable()
     buffer.toIterator
   }
 }

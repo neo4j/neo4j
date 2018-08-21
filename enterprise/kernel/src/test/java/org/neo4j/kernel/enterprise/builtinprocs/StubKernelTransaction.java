@@ -86,18 +86,6 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public Read stableDataRead()
-    {
-        return null;
-    }
-
-    @Override
-    public void markAsStable()
-    {
-
-    }
-
-    @Override
     public Write dataWrite()
     {
         return null;

@@ -98,7 +98,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   //We cannot assign to value because of periodic commit
-  protected def reads(): Read = transactionalContext.stableDataRead
+  protected def reads(): Read = transactionalContext.dataRead
 
   private def writes() = transactionalContext.dataWrite
 

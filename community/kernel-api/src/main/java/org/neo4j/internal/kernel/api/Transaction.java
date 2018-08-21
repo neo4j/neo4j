@@ -96,17 +96,6 @@ public interface Transaction extends AutoCloseable
     Read dataRead();
 
     /**
-     * @return The Read operations of the graph. The returned instance targets the stable transaction state layer.
-     */
-    Read stableDataRead();
-
-    /**
-     * Stabilize the active transaction state. This moves all changes up until this point to the stable
-     * transaction state layer. Any further changes will be added to the (now empty) active transaction state.
-     */
-    void markAsStable();
-
-    /**
      * @return The Write operations of the graph. The returned instance writes to the active transaction state layer.
      * @throws InvalidTransactionTypeKernelException when transaction cannot be upgraded to a write transaction. This
      * can happen when there have been schema modifications.
