@@ -73,7 +73,7 @@ public class BatchingMultipleIndexPopulatorTest
     private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel(42, 42);
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         clearProperty( QUEUE_THRESHOLD_NAME );
         clearProperty( TASK_QUEUE_SIZE_NAME );
@@ -98,7 +98,7 @@ public class BatchingMultipleIndexPopulatorTest
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
 
-        batchingPopulator.populateFromQueueBatched( 42 );
+        batchingPopulator.populateFromQueueBatched();
 
         verify( updater, never() ).process( any() );
         verify( populator, never() ).newPopulatingUpdater( any() );
@@ -134,7 +134,7 @@ public class BatchingMultipleIndexPopulatorTest
         batchingPopulator.queue( update2 );
         batchingPopulator.queue( update3 );
 
-        batchingPopulator.populateFromQueue( 42 );
+        batchingPopulator.populateFromQueueBatched();
 
         verify( updater1 ).process( update1 );
         verify( updater1 ).process( update3 );
@@ -157,6 +157,9 @@ public class BatchingMultipleIndexPopulatorTest
         verify( executor, never() ).shutdown();
 
         storeScan.run();
+        verify( executor, never() ).shutdown();
+        verify( executor, never() ).awaitTermination( anyLong(), any() );
+        batchingPopulator.close( true );
         verify( executor ).shutdown();
         verify( executor ).awaitTermination( anyLong(), any() );
     }
@@ -190,6 +193,9 @@ public class BatchingMultipleIndexPopulatorTest
             assertSame( scanError, t );
         }
 
+        verify( executor, never() ).shutdown();
+        verify( executor, never() ).awaitTermination( anyLong(), any() );
+        batchingPopulator.close( false );
         verify( executor ).shutdownNow();
         verify( executor ).awaitTermination( anyLong(), any() );
     }
@@ -433,12 +439,6 @@ public class BatchingMultipleIndexPopulatorTest
         public void stop()
         {
             stop = true;
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-                long currentlyIndexedNodeId )
-        {
         }
 
         @Override

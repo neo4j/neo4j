@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -479,13 +478,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
             this.delegate = delegate;
             this.updates = updates;
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-                long currentlyIndexedNodeId )
-        {
-            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
         }
 
         @Override

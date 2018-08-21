@@ -27,9 +27,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -140,16 +138,6 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
             }
         }
         return false;
-    }
-
-    @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-            long currentlyIndexedNodeId )
-    {
-        if ( update.getEntityId() <= currentlyIndexedNodeId )
-        {
-            updater.process( update );
-        }
     }
 
     private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>

@@ -334,22 +334,9 @@ public class MultipleIndexPopulator implements IndexPopulator
         close( false );
     }
 
-    void populateFromQueueBatched( long currentlyIndexedNodeId )
+    void populateFromQueueBatched()
     {
-        if ( isQueueThresholdReached() )
-        {
-            populateFromQueue( currentlyIndexedNodeId );
-        }
-    }
-
-    private boolean isQueueThresholdReached()
-    {
-        return queue.size() >= QUEUE_THRESHOLD;
-    }
-
-    protected void populateFromQueue( long currentlyIndexedNodeId )
-    {
-        populateFromQueueIfAvailable( currentlyIndexedNodeId );
+        populateFromQueue( QUEUE_THRESHOLD );
     }
 
     protected void flushAll()
@@ -369,9 +356,13 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private void populateFromQueueIfAvailable( long currentlyIndexedNodeId )
+    /**
+     * Populates external updates from the update queue if there are {@code queueThreshold} or more queued updates.
+     */
+    protected void populateFromQueue( int queueThreshold )
     {
-        if ( !queue.isEmpty() )
+        int queueSize = queue.size();
+        if ( queueSize > 0 && queueSize >= queueThreshold )
         {
             // Before applying updates from the updates queue any pending scan updates needs to be applied, i.e. flushed.
             // This is because 'currentlyIndexedNodeId' is based on how far the scan has come.
@@ -381,9 +372,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             {
                 do
                 {
-                    // no need to check for null as nobody else is emptying this queue
-                    IndexEntryUpdate<?> update = queue.poll();
-                    storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
+                    updater.process( queue.poll() );
                 }
                 while ( !queue.isEmpty() );
             }
@@ -523,7 +512,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             flipper.flip( () ->
             {
                 populator.add( takeCurrentBatch() );
-                populateFromQueueIfAvailable( Long.MAX_VALUE );
+                populateFromQueue( 0 );
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
                         sample.indexSize() );
@@ -566,10 +555,10 @@ public class MultipleIndexPopulator implements IndexPopulator
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( NodeUpdates updates ) throws IndexPopulationFailedKernelException
+        public boolean visit( NodeUpdates updates )
         {
             add( updates );
-            populateFromQueueBatched( updates.getNodeId() );
+            populateFromQueueBatched();
             return false;
         }
 
@@ -603,12 +592,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         public void stop()
         {
             delegate.stop();
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
-        {
-            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
         }
 
         @Override
