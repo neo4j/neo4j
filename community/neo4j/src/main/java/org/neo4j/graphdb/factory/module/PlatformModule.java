@@ -211,8 +211,8 @@ public class PlatformModule
 
         dependencies.satisfyDependency( dataSourceManager );
 
-        databaseAvailabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );
-        threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( databaseAvailabilityGuard ) );
+        databaseAvailabilityGuard = createAvailabilityGuard();
+        threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge() );
 
         kernelExtensionFactories = externalDependencies.kernelExtensions();
         engineProviders = externalDependencies.executionEngines();

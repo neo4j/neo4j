@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -100,6 +101,7 @@ public class KernelTransactionTestBase
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
     protected final TransactionHeaderInformationFactory headerInformationFactory =  mock( TransactionHeaderInformationFactory.class );
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
+    protected final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
     protected final StatementOperationParts statementOperations = mock( StatementOperationParts.class );
@@ -170,7 +172,7 @@ public class KernelTransactionTestBase
                 new CanWrite(), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class),
-                mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
+                mock( IndexingService.class ), mockedTokenHolders(), new Dependencies(), availabilityGuard );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

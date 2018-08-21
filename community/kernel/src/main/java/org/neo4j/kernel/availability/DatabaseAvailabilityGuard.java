@@ -121,13 +121,6 @@ public class DatabaseAvailabilityGuard
         }
     }
 
-    private enum Availability
-    {
-        AVAILABLE,
-        UNAVAILABLE,
-        SHUTDOWN
-    }
-
     /**
      * Check if the database is available for transactions to use.
      *
@@ -264,6 +257,13 @@ public class DatabaseAvailabilityGuard
             return requirementCount.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
+    }
+
+    private enum Availability
+    {
+        AVAILABLE,
+        UNAVAILABLE,
+        SHUTDOWN
     }
 
     private static class LoggingAvailabilityListener implements AvailabilityListener

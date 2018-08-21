@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -228,7 +229,7 @@ public class TransactionStatusResultTest
                         mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                         AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
                         EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
-                        mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() )
+                        mock( IndexingService.class ), mockedTokenHolders(), new Dependencies(), mock( DatabaseAvailabilityGuard.class ) )
             {
                 @Override
                 public Statistics getStatistics()
