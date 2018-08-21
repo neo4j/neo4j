@@ -56,13 +56,12 @@ public class RaftReplicator implements Replicator, LeaderListener
     private final LeaderLocator leaderLocator;
     private final TimeoutStrategy leaderTimeoutStrategy;
     private final Log log;
-    private final Throttler throttler;
     private final ReplicationMonitor replicationMonitor;
     private final long availabilityTimeoutMillis;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy, long availabilityTimeoutMillis,
-            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit, Monitors monitors )
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, Monitors monitors )
     {
         this.me = me;
         this.outbound = outbound;
@@ -72,7 +71,6 @@ public class RaftReplicator implements Replicator, LeaderListener
         this.leaderTimeoutStrategy = leaderTimeoutStrategy;
         this.availabilityTimeoutMillis = availabilityTimeoutMillis;
         this.availabilityGuard = availabilityGuard;
-        this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
         log = logProvider.getLog( getClass() );
@@ -91,22 +89,7 @@ public class RaftReplicator implements Replicator, LeaderListener
         {
             throw new ReplicationFailureException( "Replication aborted since no leader was available", e );
         }
-
-        if ( command.size().isPresent() )
-        {
-            try
-            {
-                return throttler.invoke( () -> replicate0( command, trackResult, originalLeader ), command.size().get() );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new ReplicationFailureException( "Interrupted while waiting for replication credits", e );
-            }
-        }
-        else
-        {
-            return replicate0( command, trackResult, originalLeader );
-        }
+        return replicate0( command, trackResult, originalLeader );
     }
 
     private Future<Object> replicate0( ReplicatedContent command, boolean trackResult, MemberId leader ) throws ReplicationFailureException
@@ -114,8 +97,6 @@ public class RaftReplicator implements Replicator, LeaderListener
         replicationMonitor.startReplication();
         try
         {
-            assertNoLeaderSwitch( leader );
-
             OperationContext session = sessionPool.acquireSession();
 
             DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
@@ -126,7 +107,7 @@ public class RaftReplicator implements Replicator, LeaderListener
             int attempts = 0;
             try
             {
-                do
+                while ( true )
                 {
                     attempts++;
                     if ( attempts > 1 )
@@ -139,10 +120,11 @@ public class RaftReplicator implements Replicator, LeaderListener
                     {
                         // blocking at least until the send has succeeded or failed before retrying
                         outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ), true );
-
-                        leaderTimeout = leaderTimeoutStrategy.newTimeout();
-
                         progress.awaitReplication( progressTimeout.getMillis() );
+                        if ( progress.isReplicated() )
+                        {
+                            break;
+                        }
                         progressTimeout.increment();
                         leader = leaderLocator.getLeader();
                     }
@@ -153,7 +135,6 @@ public class RaftReplicator implements Replicator, LeaderListener
                         leaderTimeout.increment();
                     }
                 }
-                while ( !progress.isReplicated() );
             }
             catch ( InterruptedException e )
             {
@@ -180,24 +161,6 @@ public class RaftReplicator implements Replicator, LeaderListener
             throw t;
         }
 
-    }
-
-    private void assertNoLeaderSwitch( MemberId originalLeader ) throws ReplicationFailureException
-    {
-        MemberId currentLeader;
-        try
-        {
-            currentLeader = leaderLocator.getLeader();
-        }
-        catch ( NoLeaderFoundException e )
-        {
-            throw new ReplicationFailureException( "Replication aborted since no leader was available", e );
-        }
-
-        if ( !currentLeader.equals( originalLeader ) )
-        {
-            throw new ReplicationFailureException( "Replication aborted since a leader switch was detected" );
-        }
     }
 
     @Override

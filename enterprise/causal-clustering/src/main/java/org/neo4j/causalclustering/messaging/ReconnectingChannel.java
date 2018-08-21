@@ -25,8 +25,10 @@ package org.neo4j.causalclustering.messaging;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.EventLoop;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Promise;
 
 import java.time.Clock;
@@ -50,9 +52,9 @@ public class ReconnectingChannel implements Channel
 
     private final Log log;
     private final Bootstrap bootstrap;
-    private final EventLoop eventLoop;
     private final SocketAddress destination;
     private final TimeoutStrategy connectionBackoffStrategy;
+    private final WritabilityThrottler writabilityThrottler;
 
     private volatile io.netty.channel.Channel channel;
     private volatile ChannelFuture fChannel;
@@ -62,21 +64,21 @@ public class ReconnectingChannel implements Channel
     private TimeoutStrategy.Timeout connectionBackoff;
     private CappedLogger cappedLogger;
 
-    ReconnectingChannel( Bootstrap bootstrap, EventLoop eventLoop, SocketAddress destination, final Log log )
+    ReconnectingChannel( Bootstrap bootstrap, SocketAddress destination, final Log log )
     {
-        this( bootstrap, eventLoop, destination, log, new ExponentialBackoffStrategy( 100, 1600, MILLISECONDS ) );
+        this( bootstrap, destination, log, new ExponentialBackoffStrategy( 100, 1600, MILLISECONDS ), new WritabilityThrottler() );
     }
 
-    private ReconnectingChannel( Bootstrap bootstrap, EventLoop eventLoop, SocketAddress destination, final Log log,
-            TimeoutStrategy connectionBackoffStrategy )
+    private ReconnectingChannel( Bootstrap bootstrap, SocketAddress destination, final Log log, TimeoutStrategy connectionBackoffStrategy,
+            WritabilityThrottler writabilityThrottler )
     {
         this.bootstrap = bootstrap;
-        this.eventLoop = eventLoop;
         this.destination = destination;
         this.log = log;
         this.cappedLogger = new CappedLogger( log ).setTimeLimit( 20, TimeUnit.SECONDS, Clock.systemUTC() );
         this.connectionBackoffStrategy = connectionBackoffStrategy;
         this.connectionBackoff = connectionBackoffStrategy.newTimeout();
+        this.writabilityThrottler = writabilityThrottler;
     }
 
     void start()
@@ -97,6 +99,16 @@ public class ReconnectingChannel implements Channel
 
         fChannel = bootstrap.connect( destination.socketAddress() );
         channel = fChannel.channel();
+        writabilityThrottler.setIsWritable( channel.isWritable() );
+        channel.pipeline().addFirst( new ChannelInboundHandlerAdapter()
+        {
+            @Override
+            public void channelWritabilityChanged( ChannelHandlerContext ctx ) throws Exception
+            {
+                writabilityThrottler.setIsWritable( ctx.channel().isWritable() );
+                super.channelWritabilityChanged( ctx );
+            }
+        } );
 
         fChannel.addListener( ( ChannelFuture f ) ->
         {
@@ -160,6 +172,25 @@ public class ReconnectingChannel implements Channel
 
         if ( channel.isActive() )
         {
+            return awaitAndWrite( msg, flush );
+        }
+        else
+        {
+            Promise<Void> promise = new DefaultPromise<>( bootstrap.config().group().next() );
+            BiConsumer<io.netty.channel.Channel,Object> writer;
+
+            writer = ( channel, message ) -> chain( awaitAndWrite( msg, flush ), promise );
+
+            deferredWrite( msg, fChannel, promise, true, writer );
+            return promise;
+        }
+    }
+
+    private ChannelFuture awaitAndWrite( Object msg, boolean flush )
+    {
+        try
+        {
+            writabilityThrottler.awaitWritable();
             if ( flush )
             {
                 return channel.writeAndFlush( msg );
@@ -169,22 +200,12 @@ public class ReconnectingChannel implements Channel
                 return channel.write( msg );
             }
         }
-        else
+        catch ( InterruptedException e )
         {
-            Promise<Void> promise = eventLoop.newPromise();
-            BiConsumer<io.netty.channel.Channel,Object> writer;
-
-            if ( flush )
-            {
-                writer = ( channel, message ) -> chain( channel.writeAndFlush( msg ), promise );
-            }
-            else
-            {
-                writer = ( channel, message ) -> chain( channel.write( msg ), promise );
-            }
-
-            deferredWrite( msg, fChannel, promise, true, writer );
-            return promise;
+            log.warn( "Interrupted while awaiting writability" );
+            Thread.currentThread().interrupt();
+            channel.close();
+            return channel.voidPromise().setFailure( e );
         }
     }
 

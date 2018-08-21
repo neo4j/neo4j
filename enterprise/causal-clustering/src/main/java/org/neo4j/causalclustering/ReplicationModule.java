@@ -72,7 +72,6 @@ public class ReplicationModule
         LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
-        long replicationLimit = config.get( CausalClusteringSettings.replication_total_size_limit );
         Duration initialBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_base );
         Duration upperBoundBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_limit );
         Duration leaderBackoff = config.get( CausalClusteringSettings.replication_leader_retry_timeout );
@@ -89,7 +88,7 @@ public class ReplicationModule
                 progressRetryStrategy,
                 leaderRetryStrategy,
                 availabilityTimeoutMillis,
-                globalAvailabilityGuard, logProvider, replicationLimit, platformModule.monitors );
+                globalAvailabilityGuard, logProvider, platformModule.monitors );
     }
 
     public RaftReplicator getReplicator()

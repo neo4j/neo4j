@@ -252,34 +252,10 @@ public class RaftReplicatorTest
         }
     }
 
-    @Test
-    public void shouldFailIfLeaderSwitches() throws NoLeaderFoundException
-    {
-        // given
-        when( leaderLocator.getLeader() ).thenReturn( leader ).thenReturn( anotherLeader );
-
-        CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
-        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
-
-        RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
-
-        // when
-        try
-        {
-            ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
-            replicator.replicate( content, true );
-            fail( "should have thrown" );
-        }
-        catch ( ReplicationFailureException e )
-        {
-            assertEquals( "Replication aborted since a leader switch was detected", e.getMessage() );
-        }
-    }
-
     private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, CapturingProgressTracker capturedProgress, Monitors monitors )
     {
         return new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                10, databaseAvailabilityGuard, NullLogProvider.getInstance(), REPLICATION_LIMIT, monitors );
+                10, databaseAvailabilityGuard, NullLogProvider.getInstance(), monitors );
     }
 
     private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
