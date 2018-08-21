@@ -198,7 +198,27 @@ class GenericKeyStateTest
         assertValidMinimalSplitter( left, right );
     }
 
-    // todo size
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void mustReportCorrectSize( ValueGenerator valueGenerator )
+    {
+        // Given
+        Value value = valueGenerator.next();
+        GenericKeyState state = new GenericKeyState();
+        state.writeValue( value, NEUTRAL );
+        int offsetBefore = cursor.getOffset();
+
+        // When
+        int reportedSize = state.size();
+        state.put( cursor );
+        int offsetAfter = cursor.getOffset();
+
+        // Then
+        int actualSize = offsetAfter - offsetBefore;
+        assertEquals( reportedSize, actualSize,
+                String.format( "did not report correct size, value=%s, actualSize=%d, reportedSize=%d", value, actualSize, reportedSize ) );
+    }
+
     // todo initValueAsLowest / Highest
 
     private Value pickSmaller( Value value1, Value value2 )
