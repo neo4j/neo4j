@@ -46,7 +46,7 @@ import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
  *  | \ database directory (other.db represented by separate database layout)
  *  |    \ particular database files
  *  store_lock
- * <pre/>
+ * </pre>
  * The current implementation does not keep references to all requested and provided files and requested layouts but can be easily enhanced to do so.
  *
  * @see DatabaseLayout
