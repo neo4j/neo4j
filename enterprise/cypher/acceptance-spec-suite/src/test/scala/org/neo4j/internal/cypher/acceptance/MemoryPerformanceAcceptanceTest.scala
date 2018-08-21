@@ -87,7 +87,7 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
                   |ORDER BY x ASC LIMIT 2147483647
                   |RETURN x""".stripMargin
 
-    for (runtime <- List("compiled")) {
+    for (runtime <- List("compiled", "interpreted")) {
       innerExecuteDeprecated(s"CYPHER runtime=$runtime $query").toList should equal(List(
         Map("x" -> 1),
         Map("x" -> 2),
@@ -96,6 +96,4 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
       ))
     }
   }
-
-
 }

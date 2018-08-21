@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Comparator
+import java.util.{Collections, Comparator}
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 
+import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 /*
@@ -36,10 +37,10 @@ import scala.math._
 abstract class TopPipe(source: Pipe, sortDescription: List[ColumnOrder])
   extends PipeWithSource(source)  {
 
-  val sortItems: Array[ColumnOrder] = sortDescription.toArray
+  val sortItems: IndexedSeq[ColumnOrder] = sortDescription.toIndexedSeq
   private val sortItemsCount: Int = sortItems.length
 
-  type SortDataWithContext = (Array[AnyValue], ExecutionContext)
+  type SortDataWithContext = (IndexedSeq[AnyValue], ExecutionContext)
 
   class LessThanComparator() extends Ordering[SortDataWithContext] {
     override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
@@ -57,8 +58,9 @@ abstract class TopPipe(source: Pipe, sortDescription: List[ColumnOrder])
     }
   }
 
-  def binarySearch(array: Array[SortDataWithContext], comparator: Comparator[SortDataWithContext])(key: SortDataWithContext) = {
-    java.util.Arrays.binarySearch(array.asInstanceOf[Array[SortDataWithContext]], key, comparator)
+  def binarySearch(array: ArrayBuffer[SortDataWithContext], comparator: Ordering[SortDataWithContext])(key: SortDataWithContext) = {
+    import scala.collection.Searching._
+    array.search(key)(comparator).insertionPoint
   }
 
   def arrayEntry(ctx: ExecutionContext, state: QueryState): SortDataWithContext =
@@ -84,13 +86,13 @@ case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpre
         Iterator.empty
       } else {
 
-        var result = new Array[SortDataWithContext](count)
-        result(0) = arrayEntry(first, state)
+        var result = new ArrayBuffer[SortDataWithContext](Math.min(count, 1024))
+        result.append(arrayEntry(first, state))
         var last : Int = 0
 
         while ( last < count - 1 && input.hasNext ) {
           last += 1
-          result(last) = arrayEntry(input.next(), state)
+          result.append(arrayEntry(input.next(), state))
         }
 
         val lessThan = new LessThanComparator()
