@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
@@ -86,7 +86,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final TransactionCommitProcess transactionCommitProcess;
     private final TransactionHooks hooks;
     private final TransactionMonitor transactionMonitor;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard databaseAvailabilityGuard;
     private final Tracers tracers;
     private final StorageEngine storageEngine;
     private final Procedures procedures;
@@ -140,7 +140,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransactions( StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
             StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
             TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProviderLookup,
-            TransactionHooks hooks, TransactionMonitor transactionMonitor, DatabaseAvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
+            TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
             StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
             AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,

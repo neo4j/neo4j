@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityListener;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -63,7 +64,7 @@ public class DatabaseAvailabilityGuardTest
     {
         // Given
         Log log = mock( Log.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
+        AvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
 
         // When starting out
         verifyZeroInteractions( log );

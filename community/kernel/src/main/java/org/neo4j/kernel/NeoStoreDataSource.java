@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -569,7 +570,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
-            DatabaseAvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock, NodePropertyAccessor nodePropertyAccessor )
+            AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock, NodePropertyAccessor nodePropertyAccessor )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
         AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();

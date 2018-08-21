@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
@@ -55,7 +56,7 @@ public class LocalDatabase implements Lifecycle
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard databaseAvailabilityGuard;
     private final Log log;
 
     private volatile StoreId storeId;
@@ -70,7 +71,7 @@ public class LocalDatabase implements Lifecycle
             LogFiles logFiles,
             DataSourceManager dataSourceManager,
             Supplier<DatabaseHealth> databaseHealthSupplier,
-            DatabaseAvailabilityGuard databaseAvailabilityGuard,
+            AvailabilityGuard databaseAvailabilityGuard,
             LogProvider logProvider )
     {
         this.databaseLayout = databaseLayout;

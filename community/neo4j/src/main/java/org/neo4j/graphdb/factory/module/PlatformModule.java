@@ -22,7 +22,6 @@ package org.neo4j.graphdb.factory.module;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -36,7 +35,6 @@ import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.extension.GlobalKernelExtensions;
@@ -126,8 +124,6 @@ public class PlatformModule
 
     public final JobScheduler jobScheduler;
 
-    public final DatabaseAvailabilityGuard databaseAvailabilityGuard;
-
     public final ThreadToStatementContextBridge threadToTransactionBridge;
 
     public final SystemNanoClock clock;
@@ -211,7 +207,6 @@ public class PlatformModule
 
         dependencies.satisfyDependency( dataSourceManager );
 
-        databaseAvailabilityGuard = createAvailabilityGuard();
         threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge() );
 
         kernelExtensionFactories = externalDependencies.kernelExtensions();
@@ -235,11 +230,6 @@ public class PlatformModule
     {
         return config.get( GraphDatabaseSettings.snapshot_query ) ? new TransactionVersionContextSupplier()
                                                                   : EmptyVersionContextSupplier.EMPTY;
-    }
-
-    protected DatabaseAvailabilityGuard createAvailabilityGuard()
-    {
-        return new DatabaseAvailabilityGuard( DatabaseManager.DEFAULT_DATABASE_NAME, clock, logging.getInternalLog( DatabaseAvailabilityGuard.class ) );
     }
 
     protected StoreLocker createStoreLocker()

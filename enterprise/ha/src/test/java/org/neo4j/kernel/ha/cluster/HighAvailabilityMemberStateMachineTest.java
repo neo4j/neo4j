@@ -54,6 +54,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -190,7 +191,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId other = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
 
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -227,7 +228,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId other2 = new InstanceId( 3 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
 
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         List<InstanceId> otherInstances = new LinkedList();
         otherInstances.add( other1 );
         otherInstances.add( other2 );
@@ -267,7 +268,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId master = new InstanceId( 2 );
         InstanceId otherSlave = new InstanceId( 3 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         ObservedClusterMembers members = mockClusterMembers( me, singletonList( master ), singletonList( otherSlave ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -303,7 +304,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId master = new InstanceId( 2 );
         InstanceId otherSlave = new InstanceId( 3 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         ObservedClusterMembers members = mockClusterMembers( me, singletonList( otherSlave ), singletonList( master ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -341,7 +342,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId me = new InstanceId( 1 );
         InstanceId master = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( master ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -378,7 +379,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId me = new InstanceId( 1 );
         InstanceId other = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -413,7 +414,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId me = new InstanceId( 1 );
         InstanceId other = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -469,7 +470,7 @@ public class HighAvailabilityMemberStateMachineTest
         StoreId storeId = newStoreIdForCurrentVersion();
         HighAvailabilityMemberContext context = mock( HighAvailabilityMemberContext.class );
         when( context.getMyId() ).thenReturn( me );
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         ObservedClusterMembers members = mock( ObservedClusterMembers.class );
         ClusterMember masterMember = mock( ClusterMember.class );
         when( masterMember.getHARole() ).thenReturn( "master" );
@@ -691,7 +692,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     private HighAvailabilityMemberStateMachine buildMockedStateMachine( HighAvailabilityMemberContext context,
-            ClusterMemberEvents events, ObservedClusterMembers clusterMembers, DatabaseAvailabilityGuard guard )
+            ClusterMemberEvents events, ObservedClusterMembers clusterMembers, AvailabilityGuard guard )
     {
         return new StateMachineBuilder().withContext( context ).withEvents( events ).withClusterMembers(
                 clusterMembers ).withGuard( guard ).build();
@@ -702,7 +703,7 @@ public class HighAvailabilityMemberStateMachineTest
         HighAvailabilityMemberContext context = mock( HighAvailabilityMemberContext.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ObservedClusterMembers clusterMembers = mock( ObservedClusterMembers.class );
-        DatabaseAvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         Election election = mock( Election.class );
 
         public StateMachineBuilder withContext( HighAvailabilityMemberContext context )
@@ -723,7 +724,7 @@ public class HighAvailabilityMemberStateMachineTest
             return this;
         }
 
-        public StateMachineBuilder withGuard( DatabaseAvailabilityGuard guard )
+        public StateMachineBuilder withGuard( AvailabilityGuard guard )
         {
             this.guard = guard;
             return this;

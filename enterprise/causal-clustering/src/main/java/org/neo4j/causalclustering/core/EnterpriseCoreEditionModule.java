@@ -237,7 +237,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 logFiles,
                 platformModule.dataSourceManager,
                 databaseHealthSupplier,
-                platformModule.databaseAvailabilityGuard,
+                getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging ),
                 logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
@@ -294,8 +294,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 
-        replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
-                loggingOutbound, clusterStateDirectory.get(), fileSystem, logProvider );
+        replicationModule =
+                new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule, loggingOutbound, clusterStateDirectory.get(),
+                        fileSystem, logProvider, getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging ) );
 
         coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),

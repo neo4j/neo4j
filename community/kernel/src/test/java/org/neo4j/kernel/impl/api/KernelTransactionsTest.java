@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -605,7 +606,7 @@ public class KernelTransactionsTest
     private static KernelTransactions createTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
-            SystemNanoClock clock, DatabaseAvailabilityGuard databaseAvailabilityGuard )
+            SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
         return new KernelTransactions( statementLocksFactory, null, statementOperations,
                 null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
@@ -621,7 +622,7 @@ public class KernelTransactionsTest
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
-            SystemNanoClock clock, DatabaseAvailabilityGuard databaseAvailabilityGuard )
+            SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
         return new TestKernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
@@ -672,7 +673,7 @@ public class KernelTransactionsTest
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
                 ExplicitIndexProvider explicitIndexProviderLookup, TransactionHooks hooks,
-                TransactionMonitor transactionMonitor, DatabaseAvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
+                TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
                 AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )

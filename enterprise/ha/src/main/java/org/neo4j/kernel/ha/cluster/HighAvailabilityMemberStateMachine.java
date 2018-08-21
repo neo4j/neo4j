@@ -30,8 +30,8 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
@@ -59,7 +59,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     public static final AvailabilityRequirement AVAILABILITY_REQUIREMENT =
             new DescriptiveAvailabilityRequirement( "High Availability member state not ready" );
     private final HighAvailabilityMemberContext context;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard databaseAvailabilityGuard;
     private final ClusterMemberEvents events;
     private final Log log;
 
@@ -70,7 +70,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final Election election;
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
-                                               DatabaseAvailabilityGuard databaseAvailabilityGuard,
+                                               AvailabilityGuard databaseAvailabilityGuard,
                                                ObservedClusterMembers members,
                                                ClusterMemberEvents events,
                                                Election election,

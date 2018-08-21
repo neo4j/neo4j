@@ -36,7 +36,7 @@ import org.neo4j.causalclustering.core.replication.session.OperationContext;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -52,7 +52,7 @@ public class RaftReplicator implements Replicator, LeaderListener
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
     private final TimeoutStrategy progressTimeoutStrategy;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard availabilityGuard;
     private final LeaderLocator leaderLocator;
     private final TimeoutStrategy leaderTimeoutStrategy;
     private final Log log;
@@ -62,7 +62,7 @@ public class RaftReplicator implements Replicator, LeaderListener
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy, long availabilityTimeoutMillis,
-            DatabaseAvailabilityGuard databaseAvailabilityGuard, LogProvider logProvider, long replicationLimit, Monitors monitors )
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit, Monitors monitors )
     {
         this.me = me;
         this.outbound = outbound;
@@ -71,7 +71,7 @@ public class RaftReplicator implements Replicator, LeaderListener
         this.progressTimeoutStrategy = progressTimeoutStrategy;
         this.leaderTimeoutStrategy = leaderTimeoutStrategy;
         this.availabilityTimeoutMillis = availabilityTimeoutMillis;
-        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
+        this.availabilityGuard = availabilityGuard;
         this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
@@ -210,7 +210,7 @@ public class RaftReplicator implements Replicator, LeaderListener
     {
         try
         {
-            databaseAvailabilityGuard.await( availabilityTimeoutMillis );
+            availabilityGuard.await( availabilityTimeoutMillis );
         }
         catch ( UnavailableException e )
         {

@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -158,7 +159,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI db )
     {
         Supplier<TransactionIdStore> transactionIdStoreSupplier = db.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        DatabaseAvailabilityGuard guard = resolveDependency( db, DatabaseAvailabilityGuard.class );
+        AvailabilityGuard guard = resolveDependency( db, DatabaseAvailabilityGuard.class );
         return new TransactionIdTracker( transactionIdStoreSupplier, guard );
     }
 

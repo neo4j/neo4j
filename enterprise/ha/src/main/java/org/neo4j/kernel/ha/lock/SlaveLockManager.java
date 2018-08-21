@@ -22,7 +22,7 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -34,14 +34,14 @@ public class SlaveLockManager implements Locks
     private final RequestContextFactory requestContextFactory;
     private final Locks local;
     private final Master master;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard availabilityGuard;
     private final LogProvider logProvider;
 
     public SlaveLockManager( Locks localLocks, RequestContextFactory requestContextFactory, Master master,
-            DatabaseAvailabilityGuard databaseAvailabilityGuard, LogProvider logProvider, Config config )
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, Config config )
     {
         this.requestContextFactory = requestContextFactory;
-        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
+        this.availabilityGuard = availabilityGuard;
         this.local = localLocks;
         this.master = master;
         this.logProvider = logProvider;
@@ -51,7 +51,7 @@ public class SlaveLockManager implements Locks
     public Client newClient()
     {
         Client client = local.newClient();
-        return new SlaveLocksClient( master, client, local, requestContextFactory, databaseAvailabilityGuard, logProvider );
+        return new SlaveLocksClient( master, client, local, requestContextFactory, availabilityGuard, logProvider );
     }
 
     @Override

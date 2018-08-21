@@ -68,7 +68,7 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -143,7 +143,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard databaseAvailabilityGuard;
     private final StorageReader storageReader;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
@@ -196,7 +196,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             AccessCapability accessCapability, AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
             IndexingProvidersService indexProviders, TokenHolders tokenHolders, Dependencies dataSourceDependencies,
-            DatabaseAvailabilityGuard databaseAvailabilityGuard )
+            AvailabilityGuard databaseAvailabilityGuard )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -395,7 +395,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public DatabaseAvailabilityGuard getAvailabilityGuard()
+    public AvailabilityGuard getAvailabilityGuard()
     {
         return databaseAvailabilityGuard;
     }

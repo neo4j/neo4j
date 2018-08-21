@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
@@ -47,7 +48,7 @@ public class TransactionIdTrackerTest
     private static final Duration DEFAULT_DURATION = ofSeconds( 10 );
 
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
+    private final AvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
 
     private TransactionIdTracker transactionIdTracker;
 

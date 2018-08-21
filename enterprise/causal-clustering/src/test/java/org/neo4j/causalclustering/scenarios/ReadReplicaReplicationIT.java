@@ -70,6 +70,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -460,7 +461,7 @@ public class ReadReplicaReplicationIT
     {
         Supplier<TransactionIdStore> transactionIdStore =
                 database.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard =
+        AvailabilityGuard databaseAvailabilityGuard =
                 database.getDependencyResolver().resolveDependency( DatabaseAvailabilityGuard.class );
         return new TransactionIdTracker( transactionIdStore, databaseAvailabilityGuard );
     }

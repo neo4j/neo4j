@@ -268,7 +268,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LocalDatabase localDatabase =
                 new LocalDatabase( databaseLayout, storeFiles, logFiles, platformModule.dataSourceManager,
-                        databaseHealthSupplier, platformModule.databaseAvailabilityGuard, logProvider );
+                        databaseHealthSupplier, getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging ), logProvider );
 
         Supplier<TransactionCommitProcess> writableCommitProcess = () -> new TransactionRepresentationCommitProcess(
                 localDatabase.dataSource().getDependencyResolver().resolveDependency( TransactionAppender.class ),

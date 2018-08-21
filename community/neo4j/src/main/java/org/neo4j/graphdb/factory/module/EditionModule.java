@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -37,6 +38,8 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -121,6 +124,8 @@ public abstract class EditionModule
     public NetworkConnectionTracker connectionTracker;
 
     private final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
+
+    protected AvailabilityGuard globalAvailabilityGuard;
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
             LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )
@@ -287,5 +292,20 @@ public abstract class EditionModule
     public TransactionCounters globalTransactionCounter()
     {
         return databaseStatistics;
+    }
+
+    public AvailabilityGuard getGlobalAvailabilityGuard( Clock clock, LogService logService )
+    {
+        if ( globalAvailabilityGuard == null )
+        {
+            globalAvailabilityGuard =
+                    new DatabaseAvailabilityGuard( DatabaseManager.DEFAULT_DATABASE_NAME, clock, logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
+        }
+        return globalAvailabilityGuard;
+    }
+
+    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName, Clock clock, LogService logService )
+    {
+        return (DatabaseAvailabilityGuard) getGlobalAvailabilityGuard( clock, logService );
     }
 }

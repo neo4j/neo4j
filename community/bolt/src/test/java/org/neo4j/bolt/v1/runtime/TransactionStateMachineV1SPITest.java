@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -62,7 +63,7 @@ public class TransactionStateMachineV1SPITest
         Duration txAwaitDuration = Duration.ofSeconds( 42 );
         FakeClock clock = new FakeClock();
 
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = spy( new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance() ) );
+        AvailabilityGuard databaseAvailabilityGuard = spy( new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance() ) );
         when( databaseAvailabilityGuard.isAvailable() ).then( invocation ->
         {
             // move clock forward on the first availability check
@@ -118,12 +119,12 @@ public class TransactionStateMachineV1SPITest
     private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
             Clock clock )
     {
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance() );
+        AvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance() );
         return createTxSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
     }
 
     private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
-            DatabaseAvailabilityGuard databaseAvailabilityGuard, Clock clock )
+            AvailabilityGuard databaseAvailabilityGuard, Clock clock )
     {
         QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
 

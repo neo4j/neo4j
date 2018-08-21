@@ -19,28 +19,23 @@
  */
 package org.neo4j.kernel.availability;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-/**
- * At end of startup, wait for instance to become available for transactions.
- * <p>
- * This helps users who expect to be able to access the instance after
- * the constructor is run.
- */
-public class StartupWaiter extends LifecycleAdapter
+public interface AvailabilityGuard
 {
-    private final AvailabilityGuard databaseAvailabilityGuard;
-    private final long timeout;
+    void require( AvailabilityRequirement requirement );
 
-    public StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
-    {
-        this.databaseAvailabilityGuard = availabilityGuard;
-        this.timeout = timeout;
-    }
+    void fulfill( AvailabilityRequirement requirement );
 
-    @Override
-    public void start()
-    {
-        databaseAvailabilityGuard.isAvailable( timeout );
-    }
+    boolean isAvailable();
+
+    boolean isShutdown();
+
+    boolean isAvailable( long millis );
+
+    void checkAvailable() throws UnavailableException;
+
+    void await( long millis ) throws UnavailableException;
+
+    void addListener( AvailabilityListener listener );
+
+    void removeListener( AvailabilityListener listener );
 }

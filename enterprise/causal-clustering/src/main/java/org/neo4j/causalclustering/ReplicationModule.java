@@ -42,6 +42,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -56,7 +57,7 @@ public class ReplicationModule
 
     public ReplicationModule( MemberId myself, PlatformModule platformModule, Config config,
             ConsensusModule consensusModule, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-            File clusterStateDirectory, FileSystemAbstraction fileSystem, LogProvider logProvider )
+            File clusterStateDirectory, FileSystemAbstraction fileSystem, LogProvider logProvider, AvailabilityGuard globalAvailabilityGuard )
     {
         LifeSupport life = platformModule.life;
 
@@ -88,7 +89,7 @@ public class ReplicationModule
                 progressRetryStrategy,
                 leaderRetryStrategy,
                 availabilityTimeoutMillis,
-                platformModule.databaseAvailabilityGuard, logProvider, replicationLimit, platformModule.monitors );
+                globalAvailabilityGuard, logProvider, replicationLimit, platformModule.monitors );
     }
 
     public RaftReplicator getReplicator()

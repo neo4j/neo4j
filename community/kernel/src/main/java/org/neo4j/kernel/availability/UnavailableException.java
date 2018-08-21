@@ -23,7 +23,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class UnavailableException extends Exception implements Status.HasStatus
 {
-    UnavailableException( String message )
+    public UnavailableException( String message )
     {
         super( message );
     }

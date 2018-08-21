@@ -37,7 +37,7 @@ import org.neo4j.logging.Log;
  * Consumers determine if it is ok to call the database using {@link #isAvailable()},
  * or await availability using {@link #isAvailable(long)}.
  */
-public class DatabaseAvailabilityGuard
+public class DatabaseAvailabilityGuard implements AvailabilityGuard
 {
     private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database %s available: %s.";
     private static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database %s unavailable: %s.";
@@ -63,6 +63,7 @@ public class DatabaseAvailabilityGuard
      *
      * @param requirement the requirement object
      */
+    @Override
     public void require( AvailabilityRequirement requirement )
     {
         if ( !blockingRequirements.add( requirement ) )
@@ -85,6 +86,7 @@ public class DatabaseAvailabilityGuard
      *
      * @param requirement the requirement object
      */
+    @Override
     public void fulfill( AvailabilityRequirement requirement )
     {
         if ( !blockingRequirements.remove( requirement ) )
@@ -126,6 +128,7 @@ public class DatabaseAvailabilityGuard
      *
      * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown
      */
+    @Override
     public boolean isAvailable()
     {
         return availability() == Availability.AVAILABLE;
@@ -134,6 +137,7 @@ public class DatabaseAvailabilityGuard
     /**
      * Check if the database has been shut down.
      */
+    @Override
     public boolean isShutdown()
     {
         return availability() == Availability.SHUTDOWN;
@@ -145,6 +149,7 @@ public class DatabaseAvailabilityGuard
      * @param millis to wait for availability
      * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown
      */
+    @Override
     public boolean isAvailable( long millis )
     {
         return availability( millis ) == Availability.AVAILABLE;
@@ -156,6 +161,7 @@ public class DatabaseAvailabilityGuard
      *
      * @throws UnavailableException if not available.
      */
+    @Override
     public void checkAvailable() throws UnavailableException
     {
         await( 0 );
@@ -167,6 +173,7 @@ public class DatabaseAvailabilityGuard
      * @param millis to wait for availability
      * @throws UnavailableException thrown when the timeout has been exceeded or the guard has been shutdown
      */
+    @Override
     public void await( long millis ) throws UnavailableException
     {
         Availability availability = availability( millis );
@@ -231,6 +238,7 @@ public class DatabaseAvailabilityGuard
      *
      * @param listener the listener to receive callbacks when availability changes
      */
+    @Override
     public void addListener( AvailabilityListener listener )
     {
         listeners.add( listener );
@@ -241,6 +249,7 @@ public class DatabaseAvailabilityGuard
      *
      * @param listener the listener to remove
      */
+    @Override
     public void removeListener( AvailabilityListener listener )
     {
         listeners.remove( listener );

@@ -35,13 +35,13 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 public class DatabaseAvailability extends LifecycleAdapter
 {
     private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = new DescriptiveAvailabilityRequirement( "Database available" );
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard databaseAvailabilityGuard;
     private final TransactionCounters transactionCounters;
     private final Clock clock;
     private final long awaitActiveTransactionDeadlineMillis;
     private volatile boolean started;
 
-    public DatabaseAvailability( DatabaseAvailabilityGuard databaseAvailabilityGuard, TransactionCounters transactionCounters, Clock clock,
+    public DatabaseAvailability( AvailabilityGuard databaseAvailabilityGuard, TransactionCounters transactionCounters, Clock clock,
             long awaitActiveTransactionDeadlineMillis )
     {
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;

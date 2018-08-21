@@ -40,7 +40,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -72,7 +72,7 @@ class SlaveLocksClient implements Locks.Client
     private final Locks.Client client;
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard availabilityGuard;
 
     // Using atomic ints to avoid creating garbage through boxing.
     private final Log log;
@@ -80,13 +80,13 @@ class SlaveLocksClient implements Locks.Client
     private volatile boolean stopped;
 
     SlaveLocksClient( Master master, Locks.Client local, Locks localLockManager,
-            RequestContextFactory requestContextFactory, DatabaseAvailabilityGuard databaseAvailabilityGuard, LogProvider logProvider )
+            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard, LogProvider logProvider )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
-        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
+        this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -441,7 +441,7 @@ class SlaveLocksClient implements Locks.Client
     {
         try
         {
-            databaseAvailabilityGuard.checkAvailable();
+            availabilityGuard.checkAvailable();
         }
         catch ( UnavailableException e )
         {

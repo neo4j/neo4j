@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
@@ -280,7 +280,7 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public DatabaseAvailabilityGuard getAvailabilityGuard()
+    public AvailabilityGuard getAvailabilityGuard()
     {
         return null;
     }
