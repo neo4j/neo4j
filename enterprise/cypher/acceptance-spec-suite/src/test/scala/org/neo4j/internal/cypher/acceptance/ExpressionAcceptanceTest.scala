@@ -24,6 +24,63 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
+  test("property existence checks, on node") {
+    createNode("exists" -> 1)
+    val result = executeWith(
+      expectSucceed = Configs.Interpreted,
+      query =
+        "MATCH (n) " +
+          "RETURN n.missing IS NULL," +
+          "       n.missing IS NOT NULL," +
+          "       exists(n.missing)," +
+          "       n.exists IS NULL," +
+          "       n.exists IS NOT NULL," +
+          "       exists(n.exists)")
+    result.toList should equal(List(Map(
+      "n.missing IS NULL" -> true,
+      "n.missing IS NOT NULL" -> false,
+      "exists(n.missing)" -> false,
+      "n.exists IS NULL" -> false,
+      "n.exists IS NOT NULL" -> true,
+      "exists(n.exists)" -> true)))
+  }
+
+  test("property existence checks, on optional non-null node") {
+    createNode("exists" -> 1)
+    val result = executeWith(
+      expectSucceed = Configs.Interpreted,
+      query =
+        "OPTIONAL MATCH (n) " +
+          "RETURN n.missing IS NULL," +
+          "       n.missing IS NOT NULL," +
+          "       exists(n.missing)," +
+          "       n.exists IS NULL," +
+          "       n.exists IS NOT NULL," +
+          "       exists(n.exists)")
+    result.toList should equal(List(Map(
+      "n.missing IS NULL" -> true,
+      "n.missing IS NOT NULL" -> false,
+      "exists(n.missing)" -> false,
+      "n.exists IS NULL" -> false,
+      "n.exists IS NOT NULL" -> true,
+      "exists(n.exists)" -> true)))
+  }
+
+  test("property existence checks, on optional null node") {
+    val result = executeWith(
+      expectSucceed = Configs.Interpreted,
+      query =
+        "OPTIONAL MATCH (n) " +
+          "RETURN n.missing IS NULL," +
+          // "       n.missing IS NOT NULL," + // Do not test. In 3.3 IS NOT NULL is incorrectly rewritten to Exists. Will be fixed in 3.5.
+          "       exists(n.missing)",
+      expectedDifferentResults = Configs.Empty)
+    result.toList should equal(List(Map(
+      "n.missing IS NULL" -> true,
+      // "n.missing IS NOT NULL" -> false, // Do not test. In 3.3 IS NOT NULL is incorrectly rewritten to Exists. Will be fixed in 3.5.
+      "exists(n.missing)" -> null)))
+  }
+
   test("should handle map projection with property selectors") {
     createNode("foo" -> 1, "bar" -> "apa")
 

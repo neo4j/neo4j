@@ -190,12 +190,23 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case idFunction: FunctionInvocation if idFunction.function == frontendAst.functions.Exists =>
         idFunction.args.head match {
           case Property(Variable(key), PropertyKeyName(propKey)) =>
-            checkIfPropertyExists(pipelineInformation, key, propKey)
+            val slot = pipelineInformation(key)
+            val propExpression = checkIfPropertyExists(pipelineInformation, key, propKey, slot)
+            if (slot.nullable)
+              NullCheck(slot.offset, propExpression)
+            else
+              propExpression
           case _ => idFunction // Don't know how to specialize this
         }
 
-      case e@IsNull(Property(Variable(key), PropertyKeyName(propKey))) =>
-        Not(checkIfPropertyExists(pipelineInformation, key, propKey))(e.position)
+      case e@IsNull(Property(variable@Variable(key), PropertyKeyName(propKey))) =>
+        val slot = pipelineInformation(key)
+        val propertyExists = checkIfPropertyExists(pipelineInformation, key, propKey, slot)
+        val notPropertyExists = Not(propertyExists)(e.position)
+        if (slot.nullable)
+          Or(IsNull(variable)(e.position), notPropertyExists)(e.position)
+        else
+          notPropertyExists
 
       case _: ShortestPathExpression =>
         throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in slot allocation")
@@ -209,11 +220,10 @@ class SlottedRewriter(tokenContext: TokenContext) {
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }
 
-  private def checkIfPropertyExists(pipelineInformation: PipelineInformation, key: String, propKey: String) = {
-    val slot = pipelineInformation(key)
+  private def checkIfPropertyExists(pipelineInformation: PipelineInformation, key: String, propKey: String, slot: Slot) = {
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 
-    val propExpression = (slot, maybeToken) match {
+    (slot, maybeToken) match {
       case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTNode =>
         NodePropertyExists(offset, token, s"$name.$propKey")
 
@@ -228,11 +238,6 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
       case _ => throw new CantCompileQueryException(s"Expressions on object other then nodes and relationships are not yet supported")
     }
-
-    if (slot.nullable)
-      NullCheck(slot.offset, propExpression)
-    else
-      propExpression
   }
 
   private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {
