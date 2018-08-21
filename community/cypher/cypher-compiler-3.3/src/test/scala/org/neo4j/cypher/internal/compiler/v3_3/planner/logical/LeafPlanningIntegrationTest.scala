@@ -722,6 +722,59 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan should equal(distinct)
   }
 
+  test("should be able to OR together two index seeks with different labels")
+  {
+    val plan = (new given {
+      indexOn("Label1", "prop1")
+      indexOn("Label2", "prop2")
+    } getLogicalPlanFor "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")._2
+
+    val propPredicate = SingleQueryExpression(StringLiteral("val")(pos))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelPredicate1 = HasLabels(Variable("n")(pos), Seq(LabelName("Label1")(pos)))(pos)
+    val labelPredicate2 = HasLabels(Variable("n")(pos), Seq(LabelName("Label2")(pos)))(pos)
+    val labelToken1 = LabelToken("Label1", LabelId(0))
+    val labelToken2 = LabelToken("Label2", LabelId(1))
+
+    val seek1: NodeIndexSeek = NodeIndexSeek("n", labelToken1, Seq(prop1), propPredicate, Set.empty)(solved)
+    val seek2: NodeIndexSeek = NodeIndexSeek("n", labelToken2, Seq(prop2), propPredicate, Set.empty)(solved)
+    val union: Union = Union(seek2, seek1)(solved)
+    val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
+    val filter = Selection(Seq(labelPredicate1, labelPredicate2), distinct)(solved)
+
+    plan should equal(filter)
+  }
+
+  test("should be able to OR together four index seeks")
+  {
+    val plan = (new given {
+      indexOn("Label1", "prop1")
+      indexOn("Label1", "prop2")
+      indexOn("Label2", "prop1")
+      indexOn("Label2", "prop2")
+    } getLogicalPlanFor "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")._2
+
+    val propPredicate = SingleQueryExpression(StringLiteral("val")(pos))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelPredicate1 = HasLabels(Variable("n")(pos), Seq(LabelName("Label1")(pos)))(pos)
+    val labelPredicate2 = HasLabels(Variable("n")(pos), Seq(LabelName("Label2")(pos)))(pos)
+    val labelToken1 = LabelToken("Label1", LabelId(0))
+    val labelToken2 = LabelToken("Label2", LabelId(1))
+
+    val seek1: NodeIndexSeek = NodeIndexSeek("n", labelToken1, Seq(prop1), propPredicate, Set.empty)(solved)
+    val seek2: NodeIndexSeek = NodeIndexSeek("n", labelToken1, Seq(prop2), propPredicate, Set.empty)(solved)
+    val seek3: NodeIndexSeek = NodeIndexSeek("n", labelToken2, Seq(prop1), propPredicate, Set.empty)(solved)
+    val seek4: NodeIndexSeek = NodeIndexSeek("n", labelToken2, Seq(prop2), propPredicate, Set.empty)(solved)
+
+    val union: Union = Union( Union( Union(seek2, seek4)(solved), seek1)(solved), seek3)(solved)
+    val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
+    val filter = Selection(Seq(labelPredicate1, labelPredicate2), distinct)(solved)
+
+    plan should equal(filter)
+  }
+
   //---------------------------------------------------------------------------
   // Test expand order with multiple configurations and
   // unsupported.cypher.plan_with_minimum_cardinality_estimates setting
