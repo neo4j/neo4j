@@ -20,11 +20,24 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.neo4j.io.pagecache.PageCursor;
 
 public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
 {
+    private final boolean useFirstLongAsSeed;
+
+    SimpleByteArrayLayout()
+    {
+        this( true );
+    }
+
+    SimpleByteArrayLayout( boolean useFirstLongAsSeed )
+    {
+        this.useFirstLongAsSeed = useFirstLongAsSeed;
+    }
+
     @Override
     public RawBytes newKey()
     {
@@ -39,10 +52,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
 
     private RawBytes copyKey( RawBytes rawBytes, RawBytes into, int length )
     {
-        byte[] src = rawBytes.bytes;
-        byte[] target = new byte[length];
-        System.arraycopy( src, 0, target, 0, length );
-        into.bytes = target;
+        into.bytes = Arrays.copyOf( rawBytes.bytes, length );
         return into;
     }
 
@@ -161,8 +171,15 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         {
             return 1;
         }
-        int compare = Long.compare( keySeed( o1 ), keySeed( o2 ) );
-        return compare != 0 ? compare : byteArrayCompare( o1.bytes, o2.bytes, Long.BYTES );
+        if ( useFirstLongAsSeed )
+        {
+            int compare = Long.compare( keySeed( o1 ), keySeed( o2 ) );
+            return compare != 0 ? compare : byteArrayCompare( o1.bytes, o2.bytes, Long.BYTES );
+        }
+        else
+        {
+            return byteArrayCompare( o1.bytes, o2.bytes, 0 );
+        }
     }
 
     @Override
