@@ -82,15 +82,15 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
         return transaction;
     }
 
-    private void assertInUnterminatedTransaction( KernelTransaction transaction )
+    private static void assertInUnterminatedTransaction( KernelTransaction transaction )
     {
-        if ( transaction.getAvailabilityGuard().isShutdown() )
-        {
-            throw new DatabaseShutdownException();
-        }
         if ( transaction == null )
         {
             throw new BridgeNotInTransactionException();
+        }
+        if ( transaction.getAvailabilityGuard().isShutdown() )
+        {
+            throw new DatabaseShutdownException();
         }
         if ( transaction.isTerminated() )
         {

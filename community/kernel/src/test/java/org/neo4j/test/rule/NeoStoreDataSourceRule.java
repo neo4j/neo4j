@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -229,6 +230,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         private final Function<File,FileSystemWatcherService> watcherServiceFactory;
         private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
+        private final DatabaseAvailability databaseAvailability;
+        private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
@@ -285,6 +288,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
             this.watcherServiceFactory = watcherServiceFactory;
             this.facade = facade;
             this.engineProviders = engineProviders;
+            this.databaseAvailability = new DatabaseAvailability( databaseAvailabilityGuard, mock( TransactionCounters.class ), clock, 0 );
+            this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, 0 );
         }
 
         @Override
@@ -474,7 +479,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         @Override
         public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()
         {
-            return null;
+            return coreAPIAvailabilityGuard;
         }
 
         @Override
@@ -552,7 +557,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         @Override
         public DatabaseAvailability getDatabaseAvailability()
         {
-            return null;
+            return databaseAvailability;
         }
     }
 

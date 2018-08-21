@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.verification.VerificationMode;
 
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,10 +44,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
@@ -73,33 +73,32 @@ public class DatabaseAvailabilityGuardTest
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
         // Then log should have been called
-        verify( log, atLeastOnce() ).info( anyString() );
+        verifyLogging( log, atLeastOnce() );
 
         // When requirement fulfilled
         databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
 
         // Then log should have been called
-        verify( log, atLeast( 2 ) ).info( anyString() );
+        verifyLogging( log, times( 4 ) );
 
         // When requirement is added
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
         // Then log should have been called
-        verify( log, atLeast( 3 ) ).info( anyString() );
+        verifyLogging( log, times( 6 ) );
 
         // When requirement fulfilled
         databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
 
         // Then log should not have been called
-        verify( log, atMost( 3 ) ).info( anyString() );
+        verifyLogging( log, times( 6 ) );
 
         // When requirement fulfilled
         databaseAvailabilityGuard.fulfill( REQUIREMENT_2 );
 
         // Then log should have been called
-        verify( log, atLeast( 4 ) ).info( anyString() );
-        verify( log, atMost( 4 ) ).info( anyString() );
+        verifyLogging( log, times( 8 ) );
     }
 
     @Test
@@ -336,6 +335,11 @@ public class DatabaseAvailabilityGuardTest
         {
             assertThat( e.getMessage(), containsString( REQUIREMENT_1.description() ) );
         }
+    }
+
+    private static void verifyLogging( Log log, VerificationMode mode )
+    {
+        verify( log, mode ).info( anyString(), Mockito.<Object[]>anyVararg() );
     }
 
     private static DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )
