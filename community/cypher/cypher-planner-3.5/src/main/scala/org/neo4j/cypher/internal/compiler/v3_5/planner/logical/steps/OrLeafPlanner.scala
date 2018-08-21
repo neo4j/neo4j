@@ -56,12 +56,14 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
               None
             case plans =>
               // We need to collect the predicates to be able to update solved correctly. After finishing to build the
-              // OR plan, we will report solving the OR predicate, but also other predicates solved.
+              // OR plan, we will report solving the OR predicate, but also other predicates which are covered by ALL
+              // underlying plans are solved.
               val predicates = collection.mutable.HashSet[Expression]()
+              predicates ++= coveringPredicates(plans.head, solveds)
+
               val singlePlan = plans.reduce[LogicalPlan] {
                 case (p1, p2) =>
-                  predicates ++= coveringPredicates(p1, solveds)
-                  predicates ++= coveringPredicates(p2, solveds)
+                  predicates --= (predicates diff coveringPredicates(p2, solveds).toSet)
                   producer.planUnion(p1, p2, context)
               }
               val orPlan = context.logicalPlanProducer.planDistinctStar(singlePlan, context)
