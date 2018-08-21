@@ -67,22 +67,22 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 {
     static final String UNKNOWN_VERSION = "Unknown";
 
-    private final File idFile;
     protected final Config configuration;
     protected final PageCache pageCache;
-    private final String databaseName;
-    final File storageFile;
     protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
     protected final Log log;
-    protected PagedFile pagedFile;
     protected final String storeVersion;
     protected final RecordFormat<RECORD> recordFormat;
+    final File storageFile;
+    private final File idFile;
+    private final String databaseName;
+    private final String typeDescriptor;
+    protected PagedFile pagedFile;
+    protected int recordSize;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private RuntimeException causeOfStoreNotOk;
-    private final String typeDescriptor;
-    protected int recordSize;
 
     private final StoreHeaderFormat<HEADER> storeHeaderFormat;
     private HEADER storeHeader;

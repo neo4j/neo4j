@@ -450,11 +450,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private static RecordFormats selectStoreFormats( Config config, DatabaseLayout dbDirectoryStructure, FileSystemAbstraction fs, PageCache pageCache,
+    private static RecordFormats selectStoreFormats( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogService logService )
     {
         LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, dbDirectoryStructure, fs, pageCache, logging );
+        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logging );
         new RecordFormatPropertyConfigurator( formats, config ).configure();
         return formats;
     }
