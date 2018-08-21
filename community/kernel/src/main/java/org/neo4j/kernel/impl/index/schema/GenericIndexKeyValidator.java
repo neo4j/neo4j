@@ -26,6 +26,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
@@ -85,16 +86,20 @@ class GenericIndexKeyValidator implements Validator<Value[]>
 
     private static int worstCaseLength( AnyValue value )
     {
-        // todo we can simply multiply length with BIGGEST_STATIC_SIZE
         if ( value.isSequenceValue() )
         {
             SequenceValue sequenceValue = (SequenceValue) value;
-            int length = 0;
-            for ( int i = 0; i < sequenceValue.length(); i++ )
+            if ( sequenceValue instanceof TextArray )
             {
-                length += worstCaseLength( sequenceValue.value( i ) );
+                TextArray textArray = (TextArray) sequenceValue;
+                int length = 0;
+                for ( int i = 0; i < textArray.length(); i++ )
+                {
+                    length += stringWorstCaseLength( textArray.stringValue( i ).length() );
+                }
+                return length;
             }
-            return length;
+            return sequenceValue.length() * BIGGEST_STATIC_SIZE;
         }
         else
         {
@@ -102,12 +107,17 @@ class GenericIndexKeyValidator implements Validator<Value[]>
             {
             case TEXT:
                 // For text, which is very dynamic in its nature do a worst-case off of number of characters in it
-                return ((TextValue) value).length() * 4;
+                return stringWorstCaseLength( ((TextValue) value).length() );
             default:
                 // For all else then use the biggest possible value for a non-dynamic, non-array value a state can occupy
                 return BIGGEST_STATIC_SIZE;
             }
         }
+    }
+
+    private static int stringWorstCaseLength( int stringLength )
+    {
+        return stringLength * 4;
     }
 
     private int actualLength( Value[] values )

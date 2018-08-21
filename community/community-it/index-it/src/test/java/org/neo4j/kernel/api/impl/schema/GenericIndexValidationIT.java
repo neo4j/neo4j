@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.impl.factory.Iterables;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -96,13 +97,14 @@ public class GenericIndexValidationIT
     @Before
     public void setup()
     {
-        allValidNonArrayTypes = Types.values();
-        allValidNonArrayTypes = ArrayUtils.removeElement( allValidNonArrayTypes, Types.ARRAY );
+        MutableList<Types> listOfValidValues = Iterables.mList( Types.values() )
+                .without( Types.ARRAY )
+                .without( Types.CARTESIAN_POINT )
+                .without( Types.CARTESIAN_POINT_3D )
+                .without( Types.GEOGRAPHIC_POINT )
+                .without( Types.GEOGRAPHIC_POINT_3D );
         // todo include points when NATIVE_BTREE10 support spatial
-        allValidNonArrayTypes = ArrayUtils.removeElement( allValidNonArrayTypes, Types.CARTESIAN_POINT );
-        allValidNonArrayTypes = ArrayUtils.removeElement( allValidNonArrayTypes, Types.CARTESIAN_POINT_3D );
-        allValidNonArrayTypes = ArrayUtils.removeElement( allValidNonArrayTypes, Types.GEOGRAPHIC_POINT );
-        allValidNonArrayTypes = ArrayUtils.removeElement( allValidNonArrayTypes, Types.GEOGRAPHIC_POINT_3D );
+        allValidNonArrayTypes = listOfValidValues.toArray( new Types[listOfValidValues.size()] );
     }
 
     @Test
