@@ -67,8 +67,7 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
         }
         this.totalCount = totalCount;
 
-        heap = new PriorityQueue<>( totalCount, comparator.reversed() );
-        array = new Object[ totalCount ];
+        heap = new PriorityQueue<>( Math.min( totalCount, 1024 ), comparator.reversed() );
     }
 
     public boolean add( T e )
@@ -95,6 +94,7 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
     public void sort()
     {
         count = heap.size();
+        array = new Object[ count ];
 
         // We keep the values in reverse order so that we can write from start to end
         for ( int i = 0; i < count; i++ )
