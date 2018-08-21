@@ -1,8 +1,3 @@
-Feature "TemporalCreateAcceptance": Scenario "Should store local time"
-Feature "TemporalCreateAcceptance": Scenario "Should store time"
-Feature "TemporalCreateAcceptance": Scenario "Should store local date time"
-Feature "TemporalCreateAcceptance": Scenario "Should store date time"
-Feature "TemporalCreateAcceptance": Scenario "Should store duration"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging relationship with null property"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging node with null property"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of maps as a property"
