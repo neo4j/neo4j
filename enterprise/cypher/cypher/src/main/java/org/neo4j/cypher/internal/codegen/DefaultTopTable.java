@@ -63,8 +63,8 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
         }
         this.totalCount = totalCount;
 
-        heap = new PriorityQueue<>( totalCount, Collections.reverseOrder() );
-        array = new Object[ totalCount ];
+        int initialSize = Math.min( totalCount, 1024 );
+        heap = new PriorityQueue<>( initialSize, Collections.reverseOrder() );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -93,6 +93,7 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
     public void sort()
     {
         count = heap.size();
+        array = new Object[ count ];
 
         // We keep the values in reverse order so that we can write from start to end
         for ( int i = 0; i < count; i++ )
