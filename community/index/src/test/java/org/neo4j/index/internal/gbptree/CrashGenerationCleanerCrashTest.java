@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
@@ -45,7 +45,7 @@ public class CrashGenerationCleanerCrashTest
     public PageCacheAndDependenciesRule store = new PageCacheAndDependenciesRule();
 
     @Test
-    public void name()
+    public void mustNotLeakTasksOnCrash()
     {
         // Given
         String exceptionMessage = "When there's no more room in hell, the dead will walk the earth";
@@ -75,31 +75,26 @@ public class CrashGenerationCleanerCrashTest
         int pageSize = 8192;
         PagedFile pagedFile = new StubPagedFile( pageSize )
         {
-            AtomicInteger ioCount = new AtomicInteger();
+            AtomicBoolean first = new AtomicBoolean( true );
 
             @Override
             public PageCursor io( long pageId, int pf_flags ) throws IOException
             {
-                int count = ioCount.getAndIncrement();
-                System.out.println( "IOCount: " + count );
-                if ( count == 10 )
+                try
+                {
+                    Thread.sleep( 1 );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw Exceptions.launderedException( e );
+                }
+                if ( first.getAndSet( false ) )
                 {
                     throw new IOException( message );
-                }
-                else
-                {
-                    try
-                    {
-                        Thread.sleep( 1 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        throw Exceptions.launderedException( e );
-                    }
                 }
                 return super.io( pageId, pf_flags );
             }
         };
-        return new CrashGenerationCleaner( pagedFile, new TreeNode<>( pageSize, new SimpleLongLayout() ), 0, MAX_BATCH_SIZE * 1000, 5, 7, NO_MONITOR );
+        return new CrashGenerationCleaner( pagedFile, new TreeNode<>( pageSize, new SimpleLongLayout() ), 0, MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR );
     }
 }
