@@ -22,16 +22,19 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
+import java.util.Comparator
+
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
-import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, Top1Pipe, Top1WithTiesPipe, TopNPipe}
+import org.neo4j.cypher.internal.runtime.slotted.{ExecutionContextOrdering, SlottedExecutionContext}
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TopSlottedPipeTestSupport._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.AnyValue
 
 import scala.util.Random
 
@@ -195,7 +198,7 @@ object TopSlottedPipeTestSupport {
   case object AscendingOrder extends TestColumnOrder
   case object DescendingOrder extends TestColumnOrder
 
-  def list(a: Any*) = a.map {
+  def list(a: Any*): List[Object] = a.map {
     case (x: Number, y: Number) => (ValueUtils.of(x.longValue()), ValueUtils.of(y.longValue()))
     case x: Number => ValueUtils.of(x.longValue())
     case (x, y) => (ValueUtils.of(x), ValueUtils.of(y))
@@ -208,19 +211,20 @@ object TopSlottedPipeTestSupport {
   }
 
   private def createTopPipe(source: Pipe, orderBy: List[ColumnOrder], limit: Int, withTies: Boolean) = {
+    val comparator = ExecutionContextOrdering.asComparator(orderBy)
     if (withTies) {
       assert(limit == 1)
-      Top1WithTiesSlottedPipe(source, orderBy)()
+      Top1WithTiesPipe(source, comparator)()
     }
     else if (limit == 1) {
-      Top1SlottedPipe(source, orderBy)()
+      Top1Pipe(source, comparator)()
     }
     else {
-      TopNSlottedPipe(source, orderBy, Literal(limit))()
+      TopNPipe(source, Literal(limit), comparator)()
     }
   }
 
-  def singleColumnTopWithInput(data: Traversable[Any], orderBy: TestColumnOrder, limit: Int, withTies: Boolean = false) = {
+  def singleColumnTopWithInput(data: Traversable[Any], orderBy: TestColumnOrder, limit: Int, withTies: Boolean = false): List[Any] = {
     val slots = SlotConfiguration.empty
       .newReference("a", nullable = true, CTAny)
 
@@ -247,7 +251,7 @@ object TopSlottedPipeTestSupport {
     }.toList
   }
 
-  def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder], limit: Int, withTies: Boolean = false) = {
+  def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder], limit: Int, withTies: Boolean = false): List[(AnyValue, AnyValue)] = {
     val slotConfiguration = SlotConfiguration.empty
       .newReference("a", nullable = true, CTAny)
       .newReference("b", nullable = true, CTAny)
@@ -274,11 +278,11 @@ object TopSlottedPipeTestSupport {
     }.toList
   }
 
-  def singleColumnTop1WithTiesWithInput(data: Traversable[Any], orderBy: TestColumnOrder) = {
+  def singleColumnTop1WithTiesWithInput(data: Traversable[Any], orderBy: TestColumnOrder): List[Any] = {
     singleColumnTopWithInput(data, orderBy, limit = 1, withTies = true)
   }
 
-  def twoColumnTop1WithTiesWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder]) = {
+  def twoColumnTop1WithTiesWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder]): List[(AnyValue, AnyValue)] = {
     twoColumnTopWithInput(data, orderBy, limit = 1, withTies = true)
   }
 }

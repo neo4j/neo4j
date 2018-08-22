@@ -22,6 +22,8 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted
 
+import java.util.Comparator
+
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
@@ -97,7 +99,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     pipe
   }
 
-  private def generateSlotAccessorFunctions(slots: SlotConfiguration) = {
+  private def generateSlotAccessorFunctions(slots: SlotConfiguration): Unit = {
     slots.foreachSlot {
       case (key, slot) =>
         val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
@@ -252,16 +254,19 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         MergeCreateRelationshipSlottedPipe(source, idName, fromSlot, LazyType(typ)(context.semanticTable),
           toSlot, slots, props.map(convertExpressions))(id = id)
 
+      case Top(_, sortItems, _) if sortItems.isEmpty => source
+
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
-        Top1SlottedPipe(source, sortItems.map(translateColumnOrder(slots, _)).toList)(id = id)
+        Top1Pipe(source, ExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder(slots, _))))(id = id)
 
       case Top(_, sortItems, limit) =>
-        TopNSlottedPipe(source, sortItems.map(translateColumnOrder(slots, _)).toList, convertExpressions(limit))(id = id)
+        TopNPipe(source, convertExpressions(limit),
+                 ExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder(slots, _))))(id = id)
 
       case Limit(_, count, IncludeTies) =>
         (source, count) match {
           case (SortSlottedPipe(inner, sortDescription, _), SignedDecimalIntegerLiteral("1")) =>
-            Top1WithTiesSlottedPipe(inner, sortDescription.toList)(id = id)
+            Top1WithTiesPipe(inner, ExecutionContextOrdering.asComparator(sortDescription))(id = id)
 
           case _ => throw new InternalException("Including ties is only supported for very specific plans")
         }
@@ -462,7 +467,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
   // Verifies the assumption that all shared slots are arguments with slot offsets within the first argument size number of slots
   // and the number of shared slots are identical to the argument size.
-  private def verifyOnlyArgumentsAreSharedSlots(plan: LogicalPlan, physicalPlan: PhysicalPlan) = {
+  private def verifyOnlyArgumentsAreSharedSlots(plan: LogicalPlan, physicalPlan: PhysicalPlan): Unit = {
     val argumentSize = physicalPlan.argumentSizes(plan.id)
     val lhsPlan = plan.lhs.get
     val rhsPlan = plan.rhs.get
@@ -489,7 +494,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
-  private def verifyArgumentsAreTheSameOnBothSides(plan: LogicalPlan, physicalPlan: PhysicalPlan) = {
+  private def verifyArgumentsAreTheSameOnBothSides(plan: LogicalPlan, physicalPlan: PhysicalPlan): Unit = {
     val argumentSize = physicalPlan.argumentSizes(plan.id)
     val lhsPlan = plan.lhs.get
     val rhsPlan = plan.rhs.get

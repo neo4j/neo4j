@@ -22,115 +22,17 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
+import java.util.Comparator;
+
+import org.neo4j.cypher.internal.DefaultComparatorTopTable;
 
 /**
- * The default implementation of a Top N table used by the generated code
- *
- * It accepts tuples as boxed objects that implements Comparable
- *
- * Implements the following interface:
- * (since the code is generated it does not actually need to declare it with implements)
- *
- * public interface SortTable<T extends Comparable<?>>
- * {
- *     boolean add( T e );
- *
- *     void sort();
- *
- *     Iterator<T> iterator();
- * }
- *
- * Uses a max heap (Java's standard PriorityQueue) to collect a maximum of totalCount tuples in reverse order.
- * When sort() is called it collects them in reverse sorted order into an array.
- * The iterator() then traverses this array backwards.
+ * The default implementation of a Top N table used by the generated code.
  */
-public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T> // implements SortTable<T>
+public class DefaultTopTable<T extends Comparable<Object>> extends DefaultComparatorTopTable<T>
 {
-    private int totalCount;
-    private int count = -1;
-    private PriorityQueue<Object> heap;
-    private Object[] array; // TODO: Use Guava's MinMaxPriorityQueue to avoid having this array
-
     public DefaultTopTable( int totalCount )
     {
-        if ( totalCount <= 0 )
-        {
-            throw new IllegalArgumentException( "Top table size must be greater than 0" );
-        }
-        this.totalCount = totalCount;
-
-        int initialSize = Math.min( totalCount, 1024 );
-        heap = new PriorityQueue<>( initialSize, Collections.reverseOrder() );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    // Because of an issue with getting the same runtime-types with generics and byte code generation we use Object for now
-    public boolean add( Object e )
-    {
-        if ( heap.size() < totalCount )
-        {
-            return heap.offer( e );
-        }
-        else
-        {
-            T head = (T) heap.peek();
-            if ( head.compareTo( e ) > 0 )
-            {
-                heap.poll();
-                return heap.offer( e );
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-
-    public void sort()
-    {
-        count = heap.size();
-        array = new Object[ count ];
-
-        // We keep the values in reverse order so that we can write from start to end
-        for ( int i = 0; i < count; i++ )
-        {
-            array[i] = heap.poll();
-        }
-    }
-
-    @Override
-    public Iterator<T> iterator()
-    {
-        if ( count == -1 )
-        {
-            // This should never happen in generated code but is here to simplify debugging if used incorrectly
-            throw new IllegalStateException( "sort() needs to be called before requesting an iterator" );
-        }
-        return new Iterator<T>()
-        {
-            private int cursor = count;
-
-            @Override
-            public boolean hasNext()
-            {
-                return cursor > 0;
-            }
-
-            @Override
-            @SuppressWarnings( "unchecked" )
-            public T next()
-            {
-                if ( !hasNext() )
-                {
-                    throw new NoSuchElementException();
-                }
-                --cursor;
-                return (T) array[cursor];
-            }
-        };
+        super( Comparator.naturalOrder(), totalCount );
     }
 }

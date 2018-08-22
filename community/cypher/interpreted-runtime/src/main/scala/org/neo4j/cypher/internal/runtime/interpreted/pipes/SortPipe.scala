@@ -30,9 +30,7 @@ case class SortPipe(source: Pipe, orderBy: Seq[ColumnOrder])
   extends PipeWithSource(source) {
   assert(orderBy.nonEmpty)
 
-  private val comparator = orderBy
-    .map(new ExecutionContextOrdering(_))
-    .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
+  private val comparator = ExecutionContextOrdering.asComparator(orderBy)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val array = input.toArray
@@ -41,13 +39,18 @@ case class SortPipe(source: Pipe, orderBy: Seq[ColumnOrder])
   }
 }
 
-private class ExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
+case class ExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
   override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
     val column = order.id
     val aVal = a(column)
     val bVal = b(column)
     order.compareValues(aVal, bVal)
   }
+}
+
+object ExecutionContextOrdering {
+  def asComparator(orderBy: Seq[ColumnOrder]): Comparator[ExecutionContext] =  orderBy.map(ExecutionContextOrdering.apply)
+    .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
 }
 
 sealed trait ColumnOrder {
