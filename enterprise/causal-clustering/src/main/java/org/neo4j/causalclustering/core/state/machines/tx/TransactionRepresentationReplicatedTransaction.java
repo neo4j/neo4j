@@ -24,7 +24,6 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -41,10 +40,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.StorageCommandSerializer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
-import static java.lang.Math.min;
+import static org.neo4j.causalclustering.helper.NettyHelpers.calculateChunkSize;
 
 public class TransactionRepresentationReplicatedTransaction implements ReplicatedTransaction
 {
+    private static final int DEFAULT_CHUNK_SIZE = (int) ByteUnit.mebiBytes( 1 );
     private final TransactionRepresentation tx;
 
     TransactionRepresentationReplicatedTransaction( TransactionRepresentation tx )
@@ -84,7 +84,7 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
             if ( channel == null )
             {
                 // Ensure that the written buffers does not overflow the allocators chunk size.
-                int maxChunkSize = getMaxChunkSize( allocator );
+                int maxChunkSize = calculateChunkSize( allocator, 0.8f, DEFAULT_CHUNK_SIZE );
                 channel = new BoundedNetworkChannel( allocator, maxChunkSize, output );
                 // Unknown length
                 channel.putInt( -1 );
@@ -133,16 +133,6 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
                 }
                 throw t;
             }
-        }
-
-        private int getMaxChunkSize( ByteBufAllocator allocator )
-        {
-            int allocatorChunkSize = Integer.MAX_VALUE;
-            if ( allocator instanceof PooledByteBufAllocator )
-            {
-                allocatorChunkSize = ((PooledByteBufAllocator) allocator).metric().chunkSize() / 4;
-            }
-            return min( (int) ByteUnit.mebiBytes( 1 ), allocatorChunkSize );
         }
 
         @Override
