@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.{IdGen, SameId}
 
 /**
@@ -33,33 +32,8 @@ case class NodeIndexSeek(idName: String,
                          argumentIds: Set[String])
                         (implicit idGen: IdGen) extends IndexSeekLeafPlan(idGen) {
 
-  override val propertyNamesWithValues: Seq[String] = properties.collect {
-    case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => idName + "." + propName
-  }
-
   override val availableSymbols: Set[String] = argumentIds + idName ++ propertyNamesWithValues
-
-  override def availablePropertiesFromIndexes: Map[Property, String] = {
-    properties.collect {
-      case IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
-        (Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName)
-    }.toMap
-  }
 
   override def copyWithoutGettingValues: NodeIndexSeek =
     NodeIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds)(SameId(this.id))
 }
-
-case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {
-  def shouldGetValue: Boolean = {
-    getValueFromIndex match {
-      case GetValue => true
-      case DoNotGetValue => false
-    }
-  }
-}
-
-// This can be extended later on with: GetValuesPartially
-sealed trait GetValueFromIndexBehavior
-case object DoNotGetValue extends GetValueFromIndexBehavior
-case object GetValue extends GetValueFromIndexBehavior

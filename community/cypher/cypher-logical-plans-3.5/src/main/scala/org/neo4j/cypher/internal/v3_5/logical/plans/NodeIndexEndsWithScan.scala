@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.{IdGen, SameId}
 
 /**
@@ -37,22 +36,13 @@ case class NodeIndexEndsWithScan(idName: String,
                                 (implicit idGen: IdGen)
   extends IndexLeafPlan(idGen) {
 
-  private val maybePropertyNameWithValues: Option[String] = property match {
-    case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => Some(idName + "." + propName)
-    case _ => None
-  }
+  private val maybePropertyNameWithValues: Option[String] = property.asGetValueOption(idName)
 
   override def propertyNamesWithValues: Traversable[String] = maybePropertyNameWithValues
 
   val availableSymbols: Set[String] = argumentIds + idName ++ maybePropertyNameWithValues
 
-  override def availablePropertiesFromIndexes: Map[Property, String] = {
-    property match {
-      case IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
-        Map((Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName))
-      case _ => Map.empty
-    }
-  }
+  override def availablePropertiesFromIndexes: Map[Property, String] = property.asPropertyMap(idName)
 
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
     NodeIndexEndsWithScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds)(SameId(this.id))

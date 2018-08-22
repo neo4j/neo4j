@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.{IdGen, SameId}
 
 /**
@@ -35,18 +34,8 @@ case class NodeUniqueIndexSeek(idName: String,
                                valueExpr: QueryExpression[Expression],
                                argumentIds: Set[String])
                               (implicit idGen: IdGen) extends IndexSeekLeafPlan(idGen) {
-  override val propertyNamesWithValues: Seq[String] = properties.collect {
-    case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => idName + "." + propName
-  }
 
   override val availableSymbols: Set[String] = argumentIds + idName ++ propertyNamesWithValues
-
-  override def availablePropertiesFromIndexes: Map[Property, String] = {
-    properties.collect {
-      case IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
-        (Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName)
-    }.toMap
-  }
 
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
     NodeUniqueIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds)(SameId(this.id))

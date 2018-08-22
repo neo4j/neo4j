@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, Strictness}
-import org.opencypher.v9_0.expressions.{Expression, Property}
+import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.Foldable._
 import org.opencypher.v9_0.util.Rewritable._
 import org.opencypher.v9_0.util.attribution.{Id, IdGen, SameId}
-import org.opencypher.v9_0.util.{Foldable, InternalException, Rewritable}
+import org.opencypher.v9_0.util.{Foldable, InputPosition, InternalException, Rewritable}
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -226,7 +226,30 @@ abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
 }
 
 abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
+
   def valueExpr: QueryExpression[Expression]
+
+  /**
+    * The indexed properties that this plan targets.
+    */
+  def properties: Seq[IndexedProperty]
+
+  /**
+    * Names of a the subset of properties where the property values will be read from the index.
+    */
+  override val propertyNamesWithValues: Seq[String] = properties.collect {
+    case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => idName + "." + propName
+  }
+
+  /**
+    * Map of a the subset of properties where the property values will be read from the index.
+    */
+  override def availablePropertiesFromIndexes: Map[Property, String] = {
+    properties.collect {
+      case IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
+        (Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName)
+    }.toMap
+  }
 }
 
 case object Flattener extends TreeBuilder[Seq[LogicalPlan]] {
