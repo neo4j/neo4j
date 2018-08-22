@@ -30,9 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -154,12 +152,7 @@ public class GenericIndexKeyValidatorTest
         Value[] tuple = new Value[slots];
         for ( int j = 0; j < slots; j++ )
         {
-            do
-            {
-                tuple[j] = random.nextValue();
-            }
-            while ( Values.isGeometryValue( tuple[j] ) ||
-                    (tuple[j].isSequenceValue() && Values.isGeometryValue( (Value) ((SequenceValue) tuple[j]).value( 0 ) )) );
+            tuple[j] = random.nextValue();
         }
         return tuple;
     }
