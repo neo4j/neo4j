@@ -221,15 +221,6 @@ class TxStateIndexChangesTest
         } );
     }
 
-    private static Value nullify( Value value )
-    {
-        if ( value == NO_VALUE )
-        {
-            return null;
-        }
-        return value;
-    }
-
     @Nested
     class SuffixOrContains
     {
