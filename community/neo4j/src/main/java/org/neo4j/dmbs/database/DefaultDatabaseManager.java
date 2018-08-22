@@ -64,8 +64,8 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
         checkState( database == null, "Database is already created, fail to create another one." );
 
         DataSourceModule dataSource = new DataSourceModule( name, platform, edition, procedures, graphDatabaseFacade );
-        ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, dataSource.getCoreAPIAvailabilityGuard() );
-        graphDatabaseFacade.init( spi, platform.threadToTransactionBridge, platform.config, dataSource.neoStoreDataSource.getTokenHolders() );
+        ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, dataSource.getCoreAPIAvailabilityGuard(), edition.threadToTransactionBridge );
+        graphDatabaseFacade.init( spi, edition.threadToTransactionBridge, platform.config, dataSource.neoStoreDataSource.getTokenHolders() );
         platform.dataSourceManager.register( dataSource.neoStoreDataSource );
         database = graphDatabaseFacade;
         return database;

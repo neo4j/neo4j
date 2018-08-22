@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
@@ -177,11 +176,6 @@ public interface KernelTransaction extends Transaction, AssertOpen
      * @param metaData The data to add.
      */
     void setMetaData( Map<String, Object> metaData );
-
-    /**
-     * @return database availability guard of database this transaction was started against.
-     */
-    AvailabilityGuard getAvailabilityGuard();
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

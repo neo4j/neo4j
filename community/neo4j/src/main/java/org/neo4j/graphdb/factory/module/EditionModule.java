@@ -44,6 +44,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -122,6 +123,8 @@ public abstract class EditionModule
     public UserManagerSupplier userManagerSupplier;
 
     public NetworkConnectionTracker connectionTracker;
+
+    public ThreadToStatementContextBridge threadToTransactionBridge;
 
     private final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
 

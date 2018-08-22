@@ -39,7 +39,7 @@ public class DataSourceModule
 
     public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
-    public DataSourceModule( String databaseName, final PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
+    public DataSourceModule( String databaseName, PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
 
@@ -53,7 +53,8 @@ public class DataSourceModule
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
 
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders() );
+        ProcedureGDSFactory gdsFactory =
+                new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(), editionModule.threadToTransactionBridge );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 

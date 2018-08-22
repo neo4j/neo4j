@@ -68,7 +68,6 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -143,7 +142,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
-    private final AvailabilityGuard databaseAvailabilityGuard;
     private final StorageReader storageReader;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
@@ -195,8 +193,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine,
             AccessCapability accessCapability, AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
-            IndexingProvidersService indexProviders, TokenHolders tokenHolders, Dependencies dataSourceDependencies,
-            AvailabilityGuard databaseAvailabilityGuard )
+            IndexingProvidersService indexProviders, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -212,7 +209,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
-        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.currentStatement = new KernelStatement( this, this, storageReader,
                 lockTracer, statementOperations, this.clocks,
                 versionContextSupplier );
@@ -392,12 +388,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void setMetaData( Map<String, Object> data )
     {
         this.userMetaData = data;
-    }
-
-    @Override
-    public AvailabilityGuard getAvailabilityGuard()
-    {
-        return databaseAvailabilityGuard;
     }
 
     public Map<String, Object> getMetaData()

@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -102,6 +103,8 @@ public class CommunityEditionModule extends EditionModule
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
+        threadToTransactionBridge =
+                dependencies.satisfyDependency( new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging ) ) );
 
         createIdComponents( platformModule, dependencies, createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
         dependencies.satisfyDependency( idGeneratorFactory );

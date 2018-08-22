@@ -105,6 +105,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
@@ -169,6 +170,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
+        threadToTransactionBridge =
+                dependencies.satisfyDependency( new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging ) ) );
         this.accessCapability = new ReadOnly();
 
         watcherServiceFactory = dir -> createFileSystemWatcherService( fileSystem, dir, logging,

@@ -43,7 +43,6 @@ import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -123,8 +122,6 @@ public class PlatformModule
     public final URLAccessRule urlAccessRule;
 
     public final JobScheduler jobScheduler;
-
-    public final ThreadToStatementContextBridge threadToTransactionBridge;
 
     public final SystemNanoClock clock;
 
@@ -206,8 +203,6 @@ public class PlatformModule
         SystemDiagnostics.registerWith( diagnosticsManager );
 
         dependencies.satisfyDependency( dataSourceManager );
-
-        threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge() );
 
         kernelExtensionFactories = externalDependencies.kernelExtensions();
         engineProviders = externalDependencies.executionEngines();

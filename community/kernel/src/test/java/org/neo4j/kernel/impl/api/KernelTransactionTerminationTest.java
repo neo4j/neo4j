@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -353,7 +352,7 @@ public class KernelTransactionTerminationTest
                     mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
-                    mock( IndexingService.class ), mockedTokenHolders(), new Dependencies(), mock( DatabaseAvailabilityGuard.class ) );
+                    mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
 
             this.monitor = monitor;
         }

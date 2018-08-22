@@ -173,7 +173,7 @@ public class KernelTransactionTestBase
                 new CanWrite(), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class),
-                mock( IndexingService.class ), mockedTokenHolders(), new Dependencies(), availabilityGuard );
+                mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

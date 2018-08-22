@@ -35,6 +35,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -56,14 +57,16 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     private final DataSourceModule dataSource;
     private final Logger msgLog;
     private final CoreAPIAvailabilityGuard availability;
+    private final ThreadToStatementContextBridge threadToTransactionBridge;
 
-    public ClassicCoreSPI( PlatformModule platform, DataSourceModule dataSource, Logger msgLog,
-            CoreAPIAvailabilityGuard availability )
+    public ClassicCoreSPI( PlatformModule platform, DataSourceModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability,
+            ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.platform = platform;
         this.dataSource = dataSource;
         this.msgLog = msgLog;
         this.availability = availability;
+        this.threadToTransactionBridge = threadToTransactionBridge;
     }
 
     @Override
@@ -181,9 +184,8 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         {
             availability.assertDatabaseAvailable();
             KernelTransaction kernelTx = dataSource.kernelAPI.get().beginTransaction( type, loginContext, timeout );
-            kernelTx.registerCloseListener(
-                    txId -> platform.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
-            platform.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
+            kernelTx.registerCloseListener( txId -> threadToTransactionBridge.unbindTransactionFromCurrentThread() );
+            threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;
         }
         catch ( TransactionFailureException e )

@@ -65,7 +65,6 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -794,12 +793,6 @@ public class QueryExecutionLocksIT
         public void setMetaData( Map<String,Object> metaData )
         {
             internal.setMetaData( metaData );
-        }
-
-        @Override
-        public AvailabilityGuard getAvailabilityGuard()
-        {
-            return internal.getAvailabilityGuard();
         }
 
         @Override

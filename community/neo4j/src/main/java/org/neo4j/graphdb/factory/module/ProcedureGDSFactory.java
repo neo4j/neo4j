@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -40,14 +41,17 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
     private final TokenHolders tokenHolders;
+    private final ThreadToStatementContextBridge bridge;
 
-    ProcedureGDSFactory( PlatformModule platform, DataSourceModule dataSource, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders )
+    ProcedureGDSFactory( PlatformModule platform, DataSourceModule dataSource, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders,
+            ThreadToStatementContextBridge bridge )
     {
         this.platform = platform;
         this.dataSource = dataSource;
         this.availability = coreAPIAvailabilityGuard;
         this.urlValidator = url -> platform.urlAccessRule.validate( platform.config, url );
         this.tokenHolders = tokenHolders;
+        this.bridge = bridge;
     }
 
     @Override
@@ -65,8 +69,8 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         ProcedureGDBFacadeSPI procedureGDBFacadeSPI = new ProcedureGDBFacadeSPI( dataSource, dataSource.neoStoreDataSource.getDependencyResolver(),
-                availability, urlValidator, securityContext, platform.threadToTransactionBridge );
-        facade.init( procedureGDBFacadeSPI, platform.threadToTransactionBridge, platform.config, tokenHolders );
+                availability, urlValidator, securityContext, bridge );
+        facade.init( procedureGDBFacadeSPI, bridge, platform.config, tokenHolders );
         return facade;
     }
 }

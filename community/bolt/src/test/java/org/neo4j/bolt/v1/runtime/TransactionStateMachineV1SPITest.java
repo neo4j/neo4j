@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -123,16 +124,15 @@ public class TransactionStateMachineV1SPITest
     }
 
     private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
-            DatabaseAvailabilityGuard databaseAvailabilityGuard, Clock clock )
+            AvailabilityGuard availabilityGuard, Clock clock )
     {
         QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
 
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge();
+        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( availabilityGuard );
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( bridge );
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
         when( dependencyResolver.provideDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( databaseAvailabilityGuard );
 
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
