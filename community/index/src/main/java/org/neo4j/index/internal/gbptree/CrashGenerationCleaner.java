@@ -66,13 +66,6 @@ class CrashGenerationCleaner
         this.internalMaxKeyCount = treeNode.internalMaxKeyCount();
     }
 
-    static int threads( long pagesToClean )
-    {
-        // Thread count at most equal to availableProcessors, at least one and each thread should have at least one batch of work
-        long availableProcessors = Runtime.getRuntime().availableProcessors();
-        return (int) min( availableProcessors, max( 1, pagesToClean / MIN_BATCH_SIZE ) );
-    }
-
     static long batchSize( long pagesToClean, int threads )
     {
         // Batch size at most maxBatchSize, at least minBatchSize and trying to give each thread 100 batches each
@@ -89,7 +82,7 @@ class CrashGenerationCleaner
 
         long startTime = currentTimeMillis();
         long pagesToClean = highTreeNodeId - lowTreeNodeId;
-        int threads = threads( pagesToClean );
+        int threads = Runtime.getRuntime().availableProcessors();
         long batchSize = batchSize( pagesToClean, threads );
         AtomicLong nextId = new AtomicLong( lowTreeNodeId );
         AtomicReference<Throwable> error = new AtomicReference<>();
