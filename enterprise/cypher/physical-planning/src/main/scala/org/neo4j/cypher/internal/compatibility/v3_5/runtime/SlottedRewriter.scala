@@ -218,19 +218,44 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
       case existsFunction: FunctionInvocation if existsFunction.function == frontendFunctions.Exists =>
         existsFunction.args.head match {
-          case prop @ Property(Variable(key), PropertyKeyName(propKey)) =>
-            val maybeSpecializedExpression = specializeCheckIfPropertyExists(slotConfiguration, key, propKey, prop)
-            maybeSpecializedExpression.getOrElse(existsFunction)
+          case prop@Property(Variable(key), PropertyKeyName(propKey)) =>
+            val slot = slotConfiguration(key)
+            val maybeSpecializedExpression = specializeCheckIfPropertyExists(slotConfiguration, key, propKey, prop, slot)
+            if (slot.nullable && maybeSpecializedExpression.isDefined && maybeSpecializedExpression.get.isInstanceOf[LogicalProperty]) {
+              NullCheckProperty(slot.offset, maybeSpecializedExpression.get.asInstanceOf[LogicalProperty])
+            }
+            else
+              maybeSpecializedExpression.getOrElse(existsFunction)
 
           case _ => existsFunction // Don't know how to specialize this
         }
 
-      case e @ IsNull(prop @ Property(Variable(key), PropertyKeyName(propKey))) =>
-        val maybeSpecializedExpression = specializeCheckIfPropertyExists(slotConfiguration, key, propKey, prop)
-        if (maybeSpecializedExpression.isDefined)
-          Not(maybeSpecializedExpression.get)(e.position)
+      case e@IsNull(prop@Property(Variable(key), PropertyKeyName(propKey))) =>
+        val slot = slotConfiguration(key)
+        val maybeSpecializedExpression = specializeCheckIfPropertyExists(slotConfiguration, key, propKey, prop, slot)
+        if (maybeSpecializedExpression.isDefined) {
+          val propertyExists = maybeSpecializedExpression.get
+          val notPropertyExists = Not(propertyExists)(e.position)
+          if (slot.nullable)
+            Or(IsPrimitiveNull(slot.offset), notPropertyExists)(e.position)
+          else
+            notPropertyExists
+        }
         else
           e
+
+      case e@IsNotNull(prop@Property(Variable(key), PropertyKeyName(propKey))) =>
+        val slot = slotConfiguration(key)
+        val maybeSpecializedExpression = specializeCheckIfPropertyExists(slotConfiguration, key, propKey, prop, slot)
+        if (maybeSpecializedExpression.isDefined) {
+          val propertyExists = maybeSpecializedExpression.get
+          if (slot.nullable)
+            And(Not(IsPrimitiveNull(slot.offset))(e.position), propertyExists)(e.position)
+          else
+            propertyExists
+        } else
+          e
+
 
 //      case _: ReduceExpression =>
 //        throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
@@ -303,11 +328,10 @@ class SlottedRewriter(tokenContext: TokenContext) {
         predicate))
   }
 
-  private def specializeCheckIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String, prop: Property) = {
-    val slot = slotConfiguration(key)
+  private def specializeCheckIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String, prop: Property, slot: Slot) = {
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 
-    val propExpression = (slot, maybeToken) match {
+    (slot, maybeToken) match {
       case (LongSlot(offset, _, typ), Some(token)) if typ == CTNode =>
         Some(NodePropertyExists(offset, token, s"$key.$propKey")(prop))
 
@@ -323,12 +347,6 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case _ =>
         None // Let the normal expression conversion work this out
     }
-
-    if (slot.nullable && propExpression.isDefined && propExpression.get.isInstanceOf[LogicalProperty]) {
-      Some(NullCheckProperty(slot.offset, propExpression.get.asInstanceOf[LogicalProperty]))
-    }
-    else
-      propExpression
   }
 
   private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {
