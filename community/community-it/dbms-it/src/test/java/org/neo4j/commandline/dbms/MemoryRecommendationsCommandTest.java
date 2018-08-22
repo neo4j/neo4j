@@ -243,11 +243,6 @@ public class MemoryRecommendationsCommandTest
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
-            // todo: remove this if-statement when native_gbptree10 supports spatial
-            if ( schemaIndex == SchemaIndex.NATIVE_BTREE10 )
-            {
-                continue;
-            }
             GraphDatabaseService db =
                     new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
                             .setConfig( default_schema_provider, schemaIndex.providerIdentifier() )
