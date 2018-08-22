@@ -78,12 +78,14 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
       query =
         "OPTIONAL MATCH (n) " +
           "RETURN n.missing IS NULL," +
-          //  "       n.missing IS NOT NULL," + // Do not test until incorrect rewriting of IS NOT NULL to Exists is removed
+          "       n.missing IS NOT NULL," +
           "       exists(n.missing)",
-      expectedDifferentResults = TestConfiguration.empty)
+      expectedDifferentResults =
+        TestConfiguration(Versions.V2_3 -> Versions.V3_4, Planners.all, Runtimes.all) +
+        TestConfiguration(Versions.Default, Planners.Rule, Runtimes.all))
     result.toList should equal(List(Map(
       "n.missing IS NULL" -> true,
-      //  "n.missing IS NOT NULL" -> false, // Do not test until incorrect rewriting of IS NOT NULL to Exists is removed
+      "n.missing IS NOT NULL" -> false,
       "exists(n.missing)" -> null)))
   }
 

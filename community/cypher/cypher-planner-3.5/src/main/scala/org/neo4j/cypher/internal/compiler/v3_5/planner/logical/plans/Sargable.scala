@@ -59,6 +59,9 @@ object AsPropertyScannable {
       if func.function == functions.Exists =>
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
+    case expr@IsNotNull(Property(_, _)) =>
+      partialPropertyPredicate(expr, expr.lhs)
+
     case expr: Equals =>
       partialPropertyPredicate(expr, expr.lhs)
 

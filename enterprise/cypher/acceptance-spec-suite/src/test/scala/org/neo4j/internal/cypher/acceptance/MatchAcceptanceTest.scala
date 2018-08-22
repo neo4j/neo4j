@@ -454,7 +454,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     ))
   }
 
-  test("should use the index for property existence queries (with exists) for cost when asked for it") {
+  test("should use index for property existence queries (with Exists & MATCH) when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -469,7 +469,34 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 
-  test("should use the index for property existence queries (with IS NOT NULL) for cost when asked for it") {
+  test("should use index for property existence queries (with Exists & OPTIONAL MATCH) when asked for it") {
+    // given
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
+    graph.createIndex("User", "email")
+
+    // when
+    val result = executeWith(Configs.Interpreted, "OPTIONAL MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use index for property existence queries (with Exists & OPTIONAL MATCH) when asked for it, on empty store") {
+    // given
+    graph.createIndex("User", "email")
+
+    // when
+    val result = executeWith(Configs.Interpreted, "OPTIONAL MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> null)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use index for property existence queries (with IS NOT NULL & MATCH) when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -481,6 +508,33 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use index for property existence queries (with IS NOT NULL & OPTIONAL MATCH) when asked for it") {
+    // given
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    graph.createIndex("User", "email")
+
+    // when
+    val result = executeWith(Configs.Interpreted, "OPTIONAL MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> n)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use index for property existence queries (with IS NOT NULL & OPTIONAL MATCH) when asked for it, on empty store") {
+    // given
+    graph.createIndex("User", "email")
+
+    // when
+    val result = executeWith(Configs.Interpreted, "OPTIONAL MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
+
+    // then
+    val list = result.toList
+    println(list)
+    list should equal(List(Map("n" -> null)))
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 
