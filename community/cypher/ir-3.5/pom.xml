@@ -87,6 +87,12 @@
       <version>${openCypher.frontend.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>rewriting-9.0</artifactId>
+      <version>${openCypher.frontend.version}</version>
+    </dependency>
+
     <!-- scala -->
 
     <dependency>
