@@ -815,6 +815,11 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         }
     }
 
+    /**
+     * This method will compare along the curve, which is not a spatial comparison, but is correct
+     * for comparison within the space filling index as long as the original spatial range has already
+     * been decomposed into a collection of 1D curve ranges before calling down into the GPTree.
+     */
     private static int compareGeometry(
             long this_long0, long this_long1, long this_long2,
             long that_long0, long that_long1, long that_long2 )

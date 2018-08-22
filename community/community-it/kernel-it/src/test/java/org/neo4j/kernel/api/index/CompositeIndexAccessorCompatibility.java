@@ -49,10 +49,16 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.kernel.api.IndexQuery.exists;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
+import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
+import static org.neo4j.values.storable.ValueGroup.GEOMETRY_ARRAY;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.longArray;
+import static org.neo4j.values.storable.Values.pointArray;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -140,10 +146,10 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
 
-        PointValue gps = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
-        PointValue car = Values.pointValue( CoordinateReferenceSystem.Cartesian, 12.6, 56.7 );
-        PointValue gps3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.7, 100.0 );
-        PointValue car3d = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 12.6, 56.7, 100.0 );
+        PointValue gps = pointValue( WGS84, 12.6, 56.7 );
+        PointValue car = pointValue( Cartesian, 12.6, 56.7 );
+        PointValue gps3d = pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.7, 100.0 );
+        PointValue car3d = pointValue( CoordinateReferenceSystem.Cartesian_3D, 12.6, 56.7, 100.0 );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), gps, gps ),
@@ -255,8 +261,30 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 dateArray( 555, 900 ) );
     }
 
-    // TODO testIndexQuery_Exact_Range_Array (spatial)
-    // TODO testIndexQuery_Exact_Range_Spatial
+    @Test
+    public void testIndexSeekExactWithRangeBySpatial() throws Exception
+    {
+        testIndexSeekExactWithRange( GEOMETRY, pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 0D, 0D ),
+                pointValue( WGS84, 1D, 1D ),
+                pointValue( WGS84, 10D, 10D ),
+                pointValue( WGS84, 110D, 110D ),
+                pointValue( WGS84, 200D, 200D ),
+                pointValue( WGS84, 300D, 300D ) );
+    }
+
+    @Test
+    public void testIndexSeekExactWithRangeBySpatialArray() throws Exception
+    {
+        testIndexSeekExactWithRange( GEOMETRY,
+                pointArray( new PointValue[] {pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 100D, 101D )} ),
+                pointArray( new PointValue[] {pointValue( WGS84, 0D, 0D ), pointValue( WGS84, 0D, 1D )} ),
+
+                pointArray( new PointValue[] {pointValue( WGS84, 1D, 1D ), pointValue( WGS84, 1D, 2D )} ),
+                pointArray( new PointValue[] {pointValue( WGS84, 10D, 10D ), pointValue( WGS84, 10D, 11D )} ),
+                pointArray( new PointValue[] {pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 100D, 101D )} ),
+                pointArray( new PointValue[] {pointValue( WGS84, 200D, 200D ), pointValue( WGS84, 200D, 201D )} ),
+                pointArray( new PointValue[] {pointValue( WGS84, 300D, 300D ), pointValue( WGS84, 300D, 301D )} ) );
+    }
 
     private void testIndexSeekExactWithRange( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 )
             throws Exception
@@ -424,8 +452,19 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         testIndexSeekExactWithExists( dateArray( 303, 900 ), dateArray( 101, 900 ) );
     }
 
-    // TODO testIndexSeekExactWithExistsByArray (spatial)
-    // TODO testIndexSeekExactWithExistsBySpatial
+    @Test
+    public void testIndexSeekExactWithExistsBySpatial() throws Exception
+    {
+        testIndexSeekExactWithExists( pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 0D, 0D ) );
+    }
+
+    @Test
+    public void testIndexSeekExactWithExistsBySpatialArray() throws Exception
+    {
+        testIndexSeekExactWithExists(
+                pointArray( new PointValue[] {pointValue( Cartesian, 100D, 100D ), pointValue( Cartesian, 101D, 101D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 1D, 1D )} ) );
+    }
 
     private void testIndexSeekExactWithExists( Object a, Object b ) throws Exception
     {
@@ -532,8 +571,27 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 dateArray( 404, 404, 303 ) );
     }
 
-    // TODO testIndexSeekRangeWithExistsByArray (spatial
-    // TODO testIndexSeekRangeWithExistsBySpatial
+    @Test
+    public void testIndexSeekRangeWithExistsBySpatial() throws Exception
+    {
+        testIndexSeekRangeWithExists( GEOMETRY,
+                pointValue( Cartesian, 0D, 0D ),
+                pointValue( Cartesian, 100D, 100D ),
+                pointValue( Cartesian, 200D, 200D ),
+                pointValue( Cartesian, 300D, 300D ),
+                pointValue( Cartesian, 400D, 400D ) );
+    }
+
+    @Test
+    public void testIndexSeekRangeWithExistsBySpatialArray() throws Exception
+    {
+        testIndexSeekRangeWithExists( ValueGroup.GEOMETRY_ARRAY,
+                pointArray( new PointValue[] {pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 0D, 1D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 100D, 100D ), pointValue( Cartesian, 100D, 100D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 200D, 200D ), pointValue( Cartesian, 200D, 200D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 300D, 300D ), pointValue( Cartesian, 300D, 300D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 400D, 400D ), pointValue( Cartesian, 400D, 400D )} ) );
+    }
 
     private void testIndexSeekRangeWithExists( ValueGroup valueGroup, Object obj1, Object obj2, Object obj3, Object obj4, Object obj5 ) throws Exception
     {
@@ -556,7 +614,12 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( range( 0, obj5, false, obj2, true ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( range( 0, null, false, obj3, false ), exists( 1 ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( range( 0, null, true, obj3, true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( range( 0, valueGroup ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        if ( valueGroup != GEOMETRY && valueGroup != GEOMETRY_ARRAY )
+        {
+            // This cannot be done for spatial values because each bound in a spatial query needs a coordinate reference system,
+            // and those are provided by Value instances, e.g. PointValue
+            assertThat( query( range( 0, valueGroup ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        }
         assertThat( query( range( 0, obj1, false, obj2, true ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( range( 0, obj1, false, obj3, false ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
     }
@@ -588,7 +651,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         public void testDuplicatesInIndexSeekByPoint() throws Exception
         {
             Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
-            testDuplicatesInIndexSeek( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 ) );
+            testDuplicatesInIndexSeek( pointValue( WGS84, 12.6, 56.7 ) );
         }
 
         @Test
@@ -631,9 +694,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         public void testDuplicatesInIndexSeekByPointArray() throws Exception
         {
             Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
-            testDuplicatesInIndexSeek( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 )
+            testDuplicatesInIndexSeek( pointArray( new PointValue[]{
+                    pointValue( WGS84, 12.6, 56.7 ),
+                    pointValue( WGS84, 12.6, 56.7 )
             } ) );
         }
 
