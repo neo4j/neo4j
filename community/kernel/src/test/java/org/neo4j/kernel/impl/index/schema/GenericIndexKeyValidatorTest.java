@@ -23,8 +23,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.SequenceValue;
@@ -69,7 +72,7 @@ public class GenericIndexKeyValidatorTest
     {
         // given
         Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
-        when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) ) );
+        when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3, spatialSettings() ) );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, layout );
 
         // when
@@ -92,7 +95,7 @@ public class GenericIndexKeyValidatorTest
         // given
         int slots = random.nextInt( 1, 6 );
         int maxLength = random.nextInt( 15, 30 ) * slots;
-        GenericLayout layout = new GenericLayout( slots, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) );
+        GenericLayout layout = new GenericLayout( slots, spatialSettings() );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, layout );
         CompositeGenericKey key = layout.newKey();
 
@@ -128,6 +131,12 @@ public class GenericIndexKeyValidatorTest
         // then a little meta assertion, that the generated parameters in this test are good so that it test at least some on each side of the threshold
         assertThat( countOk, greaterThan( 0 ) );
         assertThat( countNotOk, greaterThan( 0 ) );
+    }
+
+    private IndexSpecificSpaceFillingCurveSettingsCache spatialSettings()
+    {
+        return new IndexSpecificSpaceFillingCurveSettingsCache(
+                new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
     }
 
     private static int actualSize( Value[] tuple, CompositeGenericKey key )
