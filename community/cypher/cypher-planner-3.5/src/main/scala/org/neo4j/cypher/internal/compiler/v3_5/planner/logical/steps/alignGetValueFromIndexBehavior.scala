@@ -49,7 +49,7 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
   /**
     * Returns a copy of the provided indexedProperty with the correct GetValueBehavior set.
     */
-  def setGetValueBehavior(idName: String, indexedProperty: IndexedProperty): IndexedProperty = indexedProperty match {
+  private def withAlignedGetValueBehavior(idName: String, indexedProperty: IndexedProperty): IndexedProperty = indexedProperty match {
     case ip@IndexedProperty(PropertyKeyToken(propName, _), DoNotGetValue) => ip
     case ip@IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
       val propExpression = Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
@@ -75,23 +75,23 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
       )(attributes.copy(union.id))
 
     case seek@NodeIndexSeek(idName, _, properties, _, _) =>
-      val newProperties = properties.map(setGetValueBehavior(idName, _))
-      NodeIndexSeek(idName, seek.label, newProperties, seek.valueExpr, seek.argumentIds)(attributes.copy(seek.id))
+      val alignedProperties = properties.map(withAlignedGetValueBehavior(idName, _))
+      NodeIndexSeek(idName, seek.label, alignedProperties, seek.valueExpr, seek.argumentIds)(attributes.copy(seek.id))
 
     case seek@NodeUniqueIndexSeek(idName, _, properties, _, _) =>
-      val newProperties = properties.map(setGetValueBehavior(idName, _))
-      NodeUniqueIndexSeek(idName, seek.label, newProperties, seek.valueExpr, seek.argumentIds)(attributes.copy(seek.id))
+      val alignedProperties = properties.map(withAlignedGetValueBehavior(idName, _))
+      NodeUniqueIndexSeek(idName, seek.label, alignedProperties, seek.valueExpr, seek.argumentIds)(attributes.copy(seek.id))
 
     case scan@NodeIndexContainsScan(idName, _, property, _, _) =>
-      val newProperty = setGetValueBehavior(idName, property)
-      NodeIndexContainsScan(idName, scan.label, newProperty, scan.valueExpr, scan.argumentIds)(attributes.copy(scan.id))
+      val alignedProperty = withAlignedGetValueBehavior(idName, property)
+      NodeIndexContainsScan(idName, scan.label, alignedProperty, scan.valueExpr, scan.argumentIds)(attributes.copy(scan.id))
 
     case scan@NodeIndexEndsWithScan(idName, _, property, _, _) =>
-      val newProperty = setGetValueBehavior(idName, property)
-      NodeIndexEndsWithScan(idName, scan.label, newProperty, scan.valueExpr, scan.argumentIds)(attributes.copy(scan.id))
+      val alignedProperty = withAlignedGetValueBehavior(idName, property)
+      NodeIndexEndsWithScan(idName, scan.label, alignedProperty, scan.valueExpr, scan.argumentIds)(attributes.copy(scan.id))
 
     case scan@NodeIndexScan(idName, _, property, _) =>
-      val newProperty = setGetValueBehavior(idName, property)
-      NodeIndexScan(idName, scan.label, newProperty, scan.argumentIds)(attributes.copy(scan.id))
+      val alignedProperty = withAlignedGetValueBehavior(idName, property)
+      NodeIndexScan(idName, scan.label, alignedProperty, scan.argumentIds)(attributes.copy(scan.id))
   })
 }
