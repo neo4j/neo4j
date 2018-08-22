@@ -76,6 +76,7 @@ public class EnterpriseSecurityModule extends SecurityModule
     private static final String DEFAULT_ADMIN_STORE_FILENAME = SetDefaultAdminCommand.ADMIN_INI;
 
     private EnterpriseAuthAndUserManager authManager;
+    protected SecurityConfig securityConfig;
 
     public EnterpriseSecurityModule()
     {
@@ -160,22 +161,12 @@ public class EnterpriseSecurityModule extends SecurityModule
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        SecurityConfig securityConfig = new SecurityConfig( config );
-        securityConfig.validate();
+        securityConfig = getValidatedSecurityConfig( config );
 
         List<Realm> realms = new ArrayList<>( securityConfig.authProviders.size() + 1 );
         SecureHasher secureHasher = new SecureHasher();
 
-        EnterpriseUserManager internalRealm = null;
-        if ( securityConfig.hasNativeProvider )
-        {
-            internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
-            realms.add( (Realm) internalRealm );
-        }
-        else if ( config.get( SecuritySettings.native_graph_enabled ) )
-        {
-            throw illegalConfiguration("Native graph enabled but native auth provider is not configured."  );
-        }
+        EnterpriseUserManager internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler, realms );
 
         if ( securityConfig.hasLdapProvider )
         {
@@ -200,6 +191,13 @@ public class EnterpriseSecurityModule extends SecurityModule
                 securityConfig.propertyAuthorization, securityConfig.propertyBlacklist );
     }
 
+    protected SecurityConfig getValidatedSecurityConfig( Config config )
+    {
+        SecurityConfig securityConfig = new SecurityConfig( config );
+        securityConfig.validate();
+        return securityConfig;
+    }
+
     private static List<Realm> selectOrderedActiveRealms( List<String> configuredRealms, List<Realm> availableRealms )
     {
         List<Realm> orderedActiveRealms = new ArrayList<>( configuredRealms.size() );
@@ -218,9 +216,15 @@ public class EnterpriseSecurityModule extends SecurityModule
     }
 
     protected EnterpriseUserManager createInternalRealm( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+            FileSystemAbstraction fileSystem, JobScheduler jobScheduler, List<Realm> realms )
     {
-        return createInternalFlatFileRealm( config, logProvider, fileSystem, jobScheduler );
+        EnterpriseUserManager internalRealm = null;
+        if ( securityConfig.hasNativeProvider )
+        {
+            internalRealm = createInternalFlatFileRealm( config, logProvider, fileSystem, jobScheduler );
+            realms.add( (Realm) internalRealm );
+        }
+        return internalRealm;
     }
 
     protected static InternalFlatFileRealm createInternalFlatFileRealm( Config config, LogProvider logProvider,
@@ -360,19 +364,19 @@ public class EnterpriseSecurityModule extends SecurityModule
                 DEFAULT_ADMIN_STORE_FILENAME );
     }
 
-    private static IllegalArgumentException illegalConfiguration( String message )
+    protected static IllegalArgumentException illegalConfiguration( String message )
     {
         return new IllegalArgumentException( "Illegal configuration: " + message );
     }
 
-    static class SecurityConfig
+    protected static class SecurityConfig
     {
-        final List<String> authProviders;
-        final boolean hasNativeProvider;
+        protected final List<String> authProviders;
+        public final boolean hasNativeProvider;
         final boolean hasLdapProvider;
         final List<String> pluginAuthProviders;
-        final boolean nativeAuthentication;
-        final boolean nativeAuthorization;
+        protected final boolean nativeAuthentication;
+        protected final boolean nativeAuthorization;
         final boolean ldapAuthentication;
         final boolean ldapAuthorization;
         final boolean pluginAuthentication;
@@ -381,7 +385,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         private final String propertyAuthMapping;
         final Map<String,List<String>> propertyBlacklist = new HashMap<>();
 
-        SecurityConfig( Config config )
+        protected SecurityConfig( Config config )
         {
             authProviders = config.get( SecuritySettings.auth_providers );
             hasNativeProvider = authProviders.contains( SecuritySettings.NATIVE_REALM_NAME );
@@ -400,7 +404,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             propertyAuthMapping = config.get( SecuritySettings.property_level_authorization_permissions );
         }
 
-        void validate()
+        protected void validate()
         {
             if ( !nativeAuthentication && !ldapAuthentication && !pluginAuthentication )
             {

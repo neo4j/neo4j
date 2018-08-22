@@ -59,6 +59,7 @@ import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_RO
 public class SecuritySettings implements LoadableConfig
 {
     public static final String NATIVE_REALM_NAME = "native";
+    public static final String NATIVE_GRAPH_REALM_NAME = "native-graph";
     public static final String LDAP_REALM_NAME = "ldap";
     public static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
 
@@ -67,7 +68,7 @@ public class SecuritySettings implements LoadableConfig
     //=========================================================================
 
     @Description( "The authentication and authorization provider that contains both the users and roles. " +
-                  "This can be one of the built-in `" + NATIVE_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` providers, " +
+                  "This can be one of the built-in `" + NATIVE_REALM_NAME + "`, `" + NATIVE_GRAPH_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` providers, " +
                   "or it can be an externally provided plugin, with a custom name prefixed by `" +
                   PLUGIN_REALM_NAME_PREFIX + "`, i.e. `" + PLUGIN_REALM_NAME_PREFIX + "<AUTH_PROVIDER_NAME>`." )
     public static final Setting<String> auth_provider =
@@ -83,13 +84,13 @@ public class SecuritySettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> native_authentication_enabled =
             derivedSetting( "dbms.security.native.authentication_enabled", auth_providers,
-                    providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ) || providers.contains( NATIVE_GRAPH_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authorization via native authorization provider." )
     @Internal
     public static final Setting<Boolean> native_authorization_enabled =
             derivedSetting( "dbms.security.native.authorization_enabled", auth_providers,
-                    providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ) || providers.contains( NATIVE_GRAPH_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via settings configurable LDAP authentication provider." )
     @Internal
@@ -116,14 +117,6 @@ public class SecuritySettings implements LoadableConfig
             derivedSetting( "dbms.security.plugin.authorization_enabled", auth_providers,
                     providers -> providers.stream().anyMatch( r -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
-
-    //=========================================================================
-    // Native graph settings
-    //=========================================================================
-    @Description( "Use NativeGraphRealm for native security." )
-    @Internal
-    public static final Setting<Boolean> native_graph_enabled =
-            setting( "dbms.security.native.graph_enabled", BOOLEAN, "false" );
 
     //=========================================================================
     // LDAP settings
