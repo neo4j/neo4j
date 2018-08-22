@@ -32,7 +32,7 @@ import org.neo4j.graphalgo.impl.shortestpath.Util.PathCounter;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class UtilTest extends Neo4jAlgoTestCase
 {
@@ -71,19 +71,19 @@ public class UtilTest extends Neo4jAlgoTestCase
         bp.add( b.createRelationshipTo( a, MyRelTypes.R1 ) );
         // Count
         PathCounter counter = new Util.PathCounter( predecessors );
-        assertTrue( counter.getNumberOfPathsToNode( a ) == 1 );
-        assertTrue( counter.getNumberOfPathsToNode( b ) == 1 );
-        assertTrue( counter.getNumberOfPathsToNode( c ) == 1 );
-        assertTrue( counter.getNumberOfPathsToNode( d ) == 1 );
-        assertTrue( counter.getNumberOfPathsToNode( e ) == 2 );
-        assertTrue( counter.getNumberOfPathsToNode( f ) == 3 );
+        assertEquals( 1, counter.getNumberOfPathsToNode( a ) );
+        assertEquals( 1, counter.getNumberOfPathsToNode( b ) );
+        assertEquals( 1, counter.getNumberOfPathsToNode( c ) );
+        assertEquals( 1, counter.getNumberOfPathsToNode( d ) );
+        assertEquals( 2, counter.getNumberOfPathsToNode( e ) );
+        assertEquals( 3, counter.getNumberOfPathsToNode( f ) );
         // Reverse
         counter = new Util.PathCounter( Util.reversedPredecessors( predecessors ) );
-        assertTrue( counter.getNumberOfPathsToNode( a ) == 3 );
-        assertTrue( counter.getNumberOfPathsToNode( b ) == 2 );
-        assertTrue( counter.getNumberOfPathsToNode( c ) == 1 );
-        assertTrue( counter.getNumberOfPathsToNode( d ) == 1 );
-        assertTrue( counter.getNumberOfPathsToNode( e ) == 1 );
-        assertTrue( counter.getNumberOfPathsToNode( f ) == 1 );
+        assertEquals( 3, counter.getNumberOfPathsToNode( a ) );
+        assertEquals( 2, counter.getNumberOfPathsToNode( b ) );
+        assertEquals( 1, counter.getNumberOfPathsToNode( c ) );
+        assertEquals( 1, counter.getNumberOfPathsToNode( d ) );
+        assertEquals( 1, counter.getNumberOfPathsToNode( e ) );
+        assertEquals( 1, counter.getNumberOfPathsToNode( f ) );
     }
 }

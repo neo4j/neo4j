@@ -21,9 +21,10 @@ package org.neo4j.kernel.impl.security;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.security.Credential.INACCESSIBLE;
 
 public class CredentialTest
@@ -43,7 +44,7 @@ public class CredentialTest
     {
         Credential credential = Credential.forPassword( "foo" );
         Credential sameCredential = new Credential( credential.salt(), credential.passwordHash() );
-        assertTrue( credential.equals( sameCredential ) );
+        assertEquals( credential, sameCredential );
     }
 
     @Test
@@ -52,11 +53,11 @@ public class CredentialTest
         Credential credential = new Credential( INACCESSIBLE.salt(), INACCESSIBLE.passwordHash() );
 
         //equals
-        assertTrue( INACCESSIBLE.equals( credential ) );
-        assertTrue( credential.equals( INACCESSIBLE ) );
-        assertTrue( INACCESSIBLE.equals( INACCESSIBLE ) );
-        assertFalse( INACCESSIBLE.equals( Credential.forPassword( "" ) ) );
-        assertFalse( Credential.forPassword( "" ).equals( INACCESSIBLE ) );
+        assertEquals( INACCESSIBLE, credential );
+        assertEquals( credential, INACCESSIBLE );
+        assertEquals( INACCESSIBLE, INACCESSIBLE );
+        assertNotEquals( INACCESSIBLE, Credential.forPassword( "" ) );
+        assertNotEquals( Credential.forPassword( "" ), INACCESSIBLE );
 
         //matchesPassword
         assertFalse( INACCESSIBLE.matchesPassword( new String( new byte[]{} )) );

@@ -325,8 +325,7 @@ public class ImportToolTest
                         continue;
                     }
 
-                    assertTrue( "Wrong value for " + key,
-                            expected == Double.valueOf( node.getProperty( key ).toString() ) );
+                    assertEquals( "Wrong value for " + key, expected, Double.valueOf( node.getProperty( key ).toString() ), 0.0 );
                 }
             }
 

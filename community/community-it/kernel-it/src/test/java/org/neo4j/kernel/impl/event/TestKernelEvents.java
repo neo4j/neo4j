@@ -28,7 +28,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
@@ -76,12 +76,9 @@ public class TestKernelEvents
         { /* Good */
         }
 
-        assertTrue( handler1 == graphDb.registerKernelEventHandler(
-                handler1 ) );
-        assertTrue( handler1 == graphDb.registerKernelEventHandler(
-                handler1 ) );
-        assertTrue( handler1 == graphDb.unregisterKernelEventHandler(
-                handler1 ) );
+        assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
+        assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
+        assertSame( handler1, graphDb.unregisterKernelEventHandler( handler1 ) );
 
         try
         {
@@ -93,14 +90,10 @@ public class TestKernelEvents
         { /* Good */
         }
 
-        assertTrue( handler1 == graphDb.registerKernelEventHandler(
-                handler1 ) );
-        assertTrue( handler2 == graphDb.registerKernelEventHandler(
-                handler2 ) );
-        assertTrue( handler1 == graphDb.unregisterKernelEventHandler(
-                handler1 ) );
-        assertTrue( handler2 == graphDb.unregisterKernelEventHandler(
-                handler2 ) );
+        assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
+        assertSame( handler2, graphDb.registerKernelEventHandler( handler2 ) );
+        assertSame( handler1, graphDb.unregisterKernelEventHandler( handler1 ) );
+        assertSame( handler2, graphDb.unregisterKernelEventHandler( handler2 ) );
 
         graphDb.shutdown();
     }

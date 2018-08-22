@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class FloydWarshallTest extends Neo4jAlgoTestCase
 {
@@ -51,12 +50,9 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         FloydWarshall<Double> floydWarshall = new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING,
                 CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(),
                 Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
-        assertTrue( floydWarshall.getCost( graph.getNode( "a" ), graph
-            .getNode( "a" ) ) == 0.0 );
-        assertTrue( floydWarshall.getCost( graph.getNode( "a" ), graph
-            .getNode( "b" ) ) == 1.0 );
-        assertTrue( floydWarshall.getCost( graph.getNode( "b" ), graph
-            .getNode( "a" ) ) == Double.MAX_VALUE );
+        assertEquals( 0.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "a" ) ), 0.0 );
+        assertEquals( 1.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "b" ) ), 0.0 );
+        assertEquals( floydWarshall.getCost( graph.getNode( "b" ), graph.getNode( "a" ) ), Double.MAX_VALUE, 0.0 );
     }
 
     /**
@@ -75,13 +71,13 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
                 Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
         List<Node> path = floydWarshall.getPath( graph.getNode( "a" ), graph
             .getNode( "f" ) );
-        assertTrue( path.size() == 6 );
-        assertTrue( path.get( 0 ).equals( graph.getNode( "a" ) ) );
-        assertTrue( path.get( 1 ).equals( graph.getNode( "b" ) ) );
-        assertTrue( path.get( 2 ).equals( graph.getNode( "c" ) ) );
-        assertTrue( path.get( 3 ).equals( graph.getNode( "d" ) ) );
-        assertTrue( path.get( 4 ).equals( graph.getNode( "e" ) ) );
-        assertTrue( path.get( 5 ).equals( graph.getNode( "f" ) ) );
+        assertEquals( 6, path.size() );
+        assertEquals( path.get( 0 ), graph.getNode( "a" ) );
+        assertEquals( path.get( 1 ), graph.getNode( "b" ) );
+        assertEquals( path.get( 2 ), graph.getNode( "c" ) );
+        assertEquals( path.get( 3 ), graph.getNode( "d" ) );
+        assertEquals( path.get( 4 ), graph.getNode( "e" ) );
+        assertEquals( path.get( 5 ), graph.getNode( "f" ) );
     }
 
     @Test

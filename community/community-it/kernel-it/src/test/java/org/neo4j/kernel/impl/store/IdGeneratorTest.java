@@ -406,7 +406,7 @@ public class IdGeneratorTest
                 }
                 oldId = id;
             }
-            assertTrue( freedIds.values().size() == 0 );
+            assertEquals( 0, freedIds.values().size() );
             closeIdGenerator( idGenerator );
         }
         finally

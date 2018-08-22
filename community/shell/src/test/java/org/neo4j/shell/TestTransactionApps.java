@@ -35,6 +35,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.regex.Pattern.compile;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -122,7 +123,7 @@ public class TestTransactionApps
 
     private void assertWeAreNotInATransaction()
     {
-        assertTrue( "Expected to not be in a transaction", shellServer.getActiveTransactionCount() == 0 );
+        assertEquals( "Expected to not be in a transaction", 0, shellServer.getActiveTransactionCount() );
     }
 
     private void assertWeAreInATransaction()

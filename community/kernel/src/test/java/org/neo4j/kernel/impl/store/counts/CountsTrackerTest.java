@@ -311,7 +311,7 @@ public class CountsTrackerTest
 
         // then
         assertTrue( CountsTracker.compare( version, new FileVersion( 5, 5 ) ) > 0 );
-        assertTrue( CountsTracker.compare( version, new FileVersion( 16, 5 ) ) == 0 );
+        assertEquals( 0, CountsTracker.compare( version, new FileVersion( 16, 5 ) ) );
         assertTrue( CountsTracker.compare( version, new FileVersion( 30, 1 ) ) < 0 );
         assertTrue( CountsTracker.compare( version, new FileVersion( 16, 1 ) ) > 0 );
         assertTrue( CountsTracker.compare( version, new FileVersion( 16, 7 ) ) < 0 );

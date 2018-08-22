@@ -182,9 +182,9 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
             assertTrue( "Expected at least one path", paths.hasNext() );
-            assertTrue( "Expected first path of length 6", paths.next().length() == 6 );
+            assertEquals( "Expected first path of length 6", 6, paths.next().length() );
             assertTrue( "Expected at least two paths", paths.hasNext() );
-            assertTrue( "Expected second path of length 6", paths.next().length() == 6 );
+            assertEquals( "Expected second path of length 6", 6, paths.next().length() );
             assertFalse( "Expected exactly two paths", paths.hasNext() );
 
             tx.success();
@@ -245,7 +245,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             assertTrue( "Expected path number " + count + " to have weight of " + expectedWeight,
                     NoneStrictMath.equals( path.weight(), expectedWeight ) );
         }
-        assertTrue( "Expected exactly 6 returned paths", count == 6 );
+        assertEquals( "Expected exactly 6 returned paths", 6, count );
     }
 
     @Test

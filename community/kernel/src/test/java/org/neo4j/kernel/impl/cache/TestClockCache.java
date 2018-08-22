@@ -28,7 +28,8 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -141,7 +142,7 @@ public class TestClockCache
         cache.put( key1, s1 );
         cache.put( key2, s2 );
         cache.put( key3, s3 );
-        assertEquals( null, cache.getLastCleanedElement() );
+        assertNull( cache.getLastCleanedElement() );
 
         String fromKey2 = cache.get( key2 );
         assertEquals( s2, fromKey2 );
@@ -151,13 +152,13 @@ public class TestClockCache
         assertEquals( s3, fromKey3 );
 
         cache.put( key4, s4 );
-        assertFalse( s4.equals( cache.getLastCleanedElement() ) );
+        assertNotEquals( s4, cache.getLastCleanedElement() );
         cleanedElements.add( valueToKey.get( cache.getLastCleanedElement() ) );
         existingElements.remove( valueToKey.get( cache.getLastCleanedElement() ) );
 
         cache.put( key5, s5 );
-        assertFalse( s4.equals( cache.getLastCleanedElement() ) );
-        assertFalse( s5.equals( cache.getLastCleanedElement() ) );
+        assertNotEquals( s4, cache.getLastCleanedElement() );
+        assertNotEquals( s5, cache.getLastCleanedElement() );
         cleanedElements.add( valueToKey.get( cache.getLastCleanedElement() ) );
         existingElements.remove( valueToKey.get( cache.getLastCleanedElement() ) );
 
@@ -165,7 +166,7 @@ public class TestClockCache
         assertEquals( 3, size );
         for ( Integer key : cleanedElements )
         {
-            assertEquals( null, cache.get( key ) );
+            assertNull( cache.get( key ) );
         }
         for ( Integer key : existingElements )
         {
@@ -175,7 +176,7 @@ public class TestClockCache
         assertEquals( 0, cache.size() );
         for ( Integer key : keyToValue.keySet() )
         {
-            assertEquals( null, cache.get( key ) );
+            assertNull( cache.get( key ) );
         }
     }
 

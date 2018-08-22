@@ -35,7 +35,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -54,8 +53,8 @@ public class NetworkReceiverTest
         final String wildCard = "0.0.0.0";
         URI uri = networkReceiver.getURI( new InetSocketAddress( wildCard, PORT ) );
 
-        assertTrue( wildCard + " does not match Uri host: " + uri.getHost(), wildCard.equals( uri.getHost() ) );
-        assertTrue( PORT == uri.getPort() );
+        assertEquals( wildCard + " does not match Uri host: " + uri.getHost(), wildCard, uri.getHost() );
+        assertEquals( PORT, uri.getPort() );
     }
 
     @Test
@@ -67,8 +66,8 @@ public class NetworkReceiverTest
         // We should NOT do a reverse DNS lookup for hostname. It might not be routed properly.
         URI uri = networkReceiver.getURI( new InetSocketAddress( "localhost", PORT ) );
 
-        assertTrue( "Uri host is not localhost ip: " + uri.getHost(), "127.0.0.1".equals( uri.getHost() ) );
-        assertTrue( PORT == uri.getPort() );
+        assertEquals( "Uri host is not localhost ip: " + uri.getHost(), "127.0.0.1", uri.getHost() );
+        assertEquals( PORT, uri.getPort() );
     }
 
     @Test

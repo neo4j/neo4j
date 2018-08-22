@@ -83,7 +83,7 @@ public class SslPolicyConfigTest
         assertEquals( publicCertificate, publicCertificateFromConfig );
         assertEquals( trustedDir, trustedDirFromConfig );
         assertEquals( revokedDir, revokedDirFromConfig );
-        assertEquals( null, privateKeyPassword );
+        assertNull( privateKeyPassword );
         assertFalse( allowKeyGeneration );
         assertFalse( trustAll );
         assertEquals( singletonList( "TLSv1.2" ), tlsVersions );

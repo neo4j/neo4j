@@ -34,7 +34,9 @@ import org.neo4j.causalclustering.core.state.Result;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ProgressTrackerImplTest
 {
@@ -54,7 +56,7 @@ public class ProgressTrackerImplTest
         Progress progress = tracker.start( operationA );
 
         // then
-        assertEquals( false, progress.isReplicated() );
+        assertFalse( progress.isReplicated() );
     }
 
     @Test
@@ -82,16 +84,16 @@ public class ProgressTrackerImplTest
         Thread waiter = replicationEventWaiter( progress );
 
         // then
-        assertEquals( true, waiter.isAlive() );
-        assertEquals( false, progress.isReplicated() );
+        assertTrue( waiter.isAlive() );
+        assertFalse( progress.isReplicated() );
 
         // when
         tracker.trackReplication( operationA );
 
         // then
-        assertEquals( true, progress.isReplicated() );
+        assertTrue( progress.isReplicated() );
         waiter.join( DEFAULT_TIMEOUT_MS );
-        assertEquals( false, waiter.isAlive() );
+        assertFalse( waiter.isAlive() );
     }
 
     @Test
@@ -119,8 +121,8 @@ public class ProgressTrackerImplTest
         tracker.trackReplication( operationA );
 
         // then
-        assertEquals( true, progressA.isReplicated() );
-        assertEquals( false, progressB.isReplicated() );
+        assertTrue( progressA.isReplicated() );
+        assertFalse( progressB.isReplicated() );
     }
 
     @Test
@@ -134,9 +136,9 @@ public class ProgressTrackerImplTest
         tracker.triggerReplicationEvent();
 
         // then
-        assertEquals( false, progress.isReplicated() );
+        assertFalse( progress.isReplicated() );
         waiter.join();
-        assertEquals( false, waiter.isAlive() );
+        assertFalse( waiter.isAlive() );
     }
 
     @Test
@@ -172,8 +174,8 @@ public class ProgressTrackerImplTest
         tracker.trackResult( aliasUnderSessionB, Result.of( "result" ) );
 
         // then
-        assertEquals( false, progressA.isReplicated() );
-        assertEquals( false, progressA.futureResult().isDone() );
+        assertFalse( progressA.isReplicated() );
+        assertFalse( progressA.futureResult().isDone() );
     }
 
     private Thread replicationEventWaiter( Progress progress )

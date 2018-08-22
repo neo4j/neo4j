@@ -528,7 +528,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         {
             if ( path.startNode().equals( path.endNode() ) )
             {
-                assertTrue( "Path length must be zero", path.length() == 0 );
+                assertEquals( "Path length must be zero", 0, path.length() );
             }
             else
             {

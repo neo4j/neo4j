@@ -33,6 +33,7 @@ import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -65,7 +66,7 @@ public class DefaultFormatTest
         assertNotNull( map );
         assertThat( map, hasEntry( "key1", "value1" ) );
         assertThat( map, hasEntry( "key2", "value11" ) );
-        assertTrue( "map contained extra values", map.size() == 2 );
+        assertEquals( "map contained extra values", 2, map.size() );
     }
 
     @Test
@@ -74,7 +75,7 @@ public class DefaultFormatTest
         Map<String, Object> map = input.readMap( "{\"nested\": {\"key\": \"valuable\"}}" );
         assertNotNull( map );
         assertThat( map, hasKey( "nested" ) );
-        assertTrue( "map contained extra values", map.size() == 1 );
+        assertEquals( "map contained extra values", 1, map.size() );
         Object nested = map.get( "nested" );
         assertThat( nested, instanceOf( Map.class ) );
         @SuppressWarnings( "unchecked" )

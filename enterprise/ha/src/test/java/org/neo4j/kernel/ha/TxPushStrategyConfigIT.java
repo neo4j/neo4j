@@ -238,7 +238,7 @@ public class TxPushStrategyConfigIT
             GraphDatabaseAPI db = cluster.getMemberByServerId( mapping.serverId );
             mapping.format( failures, getLastTx( db ) );
         }
-        assertTrue( failures.toString(), failures.length() == 0 );
+        assertEquals( failures.toString(), 0, failures.length() );
     }
 
     private long getLastTx( GraphDatabaseAPI db )

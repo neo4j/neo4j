@@ -64,6 +64,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
@@ -153,7 +154,7 @@ public class BoltConnectionManagementIT
         Map<String, Long> result = collectConnectionResult( admin, 1 );
 
         assertTrue( result.containsKey( "neo4j" ) );
-        assertTrue( result.get( "neo4j" ) == 1L );
+        assertEquals( 1L, (long) result.get( "neo4j" ) );
     }
 
     //@Test
@@ -169,9 +170,9 @@ public class BoltConnectionManagementIT
         Map<String, Long> result = collectConnectionResult( admin, 2 );
 
         assertTrue( result.containsKey( "neo4j" ) );
-        assertTrue( result.get( "neo4j" ) == 1L );
+        assertEquals( 1L, (long) result.get( "neo4j" ) );
         assertTrue( result.containsKey( "Igor" ) );
-        assertTrue( result.get( "Igor" ) == 1L );
+        assertEquals( 1L, (long) result.get( "Igor" ) );
     }
 
     //@Test
@@ -202,14 +203,14 @@ public class BoltConnectionManagementIT
         // Then
         Map<String, Long> terminationResult = collectConnectionResult( admin, 1 );
         assertTrue( terminationResult.containsKey( "Igor" ) );
-        assertTrue( terminationResult.get( "Igor" ) == 1L );
+        assertEquals( 1L, (long) terminationResult.get( "Igor" ) );
 
         admin.send( util.chunk(
                 new RunMessage( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 PullAllMessage.INSTANCE ) );
         Map<String, Long> listResult = collectConnectionResult( admin, 1 );
         assertTrue( listResult.containsKey( "neo4j" ) );
-        assertTrue( listResult.get( "neo4j" ) == 1L );
+        assertEquals( 1L, (long) listResult.get( "neo4j" ) );
 
         verifyConnectionHasTerminated( user );
     }
@@ -225,7 +226,7 @@ public class BoltConnectionManagementIT
         // Then
         Map<String, Long> terminationResult = collectConnectionResult( admin, 1 );
         assertTrue( terminationResult.containsKey( "Igor" ) );
-        assertTrue( terminationResult.get( "Igor" ) == 0L );
+        assertEquals( 0L, (long) terminationResult.get( "Igor" ) );
     }
 
     //@Test

@@ -342,12 +342,12 @@ public class NodeTest
         keys.next();
         keys.next();
         Map<String,Object> properties = node1.getAllProperties();
-        assertTrue( properties.get( key1 ).equals( int1 ) );
-        assertTrue( properties.get( key2 ).equals( int2 ) );
-        assertTrue( properties.get( key3 ).equals( string ) );
+        assertEquals( properties.get( key1 ), int1 );
+        assertEquals( properties.get( key2 ), int2 );
+        assertEquals( properties.get( key3 ), string );
         properties = node1.getProperties( key1, key2 );
-        assertTrue( properties.get( key1 ).equals( int1 ) );
-        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertEquals( properties.get( key1 ), int1 );
+        assertEquals( properties.get( key2 ), int2 );
         assertFalse( properties.containsKey( key3 ) );
 
         properties = node1.getProperties();

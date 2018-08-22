@@ -90,10 +90,8 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             this.objectExistsInArray( firstNode, relNodes ) );
         assertTrue( "Relationship says that it isn't connected to secondNode",
             this.objectExistsInArray( secondNode, relNodes ) );
-        assertTrue( "The other node should be secondNode but it isn't", rel
-            .getOtherNode( firstNode ).equals( secondNode ) );
-        assertTrue( "The other node should be firstNode but it isn't", rel
-            .getOtherNode( secondNode ).equals( firstNode ) );
+        assertEquals( "The other node should be secondNode but it isn't", rel.getOtherNode( firstNode ), secondNode );
+        assertEquals( "The other node should be firstNode but it isn't", rel.getOtherNode( secondNode ), firstNode );
         rel.delete();
         secondNode.delete();
         firstNode.delete();

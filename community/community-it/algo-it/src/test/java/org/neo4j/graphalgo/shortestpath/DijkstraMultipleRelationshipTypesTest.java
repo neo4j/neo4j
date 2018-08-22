@@ -27,7 +27,7 @@ import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.RelationshipType;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
@@ -49,13 +49,13 @@ public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
         graph.makeEdges( "c,e" ); // second shortcut
         Dijkstra<Double> dijkstra;
         dijkstra = getDijkstra( "a", "e", MyRelTypes.R1 );
-        assertTrue( dijkstra.getCost() == 4.0 );
+        assertEquals( 4.0, dijkstra.getCost(), 0.0 );
         dijkstra = getDijkstra( "a", "e", MyRelTypes.R1, MyRelTypes.R2 );
-        assertTrue( dijkstra.getCost() == 3.0 );
+        assertEquals( 3.0, dijkstra.getCost(), 0.0 );
         dijkstra = getDijkstra( "a", "e", MyRelTypes.R1, MyRelTypes.R3 );
-        assertTrue( dijkstra.getCost() == 3.0 );
+        assertEquals( 3.0, dijkstra.getCost(), 0.0 );
         dijkstra = getDijkstra( "a", "e", MyRelTypes.R1, MyRelTypes.R2,
                 MyRelTypes.R3 );
-        assertTrue( dijkstra.getCost() == 2.0 );
+        assertEquals( 2.0, dijkstra.getCost(), 0.0 );
     }
 }

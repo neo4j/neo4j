@@ -29,7 +29,7 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 
 public class SmallestGraphEverTest extends TraversalTestBase
@@ -129,7 +129,7 @@ public class SmallestGraphEverTest extends TraversalTestBase
         try ( Transaction transaction = beginTx() )
         {
             Traverser traverser = traversal.uniqueness( uniqueness ).traverse( node( "1" ) );
-            assertFalse( "empty traversal", Iterables.count( traverser ) == 0 );
+            assertNotEquals( "empty traversal", 0, Iterables.count( traverser ) );
         }
     }
 

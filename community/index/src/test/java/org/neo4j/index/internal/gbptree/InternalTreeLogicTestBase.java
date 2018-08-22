@@ -1863,19 +1863,18 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
     private void assertNotEqualsKey( KEY key1, KEY key2 )
     {
-        assertFalse( String.format( "expected no not equal, key1=%s, key2=%s", key1.toString(), key2.toString() ),
-                layout.compare( key1, key2 ) == 0 );
+        assertNotEquals( String.format( "expected no not equal, key1=%s, key2=%s", key1.toString(), key2.toString() ), 0, layout.compare( key1, key2 ) );
     }
 
     private void assertEqualsKey( KEY expected, KEY actual )
     {
-        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
-                layout.compare( expected, actual ) == 0 );
+        assertEquals( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ), 0,
+                layout.compare( expected, actual ) );
     }
 
     private void assertEqualsValue( VALUE expected, VALUE actual )
     {
-        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
-                layout.compareValue( expected, actual ) == 0 );
+        assertEquals( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ), 0,
+                layout.compareValue( expected, actual ) );
     }
 }

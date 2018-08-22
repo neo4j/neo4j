@@ -302,9 +302,7 @@ public class DatabaseActionsTest
         try ( Transaction tx = database.getGraph().beginTx() )
         {
             Node node = database.getGraph().getNodeById( nodeId );
-            assertEquals( false, node.getPropertyKeys()
-                    .iterator()
-                    .hasNext() );
+            assertFalse( node.getPropertyKeys().iterator().hasNext() );
             tx.success();
         }
     }
@@ -390,7 +388,7 @@ public class DatabaseActionsTest
         {
             Node node = database.getGraph().getNodeById( nodeId );
             assertEquals( 15, node.getProperty( "number" ) );
-            assertEquals( false, node.hasProperty( "foo" ) );
+            assertFalse( node.hasProperty( "foo" ) );
             tx.success();
         }
     }

@@ -23,6 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SessionTest
 {
@@ -75,14 +77,14 @@ public class SessionTest
     @Test
     public void canCheckInvalidVariableName()
     {
-        assertEquals( false, session.has( "foo bar" ));
+        assertFalse( session.has( "foo bar" ) );
     }
 
     @Test
     public void canCheckVariableName() throws ShellException
     {
-        assertEquals( false, session.has( "_foobar" ));
+        assertFalse( session.has( "_foobar" ) );
         session.set( "_foobar", 42 );
-        assertEquals( true, session.has( "_foobar" ));
+        assertTrue( session.has( "_foobar" ) );
     }
 }

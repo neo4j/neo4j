@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class DijkstraIteratorTest extends Neo4jAlgoTestCase
 {
@@ -85,19 +85,19 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
             DijkstraIterator iter1 = new TestIterator( graph.getNode( "start" ),
                 predecessors1, seen1, seen2, dists1, dists2, false );
             // while ( iter1.hasNext() && !limitReached() && !iter1.isDone() )
-            assertTrue( iter1.next().equals( graph.getNode( "start" ) ) );
-            assertTrue( iter1.next().equals( graph.getNode( "a" ) ) );
-            assertTrue( seen1.get( graph.getNode( "x" ) ) == 10.0 );
-            assertTrue( iter1.next().equals( graph.getNode( "b" ) ) );
-            assertTrue( seen1.get( graph.getNode( "x" ) ) == 9.0 );
-            assertTrue( iter1.next().equals( graph.getNode( "c" ) ) );
-            assertTrue( seen1.get( graph.getNode( "x" ) ) == 8.0 );
-            assertTrue( iter1.next().equals( graph.getNode( "d" ) ) );
-            assertTrue( seen1.get( graph.getNode( "x" ) ) == 7.0 );
-            assertTrue( iter1.next().equals( graph.getNode( "e" ) ) );
-            assertTrue( seen1.get( graph.getNode( "x" ) ) == 6.0 );
-            assertTrue( iter1.next().equals( graph.getNode( "x" ) ) );
-            assertTrue( seen1.get( graph.getNode( "x" ) ) == 6.0 );
+            assertEquals( iter1.next(), graph.getNode( "start" ) );
+            assertEquals( iter1.next(), graph.getNode( "a" ) );
+            assertEquals( 10.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( "b" ) );
+            assertEquals( 9.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( "c" ) );
+            assertEquals( 8.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( "d" ) );
+            assertEquals( 7.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( "e" ) );
+            assertEquals( 6.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( "x" ) );
+            assertEquals( 6.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
             assertFalse( iter1.hasNext() );
             int count = 0;
             // This code below is correct for the alternative priority queue
@@ -123,7 +123,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
                 iter1.next();
                 ++count;
             }
-            assertTrue( count == 3 );
+            assertEquals( 3, count );
         }
     }
 }

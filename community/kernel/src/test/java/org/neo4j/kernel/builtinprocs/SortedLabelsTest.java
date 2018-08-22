@@ -23,9 +23,7 @@ package org.neo4j.kernel.builtinprocs;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SortedLabelsTest
 {
@@ -41,15 +39,15 @@ class SortedLabelsTest
 
         // self
         //noinspection EqualsWithItself
-        assertTrue( a.equals( a ) );
+        assertEquals( a, a );
 
         // unordered self
-        assertTrue( a.equals( b ) );
-        assertTrue( b.equals( a ) );
+        assertEquals( a, b );
+        assertEquals( b, a );
 
         // other
-        assertFalse( a.equals( c ) );
-        assertFalse( c.equals( a ) );
+        assertNotEquals( a, c );
+        assertNotEquals( c, a );
     }
 
     @Test

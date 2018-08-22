@@ -44,7 +44,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
@@ -97,9 +96,9 @@ public class SchemaProcedureIT extends KernelIntegrationTest
         while ( stream.hasNext() )
         {
             Object[] next = stream.next();
-            assertTrue( next.length == 2 );
+            assertEquals( 2, next.length );
             ArrayList<Node> nodes = (ArrayList<Node>) next[0];
-            assertTrue( nodes.size() == 1 );
+            assertEquals( 1, nodes.size() );
             assertThat( nodes.get( 0 ).getLabels(), contains( equalTo( Label.label( "Person" ) ) ) );
             assertEquals( "Person", nodes.get( 0 ).getAllProperties().get( "name" ) );
             assertEquals( Collections.singletonList( "name" ), nodes.get( 0 ).getAllProperties().get( "indexes" ) );
@@ -133,9 +132,9 @@ public class SchemaProcedureIT extends KernelIntegrationTest
         while ( stream.hasNext() )
         {
             Object[] next = stream.next();
-            assertTrue( next.length == 2 );
+            assertEquals( 2, next.length );
             LinkedList<Relationship> relationships = (LinkedList<Relationship>) next[1];
-            assertTrue( relationships.size() == 1 );
+            assertEquals( 1, relationships.size() );
             assertEquals( "LIVES_IN", relationships.get( 0 ).getType().name() );
             assertThat( relationships.get( 0 ).getStartNode().getLabels(),
                     contains( equalTo( Label.label( "Person" ) ) ) );

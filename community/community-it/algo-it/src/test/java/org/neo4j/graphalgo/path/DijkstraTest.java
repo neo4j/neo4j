@@ -159,7 +159,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         assertTrue( "Expect at least one path", paths.hasNext() );
         WeightedPath path = paths.next();
         assertPath( path, nodeA, nodeB );
-        assertTrue( "Expect weight 1", path.weight() == 1 );
+        assertEquals( "Expect weight 1", 1, path.weight(), 0.0 );
         assertFalse( "Expected at most one path",  paths.hasNext() );
 
     }
@@ -195,7 +195,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         assertTrue( "Expect at least one path", paths.hasNext() );
         WeightedPath path = paths.next();
         assertPath( path, a,g,h,f );
-        assertTrue( "Expect weight 1", path.weight() == 4 );
+        assertEquals( "Expect weight 1", 4, path.weight(), 0.0 );
         assertFalse( "Expected at most one path",  paths.hasNext() );
     }
 

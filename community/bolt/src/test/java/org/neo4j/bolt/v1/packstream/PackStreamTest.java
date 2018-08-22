@@ -36,6 +36,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class PackStreamTest
 {
@@ -721,7 +722,7 @@ public class PackStreamTest
         assertEquals( "Bob", v1 );
         assertEquals( "cat_ages", k2 );
         assertEquals( 4.3, d, 0.0001 );
-        assertEquals( true, e );
+        assertTrue( e );
     }
 
     @Test

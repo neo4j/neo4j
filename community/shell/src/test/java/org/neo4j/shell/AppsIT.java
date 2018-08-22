@@ -57,6 +57,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.function.Predicates.await;
@@ -589,8 +590,7 @@ public class AppsIT extends AbstractShellIT
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, false,
-                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertFalse( "Shows welcome message: " + outString, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
     }
 
     @Test
@@ -601,8 +601,7 @@ public class AppsIT extends AbstractShellIT
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, true,
-                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertTrue( "Shows welcome message: " + outString, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
     }
 
     @Test

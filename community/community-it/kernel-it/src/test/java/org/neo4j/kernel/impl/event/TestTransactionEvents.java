@@ -58,6 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -95,9 +96,9 @@ public class TestTransactionEvents
         { /* Good */
         }
 
-        assertTrue( handler1 == db.registerTransactionEventHandler( handler1 ) );
-        assertTrue( handler1 == db.registerTransactionEventHandler( handler1 ) );
-        assertTrue( handler1 == db.unregisterTransactionEventHandler( handler1 ) );
+        assertSame( handler1, db.registerTransactionEventHandler( handler1 ) );
+        assertSame( handler1, db.registerTransactionEventHandler( handler1 ) );
+        assertSame( handler1, db.unregisterTransactionEventHandler( handler1 ) );
 
         try
         {
@@ -108,10 +109,10 @@ public class TestTransactionEvents
         { /* Good */
         }
 
-        assertTrue( handler1 == db.registerTransactionEventHandler( handler1 ) );
-        assertTrue( handler2 == db.registerTransactionEventHandler( handler2 ) );
-        assertTrue( handler1 == db.unregisterTransactionEventHandler( handler1 ) );
-        assertTrue( handler2 == db.unregisterTransactionEventHandler( handler2 ) );
+        assertSame( handler1, db.registerTransactionEventHandler( handler1 ) );
+        assertSame( handler2, db.registerTransactionEventHandler( handler2 ) );
+        assertSame( handler1, db.unregisterTransactionEventHandler( handler1 ) );
+        assertSame( handler2, db.unregisterTransactionEventHandler( handler2 ) );
 
         db.registerTransactionEventHandler( handler1 );
         try ( Transaction tx = db.beginTx() )

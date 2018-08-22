@@ -38,6 +38,7 @@ import org.neo4j.time.FakeClock;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -75,7 +76,7 @@ public class ResourcePoolTest
         pool.release();
 
         Something somethingElse = pool.acquire();
-        assertFalse( something == somethingElse );
+        assertNotSame( something, somethingElse );
         somethingElse.doStuff();
     }
 

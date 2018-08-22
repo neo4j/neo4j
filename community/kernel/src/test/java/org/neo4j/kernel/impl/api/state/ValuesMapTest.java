@@ -34,6 +34,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -59,7 +60,7 @@ class ValuesMapTest
         assertEquals( intValue( 11 ), map.get( 1 ) );
         assertEquals( intValue( 12 ), map.get( 2 ) );
         // default empty value
-        assertEquals( null, map.get( 3 ) );
+        assertNull( map.get( 3 ) );
     }
 
     @Test

@@ -533,7 +533,7 @@ public class FollowerTest
         Outcome outcome = new Follower().handle( new Election( myself ), raftState, log() );
 
         // then
-        assertEquals( true, outcome.isPreElection() );
+        assertTrue( outcome.isPreElection() );
     }
 
     @Test
@@ -561,7 +561,7 @@ public class FollowerTest
         Outcome outcome = new Follower().handle( new Election( myself ), raftState, log() );
 
         // then
-        assertEquals( true, outcome.isPreElection() );
+        assertTrue( outcome.isPreElection() );
     }
 
     @Test
@@ -576,7 +576,7 @@ public class FollowerTest
 
         // then
         assertEquals( newTerm, outcome.getTerm() );
-        assertEquals( false, outcome.isPreElection() );
+        assertFalse( outcome.isPreElection() );
     }
 
     @Test
@@ -801,7 +801,7 @@ public class FollowerTest
         Outcome outcome = new Follower().handle( new RaftMessages.PreVote.Request( member1, raftState.term(), member1, 0, 0 ), raftState, log() );
 
         // then
-        assertEquals( false, ( (RaftMessages.PreVote.Response) messageFor( outcome, member1 ) ).voteGranted() );
+        assertFalse( ((RaftMessages.PreVote.Response) messageFor( outcome, member1 )).voteGranted() );
     }
 
     @Test
@@ -820,7 +820,7 @@ public class FollowerTest
         Outcome outcome = new Follower().handle( new RaftMessages.PreVote.Request( member1, raftState.term(), member1, 0, 0 ), raftState, log() );
 
         // then
-        assertEquals( true, ( (RaftMessages.PreVote.Response) messageFor( outcome, member1 ) ).voteGranted() );
+        assertTrue( ((RaftMessages.PreVote.Response) messageFor( outcome, member1 )).voteGranted() );
     }
 
     @Test

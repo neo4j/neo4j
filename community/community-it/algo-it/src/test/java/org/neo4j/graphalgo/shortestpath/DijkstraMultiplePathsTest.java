@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
@@ -65,10 +66,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
                 int nrPaths = dijkstra.getPathsAsNodes().size();
                 if ( !node1.equals( node2 ) )
                 {
-                    assertTrue( "Number of paths (" + node1 + "->" + node2
-                        + "): " + nrPaths, nrPaths == 2 );
+                    assertEquals( "Number of paths (" + node1 + "->" + node2 + "): " + nrPaths, 2, nrPaths );
                 }
-                assertTrue( dijkstra.getCost() == 0.0 );
+                assertEquals( 0.0, dijkstra.getCost(), 0.0 );
             }
         }
     }
@@ -89,10 +89,10 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "g", "cost", (double) 1 );
         graph.makeEdge( "g", "h", "cost", (double) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "h" );
-        assertTrue( dijkstra.getPaths().size() == 4 );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 4 );
-        assertTrue( dijkstra.getPathsAsRelationships().size() == 4 );
-        assertTrue( dijkstra.getCost() == 5.0 );
+        assertEquals( 4, dijkstra.getPaths().size() );
+        assertEquals( 4, dijkstra.getPathsAsNodes().size() );
+        assertEquals( 4, dijkstra.getPathsAsRelationships().size() );
+        assertEquals( 5.0, dijkstra.getCost(), 0.0 );
     }
 
     /**
@@ -111,10 +111,10 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "d", "e", "cost", (float) 1 );
         graph.makeEdge( "h", "e", "cost", (double) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "e" );
-        assertTrue( dijkstra.getPaths().size() == 2 );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 2 );
-        assertTrue( dijkstra.getPathsAsRelationships().size() == 2 );
-        assertTrue( dijkstra.getCost() == 4.0 );
+        assertEquals( 2, dijkstra.getPaths().size() );
+        assertEquals( 2, dijkstra.getPathsAsNodes().size() );
+        assertEquals( 2, dijkstra.getPathsAsRelationships().size() );
+        assertEquals( 4.0, dijkstra.getCost(), 0.0 );
     }
 
     /**
@@ -145,8 +145,8 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "z", "b", "cost", 1 );
         graph.makeEdge( "zz", "z", "cost", (double) 0 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "zz" );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 3 );
-        assertTrue( dijkstra.getCost() == 1.0 );
+        assertEquals( 3, dijkstra.getPathsAsNodes().size() );
+        assertEquals( 1.0, dijkstra.getCost(), 0.0 );
     }
 
     /**
@@ -175,8 +175,8 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "y", "b", "cost", (long) 1 );
         graph.makeEdge( "z", "b", "cost", 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 3 );
-        assertTrue( dijkstra.getCost() == 1.0 );
+        assertEquals( 3, dijkstra.getPathsAsNodes().size() );
+        assertEquals( 1.0, dijkstra.getCost(), 0.0 );
     }
 
     /**
@@ -192,8 +192,8 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "y", "a", "cost", (byte) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
         List<List<Node>> paths = dijkstra.getPathsAsNodes();
-        assertTrue( paths.size() == 3 );
-        assertTrue( dijkstra.getCost() == 1.0 );
+        assertEquals( 3, paths.size() );
+        assertEquals( 1.0, dijkstra.getCost(), 0.0 );
     }
 
     @Test
@@ -207,7 +207,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
                 CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(),
                 Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
         List<List<Node>> paths = dijkstra.getPathsAsNodes();
-        assertTrue( paths.size() == 2 );
+        assertEquals( 2, paths.size() );
     }
 
     @Test
@@ -230,36 +230,36 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         boolean pathBD2 = false;
         boolean pathB2D2 = false;
         List<List<PropertyContainer>> paths = dijkstra.getPaths();
-        assertTrue( paths.size() == 4 );
+        assertEquals( 4, paths.size() );
         for ( List<PropertyContainer> path : paths )
         {
-            assertTrue( path.size() == 9 );
-            assertTrue( path.get( 0 ).equals( graph.getNode( "a" ) ) );
-            assertTrue( path.get( 4 ).equals( graph.getNode( "c" ) ) );
-            assertTrue( path.get( 8 ).equals( graph.getNode( "e" ) ) );
+            assertEquals( 9, path.size() );
+            assertEquals( path.get( 0 ), graph.getNode( "a" ) );
+            assertEquals( path.get( 4 ), graph.getNode( "c" ) );
+            assertEquals( path.get( 8 ), graph.getNode( "e" ) );
             // first choice
             if ( path.get( 2 ).equals( graph.getNode( "b" ) ) )
             {
-                assertTrue( path.get( 1 ).equals( edgeAB ) );
-                assertTrue( path.get( 3 ).equals( edgeBC ) );
+                assertEquals( path.get( 1 ), edgeAB );
+                assertEquals( path.get( 3 ), edgeBC );
             }
             else
             {
-                assertTrue( path.get( 1 ).equals( edgeAB2 ) );
-                assertTrue( path.get( 2 ).equals( graph.getNode( "b2" ) ) );
-                assertTrue( path.get( 3 ).equals( edgeB2C ) );
+                assertEquals( path.get( 1 ), edgeAB2 );
+                assertEquals( path.get( 2 ), graph.getNode( "b2" ) );
+                assertEquals( path.get( 3 ), edgeB2C );
             }
             // second choice
             if ( path.get( 6 ).equals( graph.getNode( "d" ) ) )
             {
-                assertTrue( path.get( 5 ).equals( edgeCD ) );
-                assertTrue( path.get( 7 ).equals( edgeDE ) );
+                assertEquals( path.get( 5 ), edgeCD );
+                assertEquals( path.get( 7 ), edgeDE );
             }
             else
             {
-                assertTrue( path.get( 5 ).equals( edgeCD2 ) );
-                assertTrue( path.get( 6 ).equals( graph.getNode( "d2" ) ) );
-                assertTrue( path.get( 7 ).equals( edgeD2E ) );
+                assertEquals( path.get( 5 ), edgeCD2 );
+                assertEquals( path.get( 6 ), graph.getNode( "d2" ) );
+                assertEquals( path.get( 7 ), edgeD2E );
             }
             // combinations
             if ( path.get( 2 ).equals( graph.getNode( "b" ) ) )
@@ -312,29 +312,29 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         boolean pathBD2 = false;
         boolean pathB2D2 = false;
         List<List<Relationship>> paths = dijkstra.getPathsAsRelationships();
-        assertTrue( paths.size() == 4 );
+        assertEquals( 4, paths.size() );
         for ( List<Relationship> path : paths )
         {
-            assertTrue( path.size() == 4 );
+            assertEquals( 4, path.size() );
             // first choice
             if ( path.get( 0 ).equals( edgeAB ) )
             {
-                assertTrue( path.get( 1 ).equals( edgeBC ) );
+                assertEquals( path.get( 1 ), edgeBC );
             }
             else
             {
-                assertTrue( path.get( 0 ).equals( edgeAB2 ) );
-                assertTrue( path.get( 1 ).equals( edgeB2C ) );
+                assertEquals( path.get( 0 ), edgeAB2 );
+                assertEquals( path.get( 1 ), edgeB2C );
             }
             // second choice
             if ( path.get( 2 ).equals( edgeCD ) )
             {
-                assertTrue( path.get( 3 ).equals( edgeDE ) );
+                assertEquals( path.get( 3 ), edgeDE );
             }
             else
             {
-                assertTrue( path.get( 2 ).equals( edgeCD2 ) );
-                assertTrue( path.get( 3 ).equals( edgeD2E ) );
+                assertEquals( path.get( 2 ), edgeCD2 );
+                assertEquals( path.get( 3 ), edgeD2E );
             }
             // combinations
             if ( path.get( 0 ).equals( edgeAB ) )

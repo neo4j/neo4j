@@ -383,10 +383,7 @@ public class AuthProceduresIT
             {
                 String value = objectValue.toString();
                 String expectedValue = expected.get( key ).toString();
-                assertTrue(
-                        String.format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value),
-                        value.equals( expectedValue )
-                );
+                assertEquals( String.format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value ), value, expectedValue );
             }
         }
     }

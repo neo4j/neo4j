@@ -601,8 +601,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
         service.deleteAllNodeProperties( nodeId );
-        assertEquals( true, helper.getNodeProperties( nodeId )
-                .isEmpty() );
+        assertTrue( helper.getNodeProperties( nodeId ).isEmpty() );
     }
 
     @Test
@@ -953,9 +952,7 @@ public class RestfulGraphDatabaseTest
             Set<String> indexes = output.getResultAsMap()
                     .keySet();
             assertEquals( 1, indexes.size() );
-            assertTrue( indexes.iterator()
-                    .next()
-                    .equals( NODE_AUTO_INDEX ) );
+            assertEquals( indexes.iterator().next(), NODE_AUTO_INDEX );
         }
         else
         {

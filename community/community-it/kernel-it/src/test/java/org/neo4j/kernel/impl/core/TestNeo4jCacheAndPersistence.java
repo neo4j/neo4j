@@ -45,6 +45,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -87,7 +88,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         tx.success();
         tx.close();
         tx = getGraphDb().beginTx();
-        assertTrue( node1.getProperty( key1 ).equals( 1 ) );
+        assertEquals( 1, node1.getProperty( key1 ) );
         setTransaction( tx );
     }
 
@@ -146,9 +147,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( string1, node1.removeProperty( key2 ) );
         assertEquals( string2, node2.removeProperty( key2 ) );
         assertEquals( string1, rel.removeProperty( key2 ) );
-        assertTrue( node1.removeProperty( arrayKey ) != null );
-        assertTrue( node2.removeProperty( arrayKey ) != null );
-        assertTrue( rel.removeProperty( arrayKey ) != null );
+        assertNotNull( node1.removeProperty( arrayKey ) );
+        assertNotNull( node2.removeProperty( arrayKey ) );
+        assertNotNull( rel.removeProperty( arrayKey ) );
     }
 
     @Test
@@ -254,8 +255,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Relationship relA = nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
         nodeA.setProperty( arrayKey, array );
         relA.setProperty( arrayKey, array );
-        assertTrue( nodeA.getProperty( arrayKey ) != null );
-        assertTrue( relA.getProperty( arrayKey ) != null );
+        assertNotNull( nodeA.getProperty( arrayKey ) );
+        assertNotNull( relA.getProperty( arrayKey ) );
         relA.delete();
         nodeA.delete();
         nodeB.delete();

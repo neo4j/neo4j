@@ -81,6 +81,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -212,7 +213,7 @@ public class IndexPopulationJobTest
 
         // THEN
         String result = stateHolder.get( "key" );
-        assertEquals( null, result );
+        assertNull( result );
     }
 
     @Test

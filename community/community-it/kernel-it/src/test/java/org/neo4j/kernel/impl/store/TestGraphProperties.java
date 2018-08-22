@@ -27,7 +27,6 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.Future;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -50,6 +49,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -279,7 +279,7 @@ public class TestGraphProperties
         assertEquals( graphProperties, properties( db ) );
         db.shutdown();
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-        assertFalse( graphProperties.equals( properties( db ) ) );
+        assertNotEquals( graphProperties, properties( db ) );
         db.shutdown();
     }
 

@@ -31,7 +31,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
 {
@@ -55,51 +55,50 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
         SingleSourceShortestPath<Integer> singleSource = getSingleSourceAlgorithm( graph
             .getNode( "a" ) );
         // check a few distances
-        assertTrue( singleSource.getCost( graph.getNode( "a" ) ) == 0 );
-        assertTrue( singleSource.getCost( graph.getNode( "b2" ) ) == 1 );
-        assertTrue( singleSource.getCost( graph.getNode( "c3" ) ) == 2 );
-        assertTrue( singleSource.getCost( graph.getNode( "d1" ) ) == 3 );
-        assertTrue( singleSource.getCost( graph.getNode( "e2" ) ) == 4 );
-        assertTrue( singleSource.getCost( graph.getNode( "f3" ) ) == 5 );
-        assertTrue( singleSource.getCost( graph.getNode( "g1" ) ) == 6 );
+        assertEquals( 0, (int) singleSource.getCost( graph.getNode( "a" ) ) );
+        assertEquals( 1, (int) singleSource.getCost( graph.getNode( "b2" ) ) );
+        assertEquals( 2, (int) singleSource.getCost( graph.getNode( "c3" ) ) );
+        assertEquals( 3, (int) singleSource.getCost( graph.getNode( "d1" ) ) );
+        assertEquals( 4, (int) singleSource.getCost( graph.getNode( "e2" ) ) );
+        assertEquals( 5, (int) singleSource.getCost( graph.getNode( "f3" ) ) );
+        assertEquals( 6, (int) singleSource.getCost( graph.getNode( "g1" ) ) );
         // check one path
         List<Node> path = singleSource.getPathAsNodes( graph.getNode( "g2" ) );
-        assertTrue( path.size() == 7 );
-        assertTrue( path.get( 0 ).equals( graph.getNode( "a" ) ) );
-        assertTrue( path.get( 1 ).equals( graph.getNode( "b2" ) ) );
-        assertTrue( path.get( 2 ).equals( graph.getNode( "c2" ) ) );
-        assertTrue( path.get( 3 ).equals( graph.getNode( "d2" ) ) );
-        assertTrue( path.get( 4 ).equals( graph.getNode( "e2" ) ) );
-        assertTrue( path.get( 5 ).equals( graph.getNode( "f2" ) ) );
-        assertTrue( path.get( 6 ).equals( graph.getNode( "g2" ) ) );
+        assertEquals( 7, path.size() );
+        assertEquals( path.get( 0 ), graph.getNode( "a" ) );
+        assertEquals( path.get( 1 ), graph.getNode( "b2" ) );
+        assertEquals( path.get( 2 ), graph.getNode( "c2" ) );
+        assertEquals( path.get( 3 ), graph.getNode( "d2" ) );
+        assertEquals( path.get( 4 ), graph.getNode( "e2" ) );
+        assertEquals( path.get( 5 ), graph.getNode( "f2" ) );
+        assertEquals( path.get( 6 ), graph.getNode( "g2" ) );
         // check it as relationships
         List<Relationship> rpath = singleSource.getPathAsRelationships( graph
             .getNode( "g2" ) );
-        assertTrue( rpath.size() == 6 );
-        assertTrue( rpath.get( 0 ).equals( graph.getRelationship( "a", "b2" ) ) );
-        assertTrue( rpath.get( 1 ).equals( graph.getRelationship( "b2", "c2" ) ) );
-        assertTrue( rpath.get( 2 ).equals( graph.getRelationship( "c2", "d2" ) ) );
-        assertTrue( rpath.get( 3 ).equals( graph.getRelationship( "d2", "e2" ) ) );
-        assertTrue( rpath.get( 4 ).equals( graph.getRelationship( "e2", "f2" ) ) );
-        assertTrue( rpath.get( 5 ).equals( graph.getRelationship( "f2", "g2" ) ) );
+        assertEquals( 6, rpath.size() );
+        assertEquals( rpath.get( 0 ), graph.getRelationship( "a", "b2" ) );
+        assertEquals( rpath.get( 1 ), graph.getRelationship( "b2", "c2" ) );
+        assertEquals( rpath.get( 2 ), graph.getRelationship( "c2", "d2" ) );
+        assertEquals( rpath.get( 3 ), graph.getRelationship( "d2", "e2" ) );
+        assertEquals( rpath.get( 4 ), graph.getRelationship( "e2", "f2" ) );
+        assertEquals( rpath.get( 5 ), graph.getRelationship( "f2", "g2" ) );
         // check it as both
         List<PropertyContainer> cpath = singleSource.getPath( graph
             .getNode( "g2" ) );
-        assertTrue( cpath.size() == 13 );
-        assertTrue( cpath.get( 0 ).equals( graph.getNode( "a" ) ) );
-        assertTrue( cpath.get( 2 ).equals( graph.getNode( "b2" ) ) );
-        assertTrue( cpath.get( 4 ).equals( graph.getNode( "c2" ) ) );
-        assertTrue( cpath.get( 6 ).equals( graph.getNode( "d2" ) ) );
-        assertTrue( cpath.get( 8 ).equals( graph.getNode( "e2" ) ) );
-        assertTrue( cpath.get( 10 ).equals( graph.getNode( "f2" ) ) );
-        assertTrue( cpath.get( 12 ).equals( graph.getNode( "g2" ) ) );
-        assertTrue( cpath.get( 1 ).equals( graph.getRelationship( "a", "b2" ) ) );
-        assertTrue( cpath.get( 3 ).equals( graph.getRelationship( "b2", "c2" ) ) );
-        assertTrue( cpath.get( 5 ).equals( graph.getRelationship( "c2", "d2" ) ) );
-        assertTrue( cpath.get( 7 ).equals( graph.getRelationship( "d2", "e2" ) ) );
-        assertTrue( cpath.get( 9 ).equals( graph.getRelationship( "e2", "f2" ) ) );
-        assertTrue( cpath.get( 11 )
-            .equals( graph.getRelationship( "f2", "g2" ) ) );
+        assertEquals( 13, cpath.size() );
+        assertEquals( cpath.get( 0 ), graph.getNode( "a" ) );
+        assertEquals( cpath.get( 2 ), graph.getNode( "b2" ) );
+        assertEquals( cpath.get( 4 ), graph.getNode( "c2" ) );
+        assertEquals( cpath.get( 6 ), graph.getNode( "d2" ) );
+        assertEquals( cpath.get( 8 ), graph.getNode( "e2" ) );
+        assertEquals( cpath.get( 10 ), graph.getNode( "f2" ) );
+        assertEquals( cpath.get( 12 ), graph.getNode( "g2" ) );
+        assertEquals( cpath.get( 1 ), graph.getRelationship( "a", "b2" ) );
+        assertEquals( cpath.get( 3 ), graph.getRelationship( "b2", "c2" ) );
+        assertEquals( cpath.get( 5 ), graph.getRelationship( "c2", "d2" ) );
+        assertEquals( cpath.get( 7 ), graph.getRelationship( "d2", "e2" ) );
+        assertEquals( cpath.get( 9 ), graph.getRelationship( "e2", "f2" ) );
+        assertEquals( cpath.get( 11 ), graph.getRelationship( "f2", "g2" ) );
         graph.clear();
     }
 
@@ -116,18 +115,18 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
         // one path
         singleSource = getSingleSourceAlgorithm( graph.getNode( "a" ),
             Direction.BOTH, MyRelTypes.R1 );
-        assertTrue( singleSource.getCost( graph.getNode( "e" ) ) == 4 );
+        assertEquals( 4, (int) singleSource.getCost( graph.getNode( "e" ) ) );
         // one shortcut
         singleSource = getSingleSourceAlgorithm( graph.getNode( "a" ),
             Direction.BOTH, MyRelTypes.R1, MyRelTypes.R2 );
-        assertTrue( singleSource.getCost( graph.getNode( "e" ) ) == 3 );
+        assertEquals( 3, (int) singleSource.getCost( graph.getNode( "e" ) ) );
         // other shortcut
         singleSource = getSingleSourceAlgorithm( graph.getNode( "a" ),
             Direction.BOTH, MyRelTypes.R1, MyRelTypes.R3 );
-        assertTrue( singleSource.getCost( graph.getNode( "e" ) ) == 3 );
+        assertEquals( 3, (int) singleSource.getCost( graph.getNode( "e" ) ) );
         // both shortcuts
         singleSource = getSingleSourceAlgorithm( graph.getNode( "a" ),
             Direction.BOTH, MyRelTypes.R1, MyRelTypes.R2, MyRelTypes.R3 );
-        assertTrue( singleSource.getCost( graph.getNode( "e" ) ) == 2 );
+        assertEquals( 2, (int) singleSource.getCost( graph.getNode( "e" ) ) );
     }
 }

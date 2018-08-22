@@ -128,7 +128,7 @@ public class ConsecutiveCacheTest
         for ( int i = 0; i < capacity; i++ )
         {
             assertEquals( i, evictions[i].intValue() );
-            assertEquals( null, cache.get( i ) );
+            assertNull( cache.get( i ) );
         }
 
         assertEquals( 0, cache.size() );
@@ -155,7 +155,7 @@ public class ConsecutiveCacheTest
             }
 
             assertEquals( i, evictions[i].intValue() );
-            assertEquals( null, cache.get( i ) );
+            assertNull( cache.get( i ) );
         }
 
         assertEquals( 10000, cache.get( capacity / 2 ).intValue() );
@@ -177,7 +177,7 @@ public class ConsecutiveCacheTest
         for ( int i = 0; i < capacity; i++ )
         {
             assertEquals( i, evictions[i].intValue() );
-            assertEquals( null, cache.get( i ) );
+            assertNull( cache.get( i ) );
         }
 
         assertEquals( 10000, cache.get( capacity + 1 ).intValue() );
@@ -199,7 +199,7 @@ public class ConsecutiveCacheTest
         // then
         for ( int i = 0; i <= upToIndex; i++ )
         {
-            assertEquals( null, cache.get( i ) );
+            assertNull( cache.get( i ) );
             assertEquals( i, evictions[i].intValue() );
         }
 
@@ -252,7 +252,7 @@ public class ConsecutiveCacheTest
 
         for ( int i = fromIndex; i < capacity; i++ )
         {
-            assertEquals( null, cache.get( i ) );
+            assertNull( cache.get( i ) );
             assertEquals( i, evictions[capacity - i - 1].intValue() );
         }
     }

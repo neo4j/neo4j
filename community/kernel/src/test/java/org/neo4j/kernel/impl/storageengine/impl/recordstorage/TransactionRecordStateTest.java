@@ -1393,7 +1393,7 @@ public class TransactionRecordStateTest
     {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
         DynamicRecord record = dynamicLabelStore.getRecord( id, dynamicLabelStore.nextRecord(), FORCE );
-        assertTrue( inUse == record.inUse() );
+        assertEquals( inUse, record.inUse() );
     }
 
     private Value string( int length )

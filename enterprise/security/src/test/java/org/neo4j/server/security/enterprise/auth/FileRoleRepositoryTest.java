@@ -55,6 +55,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -290,7 +291,7 @@ public class FileRoleRepositoryTest
 
         RoleRecord role = roleRepository.getRoleByName( "admin" );
         assertTrue( "neo4j should be assigned to 'admin'", role.users().contains( "neo4j" ) );
-        assertTrue( "only one admin should exist", role.users().size() == 1 );
+        assertEquals( "only one admin should exist", 1, role.users().size() );
 
         role = roleRepository.getRoleByName( "reader" );
         assertTrue( "no users should be assigned to 'reader'", role.users().isEmpty() );

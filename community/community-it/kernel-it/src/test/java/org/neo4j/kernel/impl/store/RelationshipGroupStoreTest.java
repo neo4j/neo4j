@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -58,7 +57,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -264,7 +263,7 @@ public class RelationshipGroupStoreTest
 
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
-        assertFalse( groupRecord.getNext() == -1 );
+        assertNotEquals( groupRecord.getNext(), -1 );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(),
                 rel2.getId(), rel3.getId() );
 
@@ -299,7 +298,7 @@ public class RelationshipGroupStoreTest
 
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
-        assertFalse( groupRecord.getNext() == -1 );
+        assertNotEquals( groupRecord.getNext(), -1 );
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext(), groupStore.newRecord(),
                 NORMAL );
         assertEquals( -1, otherGroupRecord.getNext() );

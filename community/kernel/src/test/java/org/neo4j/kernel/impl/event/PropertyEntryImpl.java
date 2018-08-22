@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
@@ -109,7 +109,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         String entityDescription = "For " + entity + " and " + key;
         if ( o1 == null || o2 == null )
         {
-            assertTrue( entityDescription + ". " + Strings.prettyPrint( o1 ) + " != " + Strings.prettyPrint( o2 ), o1 == o2 );
+            assertSame( entityDescription + ". " + Strings.prettyPrint( o1 ) + " != " + Strings.prettyPrint( o2 ), o1, o2 );
         }
         else
         {

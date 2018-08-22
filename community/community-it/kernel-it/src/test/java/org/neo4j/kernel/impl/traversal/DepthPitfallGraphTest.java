@@ -32,7 +32,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
@@ -112,7 +112,7 @@ public class DepthPitfallGraphTest extends TraversalTestBase
                     assertNotNull( position.lastRelationship() );
                 }
             }
-            assertFalse( "empty traversal", count == 0 );
+            assertNotEquals( "empty traversal", 0, count );
             transaction.success();
         }
     }

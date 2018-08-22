@@ -32,7 +32,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentials;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 public class DefaultElectionCredentialsTest
 {
@@ -137,8 +137,8 @@ public class DefaultElectionCredentialsTest
         DefaultElectionCredentials differentTxIdFromPrevious =
                 new DefaultElectionCredentials( 1, 10, false );
 
-        assertFalse( differentTxIdFromNext.equals( differentTxIdFromPrevious ) );
-        assertFalse( differentTxIdFromPrevious.equals( differentTxIdFromNext ) );
+        assertNotEquals( differentTxIdFromNext, differentTxIdFromPrevious );
+        assertNotEquals( differentTxIdFromPrevious, differentTxIdFromNext );
 
         DefaultElectionCredentials differentURIFromNext =
                 new DefaultElectionCredentials( 1, 11, false );
@@ -146,7 +146,7 @@ public class DefaultElectionCredentialsTest
         DefaultElectionCredentials differentURIFromPrevious =
                 new DefaultElectionCredentials( 2, 11, false );
 
-        assertFalse( differentTxIdFromNext.equals( differentURIFromPrevious ) );
-        assertFalse( differentTxIdFromPrevious.equals( differentURIFromNext ) );
+        assertNotEquals( differentTxIdFromNext, differentURIFromPrevious );
+        assertNotEquals( differentTxIdFromPrevious, differentURIFromNext );
     }
 }

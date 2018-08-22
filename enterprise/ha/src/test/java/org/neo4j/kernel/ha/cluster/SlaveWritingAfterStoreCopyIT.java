@@ -35,7 +35,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class SlaveWritingAfterStoreCopyIT
@@ -68,8 +68,8 @@ public class SlaveWritingAfterStoreCopyIT
         cluster.sync();
 
         // Then
-        assertTrue( expected.equals( collectIds( master ) ) );
-        assertTrue( expected.equals( collectIds( slave ) ) );
+        assertEquals( expected, collectIds( master ) );
+        assertEquals( expected, collectIds( slave ) );
     }
 
     private Set<Long> collectIds( HighlyAvailableGraphDatabase db )

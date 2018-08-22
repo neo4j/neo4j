@@ -30,7 +30,6 @@ import java.io.IOException;
 
 import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.TestMessageBuilders;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
@@ -46,6 +45,7 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.preVoteRequest;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.preVoteResponse;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteRequest;
@@ -85,7 +85,7 @@ public class CandidateTest
 
         // then
         assertEquals( LEADER, outcome.getRole() );
-        assertEquals( true, outcome.electionTimeoutRenewed() );
+        assertTrue( outcome.electionTimeoutRenewed() );
         assertThat( outcome.getLogCommands(), hasItem( new AppendLogEntry( 0,
                 new RaftLogEntry( state.term(), new NewLeaderBarrier() ) ) ) );
         assertThat( outcome.getOutgoingMessages(), hasItems(

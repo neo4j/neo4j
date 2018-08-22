@@ -27,7 +27,8 @@ import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {
@@ -47,12 +48,12 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     {
         graph.makeNode( "lonely" );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "lonely", "lonely" );
-        assertTrue( dijkstra.getCost() == 0.0 );
-        assertTrue( dijkstra.getPathAsNodes().size() == 1 );
+        assertEquals( 0.0, dijkstra.getCost(), 0.0 );
+        assertEquals( 1, dijkstra.getPathAsNodes().size() );
         dijkstra = getDijkstra( graph, 3.0, "lonely", "lonely" );
-        assertTrue( dijkstra.getCost() == 6.0 );
-        assertTrue( dijkstra.getPathAsNodes().size() == 1 );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 1 );
+        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+        assertEquals( 1, dijkstra.getPathAsNodes().size() );
+        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
     }
 
     /**
@@ -70,14 +71,14 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "d", "e", "cost", (double) 1 );
         graph.makeEdge( "e", "f", "cost", (double) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "a" );
-        assertTrue( dijkstra.getCost() == 0.0 );
-        assertTrue( dijkstra.getPathAsNodes().size() == 1 );
+        assertEquals( 0.0, dijkstra.getCost(), 0.0 );
+        assertEquals( 1, dijkstra.getPathAsNodes().size() );
         dijkstra = getDijkstra( graph, 3.0, "a", "a" );
-        assertTrue( dijkstra.getCost() == 6.0 );
-        assertTrue( dijkstra.getPathAsNodes().size() == 1 );
-        assertTrue( dijkstra.getPathAsRelationships().size() == 0 );
-        assertTrue( dijkstra.getPath().size() == 1 );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 1 );
+        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+        assertEquals( 1, dijkstra.getPathAsNodes().size() );
+        assertEquals( 0, dijkstra.getPathAsRelationships().size() );
+        assertEquals( 1, dijkstra.getPath().size() );
+        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
     }
 
     @Test
@@ -87,18 +88,18 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "b", "c", "cost", (float) 2 );
         graph.makeEdge( "c", "d", "cost", (byte) 3 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "d" );
-        assertTrue( dijkstra.getCost() == 6.0 );
-        assertTrue( dijkstra.getPathAsNodes() != null );
-        assertTrue( dijkstra.getPathAsNodes().size() == 4 );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 1 );
+        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+        assertNotNull( dijkstra.getPathAsNodes() );
+        assertEquals( 4, dijkstra.getPathAsNodes().size() );
+        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
         dijkstra = getDijkstra( graph, 0.0, "d", "a" );
-        assertTrue( dijkstra.getCost() == 6.0 );
-        assertTrue( dijkstra.getPathAsNodes().size() == 4 );
+        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+        assertEquals( 4, dijkstra.getPathAsNodes().size() );
         dijkstra = getDijkstra( graph, 0.0, "d", "b" );
-        assertTrue( dijkstra.getCost() == 5.0 );
-        assertTrue( dijkstra.getPathAsNodes().size() == 3 );
-        assertTrue( dijkstra.getPathAsRelationships().size() == 2 );
-        assertTrue( dijkstra.getPath().size() == 5 );
+        assertEquals( 5.0, dijkstra.getCost(), 0.0 );
+        assertEquals( 3, dijkstra.getPathAsNodes().size() );
+        assertEquals( 2, dijkstra.getPathAsRelationships().size() );
+        assertEquals( 5, dijkstra.getPath().size() );
     }
 
     /**
@@ -113,9 +114,9 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "b", "cost", 7 );
         graph.makeEdge( "b", "e", "cost", (byte) 2 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "s", "e" );
-        assertTrue( dijkstra.getCost() == 11.0 );
-        assertTrue( dijkstra.getPathAsNodes() != null );
-        assertTrue( dijkstra.getPathAsNodes().size() == 4 );
-        assertTrue( dijkstra.getPathsAsNodes().size() == 1 );
+        assertEquals( 11.0, dijkstra.getCost(), 0.0 );
+        assertNotNull( dijkstra.getPathAsNodes() );
+        assertEquals( 4, dijkstra.getPathAsNodes().size() );
+        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
     }
 }

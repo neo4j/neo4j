@@ -43,13 +43,13 @@ public class CircularBufferTest
 
         // then
         assertEquals( 0, buffer.size() );
-        assertEquals( null, buffer.remove() );
-        assertEquals( null, buffer.read( 0 ) );
+        assertNull( buffer.remove() );
+        assertNull( buffer.read( 0 ) );
 
         // again for idempotency check
         assertEquals( 0, buffer.size() );
-        assertEquals( null, buffer.remove() );
-        assertEquals( null, buffer.read( 0 ) );
+        assertNull( buffer.remove() );
+        assertNull( buffer.read( 0 ) );
     }
 
     @Test
@@ -68,7 +68,7 @@ public class CircularBufferTest
         buffer.remove();
 
         // then
-        assertEquals( null, buffer.remove() );
+        assertNull( buffer.remove() );
     }
 
     @Test
