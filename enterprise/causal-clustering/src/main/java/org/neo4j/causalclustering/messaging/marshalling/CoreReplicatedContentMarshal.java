@@ -22,6 +22,8 @@
  */
 package org.neo4j.causalclustering.messaging.marshalling;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -43,7 +45,6 @@ import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionSe
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ChunkHandler;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -110,30 +111,16 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
         }
     }
 
-    public ContentBuilder<ReplicatedContent> decode( ChunkHandler.ComposedChunks composedChunks ) throws IOException, EndOfStreamException
+    public ContentBuilder<ReplicatedContent> decode( byte contentType, ByteBuf buffer ) throws IOException, EndOfStreamException
     {
-        switch ( composedChunks.contentType() )
+        switch ( contentType )
         {
         case TX_CONTENT_TYPE:
         {
-            try
-            {
-                return ContentBuilder.finished( ReplicatedTransactionSerializer.decode( composedChunks.content() ) );
-            }
-            finally
-            {
-                composedChunks.release();
-            }
+            return ContentBuilder.finished( ReplicatedTransactionSerializer.decode( buffer ) );
         }
         default:
-            try
-            {
-                return read( composedChunks.contentType(), new NetworkReadableClosableChannelNetty4( composedChunks.content() ) );
-            }
-            finally
-            {
-                composedChunks.release();
-            }
+            return read( contentType, new NetworkReadableClosableChannelNetty4( buffer ) );
         }
     }
 

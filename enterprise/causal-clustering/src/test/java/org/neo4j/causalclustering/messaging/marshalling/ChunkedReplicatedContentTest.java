@@ -50,8 +50,6 @@ public class ChunkedReplicatedContentTest
 
         // is not last
         assertFalse( byteBuf.readBoolean() );
-        // first chunk unknown length
-        assertEquals( 8, byteBuf.readInt() );
         // first chunk has content
         assertEquals( (byte) 1, byteBuf.readByte() );
         byteBuf.release();
@@ -59,15 +57,11 @@ public class ChunkedReplicatedContentTest
         byteBuf = replicatedContent.readChunk( allocator );
         // is not last
         assertFalse( byteBuf.readBoolean() );
-        // second chunk has length -1
-        assertEquals( 8, byteBuf.readInt() );
         byteBuf.release();
 
         byteBuf = replicatedContent.readChunk( allocator );
         // is last
         assertTrue( byteBuf.readBoolean() );
-        // third chunk has a length
-        assertEquals( 8, byteBuf.readInt() );
         byteBuf.release();
 
         assertNull( replicatedContent.readChunk( allocator ) );

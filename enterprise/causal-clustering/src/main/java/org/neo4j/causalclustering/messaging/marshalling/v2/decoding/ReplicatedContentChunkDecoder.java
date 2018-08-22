@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.messaging.marshalling.v2.decoding;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
@@ -33,35 +34,35 @@ import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMar
 public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
 {
     private final CoreReplicatedContentMarshal contentMarshal = new CoreReplicatedContentMarshal();
-    private final ChunkHandler chunkHandler;
 
-    ReplicatedContentChunkDecoder( ChunkHandler chunkHandler )
+    ReplicatedContentChunkDecoder()
     {
-        this.chunkHandler = chunkHandler;
+        setCumulator( new ContentChunkCumulator() );
     }
 
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
-        try
+        in.markReaderIndex();
+        boolean isLast = in.readBoolean();
+        if ( isLast )
         {
-            ChunkHandler.ComposedChunks complete = chunkHandler.handle( in );
-            if ( complete != null )
-            {
-                out.add( contentMarshal.decode( complete ) );
-            }
+            out.add( contentMarshal.decode( in.readByte(), in ) );
         }
-        catch ( Throwable e )
+        else
         {
-            try
-            {
-                chunkHandler.close();
-            }
-            catch ( Throwable t1 )
-            {
-                e.addSuppressed( t1 );
-            }
-            throw e;
+            in.resetReaderIndex();
+        }
+    }
+
+    private static class ContentChunkCumulator implements Cumulator
+    {
+        @Override
+        public ByteBuf cumulate( ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf in )
+        {
+            boolean isLast = in.readBoolean();
+            cumulation.setBoolean( 0, isLast );
+            return COMPOSITE_CUMULATOR.cumulate( alloc, cumulation, in.slice() );
         }
     }
 }

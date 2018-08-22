@@ -24,14 +24,13 @@ package org.neo4j.causalclustering.messaging.marshalling.v2.decoding;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
-
-import java.util.List;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 
 import org.neo4j.causalclustering.catchup.Protocol;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
-public class ContentTypeDispatcher extends ByteToMessageDecoder
+public class ContentTypeDispatcher extends ChannelInboundHandlerAdapter
 {
     private final Protocol<ContentType> contentTypeProtocol;
 
@@ -41,17 +40,18 @@ public class ContentTypeDispatcher extends ByteToMessageDecoder
     }
 
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
+    public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
         if ( contentTypeProtocol.isExpecting( ContentType.ContentType ) )
         {
-            byte messageCode = in.readByte();
+            byte messageCode = ((ByteBuf) msg).readByte();
             ContentType contentType = getContentType( messageCode );
             contentTypeProtocol.expect( contentType );
+            ReferenceCountUtil.release( msg );
         }
         else
         {
-            ctx.fireChannelRead( in.retain() );
+            ctx.fireChannelRead( msg );
         }
     }
 

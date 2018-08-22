@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
 {
-    private static final int METADATA_SIZE = Integer.BYTES + 1;
+    private static final int METADATA_SIZE = 1;
 
     private final byte contentType;
     private final ByteBufChunkHandler byteBufChunkHandler;
@@ -117,11 +117,9 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
 
     private ByteBuf writeMetadata( boolean isFirstChunk, ByteBufAllocator allocator, ByteBuf data )
     {
-        int length = data.writerIndex();
         int capacity = metadataSize( isFirstChunk );
         ByteBuf metaData = allocator.buffer( capacity, capacity );
         metaData.writeBoolean( byteBufAwareMarshal.isEndOfInput() );
-        metaData.writeInt( length );
         if ( isFirstChunk )
         {
             metaData.writeByte( contentType );
