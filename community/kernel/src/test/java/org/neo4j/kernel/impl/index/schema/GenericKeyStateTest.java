@@ -20,10 +20,19 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -31,17 +40,41 @@ import java.util.stream.Stream;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.values.storable.Values.COMPARATOR;
+import static org.neo4j.values.storable.Values.booleanArray;
+import static org.neo4j.values.storable.Values.byteArray;
+import static org.neo4j.values.storable.Values.dateArray;
+import static org.neo4j.values.storable.Values.dateTimeArray;
+import static org.neo4j.values.storable.Values.doubleArray;
+import static org.neo4j.values.storable.Values.durationArray;
+import static org.neo4j.values.storable.Values.floatArray;
+import static org.neo4j.values.storable.Values.intArray;
+import static org.neo4j.values.storable.Values.isGeometryArray;
+import static org.neo4j.values.storable.Values.isGeometryValue;
+import static org.neo4j.values.storable.Values.localDateTimeArray;
+import static org.neo4j.values.storable.Values.localTimeArray;
+import static org.neo4j.values.storable.Values.longArray;
+import static org.neo4j.values.storable.Values.of;
+import static org.neo4j.values.storable.Values.shortArray;
+import static org.neo4j.values.storable.Values.timeArray;
 
 @ExtendWith( RandomExtension.class )
 class GenericKeyStateTest
@@ -123,6 +156,29 @@ class GenericKeyStateTest
         assertEquals( 0, from.compareValueTo( to ), "states not equals after copy" );
     }
 
+    @Test
+    void copyShouldCopyExtremeValues()
+    {
+        // Given
+        GenericKeyState extreme = new GenericKeyState();
+        GenericKeyState copy = new GenericKeyState();
+
+        for ( ValueGroup valueGroup : ValueGroup.values() )
+        {
+            if ( valueGroup != ValueGroup.GEOMETRY &&
+                 valueGroup != ValueGroup.GEOMETRY_ARRAY &&
+                 valueGroup != ValueGroup.NO_VALUE )
+            {
+                extreme.initValueAsLowest( valueGroup );
+                copy.copyFrom( extreme );
+                assertEquals( 0, extreme.compareValueTo( copy ), "states not equals after copy, valueGroup=" + valueGroup );
+                extreme.initValueAsHighest( valueGroup );
+                copy.copyFrom( extreme );
+                assertEquals( 0, extreme.compareValueTo( copy ), "states not equals after copy, valueGroup=" + valueGroup );
+            }
+        }
+    }
+
     @ParameterizedTest
     @MethodSource( "validValueGenerators" )
     void assertCorrectTypeMustNotFailForValidTypes( ValueGenerator valueGenerator )
@@ -167,7 +223,7 @@ class GenericKeyStateTest
         }
 
         // When
-        values.sort( Values.COMPARATOR );
+        values.sort( COMPARATOR );
         states.sort( GenericKeyState::compareValueTo );
 
         // Then
@@ -188,7 +244,7 @@ class GenericKeyStateTest
         {
             value2 = valueGenerator.next();
         }
-        while ( Values.COMPARATOR.compare( value1, value2 ) == 0 );
+        while ( COMPARATOR.compare( value1, value2 ) == 0 );
 
         // When
         Value left = pickSmaller( value1, value2 );
@@ -219,11 +275,164 @@ class GenericKeyStateTest
                 String.format( "did not report correct size, value=%s, actualSize=%d, reportedSize=%d", value, actualSize, reportedSize ) );
     }
 
-    // todo initValueAsLowest / Highest
+    @Test
+    void lowestMustBeLowest()
+    {
+        // todo GEOMETRY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // ZONED_DATE_TIME
+        assertLowest( DateTimeValue.MIN_VALUE );
+        // LOCAL_DATE_TIME
+        assertLowest( LocalDateTimeValue.MIN_VALUE );
+        // DATE
+        assertLowest( DateValue.MIN_VALUE );
+        // ZONED_TIME
+        assertLowest( TimeValue.MIN_VALUE );
+        // LOCAL_TIME
+        assertLowest( LocalTimeValue.MIN_VALUE );
+        // DURATION (duration, period)
+        assertLowest( DurationValue.duration( Duration.ofSeconds( Long.MIN_VALUE, 0 ) ) );
+        assertLowest( DurationValue.duration( Period.of( Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE ) ) );
+        // TEXT
+        assertLowest( of( UTF8.decode( new byte[0] ) ) );
+        // BOOLEAN
+        assertLowest( of( false ) );
+        // NUMBER (byte, short, int, long, float, double)
+        assertLowest( of( Byte.MIN_VALUE ) );
+        assertLowest( of( Short.MIN_VALUE ) );
+        assertLowest( of( Integer.MIN_VALUE ) );
+        assertLowest( of( Long.MIN_VALUE ) );
+        assertLowest( of( Float.NEGATIVE_INFINITY ) );
+        assertLowest( of( Double.NEGATIVE_INFINITY ) );
+        // todo GEOMETRY_ARRAY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // ZONED_DATE_TIME_ARRAY
+        assertLowest( dateTimeArray( new ZonedDateTime[0] ) );
+        // LOCAL_DATE_TIME_ARRAY
+        assertLowest( localDateTimeArray( new LocalDateTime[0] ) );
+        // DATE_ARRAY
+        assertLowest( dateArray( new LocalDate[0] ) );
+        // ZONED_TIME_ARRAY
+        assertLowest( timeArray( new OffsetTime[0] ) );
+        // LOCAL_TIME_ARRAY
+        assertLowest( localTimeArray( new LocalTime[0] ) );
+        // DURATION_ARRAY (DurationValue, TemporalAmount)
+        assertLowest( durationArray( new DurationValue[0] ) );
+        assertLowest( durationArray( new TemporalAmount[0] ) );
+        // TEXT_ARRAY
+        assertLowest( of( new String[0] ) );
+        // BOOLEAN_ARRAY
+        assertLowest( of( new boolean[0] ) );
+        // NUMBER_ARRAY (byte[], short[], int[], long[], float[], double[])
+        assertLowest( of( new byte[0] ) );
+        assertLowest( of( new short[0] ) );
+        assertLowest( of( new int[0] ) );
+        assertLowest( of( new long[0] ) );
+        assertLowest( of( new float[0] ) );
+        assertLowest( of( new double[0] ) );
+    }
+
+    @Test
+    void highestMustBeHighest()
+    {
+        // todo GEOMETRY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // ZONED_DATE_TIME
+        assertHighest( DateTimeValue.MAX_VALUE );
+        // LOCAL_DATE_TIME
+        assertHighest( LocalDateTimeValue.MAX_VALUE );
+        // DATE
+        assertHighest( DateValue.MAX_VALUE );
+        // ZONED_TIME
+        assertHighest( TimeValue.MAX_VALUE );
+        // LOCAL_TIME
+        assertHighest( LocalTimeValue.MAX_VALUE );
+        // DURATION (duration, period)
+        assertHighest( DurationValue.duration( Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) ) );
+        assertHighest( DurationValue.duration( Period.of( Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE ) ) );
+        // TEXT
+        assertHighestString();
+        // BOOLEAN
+        assertHighest( of( true ) );
+        // NUMBER (byte, short, int, long, float, double)
+        assertHighest( of( Byte.MAX_VALUE ) );
+        assertHighest( of( Short.MAX_VALUE ) );
+        assertHighest( of( Integer.MAX_VALUE ) );
+        assertHighest( of( Long.MAX_VALUE ) );
+        assertHighest( of( Float.POSITIVE_INFINITY ) );
+        assertHighest( of( Double.POSITIVE_INFINITY ) );
+        // todo GEOMETRY_ARRAY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // ZONED_DATE_TIME_ARRAY
+        assertHighest( dateTimeArray( new ZonedDateTime[]{DateTimeValue.MAX_VALUE.asObjectCopy()} ) );
+        // LOCAL_DATE_TIME_ARRAY
+        assertHighest( localDateTimeArray( new LocalDateTime[]{LocalDateTimeValue.MAX_VALUE.asObjectCopy()} ) );
+        // DATE_ARRAY
+        assertHighest( dateArray( new LocalDate[]{DateValue.MAX_VALUE.asObjectCopy()} ) );
+        // ZONED_TIME_ARRAY
+        assertHighest( timeArray( new OffsetTime[]{TimeValue.MAX_VALUE.asObjectCopy()} ) );
+        // LOCAL_TIME_ARRAY
+        assertHighest( localTimeArray( new LocalTime[]{LocalTimeValue.MAX_VALUE.asObjectCopy()} ) );
+        // DURATION_ARRAY (DurationValue, TemporalAmount)
+        assertHighest( durationArray( new DurationValue[]{DurationValue.duration( Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) )} ) );
+        assertHighest( durationArray( new DurationValue[]{DurationValue.duration( Period.of( Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE ) )} ) );
+        assertHighest( durationArray( new TemporalAmount[]{Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 )} ) );
+        assertHighest( durationArray( new TemporalAmount[]{Period.of( Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE )} ) );
+        // TEXT_ARRAY
+        assertHighestStringArray();
+        // BOOLEAN_ARRAY
+        assertHighest( booleanArray( new boolean[]{true} ) );
+        // NUMBER_ARRAY (byte[], short[], int[], long[], float[], double[])
+        assertHighest( byteArray( new byte[]{Byte.MAX_VALUE} ) );
+        assertHighest( shortArray( new short[]{Short.MAX_VALUE} ) );
+        assertHighest( intArray( new int[]{Integer.MAX_VALUE} ) );
+        assertHighest( longArray( new long[]{Long.MAX_VALUE} ) );
+        assertHighest( floatArray( new float[]{Float.POSITIVE_INFINITY} ) );
+        assertHighest( doubleArray( new double[]{Double.POSITIVE_INFINITY} ) );
+    }
+
+    private void assertHighestStringArray()
+    {
+        for ( int i = 0; i < 1000; i++ )
+        {
+            assertHighest( random.randomValues().nextStringArray() );
+        }
+    }
+
+    private void assertHighestString()
+    {
+        for ( int i = 0; i < 1000; i++ )
+        {
+            assertHighest( random.randomValues().nextTextValue() );
+        }
+    }
+
+    private void assertHighest( Value value )
+    {
+        GenericKeyState highestOfAll = new GenericKeyState();
+        GenericKeyState highestInValueGroup = new GenericKeyState();
+        GenericKeyState other = new GenericKeyState();
+        highestOfAll.initValueAsHighest( ValueGroup.UNKNOWN );
+        highestInValueGroup.initValueAsHighest( value.valueGroup() );
+        other.writeValue( value, NEUTRAL );
+        assertTrue( highestInValueGroup.compareValueTo( other ) > 0, "highestInValueGroup not higher than " + value );
+        assertTrue( highestOfAll.compareValueTo( other ) > 0, "highestOfAll not higher than " + value );
+        assertTrue( highestOfAll.compareValueTo( highestInValueGroup ) > 0 || highestOfAll.type == highestInValueGroup.type,
+                "highestOfAll not higher than highestInValueGroup" );
+    }
+
+    private void assertLowest( Value value )
+    {
+        GenericKeyState lowestOfAll = new GenericKeyState();
+        GenericKeyState lowestInValueGroup = new GenericKeyState();
+        GenericKeyState other = new GenericKeyState();
+        lowestOfAll.initValueAsLowest( ValueGroup.UNKNOWN );
+        lowestInValueGroup.initValueAsLowest( value.valueGroup() );
+        other.writeValue( value, NEUTRAL );
+        assertTrue( lowestInValueGroup.compareValueTo( other ) <= 0 );
+        assertTrue( lowestOfAll.compareValueTo( other ) <= 0 );
+        assertTrue( lowestOfAll.compareValueTo( lowestInValueGroup ) <= 0 );
+    }
 
     private Value pickSmaller( Value value1, Value value2 )
     {
-        return Values.COMPARATOR.compare( value1, value2 ) < 0 ? value1 : value2;
+        return COMPARATOR.compare( value1, value2 ) < 0 ? value1 : value2;
     }
 
     private void assertValidMinimalSplitter( Value left, Value right )
@@ -256,7 +465,7 @@ class GenericKeyStateTest
     private static boolean isInvalid( Value value )
     {
         // todo update when spatial is supported
-        return Values.isGeometryValue( value ) || Values.isGeometryArray( value );
+        return isGeometryValue( value ) || isGeometryArray( value );
     }
 
     private static Stream<ValueGenerator> validValueGenerators()

@@ -105,6 +105,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     Type type;
     NativeIndexKey.Inclusion inclusion;
     private boolean isArray;
+    private boolean isHighestArray;
     private int arrayLength;
     private int currentArrayOffset;
 
@@ -144,6 +145,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         inclusion = NEUTRAL;
         isArray = false;
         arrayLength = 0;
+        isHighestArray = false;
         currentArrayOffset = 0;
     }
 
@@ -154,38 +156,103 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         inclusion = NEUTRAL;
     }
 
-    // todo is this simple lowest approach viable? Probably not when including arrays
-    // todo not for arrays most likely
     void initValueAsLowest( ValueGroup valueGroup )
     {
+        clear();
         type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
-        long0 = Long.MIN_VALUE;
-        long1 = Long.MIN_VALUE;
-        long2 = Long.MIN_VALUE;
-        long3 = Long.MIN_VALUE;
-        byteArray = null;
-        if ( type == Type.TEXT )
+        switch ( type )
         {
-            long3 = FALSE;
+        case ZONED_DATE_TIME:
+            writeValue( DateTimeValue.MIN_VALUE, LOW );
+            break;
+        case LOCAL_DATE_TIME:
+            writeValue( LocalDateTimeValue.MIN_VALUE, LOW );
+            break;
+        case DATE:
+            writeValue( DateValue.MIN_VALUE, LOW );
+            break;
+        case ZONED_TIME:
+            writeValue( TimeValue.MIN_VALUE, LOW );
+            break;
+        case LOCAL_TIME:
+            writeValue( TimeValue.MIN_VALUE, LOW );
+            break;
+        case DURATION:
+            writeValue( DurationValue.MIN_VALUE, LOW );
+            break;
+        case TEXT:
+            writeValue( Values.of( "" ), LOW );
+            break;
+        case BOOLEAN:
+            writeValue( Values.of( false ), LOW );
+            break;
+        case NUMBER:
+            writeValue( Values.of( Double.NEGATIVE_INFINITY ), LOW );
+            break;
+        case ZONED_DATE_TIME_ARRAY:
+        case LOCAL_DATE_TIME_ARRAY:
+        case DATE_ARRAY:
+        case ZONED_TIME_ARRAY:
+        case LOCAL_TIME_ARRAY:
+        case DURATION_ARRAY:
+        case TEXT_ARRAY:
+        case BOOLEAN_ARRAY:
+        case NUMBER_ARRAY:
+            initializeLowestArray();
+            break;
+        default:
+            throw new IllegalArgumentException( "Non-valid type " + type );
         }
-        inclusion = LOW;
     }
 
-    // todo is this simple highest approach viable? Probably not when including arrays
-    // todo not for arrays most likely
     void initValueAsHighest( ValueGroup valueGroup )
     {
+        clear();
         type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
-        long0 = Long.MAX_VALUE;
-        long1 = Long.MAX_VALUE;
-        long2 = Long.MAX_VALUE;
-        long3 = Long.MAX_VALUE;
-        byteArray = null;
-        if ( type == Type.TEXT )
+        switch ( type )
         {
+        case NUMBER:
+            writeValue( Values.of( Double.POSITIVE_INFINITY ), HIGH );
+            break;
+        case ZONED_DATE_TIME:
+            writeValue( DateTimeValue.MAX_VALUE, HIGH );
+            break;
+        case LOCAL_DATE_TIME:
+            writeValue( LocalDateTimeValue.MAX_VALUE, HIGH );
+            break;
+        case DATE:
+            writeValue( DateValue.MAX_VALUE, HIGH );
+            break;
+        case ZONED_TIME:
+            writeValue( TimeValue.MAX_VALUE, HIGH );
+            break;
+        case LOCAL_TIME:
+            writeValue( LocalTimeValue.MAX_VALUE, HIGH );
+            break;
+        case DURATION:
+            writeValue( DurationValue.MAX_VALUE, HIGH );
+            break;
+        case TEXT:
+            writeValue( Values.of( "" ), HIGH );
             long3 = TRUE;
+            break;
+        case BOOLEAN:
+            writeValue( Values.of( true ), HIGH );
+            break;
+        case ZONED_DATE_TIME_ARRAY:
+        case LOCAL_DATE_TIME_ARRAY:
+        case DATE_ARRAY:
+        case ZONED_TIME_ARRAY:
+        case LOCAL_TIME_ARRAY:
+        case DURATION_ARRAY:
+        case TEXT_ARRAY:
+        case BOOLEAN_ARRAY:
+        case NUMBER_ARRAY:
+            initializeHighestArray();
+            break;
+        default:
+            throw new IllegalArgumentException( "Non-valid type " + type );
         }
-        inclusion = HIGH;
     }
 
     void initAsPrefixLow( String prefix )
@@ -219,8 +286,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         }
         else
         {
-            this.arrayLength = key.arrayLength;
-            this.currentArrayOffset = key.currentArrayOffset;
             switch ( key.type )
             {
             case ZONED_DATE_TIME_ARRAY:
@@ -253,6 +318,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             default:
                 throw new IllegalStateException( "Expected an array type but was " + type );
             }
+            this.isHighestArray = key.isHighestArray;
         }
     }
 
@@ -707,6 +773,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private int compareArrays( GenericKeyState that, ArrayElementComparator comparator )
     {
+        if ( this.isHighestArray || that.isHighestArray )
+        {
+            return Boolean.compare( this.isHighestArray, that.isHighestArray );
+        }
         int index = 0;
         int compare = 0;
         int length = min( this.arrayLength, that.arrayLength );
@@ -739,13 +809,17 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         if ( this_byteArray != that_byteArray )
         {
+            if ( isHighestText( this_long3 ) || isHighestText( that_long3 ) )
+            {
+                return Boolean.compare( isHighestText( this_long3 ), isHighestText( that_long3 ) );
+            }
             if ( this_byteArray == null )
             {
-                return isHighestText( this_long3 ) ? 1 : -1;
+                return -1;
             }
             if ( that_byteArray == null )
             {
-                return isHighestText( that_long3 ) ? -1 : 1;
+                return 1;
             }
         }
         else
@@ -1636,6 +1710,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private void initializeArrayMeta( int size )
     {
         isArray = true;
+        isHighestArray = false;
         arrayLength = size;
         currentArrayOffset = 0;
     }
@@ -1772,6 +1847,25 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         long1Array = ensureBigEnough( long1Array, size );
         long2Array = ensureBigEnough( long2Array, size );
         long3Array = ensureBigEnough( long3Array, size );
+    }
+
+    private void initializeLowestArray()
+    {
+        initializeArrayMeta( 0 );
+        long0Array = ensureBigEnough( long0Array, 0 );
+        long1Array = ensureBigEnough( long1Array, 0 );
+        long2Array = ensureBigEnough( long2Array, 0 );
+        long3Array = ensureBigEnough( long3Array, 0 );
+    }
+
+    private void initializeHighestArray()
+    {
+        initializeArrayMeta( 0 );
+        long0Array = ensureBigEnough( long0Array, 0 );
+        long1Array = ensureBigEnough( long1Array, 0 );
+        long2Array = ensureBigEnough( long2Array, 0 );
+        long3Array = ensureBigEnough( long3Array, 0 );
+        isHighestArray = true;
     }
     /* </write.array> */
     /* </write> */

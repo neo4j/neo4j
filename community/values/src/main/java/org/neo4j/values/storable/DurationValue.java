@@ -22,7 +22,6 @@ package org.neo4j.values.storable;
 import java.lang.invoke.MethodHandle;
 import java.time.DateTimeException;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
@@ -72,6 +71,9 @@ import static org.neo4j.values.utils.TemporalUtil.SECONDS_PER_DAY;
  */
 public final class DurationValue extends ScalarValue implements TemporalAmount, Comparable<DurationValue>
 {
+    public static final DurationValue MIN_VALUE = duration( 0, 0, Long.MIN_VALUE, 0 );
+    public static final DurationValue MAX_VALUE = duration( 0, 0, Long.MAX_VALUE, 999_999_999 );
+
     public static DurationValue duration( Duration value )
     {
         requireNonNull( value, "Duration" );
