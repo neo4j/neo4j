@@ -38,8 +38,8 @@ class QueryState(val query: QueryContext,
                  val initialContext: Option[ExecutionContext] = None,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
-                 val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
-                 new SingleThreadedLRUCache(maxSize = 16)) {
+                 val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
+                 val lenientCreateRelationship: Boolean = false) {
 
   private var _pathValueBuilder: PathValueBuilder = _
   private var _exFactory: ExecutionContextFactory = _

@@ -98,7 +98,12 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
       val columns = from.statement().returnColumns
       val resultBuilderFactory =
-        new SlottedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, physicalPlan.slotConfigurations)
+        new SlottedExecutionResultBuilderFactory(pipeInfo,
+                                                 columns,
+                                                 logicalPlan,
+                                                 physicalPlan.slotConfigurations,
+                                                 context.config.lenientCreateRelationship)
+
       val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,

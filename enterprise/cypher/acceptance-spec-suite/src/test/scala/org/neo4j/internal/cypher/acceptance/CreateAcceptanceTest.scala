@@ -24,6 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
 
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
@@ -151,5 +152,35 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assert(result.hasNext)
     result.next.get("c") shouldEqual(1)
+  }
+
+  // No CLG decision on this AFAIK, so not TCK material
+  test("should throw on CREATE relationship if start-point is missing") {
+    graph.execute("CREATE (a), (b)")
+
+    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.OldAndRule
+
+    failWithError(config, """MATCH (a), (b)
+                            |WHERE id(a)=0 AND id(b)=1
+                            |OPTIONAL MATCH (b)-[:LINK_TO]->(c)
+                            |CREATE (b)-[:LINK_TO]->(a)
+                            |CREATE (c)-[r:MISSING_C]->(a)""".stripMargin,
+      errorType = List(s"Failed to create relationship `r`, node `c` is missing. If you prefer to simply ignore rows " +
+                       s"where a relationship node is missing, set cypher.lenient_create_relationship = true in neo4j.conf"))
+  }
+
+  // No CLG decision on this AFAIK, so not TCK material
+  test("should throw on CREATE relationship if end-point is missing") {
+    graph.execute("CREATE (a), (b)")
+
+    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.OldAndRule
+
+    failWithError(config, """MATCH (a), (b)
+                            |WHERE id(a)=0 AND id(b)=1
+                            |OPTIONAL MATCH (b)-[:LINK_TO]->(c)
+                            |CREATE (b)-[:LINK_TO]->(a)
+                            |CREATE (a)-[r:MISSING_C]->(c)""".stripMargin,
+      errorType = List(s"Failed to create relationship `r`, node `c` is missing. If you prefer to simply ignore rows " +
+        s"where a relationship node is missing, set cypher.lenient_create_relationship = true in neo4j.conf"))
   }
 }

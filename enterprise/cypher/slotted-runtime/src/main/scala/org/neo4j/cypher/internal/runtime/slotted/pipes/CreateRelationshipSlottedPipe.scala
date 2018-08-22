@@ -26,19 +26,20 @@ import java.util.function.BiConsumer
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.{LenientCreateRelationship, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, makeValueNeoSafe}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.kernel.api.StatementConstants.{NO_SUCH_NODE, NO_SUCH_RELATIONSHIP}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 abstract class BaseCreateRelationshipSlottedPipe(src: Pipe,
-                                                 RelationshipKey: String,
+                                                 relationshipKey: String,
                                                  startNode: Slot,
                                                  typ: LazyType,
                                                  endNode: Slot,
@@ -50,7 +51,7 @@ abstract class BaseCreateRelationshipSlottedPipe(src: Pipe,
   //===========================================================================
   private val getStartNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(startNode)
   private val getEndNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(endNode)
-  private val offset = slots.getLongOffsetFor(RelationshipKey)
+  private val offset = slots.getLongOffsetFor(relationshipKey)
 
   //===========================================================================
   // Runtime code
@@ -58,24 +59,26 @@ abstract class BaseCreateRelationshipSlottedPipe(src: Pipe,
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map {
-      row =>{
+      def handleMissingNode(nodeSlot: Slot) =
+        if (state.lenientCreateRelationship) NO_SUCH_RELATIONSHIP
+        else throw new InternalException(LenientCreateRelationship.errorMsg(relationshipKey, slots.getAliasOf(nodeSlot)))
+
+      row => {
         val start = getStartNodeFunction(row)
         val end = getEndNodeFunction(row)
         val typeId = typ.typ(state.query)
 
-        if (start == -1) {
-          throw new InternalException(s"Expected to find a node at ref slot ${startNode.offset} but found instead: null")
-        }
-        if (end == -1) {
-          throw new InternalException(s"Expected to find a node at ref slot ${endNode.offset} but found instead: null")
-        }
-        val relationship = state.query.createRelationship(start, end, typeId)
+        val relationshipId =
+          if (start == NO_SUCH_NODE) handleMissingNode(startNode)
+          else if (end == NO_SUCH_NODE) handleMissingNode(endNode)
+          else {
+            val relationship = state.query.createRelationship(start, end, typeId)
+            relationship.`type`() // we do this to make sure the relationship is loaded from the store into this object
+            setProperties(row, state, relationship.id())
+            relationship.id()
+          }
 
-        relationship.`type`() // we do this to make sure the relationship is loaded from the store into this object
-
-        setProperties(row, state, relationship.id())
-
-        row.setLongAt(offset, relationship.id())
+        row.setLongAt(offset, relationshipId)
         row
       }
     }

@@ -105,4 +105,5 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        legacyCsvQuoteEscaping: Boolean,
                                        csvBufferSize: Int,
                                        nonIndexedLabelWarningThreshold: Long,
-                                       planWithMinimumCardinalityEstimates: Boolean)
+                                       planWithMinimumCardinalityEstimates: Boolean,
+                                       lenientCreateRelationship: Boolean)

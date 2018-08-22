@@ -58,7 +58,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       legacyCsvQuoteEscaping = false,
       csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
-      planWithMinimumCardinalityEstimates = true
+      planWithMinimumCardinalityEstimates = true,
+      lenientCreateRelationship = false
     )
     Compatibility(config, clock, kernelMonitors,
                       log, CypherPlanner.default, CypherRuntime.default,

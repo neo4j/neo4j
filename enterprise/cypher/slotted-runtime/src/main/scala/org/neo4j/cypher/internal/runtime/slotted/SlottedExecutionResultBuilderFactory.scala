@@ -34,7 +34,8 @@ import scala.collection.mutable
 class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                                            columns: List[String],
                                            logicalPlan: LogicalPlan,
-                                           pipelines: SlotConfigurations)
+                                           pipelines: SlotConfigurations,
+                                           lenientCreateRelationship: Boolean)
   extends BaseExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan) {
 
   override def create(): ExecutionResultBuilder =
@@ -43,7 +44,8 @@ class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
   class SlottedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
     override protected def createQueryState(params: MapValue) = {
       new SlottedQueryState(queryContext, externalResource, params, pipeDecorator,
-        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty,
+        lenientCreateRelationship = lenientCreateRelationship)
     }
 
     override def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator = {

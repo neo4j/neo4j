@@ -232,7 +232,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     legacyCsvQuoteEscaping = false,
     csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = true
+    planWithMinimumCardinalityEstimates = true,
+    lenientCreateRelationship = false
   )
 
   def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {

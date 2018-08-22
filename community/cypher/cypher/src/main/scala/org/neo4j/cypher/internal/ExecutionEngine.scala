@@ -318,6 +318,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       queryService, GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates,
       GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates.getDefaultValue.toBoolean
     )
+    val lenientCreateRelationship = optGraphSetting[java.lang.Boolean](
+      queryService, GraphDatabaseSettings.cypher_lenient_create_relationship,
+      GraphDatabaseSettings.cypher_lenient_create_relationship.getDefaultValue.toBoolean
+    )
 
     if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_4) || (version != CypherVersion.v3_3)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
@@ -331,7 +335,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     new CompilerEngineDelegator(queryService, kernelMonitors, version, planner, runtime,
       useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
       errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, csvBufferSize, planWithMinimumCardinalityEstimates,
-      logProvider, compatibilityCache)
+      lenientCreateRelationship, logProvider, compatibilityCache)
   }
 
   private def getPlanCacheSize: Int =

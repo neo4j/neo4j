@@ -85,6 +85,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
                               legacyCsvQuoteEscaping: Boolean,
                               csvBufferSize: Int,
                               planWithMinimumCardinalityEstimates: Boolean,
+                              lenientCreateRelationship: Boolean,
                               logProvider: LogProvider,
                               compatibilityFactory: CompatibilityFactory) {
 
@@ -103,7 +104,8 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
     csvBufferSize = csvBufferSize,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
-    planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates
+    planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
+    lenientCreateRelationship = lenientCreateRelationship
   )
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))
