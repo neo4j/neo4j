@@ -220,7 +220,7 @@ abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
   def propertyNamesWithValues: Traversable[String]
 
   /**
-    * Get a copy if this index plan where getting values is disables (if it was enabled before)
+    * Get a copy of this index plan where getting values is disabled
     */
   def copyWithoutGettingValues: IndexLeafPlan
 }

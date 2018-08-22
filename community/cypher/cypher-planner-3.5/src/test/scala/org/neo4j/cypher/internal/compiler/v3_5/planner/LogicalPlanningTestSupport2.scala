@@ -98,31 +98,15 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val label = config.labelsById(labelId)
-        config.indexes.filter(p => p._1 == label).flatMap(p => indexGet(p._1, p._2)).iterator
+        config.indexes.filter(p => p._1 == label).map(p => newIndexDescriptor(p._1, p._2)).iterator
       }
 
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val label = config.labelsById(labelId)
-        config.uniqueIndexes.filter(p => p._1 == label).flatMap(p => uniqueIndexGet(p._1, p._2)).iterator
+        config.uniqueIndexes.filter(p => p._1 == label).map(p => newIndexDescriptor(p._1, p._2)).iterator
       }
 
-      private def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-        if (config.uniqueIndexes((labelName, propertyKeys))) {
-          Some(indexFor(labelName, propertyKeys))
-        }
-        else {
-          None
-        }
-
-      private def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-        if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys))) {
-          Some(indexFor(labelName, propertyKeys))
-        }
-        else {
-          None
-        }
-
-      private def indexFor(labelName: String, propertyKeys: Seq[String]) = {
+      private def newIndexDescriptor(labelName: String, propertyKeys: Seq[String]) = {
         // Our fake index either can always or never return property values
         val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) GetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => propertyKeys.map(_ => canGetValue)
@@ -147,7 +131,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
 
       override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-        indexGet(labelName, propertyKeys)
+        if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys))) {
+          Some(newIndexDescriptor(labelName, propertyKeys))
+        } else
+          None
 
       override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)

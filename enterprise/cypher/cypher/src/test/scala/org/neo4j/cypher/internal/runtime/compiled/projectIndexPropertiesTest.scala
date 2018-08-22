@@ -103,7 +103,7 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
 
   for((withValues, withoutValues) <- indexOperatorTuples) {
 
-    test(s"should introduce projection for ${withValues.getClass.getSimpleName}") {
+    test(s"should introduce projection for ${withValues.getClass.getSimpleName} with index properties") {
       val attr = Attributes(idGen)
       val updater = projectIndexProperties(attr)
       val emptyTable = SemanticTable()
@@ -113,6 +113,15 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
       // We have to use the exact var in the plan so that the input position is the same
       val varInNewPlan = newPlan.asInstanceOf[Projection].expressions("n.prop").asInstanceOf[Property].map.asInstanceOf[Variable]
       newTable.isNode(varInNewPlan) should be(true)
+    }
+
+    test(s"should not introduce projection for ${withoutValues.getClass.getSimpleName} without index properties") {
+      val attr = Attributes(idGen)
+      val updater = projectIndexProperties(attr)
+      val emptyTable = SemanticTable()
+
+      val (newPlan, newTable) = updater(withoutValues, emptyTable)
+      newPlan should equal(withoutValues)
     }
 
   }

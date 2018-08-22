@@ -29,8 +29,8 @@ import org.opencypher.v9_0.util.symbols.CTNode
 import org.opencypher.v9_0.util.{Rewriter, topDown}
 
 /**
-  * Repalce index plans that have indexed properties with `GetValue` by plans
-  * that have `DoNotGetValue` isntead, with a projection to get the values on
+  * Replace index plans that have indexed properties with `GetValue` by plans
+  * that have `DoNotGetValue` instead, with a projection to get the values on
   * top of the index plan.
   */
 case class projectIndexProperties(attributes: Attributes) {
