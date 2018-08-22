@@ -44,17 +44,17 @@ import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
+import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.GraphState;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.Value;
@@ -90,8 +90,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private MutableLongObjectMap<String> createdRelationshipTypeTokens;
 
     private GraphStateImpl graphState;
-    private DiffSets<IndexDescriptor> indexChanges;
-    private DiffSets<ConstraintDescriptor> constraintsChanges;
+    private MutableDiffSets<IndexDescriptor> indexChanges;
+    private MutableDiffSets<ConstraintDescriptor> constraintsChanges;
 
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingDiffSets relationships;
@@ -114,8 +114,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void accept( final TxStateVisitor visitor )
-            throws ConstraintValidationException, CreateConstraintFailureException
+    public void accept( final TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException
     {
         if ( nodes != null )
         {
@@ -173,7 +172,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( constraintsChanges != null )
         {
-            constraintsChanges.accept( new ConstraintDiffSetsVisitor( visitor ) );
+            for ( ConstraintDescriptor added : constraintsChanges.getAdded() )
+            {
+                visitor.visitAddedConstraint( added );
+            }
+            constraintsChanges.getRemoved().forEach( visitor::visitRemovedConstraint );
         }
 
         if ( createdLabelTokens != null )
@@ -511,7 +514,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void indexDoAdd( IndexDescriptor descriptor )
     {
-        DiffSets<IndexDescriptor> diff = indexChangesDiffSets();
+        MutableDiffSets<IndexDescriptor> diff = indexChangesDiffSets();
         if ( !diff.unRemove( descriptor ) )
         {
             diff.add( descriptor );
@@ -533,28 +536,28 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
+    public DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
     }
 
     @Override
-    public ReadableDiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema )
+    public DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema )
     {
         return indexChangesDiffSets().filterAdded( indexDescriptor -> indexDescriptor.schema().equals( schema ) );
     }
 
     @Override
-    public ReadableDiffSets<IndexDescriptor> indexChanges()
+    public DiffSets<IndexDescriptor> indexChanges()
     {
-        return ReadableDiffSets.Empty.ifNull( indexChanges );
+        return DiffSets.Empty.ifNull( indexChanges );
     }
 
-    private DiffSets<IndexDescriptor> indexChangesDiffSets()
+    private MutableDiffSets<IndexDescriptor> indexChangesDiffSets()
     {
         if ( indexChanges == null )
         {
-            indexChanges = new DiffSets<>();
+            indexChanges = new MutableDiffSetsImpl<>();
         }
         return indexChanges;
     }
@@ -638,34 +641,34 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId )
+    public DiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId )
     {
         return constraintsChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
     }
 
     @Override
-    public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor )
+    public DiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor )
     {
         return constraintsChangesDiffSets().filterAdded( SchemaDescriptor.equalTo( descriptor ) );
     }
 
     @Override
-    public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId )
+    public DiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId )
     {
         return constraintsChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasRelType( relTypeId ) );
     }
 
     @Override
-    public ReadableDiffSets<ConstraintDescriptor> constraintsChanges()
+    public DiffSets<ConstraintDescriptor> constraintsChanges()
     {
-        return ReadableDiffSets.Empty.ifNull( constraintsChanges );
+        return DiffSets.Empty.ifNull( constraintsChanges );
     }
 
-    private DiffSets<ConstraintDescriptor> constraintsChangesDiffSets()
+    private MutableDiffSets<ConstraintDescriptor> constraintsChangesDiffSets()
     {
         if ( constraintsChanges == null )
         {
-            constraintsChanges = new DiffSets<>();
+            constraintsChanges = new MutableDiffSetsImpl<>();
         }
         return constraintsChanges;
     }
@@ -692,7 +695,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
-            return map( this::getIndexForIndexBackedConstraint, createdConstraintIndexesByConstraint.keySet() );
+            return map( TxState::getIndexForIndexBackedConstraint, createdConstraintIndexesByConstraint.keySet() );
         }
         return Iterables.empty();
     }
@@ -784,7 +787,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    private MutableLongDiffSets getOrCreateIndexUpdatesForSeek( Map<ValueTuple,MutableLongDiffSets> updates, ValueTuple values )
+    private static MutableLongDiffSets getOrCreateIndexUpdatesForSeek( Map<ValueTuple, MutableLongDiffSets> updates, ValueTuple values )
     {
         return updates.computeIfAbsent( values, value -> new MutableLongDiffSetsImpl() );
     }
@@ -807,7 +810,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return createdConstraintIndexesByConstraint;
     }
 
-    private IndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
+    private static IndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
     {
         return constraint.ownedIndexDescriptor();
     }
@@ -824,30 +827,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return hasDataChanges;
     }
 
-    private static class ConstraintDiffSetsVisitor implements DiffSetsVisitor<ConstraintDescriptor>
-    {
-        private final TxStateVisitor visitor;
-
-        ConstraintDiffSetsVisitor( TxStateVisitor visitor )
-        {
-            this.visitor = visitor;
-        }
-
-        @Override
-        public void visitAdded( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
-        {
-            visitor.visitAddedConstraint( constraint );
-        }
-
-        @Override
-        public void visitRemoved( ConstraintDescriptor constraint )
-        {
-            visitor.visitRemovedConstraint( constraint );
-        }
-    }
-
     /**
-     * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
+     * This class works around the fact that create-delete in the same transaction is a no-op in {@link MutableDiffSetsImpl},
      * whereas we need to know total number of explicit removals.
      */
     private class RemovalsCountingDiffSets extends MutableLongDiffSetsImpl

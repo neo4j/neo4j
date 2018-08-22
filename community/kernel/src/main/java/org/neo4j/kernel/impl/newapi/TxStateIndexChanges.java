@@ -25,11 +25,12 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -59,14 +60,14 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForScan( ReadableTransactionState txState, IndexDescriptor descriptor )
+    static DiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForScan( ReadableTransactionState txState, IndexDescriptor descriptor )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
         if ( updates == null )
         {
-            return ReadableDiffSets.Empty.instance();
+            return DiffSets.Empty.instance();
         }
-        DiffSets<NodeWithPropertyValues> diffs = new DiffSets<>();
+        MutableDiffSets<NodeWithPropertyValues> diffs = new MutableDiffSetsImpl<>();
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
         {
             Value[] values = entry.getKey().getValues();
@@ -103,7 +104,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor,
+    static DiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor,
             IndexQuery query )
     {
         if ( descriptor.schema().getPropertyIds().length != 1 )
@@ -114,9 +115,9 @@ class TxStateIndexChanges
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
         if ( updates == null )
         {
-            return ReadableDiffSets.Empty.instance();
+            return DiffSets.Empty.instance();
         }
-        DiffSets<NodeWithPropertyValues> diffs = new DiffSets<>();
+        MutableDiffSets<NodeWithPropertyValues> diffs = new MutableDiffSetsImpl<>();
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
         {
             ValueTuple key = entry.getKey();
@@ -204,7 +205,7 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor,
+    static DiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor,
             IndexQuery.RangePredicate<?> predicate )
     {
         Value lower = predicate.fromValue();
@@ -214,10 +215,10 @@ class TxStateIndexChanges
             throw new IllegalStateException( "Use Values.NO_VALUE to encode the lack of a bound" );
         }
 
-        NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
+        NavigableMap<ValueTuple, ? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
-            return ReadableDiffSets.Empty.instance();
+            return DiffSets.Empty.instance();
         }
 
         ValueTuple selectedLower;
@@ -248,7 +249,7 @@ class TxStateIndexChanges
             selectedIncludeUpper = predicate.toInclusive();
         }
 
-        DiffSets<NodeWithPropertyValues> diffs = new DiffSets<>();
+        MutableDiffSets<NodeWithPropertyValues> diffs = new MutableDiffSetsImpl<>();
 
         Map<ValueTuple,? extends LongDiffSets> inRange = sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : inRange.entrySet() )
@@ -294,16 +295,16 @@ class TxStateIndexChanges
         return diffs;
     }
 
-    static ReadableDiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeekByPrefix( ReadableTransactionState txState, IndexDescriptor descriptor,
+    static DiffSets<NodeWithPropertyValues> indexUpdatesWithValuesForRangeSeekByPrefix( ReadableTransactionState txState, IndexDescriptor descriptor,
             String prefix )
     {
         NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
-            return ReadableDiffSets.Empty.instance();
+            return DiffSets.Empty.instance();
         }
         ValueTuple floor = ValueTuple.of( Values.stringValue( prefix ) );
-        DiffSets<NodeWithPropertyValues> diffs = new DiffSets<>();
+        MutableDiffSets<NodeWithPropertyValues> diffs = new MutableDiffSetsImpl<>();
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.tailMap( floor ).entrySet() )
         {
             ValueTuple key = entry.getKey();

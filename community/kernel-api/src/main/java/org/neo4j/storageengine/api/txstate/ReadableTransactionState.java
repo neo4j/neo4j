@@ -90,21 +90,21 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
+    DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
+    DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
 
-    ReadableDiffSets<IndexDescriptor> indexChanges();
+    DiffSets<IndexDescriptor> indexChanges();
 
     Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
-    ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
+    DiffSets<ConstraintDescriptor> constraintsChanges();
 
-    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId );
+    DiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId );
 
-    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor );
+    DiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor );
 
-    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
+    DiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 

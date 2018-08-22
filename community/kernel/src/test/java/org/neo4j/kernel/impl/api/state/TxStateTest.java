@@ -60,8 +60,8 @@ import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -371,7 +371,7 @@ public class TxStateTest
         state.constraintDoAdd( constraint, 7 );
 
         // then
-        ReadableDiffSets<ConstraintDescriptor> diff = state.constraintsChangesForLabel( 1 );
+        DiffSets<ConstraintDescriptor> diff = state.constraintsChangesForLabel( 1 );
 
         assertEquals( singleton( constraint ), diff.getAdded() );
         assertTrue( diff.getRemoved().isEmpty() );

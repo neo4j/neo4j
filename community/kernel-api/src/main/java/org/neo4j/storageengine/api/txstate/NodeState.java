@@ -26,8 +26,8 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 /**
  * Represents the transactional changes to a node:
  * <ul>
- * <li>{@linkplain #labelDiffSets() Labels} that have been {@linkplain ReadableDiffSets#getAdded() added}
- * or {@linkplain ReadableDiffSets#getRemoved() removed}.</li>
+ * <li>{@linkplain #labelDiffSets() Labels} that have been {@linkplain DiffSets#getAdded() added}
+ * or {@linkplain DiffSets#getRemoved() removed}.</li>
  * <li>Added and removed relationships.</li>
  * <li>{@linkplain PropertyContainerState Changes to properties}.</li>
  * </ul>

@@ -42,8 +42,8 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -70,7 +70,7 @@ class TxStateIndexChangesTest
 
         // WHEN
         LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, index );
-        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, index );
+        DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, index );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
@@ -88,7 +88,7 @@ class TxStateIndexChangesTest
 
         // WHEN
         LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, index );
-        ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, index );
+        DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, index );
 
         // THEN
         assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
@@ -212,7 +212,7 @@ class TxStateIndexChangesTest
             assert lo != NO_VALUE;
             assert hi != NO_VALUE;
             final LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
-            final ReadableDiffSets<NodeWithPropertyValues> diffSets2 =
+            final DiffSets<NodeWithPropertyValues> diffSets2 =
                     TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
 
             final LongSet expectedNodeIds = LongSets.immutable.ofAll( Arrays.stream( expected ).mapToLong( NodeWithPropertyValues::getNodeId ) );
@@ -237,7 +237,7 @@ class TxStateIndexChangesTest
             // WHEN
             LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSuffixOrContains( state, index,
                     IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
-            ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
+            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
                     IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
 
             // THEN
@@ -263,7 +263,7 @@ class TxStateIndexChangesTest
             // WHEN
             LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSuffixOrContains( state, index,
                     IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
-            ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
+            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
                     IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
 
             // THEN
@@ -293,7 +293,7 @@ class TxStateIndexChangesTest
             // WHEN
             LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSuffixOrContains( state, index,
                     IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
-            ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
+            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
                     IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
 
             // THEN
@@ -321,7 +321,7 @@ class TxStateIndexChangesTest
 
             // WHEN
             LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "eulav" );
-            ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "eulav" );
+            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "eulav" );
 
             // THEN
             assertEquals( 0, diffSets.getAdded().size() );
@@ -345,7 +345,7 @@ class TxStateIndexChangesTest
 
             // WHEN
             LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "And" );
-            ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "And" );
+            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "And" );
 
             // THEN
             assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
@@ -386,7 +386,7 @@ class TxStateIndexChangesTest
 
             // WHEN
             LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, compositeIndex );
-            ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, compositeIndex );
+            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, compositeIndex );
 
             // THEN
             assertEquals( asSet( 42L, 43L ), toSet( diffSets.getAdded() ) );
@@ -442,7 +442,7 @@ class TxStateIndexChangesTest
 
             // WHEN
             LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, compositeIndex );
-            ReadableDiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, compositeIndex );
+            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, compositeIndex );
 
             // THEN
             assertEquals( newSetWith( 42L ), diffSets.getAdded() );

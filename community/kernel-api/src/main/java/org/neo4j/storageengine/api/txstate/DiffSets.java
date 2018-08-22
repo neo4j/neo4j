@@ -25,27 +25,46 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * {@link SuperReadableDiffSets} with added method for filtering added items.
+ * Given a sequence of add and removal operations, instances of DiffSets track
+ * which elements need to actually be added and removed at minimum from some
+ * hypothetical target collection such that the result is equivalent to just
+ * executing the sequence of additions and removals in order
+ *
+ * @param <T> type of elements
  */
-public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
+public interface DiffSets<T>
 {
-    @Override
-    ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
-    final class Empty<T> implements ReadableDiffSets<T>
+    boolean isAdded( T elem );
+
+    boolean isRemoved( T elem );
+
+    Set<T> getAdded();
+
+    Set<T> getRemoved();
+
+    boolean isEmpty();
+
+    Iterator<T> apply( Iterator<? extends T> source );
+
+    int delta();
+
+    DiffSets<T> filterAdded( Predicate<T> addedFilter );
+
+    final class Empty<T> implements DiffSets<T>
     {
         @SuppressWarnings( "unchecked" )
-        public static <T> ReadableDiffSets<T> instance()
+        public static <T> DiffSets<T> instance()
         {
             return INSTANCE;
         }
 
-        public static <T> ReadableDiffSets<T> ifNull( ReadableDiffSets<T> diffSets )
+        public static <T> DiffSets<T> ifNull( DiffSets<T> diffSets )
         {
-            return diffSets == null ? Empty.instance() : diffSets;
+            return diffSets == null ? INSTANCE : diffSets;
         }
 
-        private static final ReadableDiffSets INSTANCE = new Empty();
+        private static final DiffSets INSTANCE = new Empty();
 
         private Empty()
         {
@@ -95,14 +114,9 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
         }
 
         @Override
-        public ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter )
+        public DiffSets<T> filterAdded( Predicate<T> addedFilter )
         {
             return this;
-        }
-
-        @Override
-        public void accept( DiffSetsVisitor<T> visitor )
-        {
         }
     }
 }

@@ -25,8 +25,6 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import java.util.Objects;
-
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
@@ -138,29 +136,7 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
         return added.isEmpty() && removed.isEmpty();
     }
 
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        MutableLongDiffSetsImpl diffSets = (MutableLongDiffSetsImpl) o;
-        return Objects.equals( added, diffSets.added ) &&
-                Objects.equals( removed, diffSets.removed );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( added, removed );
-    }
-
-    protected void addElement( long element )
+    private void addElement( long element )
     {
         if ( removed.isEmpty() || !removed.remove( element ) )
         {
@@ -168,7 +144,7 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
         }
     }
 
-    protected boolean removeElement( long element )
+    private boolean removeElement( long element )
     {
         if ( !added.isEmpty() && added.remove( element ) )
         {

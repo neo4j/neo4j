@@ -39,8 +39,8 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
+import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
@@ -259,7 +259,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                ReadableDiffSets<NodeWithPropertyValues> changes =
+                DiffSets<NodeWithPropertyValues> changes =
                         TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, predicate.prefix() );
                 addedWithValues = changes.getAdded().iterator();
                 removed = removed( txState, changes.getRemoved() );
@@ -287,7 +287,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                ReadableDiffSets<NodeWithPropertyValues> changes = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate );
+                DiffSets<NodeWithPropertyValues> changes = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate );
                 addedWithValues = changes.getAdded().iterator();
                 removed = removed( txState, changes.getRemoved() );
             }
@@ -308,7 +308,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                ReadableDiffSets<NodeWithPropertyValues> changes =
+                DiffSets<NodeWithPropertyValues> changes =
                         TxStateIndexChanges.indexUpdatesWithValuesForScan( txState, descriptor );
                 addedWithValues = changes.getAdded().iterator();
                 removed = removed( txState, changes.getRemoved() );
@@ -330,7 +330,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                ReadableDiffSets<NodeWithPropertyValues> changes =
+                DiffSets<NodeWithPropertyValues> changes =
                         TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
                 addedWithValues = changes.getAdded().iterator();
                 removed = removed( txState, changes.getRemoved() );
