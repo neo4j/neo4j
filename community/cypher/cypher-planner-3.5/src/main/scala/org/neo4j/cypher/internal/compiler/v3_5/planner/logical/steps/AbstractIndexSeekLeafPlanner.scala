@@ -56,13 +56,13 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       Set.empty
     else {
       val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
-      val plannables: Set[IndexPlannableExpression] = predicates.collect(
-        indexPlannableExpression(qg.argumentIds, arguments, qg.hints.toSet))
-      val result = plannables.map(_.name).flatMap { name =>
+      val indexCompatibles: Set[IndexCompatiblePredicate] = predicates.collect(
+        asIndexCompatiblePredicate(qg.argumentIds, arguments, qg.hints.toSet))
+      val result = indexCompatibles.map(_.name).flatMap { name =>
         val idName = name
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
-        val nodePlannables = plannables.filter(p => p.name == name)
-        maybeLeafPlans(name, producePlansForSpecificVariable(idName, nodePlannables, labelPredicates, qg.hints, qg.argumentIds, context))
+        val nodePredicates = indexCompatibles.filter(p => p.name == name)
+        maybeLeafPlans(name, producePlansForSpecificVariable(idName, nodePredicates, labelPredicates, qg.hints, qg.argumentIds, context))
       }
 
       if (result.isEmpty) {
@@ -94,7 +94,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case _ => None
     }.toSet
 
-  private def producePlansForSpecificVariable(idName: String, nodePlannables: Set[IndexPlannableExpression],
+  private def producePlansForSpecificVariable(idName: String, indexCompatiblePredicates: Set[IndexCompatiblePredicate],
                                               labelPredicates: Set[HasLabels],
                                               hints: Seq[Hint], argumentIds: Set[String],
                                               context: LogicalPlanningContext): Set[LogicalPlan] = {
@@ -103,9 +103,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          labelName <- labelPredicate.labels;
          labelId: LabelId <- semanticTable.id(labelName).toSeq;
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
-         (plannables, canGetValues) <- plannablesForIndex(indexDescriptor, nodePlannables))
+         (predicates, canGetValues) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, plannables, canGetValues, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, canGetValues, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -114,50 +114,50 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 labelPredicate: HasLabels,
                                 labelName: LabelName,
                                 labelId: LabelId,
-                                plannables: Seq[IndexPlannableExpression],
+                                indexCompatiblePredicates: Seq[IndexCompatiblePredicate],
                                 canGetValues: Seq[GetValueFromIndexBehavior],
                                 context: LogicalPlanningContext,
                                 semanticTable: SemanticTable): LogicalPlan = {
     val hint = {
       val name = idName
-      val propertyNames = plannables.map(_.propertyKeyName.name)
+      val propertyNames = indexCompatiblePredicates.map(_.propertyKeyName.name)
       hints.collectFirst {
         case hint@UsingIndexHint(Variable(`name`), `labelName`, propertyKeyName, _)
           if propertyKeyName.map(_.name) == propertyNames => hint
       }
     }
 
-    val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(plannables)
+    val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(indexCompatiblePredicates)
 
-    val properties = plannables.map(p => p.propertyKeyName).zip(canGetValues).map {
+    val properties = indexCompatiblePredicates.map(p => p.propertyKeyName).zip(canGetValues).map {
       case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
       constructPlan(idName, LabelToken(labelName, labelId), properties, queryExpression, hint, argumentIds, context)
 
-    val solvedPredicates = plannables.filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
-    val predicatesForCardinalityEstimation = plannables.map(p => p.propertyPredicate) :+ labelPredicate
+    val solvedPredicates = indexCompatiblePredicates.filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
+    val predicatesForCardinalityEstimation = indexCompatiblePredicates.map(p => p.propertyPredicate) :+ labelPredicate
     entryConstructor(solvedPredicates, predicatesForCardinalityEstimation)
   }
 
-  private def mergeQueryExpressionsToSingleOne(plannables: Seq[IndexPlannableExpression]): QueryExpression[Expression] =
-    if (plannables.length == 1)
-      plannables.head.queryExpression
+  private def mergeQueryExpressionsToSingleOne(predicates: Seq[IndexCompatiblePredicate]): QueryExpression[Expression] =
+    if (predicates.length == 1)
+      predicates.head.queryExpression
     else {
-      CompositeQueryExpression(plannables.map(_.queryExpression))
+      CompositeQueryExpression(predicates.map(_.queryExpression))
     }
 
-  private def indexPlannableExpression(argumentIds: Set[String],
+  private def asIndexCompatiblePredicate(argumentIds: Set[String],
                                        arguments: Set[LogicalVariable],
                                        hints: Set[Hint])(
                                         implicit labelPredicateMap: Map[String, Set[HasLabels]],
                                         semanticTable: SemanticTable):
-  PartialFunction[Expression, IndexPlannableExpression] = {
+  PartialFunction[Expression, IndexCompatiblePredicate] = {
     // n.prop IN [ ... ]
     case predicate@AsPropertySeekable(seekable: PropertySeekable)
       if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
       val queryExpression = seekable.args.asQueryExpression
-      IndexPlannableExpression(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), knownGetValueBehavior = true,
+      IndexCompatiblePredicate(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = true,
         hints, argumentIds, solvesPredicate = true)
 
     // ... = n.prop
@@ -166,7 +166,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     case predicate@Equals(a, prop@Property(seekable@LogicalVariable(_), propKeyName))
       if a.dependencies.forall(arguments) && !arguments(seekable) =>
       val expr = SingleQueryExpression(a)
-      IndexPlannableExpression(seekable.name, propKeyName, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)), knownGetValueBehavior = true,
+      IndexCompatiblePredicate(seekable.name, propKeyName, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)), exactPredicate = true,
         hints, argumentIds, solvesPredicate = true)
 
     // n.prop STARTS WITH "prefix%..."
@@ -174,7 +174,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       val partialPredicate = PartialPredicate(seekable.expr, predicate)
       val queryExpression = seekable.asQueryExpression
       val propertyKey = seekable.propertyKey
-      IndexPlannableExpression(seekable.name, propertyKey, partialPredicate, queryExpression, seekable.propertyValueType(semanticTable), knownGetValueBehavior = false,
+      IndexCompatiblePredicate(seekable.name, propertyKey, partialPredicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
         hints, argumentIds, solvesPredicate = true)
 
     // n.prop <|<=|>|>= value
@@ -182,7 +182,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       if seekable.expr.inequalities.forall(x => (x.rhs.dependencies -- arguments).isEmpty) =>
       val queryExpression = seekable.asQueryExpression
       val keyName = seekable.propertyKeyName
-      IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), knownGetValueBehavior = false,
+      IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
         hints, argumentIds, solvesPredicate = true)
 
     // The planned index seek will almost satisfy the predicate, but with the possibility of some false positives.
@@ -191,46 +191,46 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     case predicate@AsDistanceSeekable(seekable) =>
       val queryExpression = seekable.asQueryExpression
       val keyName = seekable.propertyKeyName
-      IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), knownGetValueBehavior = false,
+      IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
         hints, argumentIds, solvesPredicate = false)
   }
 
   /**
-    * Finds the Seq of IndexPlannableExpressions that can be solved by the indexDescriptor.
-    * Either each property of the index can be solved by some plannable, in which case case this returns Some(...).
-    * Or, if at least one property of the index cannot be solved, this returns None.
+    * Finds the Seq of IndexCompatiblePredicate that can be solved by the indexDescriptor.
+    * Either each property of the index solves some predicate, in which case case this returns Some(...).
+    * Or, if at least one property does not solve a predicate, this returns None.
     *
-    * Together with the matching IndexPlannableExpressions it also returns the GetValueFromIndexBehavior for each property. The tuple
+    * Together with the matching IndexCompatiblePredicates it also returns the GetValueFromIndexBehavior for each property. The tuple
     * contains two lists of the same size, which is indexDescriptor.properties.length
     */
-  private def plannablesForIndex(indexDescriptor: IndexDescriptor, plannables: Set[IndexPlannableExpression])
-                                (implicit semanticTable: SemanticTable): Option[(Seq[IndexPlannableExpression], Seq[GetValueFromIndexBehavior])] = {
-    val maybeMatchingPlannables = indexDescriptor.properties.foldLeft(Option(Seq.empty[IndexPlannableExpression])) {
+  private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate])
+                                (implicit semanticTable: SemanticTable): Option[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior])] = {
+    val maybeMatchingPredicates = indexDescriptor.properties.foldLeft(Option(Seq.empty[IndexCompatiblePredicate])) {
       case (None, _) => None
       case (Some(acc), propertyKeyId) =>
-        plannables.find(p => semanticTable.id(p.propertyKeyName).contains(propertyKeyId)) match {
+        predicates.find(p => semanticTable.id(p.propertyKeyName).contains(propertyKeyId)) match {
           case None => None
           case Some(found) => Some(acc :+ found)
         }
     }
 
-    maybeMatchingPlannables
-      .filter(isSupportedByCurrentIndexes)
-      .map { matchingPlannables =>
-        val types = matchingPlannables.map(mp => mp.propertyType)
+    maybeMatchingPredicates
+      .filter(isValidPredicateCombination)
+      .map { matchingPredicates =>
+        val types = matchingPredicates.map(mp => mp.propertyType)
         // We have to ask the index for all types as a Seq, even if we might override some values of the result
         val behaviorFromIndex = indexDescriptor.valueCapability(types)
         // We override the index behavior for exact predicates
-        val finalBehaviors = behaviorFromIndex.zip(matchingPlannables.map(_.knownGetValueBehavior)).map {
+        val finalBehaviors = behaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
           case (_, true) => GetValue
           case (behavior, _) => behavior
         }
 
-        (matchingPlannables, finalBehaviors)
+        (matchingPredicates, finalBehaviors)
       }
   }
 
-  private def isSupportedByCurrentIndexes(foundPredicates: Seq[IndexPlannableExpression]): Boolean = {
+  private def isValidPredicateCombination(foundPredicates: Seq[IndexCompatiblePredicate]): Boolean = {
     // We currently only support range queries against single prop indexes
     foundPredicates.length == 1 ||
       foundPredicates.forall(_.queryExpression match {
@@ -243,18 +243,18 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   /**
     * @param propertyType
     *                     We need to ask the index whether it supports getting values for that type
-    * @param knownGetValueBehavior
+    * @param exactPredicate
     *                     We might already know if we can get values or not, for exact predicates. If this is `true` we will set GetValue,
     *                     otherwise we need to ask the index.
     */
-  case class IndexPlannableExpression(name: String,
-                                      propertyKeyName: PropertyKeyName,
-                                      propertyPredicate: Expression,
-                                      queryExpression: QueryExpression[Expression],
-                                      propertyType: CypherType,
-                                      knownGetValueBehavior: Boolean,
-                                      hints: Set[Hint],
-                                      argumentIds: Set[String],
-                                      solvesPredicate: Boolean)
-                                     (implicit labelPredicateMap: Map[String, Set[HasLabels]])
+  private case class IndexCompatiblePredicate(name: String,
+                                              propertyKeyName: PropertyKeyName,
+                                              propertyPredicate: Expression,
+                                              queryExpression: QueryExpression[Expression],
+                                              propertyType: CypherType,
+                                              exactPredicate: Boolean,
+                                              hints: Set[Hint],
+                                              argumentIds: Set[String],
+                                              solvesPredicate: Boolean)
+                                             (implicit labelPredicateMap: Map[String, Set[HasLabels]])
 }
