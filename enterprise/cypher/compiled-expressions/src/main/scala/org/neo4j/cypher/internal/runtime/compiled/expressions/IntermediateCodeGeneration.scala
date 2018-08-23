@@ -456,8 +456,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                             constant(name)))
       Some(IntermediateExpression(load(parameterVariable), Seq.empty, Seq(local), Set(equal(load(parameterVariable), noValue))))
 
-    case Property(mapExpression, PropertyKeyName(key)) =>
-      for (map <- compileExpression(mapExpression)) yield {
+    case Property(targetExpression, PropertyKeyName(key)) =>
+      for (map <- compileExpression(targetExpression)) yield {
         val variableName = namer.nextVariableName()
         val local = variable[AnyValue](variableName,
                                     ternary(map.nullCheck.reduceLeft((acc,current) => or(acc, current)), noValue,
@@ -1006,7 +1006,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       }
 
     case p =>
-      println(p)
       None
   }
 

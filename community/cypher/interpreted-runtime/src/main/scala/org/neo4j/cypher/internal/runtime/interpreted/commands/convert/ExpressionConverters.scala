@@ -63,12 +63,6 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     throw new InternalException(s"Unknown projection type during transformation ($projections)")
   }
 
-  //ctx.setRefAt(1,map.get("foo"))
-  //ctx.setRefAt(4,map.get("bar"))
-  //ctx.setRefAt(5,map.get("baz"))
-  //ctx.setRefAt(6,map.get("foo"))
-  //ctx.setRefAt(42,map.get("foo"))
-
   def toCommandPredicate(id: Id, in: ast.Expression): Predicate = in match {
     case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(id, e))
     case e: ast.FilterExpression => predicates.NonEmpty(toCommandExpression(id, e))
