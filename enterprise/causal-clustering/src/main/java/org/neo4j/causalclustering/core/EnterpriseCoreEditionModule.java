@@ -105,6 +105,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
@@ -224,8 +225,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency( clusterStateDirectory );
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
-        threadToTransactionBridge =
-                dependencies.satisfyDependency( new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging ) ) );
+        AvailabilityGuard globalGuard = getGlobalAvailabilityGuard( platformModule.clock, logging );
+        threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( globalGuard ) );
 
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier =
@@ -240,7 +241,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 logFiles,
                 platformModule.dataSourceManager,
                 databaseHealthSupplier,
-                getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging ),
+                globalGuard,
                 logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
@@ -299,7 +300,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         replicationModule =
                 new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule, loggingOutbound, clusterStateDirectory.get(),
-                        fileSystem, logProvider, getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging ) );
+                        fileSystem, logProvider, globalGuard );
 
         coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),

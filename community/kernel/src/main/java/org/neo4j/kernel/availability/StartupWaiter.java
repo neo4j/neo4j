@@ -29,18 +29,18 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class StartupWaiter extends LifecycleAdapter
 {
-    private final AvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard availabilityGuard;
     private final long timeout;
 
     public StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
     {
-        this.databaseAvailabilityGuard = availabilityGuard;
+        this.availabilityGuard = availabilityGuard;
         this.timeout = timeout;
     }
 
     @Override
     public void start()
     {
-        databaseAvailabilityGuard.isAvailable( timeout );
+        availabilityGuard.isAvailable( timeout );
     }
 }

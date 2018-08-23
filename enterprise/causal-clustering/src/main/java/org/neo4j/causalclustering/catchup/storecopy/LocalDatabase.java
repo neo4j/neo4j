@@ -56,7 +56,7 @@ public class LocalDatabase implements Lifecycle
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
-    private final AvailabilityGuard databaseAvailabilityGuard;
+    private final AvailabilityGuard availabilityGuard;
     private final Log log;
 
     private volatile StoreId storeId;
@@ -71,7 +71,7 @@ public class LocalDatabase implements Lifecycle
             LogFiles logFiles,
             DataSourceManager dataSourceManager,
             Supplier<DatabaseHealth> databaseHealthSupplier,
-            AvailabilityGuard databaseAvailabilityGuard,
+            AvailabilityGuard availabilityGuard,
             LogProvider logProvider )
     {
         this.databaseLayout = databaseLayout;
@@ -79,7 +79,7 @@ public class LocalDatabase implements Lifecycle
         this.logFiles = logFiles;
         this.dataSourceManager = dataSourceManager;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        this.databaseAvailabilityGuard = databaseAvailabilityGuard;
+        this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog( getClass() );
         raiseAvailabilityGuard( NOT_STOPPED );
     }
@@ -230,7 +230,7 @@ public class LocalDatabase implements Lifecycle
     {
         // it is possible for the local database to be created and stopped right after that to perform a store copy
         // in this case we need to impose new requirement and drop the old one
-        databaseAvailabilityGuard.require( requirement );
+        availabilityGuard.require( requirement );
         if ( currentRequirement != null )
         {
             dropAvailabilityGuard();
@@ -240,7 +240,7 @@ public class LocalDatabase implements Lifecycle
 
     private void dropAvailabilityGuard()
     {
-        databaseAvailabilityGuard.fulfill( currentRequirement );
+        availabilityGuard.fulfill( currentRequirement );
         currentRequirement = null;
     }
 }

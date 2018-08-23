@@ -31,11 +31,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 
 /**
- * The availability guard ensures that the database will only take calls when it is in an ok state.
- * It tracks a set of requirements (added via {@link #require(AvailabilityRequirement)}) that must all be marked
- * as fulfilled (using {@link #fulfill(AvailabilityRequirement)}) before the database is considered available again.
- * Consumers determine if it is ok to call the database using {@link #isAvailable()},
- * or await availability using {@link #isAvailable(long)}.
+ * Single database availability guard.
+ *
+ * @see AvailabilityGuard
  */
 public class DatabaseAvailabilityGuard implements AvailabilityGuard
 {
@@ -58,11 +56,6 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
         this.listeners.add( new LoggingAvailabilityListener( log, databaseName ) );
     }
 
-    /**
-     * Indicate a requirement that must be fulfilled before the database is considered available.
-     *
-     * @param requirement the requirement object
-     */
     @Override
     public void require( AvailabilityRequirement requirement )
     {
@@ -81,11 +74,6 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
         }
     }
 
-    /**
-     * Indicate that a requirement has been fulfilled.
-     *
-     * @param requirement the requirement object
-     */
     @Override
     public void fulfill( AvailabilityRequirement requirement )
     {
@@ -123,56 +111,30 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
         }
     }
 
-    /**
-     * Check if the database is available for transactions to use.
-     *
-     * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown
-     */
     @Override
     public boolean isAvailable()
     {
         return availability() == Availability.AVAILABLE;
     }
 
-    /**
-     * Check if the database has been shut down.
-     */
     @Override
     public boolean isShutdown()
     {
         return availability() == Availability.SHUTDOWN;
     }
 
-    /**
-     * Check if the database is available for transactions to use.
-     *
-     * @param millis to wait for availability
-     * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown
-     */
     @Override
     public boolean isAvailable( long millis )
     {
         return availability( millis ) == Availability.AVAILABLE;
     }
 
-    /**
-     * Checks if available. If not then an {@link UnavailableException} is thrown describing why.
-     * This methods doesn't wait like {@link #await(long)} does.
-     *
-     * @throws UnavailableException if not available.
-     */
     @Override
     public void checkAvailable() throws UnavailableException
     {
         await( 0 );
     }
 
-    /**
-     * Await the database becoming available.
-     *
-     * @param millis to wait for availability
-     * @throws UnavailableException thrown when the timeout has been exceeded or the guard has been shutdown
-     */
     @Override
     public void await( long millis ) throws UnavailableException
     {
@@ -233,22 +195,12 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
         return availability;
     }
 
-    /**
-     * Add a listener for changes to availability.
-     *
-     * @param listener the listener to receive callbacks when availability changes
-     */
     @Override
     public void addListener( AvailabilityListener listener )
     {
         listeners.add( listener );
     }
 
-    /**
-     * Remove a listener for changes to availability.
-     *
-     * @param listener the listener to remove
-     */
     @Override
     public void removeListener( AvailabilityListener listener )
     {
