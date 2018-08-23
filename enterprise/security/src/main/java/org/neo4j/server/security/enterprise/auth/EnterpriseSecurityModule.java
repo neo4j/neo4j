@@ -166,7 +166,11 @@ public class EnterpriseSecurityModule extends SecurityModule
         List<Realm> realms = new ArrayList<>( securityConfig.authProviders.size() + 1 );
         SecureHasher secureHasher = new SecureHasher();
 
-        EnterpriseUserManager internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler, realms );
+        EnterpriseUserManager internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
+        if ( internalRealm != null )
+        {
+            realms.add( (Realm) internalRealm );
+        }
 
         if ( securityConfig.hasLdapProvider )
         {
@@ -216,13 +220,12 @@ public class EnterpriseSecurityModule extends SecurityModule
     }
 
     protected EnterpriseUserManager createInternalRealm( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler, List<Realm> realms )
+            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         EnterpriseUserManager internalRealm = null;
         if ( securityConfig.hasNativeProvider )
         {
             internalRealm = createInternalFlatFileRealm( config, logProvider, fileSystem, jobScheduler );
-            realms.add( (Realm) internalRealm );
         }
         return internalRealm;
     }
