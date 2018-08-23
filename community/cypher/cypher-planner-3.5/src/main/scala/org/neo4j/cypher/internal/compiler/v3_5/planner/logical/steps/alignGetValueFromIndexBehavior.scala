@@ -51,11 +51,12 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
     */
   private def withAlignedGetValueBehavior(idName: String, indexedProperty: IndexedProperty): IndexedProperty = indexedProperty match {
     case ip@IndexedProperty(PropertyKeyToken(propName, _), DoNotGetValue) => ip
-    case ip@IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
+    case ip@IndexedProperty(PropertyKeyToken(propName, _), GetValue) => throw new IllegalStateException("Whether to get values from an index is not decided yet")
+    case ip@IndexedProperty(PropertyKeyToken(propName, _), CanGetValue) =>
       val propExpression = Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
       if (horizonDependingProperties.contains(propExpression)) {
         // Get the value since we use it later
-        ip
+        ip.copy(getValueFromIndex = GetValue)
       } else {
         // We could get the value but we don't need it later
         ip.copy(getValueFromIndex = DoNotGetValue)
@@ -73,6 +74,8 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
         Selection(pred1, l1.copyWithoutGettingValues)(attributes.copy(s1.id)),
         Selection(pred2, l2.copyWithoutGettingValues)(attributes.copy(s2.id))
       )(attributes.copy(union.id))
+
+    // index seeks
 
     case seek@NodeIndexSeek(idName, _, properties, _, _) =>
       val alignedProperties = properties.map(withAlignedGetValueBehavior(idName, _))

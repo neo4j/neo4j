@@ -245,10 +245,10 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
     * Map of a the subset of properties where the property values will be read from the index.
     */
   override def availablePropertiesFromIndexes: Map[Property, String] = {
-    properties.collect {
-      case IndexedProperty(PropertyKeyToken(propName, _), GetValue) =>
-        (Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName)
-    }.toMap
+    properties.filter(_.getValueFromIndex != DoNotGetValue).map( ip => {
+      val propName = ip.propertyKeyToken.name
+      (Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName)
+    }).toMap
   }
 }
 

@@ -29,143 +29,115 @@ import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val indexSeekWithValues = NodeIndexSeek(
+  type IndexOperator = GetValueFromIndexBehavior => IndexLeafPlan
+
+  val indexSeek: IndexOperator = getValue => NodeIndexSeek(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
     SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
     Set.empty)
-  val indexSeekWithoutValues = NodeIndexSeek(
+  val uniqueIndexSeek: IndexOperator = getValue => NodeUniqueIndexSeek(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
     SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
     Set.empty)
-  val uniqueIndexSeekWithValues = NodeUniqueIndexSeek(
+  val indexContainsScan: IndexOperator = getValue => NodeIndexContainsScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-    SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-    Set.empty)
-  val uniqueIndexSeekWithoutValues = NodeUniqueIndexSeek(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-    SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-    Set.empty)
-  val indexContainsScanWithValues = NodeIndexContainsScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     StringLiteral("foo")(pos),
     Set.empty)
-  val indexContainsScanWithoutValues = NodeIndexContainsScan(
+  val indexEndsWithScan: IndexOperator = getValue => NodeIndexEndsWithScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     StringLiteral("foo")(pos),
     Set.empty)
-  val indexEndsWithScanWithValues = NodeIndexEndsWithScan(
+  val indexScan: IndexOperator = getValue => NodeIndexScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
-    StringLiteral("foo")(pos),
-    Set.empty)
-  val indexEndsWithScanWithoutValues = NodeIndexEndsWithScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-    StringLiteral("foo")(pos),
-    Set.empty)
-  val indexScanWithValues = NodeIndexScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
-    Set.empty)
-  val indexScanWithoutValues = NodeIndexScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     Set.empty)
 
-  val indexOperatorTuples = Seq(
-    (indexSeekWithValues, indexSeekWithoutValues),
-    (uniqueIndexSeekWithValues, uniqueIndexSeekWithoutValues),
-    (indexContainsScanWithValues, indexContainsScanWithoutValues),
-    (indexEndsWithScanWithValues, indexEndsWithScanWithoutValues),
-    (indexScanWithValues, indexScanWithoutValues)
-  )
+  val indexOperators = Seq(indexSeek, uniqueIndexSeek, indexContainsScan, indexEndsWithScan, indexScan)
 
-  for((withValues, withoutValues) <- indexOperatorTuples) {
+  for(indexOperator <- indexOperators) {
 
-    test(s"should keep GetValue on ${withValues.getClass.getSimpleName} with usage of that property in horizon") {
+    val doNotGetValues = indexOperator(DoNotGetValue)
+    val canGetValues = indexOperator(CanGetValue)
+    val getValues = indexOperator(GetValue)
+    val operatorName = getValues.getClass.getSimpleName
+
+    test(s"should set GetValue on $operatorName with usage of that property in horizon") {
       new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
         // Given
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
-        updater(withValues) should equal(withValues)
+        updater(canGetValues) should equal(getValues)
       }
     }
 
-    test(s"should keep GetValue on ${withValues.getClass.getSimpleName} with usage of that property nested in horizon") {
+    test(s"should set GetValue on $operatorName with usage of that property nested in horizon") {
       new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
         // Given
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("stuff" -> listOf(prop("n", "prop")))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
-        updater(withValues) should equal(withValues)
+        updater(canGetValues) should equal(getValues)
       }
     }
 
-    test(s"should keep DoNotGetValue on ${withValues.getClass.getSimpleName} with usage of that property in horizon") {
+    test(s"should keep DoNotGetValue on $operatorName with usage of that property in horizon") {
       new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
-        updater(withoutValues) should equal(withoutValues)
+        updater(doNotGetValues) should equal(doNotGetValues)
       }
     }
 
-    test(s"should set DoNotGetValue on ${withValues.getClass.getSimpleName} without usage of that property in horizon") {
+    test(s"should set DoNotGetValue on $operatorName without usage of that property in horizon") {
       new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
         // Given
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "anotherProp"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
-        updater(withValues) should equal(withoutValues)
+        updater(canGetValues) should equal(doNotGetValues)
       }
     }
 
-    test(s"should set DoNotGetValue on ${withValues.getClass.getSimpleName} without usage of that property in horizon, if nested") {
+    test(s"should set DoNotGetValue on $operatorName without usage of that property in horizon, if nested") {
       new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
         // Given
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "anotherProp"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
-        updater(Distinct(withValues, Map.empty)) should equal(Distinct(withoutValues, Map.empty))
+        updater(Distinct(canGetValues, Map.empty)) should equal(Distinct(doNotGetValues, Map.empty))
       }
     }
 
-    test(s"should set DoNotGetValue on ${withValues.getClass.getSimpleName} if plan inside a union") {
+    test(s"should set DoNotGetValue on $operatorName if plan inside a union") {
       new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
         // Given
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
-        updater(Union(withValues, withValues)) should equal(Union(withoutValues, withoutValues))
+        updater(Union(canGetValues, canGetValues)) should equal(Union(doNotGetValues, doNotGetValues))
       }
     }
 
-    test(s"should set DoNotGetValue on ${withValues.getClass.getSimpleName} if plan inside a selection inside union") {
+    test(s"should set DoNotGetValue on $operatorName if plan inside a selection inside union") {
       new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
         // Given
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
         val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
-        updater(Union(Selection(ands, withValues), Selection(ands, withValues))) should equal(
-          Union(Selection(ands, withoutValues), Selection(ands, withoutValues)))
+        updater(Union(Selection(ands, canGetValues), Selection(ands, canGetValues))) should equal(
+          Union(Selection(ands, doNotGetValues), Selection(ands, doNotGetValues)))
       }
     }
   }

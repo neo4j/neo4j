@@ -23,15 +23,10 @@ import org.opencypher.v9_0.expressions.{Property, PropertyKeyName, PropertyKeyTo
 import org.opencypher.v9_0.util.InputPosition
 
 case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {
-  def shouldGetValue: Boolean = {
-    getValueFromIndex match {
-      case GetValue => true
-      case DoNotGetValue => false
-    }
-  }
+  def shouldGetValue: Boolean = getValueFromIndex == GetValue
 
-  def asPropertyMap(entity: String): Map[Property, String] =
-    if (shouldGetValue)
+  def asAvailablePropertyMap(entity: String): Map[Property, String] =
+    if (getValueFromIndex != DoNotGetValue)
       Map((
         Property(
           Variable(entity)(InputPosition.NONE),
@@ -50,4 +45,5 @@ case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex
 // This can be extended later on with: GetValuesPartially
 sealed trait GetValueFromIndexBehavior
 case object DoNotGetValue extends GetValueFromIndexBehavior
+case object CanGetValue extends GetValueFromIndexBehavior
 case object GetValue extends GetValueFromIndexBehavior

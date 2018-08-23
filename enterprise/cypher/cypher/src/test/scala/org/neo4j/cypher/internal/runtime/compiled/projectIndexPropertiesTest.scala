@@ -32,96 +32,67 @@ import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val indexSeekWithValues = NodeIndexSeek(
+  type IndexOperator = GetValueFromIndexBehavior => IndexLeafPlan
+
+  val indexSeek: IndexOperator = getValue => NodeIndexSeek(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
     SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
     Set.empty)
-  val indexSeekWithoutValues = NodeIndexSeek(
+  val uniqueIndexSeek: IndexOperator = getValue => NodeUniqueIndexSeek(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
     SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
     Set.empty)
-  val uniqueIndexSeekWithValues = NodeUniqueIndexSeek(
+  val indexContainsScan: IndexOperator = getValue => NodeIndexContainsScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-    SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-    Set.empty)
-  val uniqueIndexSeekWithoutValues = NodeUniqueIndexSeek(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-    SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-    Set.empty)
-  val indexContainsScanWithValues = NodeIndexContainsScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     StringLiteral("foo")(pos),
     Set.empty)
-  val indexContainsScanWithoutValues = NodeIndexContainsScan(
+  val indexEndsWithScan: IndexOperator = getValue => NodeIndexEndsWithScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     StringLiteral("foo")(pos),
     Set.empty)
-  val indexEndsWithScanWithValues = NodeIndexEndsWithScan(
+  val indexScan: IndexOperator = getValue => NodeIndexScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
-    StringLiteral("foo")(pos),
-    Set.empty)
-  val indexEndsWithScanWithoutValues = NodeIndexEndsWithScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-    StringLiteral("foo")(pos),
-    Set.empty)
-  val indexScanWithValues = NodeIndexScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
-    Set.empty)
-  val indexScanWithoutValues = NodeIndexScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     Set.empty)
 
   val expectedProjections = Map("n.prop" -> prop("n", "prop"))
 
-  val indexOperatorTuples = Seq(
-    (indexSeekWithValues, indexSeekWithoutValues),
-    (uniqueIndexSeekWithValues, uniqueIndexSeekWithoutValues),
-    (indexContainsScanWithValues, indexContainsScanWithoutValues),
-    (indexEndsWithScanWithValues, indexEndsWithScanWithoutValues),
-    (indexScanWithValues, indexScanWithoutValues)
-  )
+  val indexOperators = Seq(indexSeek, uniqueIndexSeek, indexContainsScan, indexEndsWithScan, indexScan)
 
-  for((withValues, withoutValues) <- indexOperatorTuples) {
+  for(indexOperator <- indexOperators) {
 
-    test(s"should introduce projection for ${withValues.getClass.getSimpleName} with index properties") {
+    val doNotGetValues = indexOperator(DoNotGetValue)
+    val getValues = indexOperator(GetValue)
+    val operatorName = getValues.getClass.getSimpleName
+
+    test(s"should introduce projection for $operatorName with index properties") {
       val attr = Attributes(idGen)
       val updater = projectIndexProperties(attr)
       val emptyTable = SemanticTable()
 
-      val (newPlan, newTable) = updater(withValues, emptyTable)
-      newPlan should equal(Projection(withoutValues, expectedProjections)(idGen))
+      val (newPlan, newTable) = updater(getValues, emptyTable)
+      newPlan should equal(Projection(doNotGetValues, expectedProjections)(idGen))
       // We have to use the exact var in the plan so that the input position is the same
       val varInNewPlan = newPlan.asInstanceOf[Projection].expressions("n.prop").asInstanceOf[Property].map.asInstanceOf[Variable]
       newTable.isNode(varInNewPlan) should be(true)
     }
 
-    test(s"should not introduce projection for ${withoutValues.getClass.getSimpleName} without index properties") {
+    test(s"should not introduce projection for $operatorName without index properties") {
       val attr = Attributes(idGen)
       val updater = projectIndexProperties(attr)
       val emptyTable = SemanticTable()
 
-      val (newPlan, newTable) = updater(withoutValues, emptyTable)
-      newPlan should equal(withoutValues)
+      val (newPlan, newTable) = updater(doNotGetValues, emptyTable)
+      newPlan should equal(doNotGetValues)
     }
 
   }

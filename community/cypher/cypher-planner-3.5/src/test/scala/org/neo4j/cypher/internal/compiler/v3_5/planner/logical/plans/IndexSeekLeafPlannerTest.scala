@@ -100,7 +100,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), SingleQueryExpression(`lit42`), _)) => ()
       }
     }
   }
@@ -134,7 +134,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), _, _)) => ()
+        case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) => ()
       }
     }
   }
@@ -154,7 +154,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
-        Seq(IndexedProperty(PropertyKeyToken("prop", _), GetValue), IndexedProperty(PropertyKeyToken("prop2", _), GetValue)),
+        Seq(IndexedProperty(PropertyKeyToken("prop", _), CanGetValue), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue)),
         CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _)) => ()
       }
     }
@@ -192,7 +192,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
-        Seq(IndexedProperty(PropertyKeyToken("prop", _), GetValue), IndexedProperty(PropertyKeyToken("prop2", _), GetValue)),
+        Seq(IndexedProperty(PropertyKeyToken("prop", _), CanGetValue), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue)),
         CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _)) => ()
       }
     }
@@ -295,7 +295,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), SingleQueryExpression(`lit42`), _)) => ()
       }
     }
   }
@@ -329,7 +329,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, GetValue)), _, _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) => ()
       }
     }
   }
@@ -496,7 +496,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(
         AssertSameNode(`idName`,
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop1", _), GetValue), IndexedProperty(PropertyKeyToken("prop2", _), GetValue)),
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue)),
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val1`),
         SingleQueryExpression(`val2`))), _),
@@ -533,11 +533,11 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(
         AssertSameNode(`idName`,
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop1", _), GetValue), IndexedProperty(PropertyKeyToken("prop2", _), GetValue)),
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue)),
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val1`),
         SingleQueryExpression(`val2`))), _),
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop2", _), GetValue), IndexedProperty(PropertyKeyToken("prop3", _), GetValue)),
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue), IndexedProperty(PropertyKeyToken("prop3", _), CanGetValue)),
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val2`),
         SingleQueryExpression(`val3`))), _))) => ()
@@ -570,7 +570,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(
         NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _),
-        Seq(IndexedProperty(PropertyKeyToken("prop1", _), GetValue), IndexedProperty(PropertyKeyToken("prop2", _), GetValue), IndexedProperty(PropertyKeyToken("prop3", _), GetValue)),
+        Seq(IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue), IndexedProperty(PropertyKeyToken("prop3", _), CanGetValue)),
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val1`),
         SingleQueryExpression(`val2`),

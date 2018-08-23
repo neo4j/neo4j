@@ -108,7 +108,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       private def newIndexDescriptor(labelName: String, propertyKeys: Seq[String]) = {
         // Our fake index either can always or never return property values
-        val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) GetValue else DoNotGetValue
+        val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => propertyKeys.map(_ => canGetValue)
         IndexDescriptor(
           semanticTable.resolvedLabelNames(labelName),

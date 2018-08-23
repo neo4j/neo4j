@@ -222,7 +222,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         val behaviorFromIndex = indexDescriptor.valueCapability(types)
         // We override the index behavior for exact predicates
         val finalBehaviors = behaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
-          case (_, true) => GetValue
+          case (_, true) => CanGetValue
           case (behavior, _) => behavior
         }
 

@@ -102,7 +102,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val valueCapability: ValueCapability = tps => {
           reference.valueCapability(tps.map(typeToValueCategory): _*) match {
               // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
-            case api.IndexValueCapability.YES => tps.map(_ => GetValue)
+            case api.IndexValueCapability.YES => tps.map(_ => CanGetValue)
             case api.IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
             case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
