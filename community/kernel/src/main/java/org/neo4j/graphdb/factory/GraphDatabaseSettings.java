@@ -1041,6 +1041,14 @@ public class GraphDatabaseSettings implements LoadableConfig
             options( TransactionStateMemoryAllocation.class, true ),
             TransactionStateMemoryAllocation.ON_HEAP.name() ).build();
 
+    @Internal
+    @Description( "[Experimental] The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
+            "shared across all active transactions. Zero means 'unlimited'. Used when unsupported.dbms.tx_state.memory_allocation is set to 'OFF_HEAP'." )
+    public static final Setting<Long> tx_state_max_off_heap_memory = buildSetting(
+            "unsupported.dbms.tx_state.max_off_heap_memory", BYTES, "2G" )
+            .constraint( min( 0L ) )
+            .build();
+
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final HttpConnectorValidator httpValidator = new HttpConnectorValidator();

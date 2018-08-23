@@ -80,6 +80,22 @@ public final class Preconditions
     }
 
     /**
+     * Ensures that {@code value} is greater than or equal to {@code 0} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's greater than or equal to {@code 0}
+     * @throws IllegalArgumentException if {@code value} is less than 0
+     */
+    public static int requireNonNegative( int value )
+    {
+        if ( value < 0 )
+        {
+            throw new IllegalArgumentException( "Expected non-negative int value, got " + value );
+        }
+        return value;
+    }
+
+    /**
      * Ensures that {@code value} is exactly zero.
      *
      * @param value a value for check
