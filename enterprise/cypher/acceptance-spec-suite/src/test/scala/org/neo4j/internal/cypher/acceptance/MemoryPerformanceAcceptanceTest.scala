@@ -88,7 +88,7 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
                   |RETURN x""".stripMargin
 
     //we cannot use executeWith here since this query will OOM in older releases and break the test
-    for (runtime <- List("compiled", "interpreted", "slotted")) {
+    for (runtime <- List("compiled", "interpreted", "slotted", "morsel")) {
       innerExecuteDeprecated(s"CYPHER runtime=$runtime $query").toList should equal(List(
         Map("x" -> 1),
         Map("x" -> 2),
