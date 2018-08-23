@@ -27,17 +27,14 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
-import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
+import static org.neo4j.causalclustering.scenarios.EnterpriseDiscoveryServiceType.HAZELCAST;
+import static org.neo4j.causalclustering.scenarios.EnterpriseDiscoveryServiceType.SHARED;
 
 public class EnterpriseMultiClusterRoutingIT extends BaseMultiClusterRoutingIT
 {
     public EnterpriseMultiClusterRoutingIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames,
-            Supplier<DiscoveryServiceFactory> discoveryType )
+            DiscoveryServiceType discoveryType )
     {
         super( ignoredName, numCores, numReplicas, dbNames, discoveryType );
     }

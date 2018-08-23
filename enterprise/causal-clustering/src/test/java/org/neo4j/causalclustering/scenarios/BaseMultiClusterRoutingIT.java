@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,7 +46,6 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.routing.Endpoint;
 import org.neo4j.causalclustering.routing.multi_cluster.MultiClusterRoutingResult;
 import org.neo4j.causalclustering.routing.multi_cluster.procedure.MultiClusterRoutingResultFormat;
@@ -65,8 +63,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.DATABASE;
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
@@ -80,7 +78,7 @@ public abstract class BaseMultiClusterRoutingIT
     private final Set<String> dbNames;
     private final ClusterRule clusterRule;
     private final DefaultFileSystemRule fileSystemRule;
-    private final Supplier<DiscoveryServiceFactory> discoveryType;
+    private final DiscoveryServiceType discoveryType;
     private final int numCores;
 
     private Cluster<?> cluster;
@@ -92,8 +90,7 @@ public abstract class BaseMultiClusterRoutingIT
     @Rule
     public Timeout globalTimeout = Timeout.seconds(300);
 
-    protected BaseMultiClusterRoutingIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames,
-            Supplier<DiscoveryServiceFactory> discoveryType )
+    protected BaseMultiClusterRoutingIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames, DiscoveryServiceType discoveryType )
     {
         this.dbNames = dbNames;
         this.discoveryType = discoveryType;

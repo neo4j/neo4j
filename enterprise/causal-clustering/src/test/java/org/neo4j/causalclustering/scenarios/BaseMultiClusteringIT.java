@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,7 +44,6 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.Node;
@@ -70,7 +68,7 @@ public abstract class BaseMultiClusteringIT
     private final Set<String> dbNames;
     private final ClusterRule clusterRule;
     private final DefaultFileSystemRule fileSystemRule;
-    private final Supplier<DiscoveryServiceFactory> discoveryType;
+    private final DiscoveryServiceType discoveryType;
 
     @Rule
     public final RuleChain ruleChain;
@@ -80,10 +78,10 @@ public abstract class BaseMultiClusteringIT
     public Timeout globalTimeout = Timeout.seconds(300);
 
     protected BaseMultiClusteringIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames,
-            Supplier<DiscoveryServiceFactory> discoveryServiceFactory )
+            DiscoveryServiceType discoveryServiceType )
     {
         this.dbNames = dbNames;
-        this.discoveryType = discoveryServiceFactory;
+        this.discoveryType = discoveryServiceType;
 
         this.clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( numCores )

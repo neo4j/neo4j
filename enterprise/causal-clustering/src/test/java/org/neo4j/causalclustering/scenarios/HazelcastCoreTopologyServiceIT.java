@@ -22,10 +22,10 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-public class HazelcastCoreTopologyServiceIT extends CoreTopologyServiceIT
+public class HazelcastCoreTopologyServiceIT extends BaseCoreTopologyServiceIT
 {
     public HazelcastCoreTopologyServiceIT()
     {
-        super( DiscoveryServiceType.HAZELCAST );
+        super( EnterpriseDiscoveryServiceType.HAZELCAST );
     }
 }

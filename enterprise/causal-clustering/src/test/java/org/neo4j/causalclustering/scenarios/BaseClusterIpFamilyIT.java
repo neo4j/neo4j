@@ -28,12 +28,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.function.Supplier;
-
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -45,9 +42,9 @@ import static org.neo4j.causalclustering.helpers.DataCreator.countNodes;
 @RunWith( Parameterized.class )
 public abstract class BaseClusterIpFamilyIT
 {
-    protected BaseClusterIpFamilyIT( Supplier<DiscoveryServiceFactory> discoveryServiceFactory, IpFamily ipFamily, boolean useWildcard )
+    protected BaseClusterIpFamilyIT( DiscoveryServiceType discoveryServiceType, IpFamily ipFamily, boolean useWildcard )
     {
-        clusterRule.withDiscoveryServiceType( discoveryServiceFactory );
+        clusterRule.withDiscoveryServiceType( discoveryServiceType );
         clusterRule.withIpFamily( ipFamily ).useWildcard( useWildcard );
     }
 

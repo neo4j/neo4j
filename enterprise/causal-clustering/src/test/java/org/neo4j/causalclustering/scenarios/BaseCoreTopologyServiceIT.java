@@ -23,22 +23,15 @@
 package org.neo4j.causalclustering.scenarios;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyServiceNoRetriesStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -46,13 +39,12 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public abstract class CoreTopologyServiceIT
+public abstract class BaseCoreTopologyServiceIT
 {
-    private final Supplier<DiscoveryServiceFactory> discoveryServiceType;
+    private final DiscoveryServiceType discoveryServiceType;
 
-    protected CoreTopologyServiceIT( Supplier<DiscoveryServiceFactory> discoveryServiceType )
+    protected BaseCoreTopologyServiceIT( DiscoveryServiceType discoveryServiceType )
     {
         this.discoveryServiceType = discoveryServiceType;
     }
@@ -69,7 +61,7 @@ public abstract class CoreTopologyServiceIT
         Config config = Config.defaults();
         config.augment( initial_discovery_members, initialHosts );
         config.augment( CausalClusteringSettings.discovery_listen_address, "localhost:" + PortAuthority.allocatePort() );
-        CoreTopologyService service = discoveryServiceType.get().coreTopologyService(
+        CoreTopologyService service = discoveryServiceType.createFactory().coreTopologyService(
                 config,
                 new MemberId( UUID.randomUUID() ),
                 jobScheduler,

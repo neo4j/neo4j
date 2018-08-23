@@ -22,18 +22,27 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.junit.runners.Parameterized;
+import java.util.function.Supplier;
 
-public class EnterpriseClusterOverviewIT extends BaseClusterOverviewIT
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
+
+public enum EnterpriseDiscoveryServiceType implements DiscoveryServiceType
 {
-    public EnterpriseClusterOverviewIT( DiscoveryServiceType discoveryServiceType )
+    SHARED( SharedDiscoveryServiceFactory::new ),
+    HAZELCAST( HazelcastDiscoveryServiceFactory::new );
+
+    private final Supplier<DiscoveryServiceFactory> supplier;
+
+    EnterpriseDiscoveryServiceType( Supplier<DiscoveryServiceFactory> supplier )
     {
-        super( discoveryServiceType );
+        this.supplier = supplier;
     }
 
-    @Parameterized.Parameters( name = "discovery-{0}" )
-    public static DiscoveryServiceType[] data()
+    @Override
+    public DiscoveryServiceFactory createFactory()
     {
-        return EnterpriseDiscoveryServiceType.values();
+        return supplier.get();
     }
 }

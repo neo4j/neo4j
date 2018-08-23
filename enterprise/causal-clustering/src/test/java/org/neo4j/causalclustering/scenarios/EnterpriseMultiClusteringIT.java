@@ -27,19 +27,16 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
-import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
+import static org.neo4j.causalclustering.scenarios.EnterpriseDiscoveryServiceType.SHARED;
+import static org.neo4j.causalclustering.scenarios.EnterpriseDiscoveryServiceType.HAZELCAST;
 
 public class EnterpriseMultiClusteringIT extends BaseMultiClusteringIT
 {
     public EnterpriseMultiClusteringIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames,
-            Supplier<DiscoveryServiceFactory> discoveryServiceFactory )
+            DiscoveryServiceType discoveryServiceType )
     {
-        super( ignoredName, numCores, numReplicas, dbNames, discoveryServiceFactory );
+        super( ignoredName, numCores, numReplicas, dbNames, discoveryServiceType );
     }
 
     @Parameterized.Parameters( name = "{0}" )

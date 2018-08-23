@@ -26,15 +26,13 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV6;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
+import static org.neo4j.causalclustering.scenarios.EnterpriseDiscoveryServiceType.HAZELCAST;
+import static org.neo4j.causalclustering.scenarios.EnterpriseDiscoveryServiceType.SHARED;
 
 public class EnterpriseClusterIpFamilyIT extends BaseClusterIpFamilyIT
 {
@@ -53,7 +51,7 @@ public class EnterpriseClusterIpFamilyIT extends BaseClusterIpFamilyIT
         } );
     }
 
-    public EnterpriseClusterIpFamilyIT( Supplier<DiscoveryServiceFactory> discoveryServiceFactory, IpFamily ipFamily, boolean useWildcard )
+    public EnterpriseClusterIpFamilyIT( DiscoveryServiceType discoveryServiceFactory, IpFamily ipFamily, boolean useWildcard )
     {
         super( discoveryServiceFactory, ipFamily, useWildcard );
     }

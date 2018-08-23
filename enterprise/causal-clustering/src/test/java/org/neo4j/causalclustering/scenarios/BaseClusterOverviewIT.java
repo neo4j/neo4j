@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -51,7 +50,6 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
@@ -92,9 +90,9 @@ public abstract class BaseClusterOverviewIT
             .withSharedCoreParam( CausalClusteringSettings.middleware_logging_level, "0" )
             .withSharedReadReplicaParam( CausalClusteringSettings.middleware_logging_level, "0" );
 
-    protected BaseClusterOverviewIT( Supplier<DiscoveryServiceFactory> discoveryServiceFactory )
+    protected BaseClusterOverviewIT( DiscoveryServiceType discoveryServiceType )
     {
-        clusterRule.withDiscoveryServiceType( discoveryServiceFactory );
+        clusterRule.withDiscoveryServiceType( discoveryServiceType );
     }
 
     @Test

@@ -43,7 +43,7 @@ public class WillNotBecomeLeaderIT
     @Rule
     public final ClusterRule clusterRule =
             new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 )
-                    .withDiscoveryServiceType( DiscoveryServiceType.HAZELCAST )
+                    .withDiscoveryServiceType( EnterpriseDiscoveryServiceType.HAZELCAST )
                     .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
 
     @Rule
