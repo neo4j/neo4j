@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,14 +39,19 @@ import org.neo4j.values.storable.Value;
 
 class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey,NativeIndexValue>
 {
+    private final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings;
+    private final SpaceFillingCurveConfiguration configuration;
     private Validator<Value[]> validator;
 
     GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings ) throws IOException
+            IndexSamplingConfig samplingConfig, IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings,
+            SpaceFillingCurveConfiguration configuration ) throws IOException
     {
         super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
                 new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
+        this.spaceFillingCurveSettings = spaceFillingCurveSettings;
+        this.configuration = configuration;
     }
 
     @Override
@@ -57,7 +63,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey
     @Override
     public IndexReader newReader()
     {
-        return new GenericNativeIndexReader( tree, layout, samplingConfig, descriptor );
+        return new GenericNativeIndexReader( tree, layout, samplingConfig, descriptor, spaceFillingCurveSettings, configuration );
     }
 
     @Override

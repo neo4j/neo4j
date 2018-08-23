@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -38,7 +37,6 @@ import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
-
 import org.neo4j.values.storable.ValueGroup;
 
 public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends NativeIndexReader<SpatialIndexKey,VALUE>
@@ -67,17 +65,9 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     }
 
     @Override
-    boolean initializeRangeForQuery( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( IndexProgressor.NodeValueClient cursor, SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexQuery[] predicates )
     {
         throw new UnsupportedOperationException( "Cannot initialize 1D range in multidimensional spatial index reader" );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
-    {
-        NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
-        return nodeValueIterator;
     }
 
     @Override

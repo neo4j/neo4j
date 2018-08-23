@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -32,16 +34,21 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 class GenericNativeIndexPopulator extends NativeIndexPopulator<CompositeGenericKey,NativeIndexValue>
 {
+    private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
+    private final SpaceFillingCurveConfiguration configuration;
+
     GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-            IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
+            IndexSpecificSpaceFillingCurveSettingsCache spatialSettings, SpaceFillingCurveConfiguration configuration )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
+        this.spatialSettings = spatialSettings;
+        this.configuration = configuration;
     }
 
     @Override
     IndexReader newReader()
     {
-        return new GenericNativeIndexReader( tree, layout, samplingConfig, descriptor );
+        return new GenericNativeIndexReader( tree, layout, samplingConfig, descriptor, spatialSettings, configuration );
     }
 }

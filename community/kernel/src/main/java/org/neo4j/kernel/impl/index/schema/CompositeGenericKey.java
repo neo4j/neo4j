@@ -22,9 +22,13 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.Arrays;
 import java.util.StringJoiner;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.util.Preconditions;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -41,6 +45,17 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         {
             states[i] = new GenericKeyState( spatialSettings );
         }
+    }
+
+    /**
+     * Special init method for when doing sub-queries for geometry range. This given slot will not be initialized with a {@link PointValue},
+     * but a 1D value which is derived from that point, calculated based on intersecting tiles.
+     *
+     * @see SpaceFillingCurve#getTilesIntersectingEnvelope(double[], double[], SpaceFillingCurveConfiguration)
+     */
+    void initFromDerivedSpatialValue( int stateSlot, CoordinateReferenceSystem crs, long derivedValue, Inclusion inclusion )
+    {
+        states[stateSlot].writePointDerived( crs, derivedValue, inclusion );
     }
 
     @Override

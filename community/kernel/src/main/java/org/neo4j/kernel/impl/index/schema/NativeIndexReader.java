@@ -24,7 +24,6 @@ import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -114,34 +113,10 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
-        KEY treeKeyFrom = layout.newKey();
-        KEY treeKeyTo = layout.newKey();
-
-        treeKeyFrom.initialize( Long.MIN_VALUE );
-        treeKeyTo.initialize( Long.MAX_VALUE );
-
-        boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
-        {
-            return PrimitiveLongResourceCollections.emptyIterator();
-        }
-
-        try
-        {
-            RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
-            openSeekers.add( seeker );
-            return getHitIterator( seeker, needFilter, predicates );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
-    private PrimitiveLongResourceIterator getHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker, boolean needFilter, IndexQuery[] predicates )
-    {
-        return needFilter ? new FilteringNativeHitIterator<>( seeker, openSeekers, predicates )
-                          : new NativeHitIterator<>( seeker, openSeekers );
+        // This method isn't called from main product code anymore so it can might as well delegate to the "real" method
+        NodeValueIterator nodeValueIterator = new NodeValueIterator();
+        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
+        return nodeValueIterator;
     }
 
     @Override
@@ -151,12 +126,16 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
 
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
+        initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
+        boolean needFilter = initializeRangeForQuery( cursor, treeKeyFrom, treeKeyTo, predicates );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter, needsValues );
+    }
+
+    void initializeFromToKeys( KEY treeKeyFrom, KEY treeKeyTo )
+    {
         treeKeyFrom.initialize( Long.MIN_VALUE );
         treeKeyTo.initialize( Long.MAX_VALUE );
-
-        boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter, needsValues );
     }
 
     @Override
@@ -167,7 +146,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     /**
      * @return true if query results from seek will need to be filtered through the predicates, else false
      */
-    abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
+    abstract boolean initializeRangeForQuery( IndexProgressor.NodeValueClient cursor, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
     void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter,
             boolean needsValues )

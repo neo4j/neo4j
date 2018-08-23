@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -50,7 +51,7 @@ class TemporalIndexPartReader<KEY extends NativeIndexSingleValueKey<KEY>> extend
     }
 
     @Override
-    protected boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    protected boolean initializeRangeForQuery( IndexProgressor.NodeValueClient cursor, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )

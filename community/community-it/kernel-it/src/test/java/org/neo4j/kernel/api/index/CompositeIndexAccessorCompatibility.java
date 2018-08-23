@@ -56,6 +56,7 @@ import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY_ARRAY;
 import static org.neo4j.values.storable.Values.booleanArray;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.pointArray;
 import static org.neo4j.values.storable.Values.pointValue;
@@ -264,26 +265,12 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeBySpatial() throws Exception
     {
-        testIndexSeekExactWithRange( GEOMETRY, pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 0D, 0D ),
+        testIndexSeekExactWithRange( GEOMETRY, intValue( 100 ), intValue( 10 ),
+                pointValue( WGS84, -10D, -10D ),
+                pointValue( WGS84, -1D, -1D ),
+                pointValue( WGS84, 0D, 0D ),
                 pointValue( WGS84, 1D, 1D ),
-                pointValue( WGS84, 10D, 10D ),
-                pointValue( WGS84, 110D, 110D ),
-                pointValue( WGS84, 200D, 200D ),
-                pointValue( WGS84, 300D, 300D ) );
-    }
-
-    @Test
-    public void testIndexSeekExactWithRangeBySpatialArray() throws Exception
-    {
-        testIndexSeekExactWithRange( GEOMETRY,
-                pointArray( new PointValue[] {pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 100D, 101D )} ),
-                pointArray( new PointValue[] {pointValue( WGS84, 0D, 0D ), pointValue( WGS84, 0D, 1D )} ),
-
-                pointArray( new PointValue[] {pointValue( WGS84, 1D, 1D ), pointValue( WGS84, 1D, 2D )} ),
-                pointArray( new PointValue[] {pointValue( WGS84, 10D, 10D ), pointValue( WGS84, 10D, 11D )} ),
-                pointArray( new PointValue[] {pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 100D, 101D )} ),
-                pointArray( new PointValue[] {pointValue( WGS84, 200D, 200D ), pointValue( WGS84, 200D, 201D )} ),
-                pointArray( new PointValue[] {pointValue( WGS84, 300D, 300D ), pointValue( WGS84, 300D, 301D )} ) );
+                pointValue( WGS84, 10D, 10D ) );
     }
 
     private void testIndexSeekExactWithRange( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 )
@@ -309,7 +296,6 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( exact( 0, base1 ), range( 1, obj5, false, obj2, true ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( exact( 0, base1 ), range( 1, null, false, obj3, false ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( exact( 0, base1 ), range( 1, null, true, obj3, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
         assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj3, false ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj4, false ) ), equalTo( asList( 7L, 8L ) ) );
@@ -318,9 +304,14 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( exact( 0, base2 ), range( 1, obj5, false, obj2, true ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( exact( 0, base2 ), range( 1, null, false, obj3, false ) ), equalTo( asList( 6L, 7L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, null, true, obj3, true ) ), equalTo( asList( 6L, 7L, 8L ) ) );
-        assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 7L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj3, false ) ), equalTo( singletonList( 7L ) ) );
+
+        if ( valueGroup != GEOMETRY && valueGroup != GEOMETRY_ARRAY )
+        {
+            assertThat( query( exact( 0, base1 ), range( 1, obj1.valueGroup() ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+            assertThat( query( exact( 0, base2 ), range( 1, obj1.valueGroup() ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
+        }
     }
 
     private void testIndexSeekExactWithRangeByBooleanType( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2 ) throws Exception
@@ -337,7 +328,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, false ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( exact( 0, base1 ), range( 1, null, true, obj2, true ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( exact( 0, base1 ), range( 1, obj1, true, null, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1.valueGroup() ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( exact( 0, base1 ), range( 1, obj2, true, obj1, true ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, true, obj2, true ) ), equalTo( asList( 3L, 4L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 4L ) ) );
@@ -345,7 +336,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, false ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( exact( 0, base2 ), range( 1, null, true, obj2, true ) ), equalTo( asList( 3L, 4L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, true, null, true ) ), equalTo( asList( 3L, 4L ) ) );
-        assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ), equalTo( asList( 3L, 4L ) ) );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1.valueGroup() ) ), equalTo( asList( 3L, 4L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj1, true ) ), equalTo( EMPTY_LIST ) );
     }
 
@@ -576,10 +567,10 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         testIndexSeekRangeWithExists( GEOMETRY,
                 pointValue( Cartesian, 0D, 0D ),
-                pointValue( Cartesian, 100D, 100D ),
-                pointValue( Cartesian, 200D, 200D ),
-                pointValue( Cartesian, 300D, 300D ),
-                pointValue( Cartesian, 400D, 400D ) );
+                pointValue( Cartesian, 1D, 1D ),
+                pointValue( Cartesian, 2D, 2D ),
+                pointValue( Cartesian, 3D, 3D ),
+                pointValue( Cartesian, 4D, 4D ) );
     }
 
     @Test
@@ -587,10 +578,10 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         testIndexSeekRangeWithExists( ValueGroup.GEOMETRY_ARRAY,
                 pointArray( new PointValue[] {pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 0D, 1D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 100D, 100D ), pointValue( Cartesian, 100D, 100D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 200D, 200D ), pointValue( Cartesian, 200D, 200D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 300D, 300D ), pointValue( Cartesian, 300D, 300D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 400D, 400D ), pointValue( Cartesian, 400D, 400D )} ) );
+                pointArray( new PointValue[] {pointValue( Cartesian, 10D, 1D ), pointValue( Cartesian, 10D, 2D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 20D, 2D ), pointValue( Cartesian, 20D, 3D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 30D, 3D ), pointValue( Cartesian, 30D, 4D )} ),
+                pointArray( new PointValue[] {pointValue( Cartesian, 40D, 4D ), pointValue( Cartesian, 40D, 5D )} ) );
     }
 
     private void testIndexSeekRangeWithExists( ValueGroup valueGroup, Object obj1, Object obj2, Object obj3, Object obj4, Object obj5 ) throws Exception
@@ -618,7 +609,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         {
             // This cannot be done for spatial values because each bound in a spatial query needs a coordinate reference system,
             // and those are provided by Value instances, e.g. PointValue
-            assertThat( query( range( 0, valueGroup ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+            assertThat( query( range( 0, obj1.valueGroup() ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
         }
         assertThat( query( range( 0, obj1, false, obj2, true ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( range( 0, obj1, false, obj3, false ), exists( 1 ) ), equalTo( singletonList( 2L ) ) );

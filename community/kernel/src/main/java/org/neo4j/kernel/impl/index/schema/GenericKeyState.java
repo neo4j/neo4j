@@ -1783,6 +1783,18 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         }
     }
 
+    void writePointDerived( CoordinateReferenceSystem crs, long derivedValue, NativeIndexKey.Inclusion inclusion )
+    {
+        if ( isArray )
+        {
+            throw new IllegalStateException( "Not sure we're doing arrays like this, are we?" );
+        }
+        type = Type.GEOMETRY;
+        this.inclusion = inclusion;
+        long0 = derivedValue;
+        updateCurve( crs );
+    }
+
     private void updateCurve( CoordinateReferenceSystem crs )
     {
         if ( this.crs == null || this.crs != crs )

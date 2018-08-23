@@ -57,7 +57,11 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
     public SpaceFillingCurve forCrs( int crsTableId, int crsCodePoint, boolean assignToIndexIfNotYetAssigned )
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsTableId, crsCodePoint );
+        return forCrs( crs, assignToIndexIfNotYetAssigned );
+    }
 
+    public SpaceFillingCurve forCrs( CoordinateReferenceSystem crs, boolean assignToIndexIfNotYetAssigned )
+    {
         // Index-specific
         SpaceFillingCurveSettings specificSetting = specificIndexConfigCache.get( crs );
         if ( specificSetting != null )

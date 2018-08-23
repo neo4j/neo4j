@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsReader;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -173,7 +174,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     {
         // TODO this layout cast isn't nice, try and get rid of it
         return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig,
-                ((GenericLayout) layout).getSpaceFillingCurveSettings() );
+                ((GenericLayout) layout).getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override
@@ -182,7 +183,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     {
         // TODO this layout cast isn't nice, try and get rid of it
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
-                ((GenericLayout) layout).getSpaceFillingCurveSettings() );
+                ((GenericLayout) layout).getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override
