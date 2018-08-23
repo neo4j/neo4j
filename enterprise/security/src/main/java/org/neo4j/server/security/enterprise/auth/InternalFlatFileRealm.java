@@ -70,7 +70,9 @@ import static java.util.Collections.emptySet;
 
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
+ * @deprecated This class will be removed in the next major release. Please consider using SystemGraphRealm instead.
  */
+@Deprecated
 public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager,
         ShiroAuthorizationInfoProvider
 {
@@ -93,6 +95,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final JobScheduler jobScheduler;
     private volatile JobHandle reloadJobHandle;
 
+    @Deprecated
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
             JobScheduler jobScheduler, UserRepository initialUserRepository,
@@ -127,6 +130,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
     }
 
+    @Deprecated
     @Override
     public void initialize() throws Throwable
     {
@@ -136,6 +140,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         roleRepository.init();
     }
 
+    @Deprecated
     @Override
     public void start() throws Throwable
     {
@@ -299,6 +304,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         }
     }
 
+    @Deprecated
     @Override
     public void stop() throws Throwable
     {
@@ -314,6 +320,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         }
     }
 
+    @Deprecated
     @Override
     public void shutdown() throws Throwable
     {
@@ -324,6 +331,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         setCacheManager( null );
     }
 
+    @Deprecated
     @Override
     public boolean supports( AuthenticationToken token )
     {
@@ -431,6 +439,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return new ShiroAuthenticationInfo( user.name(), getName(), result );
     }
 
+    @Deprecated
     @Override
     public AuthorizationInfo getAuthorizationInfoSnapshot( PrincipalCollection principalCollection )
     {
@@ -447,6 +456,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return roleRepository.numberOfRoles();
     }
 
+    @Deprecated
     @Override
     public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
@@ -467,6 +477,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return user;
     }
 
+    @Deprecated
     @Override
     public void newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
     {
@@ -489,6 +500,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         }
     }
 
+    @Deprecated
     @Override
     public boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException
     {
@@ -521,6 +533,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return role;
     }
 
+    @Deprecated
     @Override
     public void assertRoleExists( String roleName ) throws InvalidArgumentsException
     {
@@ -532,6 +545,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return roleRepository.getRoleByName( roleName );
     }
 
+    @Deprecated
     @Override
     public void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
@@ -556,6 +570,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         clearCachedAuthorizationInfoForUser( username );
     }
 
+    @Deprecated
     @Override
     public void removeRoleFromUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
@@ -582,6 +597,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         clearCachedAuthorizationInfoForUser( username );
     }
 
+    @Deprecated
     @Override
     public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
     {
@@ -597,6 +613,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return true;
     }
 
+    @Deprecated
     @Override
     public User getUser( String username ) throws InvalidArgumentsException
     {
@@ -608,12 +625,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return u;
     }
 
+    @Deprecated
     @Override
     public User silentlyGetUser( String username )
     {
         return userRepository.getUserByName( username );
     }
 
+    @Deprecated
     @Override
     public void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
@@ -645,6 +664,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         clearCacheForUser( username );
     }
 
+    @Deprecated
     @Override
     public void suspendUser( String username ) throws IOException, InvalidArgumentsException
     {
@@ -668,6 +688,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         clearCacheForUser( username );
     }
 
+    @Deprecated
     @Override
     public void activateUser( String username, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
@@ -695,12 +716,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         clearCacheForUser( username );
     }
 
+    @Deprecated
     @Override
     public Set<String> getAllRoleNames()
     {
         return roleRepository.getAllRoleNames();
     }
 
+    @Deprecated
     @Override
     public Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException
     {
@@ -708,12 +731,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return roleRepository.getRoleNamesByUsername( username );
     }
 
+    @Deprecated
     @Override
     public Set<String> silentlyGetRoleNamesForUser( String username )
     {
         return roleRepository.getRoleNamesByUsername( username );
     }
 
+    @Deprecated
     @Override
     public Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException
     {
@@ -721,6 +746,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return role.users();
     }
 
+    @Deprecated
     @Override
     public Set<String> silentlyGetUsernamesForRole( String roleName )
     {
@@ -728,6 +754,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return role == null ? emptySet() : role.users();
     }
 
+    @Deprecated
     @Override
     public Set<String> getAllUsernames()
     {

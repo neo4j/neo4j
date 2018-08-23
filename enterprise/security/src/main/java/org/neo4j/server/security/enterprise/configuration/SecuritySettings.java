@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Level;
@@ -58,8 +59,10 @@ import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_RO
 @Description( "Security configuration settings" )
 public class SecuritySettings implements LoadableConfig
 {
-    public static final String NATIVE_REALM_NAME = "native";
     public static final String SYSTEM_GRAPH_REALM_NAME = "system-graph";
+    @Deprecated
+    @ReplacedBy( SYSTEM_GRAPH_REALM_NAME )
+    public static final String NATIVE_REALM_NAME = "native";
     public static final String LDAP_REALM_NAME = "ldap";
     public static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
 
@@ -71,7 +74,8 @@ public class SecuritySettings implements LoadableConfig
                   "This can be one of the built-in `" + NATIVE_REALM_NAME + "`, `" + SYSTEM_GRAPH_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` providers, " +
                   "or it can be an externally provided plugin, with a custom name prefixed by `" +
                   PLUGIN_REALM_NAME_PREFIX + "`, i.e. `" + PLUGIN_REALM_NAME_PREFIX + "<AUTH_PROVIDER_NAME>`. " +
-                  "The `" + SYSTEM_GRAPH_REALM_NAME + "` option is available for Commercial Edition only." )
+                  "The " + NATIVE_REALM_NAME + "option is deprecated and will be replaced by " + SYSTEM_GRAPH_REALM_NAME +
+                  " (available for Commercial Edition only) in the next major release." )
     public static final Setting<String> auth_provider =
             setting( "dbms.security.auth_provider", STRING, NATIVE_REALM_NAME );
 
