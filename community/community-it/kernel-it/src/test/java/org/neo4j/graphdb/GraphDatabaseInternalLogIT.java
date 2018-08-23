@@ -58,8 +58,8 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertEquals( 1, countOccurrences( internalLog, "Database is now ready" ) );
-        assertEquals( 1, countOccurrences( internalLog, "Database is now unavailable" ) );
+        assertEquals( 1, countOccurrences( internalLog, "Database graph.db is ready." ) );
+        assertEquals( 2, countOccurrences( internalLog, "Database graph.db is unavailable." ) );
     }
 
     @Test

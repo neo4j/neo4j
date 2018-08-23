@@ -37,8 +37,8 @@ import org.neo4j.logging.Log;
  */
 public class DatabaseAvailabilityGuard implements AvailabilityGuard
 {
-    private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database %s available: %s.";
-    private static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database %s unavailable: %s.";
+    private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement '%s' makes database %s available.";
+    private static final String DATABASE_UNAVAILABLE_MSG = "Requirement `%s` makes database %s unavailable.";
 
     private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
@@ -68,7 +68,7 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
         {
             if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
-                log.info( DATABASE_UNAVAILABLE_MSG, databaseName, requirement.description() );
+                log.info( DATABASE_UNAVAILABLE_MSG, requirement.description(), databaseName );
                 listeners.notify( AvailabilityListener::unavailable );
             }
         }
@@ -86,7 +86,7 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
         {
             if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
-                log.info( DATABASE_AVAILABLE_MSG, databaseName, requirement.description() );
+                log.info( DATABASE_AVAILABLE_MSG, requirement.description(), databaseName );
                 listeners.notify( AvailabilityListener::available );
             }
         }
@@ -241,13 +241,13 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
         @Override
         public void available()
         {
-            log.info( "Database %s is now ready.", databaseName );
+            log.info( "Database %s is ready.", databaseName );
         }
 
         @Override
         public void unavailable()
         {
-            log.info( "Database %s is now unavailable.", databaseName );
+            log.info( "Database %s is unavailable.", databaseName );
         }
     }
 }
