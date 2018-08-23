@@ -29,7 +29,6 @@ import java.io.IOException;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -54,7 +53,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -170,7 +169,7 @@ public class SpatialIndexSettingsTest
 
     private SpatialIndexProvider newSpatialIndexProvider( Config config )
     {
-        return new SpatialIndexProvider( pageCache, fs, directoriesByProvider( directory.graphDbDir() ), monitor, IMMEDIATE, false, config );
+        return new SpatialIndexProvider( pageCache, fs, directoriesByProvider( directory.graphDbDir() ), monitor, immediate(), false, config );
     }
 
     private void addUpdates( SpatialIndexProvider provider, long indexId, SchemaIndexDescriptor schemaIndexDescriptor,

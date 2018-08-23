@@ -20,16 +20,17 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
+
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 public abstract class StringSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<StringSchemaKey,NativeSchemaValue>
 {
     @Override
     StringSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor,
+        return new StringSchemaIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor,
                 schemaIndexDescriptor, indexId, samplingConfig );
     }
 

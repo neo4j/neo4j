@@ -1415,7 +1415,7 @@ public class BatchInsertTest
     private LabelScanStore getLabelScanStore()
     {
         return new NativeLabelScanStore( pageCacheRule.getPageCache( fileSystemRule.get() ), storeDir.absolutePath(),
-                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
+                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.immediate() );
     }
 
     private void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )

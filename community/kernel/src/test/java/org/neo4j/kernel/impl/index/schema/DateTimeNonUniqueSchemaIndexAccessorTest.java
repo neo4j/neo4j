@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 public class DateTimeNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<ZonedDateTimeSchemaKey,NativeSchemaValue>
 {
@@ -34,7 +34,7 @@ public class DateTimeNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndexA
     {
         TemporalIndexFiles.FileLayout<ZonedDateTimeSchemaKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_DATE_TIME );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Override

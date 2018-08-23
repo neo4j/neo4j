@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.scheduler.JobSchedulerAdapter;
@@ -248,7 +249,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public void run()
+        public void run( ExecutorService executor )
         {
             throw new RuntimeException( "Resilient to run attempts" );
         }
@@ -297,7 +298,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public void run()
+        public void run( ExecutorService executor )
         {
             allRuns.add( this );
         }

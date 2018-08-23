@@ -177,7 +177,7 @@ public class NonUniqueIndexTest
             OperationalMode operationalMode )
     {
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         if ( LUCENE10.providerName().equals( defaultSchemaProvider ) )
         {
             return LuceneIndexProviderFactory

@@ -136,7 +136,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 IOLimiter.unlimited(),
                 availabilityGuard, clock,
                 new CanWrite(), new StoreCopyCheckPointMutex(),
-                RecoveryCleanupWorkCollector.IMMEDIATE,
+                RecoveryCleanupWorkCollector.immediate(),
                 new BufferedIdController(
                         new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ), jobScheduler ),
                 OperationalMode.single, new TransactionVersionContextSupplier(), ON_HEAP );

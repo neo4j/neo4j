@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -46,7 +45,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
 
@@ -84,7 +84,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, monitors, IMMEDIATE );
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, monitors, immediate() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -106,7 +106,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, true, monitors, ignore() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -127,7 +127,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, true, monitors, ignore() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -147,7 +147,7 @@ public class NativeLabelScanStoreRebuildTest
         try
         {
             nativeLabelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, changeStream, false, new Monitors(), IMMEDIATE );
+                    new NativeLabelScanStore( pageCache, storeDir, changeStream, false, new Monitors(), immediate() );
             nativeLabelScanStore.init();
 
             // when
@@ -175,7 +175,7 @@ public class NativeLabelScanStoreRebuildTest
         try
         {
             nativeLabelScanStore = new NativeLabelScanStore( pageCache, storeDir, THROWING_STREAM, false,
-                    new Monitors(), IMMEDIATE );
+                    new Monitors(), immediate() );
 
             nativeLabelScanStore.init();
             nativeLabelScanStore.start();
