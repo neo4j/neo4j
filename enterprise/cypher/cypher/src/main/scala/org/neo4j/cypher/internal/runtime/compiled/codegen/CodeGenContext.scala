@@ -40,7 +40,7 @@ class CodeGenContext(val semanticTable: SemanticTable,
   private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
-  val operatorIds: mutable.Map[Id, String] = mutable.Map()
+  val operatorIds: mutable.Map[String, Id] = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
     //assert(!variables.isDefinedAt(queryVariable)) // TODO: Make the cases where overwriting the value is ok explicit (by using updateVariable)
@@ -94,7 +94,10 @@ class CodeGenContext(val semanticTable: SemanticTable,
   def popParent(): CodeGenPlan = parents.pop()
 
   def registerOperator(plan: LogicalPlan): String = {
-    operatorIds.getOrElseUpdate(plan.id, namer.newOpName(plan.getClass.getSimpleName))
+    val name = namer.newOpName(plan.getClass.getSimpleName)
+    operatorIds.put(name, plan.id).foreach(oldId =>
+      throw new IllegalStateException(s"Cannot support multiple operators with the same name. Tried to replace operator '$oldId' with '${plan.id}'"))
+    name
   }
 }
 

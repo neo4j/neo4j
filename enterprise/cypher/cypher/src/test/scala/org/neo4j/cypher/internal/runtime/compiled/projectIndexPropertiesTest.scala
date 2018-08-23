@@ -75,8 +75,7 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
     val operatorName = getValues.getClass.getSimpleName
 
     test(s"should introduce projection for $operatorName with index properties") {
-      val attr = Attributes(idGen)
-      val updater = projectIndexProperties(attr)
+      val updater = projectIndexProperties
       val emptyTable = SemanticTable()
 
       val (newPlan, newTable) = updater(getValues, emptyTable)
@@ -87,8 +86,7 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
     }
 
     test(s"should not introduce projection for $operatorName without index properties") {
-      val attr = Attributes(idGen)
-      val updater = projectIndexProperties(attr)
+      val updater = projectIndexProperties
       val emptyTable = SemanticTable()
 
       val (newPlan, newTable) = updater(doNotGetValues, emptyTable)

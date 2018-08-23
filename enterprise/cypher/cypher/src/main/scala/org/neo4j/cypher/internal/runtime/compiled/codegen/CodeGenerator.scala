@@ -112,9 +112,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
     val lookup = columns.indices.map(i => columns(i) -> i).toMap
     implicit val context = new CodeGenContext(semantics, lookup)
     val (_, instructions) = asCodeGenPlan(plan).produce(context, cardinalities)
-    generateCode(structure)(instructions, context.operatorIds.map {
-      case (id: Id, field: String) => field -> id
-    }.toMap, columns, conf)
+    generateCode(structure)(instructions, context.operatorIds.toMap, columns, conf)
   }
 
   private def asJavaHashMap(params: scala.collection.Map[String, Any]) = {

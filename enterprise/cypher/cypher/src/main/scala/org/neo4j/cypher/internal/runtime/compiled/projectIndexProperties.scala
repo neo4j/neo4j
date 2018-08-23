@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal.runtime.compiled
 
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.opencypher.v9_0.util.attribution.Attributes
+import org.opencypher.v9_0.util.attribution.SameId
 import org.opencypher.v9_0.util.symbols.CTNode
 import org.opencypher.v9_0.util.{Rewriter, topDown}
 
@@ -33,23 +33,21 @@ import org.opencypher.v9_0.util.{Rewriter, topDown}
   * that have `DoNotGetValue` instead, with a projection to get the values on
   * top of the index plan.
   */
-case class projectIndexProperties(attributes: Attributes) {
+case object projectIndexProperties {
 
   def apply(plan: LogicalPlan, semanticTable: SemanticTable): (LogicalPlan, SemanticTable) = {
     var currentTypes = semanticTable.types
 
     val rewriter = topDown(Rewriter.lift {
-      case plan: IndexLeafPlan if plan.propertyNamesWithValues.nonEmpty =>
-        val projections = plan.availablePropertiesFromIndexes.map(_.swap)
+      case indexLeafPlan: IndexLeafPlan if indexLeafPlan.propertyNamesWithValues.nonEmpty =>
+        val projections = indexLeafPlan.availablePropertiesFromIndexes.map(_.swap)
         // Register all variables in the property lookups as nodes
         projections.values.foreach { prop =>
           currentTypes = currentTypes.updated(prop.map, ExpressionTypeInfo(CTNode.invariant, None))
         }
 
-        val newIndexPlan = plan.copyWithoutGettingValues
-        // TODO we should give the projections the SameId as the newIndexPlan after we have runtime independent execution plan descriptions
-        // Then we also don't need attributes any more and can revert putting the logicalPlanIdGen in the EnterpriseRuntimeContext
-        Projection(newIndexPlan, projections)(attributes.copy(plan.id))
+        val newIndexPlan = indexLeafPlan.copyWithoutGettingValues
+        Projection(newIndexPlan, projections)(SameId(indexLeafPlan.id))
     })
 
     val rewrittenPlan = rewriter(plan).asInstanceOf[LogicalPlan]

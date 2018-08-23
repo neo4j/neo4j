@@ -23,7 +23,6 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
   * The regular community runtime context.
@@ -37,8 +36,7 @@ object CommunityRuntimeContextCreator extends RuntimeContextCreator[RuntimeConte
                       tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
-                      readOnly: Boolean,
-                      logicalPlanIdGen: IdGen
+                      readOnly: Boolean
                      ): RuntimeContext =
     CommunityRuntimeContext(notificationLogger, tokenContext, readOnly)
 }

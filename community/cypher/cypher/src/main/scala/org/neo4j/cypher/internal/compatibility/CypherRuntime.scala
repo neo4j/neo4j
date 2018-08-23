@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.attribution.IdGen
 
 import scala.util.Try
 
@@ -65,15 +64,11 @@ abstract class RuntimeContext {
   * @tparam CONTEXT type of runtime context created
   */
 trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
-  /**
-    * @param logicalPlanIdGen for runtime specific rewriters that introduce new logical plans
-    */
   def create(notificationLogger: InternalNotificationLogger,
              tokenContext: TokenContext,
              clock: Clock,
              debugOptions: Set[String],
-             readOnly: Boolean,
-             logicalPlanIdGen: IdGen
+             readOnly: Boolean
             ): CONTEXT
 }
 

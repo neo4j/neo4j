@@ -85,20 +85,15 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.toList should equal(List(Map("foo" -> 42), Map("foo" -> 42)))
   }
 
-  // TODO actually we don't want it to be visible. After we have runtime independent execution plan descriptions,
-  // we will assert the exact opposite here. This test will make us aware of that we need to change a line in projectIndexProperties
-  test("compiled plans an extra projection which is visible in the execution plan description") {
+  test("compiled creates an extra dbhit because it can't get values from indexes") {
     val result = innerExecuteDeprecated("CYPHER runtime=compiled PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1 AS foo")
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
       .containingArgument("{foo : `n.prop1`}")
       .withDBHits(0)
-      .onTopOf(aPlan("Projection")
-        .containingArgument("{n.prop1 : n.prop1}")
-        .withDBHits(1)
-        .onTopOf(aPlan("NodeIndexSeek")
-          .withDBHits(2)
-          .withExactVariables("n")))
+      .onTopOf(aPlan("NodeIndexSeek")
+        .withDBHits(3)
+        .withExactVariables("n", "n.prop1"))
 
     result.toList should equal(List(Map("foo" -> 42)))
   }

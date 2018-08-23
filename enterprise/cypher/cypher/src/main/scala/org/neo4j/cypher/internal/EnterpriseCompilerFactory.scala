@@ -139,7 +139,6 @@ case class RuntimeEnvironment(config:CypherRuntimeConfiguration, jobScheduler: J
 case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogger,
                                     tokenContext: TokenContext,
                                     readOnly: Boolean,
-                                    logicalPlanIdGen: IdGen,
                                     codeStructure: CodeStructure[GeneratedQuery],
                                     log: Log,
                                     clock: Clock,
@@ -160,12 +159,10 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                       tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
-                      readOnly: Boolean,
-                      logicalPlanIdGen: IdGen): EnterpriseRuntimeContext =
+                      readOnly: Boolean): EnterpriseRuntimeContext =
     EnterpriseRuntimeContext(notificationLogger,
                              tokenContext,
                              readOnly,
-                             logicalPlanIdGen,
                              codeStructure,
                              log,
                              clock,
