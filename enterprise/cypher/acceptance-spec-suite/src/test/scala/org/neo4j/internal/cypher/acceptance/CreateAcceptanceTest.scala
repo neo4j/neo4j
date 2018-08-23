@@ -166,7 +166,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
                             |CREATE (b)-[:LINK_TO]->(a)
                             |CREATE (c)-[r:MISSING_C]->(a)""".stripMargin,
       errorType = List(s"Failed to create relationship `r`, node `c` is missing. If you prefer to simply ignore rows " +
-                       s"where a relationship node is missing, set cypher.lenient_create_relationship = true in neo4j.conf"))
+                       s"where a relationship node is missing, set 'cypher.lenient_create_relationship = true' in neo4j.conf"))
   }
 
   // No CLG decision on this AFAIK, so not TCK material
@@ -181,6 +181,6 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
                             |CREATE (b)-[:LINK_TO]->(a)
                             |CREATE (a)-[r:MISSING_C]->(c)""".stripMargin,
       errorType = List(s"Failed to create relationship `r`, node `c` is missing. If you prefer to simply ignore rows " +
-        s"where a relationship node is missing, set cypher.lenient_create_relationship = true in neo4j.conf"))
+        s"where a relationship node is missing, set 'cypher.lenient_create_relationship = true' in neo4j.conf"))
   }
 }
