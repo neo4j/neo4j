@@ -39,16 +39,16 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     private final PlatformModule platform;
     private final EditionModule edition;
     private final Procedures procedures;
-    private final Logger msgLog;
+    private final Logger log;
     private final GraphDatabaseFacade graphDatabaseFacade;
 
     public DefaultDatabaseManager( PlatformModule platform, EditionModule edition, Procedures procedures,
-            Logger msgLog, GraphDatabaseFacade graphDatabaseFacade )
+            Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.platform = platform;
         this.edition = edition;
         this.procedures = procedures;
-        this.msgLog = msgLog;
+        this.log = log;
         this.graphDatabaseFacade = graphDatabaseFacade;
     }
 
@@ -59,12 +59,12 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     }
 
     @Override
-    public GraphDatabaseFacade createDatabase( String name )
+    public GraphDatabaseFacade createDatabase( String databaseName )
     {
         checkState( database == null, "Database is already created, fail to create another one." );
-
-        DataSourceModule dataSource = new DataSourceModule( name, platform, edition, procedures, graphDatabaseFacade );
-        ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, dataSource.getCoreAPIAvailabilityGuard(), edition.threadToTransactionBridge );
+        log.log( "Creating '%s' database.", databaseName );
+        DataSourceModule dataSource = new DataSourceModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
+        ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, log, dataSource.getCoreAPIAvailabilityGuard(), edition.threadToTransactionBridge );
         graphDatabaseFacade.init( spi, edition.threadToTransactionBridge, platform.config, dataSource.neoStoreDataSource.getTokenHolders() );
         platform.dataSourceManager.register( dataSource.neoStoreDataSource );
         database = graphDatabaseFacade;
@@ -87,6 +87,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     {
         if ( database != null )
         {
+            log.log( "Shutdown '%s' database.", database.databaseLayout().getDatabaseName() );
             database.shutdown();
         }
     }
