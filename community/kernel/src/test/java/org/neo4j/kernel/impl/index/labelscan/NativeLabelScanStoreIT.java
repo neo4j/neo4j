@@ -65,7 +65,7 @@ public class NativeLabelScanStoreIT
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         store = life.add( new NativeLabelScanStore( pageCache, directory.databaseLayout(), fileSystem, FullStoreChangeStream.EMPTY,
-                false, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE,
+                false, new Monitors(), RecoveryCleanupWorkCollector.immediate(),
                 // a bit of random pageSize
                 Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ) ) );
     }

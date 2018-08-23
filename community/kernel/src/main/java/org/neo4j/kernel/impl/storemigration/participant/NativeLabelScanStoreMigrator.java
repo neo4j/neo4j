@@ -131,7 +131,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
         return new NativeLabelScanStore( pageCache, migrationDirectoryStructure, fileSystem,
                 new MonitoredFullLabelStream( neoStoreIndexStoreView, progressReporter ), false, new Monitors(),
-                RecoveryCleanupWorkCollector.IMMEDIATE );
+                RecoveryCleanupWorkCollector.immediate() );
     }
 
     private StoreFactory getStoreFactory( DatabaseLayout directoryStructure, String versionToMigrateFrom )

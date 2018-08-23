@@ -1414,7 +1414,7 @@ public class BatchInsertTest
     {
         DefaultFileSystemAbstraction fs = fileSystemRule.get();
         return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), localTestDirectory.databaseLayout(), fs,
-                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
+                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.immediate() );
     }
 
     private void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )

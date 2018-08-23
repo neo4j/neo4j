@@ -33,7 +33,6 @@ import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
 import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -199,7 +198,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         NativeLabelScanStore labelScanStore =
                 new NativeLabelScanStore( pageCache, directory.databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
-                        RecoveryCleanupWorkCollector.IMMEDIATE );
+                        RecoveryCleanupWorkCollector.immediate() );
         try
         {
             labelScanStore.init();
@@ -217,7 +216,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
-                pageCache, RecoveryCleanupWorkCollector.IGNORE, DatabaseInfo.COMMUNITY, monitors ) );
+                pageCache, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors ) );
         return life.add( new DefaultIndexProviderMap( extensions ) );
     }
 

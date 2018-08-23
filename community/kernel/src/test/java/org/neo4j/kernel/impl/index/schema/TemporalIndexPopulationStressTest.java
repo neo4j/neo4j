@@ -34,7 +34,7 @@ public class TemporalIndexPopulationStressTest extends IndexPopulationStressTest
                                           rules.fileSystem(),
                                           directory,
                                           IndexProvider.Monitor.EMPTY,
-                                          RecoveryCleanupWorkCollector.IMMEDIATE,
+                                          RecoveryCleanupWorkCollector.immediate(),
                                           false );
     }
 

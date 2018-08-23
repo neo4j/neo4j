@@ -37,14 +37,14 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 public abstract class NumberIndexAccessorTest extends NativeIndexAccessorTest<NumberIndexKey,NativeIndexValue>
 {
     @Override
     NumberIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
+        return new NumberIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor, indexDescriptor, samplingConfig );
     }
 
     @Test

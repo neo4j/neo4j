@@ -40,7 +40,7 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE_BTREE10.providerIdentifier() ) );
         OperationalMode mode = OperationalMode.single;
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return GenericNativeIndexProviderFactory.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );
     }
 

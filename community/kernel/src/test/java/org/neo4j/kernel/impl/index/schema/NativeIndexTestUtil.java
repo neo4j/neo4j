@@ -129,7 +129,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
     GBPTree<KEY,VALUE> getTree() throws IOException
     {
         return new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
-                NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
+                NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() );
     }
 
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException

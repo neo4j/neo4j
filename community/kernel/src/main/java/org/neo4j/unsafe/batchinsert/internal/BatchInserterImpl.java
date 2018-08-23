@@ -295,7 +295,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
-        deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.IMMEDIATE );
+        deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
 
         DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
                 new SimpleKernelContext( databaseDirectory, DatabaseInfo.UNKNOWN, deps ),
@@ -961,7 +961,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         NativeLabelScanStore labelIndex =
                 new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
-                        RecoveryCleanupWorkCollector.IMMEDIATE );
+                        RecoveryCleanupWorkCollector.immediate() );
         if ( labelsTouched )
         {
             labelIndex.drop();

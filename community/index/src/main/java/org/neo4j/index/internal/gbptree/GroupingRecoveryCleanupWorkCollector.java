@@ -24,7 +24,6 @@ import java.util.StringJoiner;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -33,7 +32,7 @@ import org.neo4j.scheduler.JobScheduler;
  * <p>
  * Also see {@link RecoveryCleanupWorkCollector}
  */
-public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
+public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
 {
     private final Queue<CleanupJob> jobs;
     private final JobScheduler jobScheduler;
@@ -92,36 +91,37 @@ public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter imple
     private Runnable allJobs()
     {
         return () ->
-        {
-            CleanupJob job;
-            Exception jobsException = null;
-            while ( (job = jobs.poll()) != null )
-            {
-                try
+                executeWithExecutor( executor ->
                 {
-                    job.run();
-                }
-                catch ( Exception e )
-                {
-                    if ( jobsException == null )
+                    CleanupJob job;
+                    Exception jobsException = null;
+                    while ( (job = jobs.poll()) != null )
                     {
-                        jobsException = e;
+                        try
+                        {
+                            job.run( executor );
+                        }
+                        catch ( Exception e )
+                        {
+                            if ( jobsException == null )
+                            {
+                                jobsException = e;
+                            }
+                            else
+                            {
+                                jobsException.addSuppressed( e );
+                            }
+                        }
+                        finally
+                        {
+                            job.close();
+                        }
                     }
-                    else
+                    if ( jobsException != null )
                     {
-                        jobsException.addSuppressed( e );
+                        throw new RuntimeException( jobsException );
                     }
-                }
-                finally
-                {
-                    job.close();
-                }
-            }
-            if ( jobsException != null )
-            {
-                throw new RuntimeException( jobsException );
-            }
-        };
+                } );
     }
 
     private void consumeAndCloseJobs( Consumer<CleanupJob> consumer )

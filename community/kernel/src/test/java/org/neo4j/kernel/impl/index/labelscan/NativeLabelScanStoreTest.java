@@ -67,7 +67,7 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
         return new NativeLabelScanStore( pageCache, databaseLayout, fileSystemAbstraction,
-                fullStoreChangeStream, readOnly, monitors, RecoveryCleanupWorkCollector.IMMEDIATE );
+                fullStoreChangeStream, readOnly, monitors, RecoveryCleanupWorkCollector.immediate() );
     }
 
     @Override

@@ -35,7 +35,7 @@ public class SpatialIndexPopulationStressTest extends IndexPopulationStressTest
                                           rules.fileSystem(),
                                           directory,
                                           IndexProvider.Monitor.EMPTY,
-                                          RecoveryCleanupWorkCollector.IMMEDIATE,
+                                          RecoveryCleanupWorkCollector.immediate(),
                                           false,
                                           Config.defaults() );
     }

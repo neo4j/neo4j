@@ -47,7 +47,7 @@ class GBPTreeBuilder<KEY,VALUE>
     private Header.Reader headerReader = NO_HEADER_READER;
     private Layout<KEY,VALUE> layout;
     private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
-    private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
+    private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
 
     GBPTreeBuilder( PageCache pageCache, File file, Layout<KEY,VALUE> layout )
     {

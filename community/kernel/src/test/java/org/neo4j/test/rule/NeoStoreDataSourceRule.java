@@ -151,7 +151,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                         mock( InternalAutoIndexing.class ), mock( IndexConfigStore.class ), mock( ExplicitIndexProvider.class ), pageCache,
                         new StandardConstraintSemantics(), monitors, new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                         mock( Procedures.class ), IOLimiter.UNLIMITED, availabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
-                        RecoveryCleanupWorkCollector.IMMEDIATE,
+                        RecoveryCleanupWorkCollector.immediate(),
                         new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                                 jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
                         file -> EMPTY_WATCHER, new GraphDatabaseFacade(), Iterables.empty() ) );

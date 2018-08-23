@@ -510,7 +510,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
         try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
-                headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE ) )
+                headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() ) )
         {
             if ( online )
             {

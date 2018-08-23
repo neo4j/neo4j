@@ -206,7 +206,7 @@ public class NativeLabelScanStoreMigratorTest
     private NativeLabelScanStore getNativeLabelScanStore( DatabaseLayout databaseLayout, boolean readOnly )
     {
         return new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, readOnly, new Monitors(),
-                RecoveryCleanupWorkCollector.IGNORE );
+                RecoveryCleanupWorkCollector.ignore() );
     }
 
     private void initializeNativeLabelScanStoreWithContent( DatabaseLayout databaseLayout ) throws IOException

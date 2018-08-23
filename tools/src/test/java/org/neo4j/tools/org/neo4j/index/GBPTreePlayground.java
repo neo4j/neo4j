@@ -67,7 +67,7 @@ public class GBPTreePlayground
     private void setupIndex() throws IOException
     {
         tree = new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.IMMEDIATE );
+                RecoveryCleanupWorkCollector.immediate() );
     }
 
     private void run() throws InterruptedException, IOException

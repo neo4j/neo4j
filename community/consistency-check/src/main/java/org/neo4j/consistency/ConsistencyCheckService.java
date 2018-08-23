@@ -223,7 +223,7 @@ public class ConsistencyCheckService
         LifeSupport life = new LifeSupport();
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( databaseLayout.databaseDirectory(),
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
-                RecoveryCleanupWorkCollector.IGNORE,
+                RecoveryCleanupWorkCollector.ignore(),
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
                 COMMUNITY,
                 monitors ) );
@@ -235,7 +235,7 @@ public class ConsistencyCheckService
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, true, monitors,
-                            RecoveryCleanupWorkCollector.IGNORE );
+                            RecoveryCleanupWorkCollector.ignore() );
             life.add( labelScanStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();

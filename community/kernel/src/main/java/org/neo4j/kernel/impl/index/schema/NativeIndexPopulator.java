@@ -124,7 +124,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         assertNotClosed();
 
         deleteFileIfPresent( fileSystem, storeFile );
-        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, headerWriter );
+        instantiateTree( RecoveryCleanupWorkCollector.immediate(), headerWriter );
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
@@ -282,7 +282,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     {
         if ( tree == null )
         {
-            instantiateTree( RecoveryCleanupWorkCollector.IGNORE, NO_HEADER_WRITER );
+            instantiateTree( RecoveryCleanupWorkCollector.ignore(), NO_HEADER_WRITER );
         }
     }
 

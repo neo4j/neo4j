@@ -119,7 +119,7 @@ public class StoreMigration
             Dependencies deps = new Dependencies();
             Monitors monitors = new Monitors();
             deps.satisfyDependencies( fs, config, migrationIndexProvider, pageCache, logService, monitors,
-                    RecoveryCleanupWorkCollector.IMMEDIATE );
+                    RecoveryCleanupWorkCollector.immediate() );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
             DatabaseKernelExtensions kernelExtensions = life.add( new DatabaseKernelExtensions(
