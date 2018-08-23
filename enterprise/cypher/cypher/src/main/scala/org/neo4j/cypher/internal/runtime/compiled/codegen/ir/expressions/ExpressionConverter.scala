@@ -182,6 +182,11 @@ object ExpressionConverter {
         val rightOp = callback(rhs)
         Modulo(leftOp, rightOp)
 
+      case ast.Pow(lhs, rhs) =>
+        val leftOp = callback(lhs)
+        val rightOp = callback(rhs)
+        Pow(leftOp, rightOp)
+
       case ast.MapExpression(items) =>
         val map = items.map {
           case (key, expr) => (key.name, callback(expr))

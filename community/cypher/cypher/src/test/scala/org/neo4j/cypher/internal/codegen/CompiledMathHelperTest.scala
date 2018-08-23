@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.codegen
 
 import java.util
 
-import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.opencypher.v9_0.util.CypherTypeException
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{Assertions, Matchers, PropSpec}
 
@@ -566,6 +566,104 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: Number,            _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (v1, v2, v3) => fail(s"Unspecified behaviour: $v1 / $v2 => $v3")
+    }
+  }
+
+  property("^") {
+    forAll(getTable(CompiledMathHelper.pow)) {
+      // Nulls
+      case (null,                 _,                    Right(result)) => result should equal(null)
+      case (_,                    null,                 Right(result)) => result should equal(null)
+      case (Values.NO_VALUE,      _,                    Right(result)) => result should equal(null)
+      case (_,                    Values.NO_VALUE,      Right(result)) => result should equal(null)
+
+      // Java values
+      case (l: java.lang.Double,  r: Number,            Right(result)) => result should equal(Math.pow(l, r.doubleValue()))
+      case (l: Number,            r: java.lang.Double,  Right(result)) => result should equal(Math.pow(l.doubleValue() , r))
+      case (l: java.lang.Float,   r: Number,            Right(result)) => result should equal(Math.pow(l.toDouble , r.doubleValue()))
+      case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(Math.pow(l.doubleValue() , r.toDouble))
+      case (l: Number,            r: Number,            Right(result)) => result should equal(Math.pow(l.longValue() , r.longValue()))
+
+      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      // Neo values
+      // NOTE: We do not produce any Values here as with the other numerical operators
+      case (l: DoubleValue,       r: NumberValue,       Right(result)) =>
+        java.lang.Double.compare(result.asInstanceOf[Double], Math.pow(l.doubleValue(), r.doubleValue())) should equal(0)
+      case (l: NumberValue,       r: DoubleValue,       Right(result)) =>
+        java.lang.Double.doubleToLongBits(result.asInstanceOf[Number].doubleValue()) should equal(
+          java.lang.Double.doubleToLongBits(Math.pow(l.doubleValue() , r.doubleValue())))
+      case (l: FloatValue,        r: NumberValue,       Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: NumberValue,       r: FloatValue,        Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: NumberValue,       r: NumberValue,       Right(result)) =>
+        result should equal(Math.pow(l.longValue() , r.longValue()))
+
+      case (l: NumberValue,       r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: TextValue,         r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: TextValue,         r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: TextValue,         r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: BooleanValue,      r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: PointValue,          _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      // Lists
+      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l1: ListValue, l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l1: util.List[_], l2: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (x, l: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: ListValue, x, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      // Mix of Neo values and Java values
+      case (l: DoubleValue,       r: Number,            Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: Number,            r: DoubleValue,       Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: NumberValue,       r: java.lang.Double,  Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: java.lang.Double,  r: NumberValue,       Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: FloatValue,        r: Number,            Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: Number,            r: FloatValue,        Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
+      case (l: java.lang.Float,   r: NumberValue,       Right(result)) => result should equal(Math.pow(l.toDouble , r.doubleValue()))
+      case (l: NumberValue,       r: java.lang.Float,   Right(result)) => result should equal(Math.pow(l.doubleValue() , r.toDouble))
+      case (l: NumberValue,       r: Number,            Right(result)) => result should equal(Math.pow(l.longValue() , r.longValue()))
+      case (l: Number,            r: NumberValue,       Right(result)) => result should equal(Math.pow(l.longValue() , r.longValue()))
+
+      case (l: NumberValue,       r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: TextValue,         r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: Number,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: TextValue,         r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: TextValue,         r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: java.lang.Boolean, r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: BooleanValue,      r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (_: NumberValue,       _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (v1, v2, v3) => fail(s"Unspecified behaviour: $v1 ^ $v2 => $v3")
     }
   }
 

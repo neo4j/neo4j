@@ -237,16 +237,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num ^ n.loc", List("Cannot raise `Long` to the power of `Point`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num ^ n.dat", List("Cannot raise `Long` to the power of `DateTime`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo ^ n.bool", List("Cannot raise `Double` to the power of `Boolean`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst ^ n.str", List("Cannot raise `LongArray` to the power of `String`"))
   }
 }

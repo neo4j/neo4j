@@ -524,6 +524,35 @@ public final class CompiledMathHelper
         throw new CypherTypeException( String.format( "Cannot calculate modulus of `%s` and `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
     }
 
+    public static Object pow( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
+        {
+            return null;
+        }
+
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
+        }
+
+        // now we have Numbers
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            return Math.pow( ((Number) lhs).doubleValue(), ((Number) rhs).doubleValue() );
+        }
+
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : Values.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : Values.of( rhs );
+
+        throw new CypherTypeException( String.format( "Cannot raise `%s` to the power of `%s`", lhsValue.getTypeName(), rhsValue.getTypeName() ), null );
+    }
+
     public static int transformToInt( Object value )
     {
         if ( value == null )

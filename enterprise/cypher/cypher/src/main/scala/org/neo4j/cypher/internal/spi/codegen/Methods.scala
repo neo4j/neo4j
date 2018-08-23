@@ -83,6 +83,7 @@ object Methods {
   val mathAdd: MethodReference = method[CompiledMathHelper, Object]("add", typeRef[Object], typeRef[Object])
   val mathSub: MethodReference = method[CompiledMathHelper, Object]("subtract", typeRef[Object], typeRef[Object])
   val mathMul: MethodReference = method[CompiledMathHelper, Object]("multiply", typeRef[Object], typeRef[Object])
+  val mathPow: MethodReference = method[CompiledMathHelper, Object]("pow", typeRef[Object], typeRef[Object])
   val mathDiv: MethodReference = method[CompiledMathHelper, Object]("divide", typeRef[Object], typeRef[Object])
   val mathMod: MethodReference = method[CompiledMathHelper, Object]("modulo", typeRef[Object], typeRef[Object])
   val mathCastToInt: MethodReference = method[CompiledMathHelper, Int]("transformToInt", typeRef[Object])
