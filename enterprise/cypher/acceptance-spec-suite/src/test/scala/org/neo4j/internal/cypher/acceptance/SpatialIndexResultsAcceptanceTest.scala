@@ -644,7 +644,6 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
     def runTest(name: String): Unit = {
       val results = innerExecuteDeprecated(query, scala.Predef.Map("prop" -> atPoint))
-      println(results.executionPlanDescription())
       withClue(s"Should not find on-axis points when searching for < $atPoint ($name)") {
         results.toList.map(_ ("prop")).toSet should be(Set(inRange))
       }
