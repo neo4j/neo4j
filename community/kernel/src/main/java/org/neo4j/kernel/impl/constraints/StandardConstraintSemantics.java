@@ -38,10 +38,20 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-public class StandardConstraintSemantics implements ConstraintSemantics
+public class StandardConstraintSemantics extends ConstraintSemantics
 {
     public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
     public static final String ERROR_MESSAGE_NODE_KEY = "Node Key constraint requires Neo4j Enterprise Edition";
+
+    public StandardConstraintSemantics()
+    {
+        this( "standardConstraints", 1 );
+    }
+
+    protected StandardConstraintSemantics( String key, int priority )
+    {
+        super( key, priority );
+    }
 
     @Override
     public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,

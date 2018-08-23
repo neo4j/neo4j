@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -39,29 +40,42 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 /**
  * Implements semantics of constraint creation and enforcement.
  */
-public interface ConstraintSemantics
+public abstract class ConstraintSemantics extends Service
 {
-    void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+    private final int priority;
+
+    protected ConstraintSemantics( String key, int priority )
+    {
+        super( key );
+        this.priority = priority;
+    }
+
+    public abstract void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
             PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
 
-    void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+    public abstract void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
             PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
 
-    void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
+    public abstract  void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )
             throws CreateConstraintFailureException;
 
-    ConstraintDescriptor readConstraint( ConstraintRule rule );
+    public abstract ConstraintDescriptor readConstraint( ConstraintRule rule );
 
-    ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor,
+    public abstract ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor,
             long indexId );
 
-    ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+    public abstract ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
             throws CreateConstraintFailureException;
 
-    ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+    public abstract ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             throws CreateConstraintFailureException;
 
-    TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory,
+    public abstract TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory,
             ReadableTransactionState state, TxStateVisitor visitor );
+
+    public int getPriority()
+    {
+        return priority;
+    }
 }

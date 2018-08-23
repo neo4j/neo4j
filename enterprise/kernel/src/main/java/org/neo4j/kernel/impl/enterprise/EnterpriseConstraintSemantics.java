@@ -47,6 +47,11 @@ import static org.neo4j.kernel.impl.enterprise.PropertyExistenceEnforcer.getOrCr
 
 public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 {
+    public EnterpriseConstraintSemantics()
+    {
+        super( "enterpriseConstraints", 2 );
+    }
+
     @Override
     protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
     {
