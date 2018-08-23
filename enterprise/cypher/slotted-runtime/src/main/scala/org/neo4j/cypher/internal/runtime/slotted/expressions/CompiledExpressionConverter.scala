@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ExtendedExpression, RandFunction}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{CommandProjection, ExecutionContext}
+import org.neo4j.cypher.internal.runtime.slotted.expressions.CompiledExpressionConverter.COMPILE_LIMIT
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.expressions.FunctionInvocation
@@ -43,7 +44,8 @@ class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan) extends 
     //we don't deal with aggregations
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
-    case e => try {
+     // don't bother with small expressions, not worth it
+    case e if sizeOf(e) > COMPILE_LIMIT => try {
       new IntermediateCodeGeneration(physicalPlan.slotConfigurations(id)).compileExpression(e).map(i => CompileWrappingExpression(CodeGeneration.compileExpression(i),
                                                                                                     inner.toCommandExpression(id, expression)))
     } catch {
@@ -56,16 +58,25 @@ class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan) extends 
     }
   }
 
+  import org.opencypher.v9_0.util.Foldable._
+
+  private def sizeOf(expression: ast.Expression)= expression.treeCount {
+    case _: ast.Expression => true
+  }
+
   override def toCommandProjection(id: Id, projections: Map[String, ast.Expression],
                                    self: ExpressionConverters): Option[CommandProjection] = {
     try {
-      val slots = physicalPlan.slotConfigurations(id)
-      val compiler = new IntermediateCodeGeneration(slots)
-      val compiled = for {(k, v) <- projections
-                          c <- compiler.compileExpression(v)} yield slots.get(k).get.offset -> c
-
-      if (compiled.size < projections.size) None
-      else Some(CompileWrappingProjection(CodeGeneration.compileProjection(compiler.compileProjection(compiled)), projections.isEmpty))
+      val totalSize = projections.values.foldLeft(0)((acc, current) => acc + sizeOf(current))
+      if (totalSize > COMPILE_LIMIT) {
+        val slots = physicalPlan.slotConfigurations(id)
+        val compiler = new IntermediateCodeGeneration(slots)
+        val compiled = for {(k, v) <- projections
+                            c <- compiler.compileExpression(v)} yield slots.get(k).get.offset -> c
+        if (compiled.size < projections.size) None
+        else Some(CompileWrappingProjection(CodeGeneration.compileProjection(compiler.compileProjection(compiled)),
+                                            projections.isEmpty))
+      } else None
     }
     catch {
       case t: Throwable =>
@@ -76,6 +87,10 @@ class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan) extends 
          None
     }
   }
+}
+
+object CompiledExpressionConverter {
+  private val COMPILE_LIMIT = 2
 }
 
 case class CompileWrappingProjection(projection: CompiledProjection, isEmpty: Boolean) extends CommandProjection {
