@@ -62,9 +62,10 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {
-                File databasesRoot = storeDir.getParentFile();
+                File absoluteStoreDir = storeDir.getAbsoluteFile();
+                File databasesRoot = absoluteStoreDir.getParentFile();
                 config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-                config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+                config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
                 config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
                 return new HighlyAvailableGraphDatabase( databasesRoot, config, state.databaseDependencies() );
             }

@@ -82,9 +82,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
     public GraphDatabaseService newImpermanentDatabase( File storeDir )
     {
-        GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder( storeDir );
-        databaseBuilder.setConfig( GraphDatabaseSettings.active_database, storeDir.getName() );
-        databaseBuilder.setConfig( GraphDatabaseSettings.databases_root_path, storeDir.getParentFile().getAbsolutePath() );
+        File absoluteDirectory = storeDir.getAbsoluteFile();
+        GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder( absoluteDirectory );
+        databaseBuilder.setConfig( GraphDatabaseSettings.active_database, absoluteDirectory.getName() );
+        databaseBuilder.setConfig( GraphDatabaseSettings.databases_root_path, absoluteDirectory.getParentFile().getAbsolutePath() );
         return databaseBuilder.newGraphDatabase();
     }
 
@@ -268,9 +269,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         @Override
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
         {
-            File databasesRoot = storeDir.getParentFile();
+            File absoluteStoreDir = storeDir.getAbsoluteFile();
+            File databasesRoot = absoluteStoreDir.getParentFile();
             config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-            config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+            config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
             config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
             if ( impermanent )
             {

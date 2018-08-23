@@ -59,10 +59,11 @@ public class AdversarialPageCacheGraphDatabaseFactory
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
                     {
-                        File databasesRoot = storeDir.getParentFile();
-                        config.augment( GraphDatabaseSettings.active_database, storeDir.getName() );
+                        File absoluteStoreDir = storeDir.getAbsoluteFile();
+                        File databasesRoot = absoluteStoreDir.getParentFile();
+                        config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
                         config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-                        return new PlatformModule( storeDir, config, databaseInfo, dependencies )
+                        return new PlatformModule( databasesRoot, config, databaseInfo, dependencies )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

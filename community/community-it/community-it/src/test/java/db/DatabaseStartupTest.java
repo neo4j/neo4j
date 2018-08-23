@@ -19,35 +19,45 @@
  */
 package db;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.CommunityEditionModule;
+import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
-public class DatabaseStartupTest
+@ExtendWith( TestDirectoryExtension.class )
+class DatabaseStartupTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void startTheDatabaseWithWrongVersionShouldFailWithUpgradeNotAllowed() throws Throwable
+    void startTheDatabaseWithWrongVersionShouldFailWithUpgradeNotAllowed() throws Throwable
     {
         // given
         // create a store
@@ -62,29 +72,20 @@ public class DatabaseStartupTest
 
         // mess up the version in the metadatastore
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
+                PageCache pageCache = createPageCache( fileSystem ) )
         {
             MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().metadataStore(),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
-        // when
-        try
-        {
-            new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir );
-            fail( "It should have failed." );
-        }
-        catch ( RuntimeException ex )
-        {
-            // then
-            assertTrue( ex.getCause() instanceof LifecycleException );
-            assertTrue( ex.getCause().getCause() instanceof IllegalArgumentException );
-            assertEquals( "Unknown store version 'bad'", ex.getCause().getCause().getMessage() );
-        }
+        RuntimeException exception = assertThrows( RuntimeException.class, () -> new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir ) );
+        assertTrue( exception.getCause() instanceof LifecycleException );
+        assertTrue( exception.getCause().getCause() instanceof IllegalArgumentException );
+        assertEquals( "Unknown store version 'bad'", exception.getCause().getCause().getMessage() );
     }
 
     @Test
-    public void startTheDatabaseWithWrongVersionShouldFailAlsoWhenUpgradeIsAllowed() throws Throwable
+    void startTheDatabaseWithWrongVersionShouldFailAlsoWhenUpgradeIsAllowed() throws Throwable
     {
         // given
         // create a store
@@ -100,24 +101,70 @@ public class DatabaseStartupTest
         // mess up the version in the metadatastore
         String badStoreVersion = "bad";
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
+                PageCache pageCache = createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );
+            MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().metadataStore(), MetaDataStore.Position.STORE_VERSION,
+                    MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
-        // when
-        try
+        RuntimeException exception = assertThrows( RuntimeException.class,
+                () -> new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory ).setConfig( GraphDatabaseSettings.allow_upgrade,
+                        "true" ).newGraphDatabase() );
+        assertTrue( exception.getCause() instanceof LifecycleException );
+        assertTrue( exception.getCause().getCause() instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
+    }
+
+    @Test
+    void startTestDatabaseOnProvidedNonAbsoluteFile()
+    {
+        File directory = new File( "notAbsoluteDirectory" );
+        new TestGraphDatabaseFactory().newImpermanentDatabase( directory ).shutdown();
+    }
+
+    @Test
+    void startCommunityDatabaseOnProvidedNonAbsoluteFile()
+    {
+        File directory = new File( "notAbsoluteDirectory" );
+        EphemeralCommunityFacadeFactory factory = new EphemeralCommunityFacadeFactory();
+        GraphDatabaseFactory databaseFactory = new EphemeralGraphDatabaseFactory( factory );
+        GraphDatabaseService service = databaseFactory.newEmbeddedDatabase( directory );
+        service.shutdown();
+    }
+
+    private static class EphemeralCommunityFacadeFactory extends GraphDatabaseFacadeFactory
+    {
+        EphemeralCommunityFacadeFactory()
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
-                    .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newGraphDatabase();
-            fail( "It should have failed." );
+            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
-        catch ( RuntimeException ex )
+
+        @Override
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
         {
-            // then
-            assertTrue( ex.getCause() instanceof LifecycleException );
-            assertTrue( ex.getCause().getCause() instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
+            return new PlatformModule( storeDir, config, databaseInfo, dependencies )
+            {
+                @Override
+                protected FileSystemAbstraction createFileSystemAbstraction()
+                {
+                    return new EphemeralFileSystemAbstraction();
+                }
+            };
+        }
+    }
+
+    private static class EphemeralGraphDatabaseFactory extends GraphDatabaseFactory
+    {
+        private final EphemeralCommunityFacadeFactory factory;
+
+        EphemeralGraphDatabaseFactory( EphemeralCommunityFacadeFactory factory )
+        {
+            this.factory = factory;
+        }
+
+        @Override
+        protected GraphDatabaseFacadeFactory getGraphDatabaseFacadeFactory()
+        {
+            return factory;
         }
     }
 }
