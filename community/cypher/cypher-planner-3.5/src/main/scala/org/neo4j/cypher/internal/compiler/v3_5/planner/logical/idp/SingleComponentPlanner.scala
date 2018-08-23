@@ -128,8 +128,11 @@ object SingleComponentPlanner {
 
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
-        val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
-        val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
+        // Version in Johans PR - TODO: Verify the new version fixes the same issue
+//        val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
+//        val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
+        val maybeStartPlan = leaves.find(leaf => leaf.availableSymbols.contains(start) && !leaf.isInstanceOf[Argument])
+        val maybeEndPlan = leaves.find(leaf => leaf.availableSymbols.contains(end) && !leaf.isInstanceOf[Argument])
         val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, context)
         val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
