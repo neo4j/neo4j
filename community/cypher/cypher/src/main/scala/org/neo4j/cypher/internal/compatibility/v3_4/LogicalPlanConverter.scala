@@ -190,6 +190,15 @@ object LogicalPlanConverter {
             children(4).asInstanceOf[Set[String]]
           )(ids.convertId(plan))
 
+        case (plan: plansV3_4.NodeUniqueIndexSeek, children: Seq[AnyRef]) =>
+          plansv3_5.NodeUniqueIndexSeek(
+            children(0).asInstanceOf[String],
+            children(1).asInstanceOf[expressionsv3_5.LabelToken],
+            children(2).asInstanceOf[Seq[expressionsv3_5.PropertyKeyToken]].map(IndexedProperty(_, DoNotGetValue)),
+            children(3).asInstanceOf[plansv3_5.QueryExpression[expressionsv3_5.Expression]],
+            children(4).asInstanceOf[Set[String]]
+          )(ids.convertId(plan))
+
           // Fallthrough for all plans
         case (plan: plansV3_4.LogicalPlan, children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, plan, children, ids.convertId(plan), classOf[IdGen])

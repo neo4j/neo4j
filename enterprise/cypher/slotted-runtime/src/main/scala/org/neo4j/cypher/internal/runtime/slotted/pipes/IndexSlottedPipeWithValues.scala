@@ -58,8 +58,10 @@ trait IndexSlottedPipeWithValues extends Pipe {
         val slottedContext: SlottedExecutionContext = SlottedExecutionContext(slots)
         state.copyArgumentStateTo(slottedContext, argumentSize.nLongs, argumentSize.nReferences)
         slottedContext.setLongAt(offset, node)
-        propertyOffsets.foreach {
-          offset => slottedContext.setRefAt(offset, values(offset))
+        var i = 0
+        while (i < values.length) {
+          slottedContext.setRefAt(propertyOffsets(i), values(i))
+          i += 1
         }
         slottedContext
     }

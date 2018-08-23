@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
+import org.opencypher.v9_0.ast.ASTAnnotationMap
+import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -46,7 +48,8 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
     val startPlan = newMockedLogicalPlan()
 
-    aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities) should equal(
+    val (result, _) = aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities)
+    result should equal(
       Aggregation(startPlan, Map(), aggregatingMap)
     )
   }
@@ -64,7 +67,8 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val startPlan = newMockedLogicalPlan()
 
-    aggregation(startPlan, projectionPlan, context, new StubSolveds, new StubCardinalities) should equal(
+    val (result, _) = aggregation(startPlan, projectionPlan, context, new StubSolveds, new StubCardinalities)
+    result should equal(
       Aggregation(
        startPlan, groupingMap, aggregatingMap2)
     )
@@ -88,7 +92,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)
 
     // When
-    val result = aggregation(projectionPlan, projection, context, new StubSolveds, new StubCardinalities)
+    val (result, _) = aggregation(projectionPlan, projection, context, new StubSolveds, new StubCardinalities)
     // Then
     result should equal(
       Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
@@ -103,13 +107,14 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext,
+      semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]])
     )
 
     val startPlan = newMockedLogicalPlan(idNames = Set("x", "x.prop"), availablePropertiesFromIndexes = Map(prop -> "x.prop"))
 
     // When
-    val result = aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities)
+    val (result, _) = aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities)
     // Then
     result should equal(
       Aggregation(startPlan, Map("x.prop" -> Variable("x.prop")(pos)), aggregatingMap)

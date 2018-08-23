@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, ColumnOrder, LogicalPlan, Projection}
 import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.ast.AscSortItem
+import org.opencypher.v9_0.ast.{ASTAnnotationMap, AscSortItem}
+import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -147,7 +148,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
                              availablePropertiesFromIndexes: Map[Property, String] = Map.empty):
   (LogicalPlanningContext, LogicalPlan, Solveds, Cardinalities) = {
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext,
+      semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]])
     )
 
     val ids = projectionsMap.keySet

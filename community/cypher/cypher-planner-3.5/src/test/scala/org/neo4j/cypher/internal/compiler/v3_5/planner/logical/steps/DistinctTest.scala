@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5.DistinctQueryProjection
 import org.neo4j.cypher.internal.v3_5.logical.plans.Distinct
+import org.opencypher.v9_0.ast.ASTAnnotationMap
+import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -31,12 +33,15 @@ class DistinctTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val prop = Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos)
     val projection = DistinctQueryProjection(Map("x.prop" -> prop))
 
-    val context = newMockedLogicalPlanningContextWithFakeAttributes(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
+      planContext = newMockedPlanContext,
+      semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]])
+    )
 
     val startPlan = newMockedLogicalPlan(idNames = Set("x", "x.prop"), availablePropertiesFromIndexes = Map(prop -> "x.prop"))
 
     // When
-    val result = distinct(startPlan, projection, context, new StubSolveds, new StubCardinalities)
+    val (result, _) = distinct(startPlan, projection, context, new StubSolveds, new StubCardinalities)
     // Then
     result should equal(
       Distinct(startPlan, Map("x.prop" -> Variable("x.prop")(pos)))
