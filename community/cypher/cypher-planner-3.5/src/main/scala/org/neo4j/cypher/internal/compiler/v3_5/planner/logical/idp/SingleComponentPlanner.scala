@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverS
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan}
 import org.opencypher.v9_0.ast.RelationshipStartItem
 import org.opencypher.v9_0.util.InternalException
 
@@ -128,8 +128,8 @@ object SingleComponentPlanner {
 
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
-        val maybeStartPlan = leaves.find(_.availableSymbols == startJoinNodes)
-        val maybeEndPlan = leaves.find(_.availableSymbols == endJoinNodes)
+        val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
+        val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
         val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, context)
         val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
