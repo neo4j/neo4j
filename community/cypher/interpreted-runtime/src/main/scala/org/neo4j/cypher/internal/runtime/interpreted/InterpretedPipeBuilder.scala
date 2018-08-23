@@ -165,7 +165,7 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         ActiveReadPipe(source)(id = id)
 
       case Optional(inner, protectedSymbols) =>
-        OptionalPipe((inner.availableSymbols -- protectedSymbols), source)(id = id)
+        OptionalPipe(inner.availableSymbols -- protectedSymbols, source)(id = id)
 
       case PruningVarExpand(_, from, dir, types, toName, minLength, maxLength, predicates) =>
         val predicate = varLengthPredicate(predicates)
@@ -177,11 +177,14 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case SkipPlan(_, count) =>
         SkipPipe(source, buildExpression(count))(id = id)
 
+      case Top(_, sortItems, _) if sortItems.isEmpty => source
+
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
-        Top1Pipe(source, sortItems.map(translateColumnOrder).toList)(id = id)
+        Top1Pipe(source, ExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
 
       case Top(_, sortItems, limit) =>
-        TopNPipe(source, sortItems.map(translateColumnOrder).toList, buildExpression(limit))(id = id)
+        TopNPipe(source, buildExpression(limit),
+                 ExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
 
       case LimitPlan(_, count, DoNotIncludeTies) =>
         LimitPipe(source, buildExpression(count))(id = id)
@@ -189,7 +192,7 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case LimitPlan(_, count, IncludeTies) =>
         (source, count) match {
           case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
-            Top1WithTiesPipe(inner, sortDescription.toList)(id = id)
+            Top1WithTiesPipe(inner, ExecutionContextOrdering.asComparator(sortDescription))(id = id)
 
           case _ => throw new InternalException("Including ties is only supported for very specific plans")
         }

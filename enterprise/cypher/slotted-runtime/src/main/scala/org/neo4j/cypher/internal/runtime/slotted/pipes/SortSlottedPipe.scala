@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.runtime.slotted.ExecutionContextOrdering
 import org.neo4j.values.{AnyValue, AnyValues}
 
 case class SortSlottedPipe(source: Pipe,
@@ -42,37 +43,6 @@ case class SortSlottedPipe(source: Pipe,
     val array = input.toArray
     java.util.Arrays.sort(array, comparator)
     array.toIterator
-  }
-}
-
-object ExecutionContextOrdering {
-  def comparator(order: ColumnOrder): scala.Ordering[ExecutionContext] = order.slot match {
-    case LongSlot(offset, true, _) =>
-      new scala.Ordering[ExecutionContext] {
-        override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-          val aVal = a.getLongAt(offset)
-          val bVal = b.getLongAt(offset)
-          order.compareNullableLongs(aVal, bVal)
-        }
-      }
-
-    case LongSlot(offset, false, _) =>
-      new scala.Ordering[ExecutionContext] {
-        override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-          val aVal = a.getLongAt(offset)
-          val bVal = b.getLongAt(offset)
-          order.compareLongs(aVal, bVal)
-        }
-      }
-
-    case RefSlot(offset, _, _) =>
-      new scala.Ordering[ExecutionContext] {
-        override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-          val aVal = a.getRefAt(offset)
-          val bVal = b.getRefAt(offset)
-          order.compareValues(aVal, bVal)
-        }
-      }
   }
 }
 

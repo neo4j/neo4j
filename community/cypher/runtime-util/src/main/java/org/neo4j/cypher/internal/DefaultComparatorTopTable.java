@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.slotted;
+package org.neo4j.cypher.internal;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 
 /**
- * The default implementation of a Top N table used by the generated code
+ * The default implementation of a Top N table used by all runtimes
  *
  * It accepts tuples as boxed objects that implements Comparable
  *
@@ -45,7 +45,6 @@ import java.util.PriorityQueue;
  * When sort() is called it collects them in reverse sorted order into an array.
  * The iterator() then traverses this array backwards.
  *
- * TODO: Move to shared enterprise runtime module and unify with DefaultTopTable
  */
 public class DefaultComparatorTopTable<T> implements Iterable<T> // implements SortTable<T>
 {
@@ -64,8 +63,7 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
         }
         this.totalCount = totalCount;
 
-        heap = new PriorityQueue<>( totalCount, comparator.reversed() );
-        array = new Object[ totalCount ];
+        heap = new PriorityQueue<>( Math.min( totalCount, 1024 ), comparator.reversed() );
     }
 
     public boolean add( T e )
@@ -92,6 +90,7 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
     public void sort()
     {
         count = heap.size();
+        array = new Object[ count ];
 
         // We keep the values in reverse order so that we can write from start to end
         for ( int i = 0; i < count; i++ )

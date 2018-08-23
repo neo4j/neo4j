@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.slotted;
+package org.neo4j.cypher.internal;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +44,7 @@ public class DefaultComparatorTopTableTest
     @Test
     public void shouldHandleAddingMoreValuesThanCapacity()
     {
-        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 7 );
+        DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 7 );
         for ( Long i : testValues )
         {
             table.add( i );
@@ -52,12 +52,12 @@ public class DefaultComparatorTopTableTest
 
         table.sort();
 
-        Iterator<Object> iterator = table.iterator();
+        Iterator<Long> iterator = table.iterator();
 
         for ( int i = 0; i < 7; i++ )
         {
             assertTrue( iterator.hasNext() );
-            long value = (long) iterator.next();
+            long value = iterator.next();
             assertEquals( expectedValues[i], value );
         }
         assertFalse( iterator.hasNext() );
@@ -66,7 +66,7 @@ public class DefaultComparatorTopTableTest
     @Test
     public void shouldHandleWhenNotCompletelyFilledToCapacity()
     {
-        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 20 );
+        DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 20 );
         for ( Long i : testValues )
         {
             table.add( i );
@@ -74,12 +74,12 @@ public class DefaultComparatorTopTableTest
 
         table.sort();
 
-        Iterator<Object> iterator = table.iterator();
+        Iterator<Long> iterator = table.iterator();
 
         for ( int i = 0; i < testValues.length; i++ )
         {
             assertTrue( iterator.hasNext() );
-            long value = (long) iterator.next();
+            long value = iterator.next();
             assertEquals( expectedValues[i], value );
         }
         assertFalse( iterator.hasNext() );
@@ -88,11 +88,11 @@ public class DefaultComparatorTopTableTest
     @Test
     public void shouldHandleWhenEmpty()
     {
-        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 10 );
+        DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 10 );
 
         table.sort();
 
-        Iterator<Object> iterator = table.iterator();
+        Iterator<Long> iterator = table.iterator();
 
         assertFalse( iterator.hasNext() );
     }
@@ -101,20 +101,20 @@ public class DefaultComparatorTopTableTest
     public void shouldThrowOnInitializeToZeroCapacity()
     {
         exception.expect( IllegalArgumentException.class );
-        new DefaultComparatorTopTable( comparator, 0 );
+        new DefaultComparatorTopTable<>( comparator, 0 );
     }
 
     @Test
     public void shouldThrowOnInitializeToNegativeCapacity()
     {
         exception.expect( IllegalArgumentException.class );
-        new DefaultComparatorTopTable( comparator, -1 );
+        new DefaultComparatorTopTable<>( comparator, -1 );
     }
 
     @Test
     public void shouldThrowOnSortNotCalledBeforeIterator()
     {
-        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 5 );
+        DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 5 );
         for ( Long i : testValues )
         {
             table.add( i );
