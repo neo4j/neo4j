@@ -41,7 +41,7 @@ trait IndexPipeWithValues extends Pipe {
   def createResultsFromTupleIterator(baseContext: ExecutionContext, tupleIterator: Iterator[IndexedNodeWithProperties]): Iterator[ExecutionContext] = {
     tupleIterator.map {
       case IndexedNodeWithProperties(node, values) =>
-        val valueEntries = (0 until values.length).map(i => propertyNamesWithValues(i) -> values(i) )
+        val valueEntries = values.indices.map(i => propertyNamesWithValues(i) -> values(i) )
         val newEntries = (ident -> node) +: valueEntries
         executionContextFactory.copyWith(baseContext, newEntries)
     }
