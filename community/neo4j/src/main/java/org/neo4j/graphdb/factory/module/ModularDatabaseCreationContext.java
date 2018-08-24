@@ -260,7 +260,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public TransactionMonitor getTransactionStats()
+    public TransactionMonitor getTransactionMonitor()
     {
         return transactionStats;
     }

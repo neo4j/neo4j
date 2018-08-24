@@ -387,7 +387,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         }
 
         @Override
-        public TransactionMonitor getTransactionStats()
+        public TransactionMonitor getTransactionMonitor()
         {
             return transactionMonitor;
         }

@@ -98,7 +98,7 @@ public interface DatabaseCreationContext
 
     FileSystemAbstraction getFs();
 
-    TransactionMonitor getTransactionStats();
+    TransactionMonitor getTransactionMonitor();
 
     DatabaseHealth getDatabaseHealth();
 

@@ -247,7 +247,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.transactionEventHandlers = context.getTransactionEventHandlers();
         this.indexingServiceMonitor = context.getIndexingServiceMonitor();
         this.fs = context.getFs();
-        this.transactionMonitor = context.getTransactionStats();
+        this.transactionMonitor = context.getTransactionMonitor();
         this.databaseHealth = context.getDatabaseHealth();
         this.physicalLogMonitor = context.getPhysicalLogMonitor();
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
