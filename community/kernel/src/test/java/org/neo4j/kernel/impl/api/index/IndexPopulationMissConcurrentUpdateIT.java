@@ -63,9 +63,13 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.BATCH_SIZE_NAME;
@@ -76,6 +80,8 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 public class IndexPopulationMissConcurrentUpdateIT
 {
     private static final String NAME_PROPERTY = "name";
+    private static long INITIAL_CREATION_NODE_ID_THRESHOLD = 30;
+    private static long SCAN_BARRIER_NODE_ID_THRESHOLD = 10;
 
     private final ControlledSchemaIndexProvider index = new ControlledSchemaIndexProvider();
 
@@ -114,8 +120,8 @@ public class IndexPopulationMissConcurrentUpdateIT
      * Tests an issue where the {@link MultipleIndexPopulator} had a condition when applying external concurrent updates that any given
      * update would only be applied if the entity id was lower than the highest entity id the scan had seen (i.e. where the scan was currently at).
      * This would be a problem because of how the {@link LabelScanReader} works internally, which is that it reads one bit-set of node ids
-     * at the time, effectively caching a small range of ids. If a concurrent creation would happen right in front of the where the scan was
-     * after it had read and cached that bit-set it would not apply the update and miss it in the scan and would end up with an index
+     * at the time, effectively caching a small range of ids. If a concurrent creation would happen right in front of where the scan was
+     * after it had read and cached that bit-set it would not apply the update and miss that entity in the scan and would end up with an index
      * that was inconsistent with the store.
      */
     @Test
@@ -134,9 +140,15 @@ public class IndexPopulationMissConcurrentUpdateIT
                 node.setProperty( NAME_PROPERTY, "Node " + nextId++ );
                 nodes.add( node );
             }
-            while ( node.getId() < 30 );
+            while ( node.getId() < INITIAL_CREATION_NODE_ID_THRESHOLD );
             tx.success();
         }
+        assertThat( "At least one node below the scan barrier threshold must have been created, otherwise test assumptions are invalid or outdated",
+                count( filter( n -> n.getId() <= SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ), greaterThan( 0L ) );
+        assertThat( "At least two nodes above the scan barrier threshold and below initial creation threshold must have been created, " +
+                        "otherwise test assumptions are invalid or outdated",
+                // There has to be at least 2 nodes: one which will trigger the barrier and one which will be added to the index afterwards
+                count( filter( n -> n.getId() > SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ), greaterThan( 1L ) );
         db.getDependencyResolver().resolveDependency( IdController.class ).maintenance();
 
         // when
@@ -170,6 +182,14 @@ public class IndexPopulationMissConcurrentUpdateIT
 
         // then all nodes must be in the index
         assertEquals( nodes.size(), index.entitiesByScan.size() + index.entitiesByUpdater.size() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : db.getAllNodes() )
+            {
+                assertTrue( index.entitiesByScan.contains( node.getId() ) || index.entitiesByUpdater.contains( node.getId() ) );
+            }
+            tx.success();
+        }
     }
 
     /**
@@ -214,8 +234,9 @@ public class IndexPopulationMissConcurrentUpdateIT
                         {
                             for ( IndexEntryUpdate<?> update : updates )
                             {
-                                entitiesByScan.add( update.getEntityId() );
-                                if ( update.getEntityId() > 10 )
+                                boolean added = entitiesByScan.add( update.getEntityId() );
+                                assertTrue( added ); // scans should never see multiple updates from the same entityId
+                                if ( update.getEntityId() > SCAN_BARRIER_NODE_ID_THRESHOLD )
                                 {
                                     populationAtId = update.getEntityId();
                                     barrier.reached();
@@ -236,7 +257,8 @@ public class IndexPopulationMissConcurrentUpdateIT
                                 @Override
                                 public void process( IndexEntryUpdate<?> update )
                                 {
-                                    entitiesByUpdater.add( update.getEntityId() );
+                                    boolean added = entitiesByUpdater.add( update.getEntityId() );
+                                    assertTrue( added ); // we know that in this test we won't apply multiple updates for an entityId
                                 }
 
                                 @Override
