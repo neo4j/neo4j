@@ -22,7 +22,6 @@ package org.neo4j.values.storable;
 import java.lang.invoke.MethodHandle;
 import java.time.DateTimeException;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
@@ -201,7 +200,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private DurationValue( long months, long days, long seconds, long nanos )
     {
-        seconds += nanos / NANOS_PER_SECOND;
+        seconds = safeAdd( seconds, nanos / NANOS_PER_SECOND );
         nanos %= NANOS_PER_SECOND;
         // normalize nanos to be between 0 and NANOS_PER_SECOND-1
         if ( nanos < 0 )
@@ -213,6 +212,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         this.days = days;
         this.seconds = seconds;
         this.nanos = (int) nanos;
+        assertNoOverflow();
     }
 
     @Override
@@ -229,7 +229,38 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private long averageLengthInSeconds()
     {
-        return this.seconds + this.days * SECONDS_PER_DAY + this.months * AVG_SECONDS_PER_MONTH;
+        long daysInSeconds = safeMultiply( days, SECONDS_PER_DAY );
+        long monthsInSeconds = safeMultiply( months, AVG_SECONDS_PER_MONTH );
+        return safeAdd( seconds, safeAdd( daysInSeconds, monthsInSeconds ) );
+    }
+
+    private static long safeAdd( long l1, long l2 )
+    {
+        try
+        {
+            return Math.addExact( l1, l2 );
+        }
+        catch ( ArithmeticException e )
+        {
+            throw new InvalidValuesArgumentException( "Invalid value for duration", e );
+        }
+    }
+
+    private static long safeMultiply( long l1, long l2 )
+    {
+        try
+        {
+            return Math.multiplyExact( l1, l2 );
+        }
+        catch ( ArithmeticException e )
+        {
+            throw new InvalidValuesArgumentException( "Invalid value for duration", e );
+        }
+    }
+
+    private void assertNoOverflow()
+    {
+        averageLengthInSeconds();
     }
 
     long nanosOfDay()

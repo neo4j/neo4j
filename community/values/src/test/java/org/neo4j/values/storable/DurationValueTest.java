@@ -19,16 +19,19 @@
  */
 package org.neo4j.values.storable;
 
+import org.hamcrest.Matchers;
+import org.junit.Test;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.TemporalParseException;
+import org.neo4j.values.utils.TemporalUtil;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
@@ -39,6 +42,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -553,5 +557,63 @@ public class DurationValueTest
 
         // average nbr of days in 400 years doesn't imply equality
         assertNotEqual( duration( 400 * 12, 0, 0, 0 ), duration( 0, 146_097, 0, 0 ) );
+    }
+
+    @Test
+    public void shouldNotThrowWhenInsideOverflowLimit()
+    {
+        // when
+        duration(0, 0, Long.MAX_VALUE, 999_999_999 );
+
+        // then should not throw
+    }
+
+    @Test
+    public void shouldThrowOnOverflowOnNanos()
+    {
+        // when
+        try
+        {
+            DurationValue duration = duration( 0, 0, Long.MAX_VALUE, 1_000_000_000 );
+            fail( "Should have failed" );
+        }
+        catch ( InvalidValuesArgumentException e )
+        {
+            assertThat( e.getMessage(), Matchers.containsString( "Invalid value for duration" ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnOverflowOnDays()
+    {
+        // when
+        try
+        {
+            long days = Long.MAX_VALUE / TemporalUtil.SECONDS_PER_DAY;
+            long seconds = Long.MAX_VALUE - days * TemporalUtil.SECONDS_PER_DAY;
+            DurationValue duration = duration( 0, days, seconds + 1, 0 );
+            fail( "Should have failed" );
+        }
+        catch ( InvalidValuesArgumentException e )
+        {
+            assertThat( e.getMessage(), Matchers.containsString( "Invalid value for duration" ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnOverflowOnMonths()
+    {
+        // when
+        try
+        {
+            long months = Long.MAX_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
+            long seconds = Long.MAX_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
+            DurationValue duration = duration( months, 0, seconds + 1, 0 );
+            fail( "Should have failed" );
+        }
+        catch ( InvalidValuesArgumentException e )
+        {
+            assertThat( e.getMessage(), Matchers.containsString( "Invalid value for duration" ) );
+        }
     }
 }
