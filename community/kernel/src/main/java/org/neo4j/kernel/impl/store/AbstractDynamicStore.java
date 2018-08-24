@@ -66,7 +66,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         implements DynamicRecordAllocator
 {
     public AbstractDynamicStore(
-            String databaseName,
             File file,
             File idFile,
             Config conf,
@@ -80,7 +79,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             String storeVersion,
             OpenOption... openOptions )
     {
-        super( databaseName, file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
+        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
                 storeVersion, openOptions );
     }

@@ -39,7 +39,6 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
     public PropertyKeyTokenStore(
-            String databaseName,
             File file,
             File idFile,
             Config config,
@@ -50,7 +49,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             RecordFormats recordFormats,
             OpenOption... openOptions )
     {
-        super( databaseName, file, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
+        super( file, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
                 recordFormats.propertyKeyToken(), recordFormats.storeVersion(), openOptions );
     }
 

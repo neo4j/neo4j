@@ -47,14 +47,14 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return open( databaseName, filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
+        return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( String databaseName, File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         IdGenerator generator = instantiate( fs, fileName, grabSize, maxId, idTypeConfiguration.allowAggressiveReuse(),

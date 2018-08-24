@@ -156,7 +156,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     private final boolean allowStorePointsAndTemporal;
 
     public PropertyStore(
-            String databaseName,
             File file,
             File idFile,
             Config configuration,
@@ -169,7 +168,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             RecordFormats recordFormats,
             OpenOption... openOptions )
     {
-        super( databaseName, file, idFile, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+        super( file, idFile, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
                 recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;

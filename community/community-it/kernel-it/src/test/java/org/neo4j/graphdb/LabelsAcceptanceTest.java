@@ -701,11 +701,10 @@ public class LabelsAcceptanceTest
     {
         final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
         {
-            private IdTypeConfigurationProvider
-                    idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
+            private IdTypeConfigurationProvider idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
 
             @Override
-            public IdGenerator open( String databaseName, File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+            public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
             {
                 if ( idType == IdType.LABEL_TOKEN )
                 {
@@ -727,7 +726,7 @@ public class LabelsAcceptanceTest
                     }
                     return generator;
                 }
-                return super.open( databaseName, fileName, grabSize, idType, () -> Long.MAX_VALUE, Long.MAX_VALUE );
+                return super.open( fileName, grabSize, idType, () -> Long.MAX_VALUE, Long.MAX_VALUE );
             }
         };
 

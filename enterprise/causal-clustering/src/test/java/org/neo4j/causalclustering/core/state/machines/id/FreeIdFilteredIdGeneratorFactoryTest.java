@@ -37,12 +37,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 
 public class FreeIdFilteredIdGeneratorFactoryTest
 {
-    private IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-    private File file = mock( File.class );
+    private final IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
+    private final File file = mock( File.class );
 
     @Test
     public void openFilteredGenerator()
@@ -52,9 +51,9 @@ public class FreeIdFilteredIdGeneratorFactoryTest
         long highId = 1L;
         long maxId = 10L;
         LongSupplier highIdSupplier = () -> highId;
-        IdGenerator idGenerator = filteredGenerator.open( DEFAULT_DATABASE_NAME, file, idType, highIdSupplier, maxId );
+        IdGenerator idGenerator = filteredGenerator.open( file, idType, highIdSupplier, maxId );
 
-        verify( idGeneratorFactory ).open( eq( DEFAULT_DATABASE_NAME ), eq( file ), eq( idType ), any( LongSupplier.class ), eq( maxId ) );
+        verify( idGeneratorFactory ).open( eq( file ), eq( idType ), any( LongSupplier.class ), eq( maxId ) );
         assertThat( idGenerator, instanceOf( FreeIdFilteredIdGenerator.class ) );
     }
 
@@ -67,9 +66,9 @@ public class FreeIdFilteredIdGeneratorFactoryTest
         long maxId = 10L;
         int grabSize = 5;
         LongSupplier highIdSupplier = () -> highId;
-        IdGenerator idGenerator = filteredGenerator.open( DEFAULT_DATABASE_NAME, file, grabSize, idType, highIdSupplier, maxId );
+        IdGenerator idGenerator = filteredGenerator.open( file, grabSize, idType, highIdSupplier, maxId );
 
-        verify( idGeneratorFactory ).open( DEFAULT_DATABASE_NAME, file, grabSize, idType, highIdSupplier, maxId );
+        verify( idGeneratorFactory ).open( file, grabSize, idType, highIdSupplier, maxId );
         assertThat( idGenerator, instanceOf( FreeIdFilteredIdGenerator.class ) );
     }
 

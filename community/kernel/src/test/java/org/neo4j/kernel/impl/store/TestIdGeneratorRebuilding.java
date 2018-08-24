@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -76,7 +75,7 @@ public class TestIdGeneratorRebuilding
         File idFile = testDirectory.file( "idNodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
+        NodeStore store = new NodeStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
                 RecordFormatSelector.defaultFormat() );
         store.initialise( true );
@@ -181,7 +180,7 @@ public class TestIdGeneratorRebuilding
         File idFile = testDirectory.file( "idNodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
+        NodeStore store = new NodeStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
                 RecordFormatSelector.defaultFormat() );
         store.initialise( true );

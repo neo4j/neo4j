@@ -53,20 +53,20 @@ public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( String databaseName, File file, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File file, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return openGenerator( databaseName, file, idTypeConfiguration.getGrabSize(), idType, highId, maxId, idTypeConfiguration.allowAggressiveReuse() );
+        return openGenerator( file, idTypeConfiguration.getGrabSize(), idType, highId, maxId, idTypeConfiguration.allowAggressiveReuse() );
     }
 
     @Override
-    public IdGenerator open( String databaseName, File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return openGenerator( databaseName, fileName, grabSize, idType, highId, maxId, idTypeConfiguration.allowAggressiveReuse() );
+        return openGenerator( fileName, grabSize, idType, highId, maxId, idTypeConfiguration.allowAggressiveReuse() );
     }
 
-    private IdGenerator openGenerator( String databaseName, File file, int grabSize, IdType idType, LongSupplier highId, long maxId, boolean aggressiveReuse )
+    private IdGenerator openGenerator( File file, int grabSize, IdType idType, LongSupplier highId, long maxId, boolean aggressiveReuse )
     {
         ReplicatedIdGenerator other = generators.get( idType );
         if ( other != null )
@@ -74,7 +74,7 @@ public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
             other.close();
         }
         ReplicatedIdGenerator replicatedIdGenerator =
-                new ReplicatedIdGenerator( databaseName, fs, file, idType, highId, idRangeAcquirer, logProvider, grabSize, aggressiveReuse );
+                new ReplicatedIdGenerator( fs, file, idType, highId, idRangeAcquirer, logProvider, grabSize, aggressiveReuse );
 
         generators.put( idType, replicatedIdGenerator);
         return replicatedIdGenerator;

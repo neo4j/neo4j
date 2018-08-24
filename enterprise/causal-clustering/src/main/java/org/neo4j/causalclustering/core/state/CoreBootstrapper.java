@@ -144,30 +144,29 @@ public class CoreBootstrapper
     {
         DefaultIdGeneratorFactory factory = new DefaultIdGeneratorFactory( fs );
 
-        String databaseName = databaseLayout.getDatabaseName();
         long[] highIds = new long[]{
-                getHighId( factory, NODE, databaseLayout.idNodeStore(), databaseName ),
-                getHighId( factory, RELATIONSHIP, databaseLayout.idRelationshipStore(), databaseName ),
-                getHighId( factory, PROPERTY, databaseLayout.idPropertyStore(), databaseName ),
-                getHighId( factory, STRING_BLOCK, databaseLayout.idPropertyStringStore(), databaseName ),
-                getHighId( factory, ARRAY_BLOCK, databaseLayout.idPropertyArrayStore(), databaseName ),
-                getHighId( factory, PROPERTY_KEY_TOKEN, databaseLayout.idPropertyKeyTokenStore(), databaseName ),
-                getHighId( factory, PROPERTY_KEY_TOKEN_NAME, databaseLayout.idPropertyKeyTokenNamesStore(), databaseName ),
-                getHighId( factory, RELATIONSHIP_TYPE_TOKEN, databaseLayout.idRelationshipTypeTokenStore(), databaseName ),
-                getHighId( factory, RELATIONSHIP_TYPE_TOKEN_NAME, databaseLayout.idRelationshipTypeTokenNamesStore(), databaseName ),
-                getHighId( factory, LABEL_TOKEN, databaseLayout.idLabelTokenStore(), databaseName ),
-                getHighId( factory, LABEL_TOKEN_NAME, databaseLayout.idLabelTokenNamesStore(), databaseName ),
-                getHighId( factory, NEOSTORE_BLOCK, databaseLayout.idMetadataStore(), databaseName ),
-                getHighId( factory, SCHEMA, databaseLayout.idSchemaStore(), databaseName ),
-                getHighId( factory, NODE_LABELS, databaseLayout.idNodeLabelStore(), databaseName ),
-                getHighId( factory, RELATIONSHIP_GROUP, databaseLayout.idRelationshipGroupStore(), databaseName )};
+                getHighId( factory, NODE, databaseLayout.idNodeStore() ),
+                getHighId( factory, RELATIONSHIP, databaseLayout.idRelationshipStore() ),
+                getHighId( factory, PROPERTY, databaseLayout.idPropertyStore() ),
+                getHighId( factory, STRING_BLOCK, databaseLayout.idPropertyStringStore() ),
+                getHighId( factory, ARRAY_BLOCK, databaseLayout.idPropertyArrayStore() ),
+                getHighId( factory, PROPERTY_KEY_TOKEN, databaseLayout.idPropertyKeyTokenStore() ),
+                getHighId( factory, PROPERTY_KEY_TOKEN_NAME, databaseLayout.idPropertyKeyTokenNamesStore() ),
+                getHighId( factory, RELATIONSHIP_TYPE_TOKEN, databaseLayout.idRelationshipTypeTokenStore() ),
+                getHighId( factory, RELATIONSHIP_TYPE_TOKEN_NAME, databaseLayout.idRelationshipTypeTokenNamesStore() ),
+                getHighId( factory, LABEL_TOKEN, databaseLayout.idLabelTokenStore() ),
+                getHighId( factory, LABEL_TOKEN_NAME, databaseLayout.idLabelTokenNamesStore() ),
+                getHighId( factory, NEOSTORE_BLOCK, databaseLayout.idMetadataStore() ),
+                getHighId( factory, SCHEMA, databaseLayout.idSchemaStore() ),
+                getHighId( factory, NODE_LABELS, databaseLayout.idNodeLabelStore() ),
+                getHighId( factory, RELATIONSHIP_GROUP, databaseLayout.idRelationshipGroupStore() )};
 
         return new IdAllocationState( highIds, FIRST_INDEX );
     }
 
-    private static long getHighId( DefaultIdGeneratorFactory factory, IdType idType, File idFile, String databaseName )
+    private static long getHighId( DefaultIdGeneratorFactory factory, IdType idType, File idFile )
     {
-        IdGenerator idGenerator = factory.open( databaseName, idFile, idType, () -> -1L, Long.MAX_VALUE );
+        IdGenerator idGenerator = factory.open( idFile, idType, () -> -1L, Long.MAX_VALUE );
         long highId = idGenerator.getHighId();
         idGenerator.close();
         return highId;

@@ -76,7 +76,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected final RecordFormat<RECORD> recordFormat;
     final File storageFile;
     private final File idFile;
-    private final String databaseName;
     private final String typeDescriptor;
     protected PagedFile pagedFile;
     protected int recordSize;
@@ -106,7 +105,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * @param idType The Id used to index into this store
      */
     public CommonAbstractStore(
-            String databaseName,
             File file,
             File idFile,
             Config configuration,
@@ -120,7 +118,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             String storeVersion,
             OpenOption... openOptions )
     {
-        this.databaseName = databaseName;
         this.storageFile = file;
         this.idFile = idFile;
         this.configuration = configuration;
@@ -705,7 +702,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     void openIdGenerator()
     {
-        idGenerator = idGeneratorFactory.open( databaseName, idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId() );
+        idGenerator = idGeneratorFactory.open( idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId() );
     }
 
     /**

@@ -32,7 +32,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
@@ -397,7 +396,7 @@ public class CommonAbstractStoreBehaviourTest
 
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, new File( "store" ), new File( "idFile" ), config, IdType.NODE,
+            super( new File( "store" ), new File( "idFile" ), config, IdType.NODE,
                     new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                     NullLogProvider.getInstance(), "T", format, format, "XYZ" );
         }

@@ -51,7 +51,6 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     private final DynamicStringStore nameStore;
 
     public TokenStore(
-            String databaseName,
             File file,
             File idFile,
             Config configuration,
@@ -65,7 +64,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             String storeVersion,
             OpenOption... openOptions )
     {
-        super( databaseName, file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
+        super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.nameStore = nameStore;
     }

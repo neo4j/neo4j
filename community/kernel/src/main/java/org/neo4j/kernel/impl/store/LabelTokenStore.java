@@ -38,7 +38,6 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     public static final String TYPE_DESCRIPTOR = "LabelTokenStore";
 
     public LabelTokenStore(
-            String databaseName,
             File file,
             File idFile,
             Config config,
@@ -49,7 +48,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
             RecordFormats recordFormats,
             OpenOption... openOptions )
     {
-        super( databaseName, file, idFile, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
+        super( file, idFile, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, TYPE_DESCRIPTOR, recordFormats.labelToken(),
                 recordFormats.storeVersion(), openOptions );
     }

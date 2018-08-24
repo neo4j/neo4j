@@ -40,7 +40,6 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     public RelationshipStore(
-            String databaseName,
             File file,
             File idFile,
             Config configuration,
@@ -50,7 +49,7 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
             RecordFormats recordFormats,
             OpenOption... openOptions )
     {
-        super( databaseName, file, idFile, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
+        super( file, idFile, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
                 pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,
                 recordFormats.storeVersion(), openOptions );
     }

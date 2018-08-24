@@ -37,7 +37,6 @@ import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.IdGeneratorContractTest;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -298,7 +297,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
 
     private ReplicatedIdGenerator getReplicatedIdGenerator( int grabSize, long l, ReplicatedIdRangeAcquirer replicatedIdRangeAcquirer )
     {
-        return new ReplicatedIdGenerator( DatabaseManager.DEFAULT_DATABASE_NAME, fs, file, IdType.NODE, () -> l, replicatedIdRangeAcquirer, logProvider,
+        return new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> l, replicatedIdRangeAcquirer, logProvider,
                 grabSize, true );
     }
 

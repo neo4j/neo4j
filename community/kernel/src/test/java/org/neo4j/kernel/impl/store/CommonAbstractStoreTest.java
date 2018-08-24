@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.function.LongSupplier;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
@@ -106,7 +105,7 @@ public class CommonAbstractStoreTest
     @Before
     public void setUpMocks() throws IOException
     {
-        when( idGeneratorFactory.open( eq( DatabaseManager.DEFAULT_DATABASE_NAME ), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) )
+        when( idGeneratorFactory.open( any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) )
                 .thenReturn( idGenerator );
 
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
@@ -147,7 +146,7 @@ public class CommonAbstractStoreTest
         expectedException.expect( StoreNotFoundException.class );
         expectedException.expectMessage( "Fail to read header record of store file: " + storeFile.getAbsolutePath() );
 
-        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, config, IdType.NODE_LABELS,
+        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, IdType.NODE_LABELS,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
                 Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ), recordFormats ) )
         {
@@ -252,7 +251,7 @@ public class CommonAbstractStoreTest
                 PageCache pageCache, LogProvider logProvider, RecordFormat<TheRecord> recordFormat,
                 OpenOption... openOptions )
         {
-            super( DatabaseManager.DEFAULT_DATABASE_NAME, file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
+            super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
                     recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
         }
 

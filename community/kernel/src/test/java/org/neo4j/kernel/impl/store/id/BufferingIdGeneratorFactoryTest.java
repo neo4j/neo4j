@@ -26,7 +26,6 @@ import java.io.File;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -54,8 +53,7 @@ public class BufferingIdGeneratorFactoryTest
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
                 actual, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( DatabaseManager.DEFAULT_DATABASE_NAME,
-                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
+        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
         idGenerator.freeId( 7 );
@@ -86,8 +84,7 @@ public class BufferingIdGeneratorFactoryTest
                 new CommunityIdTypeConfigurationProvider() );
         bufferingIdGeneratorFactory.initialize( boundaries );
 
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( DatabaseManager.DEFAULT_DATABASE_NAME,
-                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
+        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
         idGenerator.freeId( 7 );
@@ -132,13 +129,13 @@ public class BufferingIdGeneratorFactoryTest
         private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
 
         @Override
-        public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
         {
-            return open( databaseName, filename, 0, idType, highId, maxId );
+            return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( String databaseName, File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
         {
             return generators[idType.ordinal()] = mock( IdGenerator.class );
         }

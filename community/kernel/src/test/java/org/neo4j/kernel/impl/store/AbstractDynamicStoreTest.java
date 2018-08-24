@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -147,7 +146,7 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        AbstractDynamicStore store = new AbstractDynamicStore( DatabaseManager.DEFAULT_DATABASE_NAME, storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK,
+        AbstractDynamicStore store = new AbstractDynamicStore( storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
                 formats.dynamic(), formats.storeVersion() )
         {

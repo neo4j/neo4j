@@ -48,13 +48,13 @@ public class EphemeralIdGenerator implements IdGenerator
                 idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
 
         @Override
-        public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
         {
-            return open( databaseName, filename, 0, idType, highId, maxId );
+            return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( String databaseName, File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )

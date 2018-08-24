@@ -533,7 +533,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createNodeStore()
     {
         return initialize(
-                new NodeStore( layout.getDatabaseName(), layout.nodeStore(), layout.idNodeStore(), config, idGeneratorFactory, pageCache, logProvider,
+                new NodeStore( layout.nodeStore(), layout.idNodeStore(), config, idGeneratorFactory, pageCache, logProvider,
                         (DynamicArrayStore) getOrCreateStore( StoreType.NODE_LABEL ), recordFormats, openOptions ) );
     }
 
@@ -545,7 +545,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createPropertyKeyTokenStore()
     {
-        return initialize( new PropertyKeyTokenStore( layout.getDatabaseName(), layout.propertyKeyTokenStore(), layout.idPropertyKeyTokenStore(), config,
+        return initialize( new PropertyKeyTokenStore( layout.propertyKeyTokenStore(), layout.idPropertyKeyTokenStore(), config,
                 idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN_NAME ), recordFormats,
                 openOptions ) );
     }
@@ -558,7 +558,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createPropertyStore()
     {
-        return initialize( new PropertyStore( layout.getDatabaseName(), layout.propertyStore(), layout.idPropertyStore(), config, idGeneratorFactory, pageCache,
+        return initialize( new PropertyStore( layout.propertyStore(), layout.idPropertyStore(), config, idGeneratorFactory, pageCache,
                 logProvider, (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_STRING ),
                 (PropertyKeyTokenStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN ), (DynamicArrayStore) getOrCreateStore( StoreType.PROPERTY_ARRAY ),
                 recordFormats, openOptions ) );
@@ -579,14 +579,14 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createRelationshipStore()
     {
         return initialize(
-                new RelationshipStore( layout.getDatabaseName(), layout.relationshipStore(), layout.idRelationshipStore(), config, idGeneratorFactory,
+                new RelationshipStore( layout.relationshipStore(), layout.idRelationshipStore(), config, idGeneratorFactory,
                         pageCache, logProvider, recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createRelationshipTypeTokenStore()
     {
         return initialize(
-                new RelationshipTypeTokenStore( layout.getDatabaseName(), layout.relationshipTypeTokenStore(), layout.idRelationshipTypeTokenStore(), config,
+                new RelationshipTypeTokenStore( layout.relationshipTypeTokenStore(), layout.idRelationshipTypeTokenStore(), config,
                         idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ),
                         recordFormats, openOptions ) );
     }
@@ -600,20 +600,20 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createLabelTokenStore()
     {
         return initialize(
-                new LabelTokenStore( layout.getDatabaseName(), layout.labelTokenStore(), layout.idLabelTokenStore(), config, idGeneratorFactory, pageCache,
+                new LabelTokenStore( layout.labelTokenStore(), layout.idLabelTokenStore(), config, idGeneratorFactory, pageCache,
                         logProvider, (DynamicStringStore) getOrCreateStore( StoreType.LABEL_TOKEN_NAME ), recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createSchemaStore()
     {
         return initialize(
-                new SchemaStore( layout.getDatabaseName(), layout.schemaStore(), layout.idSchemaStore(), config, IdType.SCHEMA, idGeneratorFactory, pageCache,
+                new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, IdType.SCHEMA, idGeneratorFactory, pageCache,
                         logProvider, recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createRelationshipGroupStore()
     {
-        return initialize( new RelationshipGroupStore( layout.getDatabaseName(), layout.relationshipGroupStore(), layout.idRelationshipGroupStore(), config,
+        return initialize( new RelationshipGroupStore( layout.relationshipGroupStore(), layout.idRelationshipGroupStore(), config,
                 idGeneratorFactory, pageCache, logProvider, recordFormats, openOptions ) );
     }
 
@@ -663,7 +663,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createMetadataStore()
     {
         return initialize(
-                new MetaDataStore( layout.getDatabaseName(), metadataStore, layout.idMetadataStore(), config, idGeneratorFactory, pageCache, logProvider,
+                new MetaDataStore( metadataStore, layout.idMetadataStore(), config, idGeneratorFactory, pageCache, logProvider,
                         recordFormats.metaData(), recordFormats.storeVersion(), openOptions ) );
     }
 
@@ -674,7 +674,7 @@ public class NeoStores implements AutoCloseable
 
     private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, IdType idType, int blockSize )
     {
-        return initialize( new DynamicStringStore( layout.getDatabaseName(), storeFile, idFile, config, idType, idGeneratorFactory,
+        return initialize( new DynamicStringStore( storeFile, idFile, config, idType, idGeneratorFactory,
                 pageCache, logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion(),
                 openOptions ) );
     }
@@ -690,7 +690,7 @@ public class NeoStores implements AutoCloseable
         {
             throw new IllegalArgumentException( "Block size of dynamic array store should be positive integer." );
         }
-        return initialize( new DynamicArrayStore( layout.getDatabaseName(), storeFile, idFile, config, idType, idGeneratorFactory, pageCache,
+        return initialize( new DynamicArrayStore( storeFile, idFile, config, idType, idGeneratorFactory, pageCache,
                 logProvider, blockSize, recordFormats, openOptions ) );
     }
 

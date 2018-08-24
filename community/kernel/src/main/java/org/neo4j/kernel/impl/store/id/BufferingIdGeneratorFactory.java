@@ -56,18 +56,18 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( String databaseName, File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration typeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return open( databaseName, filename, typeConfiguration.getGrabSize(), idType, highId, maxId );
+        return open( filename, typeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( String databaseName, File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
-        IdGenerator generator = delegate.open( databaseName, filename, grabSize, idType, highId, maxId );
+        IdGenerator generator = delegate.open( filename, grabSize, idType, highId, maxId );
         IdTypeConfiguration typeConfiguration = getIdTypeConfiguration(idType);
         if ( typeConfiguration.allowAggressiveReuse() )
         {
