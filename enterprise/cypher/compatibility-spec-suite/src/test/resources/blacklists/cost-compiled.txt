@@ -412,7 +412,6 @@ Feature "ReturnAcceptance2": Scenario "Arithmetic expressions inside aggregation
 Feature "ReturnAcceptance2": Scenario "Matching and disregarding output, then matching again"
 Feature "ReturnAcceptance2": Scenario "Returning an expression"
 Feature "ReturnAcceptance2": Scenario "`substring()` with default second argument"
-Feature "ReturnAcceptance2": Scenario "Arithmetic expressions should propagate null values"
 Feature "ReturnAcceptance2": Scenario "Multiple aliasing and backreferencing"
 Feature "ReturnAcceptance2": Scenario "Aggregating by a list property has a correct definition of equality"
 Feature "ReturnAcceptance2": Scenario "Reusing variable names"
