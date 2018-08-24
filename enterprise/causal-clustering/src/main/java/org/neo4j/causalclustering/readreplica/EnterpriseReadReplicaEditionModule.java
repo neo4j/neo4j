@@ -122,7 +122,6 @@ import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -183,11 +182,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         statementLocksFactoryProvider = locks -> new StatementLocksFactorySelector( locks, config, logging ).select();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-        idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
-        idController = createDefaultIdController();
-        dependencies.satisfyDependency( idGeneratorFactory );
-        dependencies.satisfyDependency( idController );
-        dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+        idGeneratorFactoryProvider = databaseName -> new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider );
+        idControllerFactory = databaseName -> createDefaultIdController();
 
         tokenHoldersSupplier = () -> new TokenHolders(
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),

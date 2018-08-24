@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
@@ -107,8 +108,8 @@ public class CommunityEditionModule extends EditionModule
                 new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
 
         createIdComponents( platformModule, dependencies, createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
-        dependencies.satisfyDependency( idGeneratorFactory );
-        dependencies.satisfyDependency( idController );
+        dependencies.satisfyDependency( idGeneratorFactoryProvider );
+        dependencies.satisfyDependency( idControllerFactory );
 
         tokenHoldersSupplier = () -> new TokenHolders(
                 new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
@@ -210,10 +211,10 @@ public class CommunityEditionModule extends EditionModule
         return life.add( new KernelData( fileSystem, pageCache, storeDir, config, dataSourceManager ) );
     }
 
-    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+    protected Function<String,IdGeneratorFactory> createIdGeneratorFactory( FileSystemAbstraction fs,
             IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
-        return new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
+        return databaseName -> new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

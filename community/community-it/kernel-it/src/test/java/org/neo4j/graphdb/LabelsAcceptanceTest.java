@@ -754,11 +754,10 @@ public class LabelsAcceptanceTest
                                         platformModule -> new CommunityEditionModule( platformModule )
                                         {
                                             @Override
-                                            protected IdGeneratorFactory createIdGeneratorFactory(
-                                                    FileSystemAbstraction fs,
+                                            protected Function<String,IdGeneratorFactory> createIdGeneratorFactory( FileSystemAbstraction fs,
                                                     IdTypeConfigurationProvider idTypeConfigurationProvider )
                                             {
-                                                return idFactory;
+                                                return any -> idFactory;
                                             }
                                         };
                                 new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )

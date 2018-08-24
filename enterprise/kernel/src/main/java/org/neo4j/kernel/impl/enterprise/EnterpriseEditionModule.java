@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 
 /**
@@ -69,7 +68,6 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     public EnterpriseEditionModule( PlatformModule platformModule )
     {
         super( platformModule );
-        platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
     }
 

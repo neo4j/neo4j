@@ -88,9 +88,13 @@ public abstract class EditionModule
     private static final boolean safeIdBuffering = FeatureToggles.flag(
             EditionModule.class, "safeIdBuffering", true );
 
-    public IdGeneratorFactory idGeneratorFactory;
+    public Function<String, ? extends IdGeneratorFactory> idGeneratorFactoryProvider;
 
     public IdTypeConfigurationProvider idTypeConfigurationProvider;
+
+    public Function<String, IdController> idControllerFactory;
+
+    public IdReuseEligibility eligibleForIdReuse;
 
     public Supplier<TokenHolders> tokenHoldersSupplier;
 
@@ -112,11 +116,7 @@ public abstract class EditionModule
 
     public IOLimiter ioLimiter;
 
-    public IdReuseEligibility eligibleForIdReuse;
-
     public Function<File, FileSystemWatcherService> watcherServiceFactory;
-
-    public IdController idController;
 
     public AuthManager authManager;
 
@@ -253,26 +253,26 @@ public abstract class EditionModule
         return NetworkConnectionTracker.NO_OP;
     }
 
-    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies, IdGeneratorFactory
-            editionIdGeneratorFactory )
+    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
+            Function<String,? extends IdGeneratorFactory> idGeneratorFactoryProvider )
     {
-        IdGeneratorFactory factory = editionIdGeneratorFactory;
+        Function<String,? extends IdGeneratorFactory> factoryProvider = idGeneratorFactoryProvider;
         if ( safeIdBuffering )
         {
-            BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                    new BufferingIdGeneratorFactory( factory, eligibleForIdReuse, idTypeConfigurationProvider );
-            idController = createBufferedIdController( bufferingIdGeneratorFactory, platformModule.jobScheduler );
-            factory = bufferingIdGeneratorFactory;
+            Function<String, BufferingIdGeneratorFactory> bufferingIdGeneratorFactory =
+                    databaseName -> new BufferingIdGeneratorFactory( idGeneratorFactoryProvider.apply( databaseName ), eligibleForIdReuse,
+                            idTypeConfigurationProvider );
+            idControllerFactory = databaseName -> createBufferedIdController( bufferingIdGeneratorFactory.apply( databaseName ), platformModule.jobScheduler );
+            factoryProvider = bufferingIdGeneratorFactory;
         }
         else
         {
-            idController = createDefaultIdController();
+            idControllerFactory = any -> createDefaultIdController();
         }
-        this.idGeneratorFactory = factory;
+        this.idGeneratorFactoryProvider = factoryProvider;
     }
 
-    private BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory,
-            JobScheduler scheduler )
+    private BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory, JobScheduler scheduler )
     {
         return new BufferedIdController( idGeneratorFactory, scheduler );
     }

@@ -124,7 +124,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     {
         this.databaseName = databaseName;
         this.config = platformModule.config;
-        this.idGeneratorFactory = editionModule.idGeneratorFactory;
+        this.idGeneratorFactory = editionModule.idGeneratorFactoryProvider.apply( databaseName );
         this.databaseLayout = platformModule.storeLayout.databaseLayout( databaseName );
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
@@ -159,7 +159,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.accessCapability = editionModule.accessCapability;
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.recoveryCleanupWorkCollector = platformModule.recoveryCleanupWorkCollector;
-        this.idController = editionModule.idController;
+        this.idController = editionModule.idControllerFactory.apply( databaseName );
         this.databaseInfo = platformModule.databaseInfo;
         this.versionContextSupplier = platformModule.versionContextSupplier;
         this.collectionsFactorySupplier = platformModule.collectionsFactorySupplier;

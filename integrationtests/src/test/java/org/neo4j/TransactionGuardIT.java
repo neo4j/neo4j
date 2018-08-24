@@ -721,11 +721,10 @@ public class TransactionGuardIT
         }
 
         @Override
-        protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+        protected Function<String, IdGeneratorFactory> createIdGeneratorFactory( FileSystemAbstraction fs,
                 IdTypeConfigurationProvider idTypeConfigurationProvider )
         {
-            IdGeneratorFactory generatorFactory = super.createIdGeneratorFactory( fs, idTypeConfigurationProvider );
-            return new TerminationIdGeneratorFactory( generatorFactory );
+            return databaseName -> new TerminationIdGeneratorFactory( super.createIdGeneratorFactory( fs, idTypeConfigurationProvider ).apply( databaseName ) );
         }
     }
 

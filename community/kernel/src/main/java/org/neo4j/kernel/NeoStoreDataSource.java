@@ -92,6 +92,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -298,6 +299,9 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( locks );
         dataSourceDependencies.satisfyDependency( databaseAvailabilityGuard );
         dataSourceDependencies.satisfyDependency( databaseAvailability );
+        dataSourceDependencies.satisfyDependency( idGeneratorFactory );
+        dataSourceDependencies.satisfyDependency( idController );
+        dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         life = new LifeSupport();
         dataSourceDependencies.satisfyDependency( explicitIndexProvider );

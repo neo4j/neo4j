@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -308,9 +309,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
 
-        createIdComponents( platformModule, dependencies, coreStateMachinesModule.idGeneratorFactory );
-        dependencies.satisfyDependency( idGeneratorFactory );
-        dependencies.satisfyDependency( idController );
+        createIdComponents( platformModule, dependencies, any -> coreStateMachinesModule.idGeneratorFactory );
+        dependencies.satisfyDependency( idGeneratorFactoryProvider );
+        dependencies.satisfyDependency( idControllerFactory );
 
         // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...
         this.tokenHoldersSupplier = () -> coreStateMachinesModule.tokenHolders;
@@ -384,11 +385,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
     @Override
     protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
-            IdGeneratorFactory editionIdGeneratorFactory )
+            Function<String,? extends IdGeneratorFactory> editionIdGeneratorFactory )
     {
         super.createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
-        this.idGeneratorFactory =
-                new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactory, coreStateMachinesModule.freeIdCondition );
+        this.idGeneratorFactoryProvider = databaseName -> new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactoryProvider.apply( databaseName ),
+                coreStateMachinesModule.freeIdCondition );
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

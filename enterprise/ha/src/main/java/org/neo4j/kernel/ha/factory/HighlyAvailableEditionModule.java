@@ -166,7 +166,6 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
@@ -380,10 +379,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         HaIdGeneratorFactory editionIdGeneratorFactory = (HaIdGeneratorFactory) createIdGeneratorFactory( masterDelegateInvocationHandler,
                 logging.getInternalLogProvider(), requestContextFactory, fs );
         eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
-        createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
-        dependencies.satisfyDependency( idGeneratorFactory );
-        dependencies.satisfyDependency( idController );
-        dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+        createIdComponents( platformModule, dependencies, any -> editionIdGeneratorFactory );
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
@@ -434,7 +430,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( resolveDatabaseDependency( platformModule, GraphDatabaseFacade.class ), platformModule.fileSystem,
                         platformModule.monitors,
-                        tokenHolders, this.idGeneratorFactory,
+                        tokenHolders, this.idGeneratorFactoryProvider.apply( DatabaseManager.DEFAULT_DATABASE_NAME ),
                         resolveDatabaseDependency( platformModule, TransactionCommitProcess.class ),
                         resolveDatabaseDependency( platformModule, CheckPointer.class ),
                         resolveDatabaseDependency( platformModule, TransactionIdStore.class ),
