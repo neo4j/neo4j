@@ -30,7 +30,5 @@ class SimpleExpressionEvaluatorTest extends CypherFunSuite {
   test("isNonDeterministic should not care about capitalization") {
     isNonDeterministic(
       FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe true
-    isNonDeterministic(
-      FunctionInvocation(FunctionName("Timestamp")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe true
   }
 }
