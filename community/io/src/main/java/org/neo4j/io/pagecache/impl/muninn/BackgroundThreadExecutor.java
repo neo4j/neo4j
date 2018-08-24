@@ -24,21 +24,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-/**
- * An executor for the background threads for the page caches.
- * <p>
- * This is similar to an unbounded cached thread pool, except it uses daemon threads.
- * <p>
- * There are only one of these (it's a singleton) to facilitate reusing the threads of closed page caches.
- * This is useful for making tests run faster.
- */
-final class BackgroundThreadExecutor implements Executor
+final class BackgroundThreadExecutor implements Executor, AutoCloseable
 {
-    static final BackgroundThreadExecutor INSTANCE = new BackgroundThreadExecutor();
-
     private final ExecutorService executor;
 
-    private BackgroundThreadExecutor()
+    BackgroundThreadExecutor()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
     }
@@ -52,5 +42,11 @@ final class BackgroundThreadExecutor implements Executor
     public Future<?> submit( Runnable command )
     {
         return executor.submit( command );
+    }
+
+    @Override
+    public void close()
+    {
+        executor.shutdown();
     }
 }

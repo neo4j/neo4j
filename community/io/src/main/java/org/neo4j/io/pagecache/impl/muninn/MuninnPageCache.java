@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -52,7 +51,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.util.FeatureToggles.flag;
@@ -144,15 +142,10 @@ public class MuninnPageCache implements PageCache
     // A counter used to identify which background threads belong to which page cache.
     private static final AtomicInteger pageCacheIdCounter = new AtomicInteger();
 
-    // This Executor runs all the background threads for all page cache instances. It allows us to reuse threads
-    // between multiple page cache instances, which is of no consequence in normal usage, but is quite useful for the
-    // many, many tests that create and close page caches all the time. We DO NOT want to take an Executor in through
-    // the constructor of the PageCache, because the Executors have too many configuration options, many of which are
-    // highly troublesome for our use case; caller-runs, bounded submission queues, bounded thread count, non-daemon
-    // thread factories, etc.
-    private static final BackgroundThreadExecutor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
+    // This Executor runs all the background threads for page cache instance.
+    private final BackgroundThreadExecutor backgroundThreadExecutor;
 
-    private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( (OpenOption) StandardOpenOption.APPEND,
+    private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
 
     private final int pageCacheId;
@@ -290,6 +283,7 @@ public class MuninnPageCache implements PageCache
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
 
         setFreelistHead( new AtomicInteger() );
+        backgroundThreadExecutor = new BackgroundThreadExecutor();
     }
 
     private static void verifyHacks()
@@ -696,12 +690,13 @@ public class MuninnPageCache implements PageCache
 
         interrupt( evictionThread );
         evictionThread = null;
+        backgroundThreadExecutor.close();
 
         // Close the page swapper factory last. If this fails then we will still consider ourselves closed.
         swapperFactory.close();
     }
 
-    private void interrupt( Thread thread )
+    private static void interrupt( Thread thread )
     {
         if ( thread != null )
         {
