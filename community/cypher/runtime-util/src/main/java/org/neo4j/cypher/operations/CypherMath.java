@@ -232,6 +232,17 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Cannot calculate modulus of `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+                String.format( "Cannot calculate modulus of `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ),
+                null );
+    }
+
+    public static AnyValue pow( AnyValue lhs, AnyValue rhs )
+    {
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return doubleValue( Math.pow( ((NumberValue) lhs).doubleValue(), ((NumberValue) rhs).doubleValue() ) );
+        }
+        throw new CypherTypeException(
+                String.format( "Cannot raise `%s` to the power of `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
     }
 }

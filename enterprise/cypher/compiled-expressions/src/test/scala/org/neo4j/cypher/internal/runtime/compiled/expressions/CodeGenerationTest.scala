@@ -916,7 +916,16 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(doubleValue(8.0), longValue(6)))) should equal(doubleValue(2.0))
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(8), doubleValue(6)))) should equal(doubleValue(2.0))
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(8), longValue(6)))) should equal(longValue(2))
+  }
 
+  test("pow") {
+    val compiled = compile(pow(parameter("a"), parameter("b")))
+
+    // Then
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(doubleValue(2), longValue(3)))) should equal(doubleValue(8.0))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(2), longValue(3)))) should equal(doubleValue(8.0))
   }
 
   test("extract parameter") {
@@ -1548,6 +1557,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def divide(l: Expression, r: Expression) = Divide(l, r)(pos)
 
   private def modulo(l: Expression, r: Expression) = Modulo(l, r)(pos)
+
+  private def pow(l: Expression, r: Expression) = Pow(l, r)(pos)
 
   private def parameter(key: String) = Parameter(key, symbols.CTAny)(pos)
 

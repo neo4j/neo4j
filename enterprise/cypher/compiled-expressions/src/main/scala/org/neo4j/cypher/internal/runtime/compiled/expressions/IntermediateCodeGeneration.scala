@@ -141,6 +141,15 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
       }
 
+    case Pow(lhs, rhs) =>
+      for {l <- compileExpression(lhs)
+           r <- compileExpression(rhs)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("pow"), l.ir, r.ir),
+          l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
+      }
+
     //literals
     case d: DoubleLiteral => Some(IntermediateExpression(
       invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)), Seq.empty, Seq.empty, Set.empty))
