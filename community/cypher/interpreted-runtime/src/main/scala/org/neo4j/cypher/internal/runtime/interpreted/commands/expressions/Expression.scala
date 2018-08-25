@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Coerce
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{NumberValue, Values}
+import org.neo4j.values.storable.Values
 import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.symbols.CypherType
 
@@ -90,8 +90,6 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-  def throwTypeError(aType: String, bType: String): Nothing
-
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val aVal = left(ctx, state)
     val bVal = right(ctx, state)
@@ -102,14 +100,15 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
   protected def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
-      case (x: NumberValue, y: NumberValue) => calc(x, y)
-      case _ => throwTypeError(aVal.getTypeName, bVal.getTypeName)
+      case (x, y) => calc(x, y)
     }
   }
 
-  def calc(a: NumberValue, b: NumberValue): AnyValue
+  def calc(a: AnyValue, b: AnyValue): AnyValue
 
   def arguments = Seq(left, right)
+
+  def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ left.symbolTableDependencies
 }
 
 trait ExtendedExpression extends Expression {
