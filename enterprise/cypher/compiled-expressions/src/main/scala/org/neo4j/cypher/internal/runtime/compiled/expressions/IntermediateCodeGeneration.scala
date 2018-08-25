@@ -104,6 +104,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             l.fields ++ r.fields, l.variables ++ r.variables,  l.nullCheck ++ r.nullCheck)
       }
 
+    case UnaryAdd(source) => compileExpression(source)
+
     case Subtract(lhs, rhs) =>
       for {l <- compileExpression(lhs)
            r <- compileExpression(rhs)
@@ -111,6 +113,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         IntermediateExpression(
             invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"), l.ir, r.ir),
             l.fields ++ r.fields, l.variables ++ r.variables,  l.nullCheck ++ r.nullCheck)
+      }
+
+    case UnarySubtract(source) =>
+      for {arg <- compileExpression(source)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"),
+                       getStatic[Values, IntegralValue]("ZERO_INT"), arg.ir), arg.fields, arg.variables, arg.nullCheck)
       }
 
     //literals

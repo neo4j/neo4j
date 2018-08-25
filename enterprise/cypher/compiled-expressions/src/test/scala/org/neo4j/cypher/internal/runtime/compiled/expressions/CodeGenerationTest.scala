@@ -812,6 +812,17 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
       equal(list(longValue(43), longValue(44), longValue(45)))
   }
 
+  test("unary add ") {
+    // Given
+    val expression = unaryAdd(literalInt(42))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(longValue(42))
+  }
+
   test("subtract numbers") {
     // Given
     val expression = subtract(literalInt(42), literalInt(10))
@@ -847,6 +858,17 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
                                                           durationValue(Duration.ofHours(10))))) should
       equal(durationValue(Duration.ofHours(0)))
+  }
+
+  test("unary subtract ") {
+    // Given
+    val expression = unarySubtract(literalInt(42))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(longValue(-42))
   }
 
   test("multiply function") {
@@ -1490,7 +1512,11 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def add(l: Expression, r: Expression) = Add(l, r)(pos)
 
+  private def unaryAdd(source: Expression) = UnaryAdd(source)(pos)
+
   private def subtract(l: Expression, r: Expression) = Subtract(l, r)(pos)
+
+  private def unarySubtract(source: Expression) = UnarySubtract(source)(pos)
 
   private def multiply(l: Expression, r: Expression) = Multiply(l, r)(pos)
 
