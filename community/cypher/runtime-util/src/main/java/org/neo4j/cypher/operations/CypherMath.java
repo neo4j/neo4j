@@ -25,6 +25,7 @@ import org.opencypher.v9_0.util.CypherTypeException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -35,6 +36,8 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.ZERO_INT;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -212,6 +215,23 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Cannot divide `%s` with `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+                String.format( "Cannot divide `%s` by `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+    }
+
+    public static AnyValue modulo( AnyValue lhs, AnyValue rhs )
+    {
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            if ( lhs instanceof FloatingPointValue || rhs instanceof FloatingPointValue )
+            {
+                return doubleValue( ((NumberValue) lhs).doubleValue() % ((NumberValue) rhs).doubleValue() );
+            }
+            else
+            {
+                return longValue( ((NumberValue) lhs).longValue() % ((NumberValue) rhs).longValue() );
+            }
+        }
+        throw new CypherTypeException(
+                String.format( "Cannot calculate modulus of `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
     }
 }

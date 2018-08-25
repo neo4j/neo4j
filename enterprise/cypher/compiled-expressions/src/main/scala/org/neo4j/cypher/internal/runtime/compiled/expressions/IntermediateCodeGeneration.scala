@@ -132,6 +132,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
       }
 
+    case Modulo(lhs, rhs) =>
+      for {l <- compileExpression(lhs)
+           r <- compileExpression(rhs)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("modulo"), l.ir, r.ir),
+          l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
+      }
 
     //literals
     case d: DoubleLiteral => Some(IntermediateExpression(

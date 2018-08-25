@@ -907,6 +907,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(durationValue(Duration.ofHours(4)), longValue(2)))) should equal(durationValue(Duration.ofHours(2)))
   }
 
+  test("modulo") {
+    val compiled = compile(modulo(parameter("a"), parameter("b")))
+
+    // Then
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(doubleValue(8.0), longValue(6)))) should equal(doubleValue(2.0))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(8), doubleValue(6)))) should equal(doubleValue(2.0))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(8), longValue(6)))) should equal(longValue(2))
+
+  }
+
   test("extract parameter") {
     compile(parameter("prop")).evaluate(ctx, db, EMPTY_MAP) should equal(NO_VALUE)
     compile(parameter("prop")).evaluate(ctx, db, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
@@ -1534,6 +1546,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def multiply(l: Expression, r: Expression) = Multiply(l, r)(pos)
 
   private def divide(l: Expression, r: Expression) = Divide(l, r)(pos)
+
+  private def modulo(l: Expression, r: Expression) = Modulo(l, r)(pos)
 
   private def parameter(key: String) = Parameter(key, symbols.CTAny)(pos)
 
