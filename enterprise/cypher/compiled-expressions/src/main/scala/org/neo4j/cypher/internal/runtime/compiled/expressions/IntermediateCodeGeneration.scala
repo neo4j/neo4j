@@ -123,6 +123,16 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                        getStatic[Values, IntegralValue]("ZERO_INT"), arg.ir), arg.fields, arg.variables, arg.nullCheck)
       }
 
+    case Divide(lhs, rhs) =>
+      for {l <- compileExpression(lhs)
+           r <- compileExpression(rhs)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("divide"), l.ir, r.ir),
+          l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
+      }
+
+
     //literals
     case d: DoubleLiteral => Some(IntermediateExpression(
       invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)), Seq.empty, Seq.empty, Set.empty))

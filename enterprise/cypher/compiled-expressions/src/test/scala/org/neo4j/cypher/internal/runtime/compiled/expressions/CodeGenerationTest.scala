@@ -894,6 +894,19 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
   }
 
+  test("division") {
+    val compiled = compile(divide(parameter("a"), parameter("b")))
+
+    // Then
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(6), longValue(3)))) should equal(longValue(2))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(5), doubleValue(2)))) should equal(doubleValue(2.5))
+    an[ArithmeticException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(5), longValue(0))))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(doubleValue(3.0), doubleValue(0.0)))) should equal(doubleValue(Double.PositiveInfinity))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(durationValue(Duration.ofHours(4)), longValue(2)))) should equal(durationValue(Duration.ofHours(2)))
+  }
+
   test("extract parameter") {
     compile(parameter("prop")).evaluate(ctx, db, EMPTY_MAP) should equal(NO_VALUE)
     compile(parameter("prop")).evaluate(ctx, db, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
@@ -1519,6 +1532,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def unarySubtract(source: Expression) = UnarySubtract(source)(pos)
 
   private def multiply(l: Expression, r: Expression) = Multiply(l, r)(pos)
+
+  private def divide(l: Expression, r: Expression) = Divide(l, r)(pos)
 
   private def parameter(key: String) = Parameter(key, symbols.CTAny)(pos)
 

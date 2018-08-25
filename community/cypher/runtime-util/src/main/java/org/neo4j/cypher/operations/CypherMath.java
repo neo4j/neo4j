@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.operations;
 
+import org.opencypher.v9_0.util.ArithmeticException;
 import org.opencypher.v9_0.util.CypherTypeException;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
@@ -32,6 +34,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -188,5 +191,27 @@ public final class CypherMath
         }
         throw new CypherTypeException(
                 String.format( "Cannot multiply `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+    }
+
+    public static AnyValue divide( AnyValue lhs, AnyValue rhs )
+    {
+        if ( rhs instanceof IntegralValue && rhs.equals( ZERO_INT ) )
+        {
+            throw new ArithmeticException( "/ by zero", null );
+        }
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return ((NumberValue) lhs).divideBy( (NumberValue) rhs );
+        }
+        // Temporal values
+        if ( lhs instanceof DurationValue )
+        {
+            if ( rhs instanceof NumberValue )
+            {
+                return ((DurationValue) lhs).div( (NumberValue) rhs );
+            }
+        }
+        throw new CypherTypeException(
+                String.format( "Cannot divide `%s` with `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
     }
 }
