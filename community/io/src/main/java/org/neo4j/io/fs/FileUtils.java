@@ -48,6 +48,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -585,11 +586,21 @@ public class FileUtils
         return path;
     }
 
+    /**
+     * Canonical file resolution on windows does not resolve links.
+     * Real paths on windows can be resolved only using {@link Path#toRealPath(LinkOption...)}, but file should exist in that case.
+     * We will try to do as much as possible and will try to use {@link Path#toRealPath(LinkOption...)} when file exist and will fallback to only
+     * use {@link File#getCanonicalFile()} if file does not exist.
+     * see JDK-8003887 for details
+     * @param file - file to resolve canonical representation
+     * @return canonical file representation.
+     */
     public static File getCanonicalFile( File file )
     {
         try
         {
-            return file.getCanonicalFile();
+            File fileToResolve = file.exists() ? file.toPath().toRealPath().toFile() : file;
+            return fileToResolve.getCanonicalFile();
         }
         catch ( IOException e )
         {
