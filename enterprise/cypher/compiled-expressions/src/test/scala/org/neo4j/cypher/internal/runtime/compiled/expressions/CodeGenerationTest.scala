@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, SlotConfi
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
@@ -1339,6 +1340,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(literal)
 
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(list(Values.TRUE, intValue(5), NO_VALUE, Values.FALSE))
+  }
+
+  test("handle map literals") {
+    val literal = literalIntMap("foo" -> 1, "bar" -> 2, "baz" -> 3)
+
+    val compiled = compile(literal)
+
+    import scala.collection.JavaConverters._
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(ValueUtils.asMapValue(Map("foo" -> 1, "bar" -> 2, "baz" -> 3).asInstanceOf[Map[String, AnyRef]].asJava))
   }
 
   test("handle variables") {

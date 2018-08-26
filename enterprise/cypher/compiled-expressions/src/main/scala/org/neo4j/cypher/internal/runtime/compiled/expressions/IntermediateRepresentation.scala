@@ -59,7 +59,7 @@ case class Invoke(target: IntermediateRepresentation, method: Method, params: Se
   * @param method the method to invoke
   * @param params the parameter to the method
   */
-case class InvokeVoid(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
+case class InvokeSideEffect(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
   extends IntermediateRepresentation
 
 /**
@@ -248,6 +248,14 @@ case class BooleanOr(lhs: IntermediateRepresentation, rhs: IntermediateRepresent
   */
 case class GetStatic(owner: Class[_], output: Class[_], name: String) extends IntermediateRepresentation
 
+case class NewInstance(constructor: Constructor, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+
+case class Constructor(owner: Class[_], params: Seq[Class[_]]) {
+  def asReference: MethodReference =
+    if (params.isEmpty) MethodReference.constructorReference(owner)
+    else MethodReference.constructorReference(owner, params.head, params.tail:_*)
+}
+
 /**
   * Defines a method
   *
@@ -296,6 +304,11 @@ object IntermediateRepresentation {
                                         in2: ClassTag[IN2], in3: ClassTag[IN3]) =
     Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass, in3.runtimeClass)
 
+  def constructor[OWNER](implicit owner: ClassTag[OWNER]) = Constructor(owner.runtimeClass, Seq.empty)
+
+  def constructor[OWNER, IN](implicit owner: ClassTag[OWNER],  in: ClassTag[IN]) =
+    Constructor(owner.runtimeClass, Seq(in.runtimeClass))
+
   def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(
     method, params)
 
@@ -303,9 +316,9 @@ object IntermediateRepresentation {
              params: IntermediateRepresentation*): IntermediateRepresentation =
     Invoke(owner, method, params)
 
-  def invokeVoid(owner: IntermediateRepresentation, method: Method,
-             params: IntermediateRepresentation*): IntermediateRepresentation =
-    InvokeVoid(owner, method, params)
+  def invokeSideEffect(owner: IntermediateRepresentation, method: Method,
+                       params: IntermediateRepresentation*): IntermediateRepresentation =
+    InvokeSideEffect(owner, method, params)
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
 
@@ -356,4 +369,6 @@ object IntermediateRepresentation {
   def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanOr(lhs, rhs)
 
   def isNull(test: IntermediateRepresentation): IntermediateRepresentation = IsNull(test)
+
+  def newInstance(constructor: Constructor, params: IntermediateRepresentation*) = NewInstance(constructor, params)
 }

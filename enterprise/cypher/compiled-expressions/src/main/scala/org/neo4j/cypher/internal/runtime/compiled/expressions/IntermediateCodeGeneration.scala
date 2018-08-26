@@ -170,6 +170,26 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           invokeStatic(method[VirtualValues, ListValue, Array[AnyValue]]("list"), arrayOf(in.map(_.ir):_*)),
           fields, variables, Set.empty))
       }
+
+    case MapExpression(items) =>
+      val compiled = (for {(k, v) <- items
+                          c <- compileExpression(v)} yield k -> c).toMap
+      if (compiled.size < items.size) None
+      else {
+        val tempVariable = namer.nextVariableName()
+        val ops = Seq(
+          declare[MapValueBuilder](tempVariable),
+          assign(tempVariable, newInstance(constructor[MapValueBuilder, Int], constant(compiled.size)))
+        ) ++ compiled.map {
+          case (k, v) => invokeSideEffect(load(tempVariable), method[MapValueBuilder, AnyValue, String, AnyValue]("add"),
+                                          constant(k.name), v.ir)
+        } :+ invoke(load(tempVariable), method[MapValueBuilder, MapValue]("build"))
+
+        Some(IntermediateExpression(block(ops:_*), compiled.values.flatMap(_.fields).toSeq,
+                                    compiled.values.flatMap(_.variables).toSeq,
+                                    compiled.values.flatMap(_.nullCheck).toSet))
+      }
+
     case Variable(name) =>
       val variableName = namer.variableName(name)
       val local = variable[AnyValue](variableName,
@@ -1055,8 +1075,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            constant(offset))
 
   private def setRefAt(offset: Int, value: IntermediateRepresentation): IntermediateRepresentation =
-    invokeVoid(load("context"), method[ExecutionContext, Unit, Int, AnyValue]("setRefAt"),
-           constant(offset), value)
+    invokeSideEffect(load("context"), method[ExecutionContext, Unit, Int, AnyValue]("setRefAt"),
+                     constant(offset), value)
 
   private def nullCheck(expressions: IntermediateExpression*)(onNotNull: IntermediateRepresentation): IntermediateRepresentation = {
     val checks = expressions.foldLeft(Set.empty[IntermediateRepresentation])((acc, current) => acc ++ current.nullCheck)

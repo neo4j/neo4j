@@ -131,7 +131,7 @@ object CodeGeneration {
     case Invoke(target, method, params) =>
       invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
     //target.method(p1,p2,...)
-    case InvokeVoid(target, method, params) =>
+    case InvokeSideEffect(target, method, params) =>
       block.expression(invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*))
       Expression.EMPTY
     //loads local variable by name
@@ -219,5 +219,7 @@ object CodeGeneration {
     case BooleanOr(lhs, rhs) =>
       Expression.or(compileExpression(lhs, block), compileExpression(rhs, block))
 
+    case NewInstance(constructor, args) =>
+      Expression.invoke(Expression.newInstance(constructor.owner), constructor.asReference, args.map(compileExpression(_, block)):_*)
   }
 }
