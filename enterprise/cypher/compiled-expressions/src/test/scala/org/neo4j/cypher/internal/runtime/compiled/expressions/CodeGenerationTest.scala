@@ -1351,6 +1351,40 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(ValueUtils.asMapValue(Map("foo" -> 1, "bar" -> 2, "baz" -> 3).asInstanceOf[Map[String, AnyRef]].asJava))
   }
 
+  test("from slice") {
+    val slice = compile(sliceFrom(parameter("a"), parameter("b")))
+    val list = VirtualValues.list(intValue(1), intValue(2), intValue(3))
+
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(3)))) should equal(NO_VALUE)
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, NO_VALUE))) should equal(NO_VALUE)
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(2)))) should equal(VirtualValues.list(intValue(3)))
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(-2)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
+
+  }
+
+  test("to slice") {
+    val slice = compile(sliceTo(parameter("a"), parameter("b")))
+    val list = VirtualValues.list(intValue(1), intValue(2), intValue(3))
+
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(1)))) should equal(NO_VALUE)
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, NO_VALUE))) should equal(NO_VALUE)
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(2)))) should equal(VirtualValues.list(intValue(1), intValue(2)))
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(-2)))) should equal(VirtualValues.list(intValue(1)))
+  }
+
+  test("full slice") {
+    val slice = compile(sliceFull(parameter("a"), parameter("b"), parameter("c")))
+    val list = VirtualValues.list(intValue(1), intValue(2), intValue(3), intValue(4), intValue(5))
+
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(NO_VALUE, intValue(1), intValue(3)))) should equal(NO_VALUE)
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, NO_VALUE, intValue(3)))) should equal(NO_VALUE)
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(3), NO_VALUE))) should equal(NO_VALUE)
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(1), intValue(3)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(1), intValue(-2)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(-4), intValue(3)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(-4), intValue(-2)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
+  }
+
   test("handle variables") {
     val variable = varFor("key")
     val compiled = compile(variable)
@@ -1634,6 +1668,12 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def isNull(expression: Expression) = expressions.IsNull(expression)(pos)
 
   private def isNotNull(expression: Expression) = expressions.IsNotNull(expression)(pos)
+
+  private def sliceFrom(list: Expression, from: Expression) = ListSlice(list, Some(from), None)(pos)
+
+  private def sliceTo(list: Expression, to: Expression) = ListSlice(list, None, Some(to))(pos)
+
+  private def sliceFull(list: Expression, from: Expression, to: Expression) = ListSlice(list, Some(from), Some(to))(pos)
 
   private val numericalValues: Seq[AnyRef] = Seq[Number](
     Double.NegativeInfinity,

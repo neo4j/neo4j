@@ -190,6 +190,37 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                     compiled.values.flatMap(_.nullCheck).toSet))
       }
 
+    case ListSlice(collection, None, None) => compileExpression(collection)
+
+    case ListSlice(collection, Some(from), None) =>
+      for {c <- compileExpression(collection)
+           f <- compileExpression(from)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue]("fromSlice"), c.ir, f.ir),
+          c.fields ++ f.fields, c.variables ++ f.variables, c.nullCheck ++ f.nullCheck)
+
+      }
+
+    case ListSlice(collection, None, Some(to)) =>
+      for {c <- compileExpression(collection)
+           t <- compileExpression(to)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue]("toSlice"), c.ir, t.ir),
+          c.fields ++ t.fields, c.variables ++ t.variables, c.nullCheck ++ t.nullCheck)
+      }
+
+    case ListSlice(collection, Some(from), Some(to)) =>
+      for {c <- compileExpression(collection)
+           f <- compileExpression(from)
+           t <- compileExpression(to)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue, AnyValue]("fullSlice"), c.ir, f.ir, t.ir),
+          c.fields ++ f.fields ++ t.fields, c.variables ++ f.variables ++ t.variables, c.nullCheck ++ f.nullCheck ++ t.nullCheck)
+      }
+
     case Variable(name) =>
       val variableName = namer.variableName(name)
       val local = variable[AnyValue](variableName,

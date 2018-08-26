@@ -962,6 +962,79 @@ public final class CypherFunctions
         }
     }
 
+    public static ListValue fromSlice( AnyValue collection, AnyValue fromValue )
+    {
+       int from = asInt( fromValue );
+       ListValue list = makeTraversable( collection );
+       if ( from >= 0 )
+       {
+           return list.drop( from );
+       }
+       else
+       {
+           return list.drop( list.size() + from );
+       }
+    }
+
+    public static ListValue toSlice( AnyValue collection, AnyValue fromValue )
+    {
+        int from = asInt( fromValue );
+        ListValue list = makeTraversable( collection );
+        if ( from >= 0 )
+        {
+            return list.take( from );
+        }
+        else
+        {
+            return list.take( list.size() + from );
+        }
+    }
+
+    public static ListValue fullSlice( AnyValue collection, AnyValue fromValue, AnyValue toValue )
+    {
+        int from = asInt( fromValue );
+        int to = asInt( toValue );
+        ListValue list = makeTraversable( collection );
+        int size = list.size();
+        if ( from >= 0 && to >= 0 )
+        {
+            return list.slice( from, to );
+        }
+        else if ( from >= 0 )
+        {
+            return list.slice( from, size + to );
+        }
+        else if ( to >= 0 )
+        {
+            return list.slice( size + from, to );
+        }
+        else
+        {
+            return list.slice( size + from, size + to );
+        }
+    }
+
+    private static ListValue makeTraversable( AnyValue collection )
+    {
+        ListValue list;
+        if ( collection == NO_VALUE )
+        {
+            return VirtualValues.EMPTY_LIST;
+        }
+        else if ( collection instanceof ListValue )
+        {
+            return  (ListValue) collection;
+        }
+        else if ( collection instanceof ArrayValue )
+        {
+            return VirtualValues.fromArray( (ArrayValue) collection );
+        }
+        else
+        {
+            return VirtualValues.list( collection );
+        }
+    }
+
     private static Value stringToLongValue( TextValue in )
     {
         try
