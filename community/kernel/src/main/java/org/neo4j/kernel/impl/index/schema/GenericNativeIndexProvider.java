@@ -53,7 +53,7 @@ import org.neo4j.values.storable.ValueCategory;
 import static org.neo4j.kernel.impl.index.schema.SpatialIndexProvider.getConfiguredSpaceFillingCurveConfiguration;
 
 /**
- * Single-value all-in-one native index
+ * Native index able to handle all value types in a single {@link GBPTree}. Single-key as well as composite-key is supported.
  *
  * A composite index query have one predicate per slot / column.
  * The predicate comes in the form of an index query. Any of "exact", "range" or "exist".
@@ -172,7 +172,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     protected IndexPopulator newIndexPopulator( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
-        // TODO this layout cast isn't nice, try and get rid of it
         return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig,
                 ((GenericLayout) layout).getSpaceFillingCurveSettings(), configuration );
     }
@@ -181,7 +180,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     protected IndexAccessor newIndexAccessor( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        // TODO this layout cast isn't nice, try and get rid of it
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
                 ((GenericLayout) layout).getSpaceFillingCurveSettings(), configuration );
     }
