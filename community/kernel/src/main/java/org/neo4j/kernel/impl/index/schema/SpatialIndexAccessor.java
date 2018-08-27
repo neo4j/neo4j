@@ -195,6 +195,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;
             this.searchConfiguration = searchConfiguration;
+            instantiateTree( recoveryCleanupWorkCollector, headerWriter );
         }
 
         @Override

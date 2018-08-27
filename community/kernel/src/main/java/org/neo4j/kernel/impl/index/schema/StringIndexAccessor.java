@@ -48,6 +48,7 @@ public class StringIndexAccessor extends NativeIndexAccessor<StringIndexKey,Nati
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig, NO_HEADER_WRITER );
+        instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }
 
     @Override

@@ -52,6 +52,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey
                 new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
+        instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }
 
     @Override

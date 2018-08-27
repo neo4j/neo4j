@@ -180,6 +180,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;
+            instantiateTree( recoveryCleanupWorkCollector, headerWriter );
         }
 
         @Override

@@ -57,7 +57,6 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
         super( pageCache, fs, storeFile, layout, monitor, descriptor );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
         this.samplingConfig = samplingConfig;
-        instantiateTree( recoveryCleanupWorkCollector, additionalHeaderWriter );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter );
     }
 
