@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4,
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexedProperty, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexedProperty, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5, UserFunctionSignature}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
 import org.opencypher.v9_0.expressions.{PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.opencypher.v9_0.util.Rewritable.RewritableAny
@@ -216,6 +216,32 @@ object LogicalPlanConverter {
 
         case (item: frontendV3_4.ast.ProcedureResultItem, children: Seq[AnyRef]) =>
           convertVersion(oldASTPackage, newASTPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
+
+        case (funcV3_4@expressionsv3_4.FunctionInvocation(_, expressionsv3_4.FunctionName("timestamp"), _, _), _: Seq[AnyRef]) => {
+          val datetimeSignature = UserFunctionSignature(
+            QualifiedName(Seq(), "datetime"),
+            inputSignature = IndexedSeq.empty,
+            symbolsv3_5.CTDateTime,
+            deprecationInfo = None,
+            allowed = Array.empty,
+            description = None,
+            isAggregate = false,
+            id = None // will use by-name lookup for built-in functions for that came from a 3.4 plan, since timestamp is not a user-defined function in 3.4
+          )
+          val funcPosV3_5 = helpers.as3_5(funcV3_4.functionName.position)
+          val datetimeFuncV3_5 = plansv3_5.ResolvedFunctionInvocation(
+            QualifiedName(Seq(), "datetime"),
+            Some(datetimeSignature),
+            callArguments = IndexedSeq.empty
+          )(funcPosV3_5)
+
+          val epochMillisV3_5 = expressionsv3_5.Property(
+            datetimeFuncV3_5,
+            expressionsv3_5.PropertyKeyName("epochMillis")(funcPosV3_5)
+          )(funcPosV3_5)
+
+          epochMillisV3_5
+        }
 
         case (item: plansV3_4.ResolvedCall, children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
