@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,6 +68,7 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.values.storable.Values;
 
@@ -111,9 +111,11 @@ public class IndexStatisticsTest
     public boolean multiThreadedPopulationEnabled;
 
     @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule()
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" )
             .startLazily();
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     private GraphDatabaseService db;
     private ThreadToStatementContextBridge bridge;
@@ -130,10 +132,10 @@ public class IndexStatisticsTest
     {
         dbRule.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled + "" );
 
-        FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, 1 );
-        FeatureToggles.set( BatchingMultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, 1 );
+        int batchSize = random.nextInt( 1, 5 );
+        FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
+        FeatureToggles.set( BatchingMultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
 
-        dbRule.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled + "" );
         GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         this.db = graphDatabaseAPI;
         DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
@@ -690,7 +692,11 @@ public class IndexStatisticsTest
                                                                         boolean allowDeletions,
                                                                         boolean allowUpdates ) throws KernelException, InterruptedException
     {
-        indexOnlineMonitor.startSignal.await();
+        if ( random.nextBoolean() )
+        {
+            // 50% of time await the start signal so that updater(s) race as much as possible with the populator.
+            indexOnlineMonitor.startSignal.await();
+        }
         Random random = ThreadLocalRandom.current();
         UpdatesTracker updatesTracker = new UpdatesTracker();
         int offset = 0;
