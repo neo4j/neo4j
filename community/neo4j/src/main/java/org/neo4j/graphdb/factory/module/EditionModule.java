@@ -21,6 +21,8 @@ package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
 import java.time.Clock;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -259,9 +261,18 @@ public abstract class EditionModule
         Function<String,? extends IdGeneratorFactory> factoryProvider = idGeneratorFactoryProvider;
         if ( safeIdBuffering )
         {
-            Function<String, BufferingIdGeneratorFactory> bufferingIdGeneratorFactory =
-                    databaseName -> new BufferingIdGeneratorFactory( idGeneratorFactoryProvider.apply( databaseName ), eligibleForIdReuse,
-                            idTypeConfigurationProvider );
+            Function<String,BufferingIdGeneratorFactory> bufferingIdGeneratorFactory = new Function<String,BufferingIdGeneratorFactory>()
+            {
+                private final Map<String,BufferingIdGeneratorFactory> idGenerators = new HashMap<>();
+
+                @Override
+                public BufferingIdGeneratorFactory apply( String databaseName )
+                {
+                    return idGenerators.computeIfAbsent( databaseName,
+                            s -> new BufferingIdGeneratorFactory( idGeneratorFactoryProvider.apply( databaseName ), eligibleForIdReuse,
+                                    idTypeConfigurationProvider ) );
+                }
+            };
             idControllerFactory = databaseName -> createBufferedIdController( bufferingIdGeneratorFactory.apply( databaseName ), platformModule.jobScheduler );
             factoryProvider = bufferingIdGeneratorFactory;
         }
