@@ -82,8 +82,6 @@ class GenericKeyStateTest
     @Inject
     private static RandomRule random;
 
-    private static final PageCursor cursor = ByteArrayPageCursor.wrap( PageCache.PAGE_SIZE );
-
     @BeforeEach
     public void setupRandomConfig()
     {
@@ -112,6 +110,12 @@ class GenericKeyStateTest
             {
                 return 10;
             }
+
+            @Override
+            public int maxCodePoint()
+            {
+                return RandomValues.MAX_16_BIT_CODE_POINT;
+            }
         } );
         random.reset();
     }
@@ -121,6 +125,7 @@ class GenericKeyStateTest
     void readWhatIsWritten( ValueGenerator valueGenerator )
     {
         // Given
+        PageCursor cursor = newPageCursor();
         GenericKeyState writeState = new GenericKeyState();
         Value value = valueGenerator.next();
         int offset = cursor.getOffset();
@@ -259,6 +264,7 @@ class GenericKeyStateTest
     void mustReportCorrectSize( ValueGenerator valueGenerator )
     {
         // Given
+        PageCursor cursor = newPageCursor();
         Value value = valueGenerator.next();
         GenericKeyState state = new GenericKeyState();
         state.writeValue( value, NEUTRAL );
@@ -531,6 +537,11 @@ class GenericKeyStateTest
         }
         // No previous state
         return to;
+    }
+
+    private PageCursor newPageCursor()
+    {
+        return ByteArrayPageCursor.wrap( PageCache.PAGE_SIZE );
     }
 
     @FunctionalInterface
