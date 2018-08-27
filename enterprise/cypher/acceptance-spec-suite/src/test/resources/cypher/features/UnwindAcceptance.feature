@@ -21,6 +21,8 @@
 # https://neo4j.com/licensing/
 #
 
+#encoding: utf-8
+
 Feature: UnwindAcceptance
 
   Scenario: Flat type support in list literal

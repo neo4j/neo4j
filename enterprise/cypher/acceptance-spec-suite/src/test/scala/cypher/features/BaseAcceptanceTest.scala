@@ -29,7 +29,7 @@ import org.junit.Assert.fail
 import org.junit.jupiter.api.Test
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
+import org.opencypher.tools.tck.api.Scenario
 
 @RunWith(classOf[JUnitPlatform])
 abstract class BaseAcceptanceTest extends BaseFeatureTest {
@@ -42,7 +42,8 @@ abstract class BaseAcceptanceTest extends BaseFeatureTest {
   val featuresURI: URI = getClass.getResource("/cypher/features").toURI
 
   val scenarios: Seq[Scenario] = {
-    val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
+    val all = parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios) //TODO: Change this back to the following line when TCK M12 is released
+    //val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
     filterScenarios(all, featureToRun, scenarioToRun)
   }
 

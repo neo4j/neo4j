@@ -21,6 +21,8 @@
 # https://neo4j.com/licensing/
 #
 
+#encoding: utf-8
+
 Feature: MatchAcceptance
 
   Scenario: Filter on path nodes

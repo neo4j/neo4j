@@ -21,6 +21,8 @@
 # https://neo4j.com/licensing/
 #
 
+#encoding: utf-8
+
 Feature: CaseExpression
 
   Scenario: Case should handle mixed number types

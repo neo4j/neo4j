@@ -26,7 +26,7 @@ import org.junit.Assert.fail
 import org.junit.jupiter.api.Test
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
+import org.opencypher.tools.tck.api.Scenario
 
 @RunWith(classOf[JUnitPlatform])
 abstract class BaseTCKTests extends BaseFeatureTest {
@@ -35,8 +35,8 @@ abstract class BaseTCKTests extends BaseFeatureTest {
   val featureToRun = ""
   val scenarioToRun = ""
 
-  val scenarios: Seq[Scenario] =
-    filterScenarios(CypherTCK.allTckScenarios, featureToRun, scenarioToRun)
+  val scenarios: Seq[Scenario] = filterScenarios(allTckScenarios, featureToRun, scenarioToRun) //TODO: Change this back to the following line when TCK M12 is released
+    // filterScenarios(CypherTCK.allTckScenarios, featureToRun, scenarioToRun)
 
   @Test
   def debugTokensNeedToBeEmpty(): Unit = {
