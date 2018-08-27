@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
-import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, SeekableArgs}
 import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
@@ -29,7 +29,7 @@ import org.opencypher.v9_0.expressions._
 
 object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression, qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
     val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
@@ -54,8 +54,8 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
   }
 
-  override def apply(queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) =
-    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, context).toSeq.flatMap(_.plans))
+  override def apply(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] =
+    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, requiredOrder, context).toSeq.flatMap(_.plans))
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: SeekableArgs, predicates: Seq[Expression], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val (left, right) = relationship.nodes

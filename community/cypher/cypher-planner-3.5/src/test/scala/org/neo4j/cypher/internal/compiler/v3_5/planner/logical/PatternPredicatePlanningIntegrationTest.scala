@@ -33,9 +33,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = (new given {
       cardinality = mapCardinality {
         // expand
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 10
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 => 10
         // argument
-        case RegularPlannerQuery(queryGraph, _, _) if containsArgumentOnly(queryGraph) => 1
+        case RegularPlannerQuery(queryGraph, _, _, _) if containsArgumentOnly(queryGraph) => 1
         case _ => 4000000
       }
     } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._2

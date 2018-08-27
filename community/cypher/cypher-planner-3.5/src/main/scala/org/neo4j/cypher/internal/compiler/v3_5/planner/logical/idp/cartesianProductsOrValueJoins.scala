@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions.{Equals, Expression}
@@ -28,6 +28,7 @@ import org.opencypher.v9_0.expressions.{Equals, Expression}
 trait JoinDisconnectedQueryGraphComponents {
   def apply(componentPlans: Set[PlannedComponent],
             fullQG: QueryGraph,
+            requiredOrder: RequiredOrder,
             context: LogicalPlanningContext,
             solveds: Solveds,
             cardinalities: Cardinalities,
@@ -50,6 +51,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
   def apply(plans: Set[PlannedComponent],
             qg: QueryGraph,
+            requiredOrder: RequiredOrder,
             context: LogicalPlanningContext,
             solveds: Solveds,
             cardinalities: Cardinalities,
@@ -70,7 +72,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     all query parts cross joined together.
      */
     val joins = produceHashJoins(plans, qg, context, solveds, cardinalities, kit, singleComponentPlanner) ++
-      produceNIJVariations(plans, qg, context, solveds, cardinalities, kit, singleComponentPlanner)
+      produceNIJVariations(plans, qg, requiredOrder, context, solveds, cardinalities, kit, singleComponentPlanner)
 
     if (joins.nonEmpty) {
       pickTheBest(plans, kit, joins)
@@ -116,6 +118,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
   private def produceNIJVariations(plans: Set[PlannedComponent],
                                    qg: QueryGraph,
+                                   requiredOrder: RequiredOrder,
                                    context: LogicalPlanningContext,
                                    solveds: Solveds,
                                    cardinalities: Cardinalities,
@@ -127,8 +130,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       t2@PlannedComponent(qgB, planB) <- plans if planA != planB
       predicate <- this.predicatesDependendingOnBothSides(qg.selections.flatPredicates, qgA, qgB)
     } yield {
-      val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, predicate, context, solveds, cardinalities, kit, singleComponentPlanner)
-      val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, predicate, context, solveds, cardinalities, kit, singleComponentPlanner)
+      val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, requiredOrder, predicate, context, solveds, cardinalities, kit, singleComponentPlanner)
+      val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, requiredOrder, predicate, context, solveds, cardinalities, kit, singleComponentPlanner)
 
       nestedIndexJoinAB.map(x => (x, t1 -> t2)) ++ nestedIndexJoinBA.map(x => (x, t1 -> t2))
 
@@ -167,9 +170,13 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       Apply
     LHS  Index Seek
    */
-  private def planNIJ(lhsPlan: LogicalPlan, rhsInputPlan: LogicalPlan,
-                      lhsQG: QueryGraph, rhsQG: QueryGraph,
-                      fullQG: QueryGraph, predicate: Expression,
+  private def planNIJ(lhsPlan: LogicalPlan,
+                      rhsInputPlan: LogicalPlan,
+                      lhsQG: QueryGraph,
+                      rhsQG: QueryGraph,
+                      fullQG: QueryGraph,
+                      requiredOrder: RequiredOrder,
+                      predicate: Expression,
                       context: LogicalPlanningContext,
                       solveds: Solveds,
                       cardinalities: Cardinalities,
@@ -183,7 +190,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
       val ids = solveds.get(rhsInputPlan.id).lastQueryGraph.addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq).addPredicates(predicate)
-      val rhsPlan = singleComponentPlanner.planComponent(ids, context, solveds, cardinalities, kit)
+      val rhsPlan = singleComponentPlanner.planComponent(ids, context, solveds, cardinalities, kit, requiredOrder)
       val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context), fullQG)
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all

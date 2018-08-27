@@ -27,7 +27,7 @@ import org.opencypher.v9_0.ast.{AscSortItem, DescSortItem, SortItem}
 import org.opencypher.v9_0.expressions.{Expression, Variable}
 import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
 
-object sortSkipAndLimit extends PlanAndContextTransformer[PlannerQuery] {
+object sortSkipAndLimit extends PlanAndContextTransformer {
 
   def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = query.horizon match {
     case p: QueryProjection =>

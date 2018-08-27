@@ -23,7 +23,7 @@ import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.allNodesLeafPlanner
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.AllNodesScan
 import org.opencypher.v9_0.expressions.PatternExpression
 
@@ -41,7 +41,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config))
 
     // when
-    val resultPlans = allNodesLeafPlanner(queryGraph, context, solveds, cardinalities)
+    val resultPlans = allNodesLeafPlanner(queryGraph, RequiredOrder.empty, context, solveds, cardinalities)
 
     // then
     resultPlans should equal(Seq(AllNodesScan("n", Set.empty)))

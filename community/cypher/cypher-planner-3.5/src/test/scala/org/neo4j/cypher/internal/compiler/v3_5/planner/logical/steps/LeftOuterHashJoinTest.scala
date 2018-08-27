@@ -70,7 +70,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, idNames = Set(aNode))
-    val plans = leftOuterHashJoin(optionalQg, left, context, solveds, cardinalities)
+    val plans = leftOuterHashJoin(optionalQg, left, RequiredOrder.empty, context, solveds, cardinalities)
 
     plans should equal(Some(LeftOuterHashJoin(Set(aNode), left, innerPlan)))
   }
@@ -99,7 +99,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, Set(aNode))
-    val plan = leftOuterHashJoin(optionalQg, left, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))
+    val plan = leftOuterHashJoin(optionalQg, left, RequiredOrder.empty, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))
 
     plan should equal(LeftOuterHashJoin(Set(aNode), left, innerPlan))
     solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)

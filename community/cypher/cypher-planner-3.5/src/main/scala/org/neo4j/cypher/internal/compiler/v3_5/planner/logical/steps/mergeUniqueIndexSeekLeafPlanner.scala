@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexedProperty, LogicalPlan, QueryExpression}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions.{Expression, LabelToken}
 
@@ -41,8 +41,8 @@ import org.opencypher.v9_0.expressions.{Expression, LabelToken}
  */
 object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
-    val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg, context)
+  override def apply(qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
+    val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg, requiredOrder, context)
     val grouped: Map[String, Set[LeafPlansForVariable]] = resultPlans.groupBy(_.id)
 
     grouped.map {

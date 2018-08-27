@@ -433,13 +433,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
   }
 
   def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: String, labels: List[Option[LabelName]], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularPlannerQuery(query.queryGraph, query.horizon)
+    val solved = RegularPlannerQuery(query.queryGraph, query.requiredOrder, query.horizon)
     annotate(NodeCountFromCountStore(projectedColumn, labels, argumentIds), solved, context)
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: String, startLabel: Option[LabelName],
                                             typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
-    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.horizon)
+    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.requiredOrder, query.horizon)
     annotate(RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds), solved, context)
   }
 
@@ -477,8 +477,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(LimitPlan(inner, count, ties), solved, context)
   }
 
-  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], reportedSortItems: Seq[ast.SortItem], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(reportedSortItems))))
+  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], reportedSortItems: Seq[ast.SortItem], requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(reportedSortItems))).withRequiredOrder(requiredOrder))
     annotate(Sort(inner, sortColumns), solved, context)
   }
 

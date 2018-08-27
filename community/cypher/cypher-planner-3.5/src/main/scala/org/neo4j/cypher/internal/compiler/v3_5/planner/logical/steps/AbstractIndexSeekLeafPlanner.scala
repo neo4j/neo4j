@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.IndexLookupUnfulfillableNotificat
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -47,9 +47,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor]
 
-  override def producePlanFor(predicates: Set[Expression],
-                              qg: QueryGraph,
-                              context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
     implicit val labelPredicateMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
     implicit val semanticTable: SemanticTable = context.semanticTable
     if (labelPredicateMap.isEmpty)
@@ -62,7 +60,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         val idName = name
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
         val nodePredicates = indexCompatibles.filter(p => p.name == name)
-        maybeLeafPlans(name, producePlansForSpecificVariable(idName, nodePredicates, labelPredicates, qg.hints, qg.argumentIds, context))
+        maybeLeafPlans(name, producePlansForSpecificVariable(idName, nodePredicates, labelPredicates, qg.hints, qg.argumentIds, context, requiredOrder))
       }
 
       if (result.isEmpty) {
@@ -73,8 +71,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
   }
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
-    producePlanFor(qg.selections.flatPredicates.toSet, qg, context).toSeq.flatMap(_.plans)
+  override def apply(qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
+    producePlanFor(qg.selections.flatPredicates.toSet, qg, requiredOrder, context).toSeq.flatMap(_.plans)
   }
 
   private def findNonSeekableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] =
@@ -97,7 +95,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   private def producePlansForSpecificVariable(idName: String, indexCompatiblePredicates: Set[IndexCompatiblePredicate],
                                               labelPredicates: Set[HasLabels],
                                               hints: Seq[Hint], argumentIds: Set[String],
-                                              context: LogicalPlanningContext): Set[LogicalPlan] = {
+                                              context: LogicalPlanningContext,
+                                              requiredOrder: RequiredOrder): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
     for (labelPredicate <- labelPredicates;
          labelName <- labelPredicate.labels;

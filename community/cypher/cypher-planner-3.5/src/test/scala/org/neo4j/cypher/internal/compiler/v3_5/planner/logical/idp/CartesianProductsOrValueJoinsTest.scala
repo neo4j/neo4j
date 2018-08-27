@@ -216,17 +216,17 @@ class CartesianProductsOrValueJoinsTest
     new given {
       qg = graph
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
         case _ => 100.0
       }
     }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
-      val kit = ctx.config.toKit(ctx, solveds, cardinalities)
+      val kit = ctx.config.toKit(RequiredOrder.empty, ctx, solveds, cardinalities)
 
       var plans: Set[PlannedComponent] = input(solveds, cardinalities)
       while (plans.size > 1) {
-        plans = cartesianProductsOrValueJoins(plans, cfg.qg, ctx, solveds, cardinalities, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+        plans = cartesianProductsOrValueJoins(plans, cfg.qg, RequiredOrder.empty, ctx, solveds, cardinalities, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
       }
 
       val result = plans.head.plan

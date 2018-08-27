@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_5.{UpdateStrategy, defaultUpdateStrategy}
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
@@ -81,14 +80,14 @@ object QueryPlannerConfiguration {
 }
 
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
-                                     applySelections: PlanTransformer[QueryGraph],
+                                     applySelections: PlanSelector,
                                      optionalSolvers: Seq[OptionalSolver],
                                      pickBestCandidate: CandidateSelectorFactory,
                                      updateStrategy: UpdateStrategy) {
 
-  def toKit(context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): QueryPlannerKit =
+  def toKit(requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): QueryPlannerKit =
     QueryPlannerKit(
-      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, context, solveds, cardinalities),
+      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, requiredOrder, context, solveds, cardinalities),
       pickBest = pickBestCandidate(context, solveds, cardinalities)
     )
 

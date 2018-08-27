@@ -37,11 +37,11 @@ case object PlanEventHorizon
   extends ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
-    val selectedPlan = context.config.applySelections(plan, query.queryGraph, context, solveds, cardinalities)
+    val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.requiredOrder, context, solveds, cardinalities)
 
     val (projectedPlan, contextAfterHorizon) = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, context, solveds, cardinalities)
+        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, query.requiredOrder, context, solveds, cardinalities)
         sortSkipAndLimit(aggregationPlan, query, newContext, solveds, cardinalities)
 
       case queryProjection: RegularQueryProjection =>
@@ -49,18 +49,18 @@ case object PlanEventHorizon
         if (queryProjection.projections.isEmpty && query.tail.isEmpty) {
           (contextAfterSort.logicalPlanProducer.planEmptyProjection(plan, contextAfterSort), contextAfterSort)
         } else {
-          val (newPlan, newContext) = projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, contextAfterSort, solveds, cardinalities)
+          val (newPlan, newContext) = projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, query.requiredOrder, contextAfterSort, solveds, cardinalities)
           (newPlan, newContext)
         }
 
       case queryProjection: DistinctQueryProjection =>
-        val (distinctPlan, newContext) = distinct(selectedPlan, queryProjection, context, solveds, cardinalities)
+        val (distinctPlan, newContext) = distinct(selectedPlan, queryProjection, query.requiredOrder, context, solveds, cardinalities)
         sortSkipAndLimit(distinctPlan, query, newContext, solveds, cardinalities)
 
       case UnwindProjection(variable, expression) =>
         val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(expression, context.semanticTable))
         val newContext = context.withUpdatedSemanticTable(newSemanticTable)
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), context, solveds, cardinalities)
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), query.requiredOrder, context, solveds, cardinalities)
         (newContext.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, newContext), newContext)
 
       case ProcedureCallProjection(call) =>

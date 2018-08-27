@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
-import org.neo4j.cypher.internal.ir.v3_5.QueryProjection
+import org.neo4j.cypher.internal.ir.v3_5.{QueryProjection, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions._
@@ -38,16 +38,18 @@ object projection {
   def withoutPropertiesFromIndex(in: LogicalPlan,
                                  projectionsToPlan: Map[String, Expression],
                                  projectionsToMarkSolved: Map[String, Expression],
+                                 requiredOrder: RequiredOrder,
                                  context: LogicalPlanningContext,
                                  solveds: Solveds,
                                  cardinalities: Cardinalities): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, solveds)
-    createPlan(in, stillToSolveProjection, projectionsToMarkSolved, context, solveds, cardinalities)
+    createPlan(in, stillToSolveProjection, projectionsToMarkSolved, requiredOrder, context, solveds, cardinalities)
   }
 
   def apply(in: LogicalPlan,
             projectionsToPlan: Map[String, Expression],
             projectionsToMarkSolved: Map[String, Expression],
+            requiredOrder: RequiredOrder,
             context: LogicalPlanningContext,
             solveds: Solveds, cardinalities:
             Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
@@ -57,7 +59,7 @@ object projection {
     val (stillToSolveProjectionWithRenames, newSemanticTable) = firstAs[Map[String, Expression]](replacePropertyLookupsWithVariables(in.availableCachedNodeProperties)(stillToSolveProjection, context.semanticTable))
     val newContext = context.withUpdatedSemanticTable(newSemanticTable)
 
-    val finalPlan = createPlan(in, stillToSolveProjectionWithRenames, projectionsToMarkSolved, newContext, solveds, cardinalities)
+    val finalPlan = createPlan(in, stillToSolveProjectionWithRenames, projectionsToMarkSolved, requiredOrder, newContext, solveds, cardinalities)
     (finalPlan, newContext)
   }
 
@@ -80,10 +82,11 @@ object projection {
   private def createPlan(in: LogicalPlan,
                          projectionsToPlan: Map[String, Expression],
                          projectionsToMarkSolved: Map[String, Expression],
+                         requiredOrder: RequiredOrder,
                          context: LogicalPlanningContext,
                          solveds: Solveds,
                          cardinalities: Cardinalities): LogicalPlan = {
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, projectionsToPlan, context, solveds, cardinalities)
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, projectionsToPlan, requiredOrder, context, solveds, cardinalities)
 
     val ids = plan.availableSymbols
 

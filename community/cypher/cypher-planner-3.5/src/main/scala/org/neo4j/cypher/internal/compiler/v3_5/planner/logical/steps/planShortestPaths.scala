@@ -145,7 +145,7 @@ case object planShortestPaths {
     val rhsProjMap = Map(columnName -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, rhsProjMap, context)
     val sortDescription = Seq(Ascending(columnName))
-    val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty, context)
+    val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty, RequiredOrder.empty, context)
     val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
     lpp.planLimit(sorted, SignedDecimalIntegerLiteral("1")(pos), ties, context)
   }

@@ -180,7 +180,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       projection = projection,
       projectionsMap = projectionsMap,
       patternNodesInQG = Set("n"),
-      solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"), DistinctQueryProjection(Map(mSortVar.name -> mSortVar))))
+      solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"), RequiredOrder.empty, DistinctQueryProjection(Map(mSortVar.name -> mSortVar))))
 
     // when
     val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)._1
@@ -217,7 +217,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       projection = projection,
       projectionsMap = grouping,
       patternNodesInQG = Set("n"),
-      solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"), AggregatingQueryProjection(Map(mSortVar.name -> mSortVar), Map(oSortVar.name -> oSortVar))))
+      solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"), RequiredOrder.empty, AggregatingQueryProjection(Map(mSortVar.name -> mSortVar), Map(oSortVar.name -> oSortVar))))
 
     // when
     val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)._1
@@ -262,7 +262,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         sortVariable.name -> sortExpression,
         // and a projection that sort will not take care of
         "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)),
-      solved = RegularPlannerQuery(QueryGraph.empty, RegularQueryProjection(Map(sortVariable.name -> sortExpression))))
+      solved = RegularPlannerQuery(QueryGraph.empty, RequiredOrder.empty, RegularQueryProjection(Map(sortVariable.name -> sortExpression))))
 
     // when
     val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)._1

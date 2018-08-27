@@ -26,9 +26,25 @@ import org.opencypher.v9_0.expressions.{LabelName, Variable}
 import scala.annotation.tailrec
 import scala.collection.GenSeq
 
+/**
+  * A linked list of queries, each made up of, a query graph (MATCH ... WHERE ...), a required order, a horizon (WITH ...) and a pointer to the next query.
+  */
 trait PlannerQuery {
+  /**
+    * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
+    */
   val queryGraph: QueryGraph
+  /**
+    * The required order of a query graph and its horizon. The required order emerges from an ORDER BY or aggregation or distinct.
+    */
+  val requiredOrder: RequiredOrder
+  /**
+    * The WITH/RETURN part of a query
+    */
   val horizon: QueryHorizon
+  /**
+    * Optionally, a next PlannerQuery for everything after the WITH in the current horizon.
+    */
   val tail: Option[PlannerQuery]
 
   def dependencies: Set[String]
@@ -55,6 +71,8 @@ trait PlannerQuery {
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
 
   def withQueryGraph(queryGraph: QueryGraph): PlannerQuery = copy(queryGraph = queryGraph)
+
+  def withRequiredOrder(requiredOrder: RequiredOrder): PlannerQuery = copy(requiredOrder = requiredOrder)
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
@@ -114,6 +132,7 @@ trait PlannerQuery {
 
   // This is here to stop usage of copy from the outside
   protected def copy(queryGraph: QueryGraph = queryGraph,
+                     requiredOrder: RequiredOrder = requiredOrder,
                      horizon: QueryHorizon = horizon,
                      tail: Option[PlannerQuery] = tail): PlannerQuery
 
@@ -177,13 +196,15 @@ object PlannerQuery {
 }
 
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
+                               requiredOrder: RequiredOrder = RequiredOrder.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
                                tail: Option[PlannerQuery] = None) extends PlannerQuery {
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
+                              requiredOrder: RequiredOrder = requiredOrder,
                               horizon: QueryHorizon = horizon,
                               tail: Option[PlannerQuery] = tail) =
-    RegularPlannerQuery(queryGraph, horizon, tail)
+    RegularPlannerQuery(queryGraph, requiredOrder, horizon, tail)
 
   override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 }

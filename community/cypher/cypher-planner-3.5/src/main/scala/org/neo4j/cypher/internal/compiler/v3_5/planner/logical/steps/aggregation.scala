@@ -21,20 +21,20 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
-import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object aggregation {
-  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
+  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
 
     // We want to leverage if we got the value from an index already
     val (aggregationWithRenames, newSemanticTable) = firstAs[AggregatingQueryProjection](replacePropertyLookupsWithVariables(plan.availableCachedNodeProperties)(aggregation, context.semanticTable))
     val newContext = context.withUpdatedSemanticTable(newSemanticTable)
 
     val expressionSolver = PatternExpressionSolver()
-    val (step1, groupingExpressions) = expressionSolver(plan, aggregationWithRenames.groupingExpressions, newContext, solveds, cardinalities)
-    val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregationWithRenames.aggregationExpressions, newContext, solveds, cardinalities)
+    val (step1, groupingExpressions) = expressionSolver(plan, aggregationWithRenames.groupingExpressions, requiredOrder, newContext, solveds, cardinalities)
+    val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregationWithRenames.aggregationExpressions, requiredOrder, newContext, solveds, cardinalities)
 
     val finalPlan = newContext.logicalPlanProducer.planAggregation(
       rewrittenPlan,

@@ -20,21 +20,21 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 import scala.annotation.tailrec
 
 case class Selector(pickBestFactory: CandidateSelectorFactory,
-                    planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanTransformer[QueryGraph] {
-  def apply(input: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+                    planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanSelector {
+  def apply(input: LogicalPlan, queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
     val pickBest = pickBestFactory(context, solveds, cardinalities)
 
     @tailrec
     def selectIt(plan: LogicalPlan): LogicalPlan = {
       val plans = planGenerators.
-        flatMap(generator => generator(plan, queryGraph, context, solveds, cardinalities))
+        flatMap(generator => generator(plan, queryGraph, requiredOrder, context, solveds, cardinalities))
 
       pickBest(plans) match {
         case Some(p) => selectIt(p)

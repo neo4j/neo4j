@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPla
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan, ProduceResult, Projection}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.ast.{ASTAnnotationMap, Hint}
 import org.opencypher.v9_0.expressions._
@@ -99,7 +99,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(context.config).thenReturn(QueryPlannerConfiguration.default)
     when(context.input).thenReturn(QueryGraphSolverInput.empty)
     when(context.strategy).thenReturn(new QueryGraphSolver with PatternExpressionSolving {
-      override def plan(queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+      override def plan(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
         solveds.set(lp.id, plannerQuery)
         cardinalities.set(lp.id, 0.0)
         lp

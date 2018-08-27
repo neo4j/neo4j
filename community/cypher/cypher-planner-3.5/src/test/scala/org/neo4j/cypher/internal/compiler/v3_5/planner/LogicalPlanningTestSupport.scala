@@ -100,7 +100,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.plan(any(), any(), any[Solveds], any[Cardinalities])).thenAnswer(new Answer[LogicalPlan] {
+    when(strategy.plan(any(), any(), any(), any[Solveds], any[Cardinalities])).thenAnswer(new Answer[LogicalPlan] {
       override def answer(invocation: InvocationOnMock): LogicalPlan = {
         val solveds = invocation.getArgument[Solveds](2)
         val cardinalities = invocation.getArgument[Cardinalities](3)
@@ -115,7 +115,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedStrategyWithMultiplePlans(plans: LogicalPlan*): QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
     val planIter = plans.iterator
-    when(strategy.plan(any(), any(), any[Solveds], any[Cardinalities])).thenAnswer(new Answer[LogicalPlan] {
+    when(strategy.plan(any(), any(), any(), any[Solveds], any[Cardinalities])).thenAnswer(new Answer[LogicalPlan] {
       override def answer(invocation: InvocationOnMock): LogicalPlan = {
         val solveds = invocation.getArgument[Solveds](2)
         val cardinalities = invocation.getArgument[Cardinalities](3)
@@ -254,7 +254,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     rewriteEqualityToInPredicate andThen
     CNFNormalizer andThen
     LateAstRewriting andThen
-//    ResolveTokens andThen
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning
     //

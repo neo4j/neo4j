@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener}
-import org.neo4j.cypher.internal.ir.v3_5.{PeriodicCommit, PlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.opencypher.v9_0.frontend.phases.Phase
 import org.opencypher.v9_0.util.Cost
@@ -122,6 +122,6 @@ case object planPart extends ((PlannerQuery, LogicalPlanningContext, Solveds, Ca
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph, ctx, solveds, cardinalities)
+    ctx.strategy.plan(query.queryGraph, query.requiredOrder, ctx, solveds, cardinalities)
   }
 }

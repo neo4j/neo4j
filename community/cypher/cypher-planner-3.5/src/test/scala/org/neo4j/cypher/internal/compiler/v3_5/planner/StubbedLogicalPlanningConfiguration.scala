@@ -79,16 +79,16 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     procedureSignatures += signature
   }
 
-  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = cost.orElse(parent.costModel())
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = cost.orElse(parent.costModel())
 
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
       val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
         case (name: String, cardinality: Cardinality) =>
           semanticTable.resolvedLabelNames(name) -> cardinality
       }
       val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 &&
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 &&
           computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
           computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
       }
@@ -110,7 +110,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     results.headOption
   }
 
-  def graphStatistics: GraphStatistics =
+  override def graphStatistics: GraphStatistics =
     Option(statistics).getOrElse(parent.graphStatistics)
 
 }

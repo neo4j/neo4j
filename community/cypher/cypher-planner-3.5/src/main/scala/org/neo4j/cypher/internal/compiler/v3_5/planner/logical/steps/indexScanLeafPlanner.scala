@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.IndexLookupUnfulfillableNotificat
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -33,18 +33,18 @@ import org.opencypher.v9_0.util.symbols._
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression, qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     val lpp = context.logicalPlanProducer
 
     e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) =>
-        val plans = produce(name, propertyKey.name, qg, prop, CTString, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, context), context)
+        val plans = produce(name, propertyKey.name, qg, requiredOrder, prop, CTString, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) =>
-        val plans = produce(name, propertyKey.name, qg, prop, CTString, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, context), context)
+        val plans = produce(name, propertyKey.name, qg, requiredOrder, prop, CTString, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
@@ -52,7 +52,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         val name = scannable.name
         val propertyKeyName = scannable.propertyKey.name
 
-        val plans = produce(name, propertyKeyName, qg, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, context), context)
+        val plans = produce(name, propertyKeyName, qg, requiredOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       case _ =>
@@ -60,8 +60,8 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
   }
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
-    val resultPlans = qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, context).toSeq.flatMap(_.plans))
+  override def apply(qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
+    val resultPlans = qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, requiredOrder, context).toSeq.flatMap(_.plans))
 
     if (resultPlans.isEmpty) {
       DynamicPropertyNotifier.process(findNonScannableVariables(qg.selections.flatPredicates, context), IndexLookupUnfulfillableNotification, qg, context)
@@ -85,6 +85,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   private def produce(variableName: String,
                       propertyKeyName: String,
                       qg: QueryGraph,
+                      requiredOrder: RequiredOrder,
                       property: LogicalProperty,
                       propertyType: CypherType,
                       predicate: Expression,
@@ -106,7 +107,6 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         }
         // Index scan is always on just one property
         val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
-
         val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
         val labelToken = LabelToken(labelName, labelId)
         val predicates = Seq(predicate, labelPredicate)

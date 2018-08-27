@@ -29,7 +29,7 @@ import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions.LabelName
 import org.opencypher.v9_0.util._
 
-object verifyBestPlan extends PlanTransformer[PlannerQuery] {
+object verifyBestPlan extends PlanTransformer {
   def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
     val constructed = solveds.get(plan.id)
     if (expected != constructed) {

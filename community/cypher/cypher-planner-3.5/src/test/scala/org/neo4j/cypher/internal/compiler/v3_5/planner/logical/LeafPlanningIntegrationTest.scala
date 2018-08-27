@@ -828,12 +828,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase") {
     val config = new given {
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
       knownLabels = Set("A", "B", "C")
@@ -844,12 +844,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase (plan_with_minimum_cardinality_estimates enabled)") {
     val config = new givenPlanWithMinimumCardinalityEnabled {
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
       knownLabels = Set("A", "B", "C")
@@ -860,12 +860,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase with estimates < 1.0") {
     val config = new given {
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 10.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 10.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
       knownLabels = Set("A", "B", "C")
@@ -876,12 +876,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase with estimates < 1.0 (plan_with_minimum_cardinality_estimates enabled)") {
     val config = new givenPlanWithMinimumCardinalityEnabled {
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 10.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 10.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
       knownLabels = Set("A", "B", "C")

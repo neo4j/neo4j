@@ -66,7 +66,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     val semanticPlan = new given {
       cardinality = mapCardinality {
         // expand - cheap
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         // everything else - expensive
         case _ => Double.MaxValue
       }

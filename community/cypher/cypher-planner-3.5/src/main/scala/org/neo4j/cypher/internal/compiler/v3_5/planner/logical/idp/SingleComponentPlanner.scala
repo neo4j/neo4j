@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.leafPlanOptions
-import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph, RequiredOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan}
-import org.opencypher.v9_0.ast.RelationshipStartItem
+import org.opencypher.v9_0.ast.RelationshipHint
 import org.opencypher.v9_0.util.InternalException
 
 /**
@@ -43,8 +43,8 @@ import org.opencypher.v9_0.util.InternalException
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, kit: QueryPlannerKit): LogicalPlan = {
-    val leaves = leafPlanFinder(context.config, qg, context, solveds, cardinalities)
+  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan = {
+    val leaves = leafPlanFinder(context.config, qg, context, requiredOrder, solveds, cardinalities)
 
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
@@ -101,7 +101,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 }
 
 trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, kit: QueryPlannerKit): LogicalPlan
+  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan
 }
 
 
@@ -119,7 +119,7 @@ object SingleComponentPlanner {
         Set(plan)
       case plan if solveds.get(plan.id).lastQueryGraph.allCoveredIds.contains(pattern.name) =>
         Set(planSingleProjectEndpoints(pattern, plan, context))
-      case plan if solveds.get(plan.id).lastQueryGraph.patternNodes.isEmpty && solveds.get(plan.id).lastQueryGraph.hints.exists(_.isInstanceOf[RelationshipStartItem]) =>
+      case plan if solveds.get(plan.id).lastQueryGraph.patternNodes.isEmpty && solveds.get(plan.id).lastQueryGraph.hints.exists(_.isInstanceOf[RelationshipHint]) =>
         Set(context.logicalPlanProducer.planEndpointProjection(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern, context))
       case plan =>
         val (start, end) = pattern.nodes

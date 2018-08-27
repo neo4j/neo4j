@@ -61,7 +61,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     )
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg, context, solveds, cardinalities)
+    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context, solveds, cardinalities)
 
     // then
     resultPlans should equal(Seq(
@@ -95,7 +95,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     )
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg, context, solveds, cardinalities)
+    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context, solveds, cardinalities)
 
     // then
     resultPlans should equal(
