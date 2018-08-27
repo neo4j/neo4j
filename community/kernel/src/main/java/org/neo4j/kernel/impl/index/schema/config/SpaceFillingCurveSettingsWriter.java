@@ -21,9 +21,15 @@ package org.neo4j.kernel.impl.index.schema.config;
 
 import java.util.function.Consumer;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
+/**
+ * {@link GBPTree} header writer for {@link SpaceFillingCurveSettings}.
+ *
+ * @see SpaceFillingCurveSettingsReader
+ */
 public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache settings;
@@ -33,6 +39,13 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
         this.settings = settings;
     }
 
+    /**
+     * Given the {@link PageCursor} goes through all {@link SpaceFillingCurveSettings} that are in use in specific index.
+     * The internal {@link IndexSpecificSpaceFillingCurveSettingsCache} provides those settings, which have been collected
+     * from geometry values from updates.
+     *
+     * @param cursor {@link PageCursor} to write index-specific {@link SpaceFillingCurveSettings} into.
+     */
     @Override
     public void accept( PageCursor cursor )
     {
@@ -47,9 +60,14 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
             @Override
             public void visit( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
             {
-                cursor.putInt( crs.getTable().getTableId() );
+                // For tableId+code the native layout is even stricter here, but it'd add unnecessary complexity to shave off a couple of more bits
+                int tableId = crs.getTable().getTableId();
+                if ( (tableId & ~0xFF) != 0 )
+                {
+                    throw new IllegalArgumentException( "Invalid table id " + tableId );
+                }
+                cursor.putByte( (byte) tableId );
                 cursor.putInt( crs.getCode() );
-
                 cursor.putInt( settings.maxLevels );
                 cursor.putInt( settings.dimensions );
                 double[] min = settings.extents.getMin();

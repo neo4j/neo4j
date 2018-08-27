@@ -35,6 +35,11 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 public class IndexSpecificSpaceFillingCurveSettingsCache
 {
     private final ConfiguredSpaceFillingCurveSettingsCache globalConfigCache;
+    /**
+     * Map of settings that are specific to this index, i.e. where there is or have been at least one value of in the index.
+     * Modifications of this map happen by a single thread at a time, due to index updates being applied using work-sync,
+     * but there can be concurrent readers at any point.
+     */
     private final ConcurrentMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache = new ConcurrentHashMap<>();
 
     public IndexSpecificSpaceFillingCurveSettingsCache(
@@ -70,7 +75,7 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
         }
 
         // Global config
-        SpaceFillingCurveSettings configuredSetting = fromConfig( crs );
+        SpaceFillingCurveSettings configuredSetting = globalConfigCache.forCRS( crs );
         if ( assignToIndexIfNotYetAssigned )
         {
             specificIndexConfigCache.put( crs, configuredSetting );
@@ -85,18 +90,6 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
     {
         visitor.count( specificIndexConfigCache.size() );
         specificIndexConfigCache.forEach( (crs, settings) -> visitor.visit( crs, settings ) );
-    }
-
-    private SpaceFillingCurveSettings fromConfig( CoordinateReferenceSystem crs )
-    {
-        SpaceFillingCurveSettings global = globalConfigCache.forCRS( crs );
-        if ( global != null )
-        {
-            return global;
-        }
-
-        // Fall back to creating one (TODO cache this?)
-        return SpaceFillingCurveSettingsFactory.fromConfig( globalConfigCache.getMaxBits(), new EnvelopeSettings( crs ) );
     }
 
     public interface SettingVisitor

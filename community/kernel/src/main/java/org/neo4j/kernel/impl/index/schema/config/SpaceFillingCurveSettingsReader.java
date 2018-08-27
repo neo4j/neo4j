@@ -23,9 +23,15 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.neo4j.gis.spatial.index.Envelope;
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
+/**
+ * {@link GBPTree} header reader for reading {@link SpaceFillingCurveSettings}.
+ *
+ * @see SpaceFillingCurveSettingsWriter
+ */
 public class SpaceFillingCurveSettingsReader implements Header.Reader
 {
     private final Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings;
@@ -47,7 +53,7 @@ public class SpaceFillingCurveSettingsReader implements Header.Reader
 
     private void readNext( ByteBuffer headerBytes )
     {
-        int tableId = headerBytes.getInt();
+        int tableId = headerBytes.get() & 0xFF;
         int code = headerBytes.getInt();
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
 
