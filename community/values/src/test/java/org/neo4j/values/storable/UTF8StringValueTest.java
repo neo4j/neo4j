@@ -107,16 +107,25 @@ class UTF8StringValueTest
         {
             for ( String string2 : STRINGS )
             {
-
-                int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
-                int y = utf8Value( string1.getBytes( UTF_8 ) ).compareTo( stringValue( string2 ) );
-                int z = utf8Value( string1.getBytes( UTF_8 ) )
-                         .compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
-
-                assertThat( Math.signum( x ), equalTo( Math.signum( y ) ) );
-                assertThat( Math.signum( x ), equalTo( Math.signum( z ) ) );
+                assertCompareTo( string1, string2 );
             }
         }
+    }
+
+    public static void assertCompareTo( String string1, String string2 )
+    {
+        TextValue textValue1 = stringValue( string1 );
+        TextValue textValue2 = stringValue( string2 );
+        TextValue utf8Value1 = utf8Value( string1.getBytes( UTF_8 ) );
+        TextValue utf8Value2 = utf8Value( string2.getBytes( UTF_8 ) );
+        int a = textValue1.compareTo( textValue2 );
+        int x = textValue1.compareTo( utf8Value2 );
+        int y = utf8Value1.compareTo( textValue2 );
+        int z = utf8Value1.compareTo( utf8Value2 );
+
+        assertThat( Math.signum( a ), equalTo( Math.signum( x ) ) );
+        assertThat( Math.signum( a ), equalTo( Math.signum( y ) ) );
+        assertThat( Math.signum( a ), equalTo( Math.signum( z ) ) );
     }
 
     @Test

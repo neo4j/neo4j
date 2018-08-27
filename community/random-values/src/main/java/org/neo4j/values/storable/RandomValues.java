@@ -93,6 +93,8 @@ public class RandomValues
         int arrayMinLength();
 
         int arrayMaxLength();
+
+        int maxCodePoint();
     }
 
     public static class Default implements Configuration
@@ -120,8 +122,15 @@ public class RandomValues
         {
             return 10;
         }
+
+        @Override
+        public int maxCodePoint()
+        {
+            return Character.MAX_CODE_POINT;
+        }
     }
 
+    public static final int MAX_16_BIT_CODE_POINT = Character.MIN_SUPPLEMENTARY_CODE_POINT - 1;
     public static Configuration DEFAULT_CONFIGURATION = new Default();
     private static Types[] TYPES = Types.values();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
@@ -619,27 +628,30 @@ public class RandomValues
 
         for ( int i = 0; i < length; i++ )
         {
-            boolean validCodePoint = false;
-
-            //TODO it is a bit inefficient to generate integer and then retry if we end up in an invalid range
-            //instead we could always generate values in a valid range, however there are a lot of ranges with holes
-            //so the code will probably become a bit unwieldly
-            while ( !validCodePoint )
-            {
-                int codePoint = intBetween( Character.MIN_CODE_POINT, Character.MAX_CODE_POINT );
-                switch ( Character.getType( codePoint ) )
-                {
-                case Character.UNASSIGNED:
-                case Character.PRIVATE_USE:
-                case Character.SURROGATE:
-                    continue;
-                default:
-                    builder.addCodePoint( codePoint );
-                    validCodePoint = true;
-                }
-            }
+            builder.addCodePoint( nextValidCodePoint() );
         }
         return builder.build();
+    }
+
+    /**
+     * Generate next code point that is valid for composition of a string.
+     * Additional limitation on code point range is given by configuration.
+     *
+     * @return A pseudorandom valid code point
+     */
+    private int nextValidCodePoint()
+    {
+        int codePoint;
+        int type;
+        do
+        {
+            codePoint = intBetween( Character.MIN_CODE_POINT, configuration.maxCodePoint() );
+            type = Character.getType( codePoint );
+        }
+        while ( type == Character.UNASSIGNED ||
+                type == Character.PRIVATE_USE ||
+                type == Character.SURROGATE );
+        return codePoint;
     }
 
     /**
@@ -1496,7 +1508,7 @@ public class RandomValues
      * @param maxLength the maximum length of the array
      * @return the next pseudorandom {@link TextArray}.
      */
-    public TextArray nextStringArray( int minLength, int maxLength )
+    private TextArray nextStringArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         String[] strings = new String[length];

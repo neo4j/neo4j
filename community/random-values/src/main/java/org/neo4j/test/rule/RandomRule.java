@@ -199,6 +199,16 @@ public class RandomRule implements TestRule
         return nextAlphaNumericTextValue().stringValue();
     }
 
+    public String nextAsciiString()
+    {
+        return nextAsciiTextValue().stringValue();
+    }
+
+    private TextValue nextAsciiTextValue()
+    {
+        return randoms.nextAsciiTextValue();
+    }
+
     public TextValue nextAlphaNumericTextValue( )
     {
         return randoms.nextAlphaNumericTextValue();
