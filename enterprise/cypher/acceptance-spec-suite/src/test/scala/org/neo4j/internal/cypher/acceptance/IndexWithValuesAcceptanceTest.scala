@@ -221,4 +221,35 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 42)))
   }
 
+  test("should not get confused by variable named as index-backed property I") {
+
+    val query =
+      """MATCH (n:Awesome) WHERE n.prop1 = 42
+        |WITH n.prop1 AS projected, 'Whoops!' AS `n.prop1`, n
+        |RETURN n.prop1, projected""".stripMargin
+
+    val result = executeWith(Configs.All, query)
+
+    result.executionPlanDescription() should
+      includeSomewhere.aPlan("NodeIndexSeek")
+        .withExactVariables("n", "n.prop1")
+
+    result.toList should equal(List(Map("n.prop1" -> 42, "projected" -> 42)))
+  }
+
+  test("should not get confused by variable named as index-backed property II") {
+
+    val query =
+      """WITH 'Whoops!' AS `n.prop1`
+        |MATCH (n:Awesome) WHERE n.prop1 = 42
+        |RETURN n.prop1, `n.prop1` AS trap""".stripMargin
+
+    val result = executeWith(Configs.All, query)
+
+    result.executionPlanDescription() should
+      includeSomewhere.aPlan("NodeIndexSeek")
+        .containingVariables("n", "n.prop1")
+
+    result.toList should equal(List(Map("n.prop1" -> 42, "trap" -> "Whoops!")))
+  }
 }
