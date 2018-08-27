@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4,
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexedProperty, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5, UserFunctionSignature}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexedProperty, ProcedureAccessMode, ProvidedOrder, QualifiedName, LogicalPlan => LogicalPlanv3_5, UserFunctionSignature}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
 import org.opencypher.v9_0.expressions.{PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.opencypher.v9_0.util.Rewritable.RewritableAny
@@ -161,7 +161,8 @@ object LogicalPlanConverter {
             children(1).asInstanceOf[expressionsv3_5.LabelToken],
             IndexedProperty(children(2).asInstanceOf[expressionsv3_5.PropertyKeyToken], DoNotGetValue),
             children(3).asInstanceOf[Expressionv3_5],
-            children(4).asInstanceOf[Set[String]]
+            children(4).asInstanceOf[Set[String]],
+            ProvidedOrder.empty
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.NodeIndexEndsWithScan, children: Seq[AnyRef]) =>
@@ -170,7 +171,8 @@ object LogicalPlanConverter {
             children(1).asInstanceOf[expressionsv3_5.LabelToken],
             IndexedProperty(children(2).asInstanceOf[expressionsv3_5.PropertyKeyToken], DoNotGetValue),
             children(3).asInstanceOf[Expressionv3_5],
-            children(4).asInstanceOf[Set[String]]
+            children(4).asInstanceOf[Set[String]],
+            ProvidedOrder.empty
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.NodeIndexScan, children: Seq[AnyRef]) =>
@@ -178,7 +180,8 @@ object LogicalPlanConverter {
             children(0).asInstanceOf[String],
             children(1).asInstanceOf[expressionsv3_5.LabelToken],
             IndexedProperty(children(2).asInstanceOf[expressionsv3_5.PropertyKeyToken], DoNotGetValue),
-            children(3).asInstanceOf[Set[String]]
+            children(3).asInstanceOf[Set[String]],
+            ProvidedOrder.empty
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.NodeIndexSeek, children: Seq[AnyRef]) =>
@@ -187,7 +190,8 @@ object LogicalPlanConverter {
             children(1).asInstanceOf[expressionsv3_5.LabelToken],
             children(2).asInstanceOf[Seq[expressionsv3_5.PropertyKeyToken]].map(IndexedProperty(_, DoNotGetValue)),
             children(3).asInstanceOf[plansv3_5.QueryExpression[expressionsv3_5.Expression]],
-            children(4).asInstanceOf[Set[String]]
+            children(4).asInstanceOf[Set[String]],
+            ProvidedOrder.empty
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.NodeUniqueIndexSeek, children: Seq[AnyRef]) =>
@@ -196,7 +200,8 @@ object LogicalPlanConverter {
             children(1).asInstanceOf[expressionsv3_5.LabelToken],
             children(2).asInstanceOf[Seq[expressionsv3_5.PropertyKeyToken]].map(IndexedProperty(_, DoNotGetValue)),
             children(3).asInstanceOf[plansv3_5.QueryExpression[expressionsv3_5.Expression]],
-            children(4).asInstanceOf[Set[String]]
+            children(4).asInstanceOf[Set[String]],
+            ProvidedOrder.empty
           )(ids.convertId(plan))
 
           // Fallthrough for all plans

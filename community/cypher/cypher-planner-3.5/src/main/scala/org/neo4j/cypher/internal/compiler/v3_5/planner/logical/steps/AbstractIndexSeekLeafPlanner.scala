@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlansForVariable.maybeLeafPlans
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
@@ -42,6 +43,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
+                              providedOrder: ProvidedOrder,
                               context: LogicalPlanningContext)
                              (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan
 
@@ -102,9 +104,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          labelName <- labelPredicate.labels;
          labelId: LabelId <- semanticTable.id(labelName).toSeq;
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
-         (predicates, canGetValues) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates))
+         (predicates, canGetValues, orderBy) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, requiredOrder))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, canGetValues, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, canGetValues, orderBy, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -115,6 +117,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 labelId: LabelId,
                                 indexCompatiblePredicates: Seq[IndexCompatiblePredicate],
                                 canGetValues: Seq[GetValueFromIndexBehavior],
+                                providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext,
                                 semanticTable: SemanticTable): LogicalPlan = {
     val hint = {
@@ -132,7 +135,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), properties, queryExpression, hint, argumentIds, context)
+      constructPlan(idName, LabelToken(labelName, labelId), properties, queryExpression, hint, argumentIds, providedOrder, context)
 
     val solvedPredicates = indexCompatiblePredicates.filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
     val predicatesForCardinalityEstimation = indexCompatiblePredicates.map(p => p.propertyPredicate) :+ labelPredicate
@@ -202,8 +205,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     * Together with the matching IndexCompatiblePredicates it also returns the GetValueFromIndexBehavior for each property. The tuple
     * contains two lists of the same size, which is indexDescriptor.properties.length
     */
-  private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate])
-                                (implicit semanticTable: SemanticTable): Option[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior])] = {
+  private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate], requiredOrder: RequiredOrder)
+                                (implicit semanticTable: SemanticTable): Option[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder)] = {
     val maybeMatchingPredicates = indexDescriptor.properties.foldLeft(Option(Seq.empty[IndexCompatiblePredicate])) {
       case (None, _) => None
       case (Some(acc), propertyKeyId) =>
@@ -217,15 +220,23 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       .filter(isValidPredicateCombination)
       .map { matchingPredicates =>
         val types = matchingPredicates.map(mp => mp.propertyType)
-        // We have to ask the index for all types as a Seq, even if we might override some values of the result
-        val behaviorFromIndex = indexDescriptor.valueCapability(types)
-        // We override the index behavior for exact predicates
-        val finalBehaviors = behaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
+
+        // Ask the index for its value capabilities for the types of all properties.
+        // We might override some of these later if they value is known in an equality predicate
+        val propertyBehaviorFromIndex = indexDescriptor.valueCapability(types)
+
+        // Combine plannables with their available properties
+        val propertyBehaviours = propertyBehaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
           case (_, true) => CanGetValue
           case (behavior, _) => behavior
         }
 
-        (matchingPredicates, finalBehaviors)
+        // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
+        val indexNamesAndTypes = matchingPredicates.map(mp => s"${mp.name}.${mp.propertyKeyName.name}").zip(types)
+        val orderBy = ResultOrdering.withIndexOrderCapability(requiredOrder, indexNamesAndTypes, indexDescriptor.orderCapability)
+
+        // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
+        (matchingPredicates, propertyBehaviours, orderBy)
       }
   }
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
-import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexedProperty, LogicalPlan, QueryExpression}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.UsingIndexHint
 import org.opencypher.v9_0.expressions.{Expression, LabelToken}
 
@@ -32,9 +32,10 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
+                              providedOrder: ProvidedOrder,
                               context: LogicalPlanningContext)
                              (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, properties, valueExpr, solvedPredicates, hint, argumentIds, context)
+      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, properties, valueExpr, solvedPredicates, hint, argumentIds, providedOrder, context)
 
   override def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)

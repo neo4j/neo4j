@@ -29,11 +29,12 @@ case class NodeIndexSeek(idName: String,
                          label: LabelToken,
                          properties: Seq[IndexedProperty],
                          valueExpr: QueryExpression[Expression],
-                         argumentIds: Set[String])
+                         argumentIds: Set[String],
+                         override val providedOrder: ProvidedOrder)
                         (implicit idGen: IdGen) extends IndexSeekLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
   override def copyWithoutGettingValues: NodeIndexSeek =
-    NodeIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds)(SameId(this.id))
+    NodeIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, providedOrder)(SameId(this.id))
 }

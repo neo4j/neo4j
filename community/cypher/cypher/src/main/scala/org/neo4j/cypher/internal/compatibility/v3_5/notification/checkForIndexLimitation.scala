@@ -30,13 +30,13 @@ case class checkForIndexLimitation(planContext: PlanContext) extends Notificatio
   def apply(plan: LogicalPlan): Set[InternalNotification] = {
 
     plan.treeFold[Set[InternalNotification]](Set.empty) {
-      case NodeIndexContainsScan(_, label, property, _, _) =>
+      case NodeIndexContainsScan(_, label, property, _, _, _) =>
         acc =>
           val notifications = getLimitations(label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForConstainsQueryNotification(label.name, Seq(property.propertyKeyToken.name))
           }
           (acc ++ notifications, None)
-      case NodeIndexEndsWithScan(_, label, property, _, _) =>
+      case NodeIndexEndsWithScan(_, label, property, _, _, _) =>
         acc =>
           val notifications = getLimitations(label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForEndsWithQueryNotification(label.name, Seq(property.propertyKeyToken.name))

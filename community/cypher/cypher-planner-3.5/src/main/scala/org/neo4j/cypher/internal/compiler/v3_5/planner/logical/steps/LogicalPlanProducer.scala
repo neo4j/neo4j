@@ -206,6 +206,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
                         solvedPredicatesForCardinalityEstimation: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[String],
+                        providedOrder: ProvidedOrder,
                         context: LogicalPlanningContext): LogicalPlan = {
     val queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -216,7 +217,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     val solved = RegularPlannerQuery(queryGraph = queryGraph)
     val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
 
-    val plan = NodeIndexSeek(idName, label, properties, valueExpr, argumentIds)
+    val plan = NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, providedOrder)
     val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
@@ -229,6 +230,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[String],
+                        providedOrder: ProvidedOrder,
                         context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -236,7 +238,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexScan(idName, label, property, argumentIds), solved, context)
+    annotate(NodeIndexScan(idName, label, property, argumentIds, providedOrder), solved, context)
   }
 
   def planNodeIndexContainsScan(idName: String,
@@ -246,6 +248,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
+                                providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -253,7 +256,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexContainsScan(idName, label, property, valueExpr, argumentIds), solved, context)
+    annotate(NodeIndexContainsScan(idName, label, property, valueExpr, argumentIds, providedOrder), solved, context)
   }
 
   def planNodeIndexEndsWithScan(idName: String,
@@ -263,6 +266,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
+                                providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -270,7 +274,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexEndsWithScan(idName, label, property, valueExpr, argumentIds), solved, context)
+    annotate(NodeIndexEndsWithScan(idName, label, property, valueExpr, argumentIds, providedOrder), solved, context)
   }
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
@@ -293,6 +297,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
                               solvedPredicates: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
                               argumentIds: Set[String],
+                              providedOrder: ProvidedOrder,
                               context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -300,7 +305,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds), solved, context)
+    annotate(NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, providedOrder), solved, context)
   }
 
   def planAssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -421,6 +426,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
   def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     annotate(Projection(inner, expressions), solved, context)
+  }
+
+  /**
+    * The only purpose of this method is to set the solved correctly for something that is already sorted.
+    */
+  def updateSolvedForSortedItems(inner: LogicalPlan, items: Seq[ast.SortItem], requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))).withRequiredOrder(requiredOrder))
+    annotate(inner.copyPlanWithIdGen(idGen), solved, context)
   }
 
   def planRollup(lhs: LogicalPlan,

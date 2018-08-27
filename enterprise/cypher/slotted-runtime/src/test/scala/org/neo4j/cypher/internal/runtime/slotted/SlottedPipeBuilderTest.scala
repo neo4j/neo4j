@@ -529,7 +529,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val lhs = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x))
+    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x), ProvidedOrder.empty)
     val apply = Apply(lhs, rhs)
 
     // when
@@ -701,7 +701,8 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       "n",
       LabelToken("Awesome", LabelId(0)),
       IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-      Set.empty)
+      Set.empty,
+      ProvidedOrder.empty)
 
     // when
     val pipe = build(leaf)
@@ -720,7 +721,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val seek = NodeUniqueIndexSeek(z, label, Seq.empty, seekExpression, Set(x))
+    val seek = NodeUniqueIndexSeek(z, label, Seq.empty, seekExpression, Set(x), ProvidedOrder.empty)
 
     // when
     val pipe = build(seek)

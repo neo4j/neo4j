@@ -38,30 +38,30 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
     LabelToken("Awesome", LabelId(0)),
     Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
     SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-    Set.empty)
+    Set.empty, ProvidedOrder.empty)
   val uniqueIndexSeek: IndexOperator = getValue => NodeUniqueIndexSeek(
     "n",
     LabelToken("Awesome", LabelId(0)),
     Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
     SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-    Set.empty)
+    Set.empty, ProvidedOrder.empty)
   val indexContainsScan: IndexOperator = getValue => NodeIndexContainsScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
     IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     StringLiteral("foo")(pos),
-    Set.empty)
+    Set.empty, ProvidedOrder.empty)
   val indexEndsWithScan: IndexOperator = getValue => NodeIndexEndsWithScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
     IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
     StringLiteral("foo")(pos),
-    Set.empty)
+    Set.empty, ProvidedOrder.empty)
   val indexScan: IndexOperator = getValue => NodeIndexScan(
     "n",
     LabelToken("Awesome", LabelId(0)),
     IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
-    Set.empty)
+    Set.empty, ProvidedOrder.empty)
 
   val expectedProjections = Map("n.prop" -> prop("n", "prop"))
 

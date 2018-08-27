@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4, 
 import org.neo4j.cypher.internal.util.{v3_4 => utilv3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ErrorPlan, ProcedureCall}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ErrorPlan, ProcedureCall, ProvidedOrder}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
 import org.opencypher.v9_0.expressions.{PathExpression, SemanticDirection}
 import org.opencypher.v9_0.util.attribution.{SequentialIdGen => SequentialIdGenv3_5}
@@ -315,7 +315,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val n3_5 = plansv3_5.NodeIndexSeek("a",
       expressionsv3_5.LabelToken("b", utilv3_5.LabelId(2)),
       Seq(plansv3_5.IndexedProperty(expressionsv3_5.PropertyKeyToken("c", utilv3_5.PropertyKeyId(3)), plansv3_5.DoNotGetValue)),
-      plansv3_5.SingleQueryExpression(var3_5), Set.empty)
+      plansv3_5.SingleQueryExpression(var3_5), Set.empty, ProvidedOrder.empty)
 
     convert[ErrorPlan](n3_4) should be(n3_5)
   }

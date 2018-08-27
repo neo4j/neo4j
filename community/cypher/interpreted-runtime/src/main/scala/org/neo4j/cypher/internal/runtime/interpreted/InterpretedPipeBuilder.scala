@@ -44,7 +44,7 @@ import org.opencypher.v9_0.util.{Eagerly, InternalException}
 case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
                                   readOnly: Boolean,
                                   expressionConverters: ExpressionConverters,
-                                  rewriteAstExpression: (ASTExpression) => ASTExpression,
+                                  rewriteAstExpression: ASTExpression => ASTExpression,
                                   tokenContext: TokenContext)
                                  (implicit semanticTable: SemanticTable) extends PipeBuilder {
 
@@ -81,21 +81,21 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case UndirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
         UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, relIdExpr), toNode, fromNode)(id = id)
 
-      case NodeIndexSeek(ident, label, properties, valueExpr, _) =>
+      case NodeIndexSeek(ident, label, properties, valueExpr, _, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
-      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _) =>
+      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
-      case NodeIndexScan(ident, label, property, _) =>
+      case NodeIndexScan(ident, label, property, _, _) =>
         NodeIndexScanPipe(ident, label, property)(id = id)
 
-      case NodeIndexContainsScan(ident, label, property, valueExpr, _) =>
+      case NodeIndexContainsScan(ident, label, property, valueExpr, _, _) =>
         NodeIndexContainsScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
 
-      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _) =>
+      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, _) =>
         NodeIndexEndsWithScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
     }
   }

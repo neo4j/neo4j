@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlansForVariable.maybeLeafPlans
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
@@ -80,7 +81,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         None
     }.toSet
 
-  type PlanProducer = (String, LabelToken, IndexedProperty, Seq[Expression], Option[UsingIndexHint], Set[String]) => LogicalPlan
+  type PlanProducer = (String, LabelToken, IndexedProperty, Seq[Expression], Option[UsingIndexHint], Set[String], ProvidedOrder) => LogicalPlan
 
   private def produce(variableName: String,
                       propertyKeyName: String,
@@ -108,9 +109,12 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         // Index scan is always on just one property
         val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
         val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
+        val orderColumnName =  s"$variableName.${property.propertyKey.name}"
+        val providedOrder = ResultOrdering.withIndexOrderCapability(requiredOrder, Seq((orderColumnName, propertyType)), indexDescriptor.orderCapability)
+
         val labelToken = LabelToken(labelName, labelId)
         val predicates = Seq(predicate, labelPredicate)
-        planProducer(idName, labelToken, indexProperty, predicates, hint, qg.argumentIds)
+        planProducer(idName, labelToken, indexProperty, predicates, hint, qg.argumentIds, providedOrder)
       }
   }
 }

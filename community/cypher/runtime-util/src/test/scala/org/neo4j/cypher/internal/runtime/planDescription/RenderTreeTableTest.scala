@@ -464,7 +464,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       LabelToken("Person", LabelId(0)),
       Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0)), DoNotGetValue)),
       rangeQuery,
-      Set.empty)(idGen)
+      Set.empty,
+      ProvidedOrder.empty)(idGen)
     val cardinalities = new Cardinalities
     cardinalities.set(seekPlan.id, 1.0)
     cardinalities.set(argument.id, 1.0)
@@ -489,7 +490,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       LabelToken("Person", LabelId(0)),
       Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0)), DoNotGetValue)),
       rangeQuery,
-      Set.empty)(idGen)
+      Set.empty,
+      ProvidedOrder.empty)(idGen)
     val cardinalities = new Cardinalities
     cardinalities.set(seekPlan.id, 1.0)
     cardinalities.set(argument.id, 1.0)

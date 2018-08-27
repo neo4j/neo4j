@@ -32,7 +32,8 @@ case class NodeIndexEndsWithScan(idName: String,
                                  label: LabelToken,
                                  property: IndexedProperty,
                                  valueExpr: Expression,
-                                 argumentIds: Set[String])
+                                 argumentIds: Set[String],
+                                 override val providedOrder: ProvidedOrder)
                                 (implicit idGen: IdGen)
   extends IndexLeafPlan(idGen) {
 
@@ -43,5 +44,5 @@ case class NodeIndexEndsWithScan(idName: String,
   override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = property.asAvailablePropertyMap(idName)
 
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
-    NodeIndexEndsWithScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds)(SameId(this.id))
+    NodeIndexEndsWithScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, providedOrder)(SameId(this.id))
 }
