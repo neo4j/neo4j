@@ -69,7 +69,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected List<Long> query( IndexQuery... predicates ) throws Exception
     {
         try ( IndexReader reader = accessor.newReader();
-              PrimitiveLongResourceIterator unfilteredResults = reader.query( predicates ))
+              PrimitiveLongResourceIterator unfilteredResults = reader.query( predicates ) )
         {
             List<Long> list = new LinkedList<>();
             while ( unfilteredResults.hasNext() )

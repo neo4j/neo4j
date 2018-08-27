@@ -141,7 +141,7 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
     public void visitIndexSpecificSettings( SettingVisitor visitor )
     {
         visitor.count( specificIndexConfigCache.size() );
-        specificIndexConfigCache.forEach( (crs, settings) -> visitor.visit( crs, settings ) );
+        specificIndexConfigCache.forEach( ( crs, settings ) -> visitor.visit( crs, settings ) );
     }
 
     public interface SettingVisitor
