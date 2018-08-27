@@ -27,6 +27,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
+import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter.VERSION;
+
 /**
  * {@link GBPTree} header reader for reading {@link SpaceFillingCurveSettings}.
  *
@@ -44,6 +46,12 @@ public class SpaceFillingCurveSettingsReader implements Header.Reader
     @Override
     public void read( ByteBuffer headerBytes )
     {
+        byte version = headerBytes.get();
+        if ( version != VERSION )
+        {
+            throw new UnsupportedOperationException( "Invalid crs settings header version " + version + ", was expecting " + VERSION );
+        }
+
         int count = headerBytes.getInt();
         for ( int i = 0; i < count; i++ )
         {

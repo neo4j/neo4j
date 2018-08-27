@@ -33,6 +33,8 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
 {
+    static final byte VERSION = 0;
+
     /**
      * Biggest theoretical size of a stored setting.
      */
@@ -60,6 +62,7 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
     @Override
     public void accept( PageCursor cursor )
     {
+        cursor.putByte( VERSION );
         settings.visitIndexSpecificSettings( new IndexSpecificSpaceFillingCurveSettingsCache.SettingVisitor()
         {
             @Override
@@ -104,6 +107,6 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
      */
     public static int maxNumberOfSettings( int pageSize )
     {
-        return (pageSize - Header.OVERHEAD) / WORST_CASE_SETTINGS_SIZE;
+        return (pageSize - Header.OVERHEAD - Long.BYTES/*some settings count/version overhead*/) / WORST_CASE_SETTINGS_SIZE;
     }
 }
