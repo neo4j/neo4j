@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{AstRewritingTestSupport, LogicalPlanConstructionTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
 import org.opencypher.v9_0.ast.Query
 import org.opencypher.v9_0.frontend.phases.rewriteEqualityToInPredicate
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -73,7 +74,7 @@ class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingT
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val input = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(original))
+    val input = LogicalPlanState(null, null, null, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), Some(original))
     val result = rewriteEqualityToInPredicate.transform(input, ContextHelper.create())
 
     result.statement should equal(expected)

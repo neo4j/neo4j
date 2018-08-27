@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.opencypher.v9_0.util.inSequence
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.opencypher.v9_0.rewriting.rewriters._
+import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanningAttributes}
+import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticChecker, SemanticTable}
 import org.opencypher.v9_0.ast.{Query, Statement}
 import org.opencypher.v9_0.frontend.phases.{CNFNormalizer, LateAstRewriting, Namespacer, rewriteEqualityToInPredicate}
-import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticChecker, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
+import org.opencypher.v9_0.rewriting.rewriters._
+import org.opencypher.v9_0.util.inSequence
 import org.scalatest.mock.MockitoSugar
 
 trait QueryGraphProducer extends MockitoSugar {
@@ -48,7 +48,7 @@ trait QueryGraphProducer extends MockitoSugar {
     onError(errors)
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
-    val state = LogicalPlanState(query, None, IDPPlannerName, new StubSolveds, new StubCardinalities, Some(firstRewriteStep), Some(semanticState))
+    val state = LogicalPlanState(query, None, IDPPlannerName, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create(logicalPlanIdGen = idGen)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 

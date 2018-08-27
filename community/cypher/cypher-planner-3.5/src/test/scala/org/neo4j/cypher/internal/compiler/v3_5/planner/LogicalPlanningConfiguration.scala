@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph}
-import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexOrderCapability}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProcedureSignature}
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions.Expression
@@ -41,6 +41,7 @@ trait LogicalPlanningConfiguration {
   def uniqueIndexes: Set[(String, Seq[String])]
   // A subset of indexes and uniqueIndexes
   def indexesWithValues: Set[(String, Seq[String])]
+  def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability]
   def procedureSignatures: Set[ProcedureSignature]
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
@@ -59,6 +60,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def indexes = parent.indexes
   override def uniqueIndexes = parent.uniqueIndexes
   override def indexesWithValues = parent.indexesWithValues
+  override def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = parent.indexesWithOrdering
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
   override def labelsById = parent.labelsById

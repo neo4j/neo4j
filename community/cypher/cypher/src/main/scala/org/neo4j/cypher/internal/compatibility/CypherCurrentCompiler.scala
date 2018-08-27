@@ -98,7 +98,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     new CypherExecutableQuery(
       logicalPlan,
       runtimeContext.readOnly,
-      logicalPlanResult.logicalPlanState.cardinalities,
+      logicalPlanResult.logicalPlanState.planningAttributes.cardinalities,
       executionPlan3_5,
       preParsingNotifications,
       planningNotificationLogger.notifications.map(asKernelNotification(planningNotificationLogger.offset)),
@@ -125,7 +125,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val procedureOrSchema = ProcedureCallOrSchemaCommandRuntime.queryType(planState.logicalPlan)
     if (procedureOrSchema.isDefined) // check this first, because if this is true solveds will be empty
       procedureOrSchema.get
-    else if (planState.solveds(planState.logicalPlan.id).readOnly)
+    else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)
       READ_ONLY
     else if (columnNames(planState.logicalPlan).isEmpty)
       WRITE

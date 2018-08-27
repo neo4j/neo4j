@@ -24,8 +24,7 @@ import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.Variable
@@ -46,12 +45,13 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   csvBufferSize: Int = 2 * Configuration.MB,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                   leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
-                                  costComparisonListener: CostComparisonListener) {
+                                  costComparisonListener: CostComparisonListener,
+                                  planningAttributes: PlanningAttributes) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))
 
-  def withUpdatedCardinalityInformation(plan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): LogicalPlanningContext =
-    copy(input = input.recurse(plan, solveds, cardinalities))
+  def withUpdatedCardinalityInformation(plan: LogicalPlan): LogicalPlanningContext =
+    copy(input = input.recurse(plan, planningAttributes.solveds, planningAttributes.cardinalities))
 
   def withUpdatedSemanticTable(semanticTable: SemanticTable): LogicalPlanningContext =
     if(semanticTable == this.semanticTable) this else copy(semanticTable = semanticTable)

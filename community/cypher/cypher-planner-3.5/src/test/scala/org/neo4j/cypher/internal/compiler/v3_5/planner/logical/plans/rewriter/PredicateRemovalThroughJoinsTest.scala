@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{NodeHashJoin, Selection}
+import org.opencypher.v9_0.expressions.{Equals, Expression, SignedDecimalIntegerLiteral}
 import org.opencypher.v9_0.util.Cardinality
 import org.opencypher.v9_0.util.attribution.Attributes
-import org.opencypher.v9_0.expressions.{Equals, Expression, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{NodeHashJoin, Selection}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aHasLabel = identHasLabel("a", "LABEL")
@@ -38,7 +38,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val solveds = new Solveds
     val cardinalities = new Cardinalities
     val lhsSelection = selectionOp("a", solveds, cardinalities, aHasLabel)
-    val rhsLeaf = newMockedLogicalPlan(solveds, cardinalities, "a")
+    val rhsLeaf = newMockedLogicalPlan(newAttributes, "a")
     val rhsSelection = Selection(Seq(aHasLabel), rhsLeaf)
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 
@@ -54,7 +54,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val solveds = new Solveds
     val cardinalities = new Cardinalities
     val lhsSelection = selectionOp("a", solveds, cardinalities, aHasLabel, pred1)
-    val rhsLeaf = newMockedLogicalPlan(solveds, cardinalities, "a")
+    val rhsLeaf = newMockedLogicalPlan(newAttributes, "a")
     val rhsSelection = Selection(Seq(aHasLabel, pred2), rhsLeaf)
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 
@@ -73,7 +73,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val solveds = new Solveds
     val cardinalities = new Cardinalities
     val lhsSelection = selectionOp("a", solveds, cardinalities, pred1)
-    val rhsLeaf = newMockedLogicalPlan(solveds, cardinalities, "a")
+    val rhsLeaf = newMockedLogicalPlan(newAttributes, "a")
     val rhsSelection = Selection(Seq(pred1), rhsLeaf)
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 

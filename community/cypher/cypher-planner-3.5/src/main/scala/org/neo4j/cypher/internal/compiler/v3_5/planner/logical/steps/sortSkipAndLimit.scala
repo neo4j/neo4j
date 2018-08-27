@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.{AscSortItem, DescSortItem, SortItem}
 import org.opencypher.v9_0.expressions.{Expression, Variable}
@@ -30,7 +29,7 @@ import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
 
 object sortSkipAndLimit extends PlanAndContextTransformer {
 
-  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = query.horizon match {
+  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
        (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
@@ -96,16 +95,16 @@ object sortSkipAndLimit extends PlanAndContextTransformer {
           val (sortedPlan, context2) =
             // The !requiredOrder.isEmpty check is only here because we do not recognize more complex required orders
             // at the moment and do not want to abort sorting only because an empty required order is satisfied by anything.
-            if (!requiredOrder.isEmpty && ResultOrdering.satisfiedWith(requiredOrder, plan.providedOrder)) {
+            if (!requiredOrder.isEmpty && ResultOrdering.satisfiedWith(requiredOrder, context.planningAttributes.providedOrders.get(plan.id))) {
               // We can't override solved, but right now we want to set it such that it solves ORDER BY
               // on a plan that has already assigned solved.
               (context.logicalPlanProducer.updateSolvedForSortedItems(plan, sortItems, requiredOrder, context), context)
             } else {
               // Project all variables needed for sort in two steps
               // First the ones that are part of projection list and may introduce variables that are needed for the second projection
-              val (preProjected1, context1) = projection(plan, projectItemsForAliases, projectItemsForAliases, requiredOrder, context, solveds, cardinalities)
+              val (preProjected1, context1) = projection(plan, projectItemsForAliases, projectItemsForAliases, requiredOrder, context)
               // And then all the ones from unaliased sort items that may refer to newly introduced variables
-              val (preProjected2, context2) = projection(preProjected1, projectItemsForUnaliasedSortItems.toMap, Map.empty, requiredOrder, context1, solveds, cardinalities)
+              val (preProjected2, context2) = projection(preProjected1, projectItemsForUnaliasedSortItems.toMap, Map.empty, requiredOrder, context1)
 
               (context2.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, requiredOrder, context2), context2)
             }

@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.ValueCapability
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.{OrderCapability, ValueCapability}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
@@ -111,10 +111,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         // Our fake index either can always or never return property values
         val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => propertyKeys.map(_ => canGetValue)
+        val orderCapability: OrderCapability = _ => config.indexesWithOrdering.getOrElse((labelName, propertyKeys), NoIndexOrder)
         IndexDescriptor(
           semanticTable.resolvedLabelNames(labelName),
           propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
-          valueCapability = valueCapability
+          valueCapability = valueCapability,
+          orderCapability = orderCapability
         )
       }
 
@@ -162,7 +164,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       CreatePlannerQuery andThen
       OptionalMatchRemover andThen
       QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
-      Do[PlannerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.solveds, new Attributes(idGen, state.cardinalities)))
+      Do[PlannerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.planningAttributes.solveds, Attributes(idGen, state.planningAttributes.cardinalities)))
 
 
     private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes): LogicalPlanState = {
@@ -184,7 +186,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val state = InitialState(queryString, None, IDPPlannerName)
       val output = pipeLine().transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].source
-      (output.periodicCommit, logicalPlan, output.semanticTable(), output.solveds, output.cardinalities)
+      (output.periodicCommit, logicalPlan, output.semanticTable(), output.planningAttributes.solveds, output.planningAttributes.cardinalities)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
@@ -192,11 +194,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig).
         queryGraphCardinalityModel(qg, input, semanticTable)
 
-    def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext, Solveds, Cardinalities) => T): T = {
+    def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
       val solveds = new Solveds
       val cardinalities = new Cardinalities
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, solveds, cardinalities, idGen)
+      val providedOrders = new ProvidedOrders
+      val planningAttributes = new PlanningAttributes(solveds, cardinalities, providedOrders)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,
@@ -205,15 +209,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         strategy = queryGraphSolver,
         input = QueryGraphSolverInput.empty,
         notificationLogger = devNullLogger,
-        costComparisonListener = devNullListener
+        costComparisonListener = devNullListener,
+        planningAttributes = planningAttributes
       )
-      f(config, ctx, solveds, cardinalities)
+      f(config, ctx)
     }
 
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, new StubSolveds, new StubCardinalities, idGen)
+      val solveds = new StubSolveds
+      val cardinalities = new StubCardinalities
+      val providedOrders = new ProvidedOrders
+      val planningAttributes = new PlanningAttributes(solveds, cardinalities, providedOrders)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,
@@ -222,7 +231,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         strategy = queryGraphSolver,
         input = QueryGraphSolverInput.empty,
         notificationLogger = devNullLogger,
-        costComparisonListener = devNullListener
+        costComparisonListener = devNullListener,
+        planningAttributes = planningAttributes
       )
       f(config, ctx)
     }
@@ -240,10 +250,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)
 
-  def fakeLogicalPlanFor(solveds: Solveds, cardinalities: Cardinalities, id: String*): FakePlan = {
+  def fakeLogicalPlanFor(planningAttributes: PlanningAttributes, id: String*): FakePlan = {
     val res = FakePlan(id.toSet)
-    solveds.set(res.id, PlannerQuery.empty)
-    cardinalities.set(res.id, 0.0)
+    planningAttributes.solveds.set(res.id, PlannerQuery.empty)
+    planningAttributes.cardinalities.set(res.id, 0.0)
+    planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)
     res
   }
 

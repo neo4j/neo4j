@@ -32,11 +32,11 @@ import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("two predicates on the same variable can be used") {
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val inner1 = mock[LeafPlanFromExpressions]
-    val p1 = newMockedLogicalPlan(solveds, cardinalities, "x")
-    val p2 = newMockedLogicalPlan(solveds, cardinalities, "x")
+    val p1 = newMockedLogicalPlan(context.planningAttributes, "x")
+    val p2 = newMockedLogicalPlan(context.planningAttributes, "x")
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
@@ -51,15 +51,15 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context, solveds, cardinalities) should equal(Seq(expected))
+    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq(expected))
   }
 
   test("two predicates on different variables are not used") {
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val inner1 = mock[LeafPlanFromExpressions]
-    val p1 = newMockedLogicalPlan(solveds, cardinalities, "x")
-    val p2 = newMockedLogicalPlan(solveds, cardinalities, "x")
+    val p1 = newMockedLogicalPlan(context.planningAttributes, "x")
+    val p2 = newMockedLogicalPlan(context.planningAttributes, "x")
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
@@ -69,14 +69,14 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context, solveds, cardinalities) should equal(Seq.empty)
+    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq.empty)
   }
 
   test("two predicates, where one cannot be leaf-plan-solved, is not used") {
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val inner1 = mock[LeafPlanFromExpressions]
-    val p1 = newMockedLogicalPlan(solveds, cardinalities, "x")
+    val p1 = newMockedLogicalPlan(context.planningAttributes, "x")
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
@@ -86,18 +86,18 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context, solveds, cardinalities) should equal(Seq.empty)
+    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq.empty)
   }
 
   test("two predicates that produce two plans each") {
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val inner1 = mock[LeafPlanFromExpressions]
     val inner2 = mock[LeafPlanFromExpressions]
-    val p1 = newMockedLogicalPlan(solveds, cardinalities, "x", "a")
-    val p2 = newMockedLogicalPlan(solveds, cardinalities, "x", "b")
-    val p3 = newMockedLogicalPlan(solveds, cardinalities, "x", "c")
-    val p4 = newMockedLogicalPlan(solveds, cardinalities, "x", "d")
+    val p1 = newMockedLogicalPlan(context.planningAttributes, "x", "a")
+    val p2 = newMockedLogicalPlan(context.planningAttributes, "x", "b")
+    val p3 = newMockedLogicalPlan(context.planningAttributes, "x", "c")
+    val p4 = newMockedLogicalPlan(context.planningAttributes, "x", "d")
 
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
@@ -124,17 +124,17 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       groupingExpressions = Map("x" -> Variable("x")(pos)))
 
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context, solveds, cardinalities) should equal(Seq(expected1, expected2, expected3, expected4))
+    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq(expected1, expected2, expected3, expected4))
   }
 
   test("two predicates that produce two plans each mk 2") {
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val inner1 = mock[LeafPlanFromExpressions]
     val inner2 = mock[LeafPlanFromExpressions]
-    val p1 = newMockedLogicalPlan(solveds, cardinalities, "x", "a")
-    val p2 = newMockedLogicalPlan(solveds, cardinalities, "x", "b")
-    val p3 = newMockedLogicalPlan(solveds, cardinalities, "x", "c")
+    val p1 = newMockedLogicalPlan(context.planningAttributes, "x", "a")
+    val p2 = newMockedLogicalPlan(context.planningAttributes, "x", "b")
+    val p3 = newMockedLogicalPlan(context.planningAttributes, "x", "c")
 
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
@@ -155,6 +155,6 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       groupingExpressions = Map("x" -> Variable("x")(pos)))
 
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context, solveds, cardinalities) should equal(Seq(expected1, expected3))
+    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq(expected1, expected3))
   }
 }

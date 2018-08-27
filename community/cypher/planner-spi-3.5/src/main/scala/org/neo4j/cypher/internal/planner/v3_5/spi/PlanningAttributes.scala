@@ -20,10 +20,17 @@
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProvidedOrder
 import org.opencypher.v9_0.util.Cardinality
-import org.opencypher.v9_0.util.attribution.Attribute
+import org.opencypher.v9_0.util.attribution.{Attribute, Attributes, IdGen}
 
 object PlanningAttributes {
   class Solveds extends Attribute[PlannerQuery]
   class Cardinalities extends Attribute[Cardinality]
+  class ProvidedOrders extends Attribute[ProvidedOrder]
+}
+
+case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, providedOrders: ProvidedOrders) {
+  def asAttributes(idGen: IdGen): Attributes = Attributes(idGen, solveds, cardinalities, providedOrders)
 }

@@ -37,7 +37,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Projection(inputPlan, Map("a" -> literal)))
@@ -54,7 +54,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Projection(inputPlan, Map(cachedNodePropertyProj("n", "prop"))))
@@ -71,7 +71,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Projection(inputPlan, Map(cachedNodePropertyProj("foo", "n", "prop"))))
@@ -88,7 +88,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Aggregation(inputPlan, Map(cachedNodePropertyProj("n","prop")), Map.empty))
@@ -105,7 +105,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Aggregation(inputPlan, Map.empty, Map(cachedNodePropertyProj("foo", "n", "prop"))))
@@ -122,7 +122,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Distinct(inputPlan, Map(cachedNodePropertyProj("n","prop"))))
@@ -139,7 +139,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Distinct(inputPlan, Map(cachedNodePropertyProj("foo", "n", "prop"))))
@@ -156,7 +156,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(UnwindCollection(inputPlan, "foo", ListLiteral(Seq(cachedNodeProperty("n", "prop")))(pos)))
@@ -179,7 +179,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(ProcedureCall(inputPlan, call))
@@ -205,7 +205,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = FakePlan(Set("n.prop"), Map(property -> "n.prop"))
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(ProcedureCall(inputPlan, ResolvedCall(signature, Seq(ListLiteral(Seq(cachedNodeProperty("n","prop")))(pos)), callResults)(pos)))
@@ -214,15 +214,15 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should plan entire projection if there is no pre-projection") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context, solveds, _) =>
+    new given().withLogicalPlanningContext { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
       val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> Variable("a")(pos), "b" -> literal, "c" -> literal), QueryShuffle(sortItems)))
       val inputPlan = Argument(Set("a"))
-      solveds.set(inputPlan.id, PlannerQuery.empty)
+      context.planningAttributes.solveds.set(inputPlan.id, PlannerQuery.empty)
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, solveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Projection(Sort(inputPlan, Seq(Ascending("a"))), Map("b" -> literal, "c" -> literal)))
@@ -231,15 +231,15 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should plan partial projection if there is a pre-projection for sorting") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context, solveds, _) =>
+    new given().withLogicalPlanningContext { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
       val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle(sortItems)))
       val inputPlan = Argument()
-      solveds.set(inputPlan.id, PlannerQuery.empty)
+      context.planningAttributes.solveds.set(inputPlan.id, PlannerQuery.empty)
 
       // When
-      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, solveds, new StubCardinalities)
+      val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context)
 
       // Then
       producedPlan should equal(Projection(Sort(Projection(inputPlan, Map("a" -> literal)), Seq(Ascending("a"))), Map("b" -> literal, "c" -> literal)))

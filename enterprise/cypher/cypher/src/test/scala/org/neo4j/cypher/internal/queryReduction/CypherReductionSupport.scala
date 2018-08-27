@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.{LogicalPlanState, Planner
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext, PlannerNameFor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext, PlannerNameFor, PlanningAttributes}
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
@@ -144,7 +144,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   }
 
   private def queryToParsingBaseState(query: String, enterprise: Boolean): BaseState = {
-    val startState = LogicalPlanState(query, None, PlannerNameFor(IDPPlannerName.name), new Solveds, new Cardinalities)
+    val startState = LogicalPlanState(query, None, PlannerNameFor(IDPPlannerName.name), PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders))
     val parsingContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, null, null, enterprise)
     CompilationPhases.parsing(CypherReductionSupport.stepSequencer).transform(startState, parsingContext)
   }
@@ -188,7 +188,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     baseState = rewriting.transform(baseState, planningContext)
 
     val logicalPlanState = CypherReductionSupport.compiler.planPreparedQuery(baseState, planningContext)
-    val readOnly = logicalPlanState.solveds(logicalPlanState.logicalPlan.id).readOnly
+    val readOnly = logicalPlanState.planningAttributes.solveds(logicalPlanState.logicalPlan.id).readOnly
 
     val runtime = CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, planningContext.config.useErrorsOverWarnings)
 

@@ -23,13 +23,13 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
-import org.opencypher.v9_0.ast.{Hint, UsingJoinHint}
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, LogicalPlan, RightOuterHashJoin}
+import org.opencypher.v9_0.ast.{Hint, UsingJoinHint}
+import org.opencypher.v9_0.expressions.{PatternExpression, SemanticDirection, Variable}
 import org.opencypher.v9_0.util.Cost
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.{PatternExpression, SemanticDirection, Variable}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, LogicalPlan, RightOuterHashJoin}
 
 class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -62,13 +62,12 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val innerPlan = newMockedLogicalPlan("b")
 
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
-    )
-    val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, idNames = Set(aNode))
-    val plans = rightOuterHashJoin(optionalQg, left, RequiredOrder.empty, context, solveds, cardinalities)
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config),
+      strategy = newMockedStrategy(innerPlan))
+    val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
+    val plans = rightOuterHashJoin(optionalQg, left, RequiredOrder.empty, context)
 
     plans should equal(Some(RightOuterHashJoin(Set(aNode), innerPlan, left)))
   }
@@ -91,15 +90,14 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val innerPlan = newMockedLogicalPlan("b")
 
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
-    )
-    val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, Set(aNode))
-    val plan = rightOuterHashJoin(optionalQg, left, RequiredOrder.empty, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config),
+      strategy = newMockedStrategy(innerPlan))
+    val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
+    val plan = rightOuterHashJoin(optionalQg, left, RequiredOrder.empty, context).getOrElse(fail("No result from outerHashJoin"))
 
     plan should equal(RightOuterHashJoin(Set(aNode), innerPlan, left))
-    solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
+    context.planningAttributes.solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
   }
 }

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ResolvedCall}
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.InternalException
@@ -33,34 +32,33 @@ Planning event horizons means planning the WITH clauses between query patterns. 
 away when going from a string query to a QueryGraph. The remaining WITHs are the ones containing ORDER BY/LIMIT,
 aggregation and UNWIND.
  */
-case object PlanEventHorizon
-  extends ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) {
+case object PlanEventHorizon extends EventHorizonPlanner {
 
-  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
-    val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.requiredOrder, context, solveds, cardinalities)
+  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+    val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.requiredOrder, context)
 
     val (projectedPlan, contextAfterHorizon) = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, query.requiredOrder, context, solveds, cardinalities)
-        sortSkipAndLimit(aggregationPlan, query, newContext, solveds, cardinalities)
+        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, query.requiredOrder, context)
+        sortSkipAndLimit(aggregationPlan, query, newContext)
 
       case queryProjection: RegularQueryProjection =>
-        val (sortedAndLimited, contextAfterSort) = sortSkipAndLimit(selectedPlan, query, context, solveds, cardinalities)
+        val (sortedAndLimited, contextAfterSort) = sortSkipAndLimit(selectedPlan, query, context)
         if (queryProjection.projections.isEmpty && query.tail.isEmpty) {
           (contextAfterSort.logicalPlanProducer.planEmptyProjection(plan, contextAfterSort), contextAfterSort)
         } else {
-          val (newPlan, newContext) = projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, query.requiredOrder, contextAfterSort, solveds, cardinalities)
+          val (newPlan, newContext) = projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, query.requiredOrder, contextAfterSort)
           (newPlan, newContext)
         }
 
       case queryProjection: DistinctQueryProjection =>
-        val (distinctPlan, newContext) = distinct(selectedPlan, queryProjection, query.requiredOrder, context, solveds, cardinalities)
-        sortSkipAndLimit(distinctPlan, query, newContext, solveds, cardinalities)
+        val (distinctPlan, newContext) = distinct(selectedPlan, queryProjection, query.requiredOrder, context)
+        sortSkipAndLimit(distinctPlan, query, newContext)
 
       case UnwindProjection(variable, expression) =>
         val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(expression, context.semanticTable))
         val newContext = context.withUpdatedSemanticTable(newSemanticTable)
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), query.requiredOrder, context, solveds, cardinalities)
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), query.requiredOrder, context)
         (newContext.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, newContext), newContext)
 
       case ProcedureCallProjection(call) =>

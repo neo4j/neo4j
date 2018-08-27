@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.attribution.SameId
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
-  override def apply(in: LogicalPlan, qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] =
-    unsolvedPredicates(in, qg, solveds).collect {
+  override def apply(in: LogicalPlan, qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
+    unsolvedPredicates(in, qg, context.planningAttributes.solveds).collect {
       // WHERE NOT (a)-[:X]->(c)
       case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, context)
       // WHERE (a)-[:X]->(c)

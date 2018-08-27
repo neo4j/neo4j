@@ -35,7 +35,7 @@ import org.opencypher.v9_0.util.PeriodicCommitInOpenTransactionException
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
-    val cardinalities = state.cardinalities
+    val cardinalities = state.planningAttributes.cardinalities
     val logicalPlan = state.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val executionPlanBuilder = new PipeExecutionPlanBuilder(

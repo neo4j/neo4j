@@ -20,16 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.opencypher.v9_0.util.InternalException
 
 trait QueryGraphSolver {
-  def plan(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan
-  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, PatternExpression)
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, PatternComprehension)
+  def plan(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan
+  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
 }
 
 trait PatternExpressionSolving {
@@ -38,28 +37,28 @@ trait PatternExpressionSolving {
 
   import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 
-  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, PatternExpression) = {
+  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
     val dependencies = expr.dependencies.map(_.name)
     val qgArguments = planArguments intersect dependencies
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
-    val plan = planQueryGraph(qg, namedMap, requiredOrder, context, solveds, cardinalities)
+    val plan = planQueryGraph(qg, namedMap, requiredOrder, context)
     (plan, namedExpr)
   }
 
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, PatternComprehension) = {
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
     val asQueryGraph = expr.asQueryGraph
     val qgArguments = planArguments intersect asQueryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
-    val plan: LogicalPlan = planQueryGraph(qg, Map.empty, requiredOrder, context, solveds, cardinalities)
+    val plan: LogicalPlan = planQueryGraph(qg, Map.empty, requiredOrder, context)
     (plan, expr)
   }
 
-  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], requiredOrder: RequiredOrder, context: LogicalPlanningContext) = {
     val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
     val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
-    self.plan(qg, requiredOrder, patternPlanningContext, solveds, cardinalities)
+    self.plan(qg, requiredOrder, patternPlanningContext)
   }
 }
 

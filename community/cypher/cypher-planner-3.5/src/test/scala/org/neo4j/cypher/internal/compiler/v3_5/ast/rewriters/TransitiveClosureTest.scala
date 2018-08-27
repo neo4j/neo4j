@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{AstRewritingTestSupport, LogicalPlanConstructionTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
 import org.opencypher.v9_0.ast.Query
 import org.opencypher.v9_0.frontend.phases.{CNFNormalizer, transitiveClosure}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -90,12 +91,12 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val input = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(original))
+    val input = LogicalPlanState(null, null, null, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), Some(original))
     //We use CNFNormalizer to get it to the canonical form without duplicates
     val result = (transitiveClosure andThen  CNFNormalizer).transform(input, ContextHelper.create())
 
     //We must also use CNFNormalizer on the expected to get the AND -> ANDS rewrite
-    val expectedInput = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(expected))
+    val expectedInput = LogicalPlanState(null, null, null, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), Some(expected))
     val expectedResult = CNFNormalizer.transform(expectedInput, ContextHelper.create())
     result.statement() should equal(expectedResult.statement())
   }

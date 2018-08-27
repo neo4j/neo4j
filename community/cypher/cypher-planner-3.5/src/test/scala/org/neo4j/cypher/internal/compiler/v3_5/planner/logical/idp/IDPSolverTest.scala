@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ProjectingSelector
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
@@ -47,7 +46,7 @@ class IDPSolverTest extends CypherFunSuite {
       Set('d') -> "d"
     )
 
-    val solution = solver(seed, Set('a', 'b', 'c', 'd'), context, new Solveds)
+    val solution = solver(seed, Set('a', 'b', 'c', 'd'), context)
 
     solution.toList should equal(List(Set('a', 'b', 'c', 'd') -> "abcd"))
     verify(monitor).foundPlanAfter(1)
@@ -79,7 +78,7 @@ class IDPSolverTest extends CypherFunSuite {
       Set('h') -> "h"
     )
 
-    solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), context, new Solveds)
+    solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), context)
 
     verify(monitor).startIteration(1)
     verify(monitor).endIteration(1, 2, 16)
@@ -140,7 +139,7 @@ class IDPSolverTest extends CypherFunSuite {
       acc ++ t._1
     }.toSet
 
-    solver(seed, result, context, new Solveds)
+    solver(seed, result, context)
 
     monitor.maxStartIteration should equal(monitor.foundPlanIteration)
     monitor.maxStartIteration
@@ -160,7 +159,7 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   private object stringAppendingSolverStep extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit, solveds: Solveds): Iterator[String] = {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit): Iterator[String] = {
       val goalSize = goal.size
       for (
         leftGoal <- goal.subsets if leftGoal.size <= goalSize;

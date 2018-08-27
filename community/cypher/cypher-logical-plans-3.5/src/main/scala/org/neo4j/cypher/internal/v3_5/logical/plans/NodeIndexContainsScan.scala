@@ -33,7 +33,7 @@ case class NodeIndexContainsScan(idName: String,
                                  property: IndexedProperty,
                                  valueExpr: Expression,
                                  argumentIds: Set[String],
-                                 override val providedOrder: ProvidedOrder)
+                                 providedOrder: ProvidedOrder)
                                 (implicit idGen: IdGen)
   extends IndexLeafPlan(idGen) {
 

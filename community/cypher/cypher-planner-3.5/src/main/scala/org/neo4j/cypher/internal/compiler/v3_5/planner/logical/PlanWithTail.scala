@@ -21,41 +21,41 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.alignGetValueFromIndexBehavior
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.util.attribution.Attributes
+import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
 */
-case class PlanWithTail(planEventHorizon: (PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext) = PlanEventHorizon,
-                        planPart: (PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = planPart,
-                        planUpdates: (PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext) = PlanUpdates)
-  extends ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext, Solveds, Cardinalities, Attributes) => (LogicalPlan, LogicalPlanningContext)) {
+case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon,
+                        planPart: PartPlanner = planPart,
+                        planUpdates: UpdatesPlanner = PlanUpdates)
+  extends TailPlanner {
 
-  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext,
-                     solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
     remaining match {
       case Some(plannerQuery) =>
-        val lhsContext = context.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
+        val attributes = context.planningAttributes.asAttributes(idGen)
+        val lhsContext = context.withUpdatedCardinalityInformation(lhs)
           // context for this query, which aligns getValueFromIndexBehavior
-          .withLeafPlanUpdater(alignGetValueFromIndexBehavior(plannerQuery, context.logicalPlanProducer, Attributes(context.logicalPlanProducer.idGen, solveds, cardinalities)))
+          .withLeafPlanUpdater(alignGetValueFromIndexBehavior(plannerQuery, context.logicalPlanProducer, attributes))
 
-        val partPlan = planPart(plannerQuery, lhsContext, solveds, cardinalities)
+        val partPlan = planPart(plannerQuery, lhsContext)
         val firstPlannerQuery = false
-        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext, solveds, cardinalities)
+        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext)
 
         val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
-        val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan, solveds, cardinalities)
-        val (projectedPlan, horizonContext) = planEventHorizon(plannerQuery, applyPlan, applyContext, solveds, cardinalities)
-        val projectedContext = horizonContext.withUpdatedCardinalityInformation(projectedPlan, solveds, cardinalities)
+        val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
+        val (projectedPlan, horizonContext) = planEventHorizon(plannerQuery, applyPlan, applyContext)
+        val projectedContext = horizonContext.withUpdatedCardinalityInformation(projectedPlan)
 
-        this.apply(projectedPlan, plannerQuery.tail, projectedContext, solveds, cardinalities, otherAttributes)
+        this.apply(projectedPlan, plannerQuery.tail, projectedContext, idGen)
 
       case None =>
-        (lhs.endoRewrite(Eagerness.unnestEager(solveds, otherAttributes.withAlso(cardinalities))), context)
+        val attributes = Attributes(idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
+        (lhs.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)), context)
     }
   }
 }

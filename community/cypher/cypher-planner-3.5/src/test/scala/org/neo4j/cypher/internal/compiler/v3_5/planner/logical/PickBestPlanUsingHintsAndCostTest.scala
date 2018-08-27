@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, devNullListener, pickBestPlanUsingHintsAndCost}
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.ast.UsingIndexHint
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName}
@@ -46,7 +47,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val a = fakeLogicalPlanFor("a")
     val b = fakeLogicalPlanFor("b")
 
-    assertTopPlan(winner = b, new StubSolveds, new StubCardinalities, a, b)(new given {
+    assertTopPlan(winner = b, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), a, b)(new given {
       cost = {
         case (p, _, _) if p == a => Cost(100)
         case (p, _, _) if p == b => Cost(50)
@@ -65,14 +66,14 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       }
     }
 
-    assertTopPlan(winner = b, new StubSolveds, new StubCardinalities, ab, b)(GIVEN)
+    assertTopPlan(winner = b, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), ab, b)(GIVEN)
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
     val ab = fakeLogicalPlanFor("a", "b")
     val c = fakeLogicalPlanFor("c")
 
-    assertTopPlan(winner = ab, new StubSolveds, new StubCardinalities, ab, c)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = ab, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), ab, c)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solves a hint over plan that solves no hint") {
@@ -82,7 +83,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty)
 
-    assertTopPlan(winner = a, solveds, new StubCardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = a, PlanningAttributes(solveds, new StubCardinalities, new StubProvidedOrders), a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints") {
@@ -94,7 +95,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
 
-    assertTopPlan(winner = b, solveds, new StubCardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, PlanningAttributes(solveds, new StubCardinalities, new StubProvidedOrders), a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints in tails") {
@@ -106,16 +107,17 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2)))))
 
-    assertTopPlan(winner = b, solveds, new StubCardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, PlanningAttributes(solveds, new StubCardinalities, new StubProvidedOrders), a, b)(GIVEN_FIXED_COST)
   }
 
-  private def assertTopPlan(winner: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities, candidates: LogicalPlan*)(GIVEN: given)= {
+  private def assertTopPlan(winner: LogicalPlan, planningAttributes: PlanningAttributes, candidates: LogicalPlan*)(GIVEN: given)= {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.statistics, GIVEN.expressionEvaluator, cypherCompilerConfig)
-    val producer = LogicalPlanProducer(metrics.cardinality, solveds, cardinalities, idGen)
-    val context = LogicalPlanningContext(null, producer, metrics, null, null, notificationLogger = devNullLogger, costComparisonListener = devNullListener)
-    pickBestPlanUsingHintsAndCost(context, solveds, cardinalities)(candidates).get shouldBe theSameInstanceAs(winner)
-    pickBestPlanUsingHintsAndCost(context, solveds, cardinalities)(candidates.reverse).get shouldBe theSameInstanceAs(winner)
+    val producer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
+    val context = LogicalPlanningContext(null, producer, metrics, null, null, notificationLogger = devNullLogger, costComparisonListener = devNullListener,
+      planningAttributes = planningAttributes)
+    pickBestPlanUsingHintsAndCost(context)(candidates).get shouldBe theSameInstanceAs(winner)
+    pickBestPlanUsingHintsAndCost(context)(candidates.reverse).get shouldBe theSameInstanceAs(winner)
   }
 }
 

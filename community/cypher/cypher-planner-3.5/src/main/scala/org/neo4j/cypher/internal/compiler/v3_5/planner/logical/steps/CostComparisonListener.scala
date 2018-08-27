@@ -20,42 +20,35 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 trait CostComparisonListener {
   def report[X](projector: X => LogicalPlan,
                 input: Iterable[X],
                 inputOrdering: Ordering[X],
-                context: LogicalPlanningContext,
-                solveds: Solveds,
-                cardinalities: Cardinalities): Unit
+                context: LogicalPlanningContext): Unit
 }
 
 object devNullListener extends CostComparisonListener {
   override def report[X](projector: X => LogicalPlan,
                          input: Iterable[X],
                          inputOrdering: Ordering[X],
-                         context: LogicalPlanningContext,
-                         solveds: Solveds,
-                         cardinalities: Cardinalities): Unit = {}
+                         context: LogicalPlanningContext): Unit = {}
 }
 
 object SystemOutCostLogger extends CostComparisonListener {
   def report[X](projector: X => LogicalPlan,
                 input: Iterable[X],
                 inputOrdering: Ordering[X],
-                context: LogicalPlanningContext,
-                solveds: Solveds,
-                cardinalities: Cardinalities): Unit = {
+                context: LogicalPlanningContext): Unit = {
     def stringTo(level: Int, plan: LogicalPlan): String = {
       def indent(level: Int, in: String): String = level match {
         case 0 => in
         case _ => System.lineSeparator() + "  " * level + in
       }
 
-      val cost = context.cost(plan, context.input, cardinalities)
-      val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${cardinalities.get(plan.id)}")
+      val cost = context.cost(plan, context.input, context.planningAttributes.cardinalities)
+      val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${context.planningAttributes.cardinalities.get(plan.id)}")
       val l = plan.lhs.map(p => stringTo(level + 1, p)).getOrElse("")
       val r = plan.rhs.map(p => stringTo(level + 1, p)).getOrElse("")
       thisPlan + l + r
@@ -73,7 +66,7 @@ object SystemOutCostLogger extends CostComparisonListener {
         println(s"* Plan #${plan.debugId}")
         println(s"\t$planTextWithCosts")
         println(s"\t$planText")
-        println(s"\t\tHints(${solveds.get(plan.id).numHints})")
+        println(s"\t\tHints(${context.planningAttributes.solveds.get(plan.id).numHints})")
         println(s"\t\tlhs: ${plan.lhs}")
       }
 
@@ -84,7 +77,7 @@ object SystemOutCostLogger extends CostComparisonListener {
       println(s"\t${best.toString}")
       val planTextWithCosts = stringTo(0, best)
       println(s"\t$planTextWithCosts")
-      println(s"\t\tHints(${solveds.get(best.id).numHints})")
+      println(s"\t\tHints(${context.planningAttributes.solveds.get(best.id).numHints})")
       println(s"\t\tlhs: ${best.lhs}")
       println("!¡" * 10)
       println()

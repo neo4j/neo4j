@@ -42,7 +42,7 @@ class DistinctTest extends CypherFunSuite with LogicalPlanningTestSupport with P
     val startPlan = newMockedLogicalPlan(idNames = Set("x", "x.prop"), availablePropertiesFromIndexes = Map(prop -> "x.prop"))
 
     // When
-    val (result, _) = distinct(startPlan, projection, RequiredOrder.empty, context, new StubSolveds, new StubCardinalities)
+    val (result, _) = distinct(startPlan, projection, RequiredOrder.empty, context)
     // Then
     result should equal(
       Distinct(startPlan, Map(cachedNodePropertyProj("x", "prop")))

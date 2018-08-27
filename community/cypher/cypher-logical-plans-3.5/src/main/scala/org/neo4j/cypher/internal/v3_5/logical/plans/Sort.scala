@@ -30,7 +30,6 @@ case class Sort(source: LogicalPlan,
 
   val lhs = Some(source)
   val rhs = None
-  override val providedOrder = ProvidedOrder(sortItems)
 
   val availableSymbols: Set[String] = source.availableSymbols
 }

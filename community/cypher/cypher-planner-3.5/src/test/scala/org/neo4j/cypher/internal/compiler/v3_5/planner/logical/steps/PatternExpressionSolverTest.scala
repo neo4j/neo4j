@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryGraphSolver}
+import org.neo4j.cypher.internal.ir.v3_5.RequiredOrder
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Projection, RollUpApply}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.DummyPosition
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.ir.v3_5.RequiredOrder
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Projection, RollUpApply}
-import org.opencypher.v9_0.expressions._
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("Rewrites single pattern expression") {
@@ -36,11 +36,11 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val pathStep = NilPathStep
 
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep))
-    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
-    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
+    val context = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     // when
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1), RequiredOrder.empty, context, solveds, cardinalities)
+    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1), RequiredOrder.empty, context)
 
     // then
     val expectedInnerPlan = Projection(otherSide, Map("  FRESHID0" -> PathExpression(pathStep)(pos)))
@@ -54,15 +54,15 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("incoming-inner-plan")
     val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
-    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
-    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
+    val context = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(context.planningAttributes, "a")
     val pathStep1 = NilPathStep
     val pathStep2 = NilPathStep
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1, "y" -> patExpr2), RequiredOrder.empty, context, solveds, cardinalities)
+    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1, "y" -> patExpr2), RequiredOrder.empty, context)
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
@@ -80,8 +80,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("both-inner-plan")
     val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
-    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
-    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
+    val context = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(context.planningAttributes, "a")
     val pathStep1 = NilPathStep
     val pathStep2 = NilPathStep
 
@@ -89,7 +89,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val stringToEquals1: Map[String, Expression] = Map("x" -> Equals(patExpr1, patExpr2)(pos))
-    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1, RequiredOrder.empty, context, solveds, cardinalities)
+    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1, RequiredOrder.empty, context)
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
@@ -107,8 +107,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("both-inner-plan")
     val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
-    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
-    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
+    val context = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(context.planningAttributes, "a")
     val pathStep1 = NilPathStep
     val pathStep2 = NilPathStep
 
@@ -116,7 +116,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val predicate = Equals(patExpr1, patExpr2)(pos)
-    val (resultPlan, expressions) = expressionSolver(source, Seq(predicate), RequiredOrder.empty, context, solveds, cardinalities)
+    val (resultPlan, expressions) = expressionSolver(source, Seq(predicate), RequiredOrder.empty, context)
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
@@ -130,8 +130,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
   }
 
 
-  private def logicalPlanningContext(strategy: QueryGraphSolver) =
-    newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy, semanticTable = new SemanticTable())
+  private def logicalPlanningContext(strategy: QueryGraphSolver): LogicalPlanningContext =
+    newMockedLogicalPlanningContext(newMockedPlanContext, semanticTable = new SemanticTable(), strategy = strategy)
 
   private def createPatternExpressionBuilder(pathSteps: Map[PatternExpression, PathStep]) =
     PatternExpressionSolver(pathSteps.map {

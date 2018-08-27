@@ -33,7 +33,7 @@ case class NodeUniqueIndexSeek(idName: String,
                                properties: Seq[IndexedProperty],
                                valueExpr: QueryExpression[Expression],
                                argumentIds: Set[String],
-                               override val providedOrder: ProvidedOrder)
+                               providedOrder: ProvidedOrder)
                               (implicit idGen: IdGen) extends IndexSeekLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName

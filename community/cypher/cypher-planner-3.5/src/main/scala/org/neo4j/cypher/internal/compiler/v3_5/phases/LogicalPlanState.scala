@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.phases
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.ast.{Query, Statement}
-import org.opencypher.v9_0.frontend.phases.{BaseState, Condition}
-import org.opencypher.v9_0.ast.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_5.{PeriodicCommit, UnionQuery}
-import org.opencypher.v9_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.ast.semantics.{SemanticState, SemanticTable}
+import org.opencypher.v9_0.ast.{Query, Statement}
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.frontend.phases.{BaseState, Condition}
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.symbols.CypherType
 
 /*
 This is the state that is used during query compilation. It accumulates more and more values as it passes through
@@ -39,8 +40,7 @@ the pipe line
 case class LogicalPlanState(queryText: String,
                             startPosition: Option[InputPosition],
                             plannerName: PlannerName,
-                            solveds: Solveds,
-                            cardinalities: Cardinalities,
+                            planningAttributes: PlanningAttributes,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
@@ -70,8 +70,7 @@ object LogicalPlanState {
                      startPosition = state.startPosition,
                      plannerName = state.plannerName,
                      initialFields = state.initialFields,
-                     solveds = new Solveds,
-                     cardinalities = new Cardinalities,
+                     planningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders),
                      maybeStatement = state.maybeStatement,
                      maybeSemantics = state.maybeSemantics,
                      maybeExtractedParams = state.maybeExtractedParams,

@@ -19,29 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
-
 object IDPSolverStep {
   def empty[S, P, C] = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds): Iterator[P] =
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C): Iterator[P] =
       Iterator.empty
   }
 }
 
 trait SolverStep[S, P, C] {
-  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds):  Iterator[P]
+  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C):  Iterator[P]
 }
 
 trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {
   self =>
 
   def map(f: P => P) = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds): Iterator[P] =
-      self(registry, goal, cache, context, solveds).map(f)
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C): Iterator[P] =
+      self(registry, goal, cache, context).map(f)
   }
 
   def ++(next: IDPSolverStep[S, P, C]) = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds): Iterator[P] =
-      self(registry, goal, cache, context, solveds) ++ next(registry, goal, cache, context, solveds)
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C): Iterator[P] =
+      self(registry, goal, cache, context) ++ next(registry, goal, cache, context)
   }
 }

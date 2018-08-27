@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.mockito.Mockito._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.labelScanLeafPlanner
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.{Cost, LabelId}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeByLabelScan}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{Cost, LabelId}
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -54,14 +54,10 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val semanticTable = new SemanticTable()
 
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
-      semanticTable = semanticTable,
-      planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
-    )
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context, solveds, cardinalities)
+    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context)
 
     // then
     resultPlans should equal(Seq(
@@ -88,14 +84,10 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val semanticTable = newMockedSemanticTable
     when(semanticTable.id(labelName)).thenReturn(Some(labelId))
 
-    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
-      semanticTable = semanticTable,
-      planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
-    )
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context, solveds, cardinalities)
+    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context)
 
     // then
     resultPlans should equal(

@@ -33,7 +33,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
 
   import LogicalPlanningSupport._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext, solveds: Solveds): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
@@ -55,12 +55,12 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
       if (optLhs.isDefined && optRhs.isDefined) {
         val lhs = optLhs.get
         val rhs = optRhs.get
-        val overlappingNodes = computeOverlappingNodes(lhs, rhs, solveds, arguments)
+        val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, arguments)
         if (overlappingNodes.nonEmpty) {
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, arguments)
           if (overlappingSymbols == overlappingNodes) {
             if (VERBOSE) {
-              println(s"${show(leftGoal, nodes(lhs, solveds))} overlap ${show(rightGoal, nodes(rhs, solveds))} on ${showNames(overlappingNodes)}")
+              println(s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}")
             }
             // This loop is designed to find both LHS and RHS plans, so no need to generate them swapped here
             val matchingHints = qg.joinHints.filter(_.coveredBy(overlappingNodes))

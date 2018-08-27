@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions._
@@ -53,9 +54,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
   override def report[X](projector: X => LogicalPlan,
                          input: Iterable[X],
                          inputOrdering: Ordering[X],
-                         context: LogicalPlanningContext,
-                         solveds: Solveds,
-                         cardinalities: Cardinalities): Unit = if (input.size > 1) {
+                         context: LogicalPlanningContext): Unit = if (input.size > 1) {
 
     def stringTo(level: Int, plan: LogicalPlan): String = {
       def indent(level: Int, in: String): String = level match {
@@ -63,8 +62,8 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
         case _ => System.lineSeparator() + "  " * level + in
       }
 
-      val cost = context.cost(plan, context.input, cardinalities)
-      val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${cardinalities.get(plan.id)}")
+      val cost = context.cost(plan, context.input, context.planningAttributes.cardinalities)
+      val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${context.planningAttributes.cardinalities.get(plan.id)}")
       val l = plan.lhs.map(p => stringTo(level + 1, p)).getOrElse("")
       val r = plan.rhs.map(p => stringTo(level + 1, p)).getOrElse("")
       thisPlan + l + r
@@ -76,8 +75,8 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
     val theseRows: immutable.Seq[Row] = sortedPlans.map { plan =>
       val planText = plan.toString.replaceAll(System.lineSeparator(), System.lineSeparator())
       val planTextWithCosts = stringTo(0, plan).replaceAll(System.lineSeparator(), System.lineSeparator())
-      val cost = context.cost(plan, context.input, cardinalities)
-      val cardinality = cardinalities.get(plan.id)
+      val cost = context.cost(plan, context.input, context.planningAttributes.cardinalities)
+      val cardinality = context.planningAttributes.cardinalities.get(plan.id)
 
       Row(comparisonCount, plan.id, planText, planTextWithCosts, cost, cardinality, winner.id == plan.id)
     }
@@ -94,6 +93,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
     val newStatement = asStatement()
     val solveds = new Solveds
     val cardinalities = new Cardinalities
+    val providedOrders = new ProvidedOrders
 
     var current: Option[LogicalPlan] = Some(plan)
     do {
@@ -103,7 +103,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       current = current.get.lhs
     } while (current.nonEmpty)
 
-    in.copy(maybePeriodicCommit = Some(None), maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), solveds = solveds, cardinalities = cardinalities)
+    in.copy(maybePeriodicCommit = Some(None), maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), planningAttributes = PlanningAttributes(solveds, cardinalities, providedOrders))
   }
 
   private def varFor(s: String) = Variable(s)(pos)

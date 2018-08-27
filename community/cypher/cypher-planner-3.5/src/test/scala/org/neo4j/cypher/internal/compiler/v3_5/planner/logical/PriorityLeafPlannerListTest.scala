@@ -35,15 +35,15 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     // GIVEN
     val priority = mock[LeafPlannerIterable]
     val fallback = mock[LeafPlannerIterable]
-    when(priority.candidates(any(), any(), any(), any(), any(), any())).thenReturn(candidates)
+    when(priority.candidates(any(), any(), any(), any())).thenReturn(candidates)
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context, solveds = new StubSolveds, cardinalities = new StubCardinalities, requiredOrder = RequiredOrder.empty)
+    val result = list.candidates(queryGraph, requiredOrder = RequiredOrder.empty, context = context)
 
     // THEN
     result should equal(candidates)
-    verify(priority).candidates(any(), any(), any(), any(), any(), any())
+    verify(priority).candidates(any(), any(), any(), any())
     verifyZeroInteractions(fallback)
   }
 
@@ -51,16 +51,16 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     // GIVEN
     val priority = mock[LeafPlannerIterable]
     val fallback = mock[LeafPlannerIterable]
-    when(priority.candidates(any(), any(), any(), any(), any(), any())).thenReturn(Seq.empty)
-    when(fallback.candidates(any(), any(), any(), any(), any(), any())).thenReturn(candidates)
+    when(priority.candidates(any(), any(), any(), any())).thenReturn(Seq.empty)
+    when(fallback.candidates(any(), any(), any(), any())).thenReturn(candidates)
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context, solveds = new StubSolveds, cardinalities = new StubCardinalities, requiredOrder = RequiredOrder.empty)
+    val result = list.candidates(queryGraph, requiredOrder = RequiredOrder.empty, context = context)
 
     // THEN
     result should equal(candidates)
-    verify(priority).candidates(any(), any(), any(), any(), any(), any())
-    verify(fallback).candidates(any(), any(), any(), any(), any(), any())
+    verify(priority).candidates(any(), any(), any(), any())
+    verify(fallback).candidates(any(), any(), any(), any())
   }
 }

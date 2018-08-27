@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryGraphProducer}
-import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, PlannerQuery}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName, Variable}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {
@@ -179,7 +178,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   private def countStoreP(query: PlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] =
-    countStorePlanner(query, context, new StubSolveds, new StubCardinalities).map(_._1)
+    countStorePlanner(query, context).map(_._1)
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {
 

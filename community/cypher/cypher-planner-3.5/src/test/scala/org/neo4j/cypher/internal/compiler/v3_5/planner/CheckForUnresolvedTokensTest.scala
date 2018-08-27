@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_5.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
-import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
-import org.neo4j.values.storable.{DurationFields, PointFields}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanningAttributes}
 import org.neo4j.values.storable.TemporalValue.TemporalFields
+import org.neo4j.values.storable.{DurationFields, PointFields}
 import org.opencypher.v9_0.ast.Query
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.phases.RecordingNotificationLogger
@@ -171,7 +171,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
     val notificationLogger = new RecordingNotificationLogger
-    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, new StubSolveds, new StubCardinalities, maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
+    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
     val context = ContextHelper.create(notificationLogger = notificationLogger)
     CheckForUnresolvedTokens.transform(compilationState, context)
     notificationLogger.notifications

@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.SingleCompone
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph, RequiredOrder}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan}
 import org.opencypher.v9_0.ast.RelationshipHint
 import org.opencypher.v9_0.util.InternalException
@@ -43,8 +42,8 @@ import org.opencypher.v9_0.util.InternalException
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
-  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan = {
-    val leaves = leafPlanFinder(context.config, qg, context, requiredOrder, solveds, cardinalities)
+  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan = {
+    val leaves = leafPlanFinder(context.config, qg, requiredOrder, context)
 
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
@@ -62,9 +61,9 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         )
 
         monitor.initTableFor(qg)
-        val seed = initTable(qg, kit, leaves, context, solveds)
+        val seed = initTable(qg, kit, leaves, context)
         monitor.startIDPIterationFor(qg)
-        val solutions = solver(seed, qg.patternRelationships, context, solveds)
+        val solutions = solver(seed, qg.patternRelationships, context)
         val (_, result) = solutions.toSingleOption.getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
         monitor.endIDPIterationFor(qg, result)
 
@@ -89,10 +88,10 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
     (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
-  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext, solveds: Solveds) = {
+  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext): Set[(Set[PatternRelationship], LogicalPlan)] = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val plans = planSinglePattern(qg, pattern, leaves, context, solveds).map(plan => kit.select(plan, qg))
+        val plans = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
         val bestAccessor = kit.pickBest(plans).getOrElse(
           throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
         Set(pattern) -> bestAccessor
@@ -101,7 +100,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 }
 
 trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan
+  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan
 }
 
 
@@ -112,8 +111,8 @@ object SingleComponentPlanner {
   def planSinglePattern(qg: QueryGraph,
                         pattern: PatternRelationship,
                         leaves: Set[LogicalPlan],
-                        context: LogicalPlanningContext,
-                        solveds: Solveds): Iterable[LogicalPlan] = {
+                        context: LogicalPlanningContext): Iterable[LogicalPlan] = {
+    val solveds = context.planningAttributes.solveds
     leaves.flatMap {
       case plan if solveds.get(plan.id).lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)

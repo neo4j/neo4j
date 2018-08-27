@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexOrderCapability, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
 import org.neo4j.helpers.collection.{Pair, Visitable}
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
@@ -60,6 +60,7 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
 
       override val indexes: Set[(String, Seq[String])] = indexSet(lookup.knownIndices())
       override val indexesWithValues: Set[(String, Seq[String])] = Set.empty
+      override val indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
       override def procedureSignatures: Set[ProcedureSignature] = Set.empty
       override val knownLabels: Set[String] = resolvedLabels.keys.toSet
       override val labelsById: Map[Int, String] = resolvedLabels.map(pair => (pair._2.id -> pair._1)).toMap

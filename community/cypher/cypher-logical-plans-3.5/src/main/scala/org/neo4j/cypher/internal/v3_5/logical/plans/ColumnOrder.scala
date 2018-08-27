@@ -21,8 +21,31 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 
 sealed trait ColumnOrder {
   def id: String
+
+  def isAscending: Boolean
 }
 
-case class Ascending(id: String) extends ColumnOrder
+case class Ascending(id: String) extends ColumnOrder {
+  override def isAscending: Boolean = true
+}
 
-case class Descending(id: String) extends ColumnOrder
+case class Descending(id: String) extends ColumnOrder {
+  override def isAscending: Boolean = false
+}
+
+object ColumnOrder {
+  def apply(id: String, ascending: Boolean): ColumnOrder = {
+    if (ascending) Ascending(id) else Descending(id)
+  }
+
+  /**
+    * Split the id into varName and propName, if the
+    * ordered column is a property lookup.
+    */
+  def unapply(arg: ColumnOrder): Option[(String, String)] = {
+    arg.id.split("\\.", 2) match {
+      case Array(varName, propName) => Some((varName, propName))
+      case _ => None
+    }
+  }
+}

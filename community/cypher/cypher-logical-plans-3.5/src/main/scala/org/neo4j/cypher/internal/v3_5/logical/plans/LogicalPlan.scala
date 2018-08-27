@@ -54,18 +54,13 @@ abstract class LogicalPlan(idGen: IdGen)
   def availableSymbols: Set[String]
 
   /**
-<<<<<<< HEAD
-    * Node properties that will be cached in the execution context.
-=======
     * The order of rows of the output of this plan.
     * TODO no default implementation
     */
   def providedOrder: ProvidedOrder = ProvidedOrder.empty
 
   /**
-    * Indexes can provide property values. This is the map of the property name (e.g. "a.prop")
-    * to the property expression for all properties that leaves of this plan get from indexes.
->>>>>>> ProvidedOrder on index plans and sort. Do not sort already sorted plans.
+    * Node properties that will be cached in the execution context.
     */
   def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {
     lhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties) ++

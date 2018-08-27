@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProvidedOrder
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.parser.ParserFixture
 import org.opencypher.v9_0.util.Cardinality
@@ -50,6 +51,16 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def isDefinedAt(id: Id): Boolean = true
 
     override def get(id: Id): Cardinality = 0.0
+
+    override def copy(from: Id, to: Id): Unit = {}
+  }
+
+  class StubProvidedOrders extends ProvidedOrders {
+    override def set(id: Id, t: ProvidedOrder): Unit = {}
+
+    override def isDefinedAt(id: Id): Boolean = true
+
+    override def get(id: Id): ProvidedOrder = ProvidedOrder.empty
 
     override def copy(from: Id, to: Id): Unit = {}
   }

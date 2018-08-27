@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanningAttributes}
 import org.opencypher.v9_0.ast.StatementHelper._
 import org.opencypher.v9_0.ast.semantics.SemanticFeature
 import org.opencypher.v9_0.ast.{AstConstructionTestSupport, Statement}
@@ -154,7 +154,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
 
   private def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
     val fromAst = parseAndRewrite(from, features: _*)
-    val fromState = LogicalPlanState(from, None, IDPPlannerName, new StubSolveds, new StubCardinalities, Some(fromAst), Some(fromAst.semanticState(features: _*)))
+    val fromState = LogicalPlanState(from, None, IDPPlannerName, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), Some(fromAst), Some(fromAst.semanticState(features: _*)))
     val toState = Namespacer.transform(fromState, ContextHelper.create())
 
     val expectedAst = parseAndRewrite(to, features: _*)

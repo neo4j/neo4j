@@ -20,32 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.opencypher.v9_0.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.ast.UsingJoinHint
 
 trait OptionalSolver {
-  def apply(qg:QueryGraph, lp:LogicalPlan, requiredOrder: RequiredOrder, context:LogicalPlanningContext, solveds:Solveds, cardinalities:Cardinalities): Option[LogicalPlan]
+  def apply(qg: QueryGraph, lp: LogicalPlan, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Option[LogicalPlan]
 }
 
 case object applyOptional extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Option[LogicalPlan] = {
-    val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
-    val inner = context.strategy.plan(optionalQg, requiredOrder, innerContext, solveds, cardinalities)
+  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
+    val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
+    val inner = context.strategy.plan(optionalQg, requiredOrder, innerContext)
     val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
     Some(context.logicalPlanProducer.planApply(lhs, rhs, context))
   }
 }
 
 abstract class outerHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Option[LogicalPlan] = {
+  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
     val joinNodes = optionalQg.argumentIds
     val solvedHints = optionalQg.joinHints.filter { hint =>
       val hintVariables = hint.variables.map(_.name).toSet
       hintVariables.subsetOf(joinNodes)
     }
-    val side2 = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints), requiredOrder, context, solveds, cardinalities)
+    val side2 = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints), requiredOrder, context)
 
     if (joinNodes.nonEmpty &&
       joinNodes.forall(side1.availableSymbols) &&

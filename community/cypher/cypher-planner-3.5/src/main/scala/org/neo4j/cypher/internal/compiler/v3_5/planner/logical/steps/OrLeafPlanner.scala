@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder, Selections}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions.PartialPredicate.PartialPredicateWrapper
 import org.opencypher.v9_0.expressions.{Expression, Ors}
@@ -29,7 +29,7 @@ import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
 
-  override def apply(qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     qg.selections.flatPredicates.flatMap {
       case orPredicate@Ors(exprs) =>
 
@@ -39,7 +39,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
             val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, requiredOrder, context))
             val qgForExpression = qg.copy(selections = Selections.from(e))
             plansForVariables.map(p =>
-              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, requiredOrder, context, solveds, cardinalities))))
+              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, requiredOrder, context))))
         }
 
         val wasUnableToFindPlanForAtLeastOnePredicate = plansPerExpression.exists(_.isEmpty)
@@ -59,11 +59,11 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
               // OR plan, we will report solving the OR predicate, but also other predicates which are covered by ALL
               // underlying plans are solved.
               val predicates = collection.mutable.HashSet[Expression]()
-              predicates ++= coveringPredicates(plans.head, solveds)
+              predicates ++= coveringPredicates(plans.head, context.planningAttributes.solveds)
 
               val singlePlan = plans.reduce[LogicalPlan] {
                 case (p1, p2) =>
-                  predicates --= (predicates diff coveringPredicates(p2, solveds).toSet)
+                  predicates --= (predicates diff coveringPredicates(p2, context.planningAttributes.solveds).toSet)
                   producer.planUnion(p1, p2, context)
               }
               val orPlan = context.logicalPlanProducer.planDistinctStar(singlePlan, context)

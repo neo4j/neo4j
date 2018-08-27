@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexOrderCapability}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProcedureSignature}
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.{Expression, HasLabels}
@@ -53,26 +53,31 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   // A subset of indexes and uniqueIndexes
   var indexesWithValues: Set[(String, Seq[String])] = Set.empty
 
+  var indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
+
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
   lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
 
-  def indexOn(label: String, properties: String*): Unit = {
+  case class IndexModifier(label: String, properties: Seq[String]) {
+    def providesValues(): IndexModifier = {
+      indexesWithValues = indexesWithValues + (label -> properties)
+      this
+    }
+    def providesOrder(order: IndexOrderCapability): IndexModifier = {
+      indexesWithOrdering = indexesWithOrdering + ((label, properties) -> order)
+      this
+    }
+  }
+
+  def indexOn(label: String, properties: String*): IndexModifier = {
     indexes = indexes + (label -> properties)
+    IndexModifier(label, properties)
   }
 
-  def indexWithValuesOn(label: String, properties: String*): Unit = {
-    indexOn(label, properties: _*)
-    indexesWithValues = indexesWithValues + (label -> properties)
-  }
-
-  def uniqueIndexOn(label: String, properties: String*): Unit = {
+  def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
     uniqueIndexes = uniqueIndexes + (label -> properties)
-  }
-
-  def uniqueIndexWithValuesOn(label: String, properties: String*): Unit = {
-    uniqueIndexOn(label, properties: _*)
-    indexesWithValues = indexesWithValues + (label -> properties)
+    IndexModifier(label, properties)
   }
 
   def procedure(signature: ProcedureSignature): Unit = {

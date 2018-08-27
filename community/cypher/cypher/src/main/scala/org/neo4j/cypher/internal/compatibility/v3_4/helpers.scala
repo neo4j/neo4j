@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName => PlannerNameV3_4, 
 import org.neo4j.cypher.internal.ir.{v3_4 => irV3_4, v3_5 => irv3_5}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_4, Solveds => SolvedsV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.{spi => spiV3_4}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_5, Solveds => SolvedsV3_5}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{DPPlannerName, IDPPlannerName, PlannerNameWithVersion, ProcedurePlannerName}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{ProvidedOrders, Cardinalities => CardinalitiesV3_5, Solveds => SolvedsV3_5}
+import org.neo4j.cypher.internal.planner.v3_5.spi._
 import org.neo4j.cypher.internal.util.v3_4.attribution.{Id => IdV3_4}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality => CardinalityV3_4, InputPosition => InputPositionV3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4}
@@ -166,6 +166,7 @@ object helpers {
 
     val solveds3_5 = new SolvedsV3_5
     val cardinalities3_5 = new CardinalitiesV3_5
+    val providedOrders = new ProvidedOrders
     val (plan3_4, semanticTable3_4) = convertLogicalPlan(logicalPlanState, solveds3_4, cardinalities3_4, solveds3_5, cardinalities3_5)
 
     val statement3_4 = logicalPlanState.maybeStatement.get
@@ -173,8 +174,7 @@ object helpers {
     LogicalPlanState(logicalPlanState.queryText,
                      startPosition,
                      plannerName,
-                     solveds3_5,
-                     cardinalities3_5,
+                     PlanningAttributes(solveds3_5, cardinalities3_5, providedOrders),
                      Some(as3_5(statement3_4)),
                      None,
                      logicalPlanState.maybeExtractedParams,

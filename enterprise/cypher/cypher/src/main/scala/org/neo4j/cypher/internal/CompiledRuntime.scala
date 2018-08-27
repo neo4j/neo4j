@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.runtime.compiled.{CompiledPlan, projectIndexPro
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.util.attribution.Attributes
 
 object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
@@ -49,7 +48,7 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       newSemanticTable,
       state.plannerName,
       context.readOnly,
-      state.cardinalities)
+      state.planningAttributes.cardinalities)
     new CompiledExecutionPlan(compiled)
   }
 

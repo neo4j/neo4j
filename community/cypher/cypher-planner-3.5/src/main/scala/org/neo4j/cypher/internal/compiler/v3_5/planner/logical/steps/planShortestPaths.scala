@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.ExhaustiveShortestPathForbiddenNo
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.ir.v3_5.{Predicate, ShortestPathPattern, _}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.{Length, Nodes}
@@ -35,8 +34,7 @@ case object planShortestPaths {
   def apply(inner: LogicalPlan,
             queryGraph: QueryGraph,
             shortestPaths: ShortestPathPattern,
-            context: LogicalPlanningContext,
-            solveds: Solveds): LogicalPlan = {
+            context: LogicalPlanningContext): LogicalPlan = {
 
     val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
     def predicateAppliesToShortestPath(p: Predicate) =
@@ -63,7 +61,7 @@ case object planShortestPaths {
     }
 
     if (needFallbackPredicates.nonEmpty) {
-      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph, context, solveds)
+      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph, context)
     }
     else {
       context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, withFallBack = false,
@@ -78,12 +76,13 @@ case object planShortestPaths {
     PathExpression(step)(pos)
   }
 
-  private def planShortestPathsWithFallback(inner: LogicalPlan, shortestPath: ShortestPathPattern,
+  private def planShortestPathsWithFallback(inner: LogicalPlan,
+                                            shortestPath: ShortestPathPattern,
                                             predicates: Seq[Expression],
                                             safePredicates: Seq[Expression],
                                             unsafePredicates: Seq[Expression],
-                                            queryGraph: QueryGraph, context: LogicalPlanningContext,
-                                            solveds: Solveds): LogicalPlan = {
+                                            queryGraph: QueryGraph,
+                                            context: LogicalPlanningContext) = {
     // create warning for planning a shortest path fallback
     context.notificationLogger.log(ExhaustiveShortestPathForbiddenNotification(shortestPath.expr.position))
 
@@ -106,7 +105,7 @@ case object planShortestPaths {
     }
 
     // We have to force the plan to solve what we actually solve
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addShortestPath(shortestPath).addPredicates(predicates: _*))
+    val solved = context.planningAttributes.solveds.get(inner.id).amendQueryGraph(_.addShortestPath(shortestPath).addPredicates(predicates: _*))
 
     lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestPath.name.get), context, Some(solved))
   }

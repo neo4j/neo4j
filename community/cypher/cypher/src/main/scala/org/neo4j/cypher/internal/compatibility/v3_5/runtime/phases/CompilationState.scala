@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases
 
-import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => RuntimeExecutionPlan}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 
 import scala.util.{Failure, Try}
 
 class CompilationState(ls: LogicalPlanState,
                            val maybeExecutionPlan: Try[RuntimeExecutionPlan] = Failure(new UnsupportedOperationException))
-  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.solveds, ls.cardinalities, ls.maybeStatement, ls.maybeSemantics,
+  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.planningAttributes, ls.maybeStatement, ls.maybeSemantics,
                            ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
                            ls.maybePeriodicCommit, ls.accumulatedConditions)
