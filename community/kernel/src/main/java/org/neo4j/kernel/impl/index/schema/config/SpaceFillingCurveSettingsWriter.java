@@ -72,15 +72,10 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
             public void visit( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
             {
                 // For tableId+code the native layout is even stricter here, but it'd add unnecessary complexity to shave off a couple of more bits
-                int tableId = crs.getTable().getTableId();
-                if ( (tableId & ~0xFF) != 0 )
-                {
-                    throw new IllegalArgumentException( "Invalid table id " + tableId );
-                }
-                cursor.putByte( (byte) tableId );
+                cursor.putByte( (byte) assertInt( "table id", crs.getTable().getTableId(), 0xFF ) );
                 cursor.putInt( crs.getCode() );
-                cursor.putInt( settings.maxLevels );
-                cursor.putInt( settings.dimensions );
+                cursor.putShort( (short) assertInt( "max levels", settings.maxLevels, 0xFFFF ) );
+                cursor.putShort( (short) assertInt( "dimensions", settings.dimensions, 0xFFFF ) );
                 double[] min = settings.extents.getMin();
                 double[] max = settings.extents.getMax();
                 for ( int i = 0; i < settings.dimensions; i++ )
@@ -88,6 +83,15 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
                     cursor.putLong( Double.doubleToLongBits( min[i] ) );
                     cursor.putLong( Double.doubleToLongBits( max[i] ) );
                 }
+            }
+
+            private int assertInt( String name, int value, int mask )
+            {
+                if ( (value & ~mask) != 0 )
+                {
+                    throw new IllegalArgumentException( "Invalid " + name + value + " max is " + mask );
+                }
+                return value;
             }
         } );
     }

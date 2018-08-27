@@ -57,8 +57,8 @@ public class SpaceFillingCurveSettingsReader implements Header.Reader
         int code = headerBytes.getInt();
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
 
-        int maxLevels = headerBytes.getInt();
-        int dimensions = headerBytes.getInt();
+        int maxLevels = headerBytes.getShort() & 0xFFFF;
+        int dimensions = headerBytes.getShort() & 0xFFFF;
         double[] min = new double[dimensions];
         double[] max = new double[dimensions];
         for ( int i = 0; i < dimensions; i++ )
