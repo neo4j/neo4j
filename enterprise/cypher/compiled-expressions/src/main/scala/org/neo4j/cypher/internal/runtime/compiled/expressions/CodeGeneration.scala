@@ -132,15 +132,20 @@ object CodeGeneration {
       invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
     //target.method(p1,p2,...)
     case InvokeSideEffect(target, method, params) =>
-      block.expression(invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*))
+      val invocation = invoke(compileExpression(target, block), method.asReference,
+                              params.map(p => compileExpression(p, block)): _*)
+
+      if (method.output == TypeReference.VOID) block.expression(invocation)
+      else block.expression(Expression.pop(invocation))
       Expression.EMPTY
+
     //loads local variable by name
     case Load(variable) => block.load(variable)
     //loads field
-    case LoadField(f) => Expression.get(block.self(), field(block.owner(), typeReference(f.typ), f.name))
+    case LoadField(f) => Expression.get(block.self(), field(block.owner(), f.typ, f.name))
     //sets a field
     case SetField(f, v) =>
-      block.put(block.self(), field(block.owner(), typeReference(f.typ), f.name), compileExpression(v, block))
+      block.put(block.self(), field(block.owner(), f.typ, f.name), compileExpression(v, block))
       Expression.EMPTY
     //Values.longValue(value)
     case Integer(value) =>
@@ -190,7 +195,7 @@ object CodeGeneration {
 
     //typ name;
     case DeclareLocalVariable(typ, name) =>
-      block.declare(typeReference(typ), name)
+      block.declare(typ, name)
 
     //name = value;
     case AssignToLocalVariable(name, value) =>
@@ -219,7 +224,15 @@ object CodeGeneration {
     case BooleanOr(lhs, rhs) =>
       Expression.or(compileExpression(lhs, block), compileExpression(rhs, block))
 
+    //new Foo(args[0], args[1], ...)
     case NewInstance(constructor, args) =>
       Expression.invoke(Expression.newInstance(constructor.owner), constructor.asReference, args.map(compileExpression(_, block)):_*)
+
+    //while(test) { body }
+    case Loop(test, body) =>
+      using(block.whileLoop(compileExpression(test, block)))(compileExpression(body, _))
+
+    // (to) expressions
+    case Cast(to, expression) => Expression.cast(to, compileExpression(expression, block))
   }
 }

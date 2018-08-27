@@ -1014,7 +1014,7 @@ public final class CypherFunctions
         }
     }
 
-    private static ListValue makeTraversable( AnyValue collection )
+    public static ListValue makeTraversable( AnyValue collection )
     {
         ListValue list;
         if ( collection == NO_VALUE )

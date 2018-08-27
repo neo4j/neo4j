@@ -47,7 +47,7 @@ class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan) extends 
      // don't bother with small expressions, not worth it
     case e if sizeOf(e) > COMPILE_LIMIT => try {
       new IntermediateCodeGeneration(physicalPlan.slotConfigurations(id)).compileExpression(e).map(i => CompileWrappingExpression(CodeGeneration.compileExpression(i),
-                                                                                                    inner.toCommandExpression(id, expression)))
+                                                                                                                                          inner.toCommandExpression(id, expression)))
     } catch {
       case t: Throwable =>
         //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried

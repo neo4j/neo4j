@@ -34,7 +34,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.DbAccess
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
@@ -51,6 +51,8 @@ import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.symbols.{CypherType, ListType}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
+
+import scala.collection.mutable
 
 class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -1562,6 +1564,42 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     Mockito.verifyNoMoreInteractions(context)
   }
 
+  test("extract function local access only") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty)
+
+    //When, extract(bar IN ["a", "aa", "aaa"] | size(a)
+    val compiled = compile(extract("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+                                   function("size", varFor("bar"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(list(intValue(1), intValue(2), intValue(3)))
+  }
+
+  test("extract function accessing outer scope") {
+    //Given
+    val context = MapExecutionContext(mutable.Map("foo" -> intValue(10)))
+
+    //When, extract(bar IN ["a", "aa", "aaa"] | size(a)
+    val compiled = compile(extract("bar", listOf(literalInt(1), literalInt(2), literalInt(3)),
+                                   add(varFor("foo"), varFor("bar"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(list(intValue(11), intValue(12), intValue(13)))
+  }
+
+  test("extract on null") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty)
+
+    //When, extract(bar IN ["a", "aa", "aaa"] | size(a)
+    val compiled = compile(extract("bar", noValue,
+                                   function("size", varFor("bar"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
   private def path(size: Int) =
     VirtualValues.path((0 to size).map(i => node(i)).toArray, (0 until size).map(i => relationship(i)).toArray)
 
@@ -1674,6 +1712,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def sliceTo(list: Expression, to: Expression) = ListSlice(list, None, Some(to))(pos)
 
   private def sliceFull(list: Expression, from: Expression, to: Expression) = ListSlice(list, Some(from), Some(to))(pos)
+
+  private def extract(variable: String, collection: Expression, extract: Expression) =
+    ExtractExpression(varFor(variable), collection,  None, Some(extract) )(pos)
 
   private val numericalValues: Seq[AnyRef] = Seq[Number](
     Double.NegativeInfinity,

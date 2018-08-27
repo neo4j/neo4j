@@ -22,10 +22,8 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
-import org.neo4j.codegen.MethodReference
+import org.neo4j.codegen.{MethodReference, TypeReference}
 import org.neo4j.values.storable._
-
-import scala.reflect.ClassTag
 
 /**
   * IntermediateRepresentation is an intermediate step between pure byte code and the operator/expression
@@ -174,6 +172,14 @@ case class Condition(test: IntermediateRepresentation, onTrue: IntermediateRepre
   extends IntermediateRepresentation
 
 /**
+  * A loop runs body while the provided test is true
+  * @param test the body will run while this evaluates to true
+  * @param body the body to run on each iteration
+  */
+case class Loop(test: IntermediateRepresentation, body: IntermediateRepresentation)
+  extends IntermediateRepresentation
+
+/**
   * Declare a local variable of the given type.
   *
   * {{{
@@ -182,7 +188,7 @@ case class Condition(test: IntermediateRepresentation, onTrue: IntermediateRepre
   * @param typ the type of the variable
   * @param name the name of the variable
   */
-case class DeclareLocalVariable(typ: Class[_], name: String) extends IntermediateRepresentation
+case class DeclareLocalVariable(typ: TypeReference, name: String) extends IntermediateRepresentation
 
 /**
   * Assign a variable to a value.
@@ -212,7 +218,7 @@ case class AssignToLocalVariable(name: String, value: IntermediateRepresentation
   * @param exception the type of the exception
   * @param name the name of the caught exception
   */
-case class TryCatch(ops: IntermediateRepresentation, onError: IntermediateRepresentation, exception: Class[_], name: String) extends IntermediateRepresentation
+case class TryCatch(ops: IntermediateRepresentation, onError: IntermediateRepresentation, exception: TypeReference, name: String) extends IntermediateRepresentation
 
 /**
   * Throw an error
@@ -246,15 +252,32 @@ case class BooleanOr(lhs: IntermediateRepresentation, rhs: IntermediateRepresent
   * @param output The type of the static field
   * @param name The name of the static field
   */
-case class GetStatic(owner: Class[_], output: Class[_], name: String) extends IntermediateRepresentation
+case class GetStatic(owner: TypeReference, output: TypeReference, name: String) extends IntermediateRepresentation
 
+/**
+  * Instantiate a new object
+  * @param constructor the constructor to call
+  * @param params the parameter to the constructor
+  */
 case class NewInstance(constructor: Constructor, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
-case class Constructor(owner: Class[_], params: Seq[Class[_]]) {
+/**
+  * Defines a constructor
+  * @param owner the owner of the constructor, or the object to be instantiated
+  * @param params the parameter to the constructor
+  */
+case class Constructor(owner: TypeReference, params: Seq[TypeReference]) {
   def asReference: MethodReference =
     if (params.isEmpty) MethodReference.constructorReference(owner)
-    else MethodReference.constructorReference(owner, params.head, params.tail:_*)
+    else MethodReference.constructorReference(owner, params:_*)
 }
+
+/**
+  * Cast the given expression to the given type
+  * @param to the type to cast to
+  * @param expression the expression to cast
+  */
+case class Cast(to: TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Defines a method
@@ -264,7 +287,7 @@ case class Constructor(owner: Class[_], params: Seq[Class[_]]) {
   * @param name   the name of the method
   * @param params the parameter types of the method
   */
-case class Method(owner: Class[_], output: Class[_], name: String, params: Class[_]*) {
+case class Method(owner: TypeReference, output: TypeReference, name: String, params: TypeReference*) {
 
   def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params: _*)
 }
@@ -272,42 +295,52 @@ case class Method(owner: Class[_], output: Class[_], name: String, params: Class
 case class IntermediateExpression(ir: IntermediateRepresentation, fields: Seq[Field],
                                   variables: Seq[LocalVariable], nullCheck: Set[IntermediateRepresentation])
 
-case class Field(typ: Class[_], name: String, initializer: Option[IntermediateRepresentation] = None)
+case class Field(typ: TypeReference, name: String, initializer: Option[IntermediateRepresentation] = None)
 
-case class LocalVariable(typ: Class[_], name: String, value: IntermediateRepresentation)
+case class LocalVariable(typ: TypeReference, name: String, value: IntermediateRepresentation)
 
 /**
   * Defines a simple dsl to facilitate constructing intermediate representation
   */
 object IntermediateRepresentation {
+  def typeRef(manifest: Manifest[_]): TypeReference = {
+    val arguments = manifest.typeArguments
+    val base = TypeReference.typeReference(manifest.runtimeClass)
+    if (arguments.nonEmpty) {
+      TypeReference.parameterizedType(base, arguments.map(typeRef): _*)
+    } else {
+      base
+    }
+  }
 
-  def field[TYPE](name: String)(implicit typ: ClassTag[TYPE]) = Field(typ.runtimeClass, name)
-  def field[TYPE](name: String, initializer: IntermediateRepresentation)(implicit typ: ClassTag[TYPE]) =
-    Field(typ.runtimeClass, name, Some(initializer))
+  def field[TYPE](name: String)(implicit typ: Manifest[TYPE]) = Field(typeRef(typ), name)
 
-  def variable[TYPE](name: String, value: IntermediateRepresentation)(implicit typ: ClassTag[TYPE]) =
-    LocalVariable(typ.runtimeClass, name, value)
+  def field[TYPE](name: String, initializer: IntermediateRepresentation)(implicit typ: Manifest[TYPE]) =
+    Field(typeRef(typ), name, Some(initializer))
 
-  def method[OWNER, OUT](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT]) =
-    Method(owner.runtimeClass, out.runtimeClass, name)
+  def variable[TYPE](name: String, value: IntermediateRepresentation)(implicit typ: Manifest[TYPE]) =
+    LocalVariable(typeRef(typ), name, value)
 
-  def method[OWNER, OUT, IN](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in: ClassTag[IN]) =
-    Method(owner.runtimeClass, out.runtimeClass, name, in.runtimeClass)
+  def method[OWNER, OUT](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT]) =
+    Method(typeRef(owner), typeRef(out), name)
+
+  def method[OWNER, OUT, IN](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT], in: Manifest[IN]) =
+    Method(typeRef(owner), typeRef(out), name, typeRef(in))
 
   def method[OWNER, OUT, IN1, IN2](name: String)
-                                  (implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in1: ClassTag[IN1],
-                                   in2: ClassTag[IN2]) =
-    Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass)
+                                  (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
+                                   in2: Manifest[IN2]) =
+    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2))
 
   def method[OWNER, OUT, IN1, IN2, IN3](name: String)
-                                       (implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in1: ClassTag[IN1],
-                                        in2: ClassTag[IN2], in3: ClassTag[IN3]) =
-    Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass, in3.runtimeClass)
+                                       (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
+                                        in2: Manifest[IN2], in3: Manifest[IN3]) =
+    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3))
 
-  def constructor[OWNER](implicit owner: ClassTag[OWNER]) = Constructor(owner.runtimeClass, Seq.empty)
+  def constructor[OWNER](implicit owner: Manifest[OWNER]) = Constructor(typeRef(owner), Seq.empty)
 
-  def constructor[OWNER, IN](implicit owner: ClassTag[OWNER],  in: ClassTag[IN]) =
-    Constructor(owner.runtimeClass, Seq(in.runtimeClass))
+  def constructor[OWNER, IN](implicit owner: Manifest[OWNER],  in: Manifest[IN]) =
+    Constructor(typeRef(owner), Seq(typeRef(in)))
 
   def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(
     method, params)
@@ -322,12 +355,14 @@ object IntermediateRepresentation {
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
 
+  def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]) = Cast(typeRef(to), expression)
+
   def loadField(field: Field): IntermediateRepresentation = LoadField(field)
 
   def setField(field: Field, value: IntermediateRepresentation): IntermediateRepresentation = SetField(field, value)
 
-  def getStatic[OWNER, OUT](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT]) =
-    GetStatic(owner.runtimeClass, out.runtimeClass, name)
+  def getStatic[OWNER, OUT](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT]) =
+    GetStatic(typeRef(owner), typeRef(out), name)
 
   def noValue: IntermediateRepresentation = getStatic[Values, Value]("NO_VALUE")
 
@@ -354,13 +389,18 @@ object IntermediateRepresentation {
   def condition(test: IntermediateRepresentation)
                (onTrue: IntermediateRepresentation): IntermediateRepresentation = Condition(test, onTrue)
 
-  def declare[TYPE](name: String)(implicit typ: ClassTag[TYPE]) = DeclareLocalVariable(typ.runtimeClass, name)
+  def loop(test: IntermediateRepresentation)
+               (body: IntermediateRepresentation): IntermediateRepresentation = Loop(test, body)
+
+  def declare[TYPE](name: String)(implicit typ: Manifest[TYPE]) = DeclareLocalVariable(typeRef(typ), name)
+
+  def declare(typeReference: TypeReference, name: String) = DeclareLocalVariable(typeReference, name)
 
   def assign(name: String, value: IntermediateRepresentation) = AssignToLocalVariable(name, value)
 
   def tryCatch[E](name: String)(ops: IntermediateRepresentation)(onError: IntermediateRepresentation)
-                 (implicit typ: ClassTag[E]) =
-    TryCatch(ops, onError, typ.runtimeClass, name)
+                 (implicit typ: Manifest[E]) =
+    TryCatch(ops, onError, typeRef(typ), name)
 
   def fail(error: IntermediateRepresentation) = Throw(error)
 
