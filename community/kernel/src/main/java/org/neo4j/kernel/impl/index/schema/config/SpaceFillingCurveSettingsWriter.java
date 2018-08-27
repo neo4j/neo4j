@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.config;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -32,6 +33,16 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
 {
+    /**
+     * Biggest theoretical size of a stored setting.
+     */
+    private static final int WORST_CASE_SETTINGS_SIZE =
+            Byte.BYTES +          // tableId
+            Integer.BYTES +       // code
+            Integer.BYTES +       // maxLevels
+            Integer.BYTES +       // dimensions
+            (Long.BYTES * 2) * 3; // two doubles per dimension (max 3 dimensions)
+
     private final IndexSpecificSpaceFillingCurveSettingsCache settings;
 
     public SpaceFillingCurveSettingsWriter( IndexSpecificSpaceFillingCurveSettingsCache settings )
@@ -79,5 +90,16 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
                 }
             }
         } );
+    }
+
+    /**
+     * Calculates max number of crs settings that can fit on a tree-state page, given {@code pageSize}.
+     *
+     * @param pageSize page size in the page cache.
+     * @return max number of crs settings a {@link GBPTree} tree-state page can hold given the {@code pageSize}.
+     */
+    public static int maxNumberOfSettings( int pageSize )
+    {
+        return (pageSize - Header.OVERHEAD) / WORST_CASE_SETTINGS_SIZE;
     }
 }

@@ -30,6 +30,14 @@ import org.neo4j.io.pagecache.PageCursor;
 public class Header
 {
     /**
+     * The total overhead of other things written into the page that the additional header is written into.
+     * Therefore the max size of an additional header cannot exceed page size minus this overhead.
+     */
+    public static final int OVERHEAD =
+            TreeState.SIZE +   // size of the tree state
+            Integer.BYTES;     // size of the field storing the length of the additional header data
+
+    /**
      * Writes a header into a {@link GBPTree} state page during
      * {@link GBPTree#checkpoint(org.neo4j.io.pagecache.IOLimiter)}.
      */

@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -42,8 +43,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.array;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class GenericIndexKeyValidatorTest
@@ -57,7 +64,7 @@ public class GenericIndexKeyValidatorTest
         // given
         Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
         doThrow( RuntimeException.class ).when( layout ).newKey();
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, layout, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ), PAGE_SIZE );
 
         // when
         validator.validate( new Value[]{intValue( 10 ), epochDate( 100 ), stringValue( "abc" )} );
@@ -71,7 +78,7 @@ public class GenericIndexKeyValidatorTest
         // given
         Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
         when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3, spatialSettings() ) );
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, layout, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ), PAGE_SIZE );
 
         // when
         try
@@ -94,7 +101,8 @@ public class GenericIndexKeyValidatorTest
         int slots = random.nextInt( 1, 6 );
         int maxLength = random.nextInt( 15, 30 ) * slots;
         GenericLayout layout = new GenericLayout( slots, spatialSettings() );
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, layout, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ),
+                PAGE_SIZE );
         CompositeGenericKey key = layout.newKey();
 
         int countOk = 0;
@@ -129,6 +137,31 @@ public class GenericIndexKeyValidatorTest
         // then a little meta assertion, that the generated parameters in this test are good so that it test at least some on each side of the threshold
         assertThat( countOk, greaterThan( 0 ) );
         assertThat( countNotOk, greaterThan( 0 ) );
+    }
+
+    @Test
+    public void shouldDetectCrsSettingsLimitExceeded()
+    {
+        // given
+        GenericLayout layout = new GenericLayout( 2, spatialSettings() );
+        IndexSpecificSpaceFillingCurveSettingsCache indexSettings =
+                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 200, layout, indexSettings, 300/*controlled page size*/ );
+        validator.validate( array( pointValue( WGS84, 1, 2 ), pointValue( Cartesian, 1, 2 ) ) );
+        // just checking so that the test assumption about max 2 settings is true
+        indexSettings.forCrs( WGS84, true );
+        indexSettings.forCrs( CoordinateReferenceSystem.Cartesian, true );
+
+        // when
+        try
+        {
+            validator.validate( array( pointValue( Cartesian_3D, 1, 2, 3 ) ) );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString( "exceed number of crs settings" ) );
+        }
     }
 
     private IndexSpecificSpaceFillingCurveSettingsCache spatialSettings()
