@@ -108,6 +108,12 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private static final long FALSE = 0;
     private static final int TYPE_ID_SIZE = Byte.BYTES;
 
+    // code+table for points (geometry) is 3B in total
+    private static final int MASK_CODE = 0x3FFFFF; // 22b
+    private static final int SHIFT_TABLE = Integer.bitCount( MASK_CODE );
+    private static final int MASK_TABLE_READ = 0xC00000; // 2b
+    private static final int MASK_TABLE_PUT = MASK_TABLE_READ >>> SHIFT_TABLE;
+
     Type type;
     NativeIndexKey.Inclusion inclusion;
     private boolean isArray;
@@ -1077,8 +1083,22 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void putGeometryCrs( PageCursor cursor, long long1, long long2 )
     {
-        cursor.putInt( (int) long1 );
-        cursor.putInt( (int) long2 );
+        if ( (long1 & ~MASK_TABLE_PUT) != 0 )
+        {
+            throw new IllegalArgumentException( "Table id must be 0 < tableId <= " + MASK_TABLE_PUT + ", but was " + long1 );
+        }
+        if ( (long2 & ~MASK_CODE) != 0 )
+        {
+            throw new IllegalArgumentException( "Code must be 0 < code <= " + MASK_CODE + ", but was " + long1 );
+        }
+        int tableAndCode = (int) ((long1 << SHIFT_TABLE) | long2);
+        put3BInt( cursor, tableAndCode );
+    }
+
+    private static void put3BInt( PageCursor cursor, int value )
+    {
+        cursor.putShort( (short) value );
+        cursor.putByte( (byte) (value >>> Short.SIZE) );
     }
 
     private void putGeometry( PageCursor cursor, long long0 )
@@ -1391,8 +1411,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private boolean readGeometryCrs( PageCursor cursor )
     {
-        long1 = cursor.getInt();
-        long2 = cursor.getInt();
+        int tableAndCode = read3BInt( cursor );
+        long1 = (tableAndCode & MASK_TABLE_READ) >>> SHIFT_TABLE;
+        long2 = tableAndCode & MASK_CODE;
         try
         {
             crs = CoordinateReferenceSystem.get( (int) long1, (int) long2 );
@@ -1402,6 +1423,14 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             cursor.setCursorException( e.getMessage() );
         }
         return true;
+    }
+
+    private static int read3BInt( PageCursor cursor )
+    {
+        int low = cursor.getShort() & 0xFFFF;
+        int high = cursor.getByte() & 0xFF;
+        int i = high << Short.SIZE | low;
+        return i;
     }
 
     private boolean readNumber( PageCursor cursor )
