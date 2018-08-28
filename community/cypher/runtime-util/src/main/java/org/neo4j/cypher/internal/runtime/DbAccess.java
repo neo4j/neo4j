@@ -40,6 +40,8 @@ public interface DbAccess
 
     int propertyKey( String name );
 
+    int nodeLabel( String name );
+
     int relationshipType( String name );
 
     boolean nodeHasProperty( long node, int property );
@@ -67,6 +69,8 @@ public interface DbAccess
     NodeValue relationshipGetEndNode( RelationshipValue relationship );
 
     ListValue getLabelsForNode( long id );
+
+    boolean isLabelSetOnNode( int label, long id );
 
     String getPropertyKeyName( int token );
 

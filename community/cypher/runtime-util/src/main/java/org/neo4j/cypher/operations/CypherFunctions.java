@@ -724,6 +724,18 @@ public final class CypherFunctions
         }
     }
 
+    public static boolean hasLabel( AnyValue entity, int labelToken, DbAccess access )
+    {
+        if ( entity instanceof NodeValue )
+        {
+            return access.isLabelSetOnNode( labelToken, ((NodeValue) entity).id() );
+        }
+        else
+        {
+            throw new ParameterWrongTypeException( "Expected a Node, got: " + entity, null );
+        }
+    }
+
     public static TextValue type( AnyValue item )
     {
         if ( item instanceof RelationshipValue )

@@ -32,7 +32,7 @@ import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.opencypher.v9_0.expressions.{Expression, SemanticDirection}
+import org.opencypher.v9_0.expressions.{Expression, HasLabels, LabelName, SemanticDirection}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -148,6 +148,17 @@ class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTest
     compiled.evaluate(ctx, dbAccess, EMPTY_MAP) should equal(relationshipValue)
   }
 
+  test("HasLabels") {
+    compile(checkLabels("L1")).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.TRUE)
+    compile(checkLabels("L1", "L2")).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.TRUE)
+    compile(checkLabels("L1", "L3")).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
+    compile(checkLabels("L2", "L3")).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
+    compile(checkLabels("L1", "L2", "L3")).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
+  }
+
+  private def checkLabels(labels: String*) =
+    HasLabels(NodeFromSlot(nodeOffset, "foo"), labels.toSeq.map(l => LabelName(l)(pos)))(pos)
+
   private def compile(e: Expression) =
     CodeGeneration.compileExpression(new IntermediateCodeGeneration(SlotConfiguration.empty).compileExpression(e).getOrElse(fail()))
 
@@ -158,6 +169,9 @@ class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTest
   private val relType = "R"
   private val relTypeId = 56
   private val property = 1337
+  private val label1 = 100
+  private val label2 = 101
+  private val label3 = 102
   private val nonExistingProperty = 1338
   private val nodeOffset = 42
   private val relOffset = 43
@@ -182,8 +196,15 @@ class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTest
   when(dbAccess.nodeGetOutgoingDegree(node, relTypeId)).thenReturn(2)
   when(dbAccess.nodeGetIncomingDegree(node, relTypeId)).thenReturn(1)
   when(dbAccess.nodeGetTotalDegree(node, relTypeId)).thenReturn(3)
+  when(nodeValue.id()).thenReturn(node)
   when(dbAccess.nodeById(node)).thenReturn(nodeValue)
   when(dbAccess.relationshipById(relationship)).thenReturn(relationshipValue)
   when(dbAccess.relationshipType(relType)).thenReturn(relTypeId)
+  when(dbAccess.nodeLabel("L1")).thenReturn(label1)
+  when(dbAccess.nodeLabel("L2")).thenReturn(label2)
+  when(dbAccess.nodeLabel("L3")).thenReturn(label3)
+  when(dbAccess.isLabelSetOnNode(label1, node)).thenReturn(true)
+  when(dbAccess.isLabelSetOnNode(label2, node)).thenReturn(true)
+  when(dbAccess.isLabelSetOnNode(label3, node)).thenReturn(false)
 
 }

@@ -755,6 +755,24 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         truthValue,
         falseValue)), Seq(f), Seq.empty, Set.empty))
 
+    case HasLabels(nodeExpression, labels)  if labels.nonEmpty =>
+      for (node <- compileExpression(nodeExpression)) yield {
+        val tokensAndNames = labels.map(l => field[Int](s"label${l.name}", constant(-1)) -> l.name)
+
+        val init = tokensAndNames.map {
+          case (token, labelName) =>
+            condition(equal(loadField(token), constant(-1)))(setField(
+              token, invoke(DB_ACCESS, method[DbAccess, Int, String]("nodeLabel"), constant(labelName))))
+        }
+
+        val predicate: IntermediateRepresentation = ternary(tokensAndNames.map { token =>
+          invokeStatic(method[CypherFunctions, Boolean, AnyValue, Int, DbAccess]("hasLabel"),
+                       node.ir, loadField(token._1), DB_ACCESS)
+        }.reduceLeft(and), truthValue, falseValue)
+
+        IntermediateExpression(block(init :+ predicate:_*), node.fields ++ tokensAndNames.map(_._1), node.variables, node.nullCheck)
+      }
+
     case NodeFromSlot(offset, name) =>
       Some(IntermediateExpression(
         invoke(DB_ACCESS, method[DbAccess, NodeValue, Long]("nodeById"), getLongAt(offset, currentContext)),
