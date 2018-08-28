@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * A little trick to automatically tell whether or not index format was changed without
+ * A little trick to automatically tell whether or not store format was changed without
  * incrementing the format version. This is done by keeping a zipped store file which is opened and tested on.
  * On failure this test will fail saying that the format version needs update and also update the zipped
  * store with the new version.
@@ -113,14 +113,14 @@ public abstract class FormatCompatibilityVerifier
         catch ( Throwable t )
         {
             throw new AssertionError( "If this is the single failing test in this component then this failure is a strong indication that format " +
-                    "has changed without also incrementing TreeNode version(s). Please make necessary format version changes.", t );
+                    "has changed without also incrementing format version(s). Please make necessary format version changes.", t );
         }
     }
 
     private void tellDeveloperToCommitThisFormatVersion( String zipName )
     {
         fail( String.format( "This is merely a notification to developer. Format has changed and its version has also " +
-                        "been properly incremented. A tree with this new format has been generated and should be committed. " +
+                        "been properly incremented. A store file with this new format has been generated and should be committed. " +
                         "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
                 globalDir.file( zipName ),
                 "<corresponding-module>" + pathify( ".src.test.resources." ) +
