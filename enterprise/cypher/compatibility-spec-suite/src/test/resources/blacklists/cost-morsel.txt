@@ -144,7 +144,6 @@ Feature "KeysAcceptance": Scenario "Using `keys()` on an optionally matched node
 Feature "KeysAcceptance": Scenario "Using `keys()` on a relationship, non-empty result"
 Feature "KeysAcceptance": Scenario "Using `keys()` on a relationship, empty result"
 Feature "KeysAcceptance": Scenario "Using `keys()` on an optionally matched relationship"
-Feature "KeysAcceptance": Scenario "Using `keys()` on a literal map"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging relationship with null property"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging node with null property"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of maps as a property"
