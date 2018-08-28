@@ -56,6 +56,7 @@ class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan) extends 
         log.debug(s"Failed to compile expression: $e", t)
         None
     }
+    case _ => None
   }
 
   import org.opencypher.v9_0.util.Foldable._
