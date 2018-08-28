@@ -201,3 +201,14 @@ Feature: ReturnAcceptance
       | result |
       | false   |
     And no side effects
+
+  Scenario: Exponentiation should work
+    Given an empty graph
+    When executing query:
+      """
+       WITH 2 AS number, 3 AS exponent RETURN number ^ exponent AS result
+      """
+    Then the result should be:
+      | result |
+      | 8.0 |
+    And no side effects
