@@ -35,6 +35,7 @@ import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -49,10 +50,10 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
 
 class BoltStateMachineFactoryImplTest
 {
+    private static final String CUSTOM_DB_NAME = "customDbName";
     private static final Clock CLOCK = Clock.systemUTC();
     private static final BoltChannel CHANNEL = mock( BoltChannel.class );
 
@@ -96,8 +97,9 @@ class BoltStateMachineFactoryImplTest
 
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager databaseManager )
     {
+        Config config = Config.defaults( GraphDatabaseSettings.active_database, CUSTOM_DB_NAME );
         return new BoltStateMachineFactoryImpl( databaseManager, new UsageData( new OnDemandJobScheduler() ),
-                mock( Authentication.class ), CLOCK, Config.defaults(),
+                mock( Authentication.class ), CLOCK, config,
                 NullLogService.getInstance() );
     }
 
@@ -110,7 +112,7 @@ class BoltStateMachineFactoryImplTest
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         DatabaseManager databaseManager = mock( DatabaseManager.class );
-        when( databaseManager.getDatabaseFacade( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( db ) );
+        when( databaseManager.getDatabaseFacade( CUSTOM_DB_NAME ) ).thenReturn( Optional.of( db ) );
         return databaseManager;
     }
 }
