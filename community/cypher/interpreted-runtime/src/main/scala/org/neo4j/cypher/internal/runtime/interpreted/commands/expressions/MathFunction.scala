@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.operations.{CypherFunctions, CypherMath}
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.VirtualValues
+import org.opencypher.v9_0.util.CypherTypeException
 import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
 
@@ -75,8 +74,10 @@ trait NumericHelper {
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
-    CypherFunctions.abs(argument(ctx, state))
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val value = argument(ctx, state)
+    if (value == NO_VALUE) NO_VALUE else CypherFunctions.abs(value)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
@@ -84,7 +85,10 @@ case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 case class AcosFunction(argument: Expression) extends MathFunction(argument) {
 
   override def apply(ctx: ExecutionContext,
-                     state: QueryState): AnyValue = CypherFunctions.acos(argument(ctx, state))
+                     state: QueryState): AnyValue = argument(ctx, state) match {
+    case NO_VALUE => NO_VALUE
+    case v => CypherFunctions.acos(v)
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(AcosFunction(argument.rewrite(f)))
 }
