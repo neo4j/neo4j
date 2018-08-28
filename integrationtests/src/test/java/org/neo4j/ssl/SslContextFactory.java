@@ -25,8 +25,6 @@ package org.neo4j.ssl;
 import io.netty.handler.ssl.SslProvider;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,26 +79,25 @@ public class SslContextFactory
         }
     }
 
-    public static SslPolicy makeSslPolicy( SslResource sslResource, SslParameters params ) throws CertificateException, IOException
+    public static SslPolicy makeSslPolicy( SslResource sslResource, SslParameters params )
     {
-        return makeSslPolicy( sslResource, SslProvider.JDK.name(), params.protocols, params.ciphers );
+        return makeSslPolicy( sslResource, SslProvider.JDK, params.protocols, params.ciphers );
     }
 
-    public static SslPolicy makeSslPolicy( SslResource sslResource, String sslProvider ) throws CertificateException, IOException
+    public static SslPolicy makeSslPolicy( SslResource sslResource, SslProvider sslProvider )
     {
         return makeSslPolicy( sslResource, sslProvider, null, null );
     }
 
-    public static SslPolicy makeSslPolicy( SslResource sslResource ) throws CertificateException, IOException
+    public static SslPolicy makeSslPolicy( SslResource sslResource )
     {
-        return makeSslPolicy( sslResource, SslProvider.JDK.name(), null, null );
+        return makeSslPolicy( sslResource, SslProvider.JDK, null, null );
     }
 
-    public static SslPolicy makeSslPolicy( SslResource sslResource, String sslProvider, String protocols, String ciphers )
-            throws CertificateException, IOException
+    public static SslPolicy makeSslPolicy( SslResource sslResource, SslProvider sslProvider, String protocols, String ciphers )
     {
         Map<String,String> config = new HashMap<>();
-        config.put( SslSystemSettings.netty_ssl_provider.name(), sslProvider );
+        config.put( SslSystemSettings.netty_ssl_provider.name(), sslProvider.name() );
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
         File baseDirectory = sslResource.privateKey().getParentFile();
@@ -127,7 +124,6 @@ public class SslContextFactory
         SslPolicyLoader sslPolicyFactory =
                 SslPolicyLoader.create( Config.fromSettings( config ).build(), NullLogProvider.getInstance() );
 
-        SslPolicy sslPolicy = sslPolicyFactory.getPolicy( "default" );
-        return sslPolicy;
+        return sslPolicyFactory.getPolicy( "default" );
     }
 }

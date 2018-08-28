@@ -29,20 +29,15 @@ import org.hamcrest.core.IsCollectionContaining;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
@@ -52,25 +47,25 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.ssl.HostnameVerificationHelper.POLICY_NAME;
+import static org.neo4j.ssl.HostnameVerificationHelper.aConfig;
+import static org.neo4j.ssl.HostnameVerificationHelper.trust;
 
 public class SslPolicyLoaderIT
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private static final PkiUtils PKI_UTILS = new PkiUtils();
     private static final LogProvider LOG_PROVIDER = FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out );
-    private static final String POLICY_NAME = "fakePolicy";
-    private static final SslPolicyConfig SSL_POLICY_CONFIG = new SslPolicyConfig( POLICY_NAME );
 
     @Test
     public void certificatesWithInvalidCommonNameAreRejected() throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException
     {
         // given server has a certificate that matches an invalid hostname
-        Config serverConfig = aConfig( "invalid-not-localhost" );
+        Config serverConfig = aConfig( "invalid-not-localhost", testDirectory );
 
         // and client has any certificate (valid), since hostname validation is done from the client side
-        Config clientConfig = aConfig( "localhost" );
+        Config clientConfig = aConfig( "localhost", testDirectory );
 
         trust( serverConfig, clientConfig );
         trust( clientConfig, serverConfig );
@@ -112,10 +107,10 @@ public class SslPolicyLoaderIT
             throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException, TimeoutException, ExecutionException
     {
         // given server has valid hostname
-        Config serverConfig = aConfig( "localhost" );
+        Config serverConfig = aConfig( "localhost", testDirectory );
 
         // and client has invalid hostname (which is irrelevant for hostname verification)
-        Config clientConfig = aConfig( "invalid-localhost" );
+        Config clientConfig = aConfig( "invalid-localhost", testDirectory );
 
         trust( serverConfig, clientConfig );
         trust( clientConfig, serverConfig );
@@ -136,10 +131,10 @@ public class SslPolicyLoaderIT
             throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException, TimeoutException, ExecutionException
     {
         // given server has an invalid hostname
-        Config serverConfig = aConfig( "invalid-localhost" );
+        Config serverConfig = aConfig( "invalid-localhost", testDirectory );
 
         // and client has invalid hostname (which is irrelevant for hostname verification)
-        Config clientConfig = aConfig( "invalid-localhost" );
+        Config clientConfig = aConfig( "invalid-localhost", testDirectory );
 
         trust( serverConfig, clientConfig );
         trust( clientConfig, serverConfig );
@@ -173,45 +168,6 @@ public class SslPolicyLoaderIT
         {
             secureServer.stop();
         }
-    }
-
-    private Config aConfig( String hostname ) throws GeneralSecurityException, IOException, OperatorCreationException
-    {
-        String random = UUID.randomUUID().toString();
-        File baseDirectory = testDirectory.directory( "base_directory_" + random );
-        File validCertificatePath = new File( baseDirectory, "certificate.crt" );
-        File validPrivateKeyPath = new File( baseDirectory, "private.pem" );
-        File revoked = new File( baseDirectory, "revoked" );
-        File trusted = new File( baseDirectory, "trusted" );
-        trusted.mkdirs();
-        revoked.mkdirs();
-        PKI_UTILS.createSelfSignedCertificate( validCertificatePath, validPrivateKeyPath, hostname ); // Sets Subject Alternative Name(s) to hostname
-        return Config.builder()
-                .withSetting( SSL_POLICY_CONFIG.base_directory, baseDirectory.toString() )
-                .withSetting( SSL_POLICY_CONFIG.trusted_dir, trusted.toString() )
-                .withSetting( SSL_POLICY_CONFIG.revoked_dir, revoked.toString() )
-                .withSetting( SSL_POLICY_CONFIG.private_key, validPrivateKeyPath.toString() )
-                .withSetting( SSL_POLICY_CONFIG.public_certificate, validCertificatePath.toString() )
-
-                .withSetting( SSL_POLICY_CONFIG.tls_versions, "TLSv1.2" )
-                .withSetting( SSL_POLICY_CONFIG.ciphers, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA" )
-
-                .withSetting( SSL_POLICY_CONFIG.client_auth, "none" )
-                .withSetting( SSL_POLICY_CONFIG.allow_key_generation, "false" )
-
-                // Even if we trust all, certs should be rejected if don't match Common Name (CA) or Subject Alternative Name
-                .withSetting( SSL_POLICY_CONFIG.trust_all, "false" )
-                .withSetting( SSL_POLICY_CONFIG.verify_hostname, "true" )
-                .build();
-    }
-
-    private void trust( Config target, Config subject ) throws IOException
-    {
-        SslPolicyConfig sslPolicyConfig = new SslPolicyConfig( POLICY_NAME );
-        File trustedDirectory = target.get( sslPolicyConfig.trusted_dir );
-        File certificate = subject.get( sslPolicyConfig.public_certificate );
-        Path trustedCertFilePath = trustedDirectory.toPath().resolve( certificate.getName() );
-        Files.copy( certificate.toPath(), trustedCertFilePath );
     }
 
     private Stream<Throwable> causes( Throwable throwable )

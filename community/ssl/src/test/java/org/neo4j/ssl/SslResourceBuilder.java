@@ -110,7 +110,7 @@ public class SslResourceBuilder
         return this;
     }
 
-    SslResourceBuilder revoke( int keyId )
+    public SslResourceBuilder revoke( int keyId )
     {
         revoked.add( keyId );
         return this;
