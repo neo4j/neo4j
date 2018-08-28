@@ -57,7 +57,6 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     void assertValidValue( int stateSlot, Value value )
     {
         Preconditions.requireBetween( stateSlot, 0, states.length );
-        GenericKeyState.assertCorrectType( value );
     }
 
     @Override
@@ -177,7 +176,6 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
 
         initialize( cursor.getLong() );
         int offset = cursor.getOffset();
-        int stateOffset = 0;
         for ( GenericKeyState state : states )
         {
             if ( !state.read( cursor, keySize ) )
@@ -188,7 +186,6 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
             int offsetAfterRead = cursor.getOffset();
             keySize -= offsetAfterRead - offset;
             offset = offsetAfterRead;
-            stateOffset++;
         }
     }
 

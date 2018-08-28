@@ -194,20 +194,6 @@ class GenericKeyStateTest
     }
 
     @ParameterizedTest
-    @MethodSource( "validValueGenerators" )
-    void assertCorrectTypeMustNotFailForValidTypes( ValueGenerator valueGenerator )
-    {
-        // Given
-        Value value = valueGenerator.next();
-
-        // When
-        GenericKeyState.assertCorrectType( value );
-
-        // Then
-        // should not fail
-    }
-
-    @ParameterizedTest
     @MethodSource( "validLosslessValueGenerators" )
     void compareToMustAlignWithValuesCompareTo( ValueGenerator valueGenerator )
     {

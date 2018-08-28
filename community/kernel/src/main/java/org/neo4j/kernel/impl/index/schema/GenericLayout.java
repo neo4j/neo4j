@@ -19,72 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
-import org.neo4j.values.storable.ValueGroup;
-
-import static java.util.Comparator.comparing;
 
 class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
 {
-    static final Comparator<Type> TYPE_COMPARATOR = comparing( t -> t.valueGroup );
-
-    // Order doesn't matter since it's each Type's ValueGroup that matters and will be used for comparison
-    enum Type
-    {
-        GEOMETRY( ValueGroup.GEOMETRY, (byte) 0 ),
-        ZONED_DATE_TIME( ValueGroup.ZONED_DATE_TIME, (byte) 1 ),
-        LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME, (byte) 2 ),
-        DATE( ValueGroup.DATE, (byte) 3 ),
-        ZONED_TIME( ValueGroup.ZONED_TIME, (byte) 4 ),
-        LOCAL_TIME( ValueGroup.LOCAL_TIME, (byte) 5 ),
-        DURATION( ValueGroup.DURATION, (byte) 6 ),
-        TEXT( ValueGroup.TEXT, (byte) 7 ),
-        BOOLEAN( ValueGroup.BOOLEAN, (byte) 8 ),
-        NUMBER( ValueGroup.NUMBER, (byte) 9 ),
-
-        GEOMETRY_ARRAY( ValueGroup.GEOMETRY_ARRAY, (byte) 10 ),
-        ZONED_DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, (byte) 11 ),
-        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, (byte) 12 ),
-        DATE_ARRAY( ValueGroup.DATE_ARRAY, (byte) 13 ),
-        ZONED_TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY, (byte) 14 ),
-        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY, (byte) 15 ),
-        DURATION_ARRAY( ValueGroup.DURATION_ARRAY, (byte) 16 ),
-        TEXT_ARRAY( ValueGroup.TEXT_ARRAY, (byte) 17 ),
-        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY, (byte) 18 ),
-        NUMBER_ARRAY( ValueGroup.NUMBER_ARRAY, (byte) 19 );
-
-        private final ValueGroup valueGroup;
-        final byte typeId;
-
-        Type( ValueGroup valueGroup, byte typeId )
-        {
-            this.valueGroup = valueGroup;
-            this.typeId = typeId;
-        }
-    }
-
-    static final Type[] TYPES = Type.values();
-    static final Type[] TYPE_BY_ID = new Type[TYPES.length];
-    static final Type LOWEST_TYPE_BY_VALUE_GROUP = Collections.min( Arrays.asList( TYPES ), TYPE_COMPARATOR );
-    static final Type HIGHEST_TYPE_BY_VALUE_GROUP = Collections.max( Arrays.asList( TYPES ), TYPE_COMPARATOR );
-    static final Type[] TYPE_BY_GROUP = new Type[ValueGroup.values().length];
-    static
-    {
-        for ( Type type : TYPES )
-        {
-            TYPE_BY_ID[type.typeId] = type;
-        }
-        for ( Type type : TYPES )
-        {
-            TYPE_BY_GROUP[type.valueGroup.ordinal()] = type;
-        }
-    }
-
     private final int numberOfSlots;
     private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
 
