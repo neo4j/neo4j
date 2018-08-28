@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ManySeekableArgs, PrefixRange, SingleSeekableArg}
 import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.NonEmptyList
 import org.opencypher.v9_0.util.symbols._
@@ -142,12 +142,13 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
-    val table = mock[SemanticTable]
-    when(table.getActualTypeFor(expr1)).thenReturn(CTFloat.invariant)
-    when(table.getActualTypeFor(expr2)).thenReturn(CTInteger.invariant)
+    val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
+        .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
+        .updated(expr2, ExpressionTypeInfo(TypeSpec.exact(CTInteger)))
+
     val AsPropertySeekable(seekable) = expr
 
-    seekable.propertyValueType(table) should be(CTNumber)
+    seekable.propertyValueType(SemanticTable(types)) should be(CTNumber)
   }
 
   test("PropertySeekable propertyValueType with equals") {
@@ -155,11 +156,12 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val expr: Expression = Equals(propExpr, expr1)_
     when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
 
-    val table = mock[SemanticTable]
-    when(table.getActualTypeFor(expr1)).thenReturn(CTFloat.invariant)
+    val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
+      .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
+
     val AsPropertySeekable(seekable) = expr
 
-    seekable.propertyValueType(table) should be(CTFloat)
+    seekable.propertyValueType(SemanticTable(types)) should be(CTFloat)
   }
 
   test("PropertySeekable propertyValueType with Parameter") {
@@ -167,11 +169,12 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val rightExpr: Parameter = Parameter("foo", CTString)(pos)
     val expr: Expression = In(leftExpr, rightExpr)_
 
-    val table = mock[SemanticTable]
-    when(table.getActualTypeFor(rightExpr)).thenReturn(CTList(CTString))
+    val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
+      .updated(rightExpr, ExpressionTypeInfo(TypeSpec.exact(CTList(CTString))))
+
     val AsPropertySeekable(seekable) = expr
 
-    seekable.propertyValueType(table) should be(CTString)
+    seekable.propertyValueType(SemanticTable(types)) should be(CTString)
   }
 
   test("InequalityRangeSeekable propertyValueType") {

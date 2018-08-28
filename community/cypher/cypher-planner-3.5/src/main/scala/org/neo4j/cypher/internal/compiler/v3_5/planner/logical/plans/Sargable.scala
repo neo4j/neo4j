@@ -25,7 +25,7 @@ import org.opencypher.v9_0.expressions.{functions, _}
 import org.opencypher.v9_0.util.symbols._
 
 object WithSeekableArgs {
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[(Expression, SeekableArgs)] = v match {
     case In(lhs, rhs) => Some(lhs -> ManySeekableArgs(rhs))
     case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
     case _ => None
@@ -33,7 +33,7 @@ object WithSeekableArgs {
 }
 
 object AsIdSeekable {
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[IdSeekable] = v match {
     case WithSeekableArgs(func@FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable)), rhs)
       if func.function == functions.Id && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
@@ -43,7 +43,7 @@ object AsIdSeekable {
 }
 
 object AsPropertySeekable {
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[PropertySeekable] = v match {
     case WithSeekableArgs(prop@Property(ident: LogicalVariable, propertyKey), rhs)
       if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
@@ -145,7 +145,7 @@ sealed trait Sargable[+T <: Expression] {
   def expr: T
   def ident: LogicalVariable
 
-  def name = ident.name
+  def name: String = ident.name
 }
 
 object Seekable {
@@ -199,17 +199,30 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
   def dependencies: Set[LogicalVariable] = args.dependencies
 
   override def propertyValueType(semanticTable: SemanticTable): CypherType = {
+
+    def getTypeSpec(expr: Expression): TypeSpec =
+      semanticTable.types.get(expr).map(_.actual).getOrElse(TypeSpec.exact(CTAny))
+
+    // TypeSpec.unwrapLists does not cope with Any, so we use this ugly solution. Can be removed on updated front-end.
+    def unwrapLists(x: TypeSpec): TypeSpec =
+      try {
+        x.unwrapLists
+      } catch {
+        case _: MatchError =>
+          TypeSpec.exact(CTAny)
+      }
+
     args match {
       case SingleSeekableArg(seekableExpr) =>
-        Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(seekableExpr))
+        Seekable.cypherTypeForTypeSpec(getTypeSpec(seekableExpr))
       case ManySeekableArgs(seekableExpr) =>
         seekableExpr match {
           // Equality is rewritten to IN AFTER semantic check. Thus, we are lacking type information for the ListLiteral
           case ListLiteral(expressions) =>
-            Seekable.combineMultipleTypeSpecs(expressions.map(exp => semanticTable.getActualTypeFor(exp)))
+            Seekable.combineMultipleTypeSpecs(expressions.map(exp => getTypeSpec(exp)))
           // When the query actually contained an IN, the list could be autoparameterized
           case _ =>
-            Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(args.expr).unwrapLists)
+            Seekable.cypherTypeForTypeSpec(unwrapLists(getTypeSpec(args.expr)))
         }
     }
   }

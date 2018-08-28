@@ -168,4 +168,18 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     val config = Configs.Interpreted - Configs.Cost2_3
     executeWith(config, "EXPLAIN CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n")
   }
+
+  test("merge and update using nested parameters list") {
+
+    graph.createConstraint("Person", "name")
+    createLabeledNode(Map("name" -> "Agneta"), "Person")
+
+    val config = Configs.Interpreted - Configs.Cost2_3
+    val result = executeWith(config, """FOREACH (nameItem IN {nameItems} |
+                                       |   MERGE (p:Person {name:nameItem[0]})
+                                       |   SET p.item = nameItem[1] )""".stripMargin,
+      params = Map("nameItems" -> List(List("Agneta", "saw"), List("Arne", "hammer"))))
+
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 3)
+  }
 }
