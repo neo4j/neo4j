@@ -29,8 +29,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.id.IdModule;
-import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
+import org.neo4j.graphdb.factory.module.id.IdContextFactory;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -74,11 +74,10 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    protected IdModule createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
+    protected IdContextFactory createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
     {
-        return IdModuleBuilder.of( new EnterpriseIdTypeConfigurationProvider( platformModule.config ) )
+        return IdContextFactoryBuilder.of( new EnterpriseIdTypeConfigurationProvider( platformModule.config ), platformModule.jobScheduler )
                 .withFileSystem( fileSystem )
-                .withJobScheduler( platformModule.jobScheduler )
                 .build();
     }
 

@@ -29,7 +29,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.id.IdModule;
+import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -76,7 +76,7 @@ import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTempo
  */
 public abstract class EditionModule
 {
-    public IdModule idModule;
+    public IdContextFactory idContextFactory;
 
     public Supplier<TokenHolders> tokenHoldersSupplier;
 

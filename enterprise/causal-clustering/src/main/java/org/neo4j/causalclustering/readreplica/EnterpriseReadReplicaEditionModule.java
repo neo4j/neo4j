@@ -90,7 +90,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -178,9 +178,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         locksSupplier = () -> emptyLockManager;
         statementLocksFactoryProvider = locks -> new StatementLocksFactorySelector( locks, config, logging ).select();
 
-        idModule = IdModuleBuilder.of( new EnterpriseIdTypeConfigurationProvider( config ) )
+        idContextFactory = IdContextFactoryBuilder.of( new EnterpriseIdTypeConfigurationProvider( config ), platformModule.jobScheduler )
                     .withFileSystem( fileSystem )
-                    .withJobScheduler( platformModule.jobScheduler )
                     .build();
 
         tokenHoldersSupplier = () -> new TokenHolders(

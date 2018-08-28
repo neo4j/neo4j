@@ -24,8 +24,8 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.id.IdModule;
-import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
+import org.neo4j.graphdb.factory.module.id.IdContextFactory;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -102,7 +102,7 @@ public class CommunityEditionModule extends EditionModule
                 new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
 
 
-        idModule = createIdModule( platformModule, fileSystem );
+        idContextFactory = createIdModule( platformModule, fileSystem );
 
         tokenHoldersSupplier = () -> new TokenHolders(
                 new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
@@ -129,9 +129,9 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
     }
 
-    protected IdModule createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
+    protected IdContextFactory createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
     {
-        return IdModuleBuilder.of( fileSystem, platformModule.jobScheduler ).build();
+        return IdContextFactoryBuilder.of( fileSystem, platformModule.jobScheduler ).build();
     }
 
     protected Predicate<String> fileWatcherFileNameFilter()

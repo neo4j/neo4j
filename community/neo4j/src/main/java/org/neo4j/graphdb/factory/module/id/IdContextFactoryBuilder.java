@@ -29,64 +29,73 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.scheduler.JobScheduler;
 
-public class IdModuleBuilder
+import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
+
+public class IdContextFactoryBuilder
 {
     private IdReuseEligibility idReuseEligibility = IdReuseEligibility.ALWAYS;
     private FileSystemAbstraction fileSystemAbstraction;
     private JobScheduler jobScheduler;
-    private IdTypeConfigurationProvider idTypeConfigurationProvider;
     private Function<String,IdGeneratorFactory> idGeneratorFactoryProvider;
+    private IdTypeConfigurationProvider idTypeConfigurationProvider;
+    private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
 
-    public static IdModuleBuilder of( IdTypeConfigurationProvider configurationProvider )
+    public static IdContextFactoryBuilder of( IdTypeConfigurationProvider configurationProvider, JobScheduler jobScheduler )
     {
-        IdModuleBuilder builder = new IdModuleBuilder();
+        IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
         builder.idTypeConfigurationProvider = configurationProvider;
+        builder.jobScheduler = jobScheduler;
         return builder;
     }
 
-    public static IdModuleBuilder of( FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler )
+    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler )
     {
-        IdModuleBuilder builder = new IdModuleBuilder();
+        IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
         builder.fileSystemAbstraction = fileSystemAbstraction;
         builder.jobScheduler = jobScheduler;
         return builder;
     }
 
-    public IdModuleBuilder withFileSystem( FileSystemAbstraction fileSystem )
+    public IdContextFactoryBuilder withFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystemAbstraction = fileSystem;
         return this;
     }
 
-    public IdModuleBuilder withJobScheduler( JobScheduler jobScheduler )
-    {
-        this.jobScheduler = jobScheduler;
-        return this;
-    }
-
-    public IdModuleBuilder withIdReuseEligibility( IdReuseEligibility eligibleForIdReuse )
+    public IdContextFactoryBuilder withIdReuseEligibility( IdReuseEligibility eligibleForIdReuse )
     {
         this.idReuseEligibility = eligibleForIdReuse;
         return this;
     }
 
-    public IdModuleBuilder withIdGenerationFactoryProvider( Function<String,IdGeneratorFactory> idGeneratorFactoryProvider )
+    public IdContextFactoryBuilder withIdGenerationFactoryProvider( Function<String,IdGeneratorFactory> idGeneratorFactoryProvider )
     {
         this.idGeneratorFactoryProvider = idGeneratorFactoryProvider;
         return this;
     }
 
-    public IdModule build()
+    public IdContextFactoryBuilder withFactoryWrapper( Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper )
+    {
+        this.factoryWrapper = factoryWrapper;
+        return this;
+    }
+
+    public IdContextFactory build()
     {
         if ( idGeneratorFactoryProvider == null )
         {
+            requireNonNull( fileSystemAbstraction, "File system is required to build id generator factory." );
             idGeneratorFactoryProvider = databaseName -> new DefaultIdGeneratorFactory( fileSystemAbstraction, idTypeConfigurationProvider );
         }
         if ( idTypeConfigurationProvider == null )
         {
             idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
         }
-        // todo pass id buffering
-        return new IdModule( jobScheduler, idGeneratorFactoryProvider, idTypeConfigurationProvider, idReuseEligibility, true );
+        if ( factoryWrapper == null )
+        {
+            factoryWrapper = identity();
+        }
+        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, idTypeConfigurationProvider, idReuseEligibility, factoryWrapper );
     }
 }

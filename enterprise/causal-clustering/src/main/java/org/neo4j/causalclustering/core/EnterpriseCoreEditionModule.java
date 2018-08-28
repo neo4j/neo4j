@@ -97,7 +97,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.helpers.collection.Pair;
@@ -304,12 +304,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),
                 consensusModule.raftMachine(), dependencies, localDatabase );
 
-        idModule = IdModuleBuilder.of( coreStateMachinesModule.idTypeConfigurationProvider )
-                                   .withJobScheduler( platformModule.jobScheduler )
-                                   .withIdGenerationFactoryProvider( any ->
-                                           new FreeIdFilteredIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory,
-                                                   coreStateMachinesModule.freeIdCondition ) )
-                                   .build();
+        idContextFactory = IdContextFactoryBuilder.of( coreStateMachinesModule.idTypeConfigurationProvider, platformModule.jobScheduler )
+                .withIdGenerationFactoryProvider( databaseName -> coreStateMachinesModule.idGeneratorFactory )
+                .withFactoryWrapper( generator -> new FreeIdFilteredIdGeneratorFactory( generator, coreStateMachinesModule.freeIdCondition ) ).build();
 
         // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...
         this.tokenHoldersSupplier = () -> coreStateMachinesModule.tokenHolders;

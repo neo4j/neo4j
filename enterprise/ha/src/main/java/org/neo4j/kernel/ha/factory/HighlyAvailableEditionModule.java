@@ -64,7 +64,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
-import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
@@ -381,13 +381,11 @@ public class HighlyAvailableEditionModule extends EditionModule
         HaIdGeneratorFactory editionIdGeneratorFactory = (HaIdGeneratorFactory) createIdGeneratorFactory( masterDelegateInvocationHandler,
                 logging.getInternalLogProvider(), requestContextFactory, fs, idTypeConfigurationProvider );
         HaIdReuseEligibility eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
-        idModule = IdModuleBuilder.of( idTypeConfigurationProvider )
-                    .withJobScheduler( platformModule.jobScheduler )
-                    .withFileSystem( fs )
+        idContextFactory = IdContextFactoryBuilder.of( idTypeConfigurationProvider, platformModule.jobScheduler )
                     .withIdGenerationFactoryProvider( any -> editionIdGeneratorFactory )
                     .withIdReuseEligibility( eligibleForIdReuse )
                     .build();
-        DatabaseIdContext idContext = idModule.createIdContext( config.get( GraphDatabaseSettings.active_database ) );
+        DatabaseIdContext idContext = idContextFactory.createIdContext( config.get( GraphDatabaseSettings.active_database ) );
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
@@ -938,8 +936,8 @@ public class HighlyAvailableEditionModule extends EditionModule
         EnterpriseEditionModule.createEnterpriseSecurityModule( this, platformModule, procedures );
     }
 
-    private static <T> T resolveDatabaseDependency( PlatformModule platfrom, Class<T> clazz )
+    private static <T> T resolveDatabaseDependency( PlatformModule platform, Class<T> clazz )
     {
-        return platfrom.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( clazz );
+        return platform.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( clazz );
     }
 }

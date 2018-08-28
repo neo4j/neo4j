@@ -39,7 +39,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -785,7 +785,7 @@ public class LabelsAcceptanceTest
         CommunityEditionModuleWithCustomIdModule( PlatformModule platformModule, EphemeralIdGenerator.Factory idFactory )
         {
             super( platformModule );
-            idModule = IdModuleBuilder.of( platformModule.fileSystem, platformModule.jobScheduler )
+            idContextFactory = IdContextFactoryBuilder.of( platformModule.fileSystem, platformModule.jobScheduler )
                     .withIdGenerationFactoryProvider( any -> idFactory )
                     .build();
         }

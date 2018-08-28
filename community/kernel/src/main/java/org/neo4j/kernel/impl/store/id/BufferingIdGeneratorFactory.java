@@ -58,7 +58,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
     {
-        IdTypeConfiguration typeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        IdTypeConfiguration typeConfiguration = getIdTypeConfiguration( idType );
         return open( filename, typeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
