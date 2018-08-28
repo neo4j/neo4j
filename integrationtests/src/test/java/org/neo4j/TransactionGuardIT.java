@@ -56,7 +56,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.collection.MapUtil;
@@ -73,6 +72,7 @@ import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
@@ -726,10 +726,9 @@ public class TransactionGuardIT
         @Override
         protected IdContextFactory createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
         {
-            DatabaseIdContext idContext =
-                    super.createIdModule( platformModule, fileSystem ).createIdContext( platformModule.config.get( GraphDatabaseSettings.active_database ) );
-            return IdContextFactoryBuilder.of( new EnterpriseIdTypeConfigurationProvider( platformModule.config ), platformModule.jobScheduler )
-                    .withIdGenerationFactoryProvider( any -> new TerminationIdGeneratorFactory( idContext.getIdGeneratorFactory() ) )
+            return IdContextFactoryBuilder.of( new EnterpriseIdTypeConfigurationProvider( platformModule.config ),
+                    platformModule.jobScheduler )
+                    .withIdGenerationFactoryProvider( any -> new TerminationIdGeneratorFactory( new DefaultIdGeneratorFactory( platformModule.fileSystem ) ) )
                     .build();
         }
     }
@@ -797,7 +796,7 @@ public class TransactionGuardIT
         }
     }
 
-    private class TerminationIdGenerator implements IdGenerator
+    private final class TerminationIdGenerator implements IdGenerator
     {
 
         private IdGenerator delegate;
