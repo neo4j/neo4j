@@ -300,9 +300,9 @@ public class TxStateTest
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getIndexUpdates( indexOn_1_1.schema() );
 
         // THEN
-        assertEquals( addedNodes( 42L ), diffSets.get( ValueTuple.of( Values.stringValue( "value42" ) ) ) );
-        assertEquals( addedNodes( 43L ), diffSets.get( ValueTuple.of( Values.stringValue( "value43" ) ) ) );
-        assertEquals( addedNodes( 41L ), diffSets.get( ValueTuple.of( Values.stringValue( "value41" ) ) ) );
+        assertEqualDiffSets( addedNodes( 42L ), diffSets.get( ValueTuple.of( Values.stringValue( "value42" ) ) ) );
+        assertEqualDiffSets( addedNodes( 43L ), diffSets.get( ValueTuple.of( Values.stringValue( "value43" ) ) ) );
+        assertEqualDiffSets( addedNodes( 41L ), diffSets.get( ValueTuple.of( Values.stringValue( "value41" ) ) ) );
     }
 
     @Test
@@ -318,7 +318,11 @@ public class TxStateTest
 
         TreeMap<ValueTuple,LongDiffSets> expected = sortedAddedNodesDiffSets( 42, 41, 43 );
         // THEN
-        assertEquals( expected, diffSets );
+        assertEquals( expected.keySet(), diffSets.keySet() );
+        for ( final ValueTuple key : expected.keySet() )
+        {
+            assertEqualDiffSets( expected.get( key ), diffSets.get( key ) );
+        }
     }
 
     // endregion
@@ -958,5 +962,11 @@ public class TxStateTest
                 }
             }
         };
+    }
+
+    private static void assertEqualDiffSets( LongDiffSets expected, LongDiffSets actual )
+    {
+        assertEquals( expected.getRemoved(), actual.getRemoved() );
+        assertEquals( expected.getAdded(), actual.getAdded() );
     }
 }
