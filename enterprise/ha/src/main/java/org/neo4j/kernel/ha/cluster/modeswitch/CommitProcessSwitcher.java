@@ -24,6 +24,8 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterTransactionCommitProcess;
 import org.neo4j.kernel.ha.SlaveTransactionCommitProcess;
@@ -45,10 +47,10 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     private final RequestContextFactory requestContextFactory;
     private final DependencyResolver dependencyResolver;
     private final MasterTransactionCommitProcess.Monitor monitor;
+    private final String activeDatabaseName;
 
-    public CommitProcessSwitcher( TransactionPropagator txPropagator, Master master,
-            DelegateInvocationHandler<TransactionCommitProcess> delegate, RequestContextFactory requestContextFactory,
-            Monitors monitors, DependencyResolver dependencyResolver )
+    public CommitProcessSwitcher( TransactionPropagator txPropagator, Master master, DelegateInvocationHandler<TransactionCommitProcess> delegate,
+            RequestContextFactory requestContextFactory, Monitors monitors, DependencyResolver dependencyResolver, Config config )
     {
         super( delegate );
         this.txPropagator = txPropagator;
@@ -56,6 +58,7 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
         this.requestContextFactory = requestContextFactory;
         this.dependencyResolver = dependencyResolver;
         this.monitor = monitors.newMonitor( MasterTransactionCommitProcess.Monitor.class );
+        this.activeDatabaseName = config.get( GraphDatabaseSettings.active_database );
     }
 
     @Override
@@ -68,7 +71,7 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     protected TransactionCommitProcess getMasterImpl()
     {
         GraphDatabaseFacade databaseFacade = this.dependencyResolver.resolveDependency( DatabaseManager.class )
-                .getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get();
+                .getDatabaseFacade( activeDatabaseName ).get();
         DependencyResolver databaseResolver = databaseFacade.getDependencyResolver();
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 databaseResolver.resolveDependency( TransactionAppender.class ),

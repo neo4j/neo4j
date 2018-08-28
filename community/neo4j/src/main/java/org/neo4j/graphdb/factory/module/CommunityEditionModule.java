@@ -103,8 +103,8 @@ public class CommunityEditionModule extends EditionModule
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
-        threadToTransactionBridge =
-                dependencies.satisfyDependency( new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging ) ) );
+        threadToTransactionBridge = dependencies.satisfyDependency(
+                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
 
         createIdComponents( platformModule, dependencies, createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
         dependencies.satisfyDependency( idGeneratorFactory );

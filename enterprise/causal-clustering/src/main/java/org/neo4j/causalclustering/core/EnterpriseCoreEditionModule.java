@@ -225,7 +225,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency( clusterStateDirectory );
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
-        AvailabilityGuard globalGuard = getGlobalAvailabilityGuard( platformModule.clock, logging );
+        AvailabilityGuard globalGuard = getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config );
         threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( globalGuard ) );
 
         logProvider = logging.getInternalLogProvider();

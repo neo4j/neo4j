@@ -27,7 +27,9 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -269,7 +271,8 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         private DependencyResolver getDatabaseResolver()
         {
             DatabaseManager databaseManager = globalResolver.resolveDependency( DatabaseManager.class );
-            GraphDatabaseFacade facade = databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get();
+            Config config = globalResolver.resolveDependency( Config.class );
+            GraphDatabaseFacade facade = databaseManager.getDatabaseFacade( config.get( GraphDatabaseSettings.active_database ) ).get();
             return facade.getDependencyResolver();
         }
 

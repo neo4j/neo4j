@@ -152,7 +152,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.procedures = procedures;
         this.ioLimiter = editionModule.ioLimiter;
         this.clock = platformModule.clock;
-        this.databaseAvailabilityGuard = editionModule.createDatabaseAvailabilityGuard( databaseName, clock, logService );
+        this.databaseAvailabilityGuard = editionModule.createDatabaseAvailabilityGuard( databaseName, clock, logService, config );
         this.databaseAvailability =
                 new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, platformModule.clock, getAwaitActiveTransactionDeadlineMillis() );
         this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionModule.transactionStartTimeout );

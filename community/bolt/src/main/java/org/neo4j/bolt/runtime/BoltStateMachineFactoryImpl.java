@@ -46,6 +46,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private final Authentication authentication;
     private final Config config;
     private final Clock clock;
+    private final String activeDatabaseName;
 
     public BoltStateMachineFactoryImpl( DatabaseManager databaseManager, UsageData usageData,
             Authentication authentication, Clock clock, Config config, LogService logging )
@@ -56,6 +57,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         this.authentication = authentication;
         this.config = config;
         this.clock = clock;
+        this.activeDatabaseName = config.get( GraphDatabaseSettings.active_database );
     }
 
     @Override
@@ -78,7 +80,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
         TransactionStateMachineSPI transactionSPI =
-                new TransactionStateMachineV1SPI( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get(),
+                new TransactionStateMachineV1SPI( databaseManager.getDatabaseFacade( activeDatabaseName ).get(),
                         getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
@@ -87,7 +89,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
         TransactionStateMachineSPI transactionSPI =
-                new TransactionStateMachineV3SPI( databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get(),
+                new TransactionStateMachineV3SPI( databaseManager.getDatabaseFacade( activeDatabaseName ).get(),
                         getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );

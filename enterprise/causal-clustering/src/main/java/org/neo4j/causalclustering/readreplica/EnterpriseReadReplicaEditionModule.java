@@ -170,8 +170,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
-        threadToTransactionBridge =
-                dependencies.satisfyDependency( new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging ) ) );
+        threadToTransactionBridge = dependencies.satisfyDependency(
+                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
         this.accessCapability = new ReadOnly();
 
         watcherServiceFactory = dir -> createFileSystemWatcherService( fileSystem, dir, logging,
@@ -270,8 +270,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseLayout, config );
 
         LocalDatabase localDatabase =
-                new LocalDatabase( databaseLayout, storeFiles, logFiles, platformModule.dataSourceManager,
-                        databaseHealthSupplier, getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging ), logProvider );
+                new LocalDatabase( databaseLayout, storeFiles, logFiles, platformModule.dataSourceManager, databaseHealthSupplier,
+                        getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging, platformModule.config ), logProvider );
 
         Supplier<TransactionCommitProcess> writableCommitProcess = () -> new TransactionRepresentationCommitProcess(
                 localDatabase.dataSource().getDependencyResolver().resolveDependency( TransactionAppender.class ),

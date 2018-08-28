@@ -297,18 +297,18 @@ public abstract class EditionModule
         return databaseStatistics;
     }
 
-    public AvailabilityGuard getGlobalAvailabilityGuard( Clock clock, LogService logService )
+    public AvailabilityGuard getGlobalAvailabilityGuard( Clock clock, LogService logService, Config config )
     {
         if ( globalAvailabilityGuard == null )
         {
-            globalAvailabilityGuard =
-                    new DatabaseAvailabilityGuard( DatabaseManager.DEFAULT_DATABASE_NAME, clock, logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
+            globalAvailabilityGuard = new DatabaseAvailabilityGuard( config.get( GraphDatabaseSettings.active_database ), clock,
+                    logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
         }
         return globalAvailabilityGuard;
     }
 
-    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName, Clock clock, LogService logService )
+    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName, Clock clock, LogService logService, Config config )
     {
-        return (DatabaseAvailabilityGuard) getGlobalAvailabilityGuard( clock, logService );
+        return (DatabaseAvailabilityGuard) getGlobalAvailabilityGuard( clock, logService, config );
     }
 }

@@ -25,7 +25,9 @@ package org.neo4j.kernel.ha;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -54,12 +56,11 @@ public class PullerFactory
     private final AvailabilityGuard availabilityGuard;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final Monitors monitors;
+    private final String activeDatabaseName;
 
-    public PullerFactory( RequestContextFactory requestContextFactory, Master master,
-            LastUpdateTime lastUpdateTime, LogProvider logging, InstanceId serverId,
-            InvalidEpochExceptionHandler invalidEpochHandler, long pullInterval,
-            JobScheduler jobScheduler, DependencyResolver dependencyResolver, AvailabilityGuard availabilityGuard,
-            HighAvailabilityMemberStateMachine memberStateMachine, Monitors monitors )
+    public PullerFactory( RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime, LogProvider logging, InstanceId serverId,
+            InvalidEpochExceptionHandler invalidEpochHandler, long pullInterval, JobScheduler jobScheduler, DependencyResolver dependencyResolver,
+            AvailabilityGuard availabilityGuard, HighAvailabilityMemberStateMachine memberStateMachine, Monitors monitors, Config config )
     {
 
         this.requestContextFactory = requestContextFactory;
@@ -74,6 +75,7 @@ public class PullerFactory
         this.availabilityGuard = availabilityGuard;
         this.memberStateMachine = memberStateMachine;
         this.monitors = monitors;
+        this.activeDatabaseName = config.get( GraphDatabaseSettings.active_database );
     }
 
     public SlaveUpdatePuller createSlaveUpdatePuller()
@@ -87,7 +89,7 @@ public class PullerFactory
         return new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId, () ->
         {
             GraphDatabaseFacade databaseFacade =
-                    this.dependencyResolver.resolveDependency( DatabaseManager.class ).getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get();
+                    this.dependencyResolver.resolveDependency( DatabaseManager.class ).getDatabaseFacade( activeDatabaseName ).get();
             DependencyResolver databaseResolver = databaseFacade.getDependencyResolver();
             return databaseResolver.resolveDependency( TransactionIdStore.class );
         } );

@@ -177,7 +177,8 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
-        platform.life.add( new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logging ), edition.transactionStartTimeout ) );
+        platform.life.add(
+                new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config ), edition.transactionStartTimeout ) );
         platform.dependencies.satisfyDependency( edition.schemaWriteGuard );
         platform.life.setLast( platform.eventHandlers );
 

@@ -228,13 +228,13 @@ public class HighlyAvailableEditionModule extends EditionModule
         watcherServiceFactory = dir -> createFileSystemWatcherService( platformModule.fileSystem, dir, logging,
                 platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
 
-        threadToTransactionBridge =
-                dependencies.satisfyDependency( new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging ) ) );
+        threadToTransactionBridge = dependencies.satisfyDependency(
+                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
-        DatabaseLayout databaseLayout = platformModule.storeLayout.databaseLayout( DatabaseManager.DEFAULT_DATABASE_NAME );
+        DatabaseLayout databaseLayout = platformModule.storeLayout.databaseLayout( config.get( GraphDatabaseSettings.active_database ) );
         life.add( new BranchedDataMigrator( databaseLayout.databaseDirectory() ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( Master.class );
@@ -358,7 +358,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         ObservedClusterMembers observedMembers = new ObservedClusterMembers( logging.getInternalLogProvider(),
                 clusterClient, clusterClient, clusterEvents, config.get( ClusterSettings.server_id ) );
 
-        AvailabilityGuard globalAvailabilityGuard = getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging );
+        AvailabilityGuard globalAvailabilityGuard = getGlobalAvailabilityGuard( platformModule.clock, platformModule.logging, platformModule.config );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, globalAvailabilityGuard, observedMembers, clusterEvents, clusterClient,
                 logging.getInternalLogProvider() );
 
@@ -418,7 +418,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         PullerFactory pullerFactory = new PullerFactory( requestContextFactory, master, lastUpdateTime,
                 logging.getInternalLogProvider(), serverId, invalidEpochHandler,
                 config.get( HaSettings.pull_interval ).toMillis(), platformModule.jobScheduler,
-                dependencies, globalAvailabilityGuard, memberStateMachine, monitors );
+                dependencies, globalAvailabilityGuard, memberStateMachine, monitors, config );
 
         dependencies.satisfyDependency( paxosLife.add( pullerFactory.createObligationFulfiller( updatePullerProxy ) ) );
 
@@ -670,7 +670,7 @@ public class HighlyAvailableEditionModule extends EditionModule
                 TransactionCommitProcess.class );
 
         CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                master, commitProcessDelegate, requestContextFactory, monitors, dependencies );
+                master, commitProcessDelegate, requestContextFactory, monitors, dependencies, config );
         componentSwitcherContainer.add( commitProcessSwitcher );
 
         return new HighlyAvailableCommitProcessFactory( commitProcessDelegate );
@@ -818,7 +818,7 @@ public class HighlyAvailableEditionModule extends EditionModule
                     diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( databaseInfo, neoStoreDataSource.getStoreId() ) );
                     neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
                     diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getDatabaseLayout() ) );
-                    assureLastCommitTimestampInitialized( dependencyResolver );
+                    assureLastCommitTimestampInitialized( dependencyResolver, platformModule.config );
                 }
                 catch ( Throwable throwable )
                 {
@@ -845,10 +845,10 @@ public class HighlyAvailableEditionModule extends EditionModule
         } );
     }
 
-    private static void assureLastCommitTimestampInitialized( DependencyResolver globalResolver )
+    private static void assureLastCommitTimestampInitialized( DependencyResolver globalResolver, Config config )
     {
         GraphDatabaseFacade databaseFacade =
-                globalResolver.resolveDependency( DatabaseManager.class ).getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME ).get();
+                globalResolver.resolveDependency( DatabaseManager.class ).getDatabaseFacade( config.get( GraphDatabaseSettings.active_database ) ).get();
         DependencyResolver databaseResolver = databaseFacade.getDependencyResolver();
         MetaDataStore metaDataStore = databaseResolver.resolveDependency( MetaDataStore.class );
         LogicalTransactionStore txStore = databaseResolver.resolveDependency( LogicalTransactionStore.class );
