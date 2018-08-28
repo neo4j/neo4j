@@ -1353,6 +1353,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(ValueUtils.asMapValue(Map("foo" -> 1, "bar" -> 2, "baz" -> 3).asInstanceOf[Map[String, AnyRef]].asJava))
   }
 
+  test("handle map literals with null") {
+    val literal = literalMap("foo" -> literalInt(1), "bar" -> noValue, "baz" -> literalString("three"))
+
+    val compiled = compile(literal)
+
+    import scala.collection.JavaConverters._
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(ValueUtils.asMapValue(Map("foo" -> 1, "bar" -> null, "baz" -> "three").asInstanceOf[Map[String, AnyRef]].asJava))
+  }
+
   test("from slice") {
     val slice = compile(sliceFrom(parameter("a"), parameter("b")))
     val list = VirtualValues.list(intValue(1), intValue(2), intValue(3))
@@ -1718,6 +1727,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     case i: Int => literalInt(i)
     case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
   }
+
+  private def literalMap(keyValues: (String,Expression)*) =
+    MapExpression(keyValues.map(kv => (PropertyKeyName(kv._1)(pos), kv._2)))(pos)
+
   private def lessThan(lhs: Expression, rhs: Expression) = LessThan(lhs, rhs)(pos)
 
   private def lessThanOrEqual(lhs: Expression, rhs: Expression) = LessThanOrEqual(lhs, rhs)(pos)

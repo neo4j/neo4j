@@ -188,12 +188,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         ) ++ compiled.map {
           case (k, v) => invokeSideEffect(load(tempVariable),
                                           method[MapValueBuilder, AnyValue, String, AnyValue]("add"),
-                                          constant(k.name), v.ir)
+                                          constant(k.name), nullCheck(v)(v.ir))
         } :+ invoke(load(tempVariable), method[MapValueBuilder, MapValue]("build"))
 
         Some(IntermediateExpression(block(ops: _*), compiled.values.flatMap(_.fields).toSeq,
-                                    compiled.values.flatMap(_.variables).toSeq,
-                                    compiled.values.flatMap(_.nullCheck).toSet))
+                                    compiled.values.flatMap(_.variables).toSeq, Set.empty))
       }
 
     case ListSlice(collection, None, None) => internalCompileExpression(collection, currentContext)
