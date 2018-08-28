@@ -307,6 +307,15 @@
                   </packages>
                 </filter>
               </revapi.java>
+              <revapi.reclassify>
+                <item>
+                  <code>java.class.added</code>
+                  <classify>
+                    <BINARY>BREAKING</BINARY>
+                    <SOURCE>BREAKING</SOURCE>
+                  </classify>
+                </item>
+              </revapi.reclassify>
               <revapi.ignore>
                 <item>
                   <!-- Ignore for now since some are already published, should be removed in 4.0 -->
