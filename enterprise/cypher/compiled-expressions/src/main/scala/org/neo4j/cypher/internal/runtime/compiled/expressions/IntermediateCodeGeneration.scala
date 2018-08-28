@@ -132,7 +132,9 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       } yield {
         IntermediateExpression(
           invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("divide"), l.ir, r.ir),
-          l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
+          l.fields ++ r.fields, l.variables ++ r.variables,
+          Set(invokeStatic(method[CypherMath, Boolean, AnyValue, AnyValue]("divideCheckForNull"),
+                           nullCheck(l)(l.ir), nullCheck(r)(r.ir))))
       }
 
     case Modulo(lhs, rhs) =>

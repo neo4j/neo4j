@@ -908,6 +908,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     an[ArithmeticException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(5), longValue(0))))
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(doubleValue(3.0), doubleValue(0.0)))) should equal(doubleValue(Double.PositiveInfinity))
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(durationValue(Duration.ofHours(4)), longValue(2)))) should equal(durationValue(Duration.ofHours(2)))
+    an[ArithmeticException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, longValue(0))))
   }
 
   test("modulo") {
@@ -1638,7 +1639,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val context = MapExecutionContext(mutable.Map.empty)
 
     //When, reduce(count = 0, bar IN ["a", "aa", "aaa"] | count + size(bar))
-    val compiled = compile(reduce("count", literalInt(0), "bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+    val compiled = compile(reduce("count", literalInt(0), "bar", noValue,
                                   add(function("size", varFor("bar")), varFor("count"))))
 
     //Then

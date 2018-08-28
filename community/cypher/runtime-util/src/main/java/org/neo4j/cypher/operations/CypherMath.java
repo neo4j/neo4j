@@ -32,6 +32,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -196,12 +197,20 @@ public final class CypherMath
                 String.format( "Cannot multiply `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
     }
 
-    public static AnyValue divide( AnyValue lhs, AnyValue rhs )
+    public static boolean divideCheckForNull( AnyValue lhs, AnyValue rhs )
     {
         if ( rhs instanceof IntegralValue && rhs.equals( ZERO_INT ) )
         {
             throw new ArithmeticException( "/ by zero", null );
         }
+        else
+        {
+            return lhs == Values.NO_VALUE || rhs == Values.NO_VALUE;
+        }
+    }
+
+    public static AnyValue divide( AnyValue lhs, AnyValue rhs )
+    {
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).divideBy( (NumberValue) rhs );
