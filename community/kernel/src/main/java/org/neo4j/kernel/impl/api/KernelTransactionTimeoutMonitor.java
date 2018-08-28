@@ -24,8 +24,8 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 
 /**
  * Transaction monitor that check transactions with a configured timeout for expiration.

@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.internal.LogService;
 
 public class HouseKeeper extends ChannelInboundHandlerAdapter
 {

@@ -29,7 +29,7 @@ import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.internal.LogService;
 
 /**
  * Bolt protocol V3. It hosts all the components that are specific to BoltV3

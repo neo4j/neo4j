@@ -22,8 +22,8 @@
  */
 package org.neo4j.server.enterprise.jmx;
 
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.server.NeoServer;
 
 public final class ServerManagement implements ServerManagementMBean

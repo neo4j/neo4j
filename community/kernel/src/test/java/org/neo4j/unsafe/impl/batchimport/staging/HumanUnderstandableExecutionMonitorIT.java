@@ -26,7 +26,7 @@ import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;

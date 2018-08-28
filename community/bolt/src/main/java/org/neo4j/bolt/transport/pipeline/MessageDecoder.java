@@ -27,8 +27,8 @@ import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.UnpackerProvider;
 import org.neo4j.bolt.v1.packstream.ByteBufInput;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
 

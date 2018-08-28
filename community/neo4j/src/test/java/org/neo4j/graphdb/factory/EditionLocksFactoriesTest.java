@@ -27,7 +27,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.MatcherAssert.assertThat;

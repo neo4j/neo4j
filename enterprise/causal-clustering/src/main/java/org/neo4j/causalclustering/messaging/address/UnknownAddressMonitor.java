@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.CappedLogger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

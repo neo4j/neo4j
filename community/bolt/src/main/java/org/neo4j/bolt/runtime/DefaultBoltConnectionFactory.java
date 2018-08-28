@@ -24,8 +24,8 @@ import java.time.Clock;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.internal.LogService;
 
 import static java.util.Objects.requireNonNull;
 

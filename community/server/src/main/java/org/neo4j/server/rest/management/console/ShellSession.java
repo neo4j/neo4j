@@ -24,9 +24,9 @@ import java.util.HashMap;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.extension.GlobalKernelExtensions;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;

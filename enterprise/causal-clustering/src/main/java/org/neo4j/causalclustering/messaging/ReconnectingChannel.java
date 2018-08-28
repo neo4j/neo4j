@@ -39,8 +39,8 @@ import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.SocketAddress;
-import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.CappedLogger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

@@ -28,8 +28,8 @@ import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 

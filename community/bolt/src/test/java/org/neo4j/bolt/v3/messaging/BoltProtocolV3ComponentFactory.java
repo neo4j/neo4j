@@ -33,7 +33,7 @@ import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.internal.NullLogService;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;

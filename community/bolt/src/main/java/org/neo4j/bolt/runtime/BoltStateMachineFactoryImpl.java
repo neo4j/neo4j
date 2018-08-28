@@ -35,7 +35,7 @@ import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.udc.UsageData;
 
 public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory

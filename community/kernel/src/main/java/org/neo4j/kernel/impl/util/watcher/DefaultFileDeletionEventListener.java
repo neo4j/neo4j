@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.util.watcher;
 import java.util.function.Predicate;
 
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 
 import static java.lang.String.format;
 

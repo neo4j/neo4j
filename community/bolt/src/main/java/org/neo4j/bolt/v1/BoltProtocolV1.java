@@ -36,7 +36,7 @@ import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReaderV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.internal.LogService;
 
 /**
  * Bolt protocol V1. It hosts all the components that are specific to BoltV1

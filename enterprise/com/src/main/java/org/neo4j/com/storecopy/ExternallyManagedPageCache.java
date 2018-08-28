@@ -43,8 +43,8 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.logging.internal.LogService;
 
 /**
  * A PageCache implementation that delegates to another page cache, whose life cycle is managed elsewhere.

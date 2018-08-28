@@ -17,31 +17,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.logging;
+package org.neo4j.logging.internal;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
-/**
- * Logging service that is used to obtain loggers for different output purposes
- */
-public abstract class AbstractLogService implements LogService
+public class NullLogService implements LogService
 {
+    private static final NullLogService INSTANCE = new NullLogService();
+
+    public final NullLogProvider nullLogProvider = NullLogProvider.getInstance();
+    public final NullLog nullLog = NullLog.getInstance();
+
+    private NullLogService()
+    {
+    }
+
+    public static NullLogService getInstance()
+    {
+        return INSTANCE;
+    }
+
     @Override
-    public abstract LogProvider getUserLogProvider();
+    public LogProvider getUserLogProvider()
+    {
+        return nullLogProvider;
+    }
 
     @Override
     public Log getUserLog( Class loggingClass )
     {
-        return getUserLogProvider().getLog( loggingClass );
+        return nullLog;
     }
 
     @Override
-    public abstract LogProvider getInternalLogProvider();
+    public LogProvider getInternalLogProvider()
+    {
+        return nullLogProvider;
+    }
 
     @Override
     public Log getInternalLog( Class loggingClass )
     {
-        return getInternalLogProvider().getLog( loggingClass );
+        return nullLog;
     }
 }

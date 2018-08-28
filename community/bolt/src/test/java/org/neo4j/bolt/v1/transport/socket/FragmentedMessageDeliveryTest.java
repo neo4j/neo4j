@@ -44,8 +44,8 @@ import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.logging.internal.NullLogService;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.runners.Parameterized.Parameter;

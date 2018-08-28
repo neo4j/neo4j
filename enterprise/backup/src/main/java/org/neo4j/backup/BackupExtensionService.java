@@ -26,7 +26,7 @@ import java.net.URI;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.internal.LogService;
 
 /**
  * <p>

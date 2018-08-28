@@ -38,8 +38,8 @@ import org.neo4j.bolt.v3.messaging.decoder.GoodbyeMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RollbackMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 
 public class BoltRequestMessageReaderV3 extends BoltRequestMessageReader
 {

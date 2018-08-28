@@ -33,8 +33,8 @@ import org.neo4j.bolt.v1.messaging.decoder.InitMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.PullAllMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.RunMessageDecoder;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 
 public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
 {

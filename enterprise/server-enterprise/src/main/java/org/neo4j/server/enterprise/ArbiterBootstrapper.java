@@ -22,6 +22,8 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.jboss.netty.channel.ChannelException;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.ZoneId;
@@ -29,8 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import org.jboss.netty.channel.ChannelException;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClientModule;
@@ -41,14 +41,14 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.internal.LogService;
+import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.server.Bootstrapper;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;

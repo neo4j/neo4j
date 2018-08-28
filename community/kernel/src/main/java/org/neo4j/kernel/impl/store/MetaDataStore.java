@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.logging.internal.CappedLogger;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.String.format;

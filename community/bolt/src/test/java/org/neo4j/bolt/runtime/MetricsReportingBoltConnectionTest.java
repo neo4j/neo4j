@@ -26,7 +26,7 @@ import java.util.UUID;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.Job;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 
 import static org.mockito.ArgumentMatchers.anyLong;

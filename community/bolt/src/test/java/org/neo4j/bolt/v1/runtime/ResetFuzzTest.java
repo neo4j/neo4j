@@ -57,11 +57,11 @@ import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.internal.NullLogService;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;

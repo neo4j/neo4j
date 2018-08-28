@@ -60,8 +60,8 @@ import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.rule.LoggerRule;
 
 import static org.junit.Assert.assertEquals;
