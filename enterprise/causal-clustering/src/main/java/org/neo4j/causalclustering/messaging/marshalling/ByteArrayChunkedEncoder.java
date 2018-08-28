@@ -28,14 +28,11 @@ import io.netty.buffer.ByteBufAllocator;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.neo4j.io.ByteUnit;
 import org.neo4j.storageengine.api.WritableChannel;
-
-import static org.neo4j.causalclustering.helper.NettyHelpers.calculateChunkSize;
 
 public class ByteArrayChunkedEncoder implements ChunkedEncoder
 {
-    private static final int DEFAULT_CHUNK_SIZE = (int) ByteUnit.mebiBytes( 1 );
+    private static final int DEFAULT_CHUNK_SIZE = 32 * 1024;
     private final byte[] content;
     private int chunkSize;
     private int pos;
@@ -58,21 +55,12 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
 
     public ByteArrayChunkedEncoder( byte[] content )
     {
-        Objects.requireNonNull( content, "content cannot be null" );
-        if ( content.length == 0 )
-        {
-            throw new IllegalArgumentException( "Content cannot be an empty array" );
-        }
-        this.content = content;
+        this( content, DEFAULT_CHUNK_SIZE );
     }
 
     @Override
     public ByteBuf encodeChunk( ByteBufAllocator allocator )
     {
-        if ( chunkSize == 0 )
-        {
-            chunkSize = calculateChunkSize( allocator, 0.8f, DEFAULT_CHUNK_SIZE );
-        }
         if ( isEndOfInput() )
         {
             return null;

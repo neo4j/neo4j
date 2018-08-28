@@ -34,17 +34,14 @@ import org.neo4j.causalclustering.helper.ErrorHandler;
 import org.neo4j.causalclustering.messaging.BoundedNetworkChannel;
 import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.StorageCommandSerializer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
-import static org.neo4j.causalclustering.helper.NettyHelpers.calculateChunkSize;
-
 public class TransactionRepresentationReplicatedTransaction implements ReplicatedTransaction
 {
-    private static final int DEFAULT_CHUNK_SIZE = (int) ByteUnit.mebiBytes( 1 );
+    private static final int CHUNK_SIZE = 32 * 1024;
     private final TransactionRepresentation tx;
 
     TransactionRepresentationReplicatedTransaction( TransactionRepresentation tx )
@@ -84,8 +81,7 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
             if ( channel == null )
             {
                 // Ensure that the written buffers does not overflow the allocators chunk size.
-                int maxChunkSize = calculateChunkSize( allocator, 0.8f, DEFAULT_CHUNK_SIZE );
-                channel = new BoundedNetworkChannel( allocator, maxChunkSize, output );
+                channel = new BoundedNetworkChannel( allocator, CHUNK_SIZE, output );
                 // Unknown length
                 channel.putInt( -1 );
             }
