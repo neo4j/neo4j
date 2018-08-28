@@ -20,11 +20,12 @@
 package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.id.IdModule;
+import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -56,11 +57,6 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -102,14 +98,11 @@ public class CommunityEditionModule extends EditionModule
         locksSupplier = () -> createLockManager( lockFactory, config, platformModule.clock );
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, config, logging );
 
-        idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
-        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
         threadToTransactionBridge = dependencies.satisfyDependency(
                 new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
 
-        createIdComponents( platformModule, dependencies, createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
-        dependencies.satisfyDependency( idGeneratorFactoryProvider );
-        dependencies.satisfyDependency( idControllerFactory );
+
+        idModule = createIdModule( platformModule, fileSystem );
 
         tokenHoldersSupplier = () -> new TokenHolders(
                 new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
@@ -136,6 +129,11 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
     }
 
+    protected IdModule createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
+    {
+        return IdModuleBuilder.of( fileSystem, platformModule.jobScheduler ).build();
+    }
+
     protected Predicate<String> fileWatcherFileNameFilter()
     {
         return communityFileWatcherFileNameFilter();
@@ -147,11 +145,6 @@ public class CommunityEditionModule extends EditionModule
                 fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME )
         );
-    }
-
-    protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
-    {
-        return new CommunityIdTypeConfigurationProvider();
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()
@@ -209,12 +202,6 @@ public class CommunityEditionModule extends EditionModule
             Config config, LifeSupport life, DataSourceManager dataSourceManager )
     {
         return life.add( new KernelData( fileSystem, pageCache, storeDir, config, dataSourceManager ) );
-    }
-
-    protected Function<String,IdGeneratorFactory> createIdGeneratorFactory( FileSystemAbstraction fs,
-            IdTypeConfigurationProvider idTypeConfigurationProvider )
-    {
-        return databaseName -> new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

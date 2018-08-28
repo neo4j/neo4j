@@ -90,6 +90,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -120,8 +121,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -167,8 +166,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LifeSupport life = platformModule.life;
 
-        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
-
         threadToTransactionBridge = dependencies.satisfyDependency(
                 new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
         this.accessCapability = new ReadOnly();
@@ -181,9 +178,10 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         locksSupplier = () -> emptyLockManager;
         statementLocksFactoryProvider = locks -> new StatementLocksFactorySelector( locks, config, logging ).select();
 
-        idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-        idGeneratorFactoryProvider = databaseName -> new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider );
-        idControllerFactory = databaseName -> createDefaultIdController();
+        idModule = IdModuleBuilder.of( new EnterpriseIdTypeConfigurationProvider( config ) )
+                    .withFileSystem( fileSystem )
+                    .withJobScheduler( platformModule.jobScheduler )
+                    .build();
 
         tokenHoldersSupplier = () -> new TokenHolders(
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),

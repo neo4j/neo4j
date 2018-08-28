@@ -63,6 +63,8 @@ import org.neo4j.graphdb.factory.EditionLocksFactories;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
+import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
@@ -166,6 +168,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
@@ -221,8 +224,6 @@ public class HighlyAvailableEditionModule extends EditionModule
         final Monitors monitors = platformModule.monitors;
 
         this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
-
-        idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
 
         watcherServiceFactory = dir -> createFileSystemWatcherService( platformModule.fileSystem, dir, logging,
                 platformModule.jobScheduler, config, fileWatcherFileNameFilter() );
@@ -376,10 +377,17 @@ public class HighlyAvailableEditionModule extends EditionModule
         paxosLife.add( (Lifecycle)clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
+        EnterpriseIdTypeConfigurationProvider idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
         HaIdGeneratorFactory editionIdGeneratorFactory = (HaIdGeneratorFactory) createIdGeneratorFactory( masterDelegateInvocationHandler,
-                logging.getInternalLogProvider(), requestContextFactory, fs );
-        eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
-        createIdComponents( platformModule, dependencies, any -> editionIdGeneratorFactory );
+                logging.getInternalLogProvider(), requestContextFactory, fs, idTypeConfigurationProvider );
+        HaIdReuseEligibility eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
+        idModule = IdModuleBuilder.of( idTypeConfigurationProvider )
+                    .withJobScheduler( platformModule.jobScheduler )
+                    .withFileSystem( fs )
+                    .withIdGenerationFactoryProvider( any -> editionIdGeneratorFactory )
+                    .withIdReuseEligibility( eligibleForIdReuse )
+                    .build();
+        DatabaseIdContext idContext = idModule.createIdContext( config.get( GraphDatabaseSettings.active_database ) );
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
@@ -430,7 +438,7 @@ public class HighlyAvailableEditionModule extends EditionModule
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( resolveDatabaseDependency( platformModule, GraphDatabaseFacade.class ), platformModule.fileSystem,
                         platformModule.monitors,
-                        tokenHolders, this.idGeneratorFactoryProvider.apply( DatabaseManager.DEFAULT_DATABASE_NAME ),
+                        tokenHolders, idContext.getIdGeneratorFactory(),
                         resolveDatabaseDependency( platformModule, TransactionCommitProcess.class ),
                         resolveDatabaseDependency( platformModule, CheckPointer.class ),
                         resolveDatabaseDependency( platformModule, TransactionIdStore.class ),
@@ -672,11 +680,12 @@ public class HighlyAvailableEditionModule extends EditionModule
         return new HighlyAvailableCommitProcessFactory( commitProcessDelegate );
     }
 
-    private IdGeneratorFactory createIdGeneratorFactory(
+    private static IdGeneratorFactory createIdGeneratorFactory(
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
             LogProvider logging,
             RequestContextFactory requestContextFactory,
-            FileSystemAbstraction fs )
+            FileSystemAbstraction fs,
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         HaIdGeneratorFactory idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory, fs, idTypeConfigurationProvider );

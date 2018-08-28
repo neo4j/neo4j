@@ -24,6 +24,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -124,7 +125,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     {
         this.databaseName = databaseName;
         this.config = platformModule.config;
-        this.idGeneratorFactory = editionModule.idGeneratorFactoryProvider.apply( databaseName );
+        DatabaseIdContext idContext = editionModule.idModule.createIdContext( databaseName );
+        this.idGeneratorFactory = idContext.getIdGeneratorFactory();
+        this.idController = idContext.getIdController();
         this.databaseLayout = platformModule.storeLayout.databaseLayout( databaseName );
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
@@ -159,7 +162,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.accessCapability = editionModule.accessCapability;
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.recoveryCleanupWorkCollector = platformModule.recoveryCleanupWorkCollector;
-        this.idController = editionModule.idControllerFactory.apply( databaseName );
         this.databaseInfo = platformModule.databaseInfo;
         this.versionContextSupplier = platformModule.versionContextSupplier;
         this.collectionsFactorySupplier = platformModule.collectionsFactorySupplier;

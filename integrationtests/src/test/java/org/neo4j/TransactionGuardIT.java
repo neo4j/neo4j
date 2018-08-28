@@ -56,6 +56,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
+import org.neo4j.graphdb.factory.module.id.IdModule;
+import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -67,13 +70,13 @@ import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -721,10 +724,13 @@ public class TransactionGuardIT
         }
 
         @Override
-        protected Function<String, IdGeneratorFactory> createIdGeneratorFactory( FileSystemAbstraction fs,
-                IdTypeConfigurationProvider idTypeConfigurationProvider )
+        protected IdModule createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
         {
-            return databaseName -> new TerminationIdGeneratorFactory( super.createIdGeneratorFactory( fs, idTypeConfigurationProvider ).apply( databaseName ) );
+            DatabaseIdContext idContext =
+                    super.createIdModule( platformModule, fileSystem ).createIdContext( platformModule.config.get( GraphDatabaseSettings.active_database ) );
+            return IdModuleBuilder.of( new EnterpriseIdTypeConfigurationProvider( platformModule.config ) )
+                    .withIdGenerationFactoryProvider( any -> new TerminationIdGeneratorFactory( idContext.getIdGeneratorFactory() ) )
+                    .build();
         }
     }
 

@@ -29,7 +29,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.id.IdModule;
+import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -49,7 +52,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 
 /**
@@ -72,6 +74,15 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
+    protected IdModule createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
+    {
+        return IdModuleBuilder.of( new EnterpriseIdTypeConfigurationProvider( platformModule.config ) )
+                .withFileSystem( fileSystem )
+                .withJobScheduler( platformModule.jobScheduler )
+                .build();
+    }
+
+    @Override
     protected Predicate<String> fileWatcherFileNameFilter()
     {
         return enterpriseNonClusterFileWatcherFileNameFilter();
@@ -84,12 +95,6 @@ public class EnterpriseEditionModule extends CommunityEditionModule
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF )
         );
-    }
-
-    @Override
-    protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
-    {
-        return new EnterpriseIdTypeConfigurationProvider( config );
     }
 
     @Override

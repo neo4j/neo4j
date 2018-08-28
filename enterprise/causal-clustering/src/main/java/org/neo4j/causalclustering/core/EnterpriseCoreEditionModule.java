@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -98,6 +97,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.id.IdModuleBuilder;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.helpers.collection.Pair;
@@ -124,8 +124,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -225,7 +223,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
         dependencies.satisfyDependency( clusterStateDirectory );
 
-        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
         AvailabilityGuard globalGuard = getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config );
         threadToTransactionBridge = dependencies.satisfyDependency( new ThreadToStatementContextBridge( globalGuard ) );
 
@@ -307,11 +304,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),
                 consensusModule.raftMachine(), dependencies, localDatabase );
 
-        this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
-
-        createIdComponents( platformModule, dependencies, any -> coreStateMachinesModule.idGeneratorFactory );
-        dependencies.satisfyDependency( idGeneratorFactoryProvider );
-        dependencies.satisfyDependency( idControllerFactory );
+        idModule = IdModuleBuilder.of( coreStateMachinesModule.idTypeConfigurationProvider )
+                                   .withJobScheduler( platformModule.jobScheduler )
+                                   .withIdGenerationFactoryProvider( any ->
+                                           new FreeIdFilteredIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory,
+                                                   coreStateMachinesModule.freeIdCondition ) )
+                                   .build();
 
         // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...
         this.tokenHoldersSupplier = () -> coreStateMachinesModule.tokenHolders;
@@ -381,15 +379,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
     protected DuplexPipelineWrapperFactory pipelineWrapperFactory()
     {
         return new VoidPipelineWrapperFactory();
-    }
-
-    @Override
-    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
-            Function<String,? extends IdGeneratorFactory> editionIdGeneratorFactory )
-    {
-        super.createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
-        this.idGeneratorFactoryProvider = databaseName -> new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactoryProvider.apply( databaseName ),
-                coreStateMachinesModule.freeIdCondition );
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

@@ -21,8 +21,6 @@ package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
 import java.time.Clock;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -31,6 +29,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.id.IdModule;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -56,17 +55,9 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
-import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
@@ -76,7 +67,6 @@ import org.neo4j.logging.Logger;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
-import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTemporalFunctions;
 
@@ -86,17 +76,7 @@ import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTempo
  */
 public abstract class EditionModule
 {
-    // This resided in RecordStorageEngine prior to 3.3
-    private static final boolean safeIdBuffering = FeatureToggles.flag(
-            EditionModule.class, "safeIdBuffering", true );
-
-    public Function<String, ? extends IdGeneratorFactory> idGeneratorFactoryProvider;
-
-    public IdTypeConfigurationProvider idTypeConfigurationProvider;
-
-    public Function<String, IdController> idControllerFactory;
-
-    public IdReuseEligibility eligibleForIdReuse;
+    public IdModule idModule;
 
     public Supplier<TokenHolders> tokenHoldersSupplier;
 
@@ -255,49 +235,6 @@ public abstract class EditionModule
         return NetworkConnectionTracker.NO_OP;
     }
 
-    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
-            Function<String,? extends IdGeneratorFactory> idGeneratorFactoryProvider )
-    {
-        Function<String,? extends IdGeneratorFactory> factoryProvider = idGeneratorFactoryProvider;
-        if ( safeIdBuffering )
-        {
-            Function<String,BufferingIdGeneratorFactory> bufferingIdGeneratorFactory = new Function<String,BufferingIdGeneratorFactory>()
-            {
-                private final Map<String,BufferingIdGeneratorFactory> idGenerators = new HashMap<>();
-
-                @Override
-                public BufferingIdGeneratorFactory apply( String databaseName )
-                {
-                    return idGenerators.computeIfAbsent( databaseName,
-                            s -> new BufferingIdGeneratorFactory( idGeneratorFactoryProvider.apply( databaseName ), eligibleForIdReuse,
-                                    idTypeConfigurationProvider ) );
-                }
-            };
-            idControllerFactory = databaseName -> createBufferedIdController( bufferingIdGeneratorFactory.apply( databaseName ), platformModule.jobScheduler );
-            factoryProvider = bufferingIdGeneratorFactory;
-        }
-        else
-        {
-            idControllerFactory = any -> createDefaultIdController();
-        }
-        this.idGeneratorFactoryProvider = factoryProvider;
-    }
-
-    private BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory, JobScheduler scheduler )
-    {
-        return new BufferedIdController( idGeneratorFactory, scheduler );
-    }
-
-    protected DefaultIdController createDefaultIdController()
-    {
-        return new DefaultIdController();
-    }
-
-    public void createDatabases( DatabaseManager databaseManager, Config config )
-    {
-        databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
-    }
-
     public DatabaseTransactionStats createTransactionMonitor()
     {
         return databaseStatistics;
@@ -321,5 +258,10 @@ public abstract class EditionModule
     public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName, Clock clock, LogService logService, Config config )
     {
         return (DatabaseAvailabilityGuard) getGlobalAvailabilityGuard( clock, logService, config );
+    }
+
+    public void createDatabases( DatabaseManager databaseManager, Config config )
+    {
+        databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
     }
 }
