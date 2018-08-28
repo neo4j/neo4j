@@ -292,11 +292,71 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             invokeSideEffect(load(extractedVars), method[java.util.ArrayList[_], Boolean, Object]("add"),
                              nullCheck(inner)(inner.ir))):_*)
           },
+          //return VirtualValues.fromList(extracted);
           invokeStatic(method[VirtualValues, ListValue, java.util.List[AnyValue]]("fromList"), load(extractedVars))
         )
-        //return VirtualValues.fromList(extracted);
         IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
                                collection.nullCheck)
+      }
+
+    case ReduceExpression(scope, initExpression, collectionExpression) =>
+      /*
+        reduce is tricky because it modifies the scope for future expressions. The generated code will be something
+        along the line of:
+
+        ListValue list = [evaluate collection expression];
+        ExecutionContext copyOfContext = context.copyWith(acc, init);
+        for ( AnyValue currentValue : extracted ) {
+            ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
+            copyOfContext = copyOfContext.set(acc, [result from inner expression using innerContext[)
+        }
+        return copyOfContext.apply(acc)
+       */
+      val copyOfContext = namer.nextVariableName()
+      //this is the context inner expressions should see
+      val innerContext = namer.nextVariableName()
+      val iterVariable = namer.nextVariableName()
+      for {collection <- internalCompileExpression(collectionExpression, currentContext)
+           init <- internalCompileExpression(initExpression, currentContext)
+           inner <- internalCompileExpression(scope.expression, Some(load(innerContext)))//Note we update the context here
+      } yield {
+        //inner variables must be evaluated after we modify context
+        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
+          Seq(declare(v.typ, v.name), assign(v.name, v.value))
+        }
+        val listVar = namer.nextVariableName()
+        val currentValue = namer.nextVariableName()
+        val ops = Seq(
+          //ListValue list = [evaluate collection expression];
+          //ExecutionContext copyOfContext = context.copyWith(acc, init);
+          declare[ListValue](listVar),
+          assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
+          declare[ExecutionContext](copyOfContext),
+          assign(copyOfContext,
+                 invoke(loadContext(currentContext),
+                        method[ExecutionContext, ExecutionContext, String, AnyValue]("copyWith"),
+                        constant(scope.accumulator.name), nullCheck(init)(init.ir))),
+          //Iterator<AnyValue> iter = list.iterator();
+          //while (iter.hasNext) {
+          //   AnyValue currentValue = iter.next();
+          declare[java.util.Iterator[AnyValue]](iterVariable),
+          assign(iterVariable, invoke(load(listVar), method[ListValue, java.util.Iterator[AnyValue]]("iterator"))),
+          loop(invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext"))) {block(Seq(
+            declare[AnyValue](currentValue),
+            assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
+            declare[ExecutionContext](innerContext),
+            //ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
+            assign(innerContext, invoke(load(copyOfContext), method[ExecutionContext, ExecutionContext, String, AnyValue]("set"),
+                                        constant(scope.variable.name), load(currentValue)))) ++ innerVars ++ Seq(
+            //copyOfContext = copyOfContext.set(acc, [inner expression using innerContext])
+            assign(copyOfContext, invoke(load(copyOfContext), method[ExecutionContext, ExecutionContext, String, AnyValue]("set"),
+                   constant(scope.accumulator.name), nullCheck(inner)(inner.ir)))):_*)
+          },
+          //return copyOfContext.apply(acc);
+          cast[AnyValue](invoke(load(copyOfContext), method[ExecutionContext, Object, Object]("apply"), constant(scope.accumulator.name)))
+        )
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields ++ init.fields,  collection.variables ++ init.variables,
+                               collection.nullCheck ++ init.nullCheck)
       }
 
     //boolean operators

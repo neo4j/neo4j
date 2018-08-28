@@ -1568,7 +1568,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Given
     val context = MapExecutionContext(mutable.Map.empty)
 
-    //When, extract(bar IN ["a", "aa", "aaa"] | size(a)
+    //When, extract(bar IN ["a", "aa", "aaa"] | size(bar))
     val compiled = compile(extract("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
                                    function("size", varFor("bar"))))
 
@@ -1580,7 +1580,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Given
     val context = MapExecutionContext(mutable.Map("foo" -> intValue(10)))
 
-    //When, extract(bar IN ["a", "aa", "aaa"] | size(a)
+    //When, extract(bar IN [1, 2, 3] | bar + foo)
     val compiled = compile(extract("bar", listOf(literalInt(1), literalInt(2), literalInt(3)),
                                    add(varFor("foo"), varFor("bar"))))
 
@@ -1592,9 +1592,45 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Given
     val context = MapExecutionContext(mutable.Map.empty)
 
-    //When, extract(bar IN ["a", "aa", "aaa"] | size(a)
+    //When, extract(bar IN ["a", "aa", "aaa"] | size(bar)
     val compiled = compile(extract("bar", noValue,
                                    function("size", varFor("bar"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("reduce function local access only") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty)
+
+    //When, reduce(count = 0, bar IN ["a", "aa", "aaa"] | count + size(bar))
+    val compiled = compile(reduce("count", literalInt(0), "bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+                                   add(function("size", varFor("bar")), varFor("count"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(intValue(6))
+  }
+
+  test("reduce function accessing outer scope") {
+    //Given
+    val context = MapExecutionContext(mutable.Map("foo" -> intValue(10)))
+
+    //When, reduce(count = 0, bar IN [1, 2, 3] | count + bar + foo)
+    val compiled = compile(reduce("count", literalInt(0),  "bar", listOf(literalInt(1), literalInt(2), literalInt(3)),
+                                   add(add(varFor("foo"), varFor("bar")), varFor("count"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(intValue(36))
+  }
+
+  test("reduce on null") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty)
+
+    //When, reduce(count = 0, bar IN ["a", "aa", "aaa"] | count + size(bar))
+    val compiled = compile(reduce("count", literalInt(0), "bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+                                  add(function("size", varFor("bar")), varFor("count"))))
 
     //Then
     compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
@@ -1715,6 +1751,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def extract(variable: String, collection: Expression, extract: Expression) =
     ExtractExpression(varFor(variable), collection,  None, Some(extract) )(pos)
+
+  private def reduce(accumulator: String, init: Expression, variable: String, collection: Expression, expression: Expression) =
+    ReduceExpression(varFor(accumulator), init, varFor(variable), collection,  expression)(pos)
 
   private val numericalValues: Seq[AnyRef] = Seq[Number](
     Double.NegativeInfinity,
