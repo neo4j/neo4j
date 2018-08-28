@@ -21,6 +21,8 @@
 # https://neo4j.com/licensing/
 #
 
+#encoding: utf-8
+
 Feature: OrderByAcceptance
 
   Scenario: ORDER BY nodes should return null results last in ascending order

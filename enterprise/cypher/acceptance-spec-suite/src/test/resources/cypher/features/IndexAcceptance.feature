@@ -21,6 +21,8 @@
 # https://neo4j.com/licensing/
 #
 
+#encoding: utf-8
+
 Feature: IndexAcceptance
 
   Scenario: Handling numerical literal on the left when using an index

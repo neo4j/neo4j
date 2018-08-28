@@ -21,6 +21,8 @@
 # https://neo4j.com/licensing/
 #
 
+#encoding: utf-8
+
 Feature: ConstraintAcceptance
 
   Scenario: Merge node with prop and label and unique index

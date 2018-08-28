@@ -21,6 +21,8 @@
 # https://neo4j.com/licensing/
 #
 
+#encoding: utf-8
+
 Feature: ForeachAcceptance
 
   Scenario: Add labels inside FOREACH
