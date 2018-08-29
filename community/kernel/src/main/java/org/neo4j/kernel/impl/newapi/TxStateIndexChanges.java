@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.DiffSets;
@@ -57,9 +58,13 @@ class TxStateIndexChanges
             new AddedAndRemoved( LongLists.immutable.empty(), LongSets.immutable.empty() );
     private static final ValueTuple MAX_STRING_TUPLE = ValueTuple.of( Values.MAX_STRING );
 
-    static AddedAndRemoved indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor descriptor )
+    static AddedAndRemoved indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor descriptor, IndexOrder indexOrder )
     {
-        UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
+        Map<ValueTuple,? extends LongDiffSets> updates =
+                indexOrder == IndexOrder.NONE ?
+                txState.getIndexUpdates( descriptor.schema() ) :
+                txState.getSortedIndexUpdates( descriptor.schema() );
+
         if ( updates == null )
         {
             return EMPTY_ADDED_AND_REMOVED;
@@ -73,12 +78,18 @@ class TxStateIndexChanges
             added.addAll( diffSet.getAdded() );
             removed.addAll( diffSet.getRemoved() );
         }
-        return new AddedAndRemoved( added, removed );
+        return new AddedAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
 
-    static AddedWithValuesAndRemoved indexUpdatesWithValuesForScan( ReadableTransactionState txState, IndexDescriptor descriptor )
+    static AddedWithValuesAndRemoved indexUpdatesWithValuesForScan( ReadableTransactionState txState,
+                                                                    IndexDescriptor descriptor,
+                                                                    IndexOrder indexOrder )
     {
-        UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
+        Map<ValueTuple,? extends LongDiffSets> updates =
+                indexOrder == IndexOrder.NONE ?
+                txState.getIndexUpdates( descriptor.schema() ) :
+                txState.getSortedIndexUpdates( descriptor.schema() );
+
         if ( updates == null )
         {
             return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
@@ -95,7 +106,7 @@ class TxStateIndexChanges
             diffSets.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, values ) ) );
             removed.addAll( diffSets.getRemoved() );
         }
-        return new AddedWithValuesAndRemoved( added, removed );
+        return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
 
     static AddedAndRemoved indexUpdatesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor, IndexQuery query )

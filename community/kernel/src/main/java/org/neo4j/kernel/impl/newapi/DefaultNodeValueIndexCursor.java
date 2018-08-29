@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -58,6 +59,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private Iterator<NodeWithPropertyValues> addedWithValues = Collections.emptyIterator();
     private LongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
+    private IndexOrder indexOrder = IndexOrder.NONE;
     private final DefaultCursors pool;
 
     DefaultNodeValueIndexCursor( DefaultCursors pool )
@@ -308,13 +310,13 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             if ( needsValues )
             {
                 AddedWithValuesAndRemoved changes =
-                        TxStateIndexChanges.indexUpdatesWithValuesForScan( txState, descriptor );
+                        TxStateIndexChanges.indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
                 addedWithValues = changes.added.iterator();
                 removed = removed( txState, changes.removed );
             }
             else
             {
-                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForScan( txState, descriptor );
+                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForScan( txState, descriptor, indexOrder );
                 added = changes.added.longIterator();
                 removed = removed( txState, changes.removed );
             }

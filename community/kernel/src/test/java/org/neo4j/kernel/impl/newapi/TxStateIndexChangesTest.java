@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.impl.UnmodifiableMap;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
@@ -32,12 +33,11 @@ import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -79,8 +79,8 @@ class TxStateIndexChangesTest
         final ReadableTransactionState state = Mockito.mock( ReadableTransactionState.class );
 
         // WHEN
-        AddedAndRemoved changes = indexUpdatesForScan( state, index );
-        AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index );
+        AddedAndRemoved changes = indexUpdatesForScan( state, index, IndexOrder.NONE );
+        AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index, IndexOrder.NONE );
 
         // THEN
         assertTrue( changes.isEmpty() );
@@ -97,12 +97,63 @@ class TxStateIndexChangesTest
                 .build();
 
         // WHEN
-        AddedAndRemoved changes = indexUpdatesForScan( state, index );
-        AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index );
+        AddedAndRemoved changes = indexUpdatesForScan( state, index, IndexOrder.NONE );
+        AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index, IndexOrder.NONE );
 
         // THEN
         assertContains( changes.added, 42L, 43L );
         assertContains( changesWithValues.added, nodeWithPropertyValues( 42L, "foo" ), nodeWithPropertyValues( 43L, "bar" ) );
+    }
+
+    @Test
+    void shouldComputeIndexUpdatesForScanWithAscendingOrder()
+    {
+        assertScanWithOrder( IndexOrder.ASCENDING );
+    }
+
+    @Test
+    void shouldComputeIndexUpdatesForScanWithDescendingOrder()
+    {
+        assertScanWithOrder( IndexOrder.DESCENDING );
+    }
+
+    private void assertScanWithOrder( IndexOrder indexOrder )
+    {
+        // GIVEN
+        final ReadableTransactionState state = new TxStateBuilder()
+                .withAdded( 40L, "Aaron" )
+                .withAdded( 41L, "Agatha" )
+                .withAdded( 42L, "Andreas" )
+                .withAdded( 43L, "Barbarella" )
+                .withAdded( 44L, "Andrea" )
+                .withAdded( 45L, "Aristotle" )
+                .withAdded( 46L, "Barbara" )
+                .withAdded( 47L, "Cinderella" )
+                .build();
+
+        // WHEN
+        AddedAndRemoved changes = indexUpdatesForScan( state, index, indexOrder );
+        AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index, indexOrder );
+
+        NodeWithPropertyValues[] expectedNodesWithValues = {nodeWithPropertyValues( 40L, "Aaron" ),
+                                                            nodeWithPropertyValues( 41L, "Agatha" ),
+                                                            nodeWithPropertyValues( 44L, "Andrea" ),
+                                                            nodeWithPropertyValues( 42L, "Andreas" ),
+                                                            nodeWithPropertyValues( 45L, "Aristotle" ),
+                                                            nodeWithPropertyValues( 46L, "Barbara" ),
+                                                            nodeWithPropertyValues( 43L, "Barbarella" ),
+                                                            nodeWithPropertyValues( 47L, "Cinderella" )};
+
+        if ( indexOrder == IndexOrder.DESCENDING )
+        {
+            ArrayUtils.reverse( expectedNodesWithValues );
+        }
+
+        long[] expectedNodeIds = Arrays.stream( expectedNodesWithValues ).mapToLong( NodeWithPropertyValues::getNodeId ).toArray();
+
+        // THEN
+        assertContainsInOrder( changes.added, expectedNodeIds );
+        assertContainsInOrder( changesWithValues.added, expectedNodesWithValues );
     }
 
     @Test
@@ -407,8 +458,8 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            AddedAndRemoved changes = indexUpdatesForScan( state, compositeIndex );
-            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex );
+            AddedAndRemoved changes = indexUpdatesForScan( state, compositeIndex, IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex, IndexOrder.NONE );
 
             // THEN
             assertContains( changes.added, 42L, 43L );
@@ -461,8 +512,8 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            AddedAndRemoved changes = indexUpdatesForScan( state, compositeIndex );
-            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex );
+            AddedAndRemoved changes = indexUpdatesForScan( state, compositeIndex, IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex, IndexOrder.NONE );
 
             // THEN
             assertContains( changes.added, 42L );
