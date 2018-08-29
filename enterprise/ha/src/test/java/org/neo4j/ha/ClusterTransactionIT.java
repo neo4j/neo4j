@@ -31,13 +31,13 @@ import java.util.concurrent.FutureTask;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.availability.AvailabilityListener;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -94,16 +94,8 @@ public class ClusterTransactionIT
             return false;
         } );
 
-        master.getDependencyResolver()
-                .resolveDependency( LifeSupport.class )
-                .addLifecycleListener( ( instance, from, to ) ->
-                {
-                    if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
-                         to == LifecycleStatus.STOPPED )
-                    {
-                        result.run();
-                    }
-                } );
+        DatabaseAvailabilityGuard masterGuard = master.getDependencyResolver().resolveDependency( DatabaseAvailabilityGuard.class );
+        masterGuard.addListener( new UnavailabilityListener( result ) );
 
         master.shutdown();
 
@@ -153,6 +145,28 @@ public class ClusterTransactionIT
         try ( Transaction tx = master.beginTx() )
         {
             assertThat( Iterables.count( master.getAllNodes() ), is( 3L ) );
+        }
+    }
+
+    private static class UnavailabilityListener implements AvailabilityListener
+    {
+        private final FutureTask<Boolean> result;
+
+        UnavailabilityListener( FutureTask<Boolean> result )
+        {
+            this.result = result;
+        }
+
+        @Override
+        public void available()
+        {
+            //nothing
+        }
+
+        @Override
+        public void unavailable()
+        {
+            result.run();
         }
     }
 }
