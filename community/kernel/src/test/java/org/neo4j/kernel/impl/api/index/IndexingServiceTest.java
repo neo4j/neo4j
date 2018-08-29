@@ -93,6 +93,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.mockito.answer.AwaitAnswer;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -283,7 +284,6 @@ public class IndexingServiceTest
         // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
         //  just for the purpose of testing this behavior)
         order.verify( populator ).newPopulatingUpdater( storeView );
-        order.verify( updater ).process( value2 );
         order.verify( updater ).close();
         order.verify( populator ).sampleResult();
         order.verify( populator ).close( true );
@@ -1274,6 +1274,14 @@ public class IndexingServiceTest
                 public void stop()
                 {
                     throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater,
+                        IndexEntryUpdate<?> update,
+                        long currentlyIndexedNodeId )
+                {
+                    // no-op
                 }
 
                 @Override

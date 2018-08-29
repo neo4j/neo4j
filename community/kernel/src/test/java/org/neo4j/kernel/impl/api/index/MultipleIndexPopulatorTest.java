@@ -387,24 +387,6 @@ public class MultipleIndexPopulatorTest
         checkPopulatorFailure( populator );
     }
 
-    @Test
-    public void shouldApplyUpdatesInFrontOfScan() throws IOException, IndexEntryConflictException
-    {
-        // given
-        IndexUpdater updater = mock( IndexUpdater.class );
-        IndexPopulator populator = createIndexPopulator( updater );
-        multipleIndexPopulator.create();
-        addPopulator( populator, 1 );
-
-        // when
-        IndexEntryUpdate<LabelSchemaDescriptor> update = add( 10, index1, "v1" );
-        multipleIndexPopulator.queue( update );
-        multipleIndexPopulator.populateFromQueue( 0 );
-
-        // then
-        verify( updater ).process( update );
-    }
-
     private IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
     {
         return add( 1, schemaDescriptor, "theValue" );

@@ -429,6 +429,13 @@ public class IndexPopulationJobTest
         }
 
         @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
+                long currentlyIndexedNodeId )
+        {
+            // no-op
+        }
+
+        @Override
         public PopulationProgress getProgress()
         {
             return new PopulationProgress( 42, 100 );
