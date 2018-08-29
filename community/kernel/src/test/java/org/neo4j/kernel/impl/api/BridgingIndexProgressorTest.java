@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -43,7 +44,7 @@ public class BridgingIndexProgressorTest
         // Given
         for ( IndexProgressor part : parts )
         {
-            progressor.initialize( index, part, null, false );
+            progressor.initialize( index, part, null, IndexOrder.NONE, false );
         }
 
         // When

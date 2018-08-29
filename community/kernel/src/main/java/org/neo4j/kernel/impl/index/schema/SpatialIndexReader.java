@@ -100,7 +100,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
         {
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates, false );
+            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, false );
             for ( NativeIndexReader<SpatialIndexKey,NativeIndexValue> reader : this )
             {
                 reader.query( multiProgressor, indexOrder, false, predicates );
@@ -130,12 +130,12 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
                 }
                 else
                 {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, false );
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, false );
                 }
             }
             else
             {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, false );
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, false );
             }
         }
     }

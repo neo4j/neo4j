@@ -36,6 +36,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
@@ -129,7 +130,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter, needsValues );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter, indexOrder, needsValues );
     }
 
     void initializeFromToKeys( KEY treeKeyFrom, KEY treeKeyTo )
@@ -148,19 +149,28 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
      */
     abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter,
-            boolean needsValues )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client,
+                                       KEY treeKeyFrom,
+                                       KEY treeKeyTo,
+                                       IndexQuery[] query,
+                                       boolean needFilter,
+                                       IndexOrder indexOrder,
+                                       boolean needsValues )
     {
         if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
         {
-            client.initialize( descriptor, IndexProgressor.EMPTY, query, needsValues );
+            Preconditions.checkArgument( indexOrder != IndexOrder.ASCENDING,
+                                         "Cannot use backwards seek [%s, %s) with ascending index order", treeKeyFrom, treeKeyTo );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, needsValues );
             return;
         }
         try
         {
+            Preconditions.checkArgument( indexOrder != IndexOrder.DESCENDING,
+                                         "Cannot use forwards seek [%s, %s) with descending index order", treeKeyFrom, treeKeyTo );
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
-            client.initialize( descriptor, hitProgressor, query, needsValues );
+            client.initialize( descriptor, hitProgressor, query, indexOrder, needsValues );
         }
         catch ( IOException e )
         {

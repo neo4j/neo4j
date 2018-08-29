@@ -92,7 +92,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
         {
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates, needsValues );
+            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, needsValues );
             for ( NativeIndexReader<?,NativeIndexValue> reader : this )
             {
                 reader.query( multiProgressor, indexOrder, needsValues, predicates );
@@ -109,12 +109,12 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
                 }
                 else
                 {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, needsValues );
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, needsValues );
                 }
             }
             else
             {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, needsValues );
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, needsValues );
             }
         }
     }

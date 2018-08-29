@@ -54,12 +54,6 @@ abstract class LogicalPlan(idGen: IdGen)
   def availableSymbols: Set[String]
 
   /**
-    * The order of rows of the output of this plan.
-    * TODO no default implementation
-    */
-  def providedOrder: ProvidedOrder = ProvidedOrder.empty
-
-  /**
     * Node properties that will be cached in the execution context.
     */
   def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {

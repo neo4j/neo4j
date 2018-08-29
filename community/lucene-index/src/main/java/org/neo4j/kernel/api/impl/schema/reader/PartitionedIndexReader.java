@@ -101,7 +101,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
                     throw new InnerException( e );
                 }
             } );
-            client.initialize( descriptor, bridgingIndexProgressor, query, needsValues );
+            client.initialize( descriptor, bridgingIndexProgressor, query, indexOrder, needsValues );
         }
         catch ( InnerException e )
         {

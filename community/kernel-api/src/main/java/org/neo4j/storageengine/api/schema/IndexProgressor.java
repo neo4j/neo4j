@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api.schema;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.values.storable.Value;
@@ -74,10 +75,11 @@ public interface IndexProgressor extends AutoCloseable
          * @param descriptor The descriptor
          * @param progressor The progressor
          * @param query The query of this progression
+         * @param indexOrder The required order the index should return nodeids in
          * @param needsValues if the index should fetch property values together with node ids for index queries
          */
         void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                         IndexQuery[] query, boolean needsValues );
+                         IndexQuery[] query, IndexOrder indexOrder, boolean needsValues );
 
         /**
          * Accept the node id and values of a candidate index entry. Return true if the entry is

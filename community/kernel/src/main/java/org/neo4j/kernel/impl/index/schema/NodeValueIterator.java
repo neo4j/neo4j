@@ -23,6 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -51,7 +52,11 @@ public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBas
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor,
+                            IndexProgressor progressor,
+                            IndexQuery[] query,
+                            IndexOrder indexOrder,
+                            boolean needsValues )
     {
         this.progressor = progressor;
     }

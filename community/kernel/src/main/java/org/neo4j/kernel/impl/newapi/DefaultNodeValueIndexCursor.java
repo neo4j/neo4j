@@ -57,7 +57,7 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeValueIndexCursor, NodeValueClient
+        implements NodeValueIndexCursor, NodeValueClient, SortedMergeJoin.Sink
 {
     private Read read;
     private Resource resource;
@@ -68,8 +68,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private Iterator<NodeWithPropertyValues> addedWithValues = Collections.emptyIterator();
     private LongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
-    private IndexOrder indexOrder = IndexOrder.NONE;
+    private IndexOrder indexOrder;
     private final DefaultCursors pool;
+    private SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
 
     DefaultNodeValueIndexCursor( DefaultCursors pool )
     {
@@ -78,11 +79,17 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor,
+                            IndexProgressor progressor,
+                            IndexQuery[] query,
+                            IndexOrder indexOrder,
+                            boolean needsValues )
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );
+        sortedMergeJoin.initialize( indexOrder );
 
+        this.indexOrder = indexOrder;
         this.needsValues = needsValues;
         this.query = query;
 
@@ -147,6 +154,18 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public boolean next()
     {
+        if ( indexOrder == IndexOrder.NONE )
+        {
+            return nextWithoutOrder();
+        }
+        else
+        {
+            return nextWithOrdering();
+        }
+    }
+
+    private boolean nextWithoutOrder()
+    {
         if ( !needsValues && added.hasNext() )
         {
             this.node = added.next();
@@ -160,10 +179,38 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.values = nodeWithPropertyValues.getValues();
             return true;
         }
+        else if ( added.hasNext() || addedWithValues.hasNext() )
+        {
+            throw new IllegalStateException( "Index cursor cannot have transaction state with values and without values simultaneously" );
+        }
         else
         {
             return innerNext();
         }
+    }
+
+    private boolean nextWithOrdering()
+    {
+        if ( sortedMergeJoin.needsA() && addedWithValues.hasNext() )
+        {
+            NodeWithPropertyValues nodeWithPropertyValues = addedWithValues.next();
+            sortedMergeJoin.setA( nodeWithPropertyValues.getNodeId(), nodeWithPropertyValues.getValues() );
+        }
+
+        if ( sortedMergeJoin.needsB() && innerNext() )
+        {
+            sortedMergeJoin.setB( node, values );
+        }
+
+        sortedMergeJoin.next( this );
+        return node != -1;
+    }
+
+    @Override
+    public void acceptSortedMergeJoin( long nodeId, Value[] values )
+    {
+        this.node = nodeId;
+        this.values = values;
     }
 
     public void setRead( Read read, Resource resource )
@@ -292,7 +339,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             TransactionState txState = read.txState();
 
-            if ( needsValues )
+            if ( needsValues || indexOrder != IndexOrder.NONE )
             {
                 AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate, indexOrder );
                 addedWithValues = changes.added.iterator();

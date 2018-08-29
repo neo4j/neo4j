@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
@@ -192,7 +193,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
 
         // when
         NodeValueClientFilter filter = new NodeValueClientFilter( this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ), this, null, true );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ), this, null, IndexOrder.NONE, true );
         boolean accepted = filter.acceptNode( nodeReference, filterValues.apply( values ) );
 
         // then
@@ -214,7 +215,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( 11 ), this, null, true );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11), this, null, IndexOrder.NONE, true );
         return filter;
     }
 
@@ -229,7 +230,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, IndexOrder indexOrder, boolean needsValues )
     {
         events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );
     }

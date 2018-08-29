@@ -738,9 +738,9 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
         return new IndexProgressor.NodeValueClient()
         {
             @Override
-            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
             {
-                iter.initialize( descriptor, progressor, query, needsValues );
+                iter.initialize( descriptor, progressor, query, indexOrder, needsValues );
             }
 
             @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -88,12 +89,16 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor,
+                            IndexProgressor progressor,
+                            IndexQuery[] query,
+                            IndexOrder indexOrder,
+                            boolean needsValues )
     {
         this.progressor = progressor;
         // We set needsValues to true for the target, since this will enable us to execute the cheaper filterByIndexValues
         // instead of filterByCursors if the target can provide values
-        target.initialize( descriptor, this, query, true );
+        target.initialize( descriptor, this, query, indexOrder, true );
     }
 
     @Override

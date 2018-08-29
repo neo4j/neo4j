@@ -96,7 +96,7 @@ public class SimpleIndexReader extends AbstractIndexReader
             throws IndexNotApplicableKernelException
     {
         Query query = toLuceneQuery( predicates );
-        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, needsValues );
+        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, indexOrder, needsValues );
     }
 
     @Override

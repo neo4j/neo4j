@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.schema;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -81,7 +82,11 @@ public class BridgingIndexProgressor implements IndexProgressor.NodeValueClient,
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor,
+                            IndexProgressor progressor,
+                            IndexQuery[] queries,
+                            IndexOrder indexOrder,
+                            boolean needsValues )
     {
         assertKeysAlign( descriptor.schema().getPropertyIds() );
         progressors.add( progressor );

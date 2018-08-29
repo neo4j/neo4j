@@ -45,7 +45,7 @@ public abstract class AbstractIndexReader implements IndexReader
                     String.format( "This reader only have support for index order %s. Provided index order was %s.",
                             IndexOrder.NONE, indexOrder ) );
         }
-        client.initialize( descriptor, new NodeValueIndexProgressor( query( query ), client ), query, needsValues );
+        client.initialize( descriptor, new NodeValueIndexProgressor( query( query ), client ), query, indexOrder, needsValues );
     }
 
 }

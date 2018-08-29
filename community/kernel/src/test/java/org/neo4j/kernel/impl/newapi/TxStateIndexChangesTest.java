@@ -446,7 +446,7 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "bar" );
+            AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "bar", IndexOrder.NONE );
 
             // THEN
             assertContainsInOrder( changes.added,   43L, 42L );

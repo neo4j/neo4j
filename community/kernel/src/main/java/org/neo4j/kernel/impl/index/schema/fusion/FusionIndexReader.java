@@ -93,7 +93,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             }
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor,
                     descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates, needsValues );
+            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, needsValues );
             try
             {
                 instanceSelector.forAll( reader ->

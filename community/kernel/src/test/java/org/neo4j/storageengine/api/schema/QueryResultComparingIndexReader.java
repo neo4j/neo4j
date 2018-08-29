@@ -113,7 +113,7 @@ public class QueryResultComparingIndexReader implements IndexReader
             private long mainValue;
 
             @Override
-            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
             {
                 IndexProgressor wrappedProgressor = new IndexProgressor()
                 {
@@ -150,7 +150,7 @@ public class QueryResultComparingIndexReader implements IndexReader
                     }
                 };
 
-                client.initialize( descriptor, wrappedProgressor, query, needsValues );
+                client.initialize( descriptor, wrappedProgressor, query, indexOrder, needsValues );
             }
 
             @Override
