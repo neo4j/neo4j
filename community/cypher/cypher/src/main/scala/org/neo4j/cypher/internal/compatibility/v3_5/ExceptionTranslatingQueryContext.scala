@@ -25,7 +25,7 @@ import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
@@ -105,9 +105,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT],
                                            values: Seq[IndexQuery]): Iterator[RESULT] =
-    translateException(inner.indexSeek(index, needsValues, resultCreator, values))
+    translateException(inner.indexSeek(index, needsValues, indexOrder, resultCreator, values))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] =
     translateException(inner.getNodesByLabel(id))
@@ -263,8 +264,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
-    translateException(inner.indexScan(index, needsValues, resultCreator))
+    translateException(inner.indexScan(index, needsValues, indexOrder, resultCreator))
 
   override def nodeIsDense(node: Long) =
     translateException(inner.nodeIsDense(node))

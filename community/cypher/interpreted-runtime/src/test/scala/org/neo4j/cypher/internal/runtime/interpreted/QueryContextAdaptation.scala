@@ -24,7 +24,7 @@ import java.net.URL
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
@@ -101,6 +101,7 @@ trait QueryContextAdaptation {
 
   override def indexSeek[RESULT](index: IndexReference,
                                  needsValues: Boolean,
+                                 indexOrder: IndexOrder,
                                  resultCreator: ResultCreator[RESULT],
                                  values: Seq[IndexQuery]): scala.Iterator[RESULT] = ???
 
@@ -134,6 +135,7 @@ trait QueryContextAdaptation {
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT]): Iterator[RESULT] = ???
 
   override def getImportURL(url: URL): Either[String, URL] = ???

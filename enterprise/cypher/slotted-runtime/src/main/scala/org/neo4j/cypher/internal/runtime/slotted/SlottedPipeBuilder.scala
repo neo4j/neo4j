@@ -57,7 +57,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.id
-    val convertExpressions = rewriteAstExpression andThen ((e) => expressionConverters.toCommandExpression(id, e))
+    val convertExpressions = rewriteAstExpression andThen (e => expressionConverters.toCommandExpression(id, e))
     val slots = physicalPlan.slotConfigurations(id)
     val argumentSize = physicalPlan.argumentSizes(id)
     generateSlotAccessorFunctions(slots)
@@ -66,17 +66,17 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case AllNodesScan(column, _) =>
         AllNodesScanSlottedPipe(column, slots, argumentSize)(id)
 
-      case NodeIndexScan(column, label, property, _, _) =>
-        NodeIndexScanSlottedPipe(column, label, SlottedIndexedProperty(column, property, slots), slots, argumentSize)(id)
+      case NodeIndexScan(column, label, property, _, indexOrder) =>
+        NodeIndexScanSlottedPipe(column, label, SlottedIndexedProperty(column, property, slots), indexOrder, slots, argumentSize)(id)
 
-      case NodeIndexSeek(column, label, properties, valueExpr, _, _) =>
+      case NodeIndexSeek(column, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekSlottedPipe(column, label, properties.map(SlottedIndexedProperty(column, _, slots)).toArray, valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
+        NodeIndexSeekSlottedPipe(column, label, properties.map(SlottedIndexedProperty(column, _, slots)).toArray, valueExpr.map(convertExpressions), indexSeekMode, indexOrder, slots, argumentSize)(id)
 
-      case NodeUniqueIndexSeek(column, label, properties, valueExpr, _, _) =>
+      case NodeUniqueIndexSeek(column, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(column, label, properties.map(SlottedIndexedProperty(column, _, slots)).toArray,
-          valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id = id)
+          valueExpr.map(convertExpressions), indexSeekMode, indexOrder, slots, argumentSize)(id = id)
 
       case NodeByLabelScan(column, label, _) =>
         NodesByLabelScanSlottedPipe(column, LazyLabel(label), slots, argumentSize)(id)

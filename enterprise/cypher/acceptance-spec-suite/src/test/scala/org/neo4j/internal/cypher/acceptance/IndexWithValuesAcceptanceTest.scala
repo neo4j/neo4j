@@ -137,12 +137,12 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
       .containingArgument("{n.prop2 : `anon[46]`}")
-      .onTopOf(includeSomewhere.aPlan("Sort")
-        .onTopOf(aPlan("Projection")
-          .containingArgument("{ : cached[n.prop1]}")
-          .withDBHits(0)
-          .onTopOf(aPlan("NodeIndexSeekByRange")
-            .withExactVariables("n", "cached[n.prop1]"))))
+      .onTopOf(aPlan("Projection")
+        .containingArgument("{ : n.prop2}")
+        // just for n.prop2, not for n.prop1
+        .withDBHits(6)
+        .onTopOf(aPlan("NodeIndexSeekByRange")
+          .withExactVariables("n", "cached[n.prop1]")))
     result.toList should equal(List(
       Map("n.prop2" -> 3), Map("n.prop2" -> 3),
       Map("n.prop2" -> 1), Map("n.prop2" -> 1),

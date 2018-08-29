@@ -317,7 +317,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x), ProvidedOrder.empty)
+    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x), IndexOrderNone)
     val apply = Apply(lhs, rhs)
 
     // when
@@ -1007,7 +1007,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       Seq(IndexedProperty(PropertyKeyToken(prop, PropertyKeyId(0)), if (getValue) GetValue else DoNotGetValue)),
       seekExpression,
       Set.empty,
-      ProvidedOrder.empty)
+      IndexOrderNone)
   }
 
   private def cachedNodeProperty(node: String, prop: String): CachedNodeProperty =

@@ -23,6 +23,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, SlottedIndexedProperty}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexMockingHelp
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrderNone
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
@@ -51,7 +52,7 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
 
     // when
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
-    val pipe = NodeIndexScanSlottedPipe("n", label, SlottedIndexedProperty(propertyKey.nameId.id, None), slots, slots.size())()
+    val pipe = NodeIndexScanSlottedPipe("n", label, SlottedIndexedProperty(propertyKey.nameId.id, None), IndexOrderNone, slots, slots.size())()
     val result = pipe.createResults(queryState)
 
     // then
@@ -69,7 +70,7 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     val nDotProp = "n." + propertyKey.name
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference(nDotProp, nullable = false, CTAny)
-    val pipe = NodeIndexScanSlottedPipe("n", label, SlottedIndexedProperty(propertyKey.nameId.id, Some(slots.getReferenceOffsetFor(nDotProp))), slots, slots.size())()
+    val pipe = NodeIndexScanSlottedPipe("n", label, SlottedIndexedProperty(propertyKey.nameId.id, Some(slots.getReferenceOffsetFor(nDotProp))), IndexOrderNone, slots, slots.size())()
     val result = pipe.createResults(queryState)
 
     // then

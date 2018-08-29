@@ -49,13 +49,14 @@ trait NodeIndexSeeker {
   protected def indexSeek[RESULT <: AnyRef](state: QueryState,
                                             indexReference: IndexReference,
                                             needsValues: Boolean,
+                                            indexOrder: IndexOrder,
                                             baseContext: ExecutionContext,
                                             resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
     indexMode match {
       case _: ExactSeek |
            _: SeekByRange =>
         val indexQueries = computeIndexQueries(state, baseContext)
-        indexQueries.toIterator.flatMap(query => state.query.indexSeek(indexReference, needsValues, resultCreator, query))
+        indexQueries.toIterator.flatMap(query => state.query.indexSeek(indexReference, needsValues, indexOrder, resultCreator, query))
 
       case LockingUniqueIndexSeek =>
         val indexQueries = computeExactQueries(state, baseContext)

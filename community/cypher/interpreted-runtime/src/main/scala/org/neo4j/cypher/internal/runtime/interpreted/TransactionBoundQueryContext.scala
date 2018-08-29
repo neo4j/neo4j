@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, _}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
@@ -38,6 +38,7 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
+import org.neo4j.internal.kernel.api.{IndexOrder => KernelIndexOrder, _}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
@@ -282,6 +283,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT],
                                            predicates: Seq[IndexQuery]): Iterator[RESULT] = {
 
@@ -293,7 +295,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
 
     if (impossiblePredicate) Iterator.empty
-    else seek(index, needsValues, resultCreator, predicates: _*)
+    else seek(index, needsValues, indexOrder, resultCreator, predicates: _*)
   }
 
   override def indexReference(label: Int,
@@ -302,6 +304,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def seek[RESULT <: AnyRef](index: IndexReference,
                                      needsValues: Boolean,
+                                     indexOrder: IndexOrder,
                                      resultCreator: ResultCreator[RESULT],
                                      queries: IndexQuery*) = {
 
@@ -323,7 +326,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
 
     val needsValuesFromIndexSeek = maybeActualValues.isEmpty && needsValues
-    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, needsValuesFromIndexSeek, queries: _*)
+    reads().nodeIndexSeek(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek, queries: _*)
     new CursorIterator[RESULT] {
       override protected def fetchNext(): RESULT = {
         if (nodeCursor.next())
@@ -338,10 +341,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT]): Iterator[RESULT] = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
     val nodeValueHit: NodeValueHit = new CursorWrappingNodeValueHit(nodeCursor)
-    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, needsValues)
+    reads().nodeIndexScan(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValues)
     new CursorIterator[RESULT] {
       override protected def fetchNext(): RESULT = {
         if (nodeCursor.next())
@@ -358,17 +362,18 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                                      needsValues: Boolean,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] =
-    seek(index, needsValues, resultCreator, IndexQuery.stringContains(index.properties()(0), value))
+    seek(index, needsValues, IndexOrderNone, resultCreator, IndexQuery.stringContains(index.properties()(0), value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] =
-    seek(index, needsValues, resultCreator, IndexQuery.stringSuffix(index.properties()(0), value))
+    seek(index, needsValues, IndexOrderNone, resultCreator, IndexQuery.stringSuffix(index.properties()(0), value))
 
   override def lockingUniqueIndexSeek[RESULT](indexReference: IndexReference,
                                               resultCreator: ResultCreator[RESULT],
                                               queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT] = {
+
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
     if (queries.exists(q => q.value() == Values.NO_VALUE))
       None
@@ -1084,6 +1089,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val cursor = transactionalContext.cursors.allocatePropertyCursor()
     resources.trace(cursor)
     cursor
+  }
+
+  private def asKernelIndexOrder(indexOrder: IndexOrder): KernelIndexOrder = indexOrder match {
+    case IndexOrderAscending => KernelIndexOrder.ASCENDING
+    case IndexOrderDescending => KernelIndexOrder.DESCENDING
+    case IndexOrderNone => KernelIndexOrder.NONE
   }
 
   abstract class CursorIterator[T] extends Iterator[T] {

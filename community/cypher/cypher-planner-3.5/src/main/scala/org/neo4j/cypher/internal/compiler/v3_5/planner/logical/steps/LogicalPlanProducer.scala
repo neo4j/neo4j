@@ -224,7 +224,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = RegularPlannerQuery(queryGraph = queryGraph)
     val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
 
-    val plan = NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, providedOrder)
+    val plan = NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder))
     val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
@@ -246,7 +246,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexScan(idName, label, property, argumentIds, providedOrder), solved, context, providedOrder)
+    annotate(NodeIndexScan(idName, label, property, argumentIds, toIndexOrder(providedOrder)), solved, context, providedOrder)
   }
 
   def planNodeIndexContainsScan(idName: String,
@@ -256,7 +256,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
-                                providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -264,7 +263,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexContainsScan(idName, label, property, valueExpr, argumentIds, providedOrder), solved, context, providedOrder)
+    annotate(NodeIndexContainsScan(idName, label, property, valueExpr, argumentIds), solved, context)
   }
 
   def planNodeIndexEndsWithScan(idName: String,
@@ -274,7 +273,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
-                                providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -282,7 +280,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexEndsWithScan(idName, label, property, valueExpr, argumentIds, providedOrder), solved, context, providedOrder)
+    annotate(NodeIndexEndsWithScan(idName, label, property, valueExpr, argumentIds), solved, context)
   }
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
@@ -313,7 +311,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, providedOrder), solved, context, providedOrder)
+    annotate(NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, context, providedOrder)
   }
 
   def planAssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -762,5 +760,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
     else
       pattern.dir
+  }
+
+  /**
+    * The provided order is used to descibe the current ordering of the LogicalPlan within a complete plan tree. For
+    * index leaf operators this can be planned as an IndexOrder for the index to provide. In that case it only works
+    * if all columns are sorted in the same direction, so we need to narrow the scope for these index operations.
+    */
+  private def toIndexOrder(providedOrder: ProvidedOrder): IndexOrder = providedOrder match {
+    case ProvidedOrder.empty => IndexOrderNone
+    case ProvidedOrder(columns) if columns.forall(c => c.isAscending) => IndexOrderAscending
+    case ProvidedOrder(columns) if columns.forall(c => !c.isAscending) => IndexOrderDescending
+    case _ => throw new IllegalStateException("Cannot mix ascending and descending columns when using index order")
   }
 }

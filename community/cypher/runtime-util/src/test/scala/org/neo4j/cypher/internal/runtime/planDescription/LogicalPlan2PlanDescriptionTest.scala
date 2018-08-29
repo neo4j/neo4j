@@ -79,7 +79,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
                                 PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
 
       , attach(NodeIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
-                             ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, ProvidedOrder.empty),
+                             ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
                23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
                             Seq(Index("Label", Seq("Prop")), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
@@ -87,7 +87,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
       , attach(
         NodeUniqueIndexSeek("x", LabelToken("Lebal", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
-                            ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, ProvidedOrder.empty),
+                            ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
         95.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
                             Seq(Index("Lebal", Seq("Prop")), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,

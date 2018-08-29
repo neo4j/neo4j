@@ -24,7 +24,7 @@ import java.net.URL
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
@@ -121,14 +121,16 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT],
                                            queries: Seq[IndexQuery]): Iterator[RESULT] =
-    manyDbHits(inner.indexSeek(index, needsValues, resultCreator, queries))
+    manyDbHits(inner.indexSeek(index, needsValues, indexOrder, resultCreator, queries))
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
-    manyDbHits(inner.indexScan(index, needsValues, resultCreator))
+    manyDbHits(inner.indexScan(index, needsValues, indexOrder, resultCreator))
 
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,

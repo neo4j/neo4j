@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QueryExpression}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
@@ -34,6 +34,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
                                     properties: Array[SlottedIndexedProperty],
                                     valueExpr: QueryExpression[Expression],
                                     indexMode: IndexSeekMode = IndexSeek,
+                                    indexOrder: IndexOrder,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
                                    (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker with IndexSlottedPipeWithValues {
@@ -61,7 +62,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
     val resultCreator = SlottedCtxResultCreator(state, slots)
-    indexSeek(state, indexReference, needsValues, baseContext, resultCreator)
+    indexSeek(state, indexReference, needsValues, indexOrder, baseContext, resultCreator)
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekSlottedPipe]

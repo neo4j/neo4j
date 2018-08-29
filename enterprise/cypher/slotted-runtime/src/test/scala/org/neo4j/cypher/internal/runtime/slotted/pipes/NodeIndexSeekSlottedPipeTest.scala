@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexMockingHelp, LockingUniqueIndexSeek}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, IndexOrderNone, ManyQueryExpression}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
@@ -63,6 +63,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
       Literal("hello"),
       Literal("bye")
     )),
+      indexOrder = IndexOrderNone,
       slots = slots,
       argumentSize = slots.size())()
     val result = pipe.createResults(queryState)
@@ -97,6 +98,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
         ManyQueryExpression(ListLiteral(
           Literal("world"), Literal("cruel")
         )))),
+        indexOrder = IndexOrderNone,
         slots = slots,
         argumentSize = slots.size())()
     val result = pipe.createResults(queryState)
@@ -123,7 +125,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
       .newReference("n." + propertyKey(0).name, nullable = false, CTAny)
     val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name)))).toArray
     val pipe = NodeIndexSeekSlottedPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek,
-      slots, slots.size())()
+      IndexOrderNone, slots, slots.size())()
     val result = pipe.createResults(queryState)
 
     // then

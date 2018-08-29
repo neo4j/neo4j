@@ -39,13 +39,13 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   protected def indexFor[T](values: (Seq[AnyRef], Iterable[NodeValueHit])*): QueryContext = {
     val query = mock[QueryContext]
-    when(query.indexSeek(any(), any(), any(), any())).thenReturn(Iterator.empty)
+    when(query.indexSeek(any(), any(), any(), any(), any())).thenReturn(Iterator.empty)
     when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
 
     values.foreach {
       case (searchTerm, resultIterable) =>
         val indexQueries = propertyKeys.zip(searchTerm).map(t => IndexQuery.exact(t._1.nameId.id, t._2))
-        when(query.indexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedIterator[T](resultIterable))
+        when(query.indexSeek(any(), any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedIterator[T](resultIterable))
         when(query.lockingUniqueIndexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedOption[T](resultIterable))
     }
 
@@ -54,7 +54,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   protected def stringIndexFor(values: (String, Iterable[NodeValueHit])*): QueryContext = {
     val query = mock[QueryContext]
-    when(query.indexSeek(any(), any(), any(), any())).thenReturn(Iterator.empty)
+    when(query.indexSeek(any(), any(), any(), any(), any())).thenReturn(Iterator.empty)
     when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
 
     values.foreach {
@@ -68,7 +68,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   protected def scanFor(nodes: Iterable[TestNodeValueHit]): QueryContext = {
     val query = mock[QueryContext]
-    when(query.indexScan(any(), any(), any())).thenAnswer(PredefinedIterator(nodes))
+    when(query.indexScan(any(), any(), any(), any())).thenAnswer(PredefinedIterator(nodes))
     query
   }
 

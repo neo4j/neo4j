@@ -31,7 +31,8 @@ case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
                              properties: Array[IndexedProperty],
                              valueExpr: QueryExpression[Expression],
-                             indexMode: IndexSeekMode = IndexSeek)
+                             indexMode: IndexSeekMode = IndexSeek,
+                             indexOrder: IndexOrder)
                             (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker with IndexPipeWithValues {
 
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id)
@@ -59,7 +60,7 @@ case class NodeIndexSeekPipe(ident: String,
     val resultCreator =
       if (needsValues) CtxResultCreatorWithValues(baseContext)
       else CtxResultCreator(baseContext)
-    indexSeek(state, indexReference, needsValues, baseContext, resultCreator)
+    indexSeek(state, indexReference, needsValues, indexOrder, baseContext, resultCreator)
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekPipe]

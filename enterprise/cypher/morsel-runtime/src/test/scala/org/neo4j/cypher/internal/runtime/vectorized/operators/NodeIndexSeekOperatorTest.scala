@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexMockingHelp, LockingUniqueIndexSeek}
 import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, IndexOrderNone, ManyQueryExpression}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -76,7 +76,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos wit
     val slots = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
       .newReference("n." + propertyKey(0).name, nullable = false, CTAny)
     val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name)))).toArray
-    val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, slots.size(),
+    val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, IndexOrderNone, slots.size(),
       ManyQueryExpression(ListLiteral(
         Literal("hello"),
         Literal("bye")
@@ -120,7 +120,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos wit
       .newReference("n." + propertyKeys(0).name, nullable = false, CTAny)
       .newReference("n." + propertyKeys(1).name, nullable = false, CTAny)
     val properties = propertyKeys.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name)))).toArray
-    val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, slots.size(),
+    val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, IndexOrderNone, slots.size(),
       CompositeQueryExpression(Seq(
         ManyQueryExpression(ListLiteral(
           Literal("hello"), Literal("bye")
@@ -167,7 +167,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos wit
       .newReference("n." + propertyKey(0).name, nullable = false, CTAny)
     val properties = propertyKey.map(pk => SlottedIndexedProperty(pk.nameId.id, Some(slots.getReferenceOffsetFor("n." + pk.name)))).toArray
 
-    val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, slots.size(),
+    val operator = new NodeIndexSeekOperator(slots.getLongOffsetFor("n"), label, properties, IndexOrderNone, slots.size(),
       ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek)
 
     // When

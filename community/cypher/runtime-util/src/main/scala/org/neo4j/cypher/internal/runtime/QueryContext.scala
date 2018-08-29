@@ -23,10 +23,10 @@ import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -100,7 +100,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
-  def indexSeek[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], queries: Seq[IndexQuery]): Iterator[RESULT]
+  def indexSeek[RESULT <: AnyRef](index: IndexReference,
+                                  needsValues: Boolean,
+                                  indexOrder: IndexOrder,
+                                  resultCreator: ResultCreator[RESULT],
+                                  queries: Seq[IndexQuery]): Iterator[RESULT]
 
   def indexSeekByContains[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], value: String): Iterator[RESULT]
 
@@ -108,6 +112,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexScan[RESULT <: AnyRef](index: IndexReference,
                                   needsValues: Boolean,
+                                  indexOrder: IndexOrder,
                                   resultCreator: ResultCreator[RESULT]): Iterator[RESULT]
 
   def lockingUniqueIndexSeek[RESULT](index: IndexReference, resultCreator: ResultCreator[RESULT], queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT]

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrder
 import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
@@ -30,6 +31,7 @@ import org.opencypher.v9_0.util.attribution.Id
 case class NodeIndexScanSlottedPipe(ident: String,
                                     label: LabelToken,
                                     property: SlottedIndexedProperty,
+                                    indexOrder: IndexOrder,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
                                    (val id: Id = Id.INVALID_ID)
@@ -51,5 +53,5 @@ case class NodeIndexScanSlottedPipe(ident: String,
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    state.query.indexScan(reference(state.query), needsValues, SlottedCtxResultCreator(state, slots))
+    state.query.indexScan(reference(state.query), needsValues, indexOrder, SlottedCtxResultCreator(state, slots))
 }

@@ -29,7 +29,7 @@ case class NodeIndexScan(idName: String,
                          label: LabelToken,
                          property: IndexedProperty,
                          argumentIds: Set[String],
-                         providedOrder: ProvidedOrder)
+                         indexOrder: IndexOrder)
                         (implicit idGen: IdGen)
   extends IndexLeafPlan(idGen) {
 
@@ -40,5 +40,5 @@ case class NodeIndexScan(idName: String,
   override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = property.asAvailablePropertyMap(idName)
 
   override def copyWithoutGettingValues: NodeIndexScan =
-    NodeIndexScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), argumentIds, providedOrder)(SameId(this.id))
+    NodeIndexScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), argumentIds, indexOrder)(SameId(this.id))
 }

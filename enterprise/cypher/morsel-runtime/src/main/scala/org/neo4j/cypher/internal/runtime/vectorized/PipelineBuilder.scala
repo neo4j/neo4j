@@ -67,7 +67,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           SlottedIndexedProperty(column, property, slots),
           argumentSize)
 
-      case NodeIndexContainsScan(column, labelToken, property, valueExpr, _, _) =>
+      case NodeIndexContainsScan(column, labelToken, property, valueExpr, _) =>
         new NodeIndexContainsScanOperator(
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
@@ -75,22 +75,24 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           converters.toCommandExpression(id, valueExpr),
           argumentSize)
 
-      case plans.NodeIndexSeek(column, label, properties, valueExpr, _,  _) =>
+      case plans.NodeIndexSeek(column, label, properties, valueExpr, _,  indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
           slots.getLongOffsetFor(column),
           label,
           properties.map(SlottedIndexedProperty(column, _, slots)).toArray,
+          indexOrder,
           argumentSize,
           valueExpr.map(converters.toCommandExpression(id, _)),
           indexSeekMode)
 
-      case plans.NodeUniqueIndexSeek(column, label, properties, valueExpr, _,  _) =>
+      case plans.NodeUniqueIndexSeek(column, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
           slots.getLongOffsetFor(column),
           label,
           properties.map(SlottedIndexedProperty(column, _, slots)).toArray,
+          indexOrder,
           argumentSize,
           valueExpr.map(converters.toCommandExpression(id, _)),
           indexSeekMode)

@@ -81,21 +81,21 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case UndirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
         UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, relIdExpr), toNode, fromNode)(id = id)
 
-      case NodeIndexSeek(ident, label, properties, valueExpr, _, _) =>
+      case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
-      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, _) =>
+      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
-      case NodeIndexScan(ident, label, property, _, _) =>
-        NodeIndexScanPipe(ident, label, property)(id = id)
+      case NodeIndexScan(ident, label, property, _, indexOrder) =>
+        NodeIndexScanPipe(ident, label, property, indexOrder)(id = id)
 
-      case NodeIndexContainsScan(ident, label, property, valueExpr, _, _) =>
+      case NodeIndexContainsScan(ident, label, property, valueExpr, _) =>
         NodeIndexContainsScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
 
-      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, _) =>
+      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _) =>
         NodeIndexEndsWithScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
     }
   }

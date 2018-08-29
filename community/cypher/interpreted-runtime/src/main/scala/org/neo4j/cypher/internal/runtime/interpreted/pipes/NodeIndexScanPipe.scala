@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, IndexedProperty}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, IndexOrder, IndexedProperty}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
-                             property: IndexedProperty)
+                             property: IndexedProperty,
+                             indexOrder: IndexOrder)
                             (val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
 
   private val needsValues = property.shouldGetValue
@@ -49,6 +50,6 @@ case class NodeIndexScanPipe(ident: String,
     val resultCreator =
       if (needsValues) CtxResultCreatorWithValues(baseContext)
       else CtxResultCreator(baseContext)
-    state.query.indexScan(reference(state.query), needsValues, resultCreator)
+    state.query.indexScan(reference(state.query), needsValues, indexOrder, resultCreator)
   }
 }

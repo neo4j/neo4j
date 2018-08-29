@@ -85,16 +85,16 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
       val alignedProperties = properties.map(withAlignedGetValueBehavior(idName, _))
       NodeUniqueIndexSeek(idName, seek.label, alignedProperties, seek.valueExpr, seek.argumentIds, providedOrder)(attributes.copy(seek.id))
 
-    case scan@NodeIndexContainsScan(idName, _, property, _, _, _) =>
+    case scan@NodeIndexContainsScan(idName, _, property, _, _) =>
       val alignedProperty = withAlignedGetValueBehavior(idName, property)
-      NodeIndexContainsScan(idName, scan.label, alignedProperty, scan.valueExpr, scan.argumentIds, scan.providedOrder)(attributes.copy(scan.id))
+      NodeIndexContainsScan(idName, scan.label, alignedProperty, scan.valueExpr, scan.argumentIds)(attributes.copy(scan.id))
 
-    case scan@NodeIndexEndsWithScan(idName, _, property, _, _, _) =>
+    case scan@NodeIndexEndsWithScan(idName, _, property, _, _) =>
       val alignedProperty = withAlignedGetValueBehavior(idName, property)
-      NodeIndexEndsWithScan(idName, scan.label, alignedProperty, scan.valueExpr, scan.argumentIds, scan.providedOrder)(attributes.copy(scan.id))
+      NodeIndexEndsWithScan(idName, scan.label, alignedProperty, scan.valueExpr, scan.argumentIds)(attributes.copy(scan.id))
 
     case scan@NodeIndexScan(idName, _, property, _, _) =>
       val alignedProperty = withAlignedGetValueBehavior(idName, property)
-      NodeIndexScan(idName, scan.label, alignedProperty, scan.argumentIds, scan.providedOrder)(attributes.copy(scan.id))
+      NodeIndexScan(idName, scan.label, alignedProperty, scan.argumentIds, scan.indexOrder)(attributes.copy(scan.id))
   })
 }

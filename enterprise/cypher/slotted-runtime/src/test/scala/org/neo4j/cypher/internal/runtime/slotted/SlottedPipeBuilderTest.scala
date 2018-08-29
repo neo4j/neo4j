@@ -529,7 +529,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val lhs = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x), ProvidedOrder.empty)
+    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x), IndexOrderNone)
     val apply = Apply(lhs, rhs)
 
     // when
@@ -538,7 +538,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     pipe should equal(ApplySlottedPipe(
       NodesByLabelScanSlottedPipe("x", LazyLabel("label"), X_NODE_SLOTS, Size.zero)(),
-      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek,
+      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek, IndexOrderNone,
         SlotConfiguration.empty
           .newLong("x", false, CTNode)
           .newLong("z", false, CTNode),
@@ -702,7 +702,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       LabelToken("Awesome", LabelId(0)),
       IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
       Set.empty,
-      ProvidedOrder.empty)
+      IndexOrderNone)
 
     // when
     val pipe = build(leaf)
@@ -714,6 +714,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
         "n",
         LabelToken("Awesome", LabelId(0)),
         SlottedIndexedProperty(0, None),
+        IndexOrderNone,
         SlotConfiguration.empty.newLong("n", false, CTNode), Size.zero)())
   }
 
@@ -721,14 +722,14 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val seek = NodeUniqueIndexSeek(z, label, Seq.empty, seekExpression, Set(x), ProvidedOrder.empty)
+    val seek = NodeUniqueIndexSeek(z, label, Seq.empty, seekExpression, Set(x), IndexOrderNone)
 
     // when
     val pipe = build(seek)
 
     // then
     pipe should equal(
-      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), UniqueIndexSeek,
+      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), UniqueIndexSeek, IndexOrderNone,
         SlotConfiguration.empty.newLong("z", false, CTNode), Size.zero)()
     )
   }

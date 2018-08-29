@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeekMode, NodeIndexSeeker, QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext, ResultCreator}
-import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QueryExpression}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.values.storable.Value
 import org.opencypher.v9_0.expressions.LabelToken
@@ -35,6 +35,7 @@ import org.opencypher.v9_0.expressions.LabelToken
 class NodeIndexSeekOperator(offset: Int,
                             label: LabelToken,
                             properties: Array[SlottedIndexedProperty],
+                            indexOrder: IndexOrder,
                             argumentSize: SlotConfiguration.Size,
                             override val valueExpr: QueryExpression[Expression],
                             override val indexMode: IndexSeekMode = IndexSeek)
@@ -47,7 +48,7 @@ class NodeIndexSeekOperator(offset: Int,
   override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
     val queryState = new OldQueryState(context, resources = null, params = state.params)
     val indexReference = reference(context)
-    val tupleIterator = indexSeek(queryState, indexReference, needsValues, currentRow, NodeWithValuesResultCreator)
+    val tupleIterator = indexSeek(queryState, indexReference, needsValues, indexOrder, currentRow, NodeWithValuesResultCreator)
     new OTask(tupleIterator)
   }
 

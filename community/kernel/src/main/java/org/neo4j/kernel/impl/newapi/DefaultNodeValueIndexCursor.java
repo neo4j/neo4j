@@ -327,19 +327,35 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
+    private void setNeedsValues( boolean needsValues )
+    {
+        this.needsValues = needsValues;
+        if ( !this.needsValues )
+        {
+            // Cannot merge-sort with transaction state if we do not have values
+            this.indexOrder = IndexOrder.NONE;
+        }
+    }
+
     private void rangeQuery( IndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
     {
         ValueGroup valueGroup = predicate.valueGroup();
         ValueCategory category = valueGroup.category();
+
+        // TODO: Cleanup the logic around exactly when we should get values and can order, or not
+        if ( indexOrder != IndexOrder.NONE )
+        {
+            this.needsValues = true;
+        }
         // We have values for text, number, and temporal but nor for other categories, so even if a NodeValueClientValue
         // wants values, we can't provide them
-        this.needsValues = this.needsValues && (category == ValueCategory.TEXT || category == ValueCategory.NUMBER || category == ValueCategory.TEMPORAL);
+        setNeedsValues( this.needsValues && (category == ValueCategory.TEXT || category == ValueCategory.NUMBER || category == ValueCategory.TEMPORAL) );
 
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
 
-            if ( needsValues || indexOrder != IndexOrder.NONE )
+            if ( needsValues )
             {
                 AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate, indexOrder );
                 addedWithValues = changes.added.iterator();
@@ -400,7 +416,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         // We should never be asked to provide values for a seek query. But a NodeValueClientFilter
         // might ask us, and then we just have to ignore that and set it back to false
-        this.needsValues = false;
+        setNeedsValues( false );
 
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );
         if ( read.hasTxStateWithChanges() )

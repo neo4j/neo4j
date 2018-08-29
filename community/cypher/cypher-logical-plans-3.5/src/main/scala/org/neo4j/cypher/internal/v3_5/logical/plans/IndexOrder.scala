@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-object ProvidedOrder {
-  val empty: ProvidedOrder = ProvidedOrder(Seq.empty[ColumnOrder])
-}
-
 /**
-  * A LogicalPlan can guarantee to provide its results in a particular order. This class
-  * is uses for the purpose of conveying the information of which order the reuslts are in,
-  * if they are in any defined order.
-  * @param columns a sequence of columns with sort direction
+  * The index order that will be requested of the index during index seeks or scans
   */
-case class ProvidedOrder(columns: Seq[ColumnOrder])
+sealed trait IndexOrder
+
+case object IndexOrderAscending extends IndexOrder
+
+case object IndexOrderDescending extends IndexOrder
+
+case object IndexOrderNone extends IndexOrder

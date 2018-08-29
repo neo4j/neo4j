@@ -89,7 +89,7 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
                 // If there's a GeometryRangeQuery among the predicates then this query changes from a straight-forward: build from/to and seek...
                 // into a query that is split into multiple sub-queries. Predicates both before and after will have to be accompanied each sub-query.
                 BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-                client.initialize( descriptor, multiProgressor, query, indexOrder, false );
+                client.initialize( descriptor, multiProgressor, query, indexOrder, needsValues );
                 double[] from = geometryRangePredicate.from() == null ? null : geometryRangePredicate.from().coordinate();
                 double[] to = geometryRangePredicate.to() == null ? null : geometryRangePredicate.to().coordinate();
                 CoordinateReferenceSystem crs = geometryRangePredicate.crs();
@@ -104,14 +104,13 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
                     boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
 
-                    // TODO needsValues==true could be problematic, no?
                     startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, needFiltering, indexOrder, needsValues );
                 }
             }
             catch ( IllegalArgumentException e )
             {
                 // Invalid query ranges will cause this state (eg. min>max)
-                client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, false );
+                client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, needsValues );
             }
         }
         else
