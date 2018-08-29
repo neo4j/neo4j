@@ -113,7 +113,8 @@ public class IndexStatisticsTest
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" )
-            .startLazily();
+            .withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled,
+                    multiThreadedPopulationEnabled + "" );
 
     private GraphDatabaseService db;
     private ThreadToStatementContextBridge bridge;
@@ -128,8 +129,6 @@ public class IndexStatisticsTest
     @Before
     public void before()
     {
-        dbRule.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled + "" );
-
         FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, 1 );
         FeatureToggles.set( BatchingMultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, 1 );
 

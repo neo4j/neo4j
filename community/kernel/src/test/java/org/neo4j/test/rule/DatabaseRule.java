@@ -302,7 +302,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         // Override to configure the database
 
         // Adjusted defaults for testing
-        applyConfigChanges( builder );
+        if ( config != null )
+        {
+            for ( Map.Entry<Setting<?>,String> setting : config.entrySet() )
+            {
+                builder.setConfig( setting.getKey(), setting.getValue() );
+            }
+        }
     }
 
     public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
@@ -317,7 +323,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     /**
      * {@link DatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
-     * a lazily started database is created, use {@link #ensureStarted(String...)} instead.
+     * a lazily started database is created, use {@link #ensureStarted()} instead.
      */
     public GraphDatabaseAPI getGraphDatabaseAPI()
     {
@@ -329,7 +335,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         if ( database == null )
         {
-            applyConfigChanges( databaseBuilder, additionalConfig );
+            applyConfigChanges( additionalConfig );
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
             storeDir = database.getStoreDir();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
@@ -377,17 +383,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         database.shutdown();
         action.run( fs, storeDir );
         database = null;
-        applyConfigChanges( databaseBuilder, configChanges );
+        applyConfigChanges( configChanges );
         return getGraphDatabaseAPI();
     }
 
-    private void applyConfigChanges( GraphDatabaseBuilder builder, String... configChanges )
+    private void applyConfigChanges( String[] configChanges )
     {
-        if ( config != null )
-        {
-            config.forEach( builder::setConfig );
-        }
-        builder.setConfig( stringMap( configChanges ) );
+        databaseBuilder.setConfig( stringMap( configChanges ) );
     }
 
     @Override
