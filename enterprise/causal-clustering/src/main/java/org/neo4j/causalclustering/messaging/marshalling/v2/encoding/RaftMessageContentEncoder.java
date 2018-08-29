@@ -62,7 +62,7 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
         private final List<Object> out;
         private final ByteBufAllocator alloc;
 
-        public Handler( List<Object> out, ByteBufAllocator alloc )
+        private Handler( List<Object> out, ByteBufAllocator alloc )
         {
             this.out = out;
             this.alloc = alloc;
