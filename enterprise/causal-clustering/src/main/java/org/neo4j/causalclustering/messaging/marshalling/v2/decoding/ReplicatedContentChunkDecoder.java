@@ -34,6 +34,8 @@ import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMar
 public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
 {
     private final CoreReplicatedContentMarshal contentMarshal = new CoreReplicatedContentMarshal();
+    private byte contentType = -1;
+    private boolean isLast;
 
     ReplicatedContentChunkDecoder()
     {
@@ -43,26 +45,26 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
-        in.markReaderIndex();
-        boolean isLast = in.readBoolean();
+        if ( contentType == -1 )
+        {
+            isLast = in.readBoolean();
+            contentType = in.readByte();
+        }
         if ( isLast )
         {
-            out.add( contentMarshal.unmarshalContent( in.readByte(), in ) );
-        }
-        else
-        {
-            in.resetReaderIndex();
+            out.add( contentMarshal.unmarshalContent( contentType, in ) );
+            isLast = false;
+            contentType = -1;
         }
     }
 
-    private static class ContentChunkCumulator implements Cumulator
+    private class ContentChunkCumulator implements Cumulator
     {
         @Override
         public ByteBuf cumulate( ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf in )
         {
-            boolean isLast = in.readBoolean();
-            cumulation.setBoolean( 0, isLast );
-            return COMPOSITE_CUMULATOR.cumulate( alloc, cumulation, in.slice() );
+            isLast = in.readBoolean();
+            return COMPOSITE_CUMULATOR.cumulate( alloc, cumulation, in );
         }
     }
 }
