@@ -49,7 +49,7 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
-        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.storeDir() )
+        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.databaseDir() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
                 .newGraphDatabase().shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
