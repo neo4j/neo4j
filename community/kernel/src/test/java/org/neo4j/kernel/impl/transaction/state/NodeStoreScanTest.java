@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -65,13 +63,6 @@ public class NodeStoreScanTest
         final NodeStoreScan<RuntimeException> scan = new NodeStoreScan<RuntimeException>( nodeStore, locks, total )
         {
             private int read;
-
-            @Override
-            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-                    long currentlyIndexedNodeId )
-            {
-                // no-op
-            }
 
             @Override
             public void process( NodeRecord node )
