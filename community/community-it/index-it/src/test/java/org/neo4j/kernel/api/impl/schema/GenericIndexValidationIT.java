@@ -96,12 +96,7 @@ public class GenericIndexValidationIT
             "prop1",
             "prop2",
             "prop3",
-            "prop4",
-            "prop5",
-            "prop6",
-            "prop7",
-            "prop8",
-            "prop9"
+            "prop4"
     };
     private static final int KEY_SIZE_LIMIT = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
     private static final int ESTIMATED_OVERHEAD_PER_SLOT = 2;
@@ -120,7 +115,7 @@ public class GenericIndexValidationIT
     public static RandomRule random = new RandomRule();
 
     @Test
-    public void shouldEnforceSizeCapSingleValue()
+    public void shouldEnforceSizeCapSingleValueMixedTypes()
     {
         createIndex( PROP_KEYS[0] );
         int keySizeLimitSingleSlot = KEY_SIZE_LIMIT - ESTIMATED_OVERHEAD_PER_SLOT;
@@ -157,7 +152,7 @@ public class GenericIndexValidationIT
      * is documented and if it changes, documentation also needs to change.
      */
     @Test
-    public void shouldEnforceSizeCapSingleArray()
+    public void shouldEnforceSizeCapSingleValueSingleType()
     {
         NamedDynamicValueGenerator[] dynamicValueGenerators = dynamicValueGenerators();
         for ( NamedDynamicValueGenerator generator : dynamicValueGenerators )
@@ -292,58 +287,68 @@ public class GenericIndexValidationIT
     }
 
     @Test
-    public void shouldEnforceSizeCapComposite()
+    public void shouldEnforceSizeCapCompositeMixedTypes()
     {
-        createIndex( PROP_KEYS );
-        int keySizeLimitPerSlot = KEY_SIZE_LIMIT / PROP_KEYS.length - ESTIMATED_OVERHEAD_PER_SLOT;
-        int wiggleRoomPerSlot = WIGGLE_ROOM / PROP_KEYS.length;
-        for ( int i = 0; i < 1_000; i++ )
+        for ( int numberOfSlots = 2; numberOfSlots < 5; numberOfSlots++ )
         {
-            Object[] propValues = new Object[PROP_KEYS.length];
-            for ( int propKey = 0; propKey < PROP_KEYS.length; propKey++ )
+            String[] propKeys = new String[numberOfSlots];
+            for ( int i = 0; i < numberOfSlots; i++ )
             {
-                propValues[propKey] = generateSingleValue( keySizeLimitPerSlot, wiggleRoomPerSlot );
-            }
-            long expectedNodeId = -1;
-
-            // Write
-            boolean ableToWrite = true;
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = db.createNode( LABEL_ONE );
-                for ( int propKey = 0; propKey < PROP_KEYS.length; propKey++ )
-                {
-                    node.setProperty( PROP_KEYS[propKey], propValues[propKey] );
-                }
-                expectedNodeId = node.getId();
-                tx.success();
-            }
-            catch ( Exception e )
-            {
-                ableToWrite = false;
+                // Use different property keys for each iteration
+                propKeys[i] = PROP_KEYS[i] + "numberOfSlots" + numberOfSlots;
             }
 
-            // Read
-            try ( Transaction tx = db.beginTx() )
+            createIndex( propKeys );
+            int keySizeLimitPerSlot = KEY_SIZE_LIMIT / propKeys.length - ESTIMATED_OVERHEAD_PER_SLOT;
+            int wiggleRoomPerSlot = WIGGLE_ROOM / propKeys.length;
+            for ( int i = 0; i < 1_000; i++ )
             {
-                Map<String,Object> values = new HashMap<>();
-                for ( int propKey = 0; propKey < PROP_KEYS.length; propKey++ )
+                Object[] propValues = new Object[propKeys.length];
+                for ( int propKey = 0; propKey < propKeys.length; propKey++ )
                 {
-                    values.put( PROP_KEYS[propKey], propValues[propKey] );
+                    propValues[propKey] = generateSingleValue( keySizeLimitPerSlot, wiggleRoomPerSlot );
                 }
-                ResourceIterator<Node> nodes = db.findNodes( LABEL_ONE, values );
-                if ( ableToWrite )
+                long expectedNodeId = -1;
+
+                // Write
+                boolean ableToWrite = true;
+                try ( Transaction tx = db.beginTx() )
                 {
-                    assertTrue( nodes.hasNext() );
-                    Node node = nodes.next();
-                    assertNotNull( node );
-                    assertEquals( "node id", expectedNodeId, node.getId() );
+                    Node node = db.createNode( LABEL_ONE );
+                    for ( int propKey = 0; propKey < propKeys.length; propKey++ )
+                    {
+                        node.setProperty( propKeys[propKey], propValues[propKey] );
+                    }
+                    expectedNodeId = node.getId();
+                    tx.success();
                 }
-                else
+                catch ( Exception e )
                 {
-                    assertFalse( nodes.hasNext() );
+                    ableToWrite = false;
                 }
-                tx.success();
+
+                // Read
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Map<String,Object> values = new HashMap<>();
+                    for ( int propKey = 0; propKey < propKeys.length; propKey++ )
+                    {
+                        values.put( propKeys[propKey], propValues[propKey] );
+                    }
+                    ResourceIterator<Node> nodes = db.findNodes( LABEL_ONE, values );
+                    if ( ableToWrite )
+                    {
+                        assertTrue( nodes.hasNext() );
+                        Node node = nodes.next();
+                        assertNotNull( node );
+                        assertEquals( "node id", expectedNodeId, node.getId() );
+                    }
+                    else
+                    {
+                        assertFalse( nodes.hasNext() );
+                    }
+                    tx.success();
+                }
             }
         }
     }
