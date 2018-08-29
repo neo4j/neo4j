@@ -58,6 +58,8 @@ class TxStateIndexChanges
             new AddedAndRemoved( LongLists.immutable.empty(), LongSets.immutable.empty() );
     private static final ValueTuple MAX_STRING_TUPLE = ValueTuple.of( Values.MAX_STRING );
 
+    // SCAN
+
     static AddedAndRemoved indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor descriptor, IndexOrder indexOrder )
     {
         Map<ValueTuple,? extends LongDiffSets> updates =
@@ -108,6 +110,8 @@ class TxStateIndexChanges
         }
         return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
+
+    // SUFFIX
 
     static AddedAndRemoved indexUpdatesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor, IndexQuery query )
     {
@@ -167,6 +171,8 @@ class TxStateIndexChanges
         return new AddedWithValuesAndRemoved( added, removed );
     }
 
+    // SEEK
+
     static AddedAndRemoved indexUpdatesForSeek( ReadableTransactionState txState, IndexDescriptor descriptor, ValueTuple values )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
@@ -179,9 +185,12 @@ class TxStateIndexChanges
         return EMPTY_ADDED_AND_REMOVED;
     }
 
+    // RANGE SEEK
+
     static AddedAndRemoved indexUpdatesForRangeSeek( ReadableTransactionState txState,
                                                      IndexDescriptor descriptor,
-                                                     IndexQuery.RangePredicate<?> predicate )
+                                                     IndexQuery.RangePredicate<?> predicate,
+                                                     IndexOrder indexOrder )
     {
         Value lower = predicate.fromValue();
         Value upper = predicate.toValue();
@@ -241,11 +250,13 @@ class TxStateIndexChanges
                 removed.addAll( diffForSpecificValue.getRemoved() );
             }
         }
-        return new AddedAndRemoved( added, removed );
+        return new AddedAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
 
-    static AddedWithValuesAndRemoved indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState, IndexDescriptor descriptor,
-            IndexQuery.RangePredicate<?> predicate )
+    static AddedWithValuesAndRemoved indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState,
+                                                                         IndexDescriptor descriptor,
+                                                                         IndexQuery.RangePredicate<?> predicate,
+                                                                         IndexOrder indexOrder )
     {
         Value lower = predicate.fromValue();
         Value upper = predicate.toValue();
@@ -306,10 +317,14 @@ class TxStateIndexChanges
                 removed.addAll( diffForSpecificValue.getRemoved() );
             }
         }
-        return new AddedWithValuesAndRemoved( added, removed );
+        return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
 
-    static AddedAndRemoved indexUpdatesForRangeSeekByPrefix( ReadableTransactionState txState, IndexDescriptor descriptor, String prefix )
+    // PREFIX
+
+    static AddedAndRemoved indexUpdatesForRangeSeekByPrefix( ReadableTransactionState txState,
+                                                             IndexDescriptor descriptor, String prefix,
+                                                             IndexOrder indexOrder )
     {
         NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
@@ -335,11 +350,13 @@ class TxStateIndexChanges
                 break;
             }
         }
-        return new AddedAndRemoved( added, removed );
+        return new AddedAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
 
-    static AddedWithValuesAndRemoved indexUpdatesWithValuesForRangeSeekByPrefix( ReadableTransactionState txState, IndexDescriptor descriptor,
-            String prefix )
+    static AddedWithValuesAndRemoved indexUpdatesWithValuesForRangeSeekByPrefix( ReadableTransactionState txState,
+                                                                                 IndexDescriptor descriptor,
+                                                                                 String prefix,
+                                                                                 IndexOrder indexOrder )
     {
         NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
@@ -366,8 +383,10 @@ class TxStateIndexChanges
                 break;
             }
         }
-        return new AddedWithValuesAndRemoved( added, removed );
+        return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
+
+    // HELPERS
 
     public static class AddedAndRemoved
     {

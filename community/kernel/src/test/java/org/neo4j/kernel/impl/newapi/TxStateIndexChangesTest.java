@@ -60,10 +60,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSuffixOrContains;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
@@ -106,8 +108,9 @@ class TxStateIndexChangesTest
     }
 
     @Test
-    void shouldComputeIndexUpdatesForScanWithAscendingOrder()
+    void shouldComputeIndexUpdatesForScan()
     {
+        assertScanWithOrder( IndexOrder.NONE );
         assertScanWithOrder( IndexOrder.ASCENDING );
     }
 
@@ -144,16 +147,8 @@ class TxStateIndexChangesTest
                                                             nodeWithPropertyValues( 43L, "Barbarella" ),
                                                             nodeWithPropertyValues( 47L, "Cinderella" )};
 
-        if ( indexOrder == IndexOrder.DESCENDING )
-        {
-            ArrayUtils.reverse( expectedNodesWithValues );
-        }
-
-        long[] expectedNodeIds = Arrays.stream( expectedNodesWithValues ).mapToLong( NodeWithPropertyValues::getNodeId ).toArray();
-
         // THEN
-        assertContainsInOrder( changes.added, expectedNodeIds );
-        assertContainsInOrder( changesWithValues.added, expectedNodesWithValues );
+        assertContains( indexOrder, changes, changesWithValues, expectedNodesWithValues );
     }
 
     @Test
@@ -187,31 +182,31 @@ class TxStateIndexChangesTest
 
         final Collection<DynamicTest> tests = new ArrayList<>();
 
-        tests.add( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), true,
+        tests.addAll( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), true,
                 nodeWithPropertyValues( 42L, 510 ),
                 nodeWithPropertyValues( 43L, 520 ),
                 nodeWithPropertyValues( 46L, 530 ),
                 nodeWithPropertyValues( 48L, 540 ),
                 nodeWithPropertyValues( 44L, 550 )
         ) );
-        tests.add( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), false,
+        tests.addAll( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), false,
                 nodeWithPropertyValues( 42L, 510 ),
                 nodeWithPropertyValues( 43L, 520 ),
                 nodeWithPropertyValues( 46L, 530 ),
                 nodeWithPropertyValues( 48L, 540 )
         ) );
-        tests.add( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), true,
+        tests.addAll( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), true,
                 nodeWithPropertyValues( 43L, 520 ),
                 nodeWithPropertyValues( 46L, 530 ),
                 nodeWithPropertyValues( 48L, 540 ),
                 nodeWithPropertyValues( 44L, 550 )
         ) );
-        tests.add( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), false,
+        tests.addAll( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), false,
                 nodeWithPropertyValues( 43L, 520 ),
                 nodeWithPropertyValues( 46L, 530 ),
                 nodeWithPropertyValues( 48L, 540 )
         ) );
-        tests.add( rangeTest( state, null, false, Values.of( 550 ), true,
+        tests.addAll( rangeTest( state, null, false, Values.of( 550 ), true,
                 nodeWithPropertyValues( 45L, 500 ),
                 nodeWithPropertyValues( 42L, 510 ),
                 nodeWithPropertyValues( 43L, 520 ),
@@ -219,7 +214,7 @@ class TxStateIndexChangesTest
                 nodeWithPropertyValues( 48L, 540 ),
                 nodeWithPropertyValues( 44L, 550 )
         ) );
-        tests.add( rangeTest( state, null, true, Values.of( 550 ), true,
+        tests.addAll( rangeTest( state, null, true, Values.of( 550 ), true,
                 nodeWithPropertyValues( 45L, 500 ),
                 nodeWithPropertyValues( 42L, 510 ),
                 nodeWithPropertyValues( 43L, 520 ),
@@ -227,45 +222,58 @@ class TxStateIndexChangesTest
                 nodeWithPropertyValues( 48L, 540 ),
                 nodeWithPropertyValues( 44L, 550 )
         ) );
-        tests.add( rangeTest( state, null, false, Values.of( 550 ), false,
+        tests.addAll( rangeTest( state, null, false, Values.of( 550 ), false,
                 nodeWithPropertyValues( 45L, 500 ),
                 nodeWithPropertyValues( 42L, 510 ),
                 nodeWithPropertyValues( 43L, 520 ),
                 nodeWithPropertyValues( 46L, 530 ),
                 nodeWithPropertyValues( 48L, 540 )
         ) );
-        tests.add( rangeTest( state, null, true, Values.of( 550 ), false,
+        tests.addAll( rangeTest( state, null, true, Values.of( 550 ), false,
                 nodeWithPropertyValues( 45L, 500 ),
                 nodeWithPropertyValues( 42L, 510 ),
                 nodeWithPropertyValues( 43L, 520 ),
                 nodeWithPropertyValues( 46L, 530 ),
                 nodeWithPropertyValues( 48L, 540 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), true, null, true,
+        tests.addAll( rangeTest( state, Values.of( 540 ), true, null, true,
                 nodeWithPropertyValues( 48L, 540 ),
                 nodeWithPropertyValues( 44L, 550 ),
                 nodeWithPropertyValues( 47L, 560 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), true, null, false,
+        tests.addAll( rangeTest( state, Values.of( 540 ), true, null, false,
                 nodeWithPropertyValues( 48L, 540 ),
                 nodeWithPropertyValues( 44L, 550 ),
                 nodeWithPropertyValues( 47L, 560 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), false, null, true,
+        tests.addAll( rangeTest( state, Values.of( 540 ), false, null, true,
                 nodeWithPropertyValues( 44L, 550 ),
                 nodeWithPropertyValues( 47L, 560 )
         ) );
-        tests.add( rangeTest( state, Values.of( 540 ), false, null, false,
+        tests.addAll( rangeTest( state, Values.of( 540 ), false, null, false,
                 nodeWithPropertyValues( 44L, 550 ),
                 nodeWithPropertyValues( 47L, 560 )
         ) );
-        tests.add( rangeTest( state, Values.of( 560 ), false, Values.of( 800 ), true ) );
+        tests.addAll( rangeTest( state, Values.of( 560 ), false, Values.of( 800 ), true ) );
 
         return tests;
     }
 
-    private DynamicTest rangeTest( ReadableTransactionState state, Value lo, boolean includeLo, Value hi, boolean includeHi,
+    private Collection<DynamicTest> rangeTest( ReadableTransactionState state, Value lo, boolean includeLo, Value hi, boolean includeHi,
             NodeWithPropertyValues... expected )
+    {
+        return Arrays.asList( rangeTest( state, IndexOrder.NONE, lo, includeLo, hi, includeHi, expected ),
+                              rangeTest( state, IndexOrder.ASCENDING, lo, includeLo, hi, includeHi, expected ),
+                              rangeTest( state, IndexOrder.DESCENDING, lo, includeLo, hi, includeHi, expected ) );
+    }
+
+    private DynamicTest rangeTest( ReadableTransactionState state,
+                                   IndexOrder indexOrder,
+                                   Value lo,
+                                   boolean includeLo,
+                                   Value hi,
+                                   boolean includeHi,
+                                   NodeWithPropertyValues... expected )
     {
         return DynamicTest.dynamicTest( String.format( "range seek: lo=%s (incl: %s), hi=%s (incl: %s)", lo, includeLo, hi, includeHi ), () ->
         {
@@ -273,13 +281,11 @@ class TxStateIndexChangesTest
             assert lo != NO_VALUE;
             assert hi != NO_VALUE;
             final AddedAndRemoved changes =
-                    TxStateIndexChanges.indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
+                    indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
             final AddedWithValuesAndRemoved changesWithValues =
-                    TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
+                    indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
 
-            final long[] expectedNodeIds = Arrays.stream( expected ).mapToLong( NodeWithPropertyValues::getNodeId ).toArray();
-            assertContainsInOrder( changes.added, expectedNodeIds );
-            assertContainsInOrder( changesWithValues.added, expected );
+            assertContains( indexOrder, changes, changesWithValues, expected );
         } );
     }
 
@@ -378,8 +384,8 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( state, index, "eulav" );
-            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "eulav" );
+            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( state, index, "eulav", IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "eulav", IndexOrder.NONE );
 
             // THEN
             assertTrue( changes.added.isEmpty() );
@@ -387,7 +393,19 @@ class TxStateIndexChangesTest
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes()
+        void shouldComputeIndexUpdatesForRangeSeekByPrefix()
+        {
+            assertRangeSeekByPrefixForOrder( IndexOrder.NONE );
+            assertRangeSeekByPrefixForOrder( IndexOrder.ASCENDING );
+        }
+
+        @Test
+        void shouldComputeIndexUpdatesForRangeSeekByPrefixWithDescendingOrder()
+        {
+            assertRangeSeekByPrefixForOrder( IndexOrder.DESCENDING );
+        }
+
+        private void assertRangeSeekByPrefixForOrder( IndexOrder indexOrder )
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -398,18 +416,23 @@ class TxStateIndexChangesTest
                     .withAdded( 44L, "Andrea" )
                     .withAdded( 45L, "Aristotle" )
                     .withAdded( 46L, "Barbara" )
-                    .withAdded( 47L, "Cinderella" )
+                    .withAdded( 47L, "Andy" )
+                    .withAdded( 48L, "Cinderella" )
+                    .withAdded( 49L, "Andromeda" )
                     .build();
 
             // WHEN
-            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( state, index, "And" );
-            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "And" );
+            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( state, index, "And", indexOrder );
+            AddedWithValuesAndRemoved changesWithValues =
+                    indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "And", indexOrder );
+
+            NodeWithPropertyValues[] expected = {nodeWithPropertyValues( 44L, "Andrea" ),
+                                                 nodeWithPropertyValues( 42L, "Andreas" ),
+                                                 nodeWithPropertyValues( 49L, "Andromeda" ),
+                                                 nodeWithPropertyValues( 47L, "Andy" )};
 
             // THEN
-            assertContainsInOrder( changes.added, 44L, 42L );
-            assertContainsInOrder( changesWithValues.added,
-                                   nodeWithPropertyValues( 44L, "Andrea" ),
-                                   nodeWithPropertyValues( 42L, "Andreas" ) );
+            assertContains( indexOrder, changes, changesWithValues, expected );
         }
 
         @Test
@@ -559,6 +582,30 @@ class TxStateIndexChangesTest
             assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).added, 14L );
         }
 
+    }
+
+    private void assertContains( IndexOrder indexOrder,
+                                 AddedAndRemoved changes,
+                                 AddedWithValuesAndRemoved changesWithValues,
+                                 NodeWithPropertyValues[] expected )
+    {
+        if ( indexOrder == IndexOrder.DESCENDING )
+        {
+            ArrayUtils.reverse( expected );
+        }
+
+        long[] expectedNodeIds = Arrays.stream( expected ).mapToLong( NodeWithPropertyValues::getNodeId ).toArray();
+
+        if ( indexOrder == IndexOrder.NONE )
+        {
+            assertContains( changes.added, expectedNodeIds );
+            assertContains( changesWithValues.added, expected );
+        }
+        else
+        {
+            assertContainsInOrder( changes.added, expectedNodeIds );
+            assertContainsInOrder( changesWithValues.added, expected );
+        }
     }
 
     private static NodeWithPropertyValues nodeWithPropertyValues( long nodeId, Object... values )

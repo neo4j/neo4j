@@ -45,6 +45,15 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeek;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForScan;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSeek;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSuffixOrContains;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
@@ -258,14 +267,13 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                AddedWithValuesAndRemoved changes =
-                        TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, predicate.prefix() );
+                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
                 addedWithValues = changes.added.iterator();
                 removed = removed( txState, changes.removed );
             }
             else
             {
-                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( txState, descriptor, predicate.prefix() );
+                AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
                 added = changes.added.longIterator();
                 removed = removed( txState, changes.removed );
             }
@@ -286,15 +294,13 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                AddedWithValuesAndRemoved changes =
-                        TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate );
+                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate, indexOrder );
                 addedWithValues = changes.added.iterator();
                 removed = removed( txState, changes.removed );
             }
             else
             {
-                AddedAndRemoved changes =
-                        TxStateIndexChanges.indexUpdatesForRangeSeek( txState, descriptor, predicate );
+                AddedAndRemoved changes = indexUpdatesForRangeSeek( txState, descriptor, predicate, indexOrder );
                 added = changes.added.longIterator();
                 removed = removed( txState, changes.removed );
             }
@@ -309,14 +315,13 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                AddedWithValuesAndRemoved changes =
-                        TxStateIndexChanges.indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
+                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
                 addedWithValues = changes.added.iterator();
                 removed = removed( txState, changes.removed );
             }
             else
             {
-                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForScan( txState, descriptor, indexOrder );
+                AddedAndRemoved changes = indexUpdatesForScan( txState, descriptor, indexOrder );
                 added = changes.added.longIterator();
                 removed = removed( txState, changes.removed );
             }
@@ -331,14 +336,13 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                AddedWithValuesAndRemoved changes =
-                        TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
+                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
                 addedWithValues = changes.added.iterator();
                 removed = removed( txState, changes.removed );
             }
             else
             {
-                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForSuffixOrContains( txState, descriptor, query );
+                AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query );
                 added = changes.added.longIterator();
                 removed = removed( txState, changes.removed );
             }
@@ -356,7 +360,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             TransactionState txState = read.txState();
 
-            AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForSeek( txState, descriptor, IndexQuery.asValueTuple( exactPreds ) );
+            AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, IndexQuery.asValueTuple( exactPreds ) );
             added = changes.added.longIterator();
             removed = removed( txState, changes.removed );
         }
