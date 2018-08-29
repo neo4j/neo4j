@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.impl.UnmodifiableMap;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
@@ -41,24 +41,32 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
+import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.txstate.DiffSets;
-import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.neo4j.collection.PrimitiveLongCollections.toSet;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForScan;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSeek;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSuffixOrContains;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class TxStateIndexChangesTest
@@ -71,12 +79,12 @@ class TxStateIndexChangesTest
         final ReadableTransactionState state = Mockito.mock( ReadableTransactionState.class );
 
         // WHEN
-        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, index );
-        DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, index );
+        AddedAndRemoved changes = indexUpdatesForScan( state, index );
+        AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index );
 
         // THEN
-        assertTrue( diffSets.isEmpty() );
-        assertTrue( diffSets2.isEmpty() );
+        assertTrue( changes.isEmpty() );
+        assertTrue( changesWithValues.isEmpty() );
     }
 
     @Test
@@ -89,12 +97,12 @@ class TxStateIndexChangesTest
                 .build();
 
         // WHEN
-        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, index );
-        DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, index );
+        AddedAndRemoved changes = indexUpdatesForScan( state, index );
+        AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index );
 
         // THEN
-        assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
-        assertEquals( UnifiedSet.newSetWith( nodeWithPropertyValues( 42L, "foo" ), nodeWithPropertyValues( 43L, "bar" ) ), diffSets2.getAdded() );
+        assertContains( changes.added, 42L, 43L );
+        assertContains( changesWithValues.added, nodeWithPropertyValues( 42L, "foo" ), nodeWithPropertyValues( 43L, "bar" ) );
     }
 
     @Test
@@ -107,98 +115,98 @@ class TxStateIndexChangesTest
                 .build();
 
         // WHEN
-        LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, index, ValueTuple.of( "bar" ) );
+        AddedAndRemoved changes = indexUpdatesForSeek( state, index, ValueTuple.of( "bar" ) );
 
         // THEN
-        assertEquals( newSetWith( 43L ), diffSets.getAdded() );
+        assertContains( changes.added, 43L );
     }
 
     @TestFactory
     Collection<DynamicTest> rangeTests()
     {
         final ReadableTransactionState state = new TxStateBuilder()
-                .withAdded( 42L, 500 )
-                .withAdded( 43L, 510 )
-                .withAdded( 44L, 520 )
-                .withAdded( 45L, 530 )
-                .withAdded( 47L, 540 )
-                .withAdded( 48L, 550 )
-                .withAdded( 49L, 560 )
+                .withAdded( 42L, 510 )
+                .withAdded( 43L, 520 )
+                .withAdded( 44L, 550 )
+                .withAdded( 45L, 500 )
+                .withAdded( 46L, 530 )
+                .withAdded( 47L, 560 )
+                .withAdded( 48L, 540 )
                 .build();
 
         final Collection<DynamicTest> tests = new ArrayList<>();
 
         tests.add( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), true,
-                nodeWithPropertyValues( 43L, 510 ),
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 ),
-                nodeWithPropertyValues( 48L, 550 )
+                nodeWithPropertyValues( 42L, 510 ),
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 ),
+                nodeWithPropertyValues( 44L, 550 )
         ) );
         tests.add( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), false,
-                nodeWithPropertyValues( 43L, 510 ),
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 )
+                nodeWithPropertyValues( 42L, 510 ),
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 )
         ) );
         tests.add( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), true,
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 ),
-                nodeWithPropertyValues( 48L, 550 )
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 ),
+                nodeWithPropertyValues( 44L, 550 )
         ) );
         tests.add( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), false,
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 )
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 )
         ) );
         tests.add( rangeTest( state, null, false, Values.of( 550 ), true,
-                nodeWithPropertyValues( 42L, 500 ),
-                nodeWithPropertyValues( 43L, 510 ),
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 ),
-                nodeWithPropertyValues( 48L, 550 )
+                nodeWithPropertyValues( 45L, 500 ),
+                nodeWithPropertyValues( 42L, 510 ),
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 ),
+                nodeWithPropertyValues( 44L, 550 )
         ) );
         tests.add( rangeTest( state, null, true, Values.of( 550 ), true,
-                nodeWithPropertyValues( 42L, 500 ),
-                nodeWithPropertyValues( 43L, 510 ),
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 ),
-                nodeWithPropertyValues( 48L, 550 )
+                nodeWithPropertyValues( 45L, 500 ),
+                nodeWithPropertyValues( 42L, 510 ),
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 ),
+                nodeWithPropertyValues( 44L, 550 )
         ) );
         tests.add( rangeTest( state, null, false, Values.of( 550 ), false,
-                nodeWithPropertyValues( 42L, 500 ),
-                nodeWithPropertyValues( 43L, 510 ),
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 )
+                nodeWithPropertyValues( 45L, 500 ),
+                nodeWithPropertyValues( 42L, 510 ),
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 )
         ) );
         tests.add( rangeTest( state, null, true, Values.of( 550 ), false,
-                nodeWithPropertyValues( 42L, 500 ),
-                nodeWithPropertyValues( 43L, 510 ),
-                nodeWithPropertyValues( 44L, 520 ),
-                nodeWithPropertyValues( 45L, 530 ),
-                nodeWithPropertyValues( 47L, 540 )
+                nodeWithPropertyValues( 45L, 500 ),
+                nodeWithPropertyValues( 42L, 510 ),
+                nodeWithPropertyValues( 43L, 520 ),
+                nodeWithPropertyValues( 46L, 530 ),
+                nodeWithPropertyValues( 48L, 540 )
         ) );
         tests.add( rangeTest( state, Values.of( 540 ), true, null, true,
-                nodeWithPropertyValues( 47L, 540 ),
-                nodeWithPropertyValues( 48L, 550 ),
-                nodeWithPropertyValues( 49L, 560 )
+                nodeWithPropertyValues( 48L, 540 ),
+                nodeWithPropertyValues( 44L, 550 ),
+                nodeWithPropertyValues( 47L, 560 )
         ) );
         tests.add( rangeTest( state, Values.of( 540 ), true, null, false,
-                nodeWithPropertyValues( 47L, 540 ),
-                nodeWithPropertyValues( 48L, 550 ),
-                nodeWithPropertyValues( 49L, 560 )
+                nodeWithPropertyValues( 48L, 540 ),
+                nodeWithPropertyValues( 44L, 550 ),
+                nodeWithPropertyValues( 47L, 560 )
         ) );
         tests.add( rangeTest( state, Values.of( 540 ), false, null, true,
-                nodeWithPropertyValues( 48L, 550 ),
-                nodeWithPropertyValues( 49L, 560 )
+                nodeWithPropertyValues( 44L, 550 ),
+                nodeWithPropertyValues( 47L, 560 )
         ) );
         tests.add( rangeTest( state, Values.of( 540 ), false, null, false,
-                nodeWithPropertyValues( 48L, 550 ),
-                nodeWithPropertyValues( 49L, 560 )
+                nodeWithPropertyValues( 44L, 550 ),
+                nodeWithPropertyValues( 47L, 560 )
         ) );
         tests.add( rangeTest( state, Values.of( 560 ), false, Values.of( 800 ), true ) );
 
@@ -213,13 +221,14 @@ class TxStateIndexChangesTest
             // Internal production code relies on null for unbounded, and cannot cope with NO_VALUE in this case
             assert lo != NO_VALUE;
             assert hi != NO_VALUE;
-            final LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
-            final DiffSets<NodeWithPropertyValues> diffSets2 =
+            final AddedAndRemoved changes =
+                    TxStateIndexChanges.indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
+            final AddedWithValuesAndRemoved changesWithValues =
                     TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, lo, includeLo, hi, includeHi ) );
 
-            final LongSet expectedNodeIds = LongSets.immutable.ofAll( Arrays.stream( expected ).mapToLong( NodeWithPropertyValues::getNodeId ) );
-            assertEquals( expectedNodeIds, diffSets.getAdded() );
-            assertEquals( UnifiedSet.newSetWith( expected ), diffSets2.getAdded() );
+            final long[] expectedNodeIds = Arrays.stream( expected ).mapToLong( NodeWithPropertyValues::getNodeId ).toArray();
+            assertContainsInOrder( changes.added, expectedNodeIds );
+            assertContainsInOrder( changesWithValues.added, expected );
         } );
     }
 
@@ -237,14 +246,14 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSuffixOrContains( state, index,
-                    IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
-            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
-                    IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
+            AddedAndRemoved changes =
+                    indexUpdatesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
+            AddedWithValuesAndRemoved changesWithValues =
+                    indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
 
             // THEN
-            assertEquals( 0, diffSets.getAdded().size() );
-            assertEquals( 0, diffSets2.getAdded().size() );
+            assertTrue( changes.added.isEmpty() );
+            assertFalse( changesWithValues.added.iterator().hasNext() );
         }
 
         @Test
@@ -263,18 +272,16 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSuffixOrContains( state, index,
-                    IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
-            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
-                    IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
+            AddedAndRemoved changes =
+                    indexUpdatesForSuffixOrContains( state, index, IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
+            AddedWithValuesAndRemoved changesWithValues =
+                    indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
 
             // THEN
-            assertEquals( newSetWith( 46L, 47L ), diffSets.getAdded() );
-            assertEquals(
-                    UnifiedSet.newSetWith(
+            assertContains( changes.added, 46L, 47L );
+            assertContains( changesWithValues.added,
                             nodeWithPropertyValues( 46L, "Barbarella" ),
-                            nodeWithPropertyValues( 47L, "Cinderella" ) ),
-                    diffSets2.getAdded() );
+                            nodeWithPropertyValues( 47L, "Cinderella" ) );
         }
 
         @Test
@@ -293,18 +300,16 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSuffixOrContains( state, index,
-                    IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
-            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( state, index,
-                    IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
+            AddedAndRemoved changes =
+                    indexUpdatesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
+            AddedWithValuesAndRemoved changesWithValues =
+                    indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
 
             // THEN
-            assertEquals( newSetWith( 45L, 46L ), diffSets.getAdded() );
-            assertEquals(
-                    UnifiedSet.newSetWith(
+            assertContains( changes.added, 45L, 46L );
+            assertContains( changesWithValues.added,
                             nodeWithPropertyValues( 45L, "Barbara" ),
-                            nodeWithPropertyValues( 46L, "Barbarella" ) ),
-                    diffSets2.getAdded() );
+                            nodeWithPropertyValues( 46L, "Barbarella" ) );
         }
     }
 
@@ -322,12 +327,12 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "eulav" );
-            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "eulav" );
+            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( state, index, "eulav" );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "eulav" );
 
             // THEN
-            assertEquals( 0, diffSets.getAdded().size() );
-            assertEquals( 0, diffSets2.getAdded().size() );
+            assertTrue( changes.added.isEmpty() );
+            assertFalse( changesWithValues.added.iterator().hasNext() );
         }
 
         @Test
@@ -338,24 +343,22 @@ class TxStateIndexChangesTest
                     .withAdded( 40L, "Aaron" )
                     .withAdded( 41L, "Agatha" )
                     .withAdded( 42L, "Andreas" )
-                    .withAdded( 43L, "Andrea" )
-                    .withAdded( 44L, "Aristotle" )
-                    .withAdded( 45L, "Barbara" )
-                    .withAdded( 46L, "Barbarella" )
+                    .withAdded( 43L, "Barbarella" )
+                    .withAdded( 44L, "Andrea" )
+                    .withAdded( 45L, "Aristotle" )
+                    .withAdded( 46L, "Barbara" )
                     .withAdded( 47L, "Cinderella" )
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "And" );
-            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "And" );
+            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( state, index, "And" );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "And" );
 
             // THEN
-            assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
-            assertEquals(
-                    UnifiedSet.newSetWith(
-                            nodeWithPropertyValues( 42L, "Andreas" ),
-                            nodeWithPropertyValues( 43L, "Andrea" ) ),
-                    diffSets2.getAdded() );
+            assertContainsInOrder( changes.added, 44L, 42L );
+            assertContainsInOrder( changesWithValues.added,
+                                   nodeWithPropertyValues( 44L, "Andrea" ),
+                                   nodeWithPropertyValues( 42L, "Andreas" ) );
         }
 
         @Test
@@ -369,10 +372,10 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "bar" );
+            AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "bar" );
 
             // THEN
-            assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
+            assertContainsInOrder( changes.added,   43L, 42L );
         }
     }
 
@@ -388,10 +391,10 @@ class TxStateIndexChangesTest
             final ReadableTransactionState state = Mockito.mock( ReadableTransactionState.class );
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
+            AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
 
             // THEN
-            assertTrue( diffSets.isEmpty() );
+            assertTrue( changes.isEmpty() );
         }
 
         @Test
@@ -404,16 +407,14 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, compositeIndex );
-            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, compositeIndex );
+            AddedAndRemoved changes = indexUpdatesForScan( state, compositeIndex );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex );
 
             // THEN
-            assertEquals( asSet( 42L, 43L ), toSet( diffSets.getAdded() ) );
-            assertEquals(
-                    UnifiedSet.newSetWith(
+            assertContains( changes.added, 42L, 43L );
+            assertContains( changesWithValues.added,
                             nodeWithPropertyValues( 42L, "42value1", "42value2" ),
-                            nodeWithPropertyValues( 43L, "43value1", "43value2" ) ),
-                    diffSets2.getAdded() );
+                            nodeWithPropertyValues( 43L, "43value1", "43value2" ) );
         }
 
         @Test
@@ -426,10 +427,10 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
+            AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
 
             // THEN
-            assertEquals( asSet( 43L ), toSet( diffSets.getAdded() ) );
+            assertContains( changes.added, 43L );
         }
 
         @Test
@@ -442,10 +443,10 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 43001.0, 43002.0 ) );
+            AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 43001.0, 43002.0 ) );
 
             // THEN
-            assertEquals( asSet( 43L ), toSet( diffSets.getAdded() ) );
+            assertContains( changes.added, 43L );
         }
 
         @Test
@@ -460,14 +461,14 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForScan( state, compositeIndex );
-            DiffSets<NodeWithPropertyValues> diffSets2 = TxStateIndexChanges.indexUpdatesWithValuesForScan( state, compositeIndex );
+            AddedAndRemoved changes = indexUpdatesForScan( state, compositeIndex );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex );
 
             // THEN
-            assertEquals( newSetWith( 42L ), diffSets.getAdded() );
-            assertEquals( UnifiedSet.newSetWith( nodeWithPropertyValues( 42L, "42value1", "42value2" ) ), diffSets2.getAdded() );
-            assertEquals( newSetWith( 44L ), diffSets.getRemoved() );
-            assertEquals( UnifiedSet.newSetWith( nodeWithPropertyValues( 44L, "44value1", "44value2" ) ), diffSets2.getRemoved() );
+            assertContains( changes.added, 42L );
+            assertContains( changesWithValues.added, nodeWithPropertyValues( 42L, "42value1", "42value2" ) );
+            assertContains( changes.removed, 44L );
+            assertContains( changesWithValues.removed, 44L );
         }
 
         @Test
@@ -481,10 +482,10 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
+            AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
 
             // THEN
-            assertEquals( asSet( 43L, 44L ), toSet( diffSets.getAdded() ) );
+            assertContains( changes.added, 43L, 44L );
         }
 
         @Test
@@ -500,16 +501,11 @@ class TxStateIndexChangesTest
                     .build();
 
             // THEN
-            assertEquals( asSet( 10L ),
-                    toSet( TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "hi", 3 ) ).getAdded() ) );
-            assertEquals( asSet( 11L ),
-                    toSet( TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 9L, 33L ) ).getAdded() ) );
-            assertEquals( asSet( 12L ),
-                    toSet( TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "sneaker", false ) ).getAdded() ) );
-            assertEquals( asSet( 13L ),
-                    toSet( TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( new int[]{10, 100}, "array-buddy" ) ).getAdded() ) );
-            assertEquals( asSet( 14L ),
-                    toSet( TxStateIndexChanges.indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).getAdded() ) );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "hi", 3 ) ).added, 10L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 9L, 33L ) ).added, 11L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "sneaker", false ) ).added, 12L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( new int[]{10, 100}, "array-buddy" ) ).added, 13L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).added, 14L );
         }
 
     }
@@ -519,6 +515,33 @@ class TxStateIndexChangesTest
         return new NodeWithPropertyValues( nodeId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) );
     }
 
+    private void assertContains( LongIterable iterable, long... nodeIds )
+    {
+        assertEquals( newSetWith( nodeIds ), LongSets.immutable.ofAll( iterable ) );
+    }
+
+    private void assertContains( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
+    {
+        assertEquals( UnifiedSet.newSetWith( expected ), UnifiedSet.newSet( iterable ) );
+    }
+
+    private void assertContainsInOrder( LongIterable iterable, long... nodeIds )
+    {
+        assertThat( Arrays.asList( iterable.toArray() ), contains( nodeIds ) );
+    }
+
+    private void assertContainsInOrder( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
+    {
+        if ( expected.length == 0 )
+        {
+            assertThat( iterable, emptyIterable() );
+        }
+        else
+        {
+            assertThat( iterable, contains( expected ) );
+        }
+    }
+
     private static class TxStateBuilder
     {
         Map<ValueTuple, MutableLongDiffSetsImpl> updates = new HashMap<>();
@@ -526,16 +549,16 @@ class TxStateIndexChangesTest
         TxStateBuilder withAdded( long id, Object... value )
         {
             final ValueTuple valueTuple = ValueTuple.of( (Object[]) value );
-            final MutableLongDiffSetsImpl diffSets = updates.computeIfAbsent( valueTuple, ignore -> new MutableLongDiffSetsImpl() );
-            diffSets.add( id );
+            final MutableLongDiffSetsImpl changes = updates.computeIfAbsent( valueTuple, ignore -> new MutableLongDiffSetsImpl() );
+            changes.add( id );
             return this;
         }
 
         TxStateBuilder withRemoved( long id, Object... value )
         {
             final ValueTuple valueTuple = ValueTuple.of( (Object[]) value );
-            final MutableLongDiffSetsImpl diffSets = updates.computeIfAbsent( valueTuple, ignore -> new MutableLongDiffSetsImpl() );
-            diffSets.remove( id );
+            final MutableLongDiffSetsImpl changes = updates.computeIfAbsent( valueTuple, ignore -> new MutableLongDiffSetsImpl() );
+            changes.remove( id );
             return this;
         }
 

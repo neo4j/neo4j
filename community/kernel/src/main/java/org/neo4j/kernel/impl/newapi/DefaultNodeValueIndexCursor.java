@@ -21,26 +21,23 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
+import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
-import org.neo4j.storageengine.api.txstate.DiffSets;
-import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
@@ -259,16 +256,16 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                DiffSets<NodeWithPropertyValues> changes =
+                AddedWithValuesAndRemoved changes =
                         TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, predicate.prefix() );
-                addedWithValues = changes.getAdded().iterator();
-                removed = removed( txState, changes.getRemoved() );
+                addedWithValues = changes.added.iterator();
+                removed = removed( txState, changes.removed );
             }
             else
             {
-                LongDiffSets changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( txState, descriptor, predicate.prefix() );
-                added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
-                removed = removed( txState, changes );
+                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( txState, descriptor, predicate.prefix() );
+                added = changes.added.longIterator();
+                removed = removed( txState, changes.removed );
             }
         }
     }
@@ -287,15 +284,17 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                DiffSets<NodeWithPropertyValues> changes = TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate );
-                addedWithValues = changes.getAdded().iterator();
-                removed = removed( txState, changes.getRemoved() );
+                AddedWithValuesAndRemoved changes =
+                        TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate );
+                addedWithValues = changes.added.iterator();
+                removed = removed( txState, changes.removed );
             }
             else
             {
-                LongDiffSets changes = TxStateIndexChanges.indexUpdatesForRangeSeek( txState, descriptor, predicate );
-                added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
-                removed = removed( txState, changes );
+                AddedAndRemoved changes =
+                        TxStateIndexChanges.indexUpdatesForRangeSeek( txState, descriptor, predicate );
+                added = changes.added.longIterator();
+                removed = removed( txState, changes.removed );
             }
         }
     }
@@ -308,16 +307,16 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                DiffSets<NodeWithPropertyValues> changes =
+                AddedWithValuesAndRemoved changes =
                         TxStateIndexChanges.indexUpdatesWithValuesForScan( txState, descriptor );
-                addedWithValues = changes.getAdded().iterator();
-                removed = removed( txState, changes.getRemoved() );
+                addedWithValues = changes.added.iterator();
+                removed = removed( txState, changes.removed );
             }
             else
             {
-                LongDiffSets changes = TxStateIndexChanges.indexUpdatesForScan( txState, descriptor );
-                added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
-                removed = removed( txState, changes );
+                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForScan( txState, descriptor );
+                added = changes.added.longIterator();
+                removed = removed( txState, changes.removed );
             }
         }
     }
@@ -330,16 +329,16 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
             if ( needsValues )
             {
-                DiffSets<NodeWithPropertyValues> changes =
+                AddedWithValuesAndRemoved changes =
                         TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
-                addedWithValues = changes.getAdded().iterator();
-                removed = removed( txState, changes.getRemoved() );
+                addedWithValues = changes.added.iterator();
+                removed = removed( txState, changes.removed );
             }
             else
             {
-                LongDiffSets changes = TxStateIndexChanges.indexUpdatesForSuffixOrContains( txState, descriptor, query );
-                added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
-                removed = removed( txState, changes );
+                AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForSuffixOrContains( txState, descriptor, query );
+                added = changes.added.longIterator();
+                removed = removed( txState, changes.removed );
             }
         }
     }
@@ -355,27 +354,15 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             TransactionState txState = read.txState();
 
-            LongDiffSets changes = TxStateIndexChanges.indexUpdatesForSeek( txState, descriptor, IndexQuery.asValueTuple( exactPreds ) );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
-            removed = removed( txState, changes );
+            AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForSeek( txState, descriptor, IndexQuery.asValueTuple( exactPreds ) );
+            added = changes.added.longIterator();
+            removed = removed( txState, changes.removed );
         }
     }
 
-    private LongSet removed( TransactionState txState, LongDiffSets changes )
+    private LongSet removed( TransactionState txState, LongSet removedFromIndex )
     {
-        return mergeToSet( txState.addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
-    }
-
-    private LongSet removed( TransactionState txState, Set<NodeWithPropertyValues> removed )
-    {
-        LongSet removedFromTXState = txState.addedAndRemovedNodes().getRemoved();
-        final MutableLongSet set = new LongHashSet( removedFromTXState.size() + removed.size() );
-        set.addAll( removedFromTXState );
-        for ( NodeWithPropertyValues nodeWithPropertyValues : removed )
-        {
-            set.add( nodeWithPropertyValues.getNodeId() );
-        }
-        return set;
+        return mergeToSet( txState.addedAndRemovedNodes().getRemoved(), removedFromIndex );
     }
 
     private static IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
