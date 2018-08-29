@@ -25,9 +25,7 @@ package org.neo4j.causalclustering.messaging.marshalling.v2.encoding;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
@@ -44,7 +42,6 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
 {
 
     private final CoreReplicatedContentMarshal serializer;
-    private Handler replicatedContentHandler = new Handler();
 
     public RaftMessageContentEncoder( CoreReplicatedContentMarshal serializer )
     {
@@ -54,123 +51,121 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
     @Override
     protected void encode( ChannelHandlerContext ctx, RaftMessages.ClusterIdAwareMessage msg, List<Object> out ) throws Exception
     {
-        out.add( ContentType.Message );
         out.add( msg );
-        Object[] dispatch = msg.message().dispatch( replicatedContentHandler );
-        if ( dispatch == null )
-        {
-            // there was an error serializing
-            throw new IllegalArgumentException( "Error reading raft message content" );
-        }
-        out.addAll( Arrays.asList( dispatch ) );
+        Handler replicatedContentHandler = new Handler( out );
+        msg.message().dispatch( replicatedContentHandler );
     }
 
-    private class Handler implements RaftMessages.Handler<Object[],Exception>
+    private class Handler implements RaftMessages.Handler<Void,Exception>
     {
-        @Override
-        public Object[] handle( RaftMessages.Vote.Request request ) throws Exception
+        private final List<Object> out;
+
+        public Handler( List<Object> out )
         {
-            return noContent();
+            this.out = out;
         }
 
         @Override
-        public Object[] handle( RaftMessages.Vote.Response response ) throws Exception
+        public Void handle( RaftMessages.Vote.Request request ) throws Exception
         {
-            return noContent();
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.PreVote.Request request ) throws Exception
+        public Void handle( RaftMessages.Vote.Response response ) throws Exception
         {
-            return noContent();
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.PreVote.Response response ) throws Exception
+        public Void handle( RaftMessages.PreVote.Request request ) throws Exception
         {
-            return noContent();
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.AppendEntries.Request request ) throws Exception
+        public Void handle( RaftMessages.PreVote.Response response ) throws Exception
         {
-            Stream<Object> terms = Stream.of( ContentType.RaftLogEntryTerms,
-                    serializable( Arrays.stream( request.entries() ).mapToLong( RaftLogEntry::term ).toArray() ) );
-
-            Stream<Object> contents = Arrays.stream( request.entries() )
-                    .flatMap( entry -> serializableContents( entry.content() ) );
-
-            return Stream.concat( terms, contents ).toArray( Object[]::new );
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.AppendEntries.Response response ) throws Exception
+        public Void handle( RaftMessages.AppendEntries.Request request ) throws Exception
         {
-            return noContent();
+            RaftLogEntryTermEncoder.RaftLogEntryTermSerializer terms = serializable( request.entries() );
+            out.add( terms );
+            for ( RaftLogEntry entry : request.entries() )
+            {
+                serializableContents( entry.content(), out );
+            }
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.Heartbeat heartbeat ) throws Exception
+        public Void handle( RaftMessages.AppendEntries.Response response ) throws Exception
         {
-            return noContent();
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws Exception
+        public Void handle( RaftMessages.Heartbeat heartbeat ) throws Exception
         {
-            return noContent();
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws Exception
+        public Void handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws Exception
         {
-            return noContent();
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.NewEntry.Request request ) throws Exception
+        public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws Exception
         {
-            return serializableContents( request.content() ).toArray();
+            return null;
         }
 
         @Override
-        public Object[] handle( RaftMessages.Timeout.Election election ) throws Exception
+        public Void handle( RaftMessages.NewEntry.Request request ) throws Exception
+        {
+            serializableContents( request.content(), out );
+            return null;
+        }
+
+        @Override
+        public Void handle( RaftMessages.Timeout.Election election ) throws Exception
         {
             return illegalOutbound( election );
         }
 
         @Override
-        public Object[] handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws Exception
+        public Void handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws Exception
         {
             return illegalOutbound( heartbeat );
         }
 
         @Override
-        public Object[] handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws Exception
+        public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws Exception
         {
             return illegalOutbound( batchRequest );
         }
 
         @Override
-        public Object[] handle( RaftMessages.PruneRequest pruneRequest ) throws Exception
+        public Void handle( RaftMessages.PruneRequest pruneRequest ) throws Exception
         {
             return illegalOutbound( pruneRequest );
         }
 
-        private Object[] noContent()
-        {
-            return new Object[]{};
-        }
-
-        private Object[] illegalOutbound( RaftMessages.BaseRaftMessage raftMessage )
+        private Void illegalOutbound( RaftMessages.BaseRaftMessage raftMessage )
         {
             // not network
             throw new IllegalStateException( "Illegal outbound call: " + raftMessage.getClass() );
         }
 
-        private Stream<Object> serializableContents( ReplicatedContent content )
+        private void serializableContents( ReplicatedContent content, List<Object> out )
         {
-            return Stream.concat( Stream.of( ContentType.ReplicatedContent ), serializer.toSerializable( content ).stream() );
+            out.add( ContentType.ReplicatedContent );
+            serializer.marshal( content, out::add );
         }
     }
 }

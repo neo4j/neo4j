@@ -47,13 +47,15 @@ public class ContentTypeDispatcher extends ChannelInboundHandlerAdapter
             byte messageCode = ((ByteBuf) msg).readByte();
             ContentType contentType = getContentType( messageCode );
             contentTypeProtocol.expect( contentType );
-            ReferenceCountUtil.release( msg );
+            if ( ((ByteBuf) msg).readableBytes() == 0 )
+            {
+                ReferenceCountUtil.release( msg );
+                return;
+            }
         }
-        else
-        {
+
             ctx.fireChannelRead( msg );
         }
-    }
 
     private ContentType getContentType( byte messageCode )
     {

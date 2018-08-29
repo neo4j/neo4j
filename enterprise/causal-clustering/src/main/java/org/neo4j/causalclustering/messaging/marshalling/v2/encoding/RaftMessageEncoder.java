@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
 public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.ClusterIdAwareMessage>
 {
@@ -41,6 +42,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
+        channel.put( ContentType.Message.get() );
         ClusterId.Marshal.INSTANCE.marshal( clusterId, channel );
         channel.putInt( message.type().ordinal() );
         memberMarshal.marshal( message.from(), channel );

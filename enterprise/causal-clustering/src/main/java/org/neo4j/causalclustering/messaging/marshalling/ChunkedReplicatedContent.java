@@ -97,7 +97,7 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
         try
         {
             boolean isFirstChunk = progress() == 0;
-            allData.addComponent( true, 0, writeMetadata( isFirstChunk, allocator, data ) );
+            allData.addComponent( true, 0, writeMetadata( isFirstChunk, byteBufAwareMarshal.isEndOfInput(), allocator ) );
             progress += allData.readableBytes();
             assert progress > 0; // logic relies on this
             byteBufChunkHandler.handle( data ); // ignores metadata
@@ -115,11 +115,11 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
         return METADATA_SIZE + (isFirstChunk ? 1 : 0);
     }
 
-    private ByteBuf writeMetadata( boolean isFirstChunk, ByteBufAllocator allocator, ByteBuf data )
+    private ByteBuf writeMetadata( boolean isFirstChunk, boolean isLastChunk, ByteBufAllocator allocator )
     {
         int capacity = metadataSize( isFirstChunk );
         ByteBuf metaData = allocator.buffer( capacity, capacity );
-        metaData.writeBoolean( byteBufAwareMarshal.isEndOfInput() );
+        metaData.writeBoolean( isLastChunk );
         if ( isFirstChunk )
         {
             metaData.writeByte( contentType );

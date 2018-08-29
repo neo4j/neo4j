@@ -47,7 +47,7 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
         boolean isLast = in.readBoolean();
         if ( isLast )
         {
-            out.add( contentMarshal.decode( in.readByte(), in ) );
+            out.add( contentMarshal.unmarshalContent( in.readByte(), in ) );
         }
         else
         {

@@ -26,11 +26,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
+
 public class RaftLogEntryTermEncoder extends MessageToByteEncoder<RaftLogEntryTermEncoder.RaftLogEntryTermSerializer>
 {
     @Override
     protected void encode( ChannelHandlerContext ctx, RaftLogEntryTermSerializer msg, ByteBuf out )
     {
+        out.writeByte( ContentType.RaftLogEntryTerms.get() );
         out.writeInt( msg.terms.length );
         for ( long term : msg.terms )
         {
@@ -38,8 +42,13 @@ public class RaftLogEntryTermEncoder extends MessageToByteEncoder<RaftLogEntryTe
         }
     }
 
-    static RaftLogEntryTermSerializer serializable( long[] terms )
+    static RaftLogEntryTermSerializer serializable( RaftLogEntry[] raftLogEntries )
     {
+        long[] terms = new long[raftLogEntries.length];
+        for ( int i = 0; i < raftLogEntries.length; i++ )
+        {
+            terms[i] = raftLogEntries[i].term();
+        }
         return new RaftLogEntryTermSerializer( terms );
     }
 

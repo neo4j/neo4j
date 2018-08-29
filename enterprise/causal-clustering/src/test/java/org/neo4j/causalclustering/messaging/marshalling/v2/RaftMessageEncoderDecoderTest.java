@@ -69,7 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 /**
- * Warning! This test ensures that all raft protocol work as expected in theirs current implementation. However, it does not know about changes to the
+ * Warning! This test ensures that all raft protocol work as expected in their current implementation. However, it does not know about changes to the
  * protocols that breaks backward compatibility.
  */
 @RunWith( Parameterized.class )
