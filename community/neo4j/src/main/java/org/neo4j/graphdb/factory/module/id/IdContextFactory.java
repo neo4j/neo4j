@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module.id;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
@@ -37,9 +35,8 @@ public class IdContextFactory
 {
      private static final boolean ID_BUFFERING_FLAG = FeatureToggles.flag( IdContextFactory.class, "safeIdBuffering", true );
 
-    private Function<String, ? extends IdGeneratorFactory> idGeneratorFactoryProvider;
-    private Function<String, IdController> idControllerFactory;
-
+    private final JobScheduler jobScheduler;
+    private final Function<String,IdGeneratorFactory> idFactoryProvider;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
     private final IdReuseEligibility eligibleForIdReuse;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
@@ -48,46 +45,38 @@ public class IdContextFactory
             IdTypeConfigurationProvider idTypeConfigurationProvider, IdReuseEligibility eligibleForIdReuse,
             Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper )
     {
+        this.jobScheduler = jobScheduler;
+        this.idFactoryProvider = idFactoryProvider;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;
         this.eligibleForIdReuse = eligibleForIdReuse;
         this.factoryWrapper = factoryWrapper;
-        initComponents( jobScheduler, idFactoryProvider );
     }
 
     public DatabaseIdContext createIdContext( String databaseName )
     {
-        IdGeneratorFactory originalFactory = idGeneratorFactoryProvider.apply( databaseName );
-        IdController idController = idControllerFactory.apply( databaseName );
-        IdGeneratorFactory idGeneratorFactory = factoryWrapper.apply( originalFactory );
-        return new DatabaseIdContext( idGeneratorFactory, idController );
+        return ID_BUFFERING_FLAG ? createBufferingIdContext( idFactoryProvider, jobScheduler, databaseName )
+                                 : createDefaultIdContext( idFactoryProvider, databaseName );
     }
 
-    private void initComponents( JobScheduler jobScheduler,
-            Function<String,? extends IdGeneratorFactory> idGeneratorFactoryProvider )
+    private DatabaseIdContext createDefaultIdContext( Function<String,? extends IdGeneratorFactory> idGeneratorFactoryProvider,
+            String databaseName )
     {
-        Function<String,? extends IdGeneratorFactory> factoryProvider = idGeneratorFactoryProvider;
-        if ( ID_BUFFERING_FLAG )
-        {
-            Function<String,BufferingIdGeneratorFactory> bufferingIdGeneratorFactory = new Function<String,BufferingIdGeneratorFactory>()
-            {
-                private final Map<String,BufferingIdGeneratorFactory> idGenerators = new HashMap<>();
+        return createIdContext( idGeneratorFactoryProvider.apply( databaseName ), createDefaultIdController() );
+    }
 
-                @Override
-                public BufferingIdGeneratorFactory apply( String databaseName )
-                {
-                    return idGenerators.computeIfAbsent( databaseName,
-                            s -> new BufferingIdGeneratorFactory( idGeneratorFactoryProvider.apply( databaseName ), eligibleForIdReuse,
-                                    idTypeConfigurationProvider ) );
-                }
-            };
-            idControllerFactory = databaseName -> createBufferedIdController( bufferingIdGeneratorFactory.apply( databaseName ), jobScheduler );
-            factoryProvider = bufferingIdGeneratorFactory;
-        }
-        else
-        {
-            idControllerFactory = any -> createDefaultIdController();
-        }
-        this.idGeneratorFactoryProvider = factoryProvider;
+    private DatabaseIdContext createBufferingIdContext( Function<String,? extends IdGeneratorFactory> idGeneratorFactoryProvider, JobScheduler jobScheduler,
+            String databaseName )
+    {
+        IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( databaseName );
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
+                new BufferingIdGeneratorFactory( idGeneratorFactory, eligibleForIdReuse, idTypeConfigurationProvider );
+        BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler );
+        return createIdContext( bufferingIdGeneratorFactory, bufferingController );
+    }
+
+    private DatabaseIdContext createIdContext( IdGeneratorFactory idGeneratorFactory, IdController idController )
+    {
+        return new DatabaseIdContext( factoryWrapper.apply( idGeneratorFactory ), idController );
     }
 
     private static BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory, JobScheduler scheduler )
