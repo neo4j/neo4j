@@ -73,11 +73,10 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
 
         try
         {
-            // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
-            // That is why we create a lazy Iterator and then Iterable
-            writer.addDocuments( updates.size(), () -> updates.stream()
-                    .map( LuceneIndexPopulator::updateAsDocument )
-                    .iterator() );
+            for ( IndexEntryUpdate<?> update : updates )
+            {
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ), updateAsDocument( update ) );
+            }
         }
         catch ( IOException e )
         {
