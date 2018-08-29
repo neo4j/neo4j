@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -94,7 +93,6 @@ import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
  * The area around when the index population is done is controlled using a {@link Barrier} so that we can assert sample data
  * with 100% accuracy against the updates we know that the test has done during the time the index was populating.
  */
-@Ignore( "Super temporary until next PR is in" )
 @RunWith( Parameterized.class )
 public class IndexStatisticsTest
 {
