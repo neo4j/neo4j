@@ -374,25 +374,25 @@ public class GenericIndexValidationIT
     private static NamedDynamicValueGenerator[] dynamicValueGenerators()
     {
         return new NamedDynamicValueGenerator[]{
-                new NamedDynamicValueGenerator( string, ( i ) -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
-                new NamedDynamicValueGenerator( byteArray, ( i ) -> random.randomValues().nextByteArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( shortArray, ( i ) -> random.randomValues().nextShortArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( intArray, ( i ) -> random.randomValues().nextIntArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( longArray, ( i ) -> random.randomValues().nextLongArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( floatArray, ( i ) -> random.randomValues().nextFloatArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( doubleArray, ( i ) -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( booleanArray, ( i ) -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( stringArray0, ( i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 0, 0 ) ),
-                new NamedDynamicValueGenerator( stringArray10, ( i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
-                new NamedDynamicValueGenerator( stringArray100, ( i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
-                new NamedDynamicValueGenerator( stringArray1000, ( i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
-                new NamedDynamicValueGenerator( dateArray, ( i ) -> random.randomValues().nextDateArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( timeArray, ( i ) -> random.randomValues().nextTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( localTimeArray, ( i ) -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( dateTimeArray, ( i ) -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( localDateTimeArray, ( i ) -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( durationArray, ( i ) -> random.randomValues().nextDurationArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( periodArray, ( i ) -> random.randomValues().nextPeriodArrayRaw( i, i ) )
+                new NamedDynamicValueGenerator( string, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
+                new NamedDynamicValueGenerator( byteArray, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( shortArray, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( intArray, i -> random.randomValues().nextIntArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( longArray, i -> random.randomValues().nextLongArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( floatArray, i -> random.randomValues().nextFloatArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( doubleArray, i -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( booleanArray, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( stringArray0, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 0, 0 ) ),
+                new NamedDynamicValueGenerator( stringArray10, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
+                new NamedDynamicValueGenerator( stringArray100, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
+                new NamedDynamicValueGenerator( stringArray1000, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
+                new NamedDynamicValueGenerator( dateArray, i -> random.randomValues().nextDateArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( timeArray, i -> random.randomValues().nextTimeArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( localTimeArray, i -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( dateTimeArray, i -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( localDateTimeArray, i -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( durationArray, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
+                new NamedDynamicValueGenerator( periodArray, i -> random.randomValues().nextPeriodArrayRaw( i, i ) )
                 // TODO Point (Cartesian)
                 // TODO Point (Cartesian 3D)
                 // TODO Point (WGS-84)
