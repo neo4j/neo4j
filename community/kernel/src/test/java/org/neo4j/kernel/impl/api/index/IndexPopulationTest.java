@@ -133,6 +133,12 @@ public class IndexPopulationTest
                     {
                         return null;
                     }
+
+                    @Override
+                    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update, long currentlyIndexedNodeId )
+                    {
+                        updater.process( update );
+                    }
                 };
             }
         };

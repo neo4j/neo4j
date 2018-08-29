@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -528,6 +529,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
             this.delegate = delegate;
             this.customAction = customAction;
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
+                long currentlyIndexedNodeId )
+        {
+            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
         }
 
         @Override

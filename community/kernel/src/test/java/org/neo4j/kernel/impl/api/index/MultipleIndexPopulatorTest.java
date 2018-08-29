@@ -34,7 +34,6 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -463,24 +462,6 @@ public class MultipleIndexPopulatorTest
         verify( updater, never() ).process( update2 );
         verify( updater ).close();
         checkPopulatorFailure( populator );
-    }
-
-    @Test
-    public void shouldApplyUpdatesInFrontOfScan() throws IOException, IndexEntryConflictException, FlipFailedKernelException
-    {
-        // given
-        IndexUpdater updater = mock( IndexUpdater.class );
-        IndexPopulator populator = createIndexPopulator( updater );
-        multipleIndexPopulator.create();
-        addPopulator( populator, 1 );
-
-        // when
-        IndexEntryUpdate<SchemaDescriptor> update = add( 10, index1, "v1" );
-        multipleIndexPopulator.queue( update );
-        multipleIndexPopulator.populateFromQueue( 0 );
-
-        // then
-        verify( updater ).process( update );
     }
 
     private IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
