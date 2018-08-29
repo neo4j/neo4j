@@ -313,13 +313,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         // Override to configure the database
 
         // Adjusted defaults for testing
-        if ( config != null )
-        {
-            for ( Map.Entry<Setting<?>,String> setting : config.entrySet() )
-            {
-                builder.setConfig( setting.getKey(), setting.getValue() );
-            }
-        }
+        applyConfigChanges( builder );
     }
 
     public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
@@ -341,7 +335,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         if ( database == null )
         {
-            applyConfigChanges( additionalConfig );
+            applyConfigChanges( databaseBuilder, additionalConfig );
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
             databaseLayout = database.databaseLayout();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
@@ -389,13 +383,17 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         database.shutdown();
         action.run( fs, databaseLayout );
         database = null;
-        applyConfigChanges( configChanges );
+        applyConfigChanges( databaseBuilder, configChanges );
         return getGraphDatabaseAPI();
     }
 
-    private void applyConfigChanges( String[] configChanges )
+    private void applyConfigChanges( GraphDatabaseBuilder builder, String... configChanges )
     {
-        databaseBuilder.setConfig( stringMap( configChanges ) );
+        if ( config != null )
+        {
+            config.forEach( builder::setConfig );
+        }
+        builder.setConfig( stringMap( configChanges ) );
     }
 
     @Override

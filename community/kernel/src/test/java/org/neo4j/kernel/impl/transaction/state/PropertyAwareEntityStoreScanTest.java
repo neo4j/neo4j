@@ -24,8 +24,6 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -71,12 +69,6 @@ public class PropertyAwareEntityStoreScanTest
                     private int read;
 
                     @Override
-                    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
-                    {
-                        // no-op
-                    }
-
-                    @Override
                     public void process( NodeRecord node )
                     {
                         // then
@@ -104,7 +96,7 @@ public class PropertyAwareEntityStoreScanTest
             return (float) progress.getCompleted() / (float) progress.getTotal();
         }
 
-        public void setStoreScan( StoreScan<?> storeScan )
+        void setStoreScan( StoreScan<?> storeScan )
         {
             this.storeScan = storeScan;
         }

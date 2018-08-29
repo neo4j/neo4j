@@ -34,6 +34,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -83,7 +84,7 @@ public class MultipleIndexPopulatorTest
     private MultipleIndexPopulator multipleIndexPopulator;
 
     @Test
-    public void canceledPopulationNotAbleToCreateNewIndex() throws IOException, FlipFailedKernelException
+    public void canceledPopulationNotAbleToCreateNewIndex() throws FlipFailedKernelException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -96,7 +97,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void canceledPopulationNotAbleToFlip() throws IOException, FlipFailedKernelException
+    public void canceledPopulationNotAbleToFlip() throws FlipFailedKernelException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -109,7 +110,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void flippedPopulationAreNotCanceable() throws IOException, FlipFailedKernelException
+    public void flippedPopulationAreNotCanceable() throws FlipFailedKernelException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -122,7 +123,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePopulatorsCreation() throws Exception
+    public void testMultiplePopulatorsCreation() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -306,7 +307,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFlipAfterPopulation() throws Exception
+    public void testFlipAfterPopulation() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -463,7 +464,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void shouldVerifyConstraintsBeforeFlippingIfToldTo() throws IOException, IndexEntryConflictException
+    public void shouldVerifyConstraintsBeforeFlippingIfToldTo() throws IndexEntryConflictException
     {
         // given
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
@@ -481,6 +482,24 @@ public class MultipleIndexPopulatorTest
         // then
         verify( indexPopulator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( indexPopulator ).close( true );
+    }
+
+    @Test
+    public void shouldApplyUpdatesInFrontOfScan() throws IndexEntryConflictException, FlipFailedKernelException
+    {
+        // given
+        IndexUpdater updater = mock( IndexUpdater.class );
+        IndexPopulator populator = createIndexPopulator( updater );
+        multipleIndexPopulator.create();
+        addPopulator( populator, 1 );
+
+        // when
+        IndexEntryUpdate<SchemaDescriptor> update = add( 10, index1, "v1" );
+        multipleIndexPopulator.queueUpdate( update );
+        multipleIndexPopulator.populateFromQueue( 0 );
+
+        // then
+        verify( updater ).process( update );
     }
 
     private IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )

@@ -33,7 +33,6 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.LogProvider;
@@ -105,20 +104,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     @Override
-    public StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
+    protected void flushAll()
     {
-        StoreScan<IndexPopulationFailedKernelException> storeScan = super.indexAllEntities();
-        return new BatchingStoreScan<>( storeScan );
-    }
-
-    @Override
-    protected void populateFromUpdateQueue( long currentlyIndexedNodeId )
-    {
-        log.debug( "Populating from queue." + EOL + this );
-        flushAll();
+        super.flushAll();
         awaitCompletion();
-        super.populateFromUpdateQueue( currentlyIndexedNodeId );
-        log.debug( "Drained queue and all batched updates." + EOL + this );
     }
 
     @Override
@@ -181,6 +170,13 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
                 activeTasks.decrementAndGet();
             }
         } );
+    }
+
+    @Override
+    public void close( boolean populationCompletedSuccessfully )
+    {
+        super.close( populationCompletedSuccessfully );
+        shutdownExecutor( !populationCompletedSuccessfully );
     }
 
     /**
@@ -262,44 +258,5 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private int getNumberOfPopulationWorkers()
     {
         return Math.max( 2, MAXIMUM_NUMBER_OF_WORKERS );
-    }
-
-    /**
-     * A delegating {@link StoreScan} implementation that flushes all pending updates and terminates the executor after
-     * the delegate store scan completes.
-     *
-     * @param <E> type of the exception this store scan might get.
-     */
-    private class BatchingStoreScan<E extends Exception> extends DelegatingStoreScan<E>
-    {
-        BatchingStoreScan( StoreScan<E> delegate )
-        {
-            super( delegate );
-        }
-
-        @Override
-        public void run() throws E
-        {
-            try
-            {
-                super.run();
-                log.info( "Completed node store scan. " +
-                          "Flushing all pending updates." + EOL + BatchingMultipleIndexPopulator.this );
-                flushAll();
-            }
-            catch ( Throwable scanError )
-            {
-                try
-                {
-                    shutdownExecutor( true );
-                }
-                catch ( Throwable error )
-                {
-                    scanError.addSuppressed( error );
-                }
-                throw scanError;
-            }
-            shutdownExecutor( false );
-        }
     }
 }

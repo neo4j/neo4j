@@ -174,7 +174,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void noMessagesWhenThereIsNoIndexes() throws Exception
+    public void noMessagesWhenThereIsNoIndexes()
     {
         IndexMapReference indexMapReference = new IndexMapReference();
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
@@ -294,13 +294,10 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
-
-        // invoked from indexAllEntities(), empty because the id we added (2) is bigger than the one we indexed (1)
-        //
-        // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
-        //  just for the purpose of testing this behavior)
+        order.verify( populator, times( 3 ) ).add( any( Collection.class ) );
         order.verify( populator ).newPopulatingUpdater( storeView );
+        order.verify( populator ).includeSample( value2 );
+        order.verify( updater ).process( value2 );
         order.verify( updater ).close();
         order.verify( populator ).sampleResult();
         order.verify( populator ).close( true );
@@ -464,7 +461,7 @@ public class IndexingServiceTest
         IndexProviderDescriptor otherDescriptor = new IndexProviderDescriptor(
                 otherProviderKey, "no-version" );
         StoreIndexDescriptor rule = storeIndex( 1, 2, 3, otherDescriptor );
-        IndexingService indexing = newIndexingServiceWithMockedDependencies(
+        newIndexingServiceWithMockedDependencies(
                 mock( IndexPopulator.class ), mock( IndexAccessor.class ),
                 new DataUpdates(), rule );
 
@@ -1095,7 +1092,7 @@ public class IndexingServiceTest
     {
         // given
         StoreIndexDescriptor rule = index.withId( 0 );
-        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), rule );
+        newIndexingServiceWithMockedDependencies( populator, accessor, withData(), rule );
 
         IndexAccessor accessor = mock( IndexAccessor.class );
         IndexUpdater updater = mock( IndexUpdater.class );
@@ -1166,7 +1163,7 @@ public class IndexingServiceTest
         };
     }
 
-    private String storedFailure() throws IOException
+    private String storedFailure()
     {
         ArgumentCaptor<String> reason = ArgumentCaptor.forClass( String.class );
         verify( populator ).markAsFailed( reason.capture() );
@@ -1324,14 +1321,6 @@ public class IndexingServiceTest
                 public void stop()
                 {
                     stop = true;
-                }
-
-                @Override
-                public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater,
-                        IndexEntryUpdate<?> update,
-                        long currentlyIndexedNodeId )
-                {
-                    // no-op
                 }
 
                 @Override

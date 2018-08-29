@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,7 +69,6 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -528,13 +526,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
             this.delegate = delegate;
             this.customAction = customAction;
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-                long currentlyIndexedNodeId )
-        {
-            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
         }
 
         @Override
