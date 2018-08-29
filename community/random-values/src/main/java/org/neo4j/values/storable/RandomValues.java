@@ -1479,13 +1479,23 @@ public class RandomValues
      */
     public TextArray nextAlphaNumericStringArray( int minLength, int maxLength )
     {
+        return Values.stringArray( nextAlphaNumericStringArrayRaw( minLength, maxLength ) );
+    }
+
+    public String[] nextAlphaNumericStringArrayRaw( int minLength, int maxLength )
+    {
+        return nextAlphaNumericStringArrayRaw( minLength, maxLength, configuration.stringMinLength(), configuration.stringMaxLength() );
+    }
+
+    public String[] nextAlphaNumericStringArrayRaw( int minLength, int maxLength, int minStringLength, int maxStringLength )
+    {
         int length = intBetween( minLength, maxLength );
         String[] strings = new String[length];
         for ( int i = 0; i < length; i++ )
         {
-            strings[i] = nextAlphaNumericTextValue().stringValue();
+            strings[i] = nextAlphaNumericTextValue( minStringLength, maxStringLength ).stringValue();
         }
-        return Values.stringArray( strings );
+        return strings;
     }
 
     /**
@@ -1510,13 +1520,30 @@ public class RandomValues
      */
     private TextArray nextStringArray( int minLength, int maxLength )
     {
+        return Values.stringArray( nextStringArrayRaw( minLength, maxLength ) );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link String[]}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link String[]}.
+     */
+    public String[] nextStringArrayRaw( int minLength, int maxLength )
+    {
+        return nextStringArrayRaw( minLength, maxLength, configuration.stringMinLength(), configuration.stringMaxLength() );
+    }
+
+    public String[] nextStringArrayRaw( int minLength, int maxLength, int minStringLength, int maxStringLength )
+    {
         int length = intBetween( minLength, maxLength );
         String[] strings = new String[length];
         for ( int i = 0; i < length; i++ )
         {
-            strings[i] = nextTextValue().stringValue();
+            strings[i] = nextTextValue( minStringLength, maxStringLength ).stringValue();
         }
-        return Values.stringArray( strings );
+        return strings;
     }
 
     /**

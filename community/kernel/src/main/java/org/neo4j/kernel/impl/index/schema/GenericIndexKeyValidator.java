@@ -117,7 +117,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
 
     private static int stringWorstCaseLength( int stringLength )
     {
-        return stringLength * 4;
+        return GenericKeyState.SIZE_STRING_LENGTH + stringLength * 4;
     }
 
     private int actualLength( Value[] values )
