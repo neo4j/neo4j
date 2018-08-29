@@ -261,6 +261,13 @@ class GenericKeyStateTest
 
     @ParameterizedTest
     @MethodSource( "validValueGenerators" )
+    void mustProduceValidMinimalSplittersWhenValuesAreEqual( ValueGenerator valueGenerator )
+    {
+        assertValidMinimalSplitterForEqualValues( valueGenerator.next() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
     void mustReportCorrectSize( ValueGenerator valueGenerator )
     {
         // Given
@@ -455,6 +462,22 @@ class GenericKeyStateTest
                 "left state not less than minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
         assertTrue( rightState.compareValueTo( minimalSplitter ) >= 0,
                 "right state not less than minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
+    }
+
+    private void assertValidMinimalSplitterForEqualValues( Value value )
+    {
+        GenericKeyState leftState = new GenericKeyState();
+        leftState.writeValue( value, NEUTRAL );
+        GenericKeyState rightState = new GenericKeyState();
+        rightState.writeValue( value, NEUTRAL );
+
+        GenericKeyState minimalSplitter = new GenericKeyState();
+        GenericKeyState.minimalSplitter( leftState, rightState, minimalSplitter );
+
+        assertTrue( leftState.compareValueTo( minimalSplitter ) == 0,
+                "left state not equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
+        assertTrue( rightState.compareValueTo( minimalSplitter ) == 0,
+                "right state equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
     }
 
     private static Value nextValidValue()

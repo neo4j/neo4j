@@ -473,7 +473,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         // Convert from last equal index to first index to differ +1
         // Convert from index to length +1
         // Total +2
-        arrayCopier.copyArray( into, right, lastEqualIndex + 2 );
+        int length = Math.min( right.arrayLength, lastEqualIndex + 2 );
+        arrayCopier.copyArray( into, right, length );
     }
 
     private static void minimalSplitterText( GenericKeyState left, GenericKeyState right, GenericKeyState into )
@@ -481,7 +482,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         int length = 0;
         if ( left.type == Type.TEXT )
         {
-            length = StringLayout.firstPosToDiffer( left.byteArray, (int) left.long0, right.byteArray, (int) right.long0 );
+            length = StringLayout.minimalLengthFromRightNeededToDifferentiateFromLeft( left.byteArray, (int) left.long0, right.byteArray, (int) right.long0 );
         }
         into.writeUTF8( right.byteArray, 0, length );
     }

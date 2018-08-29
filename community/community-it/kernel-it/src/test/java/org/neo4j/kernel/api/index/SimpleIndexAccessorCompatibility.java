@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -426,6 +427,48 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             assertThat( query( stringSuffix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
             assertThat( query( stringSuffix( 1, "apa*" ) ), equalTo( Collections.emptyList() ) );
             assertThat( query( stringSuffix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
+        }
+
+        @Test
+        public void testIndexShouldHandleLargeAmountOfDuplicatesString() throws Exception
+        {
+            doTestShouldHandleLargeAmountOfDuplicates( "this is a semi-long string that will need to be split" );
+        }
+
+        @Test
+        public void testIndexShouldHandleLargeAmountOfDuplicatesStringArray() throws Exception
+        {
+            Value arrayValue = nextRandomValidArrayValue();
+            doTestShouldHandleLargeAmountOfDuplicates( arrayValue );
+        }
+
+        private void doTestShouldHandleLargeAmountOfDuplicates( Object value ) throws Exception
+        {
+            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            List<Long> nodeIds = new ArrayList<>();
+            for ( long i = 0; i < 1000; i++ )
+            {
+                nodeIds.add( i );
+                updates.add( add( i, descriptor.schema(), value ) );
+            }
+            updateAndCommit( updates );
+
+            assertThat( query( exists( 1 ) ), equalTo( nodeIds ) );
+        }
+
+        private Value nextRandomValidArrayValue()
+        {
+            Value value;
+            while ( true )
+            {
+                value = random.randomValues().nextArray();
+                // todo remove when spatial is supported by all
+                if ( testSuite.supportsSpatial() || !Values.isGeometryArray( value ) )
+                {
+                    break;
+                }
+            }
+            return value;
         }
     }
 
