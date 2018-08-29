@@ -22,6 +22,7 @@
  */
 package org.neo4j.causalclustering.messaging.marshalling.v2.encoding;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
@@ -33,7 +34,7 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
-import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermEncoder.serializable;
+import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermsSerialize.serializeTerms;
 
 /**
  * Serializes a raft messages content in the order Message, RaftLogTerms, ReplicatedContent.
@@ -52,17 +53,19 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
     protected void encode( ChannelHandlerContext ctx, RaftMessages.ClusterIdAwareMessage msg, List<Object> out ) throws Exception
     {
         out.add( msg );
-        Handler replicatedContentHandler = new Handler( out );
+        Handler replicatedContentHandler = new Handler( out, ctx.alloc() );
         msg.message().dispatch( replicatedContentHandler );
     }
 
     private class Handler implements RaftMessages.Handler<Void,Exception>
     {
         private final List<Object> out;
+        private final ByteBufAllocator alloc;
 
-        public Handler( List<Object> out )
+        public Handler( List<Object> out, ByteBufAllocator alloc )
         {
             this.out = out;
+            this.alloc = alloc;
         }
 
         @Override
@@ -92,8 +95,7 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
         @Override
         public Void handle( RaftMessages.AppendEntries.Request request ) throws Exception
         {
-            RaftLogEntryTermEncoder.RaftLogEntryTermSerializer terms = serializable( request.entries() );
-            out.add( terms );
+            out.add( serializeTerms( request.entries(), alloc ) );
             for ( RaftLogEntry entry : request.entries() )
             {
                 serializableContents( entry.content(), out );
