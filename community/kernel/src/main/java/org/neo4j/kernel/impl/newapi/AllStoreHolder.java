@@ -556,12 +556,12 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
+    public long nodesCountIndexed( IndexReference index, long nodeId, int propertyKeyId, Value value ) throws KernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
         IndexReader reader = storageReader.getIndexReader( (IndexDescriptor) index );
-        return reader.countIndexedNodes( nodeId, value );
+        return reader.countIndexedNodes( nodeId, new int[] {propertyKeyId}, value );
     }
 
     @Override

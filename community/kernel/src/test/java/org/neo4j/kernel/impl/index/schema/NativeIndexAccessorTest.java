@@ -229,7 +229,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
         {
             // when
             IndexEntryUpdate<IndexDescriptor> update = layoutUtil.randomUpdateGenerator( random ).next();
-            long count = reader.countIndexedNodes( 123, update.values()[0] );
+            long count = reader.countIndexedNodes( 123, layoutUtil.indexDescriptor.properties(), update.values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -248,7 +248,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
         {
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
-                long count = reader.countIndexedNodes( update.getEntityId(), update.values() );
+                long count = reader.countIndexedNodes( update.getEntityId(), layoutUtil.indexDescriptor.properties(), update.values() );
 
                 // then
                 assertEquals( 1, count );
@@ -256,7 +256,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
 
             // and when
             Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
-            long count = reader.countIndexedNodes( 123, generator.next().values()[0] );
+            long count = reader.countIndexedNodes( 123, layoutUtil.indexDescriptor.properties(), generator.next().values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -275,9 +275,10 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
 
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, update.values() );
-            long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, update.values() );
-            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), generateUniqueValue( updates ) );
+            int[] propKeys = layoutUtil.indexDescriptor.properties();
+            long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, propKeys, update.values() );
+            long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, propKeys, update.values() );
+            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), propKeys, generateUniqueValue( updates ) );
 
             // then
             assertEquals( 0, countWithMismatchingData );

@@ -29,6 +29,7 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 
@@ -254,7 +256,7 @@ class NodeInUseWithCorrectLabelsCheckTest
     private static NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport> checker( long[] expectedLabels,
             boolean checkStoreToIndex )
     {
-        return new NodeInUseWithCorrectLabelsCheck<>( expectedLabels, checkStoreToIndex );
+        return new NodeInUseWithCorrectLabelsCheck<>( expectedLabels, COMPLETE_ALL_TOKENS, checkStoreToIndex );
     }
 
     interface Engine extends CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>

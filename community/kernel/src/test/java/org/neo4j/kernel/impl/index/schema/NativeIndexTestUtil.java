@@ -73,7 +73,6 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
     private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-    long indexId = 1;
 
     @Before
     public void setup()

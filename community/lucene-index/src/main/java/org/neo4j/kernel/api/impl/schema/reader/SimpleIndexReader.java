@@ -193,7 +193,7 @@ public class SimpleIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
         Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValues );

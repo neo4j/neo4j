@@ -56,11 +56,11 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
     {
         NativeIndexReader<SpatialIndexKey,NativeIndexValue> partReader =
                 uncheckedSelect( ((PointValue) propertyValues[0]).getCoordinateReferenceSystem() );
-        return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyValues );
+        return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyKeyIds, propertyValues );
     }
 
     @Override

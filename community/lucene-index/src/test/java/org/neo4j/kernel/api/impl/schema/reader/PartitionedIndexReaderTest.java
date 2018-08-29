@@ -50,8 +50,10 @@ import static org.mockito.Mockito.when;
 @RunWith( MockitoJUnitRunner.class )
 public class PartitionedIndexReaderTest
 {
+    private static final int PROP_KEY = 1;
+    private static final int LABEL_ID = 0;
 
-    private IndexDescriptor schemaIndexDescriptor = TestIndexDescriptorFactory.forLabel( 0, 1 );
+    private IndexDescriptor schemaIndexDescriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROP_KEY );
     @Mock
     private IndexSamplingConfig samplingConfig;
     @Mock
@@ -153,11 +155,11 @@ public class PartitionedIndexReaderTest
     public void countNodesOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 1L );
-        when( indexReader2.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 2L );
-        when( indexReader3.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 3L );
+        when( indexReader1.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 1L );
+        when( indexReader2.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 2L );
+        when( indexReader3.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 3L );
 
-        assertEquals( 6, indexReader.countIndexedNodes( 1, Values.of( "a" ) ) );
+        assertEquals( 6, indexReader.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) );
     }
 
     @Test

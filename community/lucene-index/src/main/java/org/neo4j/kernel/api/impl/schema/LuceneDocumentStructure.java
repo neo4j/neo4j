@@ -137,13 +137,11 @@ public class LuceneDocumentStructure
             builder.setDisableCoord(true);
             if ( includeLowerBoundary != includeLower )
             {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), lower ) ), BooleanClause.Occur
-                        .MUST_NOT );
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), lower ) ), BooleanClause.Occur.MUST_NOT );
             }
             if ( includeUpperBoundary != includeUpper )
             {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), upper ) ), BooleanClause.Occur
-                        .MUST_NOT );
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), upper ) ), BooleanClause.Occur.MUST_NOT );
             }
             builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
             return new ConstantScoreQuery( builder.build() );

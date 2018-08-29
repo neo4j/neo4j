@@ -43,9 +43,9 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
     {
-        return actual.countIndexedNodes( nodeId, propertyValues );
+        return actual.countIndexedNodes( nodeId, propertyKeyIds, propertyValues );
     }
 
     @Override

@@ -232,8 +232,9 @@ public class ConsistencyCheckService
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
+        JobScheduler jobScheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( databaseLayout.databaseDirectory(),
-                fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
+                fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache, jobScheduler,
                 RecoveryCleanupWorkCollector.ignore(),
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
                 COMMUNITY,

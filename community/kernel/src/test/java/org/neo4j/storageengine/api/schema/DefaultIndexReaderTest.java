@@ -50,7 +50,7 @@ class DefaultIndexReaderTest
         return new AbstractIndexReader( null )
         {
             @Override
-            public long countIndexedNodes( long nodeId, Value... propertyValues )
+            public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
             {
                 return 0;
             }

@@ -19,29 +19,36 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.Arrays;
-
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport>
 {
-    private final StoreIndexDescriptor indexRule;
+    private final long[] entityTokenLongIds;
+    private final SchemaDescriptor.PropertySchemaType propertySchemaType;
 
     public IndexCheck( StoreIndexDescriptor indexRule )
     {
-        this.indexRule = indexRule;
+        SchemaDescriptor schema = indexRule.schema();
+        int[] entityTokenIntIds = schema.getEntityTokenIds();
+        entityTokenLongIds = new long[entityTokenIntIds.length];
+        for ( int i = 0; i < entityTokenIntIds.length; i++ )
+        {
+            entityTokenLongIds[i] = entityTokenIntIds[i];
+        }
+        propertySchemaType = schema.propertySchemaType();
     }
 
     @Override
     public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
-        int[] entityTokenIds = indexRule.schema().getEntityTokenIds();
-        engine.comparativeCheck( records.node( record.getId() ),
-                new NodeInUseWithCorrectLabelsCheck<>( Arrays.stream( entityTokenIds ).asLongStream().toArray(), false ) );
+        NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport> checker =
+                new NodeInUseWithCorrectLabelsCheck<>( entityTokenLongIds, propertySchemaType, false );
+        engine.comparativeCheck( records.node( record.getId() ), checker );
     }
 }

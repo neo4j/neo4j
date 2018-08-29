@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Utility for loading {@link IndexProvider} instances from {@link DatabaseKernelExtensions}.
@@ -45,11 +46,11 @@ public class SchemaIndexExtensionLoader
 
     @SuppressWarnings( "unchecked" )
     public static DatabaseKernelExtensions instantiateKernelExtensions( File databaseDirectory, FileSystemAbstraction fileSystem,
-            Config config, LogService logService, PageCache pageCache,
+            Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
             RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors )
     {
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors );
+        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler );
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( databaseDirectory, databaseInfo, deps );

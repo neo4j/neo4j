@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -93,12 +94,11 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             RecordAccess records,
             Collection<PropertyRecord> propertyRecs )
     {
-        Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
+        long[] labels = NodeLabelReader.getListOfLabels( record, records, engine ).stream().mapToLong( Long::longValue ).toArray();
         IntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
         {
-            long labelId = indexRule.schema().keyId();
-            if ( labels.contains( labelId ) )
+            if ( indexRule.schema().isAffected( labels ) )
             {
                 if ( nodePropertyMap == null )
                 {
@@ -119,7 +119,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                         }
                         else
                         {
-                            long count = reader.countIndexedNodes( nodeId, values );
+                            long count = reader.countIndexedNodes( nodeId, indexPropertyIds, values );
                             reportIncorrectIndexCount( values, engine, indexRule, count );
                         }
                     }

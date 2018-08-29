@@ -150,10 +150,10 @@ public class IndexPopulationFlipRaceIT
             {
                 long nodeAId = data.first()[j];
                 assertEquals( 1, tx.schemaRead().nodesCountIndexed(
-                        indexA, nodeAId, Values.of( nodeAId ) ) );
+                        indexA, nodeAId, keyAId, Values.of( nodeAId ) ) );
                 long nodeBId = data.other()[j];
                 assertEquals( 1, tx.schemaRead().nodesCountIndexed(
-                        indexB, nodeBId, Values.of( nodeBId ) ) );
+                        indexB, nodeBId, keyBId, Values.of( nodeBId ) ) );
             }
         }
     }

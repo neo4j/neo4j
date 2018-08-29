@@ -130,7 +130,7 @@ class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.countIndexedNodes( 2, Values.of( "testValue" ) );
+        simpleIndexReader.countIndexedNodes( 2, new int[] {3}, Values.of( "testValue" ) );
 
         verify( indexSearcher ).search( any( BooleanQuery.class ), any( TotalHitCountCollector.class ) );
     }

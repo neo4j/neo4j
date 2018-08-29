@@ -27,6 +27,8 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+
 public class LabelScanCheck implements RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
 {
     @Override
@@ -36,8 +38,9 @@ public class LabelScanCheck implements RecordCheck<LabelScanDocument, Consistenc
         NodeLabelRange range = record.getNodeLabelRange();
         for ( long nodeId : range.nodes() )
         {
+            long[] labels = record.getNodeLabelRange().labels( nodeId );
             engine.comparativeCheck( records.node( nodeId ),
-                    new NodeInUseWithCorrectLabelsCheck<>( record.getNodeLabelRange().labels( nodeId ), true ) );
+                    new NodeInUseWithCorrectLabelsCheck<>( labels, COMPLETE_ALL_TOKENS, true ) );
         }
     }
 }

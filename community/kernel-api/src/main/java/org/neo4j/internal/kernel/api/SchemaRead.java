@@ -152,10 +152,11 @@ public interface SchemaRead
      *
      * @param index The index of interest
      * @param nodeId node id to match.
+     * @param propertyKeyId the indexed property to look at (composite indexes apply to more than one property, so we need to specify this)
      * @param value the property value
      * @return number of index entries for the given {@code nodeId} and {@code value}.
      */
-    long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException;
+    long nodesCountIndexed( IndexReference index, long nodeId, int propertyKeyId, Value value ) throws KernelException;
 
     /**
      * Returns the number of unique entries and the total number of entries in an index.

@@ -57,6 +57,8 @@ import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -84,6 +86,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -160,6 +163,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         if ( directStoreAccess == null )
         {
             life.start();
+            JobScheduler scheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
             fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
@@ -188,7 +192,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
-            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseDir(), config, logProvider, monitors);
+            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseDir(), config, scheduler, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
         }
         return directStoreAccess;
@@ -212,11 +216,11 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     }
 
     private IndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir,
-                                            Config config, LogProvider logProvider, Monitors monitors )
+                                            Config config, JobScheduler scheduler, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
-                pageCache, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors ) );
+                pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors ) );
         return life.add( new DefaultIndexProviderMap( extensions ) );
     }
 

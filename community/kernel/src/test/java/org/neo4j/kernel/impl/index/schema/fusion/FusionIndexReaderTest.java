@@ -202,13 +202,13 @@ public class FusionIndexReaderTest
 
     private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, Value... nativeValue )
     {
-        fusionIndexReader.countIndexedNodes( 0, nativeValue );
-        verify( correct, times( 1 ) ).countIndexedNodes( 0, nativeValue );
+        fusionIndexReader.countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
+        verify( correct, times( 1 ) ).countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
         for ( IndexReader reader : aliveReaders )
         {
             if ( reader != correct )
             {
-                verify( reader, never() ).countIndexedNodes( 0, nativeValue );
+                verify( reader, never() ).countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
             }
         }
     }

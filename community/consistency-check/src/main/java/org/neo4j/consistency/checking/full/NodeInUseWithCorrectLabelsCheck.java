@@ -21,6 +21,8 @@ package org.neo4j.consistency.checking.full;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.Arrays;
+
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -28,6 +30,7 @@ import org.neo4j.consistency.checking.LabelChainWalker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -42,12 +45,14 @@ public class NodeInUseWithCorrectLabelsCheck
         implements ComparativeRecordChecker<RECORD, NodeRecord, REPORT>
 {
     private final long[] indexLabels;
+    private final SchemaDescriptor.PropertySchemaType propertySchemaType;
     private final boolean checkStoreToIndex;
 
-    public NodeInUseWithCorrectLabelsCheck( long[] expectedLabels, boolean checkStoreToIndex )
+    public NodeInUseWithCorrectLabelsCheck( long[] expectedEntityTokenIds, SchemaDescriptor.PropertySchemaType propertySchemaType, boolean checkStoreToIndex )
     {
+        this.propertySchemaType = propertySchemaType;
         this.checkStoreToIndex = checkStoreToIndex;
-        this.indexLabels = sortAndDeduplicate( expectedLabels );
+        this.indexLabels = sortAndDeduplicate( expectedEntityTokenIds );
     }
 
     private static long[] sortAndDeduplicate( long[] labels )
@@ -94,38 +99,63 @@ public class NodeInUseWithCorrectLabelsCheck
     {
         storeLabels = sortAndDeduplicate( storeLabels );
 
-        int indexLabelsCursor = 0;
-        int storeLabelsCursor = 0;
-
-        while ( indexLabelsCursor < indexLabels.length && storeLabelsCursor < storeLabels.length )
+        if ( propertySchemaType == SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS )
         {
-            long indexLabel = indexLabels[indexLabelsCursor];
-            long storeLabel = storeLabels[storeLabelsCursor];
-            if ( indexLabel < storeLabel )
-            {   // node store has a label which isn't in label scan store
+            // The node must have all of the labels specified by the index.
+            int indexLabelsCursor = 0;
+            int storeLabelsCursor = 0;
+
+            while ( indexLabelsCursor < indexLabels.length && storeLabelsCursor < storeLabels.length )
+            {
+                long indexLabel = indexLabels[indexLabelsCursor];
+                long storeLabel = storeLabels[storeLabelsCursor];
+                if ( indexLabel < storeLabel )
+                {   // node store has a label which isn't in label scan store
+                    report.nodeDoesNotHaveExpectedLabel( nodeRecord, indexLabel );
+                    indexLabelsCursor++;
+                }
+                else if ( indexLabel > storeLabel )
+                {   // label scan store has a label which isn't in node store
+                    reportNodeLabelNotInIndex( report, nodeRecord, storeLabel );
+                    storeLabelsCursor++;
+                }
+                else
+                {   // both match
+                    indexLabelsCursor++;
+                    storeLabelsCursor++;
+                }
+            }
+
+            while ( indexLabelsCursor < indexLabels.length )
+            {
+                report.nodeDoesNotHaveExpectedLabel( nodeRecord, indexLabels[indexLabelsCursor++] );
+            }
+            while ( storeLabelsCursor < storeLabels.length )
+            {
+                reportNodeLabelNotInIndex( report, nodeRecord, storeLabels[storeLabelsCursor] );
+                storeLabelsCursor++;
+            }
+        }
+        else if ( propertySchemaType == SchemaDescriptor.PropertySchemaType.PARTIAL_ANY_TOKEN )
+        {
+            // The node must have at least one label in the index.
+            for ( long storeLabel : storeLabels )
+            {
+                if ( Arrays.binarySearch( indexLabels, storeLabel ) >= 0 )
+                {
+                    // The node has one of the indexed labels, so we're good.
+                    return;
+                }
+            }
+            // The node had none of the indexed labels, so we report all of them as missing.
+            for ( long indexLabel : indexLabels )
+            {
                 report.nodeDoesNotHaveExpectedLabel( nodeRecord, indexLabel );
-                indexLabelsCursor++;
-            }
-            else if ( indexLabel > storeLabel )
-            {   // label scan store has a label which isn't in node store
-                reportNodeLabelNotInIndex( report, nodeRecord, storeLabel );
-                storeLabelsCursor++;
-            }
-            else
-            {   // both match
-                indexLabelsCursor++;
-                storeLabelsCursor++;
             }
         }
-
-        while ( indexLabelsCursor < indexLabels.length )
+        else
         {
-            report.nodeDoesNotHaveExpectedLabel( nodeRecord, indexLabels[indexLabelsCursor++] );
-        }
-        while ( storeLabelsCursor < storeLabels.length )
-        {
-            reportNodeLabelNotInIndex( report, nodeRecord, storeLabels[storeLabelsCursor] );
-            storeLabelsCursor++;
+            throw new IllegalStateException( "Unknown property schema type '" + propertySchemaType + "'." );
         }
     }
 

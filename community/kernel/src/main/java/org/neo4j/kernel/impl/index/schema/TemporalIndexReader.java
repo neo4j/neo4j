@@ -55,10 +55,10 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Value... propertyValues )
+    public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
     {
         NativeIndexReader<?,NativeIndexValue> partReader = uncheckedSelect( propertyValues[0].valueGroup() );
-        return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyValues );
+        return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyKeyIds, propertyValues );
     }
 
     @Override
