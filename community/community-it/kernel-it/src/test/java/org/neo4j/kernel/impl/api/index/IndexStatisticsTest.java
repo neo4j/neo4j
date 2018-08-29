@@ -76,6 +76,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
@@ -373,8 +374,8 @@ public class IndexStatisticsTest
         }
         awaitIndexesOnline();
 
-        executorService.awaitTermination( 1, TimeUnit.SECONDS );
         executorService.shutdown();
+        assertTrue( executorService.awaitTermination( 1, TimeUnit.MINUTES ) );
 
         // then
         assertIndexedNodesMatchesStoreNodes();
