@@ -102,7 +102,7 @@ import static org.neo4j.kernel.impl.index.schema.SpatialIndexProvider.getConfigu
  * We COULD allow this query and do filter during scan instead and take the extra cost into account when planning queries.
  * As of writing this, there is no such filtering implementation.
  */
-public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue>
+public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue,GenericLayout>
 {
     public static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
     public static final String KEY = SCHEMA_INDEX.providerName();
@@ -145,7 +145,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     }
 
     @Override
-    IndexLayout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor, File storeFile )
+    GenericLayout layout( StoreIndexDescriptor descriptor, File storeFile )
     {
         try
         {
@@ -168,19 +168,19 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
         return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig,
-                ((GenericLayout) layout).getSpaceFillingCurveSettings(), configuration );
+                layout.getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
-                ((GenericLayout) layout).getSpaceFillingCurveSettings(), configuration );
+                layout.getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override

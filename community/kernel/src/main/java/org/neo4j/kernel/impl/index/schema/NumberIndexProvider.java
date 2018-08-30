@@ -40,7 +40,7 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,NativeIndexValue>
+public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,NativeIndexValue,NumberLayout>
 {
     public static final String KEY = "native";
     public static final IndexProviderDescriptor NATIVE_PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
@@ -54,7 +54,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
     }
 
     @Override
-    IndexLayout<NumberIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor, File storeFile )
+    NumberLayout layout( StoreIndexDescriptor descriptor, File storeFile )
     {
         // split like this due to legacy reasons, there are old stores out there with these different identifiers
         switch ( descriptor.type() )
@@ -69,14 +69,14 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, IndexLayout<NumberIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexPopulator newIndexPopulator( File storeFile, NumberLayout layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
         return new NumberIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, IndexLayout<NumberIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, NumberLayout layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,

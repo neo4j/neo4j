@@ -41,7 +41,7 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,NativeIndexValue>
+public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,NativeIndexValue,StringLayout>
 {
     public static final String KEY = "string";
     static final IndexCapability CAPABILITY = new StringIndexCapability();
@@ -55,20 +55,20 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
     }
 
     @Override
-    IndexLayout<StringIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor, File storeFile )
+    StringLayout layout( StoreIndexDescriptor descriptor, File storeFile )
     {
         return new StringLayout();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, IndexLayout<StringIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexPopulator newIndexPopulator( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
         return new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, IndexLayout<StringIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );

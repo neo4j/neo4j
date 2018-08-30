@@ -42,8 +42,10 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
  *
  * @param <KEY> type of {@link NativeIndexSingleValueKey}
  * @param <VALUE> type of {@link NativeIndexValue}
+ * @param <LAYOUT> type of {@link IndexLayout}
  */
-abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends IndexProvider
+abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue,LAYOUT extends IndexLayout<KEY,VALUE>>
+        extends IndexProvider
 {
     protected final PageCache pageCache;
     protected final FileSystemAbstraction fs;
@@ -62,7 +64,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         this.readOnly = readOnly;
     }
 
-    abstract IndexLayout<KEY,VALUE> layout( StoreIndexDescriptor descriptor, File storeFile );
+    abstract LAYOUT layout( StoreIndexDescriptor descriptor, File storeFile );
 
     @Override
     public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -76,7 +78,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return newIndexPopulator( storeFile, layout( descriptor, storeFile ), descriptor, samplingConfig );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, IndexLayout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig );
 
     @Override
@@ -86,7 +88,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return newIndexAccessor( storeFile, layout( descriptor, storeFile ), descriptor, samplingConfig );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, IndexLayout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Override
