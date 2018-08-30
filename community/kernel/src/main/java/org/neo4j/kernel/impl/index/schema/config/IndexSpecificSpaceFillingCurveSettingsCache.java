@@ -61,7 +61,7 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
      *
      * @param crsTableId table id of the {@link CoordinateReferenceSystem}.
      * @param crsCodePoint code of the {@link CoordinateReferenceSystem}.
-     * @param assignToIndexIfNotYetAssigned whether or not to make a snapshot of this setting index-specific if this is the
+     * @param assignToIndexIfNotYetAssigned whether or not to make a snapshot of this index-specific setting if this is the
      * first time it's accessed for this index. It will then show up in {@link #visitIndexSpecificSettings(SettingVisitor)}.
      * @return the {@link SpaceFillingCurve} for the given coordinate reference system.
      */
@@ -141,7 +141,7 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
     public void visitIndexSpecificSettings( SettingVisitor visitor )
     {
         visitor.count( specificIndexConfigCache.size() );
-        specificIndexConfigCache.forEach( ( crs, settings ) -> visitor.visit( crs, settings ) );
+        specificIndexConfigCache.forEach( visitor::visit );
     }
 
     public interface SettingVisitor
