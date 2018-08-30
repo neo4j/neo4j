@@ -77,8 +77,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     // TODO copy-pasted from individual keys
     // TODO also put this in Type enum
     private static final int SIZE_GEOMETRY =       Long.BYTES +    /* rawValueBits */
-                                                   Integer.BYTES + /* coordinate reference system tableId */
-                                                   Integer.BYTES;  /* coordinate reference system codePointId */
+                                                   3;              /* 2b tableId and 22b code */
     public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
                                                    Integer.BYTES + /* nanoOfSecond */
                                                    Integer.BYTES;  /* timeZone */
@@ -184,6 +183,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
         switch ( type )
         {
+        case GEOMETRY:
+            // WGS84 is the CRS w/ lowest table/code at the time of writing this. Update as more CRSs gets added?
+            writePointDerived( CoordinateReferenceSystem.WGS84, Long.MIN_VALUE, LOW );
+            break;
         case ZONED_DATE_TIME:
             writeValue( DateTimeValue.MIN_VALUE, LOW );
             break;
@@ -211,6 +214,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case NUMBER:
             writeValue( Values.of( Double.NEGATIVE_INFINITY ), LOW );
             break;
+        case GEOMETRY_ARRAY:
         case ZONED_DATE_TIME_ARRAY:
         case LOCAL_DATE_TIME_ARRAY:
         case DATE_ARRAY:

@@ -34,12 +34,15 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
@@ -56,9 +59,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.booleanArray;
@@ -198,18 +199,6 @@ class GenericKeyStateTest
 
         // Then
         // should not fail
-    }
-
-    @ParameterizedTest
-    @MethodSource( "invalidValueGenerators" )
-    void assertCorrectTypeMustFailForInvalidTypes( ValueGenerator valueGenerator )
-    {
-        // Given
-        Value invalidValue = valueGenerator.next();
-
-        // When
-        assertThrows( IllegalArgumentException.class, () -> GenericKeyState.assertCorrectType( invalidValue ),
-                "did not throw on invalid value " + invalidValue );
     }
 
     @ParameterizedTest
@@ -535,21 +524,6 @@ class GenericKeyStateTest
         );
     }
 
-    private static Stream<ValueGenerator> invalidValueGenerators()
-    {
-        return Stream.of(
-                () -> random.randomValues().nextGeographicPoint(),
-                () -> random.randomValues().nextGeographic3DPoint(),
-                () -> random.randomValues().nextCartesianPoint(),
-                () -> random.randomValues().nextCartesian3DPoint(),
-                () -> random.randomValues().nextGeographicPointArray(),
-                () -> random.randomValues().nextGeographic3DPointArray(),
-                () -> random.randomValues().nextCartesianPointArray(),
-                () -> random.randomValues().nextCartesian3DPointArray()
-        );
-        // todo Remove when GEOMERTY is supported
-    }
-
     private GenericKeyState genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
     {
         GenericKeyState to = newKeyState();
@@ -571,7 +545,9 @@ class GenericKeyStateTest
 
     private GenericKeyState newKeyState()
     {
-        return new GenericKeyState( mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) );
+        IndexSpecificSpaceFillingCurveSettingsCache indexSettings =
+                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+        return new GenericKeyState( indexSettings );
     }
 
     @FunctionalInterface
