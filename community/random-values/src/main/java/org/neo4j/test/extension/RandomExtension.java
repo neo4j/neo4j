@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.AssertionFailedError;
+import org.opentest4j.TestAbortedException;
 
 import org.neo4j.test.rule.RandomRule;
 
@@ -70,6 +71,11 @@ public class RandomExtension extends StatefullFieldExtension<RandomRule> impleme
     @Override
     public void handleTestExecutionException( ExtensionContext context, Throwable t )
     {
+        if ( t instanceof TestAbortedException )
+        {
+            return;
+        }
+
         final long seed = getStoredValue( context ).seed();
         throw new AssertionFailedError( format( "%s [ random seed used: %dL ]", t.getMessage(), seed ), t );
     }
