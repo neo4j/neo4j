@@ -81,7 +81,7 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public synchronized void beginMessage()
+    public void beginMessage()
     {
         if ( currentMessageStartIndex != NO_MESSAGE )
         {
@@ -92,7 +92,7 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public synchronized void messageSucceeded() throws IOException
+    public void messageSucceeded() throws IOException
     {
         assertMessageStarted();
         currentMessageStartIndex = NO_MESSAGE;
@@ -108,7 +108,7 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public synchronized void messageFailed() throws IOException
+    public void messageFailed() throws IOException
     {
         assertMessageStarted();
         int writerIndex = currentMessageStartIndex;
@@ -119,10 +119,8 @@ public class ChunkedOutput implements PackOutput
         chunkOpen = false;
     }
 
-    //Flush can be called from a separate thread, we therefor need to synchronize
-    //on everything that touches the buffer
     @Override
-    public synchronized PackOutput flush() throws IOException
+    public PackOutput flush() throws IOException
     {
         if ( buffer != null && buffer.readableBytes() > 0 )
         {
@@ -150,47 +148,47 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public synchronized PackOutput writeByte( byte value ) throws IOException
+    public PackOutput writeByte( byte value ) throws IOException
     {
-        ensure( 1 );
+        ensure( Byte.BYTES );
         buffer.writeByte( value );
         return this;
     }
 
     @Override
-    public synchronized PackOutput writeShort( short value ) throws IOException
+    public PackOutput writeShort( short value ) throws IOException
     {
-        ensure( 2 );
+        ensure( Short.BYTES );
         buffer.writeShort( value );
         return this;
     }
 
     @Override
-    public synchronized PackOutput writeInt( int value ) throws IOException
+    public PackOutput writeInt( int value ) throws IOException
     {
-        ensure( 4 );
+        ensure( Integer.BYTES );
         buffer.writeInt( value );
         return this;
     }
 
     @Override
-    public synchronized PackOutput writeLong( long value ) throws IOException
+    public PackOutput writeLong( long value ) throws IOException
     {
-        ensure( 8 );
+        ensure( Long.BYTES );
         buffer.writeLong( value );
         return this;
     }
 
     @Override
-    public synchronized PackOutput writeDouble( double value ) throws IOException
+    public PackOutput writeDouble( double value ) throws IOException
     {
-        ensure( 8 );
+        ensure( Double.BYTES );
         buffer.writeDouble( value );
         return this;
     }
 
     @Override
-    public synchronized PackOutput writeBytes( ByteBuffer data ) throws IOException
+    public PackOutput writeBytes( ByteBuffer data ) throws IOException
     {
         while ( data.remaining() > 0 )
         {
@@ -216,7 +214,7 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public synchronized void close()
+    public void close()
     {
         if ( buffer != null )
         {
