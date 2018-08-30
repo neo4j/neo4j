@@ -33,7 +33,7 @@ public class SecureHasher
     // TODO: Do we need to make this configurable?
     private static final String HASH_ALGORITHM = "SHA-256";
     private static final int HASH_ITERATIONS = 1024;
-    private static final int SALT_BYTES_SIZE = 16;
+    private static final int SALT_BYTES_SIZE = 32;
 
     private RandomNumberGenerator randomNumberGenerator;
     private HashedCredentialsMatcher hashedCredentialsMatcher;

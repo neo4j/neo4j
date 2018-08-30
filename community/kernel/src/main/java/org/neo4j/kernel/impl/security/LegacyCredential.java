@@ -21,17 +21,24 @@ package org.neo4j.kernel.impl.security;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
 import org.neo4j.string.HexString;
 import org.neo4j.string.UTF8;
 
+/**
+ * This class is used for community security, InternalFlatFile, SetDefaultAdminCommand and SetInitialPasswordCommand
+ * The new commercial security has its own more secure version of Credential
+ */
 public class LegacyCredential implements Credential
 {
     public static final String DIGEST_ALGO = "SHA-256";
 
     public static final LegacyCredential INACCESSIBLE = new LegacyCredential( new byte[]{}, new byte[]{} );
+
+    private static final Random random = new SecureRandom();
 
     private final byte[] salt;
     private final byte[] passwordHash;
@@ -73,7 +80,7 @@ public class LegacyCredential implements Credential
      * @param given password given by the user
      * @return whether the two byte arrays are equal
      */
-    private boolean byteEquals( byte[] actual, byte[] given )
+    private static boolean byteEquals( byte[] actual, byte[] given )
     {
         if ( actual == given )
         {
@@ -83,22 +90,21 @@ public class LegacyCredential implements Credential
         {
             return false;
         }
-        boolean result = true;
-        boolean accessible = true;
+
         int actualLength = actual.length;
+        if ( actualLength == 0 )
+        {
+            return false;
+        }
+
+        boolean result = true;
         int givenLength = given.length;
+
         for ( int i = 0; i < givenLength; ++i )
         {
-            if ( actualLength == 0 )
-            {
-                accessible = false;
-            }
-            else
-            {
-                result &= actual[i % actualLength] == given[i];
-            }
+            result &= actual[i % actualLength] == given[i];
         }
-        return result && actualLength == givenLength && accessible;
+        return result && actualLength == givenLength;
     }
 
     /**
@@ -156,8 +162,8 @@ public class LegacyCredential implements Credential
 
     private static byte[] randomSalt()
     {
-        byte[] salt = new byte[16];
-        ThreadLocalRandom.current().nextBytes( salt );
+        byte[] salt = new byte[32];
+        random.nextBytes( salt );
         return salt;
     }
 }
