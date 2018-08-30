@@ -101,7 +101,6 @@ public class CommunityEditionModule extends EditionModule
         threadToTransactionBridge = dependencies.satisfyDependency(
                 new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
 
-
         idContextFactory = createIdModule( platformModule, fileSystem );
 
         tokenHoldersSupplier = () -> new TokenHolders(
