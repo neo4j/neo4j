@@ -22,6 +22,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -103,6 +104,8 @@ public class QueryLoggerIT
 
     private File logsDirectory;
     private File logFilename;
+    private EmbeddedInteraction db;
+    private GraphDatabaseService database;
 
     @Before
     public void setUp()
@@ -113,7 +116,20 @@ public class QueryLoggerIT
         databaseBuilder = new TestEnterpriseGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem.get() ) )
                 .setInternalLogProvider( inMemoryLog )
-                .newImpermanentDatabaseBuilder( testDirectory.storeDir() );
+                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() );
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( db != null )
+        {
+            db.tearDown();
+        }
+        if ( database != null )
+        {
+            database.shutdown();
+        }
     }
 
     @Test
@@ -123,7 +139,7 @@ public class QueryLoggerIT
         final Map<String, String> config = stringMap(
             logs_directory.name(), logsDirectory.getPath(),
             log_queries.name(), Settings.TRUE );
-        EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder, config );
+        db = new EmbeddedInteraction( databaseBuilder, config );
 
         // create users
         db.getLocalUserManager().newUser( "mats", "neo4j", false );
@@ -158,7 +174,7 @@ public class QueryLoggerIT
         // turn on query logging
         databaseBuilder.setConfig( logs_directory, logsDirectory.getPath() );
         databaseBuilder.setConfig( log_queries, Settings.TRUE );
-        EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder, Collections.emptyMap() );
+        db = new EmbeddedInteraction( databaseBuilder, Collections.emptyMap() );
         GraphDatabaseFacade graph = db.getLocalGraph();
 
         db.getLocalUserManager().setUserPassword( "neo4j", "123", false );
@@ -206,7 +222,7 @@ public class QueryLoggerIT
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
     {
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
+        database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
                 .setConfig( logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_parameter_logging_enabled, Settings.FALSE )
                 .newGraphDatabase();
@@ -222,7 +238,7 @@ public class QueryLoggerIT
     @Test
     public void shouldLogParametersWhenNestedMap() throws Exception
     {
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
+        database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
                 .setConfig( logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_parameter_logging_enabled, Settings.TRUE )
                 .newGraphDatabase();
@@ -251,7 +267,7 @@ public class QueryLoggerIT
     @Test
     public void shouldLogRuntime() throws Exception
     {
-        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+        database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_runtime_logging_enabled, Settings.TRUE )
                 .newGraphDatabase();
@@ -267,15 +283,10 @@ public class QueryLoggerIT
                 query ) ) );
     }
 
-    private static String clientConnectionInfo()
-    {
-        return ClientConnectionInfo.EMBEDDED_CONNECTION.withUsername( AUTH_DISABLED.username() ).asConnectionDetails();
-    }
-
     @Test
     public void shouldLogParametersWhenList() throws Exception
     {
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
+        database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
                 .setConfig( logs_directory, logsDirectory.getPath() )
                 .newGraphDatabase();
 
@@ -294,7 +305,7 @@ public class QueryLoggerIT
     @Test
     public void disabledQueryLogging()
     {
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.FALSE )
+        database = databaseBuilder.setConfig( log_queries, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .newGraphDatabase();
 
@@ -309,7 +320,7 @@ public class QueryLoggerIT
         final File logsDirectory = new File( testDirectory.storeDir(), "logs" );
         final File logFilename = new File( logsDirectory, "query.log" );
         final File shiftedLogFilename1 = new File( logsDirectory, "query.log.1" );
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
+        database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
                 .setConfig( logs_directory, logsDirectory.getPath() )
                 .setConfig( log_queries_rotation_threshold, "0" )
                 .newGraphDatabase();
@@ -337,7 +348,7 @@ public class QueryLoggerIT
                 .setConfig( logs_directory, logsDirectory.getPath() )
                 .setConfig( log_queries_max_archives, "100" )
                 .setConfig( log_queries_rotation_threshold, "1" );
-        GraphDatabaseService database = databaseBuilder.newGraphDatabase();
+        database = databaseBuilder.newGraphDatabase();
 
         // Logging is done asynchronously, and it turns out it's really hard to make it all work the same on Linux
         // and on Windows, so just write many times to make sure we rotate several times.
@@ -382,26 +393,26 @@ public class QueryLoggerIT
     @Test
     public void shouldNotLogPassword() throws Exception
     {
-        GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
+        database = databaseBuilder
                 .setConfig( log_queries, Settings.TRUE )
                 .setConfig( logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.auth_enabled, Settings.TRUE )
                 .newGraphDatabase();
+        GraphDatabaseFacade facade = (GraphDatabaseFacade) this.database;
 
-        EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseAuthManager authManager = facade.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
         EnterpriseLoginContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
 
         String query = "CALL dbms.security.changePassword('abc123')";
-        try ( InternalTransaction tx = database
-                .beginTransaction( KernelTransaction.Type.explicit, neo ) )
+        try ( InternalTransaction tx = facade.beginTransaction( KernelTransaction.Type.explicit, neo ) )
         {
-            Result res = database.execute( tx, query, VirtualValues.EMPTY_MAP );
+            Result res = facade.execute( tx, query, VirtualValues.EMPTY_MAP );
             res.close();
             tx.success();
         }
         finally
         {
-            database.shutdown();
+            facade.shutdown();
         }
 
         List<String> logLines = readAllLines( logFilename );
@@ -415,7 +426,7 @@ public class QueryLoggerIT
     @Test
     public void canBeEnabledAndDisabledAtRuntime() throws Exception
     {
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.FALSE ).setConfig( GraphDatabaseSettings.log_queries_filename,
+        database = databaseBuilder.setConfig( log_queries, Settings.FALSE ).setConfig( GraphDatabaseSettings.log_queries_filename,
                 logFilename.getPath() ).newGraphDatabase();
         List<String> strings;
 
@@ -468,25 +479,29 @@ public class QueryLoggerIT
 
     private void executeSingleQueryWithTimeZoneLog()
     {
-        GraphDatabaseFacade database =
-                (GraphDatabaseFacade) databaseBuilder.setConfig( log_queries, Settings.TRUE )
-                        .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() )
-                        .setConfig( logs_directory, logsDirectory.getPath() )
-                        .newGraphDatabase();
+        database = databaseBuilder.setConfig( log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() )
+                .setConfig( logs_directory, logsDirectory.getPath() )
+                .newGraphDatabase();
         database.execute( QUERY ).close();
         database.shutdown();
     }
 
-    private void executeQueryAndShutdown( GraphDatabaseService database )
+    private static void executeQueryAndShutdown( GraphDatabaseService database )
     {
         executeQueryAndShutdown( database, QUERY, Collections.emptyMap() );
     }
 
-    private void executeQueryAndShutdown( GraphDatabaseService database, String query, Map<String,Object> params )
+    private static void executeQueryAndShutdown( GraphDatabaseService database, String query, Map<String,Object> params )
     {
         Result execute = database.execute( query, params );
         execute.close();
         database.shutdown();
+    }
+
+    private static String clientConnectionInfo()
+    {
+        return ClientConnectionInfo.EMBEDDED_CONNECTION.withUsername( AUTH_DISABLED.username() ).asConnectionDetails();
     }
 
     private List<String> readAllLinesSilent( File logFilename )
@@ -506,7 +521,7 @@ public class QueryLoggerIT
         return readAllLines( fileSystem.get(), logFilename );
     }
 
-    public static List<String> readAllLines( FileSystemAbstraction fs, File logFilename ) throws IOException
+    static List<String> readAllLines( FileSystemAbstraction fs, File logFilename ) throws IOException
     {
         List<String> logLines = new ArrayList<>();
         // this is needed as the EphemeralFSA is broken, and creates a new file when reading a non-existent file from
