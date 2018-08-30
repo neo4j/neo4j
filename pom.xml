@@ -88,7 +88,7 @@
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
     <openCypher.frontend.version>9.0.7</openCypher.frontend.version>
-    <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
+    <scala-maven-plugin.version>3.4.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>6.2</asm.version>
@@ -103,6 +103,7 @@
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
     <cypher.compatibility.34>3.4.6</cypher.compatibility.34>
     <caffeine.version>2.6.2</caffeine.version>
+    <required.maven.version>3.5.4</required.maven.version>
   </properties>
 
   <modules>
@@ -164,7 +165,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.0.1</version>
           <executions>
             <execution>
               <id>generate-javadocs</id>
@@ -436,7 +437,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.1.0</version>
           <executions>
             <!-- Augment default jar with url -->
             <execution>
@@ -623,7 +624,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0-M2</version>
           <configuration>
             <rules>
               <evaluateBeanshell>
@@ -637,6 +638,9 @@
                   <file>${project.build.testSourceDirectory}/com</file>
                 </files>
               </requireFilesDontExist>
+              <requireMavenVersion>
+                <version>${required.maven.version}</version>
+              </requireMavenVersion>
             </rules>
             <fail>true</fail>
           </configuration>
@@ -675,6 +679,11 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
           <version>2.5.2</version>
         </plugin>
@@ -704,18 +713,18 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>1.4.0</version>
+          <version>1.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.owasp</groupId>
           <artifactId>dependency-check-maven</artifactId>
-          <version>3.1.2</version>
+          <version>3.3.1</version>
           <dependencies>
             <!-- https://mvnrepository.com/artifact/org.owasp/dependency-check-maven -->
             <dependency>
               <groupId>org.owasp</groupId>
               <artifactId>dependency-check-maven</artifactId>
-              <version>3.2.1</version>
+              <version>3.3.1</version>
             </dependency>
           </dependencies>
           <executions>
@@ -856,7 +865,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.1</version>
+                    <version>0.8.2</version>
                     <executions>
                         <execution>
                             <id>default-prepare-agent</id>
