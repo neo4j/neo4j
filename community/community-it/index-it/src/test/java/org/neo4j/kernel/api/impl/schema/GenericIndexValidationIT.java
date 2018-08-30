@@ -135,11 +135,11 @@ public class GenericIndexValidationIT
 
     private class BinarySearch
     {
-        private int longestSuccessful = 0;
-        private int minArrayLength = 0;
+        private int longestSuccessful;
+        private int minArrayLength;
         private int maxArrayLength = 1;
         private int arrayLength = 1;
-        private boolean foundMaxLimit = false;
+        private boolean foundMaxLimit;
 
         boolean finished()
         {
