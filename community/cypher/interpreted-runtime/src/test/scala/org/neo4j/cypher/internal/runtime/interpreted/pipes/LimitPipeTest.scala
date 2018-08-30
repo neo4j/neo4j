@@ -47,7 +47,7 @@ class LimitPipeTest extends CypherFunSuite {
 class DummyPipe(inputIterator: Iterator[ExecutionContext]) extends Pipe {
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = ???
 
-  override def id(): Id = ???
+  override def id: Id = ???
 
   override def createResults(state: QueryState): Iterator[ExecutionContext] = inputIterator
 }

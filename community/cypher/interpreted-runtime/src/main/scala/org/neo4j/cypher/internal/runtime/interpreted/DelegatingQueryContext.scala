@@ -49,7 +49,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits[A](value: RelationshipSelectionCursor): RelationshipSelectionCursor = value
   protected def manyDbHits(count: Int): Int = count
 
-  override def resources: CloseableResource = inner.resources
+  override def resources: ResourceManager = inner.resources
 
   override def transactionalContext: QueryTransactionalContext = inner.transactionalContext
 

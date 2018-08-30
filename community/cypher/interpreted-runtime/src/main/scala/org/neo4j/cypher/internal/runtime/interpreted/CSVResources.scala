@@ -29,6 +29,7 @@ import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.opencypher.v9_0.util.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.CypherExecutionException
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
@@ -54,7 +55,11 @@ object CSVResources {
   }
 }
 
-class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
+case class CSVResource(url: URL, resource: AutoCloseable) extends AutoCloseable {
+  override def close(): Unit = resource.close()
+}
+
+class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
                      headers: Boolean = false): Iterator[Array[String]] = {
@@ -66,9 +71,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
     val intDelimiter = delimiter.toInt
     val mark = new Mark
 
-    cleaner.addTask(_ => {
-      seeker.close()
-    })
+    resourceManager.trace(CSVResource(url, seeker))
 
     new Iterator[Array[String]] {
       private def readNextRow: Array[String] = {

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.IteratorBasedResult
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
@@ -38,10 +39,9 @@ class SlottedExecutionResultBuilderFactory(pipe: Pipe,
                                            lenientCreateRelationship: Boolean)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
 
-  override def create(): ExecutionResultBuilder =
-    new SlottedExecutionWorkflowBuilder()
+  override def create(queryContext: QueryContext): ExecutionResultBuilder = SlottedExecutionWorkflowBuilder(queryContext)
 
-  class SlottedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
+  case class SlottedExecutionWorkflowBuilder(queryContext: QueryContext) extends BaseExecutionWorkflowBuilder {
     override protected def createQueryState(params: MapValue): SlottedQueryState = {
       new SlottedQueryState(queryContext,
                             externalResource,

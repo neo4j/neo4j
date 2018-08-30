@@ -24,13 +24,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.CypherException
 
 trait ExecutionResultBuilder {
-  def setQueryContext(context: QueryContext)
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
-  def setExceptionDecorator(newDecorator: CypherException => CypherException)
   def build(params: MapValue,
             notificationLogger: InternalNotificationLogger,
             readOnly: Boolean,
@@ -38,5 +35,5 @@ trait ExecutionResultBuilder {
 }
 
 trait ExecutionResultBuilderFactory {
-  def create(): ExecutionResultBuilder
+  def create(queryContext: QueryContext): ExecutionResultBuilder
 }

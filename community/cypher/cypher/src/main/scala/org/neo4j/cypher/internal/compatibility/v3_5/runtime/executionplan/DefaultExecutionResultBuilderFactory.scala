@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.{CypherException, TaskCloser}
+import org.opencypher.v9_0.util.CypherException
 
 import scala.collection.mutable
 
@@ -36,62 +36,37 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                                  columns: List[String],
                                                  logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
   abstract class BaseExecutionWorkflowBuilder() extends ExecutionResultBuilder {
-    protected val taskCloser = new TaskCloser
-    protected var externalResource: ExternalCSVResource = new CSVResources(taskCloser)
-    protected var maybeQueryContext: Option[QueryContext] = None
+    protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
     protected var pipeDecorator: PipeDecorator = NullPipeDecorator
     protected var exceptionDecorator: CypherException => CypherException = identity
 
     protected def createQueryState(params: MapValue): QueryState
 
-    def setQueryContext(context: QueryContext) {
-      maybeQueryContext = Some(context)
-    }
+    def queryContext: QueryContext
 
-    def setLoadCsvPeriodicCommitObserver(batchRowCount: Long) {
+    def setLoadCsvPeriodicCommitObserver(batchRowCount: Long): Unit = {
       val observer = new LoadCsvPeriodicCommitObserver(batchRowCount, externalResource, queryContext)
       externalResource = observer
-      setExceptionDecorator(observer)
+      exceptionDecorator = observer
     }
 
-    def setPipeDecorator(newDecorator: PipeDecorator) {
+    def setPipeDecorator(newDecorator: PipeDecorator): Unit =
       pipeDecorator = newDecorator
-    }
-
-    def setExceptionDecorator(newDecorator: CypherException => CypherException) {
-      exceptionDecorator = newDecorator
-    }
 
     override def build(params: MapValue,
                        notificationLogger: InternalNotificationLogger,
                        readOnly: Boolean,
                        queryProfile: QueryProfile): RuntimeResult = {
-      taskCloser.addTask(queryContext.transactionalContext.close)
-      taskCloser.addTask(queryContext.resources.close)
       val state = createQueryState(params)
       try {
-        createResults(state, notificationLogger, readOnly, queryProfile)
-      }
-      catch {
+        val results = pipe.createResults(state)
+        val resultIterator = buildResultIterator(results, readOnly)
+        new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile)
+      } catch {
         case e: CypherException =>
-          taskCloser.close(success = false)
           throw exceptionDecorator(e)
-        case t: Throwable =>
-          taskCloser.close(success = false)
-          throw t
       }
     }
-
-    private def createResults(state: QueryState,
-                              notificationLogger: InternalNotificationLogger,
-                              readOnly: Boolean,
-                              queryProfile: QueryProfile): RuntimeResult = {
-      val results = pipe.createResults(state)
-      val resultIterator = buildResultIterator(results, readOnly)
-      new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile)
-    }
-
-    protected def queryContext: QueryContext = maybeQueryContext.get
 
     protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult
   }
@@ -104,9 +79,9 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     lenientCreateRelationship: Boolean)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
 
-  override def create(): ExecutionResultBuilder = InterpretedExecutionWorkflowBuilder()
+  override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionWorkflowBuilder(queryContext: QueryContext)
 
-  case class InterpretedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
+  case class InterpretedExecutionWorkflowBuilder(queryContext: QueryContext) extends BaseExecutionWorkflowBuilder {
     override def createQueryState(params: MapValue): QueryState = {
       new QueryState(queryContext,
                      externalResource,

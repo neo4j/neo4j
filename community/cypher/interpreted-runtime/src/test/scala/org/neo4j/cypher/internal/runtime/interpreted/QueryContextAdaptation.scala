@@ -83,7 +83,7 @@ trait QueryContextAdaptation {
 
   override def withActiveRead: QueryContext = ???
 
-  override def resources: CloseableResource = ???
+  override def resources: ResourceManager = ???
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int = ???
 

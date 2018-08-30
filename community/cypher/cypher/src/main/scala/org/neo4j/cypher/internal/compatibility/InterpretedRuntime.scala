@@ -69,12 +69,10 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                  readOnly: Boolean) extends ExecutionPlan {
 
     override def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult = {
-      val builder = resultBuilderFactory.create()
+      val builderContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
+      val builder = resultBuilderFactory.create(builderContext)
 
       val profileInformation = new InterpretedProfileInformation
-      val builderContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
-
-      builder.setQueryContext(builderContext)
 
       if (periodicCommit.isDefined) {
         if (!builderContext.transactionalContext.isTopLevelTx)

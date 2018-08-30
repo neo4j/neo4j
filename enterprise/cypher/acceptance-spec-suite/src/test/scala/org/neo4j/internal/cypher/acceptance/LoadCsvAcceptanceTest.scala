@@ -41,12 +41,22 @@ import org.scalatest.BeforeAndAfterAll
 import scala.collection.JavaConverters._
 
 class LoadCsvAcceptanceTest
-  extends ExecutionEngineFunSuite with BeforeAndAfterAll
-  with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport with RunWithConfigTestSupport {
+  extends ExecutionEngineFunSuite
+    with BeforeAndAfterAll
+    with QueryStatisticsTestSupport
+    with CreateTempFileTestSupport
+    with CypherComparisonSupport
+    with RunWithConfigTestSupport
+    with ResourceTracking {
 
   private val expectedToFail = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
 
-  def csvUrls(f: PrintWriter => Unit) = Seq(
+  override protected def initTest(): Unit = {
+    super.initTest()
+    trackResources(graph)
+  }
+
+  private def csvUrls(f: PrintWriter => Unit): Seq[String] = Seq(
     createCSVTempFileURL(f),
     createGzipCSVTempFileURL(f),
     createZipCSVTempFileURL(f)
@@ -70,6 +80,8 @@ class LoadCsvAcceptanceTest
           | RETURN count(*)""".stripMargin
     ).resultAsString()
 
+    resourceMonitor.assertClosedAndClear(1)
+
     graph.createIndex("User", "userID")
 
     // when & then
@@ -85,6 +97,7 @@ class LoadCsvAcceptanceTest
         planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.atLeastNTimes(1, aPlan("NodeIndexSeek").containingVariables("user"))
           , expectPlansToFail = Configs.AllRulePlanners))
 
+      resourceMonitor.assertClosedAndClear(1)
       assertStats(result, propertiesWritten = 6)
       result.executionPlanDescription() should includeSomewhere.atLeastNTimes(1, aPlan("NodeIndexSeek").containingVariables("user"))
     }
@@ -93,7 +106,7 @@ class LoadCsvAcceptanceTest
   test("import should not be eager") {
     createNode(Map("OrderId" -> "4", "field1" -> "REPLACE_ME"))
 
-    val urls = csvUrls({
+    val url = createCSVTempFileURL({
       writer =>
         writer.println("OrderId,field1")
         writer.println("4,hi")
@@ -102,12 +115,13 @@ class LoadCsvAcceptanceTest
     })
 
     val result = executeWith(Configs.UpdateConf,
-      s"""LOAD CSV WITH HEADERS FROM '${urls.head}' AS row
+      s"""LOAD CSV WITH HEADERS FROM '$url' AS row
          | WITH row.field1 as field, row.OrderId as order
          | MATCH (o) WHERE o.OrderId = order
          | SET o.field1 = field""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion(_ should not( includeSomewhere.aPlan("Eager")),expectPlansToFail = Configs.Cost3_1))
 
+    resourceMonitor.assertClosedAndClear(1)
     assertStats(result, nodesCreated = 0, propertiesWritten = 1)
   }
 
@@ -121,6 +135,7 @@ class LoadCsvAcceptanceTest
 
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
+      resourceMonitor.assertClosedAndClear(1)
       assertStats(result, nodesCreated = 3, propertiesWritten = 3)
     }
   }
@@ -134,6 +149,7 @@ class LoadCsvAcceptanceTest
     val filePathForQuery = path.normalize().toUri
     val result = execute(s"LOAD CSV FROM '$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
+    resourceMonitor.assertClosedAndClear(1)
 
     assert(Files.deleteIfExists(path))
   }
@@ -148,6 +164,7 @@ class LoadCsvAcceptanceTest
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line CREATE (a {number: line[0]}) RETURN a.number")
       assertStats(result, nodesCreated = 3, propertiesWritten = 3)
+      resourceMonitor.assertClosedAndClear(1)
 
       result.columnAs[Long]("a.number").toList === List("")
     }
@@ -163,6 +180,7 @@ class LoadCsvAcceptanceTest
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
       assertStats(result, nodesCreated = 3, propertiesWritten = 3)
+      resourceMonitor.assertClosedAndClear(1)
     }
   }
 
@@ -179,6 +197,7 @@ class LoadCsvAcceptanceTest
         s"LOAD CSV WITH HEADERS FROM '$url' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
       )
 
+      resourceMonitor.assertClosedAndClear(1)
       assertStats(result, nodesCreated = 3, propertiesWritten = 6)
     }
   }
@@ -196,6 +215,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result =executeWith(Configs.UpdateConf, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
+      resourceMonitor.assertClosedAndClear(1)
       assert(result.toList === List(
         Map("line.x" -> "0"),
         Map("line.x" -> null),
@@ -218,6 +238,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf + Configs.SlottedInterpreted, s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
+      resourceMonitor.assertClosedAndClear(1)
       assert(result.toList === List(
         Map("line.name" -> "'Aardvark'"),
         Map("line.name" -> "'Cash'"),
@@ -236,6 +257,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line RETURN line as string").toList
+      resourceMonitor.assertClosedAndClear(1)
       assert(result === List(
         Map("string" -> Seq("String without quotes")),
         Map("string" -> Seq("'String", " with single quotes'")),
@@ -254,6 +276,7 @@ class LoadCsvAcceptanceTest
 
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line RETURN line")
+      resourceMonitor.assertClosedAndClear(1)
       assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
         Map("line" -> Seq("3", "'Cash'", "1"))))
     }
@@ -268,6 +291,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line RETURN line")
+      resourceMonitor.assertClosedAndClear(1)
       assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
         Map("line" -> Seq("3", "'Cash'", "1"))))
     }
@@ -282,6 +306,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line RETURN line")
+      resourceMonitor.assertClosedAndClear(1)
       assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
         Map("line" -> Seq("3", "'Cash'", "1"))))
     }
@@ -296,6 +321,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line FIELDTERMINATOR ';' RETURN line")
+      resourceMonitor.assertClosedAndClear(1)
       assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
         Map("line" -> Seq("3", "'Cash'", "1"))))
     }
@@ -309,6 +335,7 @@ class LoadCsvAcceptanceTest
     })
 
     val result = executeWith(Configs.UpdateConf, "LOAD CSV FROM \"" + url + "\" AS line RETURN line as string").toList
+    resourceMonitor.assertClosedAndClear(1)
     assert(result === List(Map("string" -> Seq("something"))))
   }
 
@@ -320,6 +347,7 @@ class LoadCsvAcceptanceTest
     })
 
     val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line RETURN line as string").toList
+    resourceMonitor.assertClosedAndClear(1)
     assert(result === List(Map("string" -> Seq("something"))))
   }
 
@@ -327,6 +355,7 @@ class LoadCsvAcceptanceTest
     val urls = csvUrls(writer => {})
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
+      resourceMonitor.assertClosedAndClear(1)
       assertStats(result, nodesCreated = 0)
     }
   }
@@ -338,6 +367,7 @@ class LoadCsvAcceptanceTest
     ).cypherEscape
 
     val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    resourceMonitor.assertClosedAndClear(1)
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
   }
 
@@ -348,6 +378,7 @@ class LoadCsvAcceptanceTest
     ).cypherEscape
 
     val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    resourceMonitor.assertClosedAndClear(1)
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
   }
 
@@ -361,6 +392,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result = executeWith(Configs.UpdateConf, s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN *").toList
+      resourceMonitor.assertClosedAndClear(1)
       assert(result === List(
         Map("line" -> Map("DEPARTMENT ID" -> "010-1010", "DEPARTMENT NAME" -> "MFG Supplies",
           null.asInstanceOf[String] -> null)),
@@ -373,83 +405,70 @@ class LoadCsvAcceptanceTest
   }
 
   test("should fail gracefully when loading missing file") {
-      failWithError(expectedToFail, "LOAD CSV FROM 'file:///./these_are_not_the_droids_you_are_looking_for.csv' AS line CREATE (a {name:line[0]})",
-        List("Couldn't load the external resource at: file:/./these_are_not_the_droids_you_are_looking_for.csv"))
+    failWithError(expectedToFail, "LOAD CSV FROM 'file:///./these_are_not_the_droids_you_are_looking_for.csv' AS line CREATE (a {name:line[0]})",
+      List("Couldn't load the external resource at: file:/./these_are_not_the_droids_you_are_looking_for.csv"))
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should be able to download data from the web") {
     val url = s"http://127.0.0.1:$port/test.csv".cypherEscape
 
-    //val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    resourceMonitor.assertClosedAndClear(1)
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
 
   test("should be able to download from a website when redirected and cookies are set") {
     val url = s"http://127.0.0.1:$port/redirect_test.csv".cypherEscape
 
-//    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     val result = executeWith(Configs.UpdateConf, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    resourceMonitor.assertClosedAndClear(1)
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
 
   test("should fail gracefully when getting 404") {
     failWithError(expectedToFail, s"LOAD CSV FROM 'http://127.0.0.1:$port/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})",
       List("Couldn't load the external resource at"))
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should fail gracefully when loading non existent (local) site") {
-      failWithError(expectedToFail, "LOAD CSV FROM 'http://127.0.0.1:9999/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})",
-        List("Couldn't load the external resource at"))
+    failWithError(expectedToFail, "LOAD CSV FROM 'http://127.0.0.1:9999/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})",
+      List("Couldn't load the external resource at"))
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should reject URLs that are not valid") {
 
     failWithError(expectedToFail, s"LOAD CSV FROM 'morsecorba://sos' AS line CREATE (a {name:line[0]})",
       List("Invalid URL 'morsecorba://sos': unknown protocol: morsecorba"))
-
-//    intercept[LoadExternalResourceException] {
-//      updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM 'morsecorba://sos' AS line CREATE (a {name:line[0]})")
-//    }.getMessage should equal("Invalid URL 'morsecorba://sos': unknown protocol: morsecorba")
+    resourceMonitor.assertClosedAndClear(0)
 
     failWithError(expectedToFail, s"LOAD CSV FROM '://' AS line CREATE (a {name:line[0]})",
       List("Invalid URL '://': no protocol: ://"))
-
-//    intercept[LoadExternalResourceException] {
-//      updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM '://' AS line CREATE (a {name:line[0]})")
-//    }.getMessage should equal("Invalid URL '://': no protocol: ://")
+    resourceMonitor.assertClosedAndClear(0)
 
     failWithError(expectedToFail, s"LOAD CSV FROM 'foo.bar' AS line CREATE (a {name:line[0]})",
       List("Invalid URL 'foo.bar': no protocol: foo.bar"))
-//    intercept[LoadExternalResourceException] {
-//      updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM 'foo.bar' AS line CREATE (a {name:line[0]})")
-//    }.getMessage should equal("Invalid URL 'foo.bar': no protocol: foo.bar")
+    resourceMonitor.assertClosedAndClear(0)
 
     failWithError(expectedToFail, s"LOAD CSV FROM 'jar:file:///tmp/bar.jar' AS line CREATE (a {name:line[0]})",
       List("Invalid URL 'jar:file:///tmp/bar.jar': no !/ in spec"))
-//    intercept[LoadExternalResourceException] {
-//      updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM 'jar:file:///tmp/bar.jar' AS line CREATE (a {name:line[0]})")
-//    }.getMessage should equal("Invalid URL 'jar:file:///tmp/bar.jar': no !/ in spec")
+    resourceMonitor.assertClosedAndClear(0)
 
     failWithError(expectedToFail, "LOAD CSV FROM 'file://./blah.csv' AS line CREATE (a {name:line[0]})",
       List("Cannot load from URL 'file://./blah.csv': file URL may not contain an authority section (i.e. it should be 'file:///')"))
-//    intercept[LoadExternalResourceException] {
-//      updateWithBothPlannersAndCompatibilityMode("LOAD CSV FROM 'file://./blah.csv' AS line CREATE (a {name:line[0]})")
-//    }.getMessage should equal("Cannot load from URL 'file://./blah.csv': file URL may not contain an authority section (i.e. it should be 'file:///')")
+    resourceMonitor.assertClosedAndClear(0)
 
     failWithError(expectedToFail, "LOAD CSV FROM 'file:///tmp/blah.csv?q=foo' AS line CREATE (a {name:line[0]})",
       List("Cannot load from URL 'file:///tmp/blah.csv?q=foo': file URL may not contain a query component"))
-//    intercept[LoadExternalResourceException] {
-//      updateWithBothPlannersAndCompatibilityMode("LOAD CSV FROM 'file:///tmp/blah.csv?q=foo' AS line CREATE (a {name:line[0]})")
-//    }.getMessage should equal("Cannot load from URL 'file:///tmp/blah.csv?q=foo': file URL may not contain a query component")
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should deny URLs for blocked protocols") {
     failWithError(expectedToFail, s"LOAD CSV FROM 'jar:file:///tmp/bar.jar!/blah/foo.csv' AS line CREATE (a {name:line[0]})",
       List("Cannot load from URL 'jar:file:///tmp/bar.jar!/blah/foo.csv': loading resources via protocol 'jar' is not permitted"))
-//    intercept[LoadExternalResourceException] {
-//      updateWithBothPlannersAndCompatibilityMode(s"LOAD CSV FROM 'jar:file:///tmp/bar.jar!/blah/foo.csv' AS line CREATE (a {name:line[0]})")
-//    }.getMessage should equal("Cannot load from URL 'jar:file:///tmp/bar.jar!/blah/foo.csv': loading resources via protocol 'jar' is not permitted")
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should fail for file urls if local file access disallowed") {
@@ -463,6 +482,7 @@ class LoadCsvAcceptanceTest
     } finally {
       db.shutdown()
     }
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should allow paths relative to authorized directory") {
@@ -475,6 +495,9 @@ class LoadCsvAcceptanceTest
     val db = acceptanceTestDatabaseBuilder
       .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
       .newGraphDatabase()
+
+    trackResources(db)
+
     try {
       val result = db.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field", emptyMap())
       result.asScala.map(_.asScala).toList should equal(List(Map("field" -> "something")))
@@ -482,6 +505,7 @@ class LoadCsvAcceptanceTest
     } finally {
       db.shutdown()
     }
+    resourceMonitor.assertClosedAndClear(1)
   }
 
   test("should restrict file urls to be rooted within an authorized directory") {
@@ -491,6 +515,8 @@ class LoadCsvAcceptanceTest
       .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
       .newGraphDatabase()
 
+    trackResources(db)
+
     try {
       intercept[QueryExecutionException] {
         db.execute(s"LOAD CSV FROM 'file:///../foo.csv' AS line RETURN line[0] AS field", emptyMap()).asScala.size
@@ -498,6 +524,7 @@ class LoadCsvAcceptanceTest
     } finally {
       db.shutdown()
     }
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should apply protocol rules set at db construction") {
@@ -520,9 +547,13 @@ class LoadCsvAcceptanceTest
       .addURLAccessRule( "testproto", new URLAccessRule {
         override def validate(config: Configuration, url: URL): URL = url
       }).newImpermanentDatabaseBuilder(acceptanceDbFolder).newGraphDatabase()
+
+    trackResources(db)
+
     try {
       val result = db.execute(s"LOAD CSV FROM 'testproto://foo.bar' AS line RETURN line[0] AS field", emptyMap())
       result.asScala.map(_.asScala).toList should equal(List(Map("field" -> "something")))
+      resourceMonitor.assertClosedAndClear(1)
     } finally {
       db.shutdown()
     }
@@ -543,7 +574,7 @@ class LoadCsvAcceptanceTest
            |CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})
            |CREATE (movie)-[:MADE_IN]->(country)""".stripMargin
       innerExecuteDeprecated(query, Map.empty)
-
+      resourceMonitor.assertClosedAndClear(1)
 
       //make sure three unique movies are created
       val result = executeWith(Configs.All, "match (m:Movie) return m.id AS id ORDER BY m.id").toList
@@ -565,7 +596,8 @@ class LoadCsvAcceptanceTest
     val second = url.substring(url.length / 2)
     createNode(Map("prop" -> second))
 
-    val result = executeWith(Configs.UpdateConf, s"MATCH (n) WITH n, '$first' as prefix  LOAD CSV FROM prefix + n.prop AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = executeWith(Configs.UpdateConf, s"MATCH (n) WITH n, '$first' as prefix LOAD CSV FROM prefix + n.prop AS line CREATE (a {name: line[0]}) RETURN a.name")
+    resourceMonitor.assertClosedAndClear(1)
     assertStats(result, nodesCreated = 3, propertiesWritten = 3)
   }
 
@@ -581,6 +613,7 @@ class LoadCsvAcceptanceTest
                    |RETURN count(*) as c""".stripMargin
 
     val result = executeWith(Configs.UpdateConf, query)
+    resourceMonitor.assertClosedAndClear(1)
     result.columnAs("c").toList should equal(List(0))
   }
 
@@ -591,12 +624,16 @@ class LoadCsvAcceptanceTest
         s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN count(*)"
       )
 
+      resourceMonitor.assertClosedAndClear(1)
       result.toList should equal(List(Map("count(*)" -> 0)))
     }
   }
 
   test("should give nice error message when overflowing the buffer") {
     runWithConfig(GraphDatabaseSettings.csv_buffer_size -> (1 * 1024 * 1024).toString) { db =>
+
+      trackResources(db)
+
       val longName  = "f"* 6000000
       val urls = csvUrls({
         writer =>
@@ -610,12 +647,16 @@ class LoadCsvAcceptanceTest
              |RETURN row.prop""".stripMargin).next().get("row.prop"))
         error.getMessage should startWith(
           """Tried to read a field larger than buffer size 1048576.""".stripMargin)
+        resourceMonitor.assertClosedAndClear(1)
       }
     }
   }
 
   test("should be able to configure db to handle huge fields") {
     runWithConfig(GraphDatabaseSettings.csv_buffer_size -> (4 * 1024 * 1024).toString) { db =>
+
+      trackResources(db)
+
       val longName  = "f"* 6000000
       val urls = csvUrls({
         writer =>
@@ -627,6 +668,7 @@ class LoadCsvAcceptanceTest
           s"""LOAD CSV WITH HEADERS FROM '$url' AS row
              |RETURN row.prop""".stripMargin)
         result.next().get("row.prop") should equal(longName)
+        resourceMonitor.assertClosedAndClear(1)
       }
     }
   }

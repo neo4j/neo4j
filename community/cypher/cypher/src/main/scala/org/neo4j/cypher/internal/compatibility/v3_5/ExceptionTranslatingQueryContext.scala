@@ -44,7 +44,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def withActiveRead: QueryContext = inner.withActiveRead
 
-  override def resources: CloseableResource = inner.resources
+  override def resources: ResourceManager = inner.resources
 
   override def transactionalContext =
     new ExceptionTranslatingTransactionalContext(inner.transactionalContext)

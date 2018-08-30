@@ -45,7 +45,7 @@ import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.internal.kernel.api.procs.{UserAggregator, QualifiedName => KernelQualifiedName}
 import org.neo4j.io.IOUtils
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api._
+import org.neo4j.kernel.api.{ResourceManager => NotTheTypeWeWant, _}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory

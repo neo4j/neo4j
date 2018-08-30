@@ -60,7 +60,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def withActiveRead: QueryContext
 
-  def resources: CloseableResource
+  def resources: ResourceManager
 
   def nodeOps: Operations[NodeValue]
 

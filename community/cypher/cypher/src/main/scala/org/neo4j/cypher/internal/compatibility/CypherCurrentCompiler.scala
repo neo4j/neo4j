@@ -157,9 +157,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         queryType: InternalQueryType) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
+    private val resourceMonitor = kernelMonitors.newMonitor(classOf[ResourceMonitor])
 
     private def getQueryContext(transactionalContext: TransactionalContext) = {
-      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext))(searchMonitor)
+      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext),
+                                                 new ResourceManager(resourceMonitor)
+                                               )(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
 
@@ -170,16 +173,15 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case CypherExecutionMode.profile => ProfileMode
         case CypherExecutionMode.normal => NormalMode
       }
+      val taskCloser = new TaskCloser
       runSafely {
 
         val queryContext = getQueryContext(transactionalContext)
+        taskCloser.addTask(queryContext.transactionalContext.close)
+        taskCloser.addTask(queryContext.resources.close)
 
         val planDescriptionBuilder =
           new PlanDescriptionBuilder(logicalPlan, plannerName, readOnly, cardinalities, executionPlan.runtimeName, executionPlan.metadata)
-
-        val taskCloser = new TaskCloser
-        taskCloser.addTask(queryContext.transactionalContext.close)
-        taskCloser.addTask(queryContext.resources.close)
 
         val internalExecutionResult =
           if (innerExecutionMode == ExplainMode) {
@@ -213,7 +215,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
             kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
           )
         )
-      }
+      } (e => taskCloser.close(false))
     }
 
     def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState

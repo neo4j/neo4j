@@ -40,7 +40,7 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     protected def internalCreateResults(state: QueryState) = f(state)
 
     // Used by profiling to identify where to report dbhits and rows
-    override def id(): Id = Id.INVALID_ID
+    override def id: Id = Id.INVALID_ID
   }
 
   def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)

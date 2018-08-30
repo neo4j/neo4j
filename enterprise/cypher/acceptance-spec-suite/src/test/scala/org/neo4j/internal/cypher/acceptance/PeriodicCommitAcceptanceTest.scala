@@ -33,8 +33,15 @@ import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
-  with TxCountsTrackingTestSupport with QueryStatisticsTestSupport
-  with CreateTempFileTestSupport {
+  with TxCountsTrackingTestSupport
+  with QueryStatisticsTestSupport
+  with CreateTempFileTestSupport
+  with ResourceTracking {
+
+  override protected def initTest(): Unit = {
+    super.initTest()
+    trackResources(graph)
+  }
 
   def unwrapLoadCSVStatus[T](f: => T) = {
     try {
@@ -53,9 +60,9 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv")(f).cypherEscape
 
   test("should reject periodic commit when not followed by LOAD CSV") {
-    evaluating {
+    intercept[SyntaxException] {
       executeScalar("USING PERIODIC COMMIT 200 MATCH (n) RETURN count(n)")
-    } should produce[SyntaxException]
+    }
   }
 
   test("should produce data from periodic commit") {
@@ -66,6 +73,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
     result.toList should equal(List(Map("n.id" -> "42")))
     result.columns should equal(List("n.id"))
+    resourceMonitor.assertClosedAndClear(1)
   }
 
   test("should use cost planner for periodic commit and load csv") {
@@ -88,8 +96,9 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     arguments.find( _.isInstanceOf[PageCacheHits]) shouldBe defined
     arguments.find( _.isInstanceOf[PageCacheMisses]) shouldBe defined
     result.columnAs[Long]("id").toList should equal(List("1","2","3","4","5"))
-    val afterTxId = txIdStore.getLastClosedTransactionId
+    resourceMonitor.assertClosedAndClear(1)
 
+    val afterTxId = txIdStore.getLastClosedTransactionId
     afterTxId should equal(beforeTxId + 5)
   }
 
@@ -106,6 +115,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
     // then
     assertStats(result, nodesCreated = 5)
+    resourceMonitor.assertClosedAndClear(1)
 
     // and then
     txCounts should equal(TxCounts(commits = 3))
@@ -124,6 +134,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
     // then
     assertStats(result, nodesCreated = 4)
+    resourceMonitor.assertClosedAndClear(1)
 
     // and then
     txCounts should equal(TxCounts(commits = 2))
@@ -132,14 +143,15 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
   test("should abort first tx when failing on first batch during periodic commit") {
     // given
     val url = createTempCSVFile(20)
-    val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: (toInt(line[0]) - 8)/0})"
+    val query = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: (toInt(line[0]) - 8)/0})"
 
     // when
     val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](
-      unwrapLoadCSVStatus(executeScalar[Number](queryText))
+      unwrapLoadCSVStatus(executeScalar[Number](query))
     ))
 
     // then
+    resourceMonitor.assertClosedAndClear(1)
     txCounts should equal(TxCounts(rollbacks = 1))
   }
 
@@ -152,6 +164,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val (_, txCounts) = executeAndTrackTxCounts(queryText)
 
     // then
+    resourceMonitor.assertClosedAndClear(1)
     txCounts should equal(TxCounts(commits = 2, rollbacks = 0))
   }
 
@@ -166,17 +179,20 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     ))
 
     // then
+    resourceMonitor.assertClosedAndClear(1)
     txCounts should equal(TxCounts(commits = 1, rollbacks = 1))
   }
 
   test("should support periodic commit hint without explicit size") {
     val url = createTempCSVFile(1)
     executeScalar[Node](s"USING PERIODIC COMMIT LOAD CSV FROM '$url' AS line CREATE (n) RETURN n")
+    resourceMonitor.assertClosedAndClear(1)
   }
 
   test("should support periodic commit hint with explicit size") {
     val url = createTempCSVFile(1)
     executeScalar[Node](s"USING PERIODIC COMMIT 400 LOAD CSV FROM '$url' AS line CREATE (n) RETURN n")
+    resourceMonitor.assertClosedAndClear(1)
   }
 
   test("should reject periodic commit hint with negative size") {
@@ -184,6 +200,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     intercept[SyntaxException] {
       executeScalar[Node](s"USING PERIODIC COMMIT -1 LOAD CSV FROM '$url' AS line CREATE (n) RETURN n")
     }
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should fail if periodic commit is executed in an open transaction") {
@@ -194,6 +211,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
         execute(s"USING PERIODIC COMMIT LOAD CSV FROM '$url' AS line CREATE ()")
       }, Type.explicit)
     }
+    resourceMonitor.assertClosedAndClear(0)
   }
 
   test("should tell line number information when failing using periodic commit and load csv") {
@@ -214,6 +232,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
     // then
     e.getMessage should include("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.")
+    resourceMonitor.assertClosedAndClear(1)
   }
 
   test("should read committed properties in later transactions") {
@@ -243,11 +262,13 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     execute(query)
     executeScalar[Int](nodesWithFlow(1)) should be(6)
+    resourceMonitor.assertClosedAndClear(1)
 
     // When
     execute(query)
 
     // Then
     executeScalar[Int](nodesWithFlow(2)) should be(6)
+    resourceMonitor.assertClosedAndClear(1)
   }
 }
