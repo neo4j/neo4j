@@ -479,6 +479,13 @@ public interface ConsistencyReport
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
+    interface RelationshipInUseWithCorrectRelationshipTypeReport extends ConsistencyReport
+    {
+        void relationshipNotInUse( RelationshipRecord referredRelationshipRecord );
+
+        void relationshipDoesNotHaveExpectedRelationshipType( RelationshipRecord referredRelationshipRecord, long expectedRelationshipTypeId );
+    }
+
     interface LabelScanConsistencyReport extends NodeInUseWithCorrectLabelsReport
     {
         @Override
@@ -498,15 +505,23 @@ public interface ConsistencyReport
         void dirtyIndex();
     }
 
-    interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport
+    interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport, RelationshipInUseWithCorrectRelationshipTypeReport
     {
         @Override
         @Documented( "This index entry refers to a node record that is not in use." )
         void nodeNotInUse( NodeRecord referredNodeRecord );
 
         @Override
+        @Documented( "This index entry refers to a relationship record that is not in use." )
+        void relationshipNotInUse( RelationshipRecord referredRelationshipRecord );
+
+        @Override
         @Documented( "This index entry refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
+
+        @Override
+        @Documented( "This index entry refers to a relationship that does not have the expected relationship type." )
+        void relationshipDoesNotHaveExpectedRelationshipType( RelationshipRecord referredRelationshipRecord, long expectedRelationshipTypeId );
 
         @Override
         @Documented( "This node record has a label that is not found in the index for this node" )

@@ -55,7 +55,7 @@ public class NodeInUseWithCorrectLabelsCheck
         this.indexLabels = sortAndDeduplicate( expectedEntityTokenIds );
     }
 
-    private static long[] sortAndDeduplicate( long[] labels )
+    static long[] sortAndDeduplicate( long[] labels )
     {
         if ( ArrayUtils.isNotEmpty( labels ) )
         {

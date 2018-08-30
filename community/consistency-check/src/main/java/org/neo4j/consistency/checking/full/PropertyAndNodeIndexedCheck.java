@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.Value;
@@ -98,14 +99,15 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         IntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
         {
-            if ( indexRule.schema().isAffected( labels ) )
+            SchemaDescriptor schema = indexRule.schema();
+            if ( schema.entityType() == EntityType.NODE && schema.isAffected( labels ) )
             {
                 if ( nodePropertyMap == null )
                 {
                     nodePropertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
                 }
 
-                int[] indexPropertyIds = indexRule.schema().getPropertyIds();
+                int[] indexPropertyIds = schema.getPropertyIds();
                 if ( nodeHasSchemaProperties( nodePropertyMap, indexPropertyIds ) )
                 {
                     Value[] values = getPropertyValues( nodePropertyMap, indexPropertyIds );
