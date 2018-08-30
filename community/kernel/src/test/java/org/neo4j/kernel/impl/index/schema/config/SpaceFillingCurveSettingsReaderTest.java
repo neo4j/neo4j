@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -35,10 +35,10 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
 
-public class SpaceFillingCurveSettingsReaderTest
+class SpaceFillingCurveSettingsReaderTest
 {
     @Test
-    public void shouldReadMultipleSettings()
+    void shouldReadMultipleSettings()
     {
         // given
         ConfiguredSpaceFillingCurveSettingsCache globalSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );

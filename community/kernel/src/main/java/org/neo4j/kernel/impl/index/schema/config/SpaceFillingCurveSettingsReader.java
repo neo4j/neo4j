@@ -71,8 +71,8 @@ public class SpaceFillingCurveSettingsReader implements Header.Reader
         double[] max = new double[dimensions];
         for ( int i = 0; i < dimensions; i++ )
         {
-            min[i] = headerBytes.getDouble();
-            max[i] = headerBytes.getDouble();
+            min[i] = Double.longBitsToDouble( headerBytes.getLong() );
+            max[i] = Double.longBitsToDouble( headerBytes.getLong() );
         }
         Envelope extents = new Envelope( min, max );
         settings.put( crs, new SpaceFillingCurveSettings( dimensions, extents, maxLevels ) );

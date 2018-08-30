@@ -33,7 +33,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 
-public class SpaceFillingCurveSettingsHeaderTest
+class SpaceFillingCurveSettingsHeaderTest
 {
     private final byte[] data = new byte[PAGE_SIZE];
     private final PageCursor pageCursor = ByteArrayPageCursor.wrap( data );
