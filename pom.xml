@@ -762,7 +762,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.11</version>
+            <version>8.12</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -1042,25 +1042,25 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-testlib</artifactId>
-        <version>25.1-jre</version>
+        <version>26.0-jre</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
-        <version>4.5.2</version>
+        <version>4.5.6</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
-        <version>4.5.2</version>
+        <version>4.5.6</version>
         <classifier>tests</classifier>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpcore</artifactId>
-        <version>4.4.5</version>
+        <version>4.4.10</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -1181,7 +1181,7 @@
       <dependency>
         <groupId>org.scalacheck</groupId>
         <artifactId>scalacheck_2.11</artifactId>
-        <version>1.12.5</version>
+        <version>1.14.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1259,7 +1259,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.7</version>
+        <version>3.8</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -1269,7 +1269,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.17</version>
+        <version>1.18</version>
       </dependency>
 
       <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
