@@ -92,7 +92,7 @@ public class SpaceFillingCurveSettingsWriter implements Consumer<PageCursor>
             {
                 if ( (value & ~mask) != 0 )
                 {
-                    throw new IllegalArgumentException( "Invalid " + name + value + " max is " + mask );
+                    throw new IllegalArgumentException( "Invalid " + name + " " + value + ", max is " + mask );
                 }
                 return value;
             }
