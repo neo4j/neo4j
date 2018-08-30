@@ -101,7 +101,7 @@ public class CommunityEditionModule extends EditionModule
         threadToTransactionBridge = dependencies.satisfyDependency(
                 new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
 
-        idContextFactory = createIdModule( platformModule, fileSystem );
+        idContextFactory = createIdContextFactory( platformModule, fileSystem );
 
         tokenHoldersSupplier = () -> new TokenHolders(
                 new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
@@ -128,7 +128,7 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
     }
 
-    protected IdContextFactory createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
+    protected IdContextFactory createIdContextFactory( PlatformModule platformModule, FileSystemAbstraction fileSystem )
     {
         return IdContextFactoryBuilder.of( fileSystem, platformModule.jobScheduler ).build();
     }

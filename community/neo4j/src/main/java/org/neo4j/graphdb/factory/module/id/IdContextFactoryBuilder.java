@@ -41,6 +41,10 @@ public class IdContextFactoryBuilder
     private IdTypeConfigurationProvider idTypeConfigurationProvider;
     private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
 
+    private IdContextFactoryBuilder()
+    {
+    }
+
     public static IdContextFactoryBuilder of( IdTypeConfigurationProvider configurationProvider, JobScheduler jobScheduler )
     {
         IdContextFactoryBuilder builder = new IdContextFactoryBuilder();

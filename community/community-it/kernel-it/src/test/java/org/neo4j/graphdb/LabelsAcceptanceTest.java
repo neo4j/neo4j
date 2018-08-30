@@ -750,7 +750,7 @@ public class LabelsAcceptanceTest
                                     GraphDatabaseFacadeFactory.Dependencies dependencies )
                             {
                                 Function<PlatformModule,EditionModule> factory =
-                                        platformModule -> new CommunityEditionModuleWithCustomIdModule( platformModule, idFactory );
+                                        platformModule -> new CommunityEditionModuleWithCustomIdContextFactory( platformModule, idFactory );
                                 new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
                                 {
 
@@ -780,9 +780,9 @@ public class LabelsAcceptanceTest
         }
     }
 
-    private static class CommunityEditionModuleWithCustomIdModule extends CommunityEditionModule
+    private static class CommunityEditionModuleWithCustomIdContextFactory extends CommunityEditionModule
     {
-        CommunityEditionModuleWithCustomIdModule( PlatformModule platformModule, EphemeralIdGenerator.Factory idFactory )
+        CommunityEditionModuleWithCustomIdContextFactory( PlatformModule platformModule, EphemeralIdGenerator.Factory idFactory )
         {
             super( platformModule );
             idContextFactory = IdContextFactoryBuilder.of( platformModule.fileSystem, platformModule.jobScheduler )

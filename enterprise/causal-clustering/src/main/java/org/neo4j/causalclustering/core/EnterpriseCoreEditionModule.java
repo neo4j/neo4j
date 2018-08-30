@@ -305,7 +305,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 consensusModule.raftMachine(), dependencies, localDatabase );
 
         idContextFactory = IdContextFactoryBuilder.of( coreStateMachinesModule.idTypeConfigurationProvider, platformModule.jobScheduler )
-                .withIdGenerationFactoryProvider( databaseName -> coreStateMachinesModule.idGeneratorFactory )
+                .withIdGenerationFactoryProvider( ignored -> coreStateMachinesModule.idGeneratorFactory )
                 .withFactoryWrapper( generator -> new FreeIdFilteredIdGeneratorFactory( generator, coreStateMachinesModule.freeIdCondition ) ).build();
 
         // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...

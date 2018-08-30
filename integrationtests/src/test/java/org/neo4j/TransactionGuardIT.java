@@ -724,7 +724,7 @@ public class TransactionGuardIT
         }
 
         @Override
-        protected IdContextFactory createIdModule( PlatformModule platformModule, FileSystemAbstraction fileSystem )
+        protected IdContextFactory createIdContextFactory( PlatformModule platformModule, FileSystemAbstraction fileSystem )
         {
             return IdContextFactoryBuilder.of( new EnterpriseIdTypeConfigurationProvider( platformModule.config ),
                     platformModule.jobScheduler )
