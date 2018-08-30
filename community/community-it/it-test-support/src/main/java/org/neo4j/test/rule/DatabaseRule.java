@@ -70,12 +70,12 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     private DatabaseLayout databaseLayout;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
-    private Map<Setting<?>, String> config;
+    private final Map<Setting<?>, String> globalConfig = new HashMap<>();
     private final Monitors monitors = new Monitors();
 
     /**
      * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
-     * or {@link #ensureStarted(String...)} call.
+     * or {@link #ensureStarted()} call.
      */
     public DatabaseRule startLazily()
     {
@@ -274,7 +274,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
             factory.setMonitors( monitors );
             configure( factory );
             databaseBuilder = newBuilder( factory );
-            configure( databaseBuilder );
+            globalConfig.forEach( databaseBuilder::setConfig );
         }
         catch ( RuntimeException e )
         {
@@ -308,22 +308,9 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         // Override to configure the database factory
     }
 
-    protected void configure( GraphDatabaseBuilder builder )
-    {
-        // Override to configure the database
-
-        // Adjusted defaults for testing
-        applyConfigChanges( builder );
-    }
-
-    public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
-    {
-        return databaseBuilder.setConfig( setting, value );
-    }
-
     /**
      * {@link DatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
-     * a lazily started database is created, use {@link #ensureStarted( String... )} instead.
+     * a lazily started database is created, use {@link #ensureStarted()} instead.
      */
     public GraphDatabaseAPI getGraphDatabaseAPI()
     {
@@ -331,34 +318,56 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return database;
     }
 
-    public synchronized void ensureStarted( String... additionalConfig )
+    public synchronized void ensureStarted()
     {
         if ( database == null )
         {
-            applyConfigChanges( databaseBuilder, additionalConfig );
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
             databaseLayout = database.databaseLayout();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }
     }
 
+    /**
+     * Adds or replaces a setting for the database managed by this database rule.
+     * <p>
+     * If this method is called when constructing the rule, the setting is considered a global setting applied to all tests.
+     * <p>
+     * If this method is called inside a specific test, i.e. after {@link #before()}, but before started (a call to {@link #startLazily()} have been made),
+     * then this setting will be considered a test-specific setting, adding to or overriding the global settings for this test only.
+     * Test-specific settings will be remembered throughout a test, even between restarts.
+     * <p>
+     * If this method is called when a database is already started an {@link IllegalStateException} will be thrown since the setting
+     * will have no effect, instead letting the developer notice that and change the test code.
+     */
     public DatabaseRule withSetting( Setting<?> key, String value )
     {
-        if ( this.config == null )
+        if ( database != null )
         {
-            this.config = new HashMap<>();
+            // Database already started
+            throw new IllegalStateException( "Wanted to set " + key + "=" + value + ", but database has already been started" );
         }
-        this.config.put( key, value );
+        if ( databaseBuilder != null )
+        {
+            // Test already started, but db not yet started
+            databaseBuilder.setConfig( key, value );
+        }
+        else
+        {
+            // Test haven't started, we're still in phase of constructing this rule
+            globalConfig.put( key, value );
+        }
         return this;
     }
 
-    public DatabaseRule withConfiguration( Map<Setting<?>,String> configuration )
+    /**
+     * Applies all settings in the settings map.
+     *
+     * @see #withSetting(Setting, String)
+     */
+    public DatabaseRule withSettings( Map<Setting<?>,String> configuration )
     {
-        if ( this.config == null )
-        {
-            this.config = new HashMap<>();
-        }
-        this.config.putAll( configuration );
+        configuration.forEach( this::withSetting );
         return this;
     }
 
@@ -383,17 +392,10 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         database.shutdown();
         action.run( fs, databaseLayout );
         database = null;
-        applyConfigChanges( databaseBuilder, configChanges );
+        // This DatabaseBuilder has already been configured with the global settings as well as any test-specific settings,
+        // so just apply these additional settings.
+        databaseBuilder.setConfig( stringMap( configChanges ) );
         return getGraphDatabaseAPI();
-    }
-
-    private void applyConfigChanges( GraphDatabaseBuilder builder, String... configChanges )
-    {
-        if ( config != null )
-        {
-            config.forEach( builder::setConfig );
-        }
-        builder.setConfig( stringMap( configChanges ) );
     }
 
     @Override

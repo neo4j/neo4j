@@ -452,9 +452,9 @@ public class OnlineBackupCommandHaIT
 
     private void startDb( EmbeddedDatabaseRule db, Integer backupPort )
     {
-        db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
-        db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
-        db.setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1" + ":" + backupPort );
+        db.withSetting( GraphDatabaseSettings.record_format, recordFormat );
+        db.withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
+        db.withSetting( OnlineBackupSettings.online_backup_server, "127.0.0.1" + ":" + backupPort );
         db.ensureStarted();
         createSomeData( db );
     }

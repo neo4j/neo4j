@@ -236,7 +236,7 @@ public class BackupProtocolServiceIT
     {
         defaultBackupPortHostParams();
         Config defaultConfig = Config.defaults();
-        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        dbRule.withSetting( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createSchemaIndex( db );
@@ -676,7 +676,7 @@ public class BackupProtocolServiceIT
         // Given
         defaultBackupPortHostParams();
         Config defaultConfig = Config.defaults();
-        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        dbRule.withSetting( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createSchemaIndex( db );
@@ -719,7 +719,7 @@ public class BackupProtocolServiceIT
         // Given
         defaultBackupPortHostParams();
         Config defaultConfig = Config.defaults();
-        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        dbRule.withSetting( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createSchemaIndex( db );
@@ -763,7 +763,7 @@ public class BackupProtocolServiceIT
         // Given
         defaultBackupPortHostParams();
         Config defaultConfig = Config.defaults();
-        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        dbRule.withSetting( GraphDatabaseSettings.keep_logical_logs, "false" );
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createSchemaIndex( db );
         BackupProtocolService backupProtocolService = backupService();
@@ -841,7 +841,7 @@ public class BackupProtocolServiceIT
         // Given
         defaultBackupPortHostParams();
         Config defaultConfig = Config.defaults();
-        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        dbRule.withSetting( GraphDatabaseSettings.keep_logical_logs, "false" );
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createSchemaIndex( db );
         BackupProtocolService backupProtocolService = backupService();
@@ -865,7 +865,7 @@ public class BackupProtocolServiceIT
         defaultBackupPortHostParams();
         Config defaultConfig = Config.defaults();
         defaultConfig.augment( OnlineBackupSettings.online_backup_server, BACKUP_HOST + ":" + backupPort );
-        dbRule.setConfig( OnlineBackupSettings.online_backup_enabled, "false" );
+        dbRule.withSetting( OnlineBackupSettings.online_backup_enabled, "false" );
         Config withOnlineBackupDisabled = Config.defaults();
 
         final Barrier.Control barrier = new Barrier.Control();
@@ -925,7 +925,7 @@ public class BackupProtocolServiceIT
         defaultBackupPortHostParams();
         Config config = Config.defaults();
         config.augment( OnlineBackupSettings.online_backup_server, BACKUP_HOST + ":" + backupPort );
-        dbRule.setConfig( OnlineBackupSettings.online_backup_enabled, "false" );
+        dbRule.withSetting( OnlineBackupSettings.online_backup_enabled, "false" );
         Config withOnlineBackupDisabled = Config.defaults();
         createAndIndexNode( dbRule, 1 );
 
@@ -1025,7 +1025,7 @@ public class BackupProtocolServiceIT
 
     private void defaultBackupPortHostParams()
     {
-        dbRule.setConfig( OnlineBackupSettings.online_backup_server, BACKUP_HOST + ":" + backupPort );
+        dbRule.withSetting( OnlineBackupSettings.online_backup_server, BACKUP_HOST + ":" + backupPort );
     }
 
     private static void createSchemaIndex( GraphDatabaseService db )

@@ -77,7 +77,7 @@ public class ConsistencyCheckServiceRecordFormatIT
     @Before
     public void configureRecordFormat()
     {
-        db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
+        db.withSetting( GraphDatabaseSettings.record_format, recordFormat );
     }
 
     @Test

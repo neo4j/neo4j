@@ -112,7 +112,7 @@ public class IndexFailureOnStartupTest
     public void shouldArchiveFailedIndex() throws Exception
     {
         // given
-        db.setConfig( GraphDatabaseSettings.archive_failed_index, "true" );
+        db.withSetting( GraphDatabaseSettings.archive_failed_index, "true" );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( PERSON );

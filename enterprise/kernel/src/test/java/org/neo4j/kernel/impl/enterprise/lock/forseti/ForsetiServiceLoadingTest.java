@@ -53,7 +53,7 @@ public class ForsetiServiceLoadingTest
     public void shouldAllowUsingCommunityLockManager()
     {
         // When
-        dbRule.setConfig( GraphDatabaseSettings.lock_manager, "community" );
+        dbRule.withSetting( GraphDatabaseSettings.lock_manager, "community" );
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         // Then

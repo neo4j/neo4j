@@ -67,7 +67,7 @@ public class MergeLockConcurrencyTest
 
     public MergeLockConcurrencyTest( ConfigBuilder config )
     {
-        db.withConfiguration( config.configuration() );
+        db.withSettings( config.configuration() );
     }
 
     @Test

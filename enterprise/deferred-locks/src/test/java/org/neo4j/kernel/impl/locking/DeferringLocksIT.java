@@ -71,7 +71,7 @@ public class DeferringLocksIT
     @Before
     public void initDb()
     {
-        dbRule.setConfig( DeferringStatementLocksFactory.deferred_locks_enabled, Settings.TRUE );
+        dbRule.withSetting( DeferringStatementLocksFactory.deferred_locks_enabled, Settings.TRUE );
         db = dbRule.getGraphDatabaseAPI();
     }
 

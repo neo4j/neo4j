@@ -38,7 +38,6 @@ import java.util.List;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
@@ -71,14 +70,8 @@ public class ShellQueryLoggingIT
         {
             ((TestGraphDatabaseFactory) factory).setFileSystem( fs.get() );
         }
+    }.withSetting( GraphDatabaseSettings.log_queries, Settings.TRUE ).startLazily();
 
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
-            builder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory().getPath() );
-        }
-    };
     @Rule
     public final TestRule order = outerRule( dir ).around( fs ).around( db )
             .around( ( base, description ) -> new Statement()
@@ -106,6 +99,8 @@ public class ShellQueryLoggingIT
     @Before
     public void setup() throws Exception
     {
+        // Set this config a bit later since it's dependent on directory of the dbRule, which is assigned in its creation phase.
+        db.withSetting( GraphDatabaseSettings.logs_directory, logsDirectory().getPath() );
         server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI() );
         SystemOutput output = new SystemOutput( new PrintWriter( out ) );
         client = ShellLobby.newClient( server, new HashMap<>(), output, action -> () ->

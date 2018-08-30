@@ -83,7 +83,7 @@ public class AccessExplicitIndexReadOnlyIT
     public void shouldNotCreateIndexesForReadOnlyDb()
     {
         // given
-        db.ensureStarted( GraphDatabaseSettings.read_only.name(), TRUE.toString() );
+        db.withSetting( GraphDatabaseSettings.read_only, TRUE.toString() );
 
         // when
         try ( Transaction tx = db.beginTx() )

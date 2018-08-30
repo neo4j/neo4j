@@ -77,9 +77,9 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
     public void warmupMustReloadHotPagesAfterRestartAndFaultsMustBeVisibleViaMetrics() throws Exception
     {
         File metricsDirectory = testDirectory.directory( "metrics" );
-        db.setConfig( MetricsSettings.metricsEnabled, Settings.FALSE )
-          .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-          .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
+        db.withSetting( MetricsSettings.metricsEnabled, Settings.FALSE )
+          .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+          .withSetting( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
         db.ensureStarted();
 
         createTestData( db );
@@ -98,11 +98,11 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
     public void cacheProfilesMustBeIncludedInOnlineBackups() throws Exception
     {
         int backupPort = PortAuthority.allocatePort();
-        db.setConfig( MetricsSettings.metricsEnabled, Settings.FALSE )
-          .setConfig( UdcSettings.udc_enabled, Settings.FALSE )
-          .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-          .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + backupPort )
-          .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
+        db.withSetting( MetricsSettings.metricsEnabled, Settings.FALSE )
+          .withSetting( UdcSettings.udc_enabled, Settings.FALSE )
+          .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+          .withSetting( OnlineBackupSettings.online_backup_server, "localhost:" + backupPort )
+          .withSetting( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
         db.ensureStarted();
 
         createTestData( db );
@@ -135,10 +135,10 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         // Here we are testing that the file modifications done by the page cache profiler,
         // does not make online backup throw any exceptions.
         int backupPort = PortAuthority.allocatePort();
-        db.setConfig( MetricsSettings.metricsEnabled, Settings.FALSE )
-          .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-          .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + backupPort )
-          .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "1ms" );
+        db.withSetting( MetricsSettings.metricsEnabled, Settings.FALSE )
+          .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+          .withSetting( OnlineBackupSettings.online_backup_server, "localhost:" + backupPort )
+          .withSetting( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "1ms" );
         db.ensureStarted();
 
         createTestData( db );
@@ -154,9 +154,9 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
     @Test
     public void cacheProfilesMustBeIncludedInOfflineBackups() throws Exception
     {
-        db.setConfig( MetricsSettings.metricsEnabled, Settings.FALSE )
-          .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-          .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
+        db.withSetting( MetricsSettings.metricsEnabled, Settings.FALSE )
+          .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+          .withSetting( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
         db.ensureStarted();
         createTestData( db );
         long pagesInMemory = waitForCacheProfile( db.getMonitors() );
@@ -192,12 +192,11 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         FileUtils.deleteRecursively( graphdb );
 
         File metricsDirectory = testDirectory.cleanDirectory( "metrics" );
-        db.ensureStarted(
-                OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE,
-                MetricsSettings.neoPageCacheEnabled.name(), Settings.TRUE,
-                MetricsSettings.csvEnabled.name(), Settings.TRUE,
-                MetricsSettings.csvInterval.name(), "100ms",
-                MetricsSettings.csvPath.name(), metricsDirectory.getAbsolutePath() );
+        db.withSetting( MetricsSettings.neoPageCacheEnabled, Settings.TRUE )
+          .withSetting( MetricsSettings.csvEnabled, Settings.TRUE )
+          .withSetting( MetricsSettings.csvInterval, "100ms" )
+          .withSetting( MetricsSettings.csvPath, metricsDirectory.getAbsolutePath() );
+        db.ensureStarted();
 
         verifyEventuallyWarmsUp( pagesInMemory, metricsDirectory );
     }
