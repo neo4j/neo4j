@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.eclipse.collections.impl.factory.Iterables;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -40,14 +36,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.RandomValues.Types;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
@@ -66,31 +59,9 @@ import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_STRING_LEN
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_ZONED_DATE_TIME;
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_ZONED_TIME;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
-import static org.neo4j.values.storable.RandomValues.Types.ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.STRING;
 
 public class GenericIndexValidationIT
 {
-    private static final String string = "string";
-    private static final String byteArray = "byteArray";
-    private static final String intArray = "intArray";
-    private static final String shortArray = "shortArray";
-    private static final String longArray = "longArray";
-    private static final String floatArray = "floatArray";
-    private static final String doubleArray = "doubleArray";
-    private static final String booleanArray = "booleanArray";
-    private static final String stringArray0 = "stringArray0";
-    private static final String stringArray10 = "stringArray10";
-    private static final String stringArray100 = "stringArray100";
-    private static final String stringArray1000 = "stringArray1000";
-    private static final String dateArray = "dateArray";
-    private static final String timeArray = "timeArray";
-    private static final String localTimeArray = "localTimeArray";
-    private static final String dateTimeArray = "dateTimeArray";
-    private static final String localDateTimeArray = "localDateTimeArray";
-    private static final String durationArray = "durationArray";
-    private static final String periodArray = "periodArray";
-
     private static final String[] PROP_KEYS = new String[]{
             "prop0",
             "prop1",
@@ -101,12 +72,6 @@ public class GenericIndexValidationIT
     private static final int KEY_SIZE_LIMIT = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
     private static final int ESTIMATED_OVERHEAD_PER_SLOT = 2;
     private static final int WIGGLE_ROOM = 50;
-    private List<Types> allValidNonArrayTypes = Iterables.mList( Types.values() )
-            .without( Types.ARRAY )
-            .without( Types.CARTESIAN_POINT )
-            .without( Types.CARTESIAN_POINT_3D )
-            .without( Types.GEOGRAPHIC_POINT )
-            .without( Types.GEOGRAPHIC_POINT_3D );
 
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerIdentifier() );
@@ -114,38 +79,12 @@ public class GenericIndexValidationIT
     @ClassRule
     public static RandomRule random = new RandomRule();
 
-    @Test
-    public void shouldEnforceSizeCapSingleValueMixedTypes()
-    {
-        createIndex( PROP_KEYS[0] );
-        int keySizeLimitSingleSlot = KEY_SIZE_LIMIT - ESTIMATED_OVERHEAD_PER_SLOT;
-        for ( int i = 0; i < 1_000; i++ )
-        {
-            Object propValue = generateSingleValue( keySizeLimitSingleSlot, WIGGLE_ROOM );
-            long expectedNodeId = -1;
-
-            // Write
-            boolean ableToWrite = true;
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = db.createNode( LABEL_ONE );
-                node.setProperty( PROP_KEYS[0], propValue );
-                expectedNodeId = node.getId();
-                tx.success();
-            }
-            catch ( Exception e )
-            {
-                ableToWrite = false;
-            }
-
-            // Read
-            verifyReadExpected( PROP_KEYS[0], propValue, expectedNodeId, ableToWrite );
-        }
-    }
-
     /**
-     * Validate that we handle index reads and writes correctly for arrays of all different types
-     * with length close to and over the max limit for given type.
+     * Key size validation test for single type.
+     *
+     * Validate that we handle index reads and writes correctly for dynamically sized values (arrays and strings)
+     * of all different types with length close to and over the max limit for given type.
+     *
      * We do this by inserting arrays of increasing size (doubling each iteration) and when we hit the upper limit
      * we do binary search between the established min and max limit.
      * We also verify that the largest successful array length for each type is as expected because this value
@@ -154,23 +93,18 @@ public class GenericIndexValidationIT
     @Test
     public void shouldEnforceSizeCapSingleValueSingleType()
     {
-        NamedDynamicValueGenerator[] dynamicValueGenerators = dynamicValueGenerators();
+        NamedDynamicValueGenerator[] dynamicValueGenerators = NamedDynamicValueGenerator.values();
         for ( NamedDynamicValueGenerator generator : dynamicValueGenerators )
         {
-            String propKey = PROP_KEYS[0] + generator.name();
+            String propKey = PROP_KEYS[0] + generator.identifier;
             createIndex( propKey );
 
-            int longestSuccessful = 0;
-            int minArrayLength = 0;
-            int maxArrayLength = 1;
-            int arrayLength = 1;
-            boolean foundMaxLimit = false;
+            BinarySearch binarySearch = new BinarySearch();
             Object propValue;
 
-            // When arrayLength is stable on minArrayLength, our binary search for max limit is finished
-            while ( arrayLength != minArrayLength )
+            while ( !binarySearch.finished() )
             {
-                propValue = generator.dynamicValue( arrayLength );
+                propValue = generator.dynamicValue( binarySearch.arrayLength );
                 long expectedNodeId = -1;
 
                 // Write
@@ -184,130 +118,98 @@ public class GenericIndexValidationIT
                 }
                 catch ( Exception e )
                 {
-                    foundMaxLimit = true;
                     wasAbleToWrite = false;
                 }
 
                 // Read
                 verifyReadExpected( propKey, propValue, expectedNodeId, wasAbleToWrite );
 
-                // We try to do binary search to find the exact array length limit for current type
-                if ( wasAbleToWrite )
-                {
-                    longestSuccessful = Math.max( arrayLength, longestSuccessful );
-                    if ( !foundMaxLimit )
-                    {
-                        // We continue to double the max limit until we find some upper limit
-                        minArrayLength = arrayLength;
-                        maxArrayLength *= 2;
-                        arrayLength = maxArrayLength;
-                    }
-                    else
-                    {
-                        // We where able to write so we can move min limit up to current array length
-                        minArrayLength = arrayLength;
-                        arrayLength = (minArrayLength + maxArrayLength) / 2;
-                    }
-                }
-                else
-                {
-                    // We where not able to write so we take max limit down to current array length
-                    maxArrayLength = arrayLength;
-                    arrayLength = (minArrayLength + maxArrayLength) / 2;
-                }
-            }
-            int expectedLongest;
-            switch ( generator.name() )
-            {
-            case string:
-                expectedLongest = 4036;
-                break;
-            case byteArray:
-                expectedLongest = 4033;
-                break;
-            case shortArray:
-                expectedLongest = 2016;
-                break;
-            case intArray:
-                expectedLongest = 1008;
-                break;
-            case longArray:
-                expectedLongest = 504;
-                break;
-            case floatArray:
-                expectedLongest = 1008;
-                break;
-            case doubleArray:
-                expectedLongest = 504;
-                break;
-            case booleanArray:
-                expectedLongest = 4034;
-                break;
-            case stringArray0:
-                expectedLongest = 2017;
-                break;
-            case stringArray10:
-                expectedLongest = 336;
-                break;
-            case stringArray100:
-                expectedLongest = 39;
-                break;
-            case stringArray1000:
-                expectedLongest = 4;
-                break;
-            case dateArray:
-                expectedLongest = 504;
-                break;
-            case timeArray:
-                expectedLongest = 336;
-                break;
-            case localTimeArray:
-                expectedLongest = 504;
-                break;
-            case dateTimeArray:
-                expectedLongest = 252;
-                break;
-            case localDateTimeArray:
-                expectedLongest = 336;
-                break;
-            case durationArray:
-                expectedLongest = 144;
-                break;
-            case periodArray:
-                expectedLongest = 144;
-                break;
-            default:
-                throw new IllegalArgumentException( "Did not recognize type, " + generator.name() +
-                        ". Please add new type to this list of expected array lengths if you have added a new type." );
+                // Progress binary search
+                binarySearch.progress( wasAbleToWrite );
             }
             assertEquals( format( "expected longest successful array length for type %s, to be %d but was %d. " +
                             "This is a strong indication that documentation of max limit needs to be updated.",
-                    generator.name(), expectedLongest, longestSuccessful ), expectedLongest, longestSuccessful );
+                    generator.identifier, generator.expectedMax, binarySearch.longestSuccessful ), generator.expectedMax, binarySearch.longestSuccessful );
         }
     }
 
-    @Test
-    public void shouldEnforceSizeCapCompositeMixedTypes()
+    private class BinarySearch
     {
-        for ( int numberOfSlots = 2; numberOfSlots < 5; numberOfSlots++ )
+        private int longestSuccessful = 0;
+        private int minArrayLength = 0;
+        private int maxArrayLength = 1;
+        private int arrayLength = 1;
+        private boolean foundMaxLimit = false;
+
+        boolean finished()
         {
-            String[] propKeys = new String[numberOfSlots];
-            for ( int i = 0; i < numberOfSlots; i++ )
+            // When arrayLength is stable on minArrayLength, our binary search for max limit is finished
+            return arrayLength == minArrayLength;
+        }
+
+        void progress( boolean wasAbleToWrite )
+        {
+            if ( wasAbleToWrite )
             {
-                // Use different property keys for each iteration
-                propKeys[i] = PROP_KEYS[i] + "numberOfSlots" + numberOfSlots;
+                longestSuccessful = Math.max( arrayLength, longestSuccessful );
+                if ( !foundMaxLimit )
+                {
+                    // We continue to double the max limit until we find some upper limit
+                    minArrayLength = arrayLength;
+                    maxArrayLength *= 2;
+                    arrayLength = maxArrayLength;
+                }
+                else
+                {
+                    // We where able to write so we can move min limit up to current array length
+                    minArrayLength = arrayLength;
+                    arrayLength = (minArrayLength + maxArrayLength) / 2;
+                }
             }
+            else
+            {
+                foundMaxLimit = true;
+                // We where not able to write so we take max limit down to current array length
+                maxArrayLength = arrayLength;
+                arrayLength = (minArrayLength + maxArrayLength) / 2;
+            }
+        }
+    }
+
+    /**
+     * Key size validation test for mixed types in composite index.
+     *
+     * Validate that we handle index reads and writes correctly for
+     * dynamically sized values (arrays and strings) of all different
+     * types with length close to and over the max limit for given
+     * type.
+     *
+     * We do this by trying to insert random dynamically sized values
+     * with size in range that covers the limit, taking into account
+     * the number of slots in the index.
+     * Then we verify that we either
+     *  - write successfully and are able to read value back
+     *  - fail to write and no result is found during read
+     *
+     * Even though we don't keep track of all inserted values, the
+     * probability that we will ever generate two identical values
+     * is, for single property boolean array which is the most likely,
+     * (1/2)^3995. As a reference (1/2)^100 = 7.8886091e-31.
+     */
+    @Test
+    public void shouldEnforceSizeCapMixedTypes()
+    {
+        for ( int numberOfSlots = 1; numberOfSlots < 5; numberOfSlots++ )
+        {
+            String[] propKeys = generatePropertyKeys( numberOfSlots );
 
             createIndex( propKeys );
             int keySizeLimitPerSlot = KEY_SIZE_LIMIT / propKeys.length - ESTIMATED_OVERHEAD_PER_SLOT;
             int wiggleRoomPerSlot = WIGGLE_ROOM / propKeys.length;
+            SuccessAndFail successAndFail = new SuccessAndFail();
             for ( int i = 0; i < 1_000; i++ )
             {
-                Object[] propValues = new Object[propKeys.length];
-                for ( int propKey = 0; propKey < propKeys.length; propKey++ )
-                {
-                    propValues[propKey] = generateSingleValue( keySizeLimitPerSlot, wiggleRoomPerSlot );
-                }
+                Object[] propValues = generatePropertyValues( propKeys, keySizeLimitPerSlot, wiggleRoomPerSlot );
                 long expectedNodeId = -1;
 
                 // Write
@@ -315,10 +217,7 @@ public class GenericIndexValidationIT
                 try ( Transaction tx = db.beginTx() )
                 {
                     Node node = db.createNode( LABEL_ONE );
-                    for ( int propKey = 0; propKey < propKeys.length; propKey++ )
-                    {
-                        node.setProperty( propKeys[propKey], propValues[propKey] );
-                    }
+                    setProperties( propKeys, propValues, node );
                     expectedNodeId = node.getId();
                     tx.success();
                 }
@@ -326,205 +225,73 @@ public class GenericIndexValidationIT
                 {
                     ableToWrite = false;
                 }
+                successAndFail.ableToWrite( ableToWrite );
 
                 // Read
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Map<String,Object> values = new HashMap<>();
-                    for ( int propKey = 0; propKey < propKeys.length; propKey++ )
-                    {
-                        values.put( propKeys[propKey], propValues[propKey] );
-                    }
-                    ResourceIterator<Node> nodes = db.findNodes( LABEL_ONE, values );
-                    if ( ableToWrite )
-                    {
-                        assertTrue( nodes.hasNext() );
-                        Node node = nodes.next();
-                        assertNotNull( node );
-                        assertEquals( "node id", expectedNodeId, node.getId() );
-                    }
-                    else
-                    {
-                        assertFalse( nodes.hasNext() );
-                    }
-                    tx.success();
-                }
+                verifyReadExpected( propKeys, propValues, expectedNodeId, ableToWrite );
             }
+            successAndFail.verifyBothSuccessAndFail();
         }
+    }
+
+    private void setProperties( String[] propKeys, Object[] propValues, Node node )
+    {
+        for ( int propKey = 0; propKey < propKeys.length; propKey++ )
+        {
+            node.setProperty( propKeys[propKey], propValues[propKey] );
+        }
+    }
+
+    private String[] generatePropertyKeys( int numberOfSlots )
+    {
+        String[] propKeys = new String[numberOfSlots];
+        for ( int i = 0; i < numberOfSlots; i++ )
+        {
+            // Use different property keys for each iteration
+            propKeys[i] = PROP_KEYS[i] + "numberOfSlots" + numberOfSlots;
+        }
+        return propKeys;
+    }
+
+    private Object[] generatePropertyValues( String[] propKeys, int keySizeLimitPerSlot, int wiggleRoomPerSlot )
+    {
+        Object[] propValues = new Object[propKeys.length];
+        for ( int propKey = 0; propKey < propKeys.length; propKey++ )
+        {
+            NamedDynamicValueGenerator among = random.among( NamedDynamicValueGenerator.values() );
+            propValues[propKey] = among.dynamicValue( keySizeLimitPerSlot, wiggleRoomPerSlot );
+        }
+        return propValues;
     }
 
     private void verifyReadExpected( String propKey, Object propValue, long expectedNodeId, boolean ableToWrite )
     {
+        verifyReadExpected( new String[]{propKey}, new Object[]{propValue}, expectedNodeId, ableToWrite );
+    }
+
+    private void verifyReadExpected( String[] propKeys, Object[] propValues, long expectedNodeId, boolean ableToWrite )
+    {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.findNode( LABEL_ONE, propKey, propValue );
+            Map<String,Object> values = new HashMap<>();
+            for ( int propKey = 0; propKey < propKeys.length; propKey++ )
+            {
+                values.put( propKeys[propKey], propValues[propKey] );
+            }
+            ResourceIterator<Node> nodes = db.findNodes( LABEL_ONE, values );
             if ( ableToWrite )
             {
+                assertTrue( nodes.hasNext() );
+                Node node = nodes.next();
                 assertNotNull( node );
                 assertEquals( "node id", expectedNodeId, node.getId() );
             }
             else
             {
-                assertNull( node );
+                assertFalse( nodes.hasNext() );
             }
             tx.success();
         }
-    }
-
-    private static NamedDynamicValueGenerator[] dynamicValueGenerators()
-    {
-        return new NamedDynamicValueGenerator[]{
-                new NamedDynamicValueGenerator( string, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
-                new NamedDynamicValueGenerator( byteArray, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( shortArray, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( intArray, i -> random.randomValues().nextIntArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( longArray, i -> random.randomValues().nextLongArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( floatArray, i -> random.randomValues().nextFloatArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( doubleArray, i -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( booleanArray, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( stringArray0, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 0, 0 ) ),
-                new NamedDynamicValueGenerator( stringArray10, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
-                new NamedDynamicValueGenerator( stringArray100, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
-                new NamedDynamicValueGenerator( stringArray1000, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
-                new NamedDynamicValueGenerator( dateArray, i -> random.randomValues().nextDateArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( timeArray, i -> random.randomValues().nextTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( localTimeArray, i -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( dateTimeArray, i -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( localDateTimeArray, i -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( durationArray, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
-                new NamedDynamicValueGenerator( periodArray, i -> random.randomValues().nextPeriodArrayRaw( i, i ) )
-                // TODO Point (Cartesian)
-                // TODO Point (Cartesian 3D)
-                // TODO Point (WGS-84)
-                // TODO Point (WGS-84 3D)
-        };
-    }
-
-    private static class NamedDynamicValueGenerator implements DynamicValueGenerator
-    {
-        private final String name;
-        private final DynamicValueGenerator generator;
-
-        NamedDynamicValueGenerator( String name, DynamicValueGenerator generator )
-        {
-            this.name = name;
-            this.generator = generator;
-        }
-        String name()
-        {
-            return name;
-        }
-
-        @Override
-        public Object dynamicValue( int arrayLength )
-        {
-            return generator.dynamicValue( arrayLength );
-        }
-    }
-
-    private Object generateSingleValue( int keySizeLimit, int wiggleRoom )
-    {
-        switch ( random.among( new Types[] {STRING, ARRAY} ) )
-        {
-        case STRING:
-            return random.nextAlphaNumericString( keySizeLimit - wiggleRoom, keySizeLimit + wiggleRoom );
-        case ARRAY:
-            return generateSingleArrayValue( keySizeLimit, wiggleRoom );
-        default:
-            throw new IllegalArgumentException();
-        }
-    }
-
-    private Object generateSingleArrayValue( int keySizeLimit, int wiggleRoom )
-    {
-        Types type = random.among( allValidNonArrayTypes );
-        switch ( type )
-        {
-        case BOOLEAN:
-            return createRandomArray( RandomValues::nextBooleanArrayRaw, keySizeLimit, wiggleRoom, SIZE_BOOLEAN );
-        case BYTE:
-            return createRandomArray( RandomValues::nextByteArrayRaw, keySizeLimit, wiggleRoom, SIZE_NUMBER_BYTE );
-        case SHORT:
-            return createRandomArray( RandomValues::nextShortArrayRaw, keySizeLimit, wiggleRoom, SIZE_NUMBER_SHORT );
-        case STRING:
-            return createRandomStringArray( keySizeLimit, wiggleRoom );
-        case INT:
-            return createRandomArray( RandomValues::nextIntArrayRaw, keySizeLimit, wiggleRoom, SIZE_NUMBER_INT );
-        case LONG:
-            return createRandomArray( RandomValues::nextLongArrayRaw, keySizeLimit, wiggleRoom, SIZE_NUMBER_LONG );
-        case FLOAT:
-            return createRandomArray( RandomValues::nextFloatArrayRaw, keySizeLimit, wiggleRoom, SIZE_NUMBER_FLOAT );
-        case DOUBLE:
-            return createRandomArray( RandomValues::nextDoubleArrayRaw, keySizeLimit, wiggleRoom, SIZE_NUMBER_DOUBLE );
-        case LOCAL_DATE_TIME:
-            return createRandomArray( RandomValues::nextLocalDateTimeArrayRaw, keySizeLimit, wiggleRoom, SIZE_LOCAL_DATE_TIME );
-        case DATE:
-            return createRandomArray( RandomValues::nextDateArrayRaw, keySizeLimit, wiggleRoom, SIZE_DATE );
-        case LOCAL_TIME:
-            return createRandomArray( RandomValues::nextLocalTimeArrayRaw, keySizeLimit, wiggleRoom, SIZE_LOCAL_TIME );
-        case PERIOD:
-            return createRandomArray( RandomValues::nextPeriodArrayRaw, keySizeLimit, wiggleRoom, SIZE_DURATION );
-        case DURATION:
-            return createRandomArray( RandomValues::nextDurationArrayRaw, keySizeLimit, wiggleRoom, SIZE_DURATION );
-        case TIME:
-            return createRandomArray( RandomValues::nextTimeArrayRaw, keySizeLimit, wiggleRoom, SIZE_ZONED_TIME );
-        case DATE_TIME:
-            return createRandomArray( RandomValues::nextDateTimeArrayRaw, keySizeLimit, wiggleRoom, SIZE_ZONED_DATE_TIME );
-        case CARTESIAN_POINT:
-        case CARTESIAN_POINT_3D:
-        case GEOGRAPHIC_POINT:
-        case GEOGRAPHIC_POINT_3D:
-            // todo create spatial arrays when NATIVE_BTREE10 support spatial
-        default:
-            throw new IllegalArgumentException( "Unknown type " + type );
-        }
-    }
-
-    private Object createRandomStringArray( int keySizeLimit, int wiggleRoom )
-    {
-        if ( random.nextBoolean() )
-        {
-            // Char array with many small elements
-            int singleEntrySize = SIZE_STRING_LENGTH + 1; // Alphanumeric chars are all serialized with 1 byte
-            int length = random.nextInt( lowLimit( keySizeLimit, wiggleRoom, singleEntrySize ), highLimit( keySizeLimit, wiggleRoom, singleEntrySize ) );
-            char[] chars = new char[length];
-            for ( int i = 0; i < chars.length; i++ )
-            {
-                chars[i] = RandomStringUtils.randomAlphanumeric( 1 ).charAt( 0 );
-            }
-            return chars;
-        }
-        else
-        {
-            // String array with few large elements
-            // We generate only a small number of large strings so overhead per char is negligible.
-            int totalLength = random.nextInt( lowLimit( keySizeLimit, wiggleRoom, 1 ), highLimit( keySizeLimit, wiggleRoom, 1 ) );
-            int maxNumberOfStrings = 4;
-            List<String> strings = new ArrayList<>();
-            while ( strings.size() < maxNumberOfStrings - 1 && totalLength > 0 )
-            {
-                int sizeOfString = random.nextInt( totalLength );
-                strings.add( RandomStringUtils.randomAlphanumeric( sizeOfString ) );
-                totalLength -= sizeOfString;
-            }
-            strings.add( RandomStringUtils.randomAlphabetic( totalLength ) );
-            return strings.toArray( new String[strings.size()] );
-        }
-    }
-
-    private Object createRandomArray( RandomArrayFactory factory, int keySizeLimit, int wiggleRoom, int entrySize )
-    {
-        return factory.next( random.randomValues(), lowLimit( keySizeLimit, wiggleRoom, entrySize ), highLimit( keySizeLimit, wiggleRoom, entrySize ) );
-    }
-
-    private int lowLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
-    {
-        return (keySizeLimit - wiggleRoom) / singleEntrySize;
-    }
-
-    private int highLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
-    {
-        return (keySizeLimit + wiggleRoom) / singleEntrySize;
     }
 
     private void createIndex( String... propKeys )
@@ -546,15 +313,95 @@ public class GenericIndexValidationIT
         }
     }
 
-    @FunctionalInterface
-    private interface DynamicValueGenerator
+    private class SuccessAndFail
     {
-        Object dynamicValue( int arrayLength );
+        boolean atLeastOneSuccess;
+        boolean atLeastOneFail;
+
+        void ableToWrite( boolean ableToWrite )
+        {
+            if ( ableToWrite )
+            {
+                atLeastOneSuccess = true;
+            }
+            else
+            {
+                atLeastOneFail = true;
+            }
+        }
+
+        void verifyBothSuccessAndFail()
+        {
+            assertTrue( "not a single successful write, need to adjust parameters", atLeastOneSuccess );
+            assertTrue( "not a single failed write, need to adjust parameters", atLeastOneFail );
+        }
     }
 
-    @FunctionalInterface
-    private interface RandomArrayFactory
+    private enum NamedDynamicValueGenerator
     {
-        Object next( RandomValues rnd, int minLength, int maxLength );
+        string( "string", Byte.BYTES, 4036, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
+        byteArray( "byteArray", SIZE_NUMBER_BYTE, 4033, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
+        shortArray( "shortArray", SIZE_NUMBER_SHORT, 2016, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
+        intArray( "intArray", SIZE_NUMBER_INT, 1008, i -> random.randomValues().nextIntArrayRaw( i, i ) ),
+        longArray( "longArray", SIZE_NUMBER_LONG, 504, i -> random.randomValues().nextLongArrayRaw( i, i ) ),
+        floatArray( "floatArray", SIZE_NUMBER_FLOAT, 1008, i -> random.randomValues().nextFloatArrayRaw( i, i ) ),
+        doubleArray( "doubleArray", SIZE_NUMBER_DOUBLE, 504, i -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
+        booleanArray( "booleanArray", SIZE_BOOLEAN, 4034, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
+        stringArray1( "stringArray1", SIZE_STRING_LENGTH + 1, 1344, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
+        stringArray10( "stringArray10", SIZE_STRING_LENGTH + 10, 336, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
+        stringArray100( "stringArray100", SIZE_STRING_LENGTH + 100, 39, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
+        stringArray1000( "stringArray1000", SIZE_STRING_LENGTH + 1000, 4, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
+        dateArray( "dateArray", SIZE_DATE, 504, i -> random.randomValues().nextDateArrayRaw( i, i ) ),
+        timeArray( "timeArray", SIZE_ZONED_TIME, 336, i -> random.randomValues().nextTimeArrayRaw( i, i ) ),
+        localTimeArray( "localTimeArray", SIZE_LOCAL_TIME, 504, i -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
+        dateTimeArray( "dateTimeArray", SIZE_ZONED_DATE_TIME, 252, i -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
+        localDateTimeArray( "localDateTimeArray", SIZE_LOCAL_DATE_TIME, 336, i -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
+        durationArray( "durationArray", SIZE_DURATION, 144, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
+        periodArray( "periodArray", SIZE_DURATION, 144, i -> random.randomValues().nextPeriodArrayRaw( i, i ) );
+        // TODO Point (Cartesian)
+        // TODO Point (Cartesian 3D)
+        // TODO Point (WGS-84)
+        // TODO Point (WGS-84 3D)
+
+        private final String identifier;
+        private final int singleArrayEntrySize;
+        private final DynamicValueGenerator generator;
+        private final int expectedMax;
+
+        NamedDynamicValueGenerator( String identifier, int singleArrayEntrySize, int expectedLongestArrayLength, DynamicValueGenerator generator )
+        {
+            this.identifier = identifier;
+            this.singleArrayEntrySize = singleArrayEntrySize;
+            this.expectedMax = expectedLongestArrayLength;
+            this.generator = generator;
+        }
+
+        Object dynamicValue( int length )
+        {
+            return generator.dynamicValue( length );
+        }
+
+        Object dynamicValue( int keySizeLimit, int wiggleRoom )
+        {
+            int lowLimit = lowLimit( keySizeLimit, wiggleRoom, singleArrayEntrySize );
+            int highLimit = highLimit( keySizeLimit, wiggleRoom, singleArrayEntrySize );
+            return dynamicValue( random.intBetween( lowLimit, highLimit ) );
+        }
+
+        private int lowLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
+        {
+            return (keySizeLimit - wiggleRoom) / singleEntrySize;
+        }
+
+        private int highLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
+        {
+            return (keySizeLimit + wiggleRoom) / singleEntrySize;
+        }
+
+        @FunctionalInterface
+        private interface DynamicValueGenerator
+        {
+            Object dynamicValue( int arrayLength );
+        }
     }
 }
