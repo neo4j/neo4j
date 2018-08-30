@@ -180,7 +180,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
     // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
     private static final Comparator<DurationValue> COMPARATOR =
-            Comparator.comparingLong( DurationValue::averageLengthInSeconds )
+            Comparator.comparingLong( DurationValue::getAverageLengthInSeconds )
                     // nanos are guaranteed to be smaller than NANOS_PER_SECOND
                     .thenComparingLong( d -> d.nanos )
                     // At this point, the durations have the same length and we compare by the individual fields.
@@ -200,7 +200,8 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private DurationValue( long months, long days, long seconds, long nanos )
     {
-        seconds = safeAdd( seconds, nanos / NANOS_PER_SECOND );
+        assertNoOverflow( months, days, seconds, nanos );
+        seconds = secondsWithNanos( seconds, nanos );
         nanos %= NANOS_PER_SECOND;
         // normalize nanos to be between 0 and NANOS_PER_SECOND-1
         if ( nanos < 0 )
@@ -212,7 +213,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         this.days = days;
         this.seconds = seconds;
         this.nanos = (int) nanos;
-        assertNoOverflow();
     }
 
     @Override
@@ -227,40 +227,36 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return compareTo( (DurationValue) otherValue );
     }
 
-    private long averageLengthInSeconds()
+    private long getAverageLengthInSeconds()
     {
-        long daysInSeconds = safeMultiply( days, SECONDS_PER_DAY );
-        long monthsInSeconds = safeMultiply( months, AVG_SECONDS_PER_MONTH );
-        return safeAdd( seconds, safeAdd( daysInSeconds, monthsInSeconds ) );
+        return calcAverageLengthInSeconds( this.months, this.days, this.seconds );
     }
 
-    private static long safeAdd( long l1, long l2 )
+    private long calcAverageLengthInSeconds( long months, long days, long seconds )
+    {
+        long daysInSeconds = Math.multiplyExact( days, SECONDS_PER_DAY );
+        long monthsInSeconds = Math.multiplyExact( months, AVG_SECONDS_PER_MONTH );
+        return Math.addExact( seconds, Math.addExact( daysInSeconds, monthsInSeconds ) );
+    }
+
+    private long secondsWithNanos( long seconds, long nanos )
+    {
+        return Math.addExact( seconds, nanos / NANOS_PER_SECOND );
+    }
+
+    private void assertNoOverflow( long months, long days, long seconds, long nanos )
     {
         try
         {
-            return Math.addExact( l1, l2 );
+            calcAverageLengthInSeconds( months, days, seconds );
+            secondsWithNanos( seconds, nanos );
         }
         catch ( ArithmeticException e )
         {
-            throw new InvalidValuesArgumentException( "Invalid value for duration", e );
+            throw new InvalidValuesArgumentException(
+                    String.format( "Invalid value for duration, will cause overflow. Value was months=%d, days=%d, seconds=%d, nanos=%d",
+                            months, days, seconds, nanos ), e );
         }
-    }
-
-    private static long safeMultiply( long l1, long l2 )
-    {
-        try
-        {
-            return Math.multiplyExact( l1, l2 );
-        }
-        catch ( ArithmeticException e )
-        {
-            throw new InvalidValuesArgumentException( "Invalid value for duration", e );
-        }
-    }
-
-    private void assertNoOverflow()
-    {
-        averageLengthInSeconds();
     }
 
     long nanosOfDay()

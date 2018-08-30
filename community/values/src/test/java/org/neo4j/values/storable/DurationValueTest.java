@@ -572,48 +572,45 @@ public class DurationValueTest
     public void shouldThrowOnOverflowOnNanos()
     {
         // when
-        try
-        {
-            DurationValue duration = duration( 0, 0, Long.MAX_VALUE, 1_000_000_000 );
-            fail( "Should have failed" );
-        }
-        catch ( InvalidValuesArgumentException e )
-        {
-            assertThat( e.getMessage(), Matchers.containsString( "Invalid value for duration" ) );
-        }
+        int nanos = 1_000_000_000;
+        long seconds = Long.MAX_VALUE;
+        assertConstructorThrows( 0, 0, seconds, nanos );
     }
 
     @Test
     public void shouldThrowOnOverflowOnDays()
     {
         // when
-        try
-        {
-            long days = Long.MAX_VALUE / TemporalUtil.SECONDS_PER_DAY;
-            long seconds = Long.MAX_VALUE - days * TemporalUtil.SECONDS_PER_DAY;
-            DurationValue duration = duration( 0, days, seconds + 1, 0 );
-            fail( "Should have failed" );
-        }
-        catch ( InvalidValuesArgumentException e )
-        {
-            assertThat( e.getMessage(), Matchers.containsString( "Invalid value for duration" ) );
-        }
+        long days = Long.MAX_VALUE / TemporalUtil.SECONDS_PER_DAY;
+        long seconds = Long.MAX_VALUE - days * TemporalUtil.SECONDS_PER_DAY;
+        assertConstructorThrows( 0, days, seconds + 1, 0 );
     }
 
     @Test
     public void shouldThrowOnOverflowOnMonths()
     {
         // when
+        long months = Long.MAX_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
+        long seconds = Long.MAX_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
+        assertConstructorThrows( months, 0, seconds + 1, 0 );
+    }
+
+    private void assertConstructorThrows( long months, long days, long seconds, int nanos )
+    {
         try
         {
-            long months = Long.MAX_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
-            long seconds = Long.MAX_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
-            DurationValue duration = duration( months, 0, seconds + 1, 0 );
+            DurationValue duration = duration( months, days, seconds, nanos );
             fail( "Should have failed" );
         }
         catch ( InvalidValuesArgumentException e )
         {
-            assertThat( e.getMessage(), Matchers.containsString( "Invalid value for duration" ) );
+            assertThat( e.getMessage(), Matchers.allOf(
+                    Matchers.containsString( "Invalid value for duration" ),
+                    Matchers.containsString( "months=" + months ),
+                    Matchers.containsString( "days=" + days ),
+                    Matchers.containsString( "seconds=" + seconds ),
+                    Matchers.containsString( "nanos=" + nanos )
+            ) );
         }
     }
 }
