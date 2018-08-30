@@ -17,23 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted
+package org.neo4j.cypher.internal.runtime
 
 import java.util
 import java.util.Collections.newSetFromMap
 
-import org.neo4j.cypher.internal.runtime.CloseableResource
 import org.neo4j.helpers.Exceptions
 
 import scala.collection.JavaConverters._
 
-class ResourceManager extends CloseableResource {
+class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource {
   private val resources: util.Set[AutoCloseable] = newSetFromMap(new util.IdentityHashMap[AutoCloseable, java.lang.Boolean]())
 
-  def trace(resource: AutoCloseable): Unit =
+  def trace(resource: AutoCloseable): Unit = {
+    monitor.trace(resource)
     resources.add(resource)
+  }
 
   def release(resource: AutoCloseable): Unit = {
+    monitor.close(resource)
     resource.close()
     if (!resources.remove(resource)) {
       throw new IllegalStateException(s"$resource is not in the resource set $resources")
@@ -46,12 +48,28 @@ class ResourceManager extends CloseableResource {
     val iterator = resources.iterator()
     var error: Throwable = null
     while (iterator.hasNext) {
-      try iterator.next().close()
+      try {
+        val resource = iterator.next()
+        monitor.close(resource)
+        resource.close()
+      }
       catch {
         case t: Throwable => error = Exceptions.chain(error, t)
       }
       iterator.remove()
     }
     if (error != null) throw error
+  }
+}
+
+trait ResourceMonitor {
+  def trace(resource: AutoCloseable): Unit
+  def close(resource: AutoCloseable): Unit
+}
+
+object ResourceMonitor {
+  val NOOP: ResourceMonitor = new ResourceMonitor {
+    def trace(resource: AutoCloseable): Unit = {}
+    def close(resource: AutoCloseable): Unit = {}
   }
 }
