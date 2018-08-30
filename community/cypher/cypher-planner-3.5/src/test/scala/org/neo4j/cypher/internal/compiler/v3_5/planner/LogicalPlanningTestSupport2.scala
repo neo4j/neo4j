@@ -220,7 +220,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
       val solveds = new StubSolveds
       val cardinalities = new StubCardinalities
-      val providedOrders = new ProvidedOrders
+      val providedOrders = new StubProvidedOrders
       val planningAttributes = new PlanningAttributes(solveds, cardinalities, providedOrders)
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(

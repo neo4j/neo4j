@@ -97,12 +97,15 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
 
     val context = mock[LogicalPlanningContext]
+    val planningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders)
     when(context.config).thenReturn(QueryPlannerConfiguration.default)
     when(context.input).thenReturn(QueryGraphSolverInput.empty)
+    when(context.planningAttributes).thenReturn(planningAttributes)
     when(context.strategy).thenReturn(new QueryGraphSolver with PatternExpressionSolving {
       override def plan(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan = {
         context.planningAttributes.solveds.set(lp.id, plannerQuery)
         context.planningAttributes.cardinalities.set(lp.id, 0.0)
+        context.planningAttributes.providedOrders.set(lp.id, ProvidedOrder.empty)
         lp
       }
     })

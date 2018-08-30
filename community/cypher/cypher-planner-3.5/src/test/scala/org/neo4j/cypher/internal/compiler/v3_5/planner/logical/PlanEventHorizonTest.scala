@@ -217,8 +217,10 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
-      val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> Variable("a")(pos), "b" -> literal, "c" -> literal), QueryShuffle(sortItems)))
-      val inputPlan = Argument(Set("a"))
+      val requiredOrder = RequiredOrder(Seq(("a", AscColumnOrder)))
+      val horizon = RegularQueryProjection(Map("a" -> Variable("a")(pos), "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
+      val pq = RegularPlannerQuery(requiredOrder = requiredOrder, horizon = horizon)
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "a")
       context.planningAttributes.solveds.set(inputPlan.id, PlannerQuery.empty)
 
       // When
@@ -234,8 +236,10 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
-      val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle(sortItems)))
-      val inputPlan = Argument()
+      val requiredOrder = RequiredOrder(Seq(("a", AscColumnOrder)))
+      val horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
+      val pq = RegularPlannerQuery(requiredOrder = requiredOrder, horizon = horizon)
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes)
       context.planningAttributes.solveds.set(inputPlan.id, PlannerQuery.empty)
 
       // When

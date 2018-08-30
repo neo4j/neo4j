@@ -50,7 +50,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
+      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
       table.put(register(pattern1), plan1)
 
@@ -64,7 +64,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
+      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
       table.put(register(pattern1), plan1)
 
@@ -80,7 +80,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
+      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
       table.put(register(pattern1), plan1)
 
@@ -95,7 +95,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val plan1 = fakeLogicalPlanFor("a", "r1", "b", "c", "r2", "d")
+      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c", "r2", "d")
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", "c", "d")))
       table.put(register(pattern1, pattern2), plan1)
 

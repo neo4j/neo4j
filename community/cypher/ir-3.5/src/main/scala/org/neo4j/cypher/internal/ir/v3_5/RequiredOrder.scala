@@ -39,5 +39,5 @@ object RequiredOrder {
   */
 case class RequiredOrder(columns: Seq[(String, RequiredColumnOrder)]) {
 
-  val isEmpty: Boolean = this == RequiredOrder.empty
+  val isEmpty: Boolean = columns.isEmpty
 }

@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryGraphSolver}
 import org.neo4j.cypher.internal.ir.v3_5.RequiredOrder
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Projection, RollUpApply}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, Projection, RollUpApply}
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.DummyPosition
@@ -31,12 +35,13 @@ import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
-    val otherSide = newMockedLogicalPlan("  NODE1")
-    val strategy = newMockedStrategyWithMultiplePlans(otherSide)
+    val strategy = mock[QueryGraphSolver]
+    val context = logicalPlanningContext(strategy)
     val pathStep = NilPathStep
+    val otherSide = newMockedLogicalPlan(context.planningAttributes, "  NODE1")
+    mockStrategyWithMultiplePlans(strategy, otherSide)
 
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep))
-    val context = logicalPlanningContext(strategy)
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     // when
@@ -49,12 +54,22 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     expressions should equal(Map("x" -> Variable("x")(pos)))
   }
 
+  private def mockStrategyWithMultiplePlans(strategy: QueryGraphSolver, plans: LogicalPlan*): Unit = {
+    val planIter = plans.iterator
+    when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[LogicalPlan] {
+      override def answer(invocation: InvocationOnMock): LogicalPlan = {
+        planIter.next()
+      }
+    })
+  }
+
   test("Rewrites multiple pattern expressions") {
     // given MATCH (a) RETURN (a)-->(b) as x, (a)<--(b) as y
-    val b1 = newMockedLogicalPlan("outgoing-inner-plan")
-    val b2 = newMockedLogicalPlan("incoming-inner-plan")
-    val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
+    val strategy = mock[QueryGraphSolver]
     val context = logicalPlanningContext(strategy)
+    val b1 = newMockedLogicalPlan(context.planningAttributes, "outgoing-inner-plan")
+    val b2 = newMockedLogicalPlan(context.planningAttributes, "incoming-inner-plan")
+    mockStrategyWithMultiplePlans(strategy, b1, b2)
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
     val pathStep1 = NilPathStep
     val pathStep2 = NilPathStep
@@ -77,10 +92,11 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   test("Rewrites pattern expression inside complex expression") {
     // given MATCH (a) RETURN (a)-->() = (a)--()
-    val b1 = newMockedLogicalPlan("outgoing-inner-plan")
-    val b2 = newMockedLogicalPlan("both-inner-plan")
-    val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
+    val strategy = mock[QueryGraphSolver]
     val context = logicalPlanningContext(strategy)
+    val b1 = newMockedLogicalPlan(context.planningAttributes, "outgoing-inner-plan")
+    val b2 = newMockedLogicalPlan(context.planningAttributes, "both-inner-plan")
+    mockStrategyWithMultiplePlans(strategy, b1, b2)
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
     val pathStep1 = NilPathStep
     val pathStep2 = NilPathStep
@@ -104,10 +120,11 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   test("Rewrites pattern expression inside complex expression, as a WHERE predicate") {
     // given MATCH (a) WHERE (a)-->() = (a)--() return a
-    val b1 = newMockedLogicalPlan("outgoing-inner-plan")
-    val b2 = newMockedLogicalPlan("both-inner-plan")
-    val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
+    val strategy = mock[QueryGraphSolver]
     val context = logicalPlanningContext(strategy)
+    val b1 = newMockedLogicalPlan(context.planningAttributes, "outgoing-inner-plan")
+    val b2 = newMockedLogicalPlan(context.planningAttributes, "both-inner-plan")
+    mockStrategyWithMultiplePlans(strategy, b1, b2)
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
     val pathStep1 = NilPathStep
     val pathStep2 = NilPathStep

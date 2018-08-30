@@ -102,22 +102,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val strategy = mock[QueryGraphSolver]
     when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[LogicalPlan] {
       override def answer(invocation: InvocationOnMock): LogicalPlan = {
-        val solveds = invocation.getArgument[Solveds](2)
-        val cardinalities = invocation.getArgument[Cardinalities](3)
+        val context = invocation.getArgument[LogicalPlanningContext](2)
+        val solveds = context.planningAttributes.solveds
+        val cardinalities = context.planningAttributes.cardinalities
+        val providedOrders = context.planningAttributes.providedOrders
         solveds.set(plan.id, PlannerQuery.empty)
         cardinalities.set(plan.id, 0.0)
+        providedOrders.set(plan.id, ProvidedOrder.empty)
         plan
-      }
-    })
-    strategy
-  }
-
-  def newMockedStrategyWithMultiplePlans(plans: LogicalPlan*): QueryGraphSolver = {
-    val strategy = mock[QueryGraphSolver]
-    val planIter = plans.iterator
-    when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[LogicalPlan] {
-      override def answer(invocation: InvocationOnMock): LogicalPlan = {
-        planIter.next()
       }
     })
     strategy
@@ -225,7 +217,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes)
   }
 
-  def newAttributes : PlanningAttributes = {
+  def newAttributes() : PlanningAttributes = {
     val solveds = new Solveds
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
