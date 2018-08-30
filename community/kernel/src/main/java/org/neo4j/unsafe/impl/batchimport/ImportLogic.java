@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -521,12 +522,12 @@ public class ImportLogic implements Closeable
 
     public static BatchingNeoStores instantiateNeoStores( FileSystemAbstraction fileSystem, File storeDir,
             PageCache externalPageCache, RecordFormats recordFormats, Configuration config,
-            LogService logService, AdditionalInitialIds additionalInitialIds, Config dbConfig )
+            LogService logService, AdditionalInitialIds additionalInitialIds, Config dbConfig, JobScheduler scheduler )
     {
         if ( externalPageCache == null )
         {
             return BatchingNeoStores.batchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
-                    additionalInitialIds, dbConfig );
+                    additionalInitialIds, dbConfig, scheduler );
         }
 
         return BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, externalPageCache,

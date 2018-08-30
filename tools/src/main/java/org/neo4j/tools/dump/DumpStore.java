@@ -27,7 +27,6 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -56,6 +55,7 @@ import org.neo4j.logging.PrintStreamLogger;
 
 import static java.lang.Long.parseLong;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -99,7 +99,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         }
 
         try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-              PageCache pageCache = createPageCache( fs ) )
+              PageCache pageCache = createPageCache( fs, createInitialisedScheduler() ) )
         {
             final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( DatabaseLayout.of( file ),

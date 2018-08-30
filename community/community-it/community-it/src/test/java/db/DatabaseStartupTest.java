@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -72,7 +73,8 @@ class DatabaseStartupTest
 
         // mess up the version in the metadatastore
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-                PageCache pageCache = createPageCache( fileSystem ) )
+              ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
+              PageCache pageCache = createPageCache( fileSystem, scheduler ) )
         {
             MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().metadataStore(),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
@@ -101,7 +103,8 @@ class DatabaseStartupTest
         // mess up the version in the metadatastore
         String badStoreVersion = "bad";
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-                PageCache pageCache = createPageCache( fileSystem ) )
+              ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
+              PageCache pageCache = createPageCache( fileSystem, scheduler ) )
         {
             MetaDataStore.setRecord( pageCache, testDirectory.databaseLayout().metadataStore(), MetaDataStore.Position.STORE_VERSION,
                     MetaDataStore.versionStringToLong( badStoreVersion ) );

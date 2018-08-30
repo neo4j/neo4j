@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -147,7 +148,7 @@ class RebuildFromLogs
 
     public void rebuild( File source, File target, long txId ) throws Exception, InconsistentStoreException
     {
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, createInitialisedScheduler() ) )
         {
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( source, fs ).build();
             long highestVersion = logFiles.getHighestLogVersion();

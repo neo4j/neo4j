@@ -46,6 +46,8 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -75,8 +77,9 @@ public class StoreMigratorTest
         Config config = Config.defaults( pagecache_memory, "8m" );
 
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+              JobScheduler jobScheduler = new ThreadPoolJobScheduler();
               PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, NULL,
-                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY )
+                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler )
                      .getOrCreatePageCache() )
         {
             // For test code sanity
@@ -86,8 +89,7 @@ public class StoreMigratorTest
             assertTrue( hasVersionResult.actualVersion, hasVersionResult.outcome.isSuccessful() );
 
             // WHEN
-            StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance()
-            );
+            StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(), jobScheduler );
             ProgressReporter monitor = mock( ProgressReporter.class );
             DatabaseLayout migrationLayout = directory.databaseLayout( "migration" );
             migrator.migrate( directory.databaseLayout(), migrationLayout, monitor, fromStoreVersion,

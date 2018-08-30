@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -73,6 +72,7 @@ import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.lock_read_timeout;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 /**
  *  Current test will try to emulate client master conversation lifecycle
@@ -94,7 +94,7 @@ public class MasterImplConversationStopFuzzIT
 
     private final LifeSupport life = new LifeSupport();
     private final ExecutorService executor = Executors.newFixedThreadPool( numberOfWorkers + 1 );
-    private final JobScheduler scheduler = life.add( new CentralJobScheduler() );
+    private final JobScheduler scheduler = life.add( createInitialisedScheduler() );
     private final Config config = Config.defaults( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
     private final Locks locks = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(),
             ResourceTypes.NODE, ResourceTypes.LABEL );

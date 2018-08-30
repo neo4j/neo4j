@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -36,7 +35,9 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
 
 public class StoreInfoCommand implements AdminCommand
@@ -60,7 +61,8 @@ public class StoreInfoCommand implements AdminCommand
         Validators.CONTAINS_EXISTING_DATABASE.validate( databaseDirectory.toFile() );
 
         try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
+                JobScheduler jobScheduler = createInitialisedScheduler();
+                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, jobScheduler ) )
         {
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
             final String storeVersion = new StoreVersionCheck( pageCache )
@@ -77,7 +79,7 @@ public class StoreInfoCommand implements AdminCommand
                     .map( next -> String.format( fmt, "Store format superseded in:", next.introductionVersion() ) )
                     .ifPresent( out );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             throw new CommandFailed( e.getMessage(), e );
         }

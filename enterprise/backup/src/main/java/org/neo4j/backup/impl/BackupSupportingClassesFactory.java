@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * The dependencies for the backup strategies require a valid configuration for initialisation.
@@ -66,6 +67,7 @@ public class BackupSupportingClassesFactory
     protected final TransactionLogCatchUpFactory transactionLogCatchUpFactory;
     protected final OutputStream logDestination;
     protected final OutsideWorld outsideWorld;
+    private final JobScheduler jobScheduler;
 
     protected BackupSupportingClassesFactory( BackupModule backupModule )
     {
@@ -74,6 +76,7 @@ public class BackupSupportingClassesFactory
         this.monitors = backupModule.getMonitors();
         this.fileSystemAbstraction = backupModule.getFileSystemAbstraction();
         this.transactionLogCatchUpFactory = backupModule.getTransactionLogCatchUpFactory();
+        this.jobScheduler = backupModule.jobScheduler();
         this.logDestination = backupModule.getOutsideWorld().outStream();
         this.outsideWorld = backupModule.getOutsideWorld();
     }
@@ -88,7 +91,7 @@ public class BackupSupportingClassesFactory
     BackupSupportingClasses createSupportingClasses( Config config )
     {
         monitors.addMonitorListener( new BackupOutputMonitor( outsideWorld ) );
-        PageCache pageCache = createPageCache( fileSystemAbstraction, config );
+        PageCache pageCache = createPageCache( fileSystemAbstraction, config, jobScheduler );
         return new BackupSupportingClasses(
                 backupDelegatorFromConfig( pageCache, config ),
                 haFromConfig( pageCache ),
@@ -139,8 +142,8 @@ public class BackupSupportingClassesFactory
         return new BackupDelegator( remoteStore, catchUpClient, storeCopyClient );
     }
 
-    private static PageCache createPageCache( FileSystemAbstraction fileSystemAbstraction, Config config )
+    private static PageCache createPageCache( FileSystemAbstraction fileSystemAbstraction, Config config, JobScheduler jobScheduler )
     {
-        return ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
+        return ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config, jobScheduler );
     }
 }

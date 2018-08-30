@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.scheduler.DaemonThreadFactory;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 class SequenceLockStressIT

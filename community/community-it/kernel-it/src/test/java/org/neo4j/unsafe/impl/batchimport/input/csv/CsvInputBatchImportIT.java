@@ -70,6 +70,8 @@ import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -125,17 +127,20 @@ public class CsvInputBatchImportIT
     {
         // GIVEN
         Config dbConfig = Config.builder().withSetting( db_timezone, LogTimeZone.SYSTEM.name() ).build();
-        BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null,
-                smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), AdditionalInitialIds.EMPTY, dbConfig,
-                RecordFormatSelector.defaultFormat(), NO_MONITOR );
-        List<InputEntity> nodeData = randomNodeData();
-        List<InputEntity> relationshipData = randomRelationshipData( nodeData );
+        try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
+        {
+            BatchImporter importer =
+                    new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, smallBatchSizeConfig(), NullLogService.getInstance(),
+                            invisible(), AdditionalInitialIds.EMPTY, dbConfig, RecordFormatSelector.defaultFormat(), NO_MONITOR, scheduler );
+            List<InputEntity> nodeData = randomNodeData();
+            List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 
-        // WHEN
-        importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ),
-                IdType.STRING, lowBufferSize( COMMAS ), silentBadCollector( 0 ) ) );
-        // THEN
-        verifyImportedData( nodeData, relationshipData );
+            // WHEN
+            importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ), IdType.STRING, lowBufferSize( COMMAS ),
+                    silentBadCollector( 0 ) ) );
+            // THEN
+            verifyImportedData( nodeData, relationshipData );
+        }
     }
 
     public static Input csv( File nodes, File relationships, IdType idType,

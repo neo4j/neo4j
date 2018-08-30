@@ -51,7 +51,7 @@ public class StoreMigrationTest
     }
 
     @Test
-    public void storeMigrationToolShouldBeAbleToMigrateOldStore() throws IOException
+    public void storeMigrationToolShouldBeAbleToMigrateOldStore() throws Exception
     {
         StoreMigration.main( new String[]{testDir.databaseDir().getAbsolutePath()} );
 

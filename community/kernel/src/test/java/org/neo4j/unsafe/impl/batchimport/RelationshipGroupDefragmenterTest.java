@@ -44,6 +44,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -88,20 +90,23 @@ public class RelationshipGroupDefragmenterTest
     public int units;
 
     private BatchingNeoStores stores;
+    private JobScheduler jobScheduler;
 
     @Before
     public void start() throws IOException
     {
+        jobScheduler = new ThreadPoolJobScheduler();
         stores = BatchingNeoStores.batchingNeoStores( fileSystemRule.get(),
                 directory.absolutePath(), format, CONFIG, NullLogService.getInstance(),
-                AdditionalInitialIds.EMPTY, Config.defaults() );
+                AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler );
         stores.createNew();
     }
 
     @After
-    public void stop() throws IOException
+    public void stop() throws Exception
     {
         stores.close();
+        jobScheduler.close();
     }
 
     @Test

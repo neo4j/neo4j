@@ -52,6 +52,7 @@ import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -63,6 +64,7 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
@@ -149,9 +151,10 @@ public class ConsistencyCheckService
             ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
+        JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY );
+                logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY, jobScheduler );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
@@ -168,6 +171,14 @@ public class ConsistencyCheckService
             catch ( Exception e )
             {
                 log.error( "Failure during shutdown of the page cache", e );
+            }
+            try
+            {
+                jobScheduler.close();
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failure during shutdown of the job scheduler", e );
             }
         }
     }

@@ -41,10 +41,8 @@ import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransact
 import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobSchedulerAdapter;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
@@ -71,27 +69,6 @@ public class CheckPointingLogRotationStressTesting
     private static final String DEFAULT_PAGE_CACHE_MEMORY = "4g";
 
     private static final int CHECK_POINT_INTERVAL_MINUTES = 1;
-    private JobScheduler jobScheduler = new JobSchedulerAdapter()
-    {
-        @Override
-        public JobHandle schedule( Group group, Runnable job )
-        {
-            return new JobHandle()
-            {
-                @Override
-                public void cancel( boolean mayInterruptIfRunning )
-                {
-
-                }
-
-                @Override
-                public void waitTermination()
-                {
-
-                }
-            };
-        }
-    };
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Throwable
@@ -104,12 +81,13 @@ public class CheckPointingLogRotationStressTesting
         String pageCacheMemory = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_CACHE_MEMORY", DEFAULT_PAGE_CACHE_MEMORY );
 
         System.out.println( "1/6\tBuilding initial store..." );
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             Config dbConfig = Config.defaults();
             new ParallelBatchImporter( DatabaseLayout.of( ensureExistsAndEmpty( storeDir ) ), fileSystem, null, DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.defaultVisible( jobScheduler ), EMPTY, dbConfig,
-                    RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ), NO_MONITOR )
+                    RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ), NO_MONITOR, jobScheduler )
                     .doImport( new NodeCountInputs( nodeCount ) );
         }
 

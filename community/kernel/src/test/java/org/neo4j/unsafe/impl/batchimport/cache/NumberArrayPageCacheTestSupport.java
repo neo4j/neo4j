@@ -26,6 +26,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.TestDirectory;
 
 public class NumberArrayPageCacheTestSupport
@@ -35,8 +36,9 @@ public class NumberArrayPageCacheTestSupport
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );
         File dir = testDirectory.prepareDirectoryForTest( "test" );
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem );
-        return new Fixture( pageCache, fileSystem, dir );
+        ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
+        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, scheduler );
+        return new Fixture( pageCache, fileSystem, dir, scheduler );
     }
 
     public static class Fixture implements AutoCloseable
@@ -44,18 +46,21 @@ public class NumberArrayPageCacheTestSupport
         public final PageCache pageCache;
         public final FileSystemAbstraction fileSystem;
         public final File directory;
+        private final ThreadPoolJobScheduler scheduler;
 
-        private Fixture( PageCache pageCache, FileSystemAbstraction fileSystem, File directory )
+        private Fixture( PageCache pageCache, FileSystemAbstraction fileSystem, File directory, ThreadPoolJobScheduler scheduler )
         {
             this.pageCache = pageCache;
             this.fileSystem = fileSystem;
             this.directory = directory;
+            this.scheduler = scheduler;
         }
 
         @Override
         public void close() throws Exception
         {
             pageCache.close();
+            scheduler.close();
             fileSystem.close();
         }
     }

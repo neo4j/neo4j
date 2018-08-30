@@ -52,7 +52,7 @@ public class ConfigurablePageCacheRule extends PageCacheRule
         config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, tracer, cursorTracerSupplier,
-                        logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY );
+                        logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY, jobScheduler );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

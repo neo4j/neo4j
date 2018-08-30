@@ -19,6 +19,7 @@
  */
 package upgrade;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,6 +61,8 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -95,14 +98,23 @@ public class StoreUpgraderInterruptionTestIT
     }
 
     private final FileSystemAbstraction fs = fileSystemRule.get();
+    private JobScheduler jobScheduler;
     private DatabaseLayout workingDatabaseLayout;
     private File prepareDirectory;
 
     @Before
     public void setUpLabelScanStore()
     {
+        jobScheduler = new ThreadPoolJobScheduler();
         workingDatabaseLayout = directory.databaseLayout();
         prepareDirectory = directory.directory( "prepare" );
+
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        jobScheduler.close();
     }
 
     @Test
@@ -115,7 +127,7 @@ public class StoreUpgraderInterruptionTestIT
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService )
+        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
@@ -140,7 +152,7 @@ public class StoreUpgraderInterruptionTestIT
         }
 
         progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader( upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDatabaseLayout );
 
@@ -174,7 +186,7 @@ public class StoreUpgraderInterruptionTestIT
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService )
+        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
         {
             @Override
             public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
@@ -199,7 +211,7 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDatabaseLayout ) );
 
         progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDatabaseLayout );
 

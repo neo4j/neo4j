@@ -57,11 +57,11 @@ import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -74,6 +74,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ResetFuzzTest
@@ -92,7 +93,7 @@ public class ResetFuzzTest
     /** We track the number of un-closed transactions, and fail if we ever leak one */
     private final AtomicLong liveTransactions = new AtomicLong();
     private final Monitors monitors = new Monitors();
-    private final CentralJobScheduler scheduler = life.add( new CentralJobScheduler() );
+    private final JobScheduler scheduler = life.add( createScheduler() );
     private final BoltSchedulerProvider boltSchedulerProvider = life.add(
             new ExecutorBoltSchedulerProvider( createConfig(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler,
                     NullLogService.getInstance() ) );

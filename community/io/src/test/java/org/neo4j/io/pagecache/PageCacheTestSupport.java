@@ -44,6 +44,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
@@ -76,6 +78,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected int filePageSize;
     protected ByteBuffer bufA;
     protected FileSystemAbstraction fs;
+    protected JobScheduler jobScheduler;
     protected T pageCache;
 
     private Fixture<T> fixture;
@@ -88,6 +91,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         fixture = createFixture();
         Thread.interrupted(); // Clear stray interrupts
         fs = createFileSystemAbstraction();
+        jobScheduler = new ThreadPoolJobScheduler();
         ensureExists( file( "a" ) );
     }
 
@@ -100,6 +104,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         {
             tearDownPageCache( pageCache );
         }
+        jobScheduler.close();
         fs.close();
     }
 
@@ -107,7 +112,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
                                        PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
                                        VersionContextSupplier versionContextSupplier )
     {
-        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier );
+        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier, jobScheduler );
         pageCachePageSize = pageCache.pageSize();
         recordsPerFilePage = pageCachePageSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
@@ -348,7 +353,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     {
         public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
                                            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
-                                           VersionContextSupplier contextSupplier );
+                                           VersionContextSupplier contextSupplier, JobScheduler jobScheduler );
 
         public abstract void tearDownPageCache( T pageCache );
 

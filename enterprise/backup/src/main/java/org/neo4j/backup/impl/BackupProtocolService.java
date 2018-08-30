@@ -87,6 +87,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 /**
  * Client-side convenience service for doing backups from a running database instance.
@@ -115,7 +116,7 @@ public class BackupProtocolService
     public BackupProtocolService( OutputStream logDestination )
     {
         this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination, new Monitors(),
-                createPageCache( new DefaultFileSystemAbstraction() ) );
+                createPageCache( new DefaultFileSystemAbstraction(), createInitialisedScheduler() ) );
     }
 
     BackupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, OutputStream logDestination, Monitors monitors,

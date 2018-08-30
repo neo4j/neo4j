@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -75,11 +77,14 @@ public class HumanUnderstandableExecutionMonitorIT
                 1, 1, 0, 0 );
 
         // when
-        new ParallelBatchImporter( storage.directory().databaseLayout(), storage.fileSystem(), storage.pageCache(), DEFAULT,
-                NullLogService.getInstance(), monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR ).doImport( input );
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
+        {
+            new ParallelBatchImporter( storage.directory().databaseLayout(), storage.fileSystem(), storage.pageCache(), DEFAULT, NullLogService.getInstance(),
+                    monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR, jobScheduler ).doImport( input );
 
-        // then
-        progress.assertAllProgressReachedEnd();
+            // then
+            progress.assertAllProgressReachedEnd();
+        }
     }
 
     private static class CapturingMonitor implements HumanUnderstandableExecutionMonitor.Monitor

@@ -62,6 +62,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -262,12 +263,12 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
             RecordFormats recordFormats, Configuration config, LogService logService, AdditionalInitialIds initialIds,
-            Config dbConfig )
+            Config dbConfig, JobScheduler jobScheduler )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer,
-                DefaultPageCursorTracerSupplier.INSTANCE, EmptyVersionContextSupplier.EMPTY );
+                DefaultPageCursorTracerSupplier.INSTANCE, EmptyVersionContextSupplier.EMPTY, jobScheduler );
 
         return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
                 initialIds, false, tracer::bytesWritten );
@@ -292,10 +293,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
-            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier )
+            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier, JobScheduler jobScheduler )
     {
         return new ConfiguringPageCacheFactory( fileSystem, config, tracer, cursorTracerSupplier,
-                log.getLog( BatchingNeoStores.class ), contextSupplier ).getOrCreatePageCache();
+                log.getLog( BatchingNeoStores.class ), contextSupplier, jobScheduler ).getOrCreatePageCache();
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, OpenOption... openOptions )

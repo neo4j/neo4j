@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -70,6 +71,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 
 public class ClusterIT
@@ -400,10 +402,11 @@ public class ClusterIT
         }
     }
 
-    private static void clearLastTransactionCommitTimestampField( DatabaseLayout databaseLayout ) throws IOException
+    private static void clearLastTransactionCommitTimestampField( DatabaseLayout databaseLayout ) throws Exception
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              PageCache pageCache = createPageCache( fileSystem ) )
+              JobScheduler jobScheduler = createInitialisedScheduler();
+              PageCache pageCache = createPageCache( fileSystem, jobScheduler ) )
         {
             File neoStore = databaseLayout.metadataStore();
             MetaDataStore.setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP,

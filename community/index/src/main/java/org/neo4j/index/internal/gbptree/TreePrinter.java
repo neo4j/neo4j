@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
@@ -68,17 +69,17 @@ public class TreePrinter<KEY, VALUE>
      * Prints the header, that is tree state and meta information, about the tree present in the given {@code file}.
      *
      * @param fs {@link FileSystemAbstraction} where the {@code file} exists.
+     * @param jobScheduler {@link JobScheduler} job scheduler to run page cache related tasks
      * @param file {@link File} containing the tree to print header for.
      * @param out {@link PrintStream} to print at.
      * @throws IOException on I/O error.
      */
-    public static void printHeader( FileSystemAbstraction fs, File file, PrintStream out ) throws IOException
+    public static void printHeader( FileSystemAbstraction fs, JobScheduler jobScheduler, File file, PrintStream out ) throws IOException
     {
         SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
         swapper.open( fs, EMPTY );
         PageCursorTracerSupplier cursorTracerSupplier = PageCursorTracerSupplier.NULL;
-        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier,
-                EmptyVersionContextSupplier.EMPTY ) )
+        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
         {
             printHeader( pageCache, file, out );
         }

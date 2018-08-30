@@ -39,7 +39,6 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -104,6 +103,7 @@ import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -480,11 +480,12 @@ public class RecoveryIT
         NullLogProvider logProvider = NullLogProvider.getInstance();
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try (
+                ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier, jobScheduler )
                         .getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier, jobScheduler )
                         .getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1 ),
                         pageCache1, fs1, logProvider, contextSupplier ).openAllNeoStores();

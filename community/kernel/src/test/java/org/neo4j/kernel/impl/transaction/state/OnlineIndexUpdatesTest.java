@@ -27,7 +27,6 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -40,7 +39,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyTraverser;
@@ -119,7 +118,7 @@ public class OnlineIndexUpdatesTest
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
-        JobScheduler scheduler = new CentralJobScheduler();
+        JobScheduler scheduler = JobSchedulerFactory.createScheduler();
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( EMPTY );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies );

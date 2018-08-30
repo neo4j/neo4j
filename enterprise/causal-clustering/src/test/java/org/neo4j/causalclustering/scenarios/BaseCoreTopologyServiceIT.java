@@ -33,12 +33,13 @@ import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyServiceNoRetriesStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public abstract class BaseCoreTopologyServiceIT
 {
@@ -52,8 +53,7 @@ public abstract class BaseCoreTopologyServiceIT
     @Test( timeout = 120_000 )
     public void shouldBeAbleToStartAndStopWithoutSuccessfulJoin() throws Throwable
     {
-        CentralJobScheduler jobScheduler = new CentralJobScheduler();
-        jobScheduler.init();
+        JobScheduler jobScheduler = createInitialisedScheduler();
         HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
         // Random members that does not exists, discovery will never succeed

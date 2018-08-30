@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -56,17 +55,19 @@ import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 /**
  * Tool that will dump content of count store content into a simple string representation for further analysis.
  */
 public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownKey.Visitor
 {
-    public static void main( String... args ) throws IOException
+    public static void main( String... args ) throws Exception
     {
         if ( args.length != 1 )
         {
@@ -79,9 +80,10 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
     }
 
-    public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException
+    public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws Exception
     {
-        try ( PageCache pages = createPageCache( fs );
+        try ( JobScheduler jobScheduler = createInitialisedScheduler();
+              PageCache pages = createPageCache( fs, jobScheduler );
               Lifespan life = new Lifespan() )
         {
             NullLogProvider logProvider = NullLogProvider.getInstance();

@@ -41,20 +41,20 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.TestNetwork;
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.asSet;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class Fixture
 {
     private final Set<MemberId> members = new HashSet<>();
     private final Set<BootstrapWaiter> bootstrapWaiters = new HashSet<>();
     private final List<TimerService> timerServices = new ArrayList<>();
-    private final JobScheduler scheduler = new CentralJobScheduler();
+    private final JobScheduler scheduler = createInitialisedScheduler();
     final Set<RaftFixture> rafts = new HashSet<>();
     final TestNetwork net;
 
@@ -99,7 +99,6 @@ public class Fixture
 
     void boot() throws Throwable
     {
-        scheduler.init();
         scheduler.start();
         for ( RaftFixture raft : rafts )
         {

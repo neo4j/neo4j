@@ -34,6 +34,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
@@ -47,17 +49,17 @@ public class TestStoreId
     {
     }
 
-    public static void assertAllStoresHaveTheSameStoreId( List<File> coreStoreDirs, FileSystemAbstraction fs )
-            throws IOException
+    public static void assertAllStoresHaveTheSameStoreId( List<File> coreStoreDirs, FileSystemAbstraction fs ) throws Exception
     {
         Set<StoreId> storeIds = getStoreIds( coreStoreDirs, fs );
         assertEquals( "Store Ids " + storeIds, 1, storeIds.size() );
     }
 
-    public static Set<StoreId> getStoreIds( List<File> coreStoreDirs, FileSystemAbstraction fs ) throws IOException
+    public static Set<StoreId> getStoreIds( List<File> coreStoreDirs, FileSystemAbstraction fs ) throws Exception
     {
         Set<StoreId> storeIds = new HashSet<>();
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler ) )
         {
             for ( File coreStoreDir : coreStoreDirs )
             {

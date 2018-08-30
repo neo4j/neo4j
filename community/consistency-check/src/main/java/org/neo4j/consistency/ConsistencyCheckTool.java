@@ -43,10 +43,12 @@ import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.helpers.Args.jarUsage;
 import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class ConsistencyCheckTool
 {
@@ -130,14 +132,15 @@ public class ConsistencyCheckTool
         }
     }
 
-    private boolean isVerbose( Args arguments )
+    private static boolean isVerbose( Args arguments )
     {
         return arguments.getBoolean( VERBOSE, false, true );
     }
 
     private void checkDbState( DatabaseLayout databaseLayout, Config tuningConfiguration ) throws ToolFailureException
     {
-        try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
+        try ( JobScheduler jobScheduler = createInitialisedScheduler();
+              PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration, jobScheduler ) )
         {
             RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache,
                     tuningConfiguration, new Monitors() );
@@ -149,7 +152,11 @@ public class ConsistencyCheckTool
                         "To perform recovery please start database and perform clean shutdown." ) );
             }
         }
-        catch ( IOException e )
+        catch ( ToolFailureException tfe )
+        {
+            throw tfe;
+        }
+        catch ( Exception e )
         {
             systemError.printf( "Failure when checking for recovery state: '%s', continuing as normal.%n", e );
         }

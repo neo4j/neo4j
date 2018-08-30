@@ -39,6 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
@@ -77,22 +79,19 @@ public class ImportPanicIT
     @Test
     public void shouldExitAndThrowExceptionOnPanic() throws Exception
     {
-        // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fs, null, Configuration.DEFAULT,
-                NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
-                Config.defaults(), StandardV3_0.RECORD_FORMATS, NO_MONITOR );
-        Iterable<DataFactory> nodeData =
-                datas( data( NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
-        Input brokenCsvInput = new CsvInput(
-                nodeData, defaultFormatNodeFileHeader(),
-                datas(), defaultFormatRelationshipFileHeader(),
-                IdType.ACTUAL,
-                csvConfigurationWithLowBufferSize(),
-                new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ) );
-
-        // WHEN
-        try
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
+            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fs, null, Configuration.DEFAULT,
+                    NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
+                    Config.defaults(), StandardV3_0.RECORD_FORMATS, NO_MONITOR, jobScheduler );
+            Iterable<DataFactory> nodeData =
+                    datas( data( NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
+            Input brokenCsvInput = new CsvInput(
+                    nodeData, defaultFormatNodeFileHeader(),
+                    datas(), defaultFormatRelationshipFileHeader(),
+                    IdType.ACTUAL,
+                    csvConfigurationWithLowBufferSize(),
+                    new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ) );
             importer.doImport( brokenCsvInput );
             fail( "Should have failed properly" );
         }

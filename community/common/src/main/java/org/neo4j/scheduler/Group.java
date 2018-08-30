@@ -19,7 +19,6 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.OptionalInt;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,6 +30,8 @@ public enum Group
     // GENERAL DATABASE GROUPS.
     /** Thread that schedules delayed or recurring tasks. */
     TASK_SCHEDULER( "Scheduler", ExecutorServiceFactory.unschedulable() ),
+    /* Background page cache worker. */
+    PAGE_CACHE( "PageCacheWorker" ),
     /** Watch out for, and report, external manipulation of store files. */
     FILE_WATCHER( "FileWatcher" ),
     /** Monitor and report system-wide pauses, in case they lead to service interruption. */

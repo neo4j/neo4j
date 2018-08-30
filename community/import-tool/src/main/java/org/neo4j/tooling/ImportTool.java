@@ -52,7 +52,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validator;
@@ -61,6 +60,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
@@ -90,6 +90,7 @@ import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.kernel.impl.store.PropertyType.EMPTY_BYTE_ARRAY;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -562,7 +563,7 @@ public class ImportTool
         dbConfig.augment( logs_directory, logsDir.getCanonicalPath() );
         File internalLogFile = dbConfig.get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
-        final CentralJobScheduler jobScheduler = life.add( new CentralJobScheduler() );
+        final JobScheduler jobScheduler = life.add( createScheduler() );
 
         life.start();
         ExecutionMonitor executionMonitor = detailedProgress
@@ -576,7 +577,7 @@ public class ImportTool
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
-                new PrintingImportLogicMonitor( out, err ) );
+                new PrintingImportLogicMonitor( out, err ), jobScheduler );
         printOverview( databaseLayout.databaseDirectory(), nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try

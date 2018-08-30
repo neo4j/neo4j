@@ -47,6 +47,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
@@ -79,11 +81,11 @@ public class BatchingNeoStoresTest
         someDataInTheDatabase();
 
         // WHEN
-        try
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
             try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().databaseDir(), recordFormats,
-                    DEFAULT, NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+                    DEFAULT, NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler ) )
             {
                 store.createNew();
                 fail( "Should fail on existing data" );
@@ -108,8 +110,9 @@ public class BatchingNeoStoresTest
         // WHEN
         RecordFormats recordFormats = LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
-        try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().absolutePath(),
-                recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+              BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().absolutePath(),
+              recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler ) )
         {
             store.createNew();
 

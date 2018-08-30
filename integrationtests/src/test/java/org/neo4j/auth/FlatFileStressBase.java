@@ -31,21 +31,16 @@ import java.time.Clock;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobSchedulerAdapter;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.ListSnapshot;
@@ -80,7 +75,7 @@ abstract class FlatFileStressBase
     {
         Config config = Config.defaults();
         LogProvider logProvider = NullLogProvider.getInstance();
-        JobScheduler jobScheduler = new NoopJobScheduler();
+        JobScheduler jobScheduler = new JobSchedulerAdapter();
 
         userRepository = CommunitySecurityModule.getUserRepository( config, logProvider, getFileSystem() );
         roleRepository = EnterpriseSecurityModule.getRoleRepository( config, logProvider, getFileSystem() );
@@ -164,57 +159,6 @@ abstract class FlatFileStressBase
         void setActions( Runnable... actions )
         {
             this.actions = actions;
-        }
-    }
-
-    private class NoopJobScheduler extends LifecycleAdapter implements JobScheduler
-    {
-        @Override
-        public void setTopLevelGroupName( String name )
-        {
-        }
-
-        @Override
-        public Executor executor( Group group )
-        {
-            return null;
-        }
-
-        @Override
-        public ExecutorService workStealingExecutor( Group group, int parallelism )
-        {
-            return null;
-        }
-
-        @Override
-        public ThreadFactory threadFactory( Group group )
-        {
-            return null;
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable job )
-        {
-            return null;
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-        {
-            return null;
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
-        {
-            return null;
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period,
-        TimeUnit timeUnit )
-        {
-            return null;
         }
     }
 }

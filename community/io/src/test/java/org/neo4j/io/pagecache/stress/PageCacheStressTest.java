@@ -31,6 +31,8 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,12 +85,13 @@ public class PageCacheStressTest
 
     public void run() throws Exception
     {
-        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+              JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
             swapperFactory.open( fs, Configuration.EMPTY );
             try ( PageCache pageCacheUnderTest = new MuninnPageCache(
-                    swapperFactory, numberOfCachePages, tracer, pageCursorTracerSupplier, EmptyVersionContextSupplier.EMPTY ) )
+                    swapperFactory, numberOfCachePages, tracer, pageCursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {
                 PageCacheStresser pageCacheStresser =
                         new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );

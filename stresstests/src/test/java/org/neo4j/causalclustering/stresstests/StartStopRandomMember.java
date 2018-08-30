@@ -35,6 +35,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 
 import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
@@ -69,7 +71,8 @@ class StartStopRandomMember extends RepeatOnRandomMember
     {
         File parent = storeDir.getParentFile();
         try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, pageCache, parent );
-              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+              JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler ) )
         {
             fs.copyRecursively( storeDir, storeDirectory.storeDir() );
             new CopiedStoreRecovery( Config.defaults(), GraphDatabaseDependencies.newDependencies().kernelExtensions(),  pageCache )

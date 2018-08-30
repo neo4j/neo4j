@@ -23,7 +23,6 @@
 package org.neo4j.tools.applytx;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.function.Supplier;
 
@@ -32,7 +31,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -49,11 +47,13 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.tools.console.input.ArgsCommand;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
@@ -100,8 +100,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
     }
 
     private long applyTransactions( File fromPath, GraphDatabaseAPI toDb, Config toConfig,
-            long fromTxExclusive, long toTxInclusive, PrintStream out )
-            throws IOException, TransactionFailureException
+            long fromTxExclusive, long toTxInclusive, PrintStream out ) throws Exception
     {
         DependencyResolver resolver = toDb.getDependencyResolver();
         TransactionRepresentationCommitProcess commitProcess =
@@ -110,7 +109,8 @@ public class ApplyTransactionsCommand extends ArgsCommand
                         resolver.resolveDependency( StorageEngine.class ) );
         LifeSupport life = new LifeSupport();
         try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
+              JobScheduler jobScheduler = createInitialisedScheduler();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, jobScheduler ) )
         {
             LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, DatabaseLayout.of( fromPath ),
                     Config.defaults(), new Monitors() ) );

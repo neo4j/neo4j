@@ -45,6 +45,7 @@ import org.neo4j.tools.console.input.ConsoleInput;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.tools.console.input.ConsoleUtil.staticPrompt;
 
 public class GBPTreePlayground
@@ -61,7 +62,7 @@ public class GBPTreePlayground
     {
         this.indexFile = indexFile;
         this.layout = SimpleLongLayout.longLayout().build();
-        this.pageCache = StandalonePageCacheFactory.createPageCache( fs );
+        this.pageCache = StandalonePageCacheFactory.createPageCache( fs, createInitialisedScheduler() );
     }
 
     private void setupIndex() throws IOException

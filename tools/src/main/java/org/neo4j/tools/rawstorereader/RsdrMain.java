@@ -50,10 +50,12 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.string.HexString;
 import org.neo4j.tools.util.TransactionLogUtils;
 
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
@@ -90,7 +92,8 @@ public class RsdrMain
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory );
 
             Config config = buildConfig();
-            try ( PageCache pageCache = createPageCache( fileSystem, config ) )
+            JobScheduler jobScheduler = createInitialisedScheduler();
+            try ( PageCache pageCache = createPageCache( fileSystem, config, jobScheduler ) )
             {
                 File neoStore = databaseLayout.metadataStore();
                 StoreFactory factory = openStore( fileSystem, neoStore, config, pageCache );

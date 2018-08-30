@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -68,6 +67,7 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 /**
@@ -104,7 +104,7 @@ public class RecordStorageEngineRule extends ExternalResource
         ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
         when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( databaseLayout, fs );
-        JobScheduler scheduler = life.add( new CentralJobScheduler() );
+        JobScheduler scheduler = life.add( createScheduler() );
         Config config = Config.defaults();
 
         Dependencies dependencies = new Dependencies();

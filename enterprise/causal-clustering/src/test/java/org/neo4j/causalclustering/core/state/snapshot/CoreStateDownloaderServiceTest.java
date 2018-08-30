@@ -35,13 +35,13 @@ import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,23 +50,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotDownloader.OPERATION_NAME;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class CoreStateDownloaderServiceTest
 {
     private final AdvertisedSocketAddress someMemberAddress = new AdvertisedSocketAddress( "localhost", 1234 );
     private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( someMemberAddress );
-    private CentralJobScheduler centralJobScheduler;
+    private JobScheduler centralJobScheduler;
     private DatabaseHealth dbHealth = mock( DatabaseHealth.class );
 
     @Before
     public void create()
     {
-        centralJobScheduler = new CentralJobScheduler();
-        centralJobScheduler.init();
+        centralJobScheduler = createInitialisedScheduler();
     }
 
     @After
-    public void shutdown()
+    public void shutdown() throws Throwable
     {
         centralJobScheduler.shutdown();
     }

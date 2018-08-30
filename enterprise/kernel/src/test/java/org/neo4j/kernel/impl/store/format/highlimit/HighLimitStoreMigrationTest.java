@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -67,34 +69,35 @@ public class HighLimitStoreMigrationTest
     }
 
     @Test
-    public void migrateHighLimit3_0StoreFiles() throws IOException
+    public void migrateHighLimit3_0StoreFiles() throws Exception
     {
         FileSystemAbstraction fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
+        {
+            StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance(), jobScheduler );
 
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance() );
+            DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+            DatabaseLayout migrationLayout = testDirectory.databaseLayout( "migration" );
 
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        DatabaseLayout migrationLayout = testDirectory.databaseLayout( "migration" );
+            prepareNeoStoreFile( fileSystem, databaseLayout, HighLimitV3_0_0.STORE_VERSION, pageCache );
 
-        prepareNeoStoreFile( fileSystem, databaseLayout, HighLimitV3_0_0.STORE_VERSION, pageCache );
+            ProgressReporter progressMonitor = mock( ProgressReporter.class );
 
-        ProgressReporter progressMonitor = mock( ProgressReporter.class );
+            migrator.migrate( databaseLayout, migrationLayout, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
 
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
-
-        int newStoreFilesCount = fileSystem.listFiles( migrationLayout.databaseDirectory() ).length;
-        assertThat( "Store should be migrated and new store files should be created.",
-                newStoreFilesCount, Matchers.greaterThanOrEqualTo( StoreType.values().length ) );
+            int newStoreFilesCount = fileSystem.listFiles( migrationLayout.databaseDirectory() ).length;
+            assertThat( "Store should be migrated and new store files should be created.", newStoreFilesCount,
+                    Matchers.greaterThanOrEqualTo( StoreType.values().length ) );
+        }
     }
 
-    private static File prepareNeoStoreFile( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, String storeVersion, PageCache pageCache )
+    private static void prepareNeoStoreFile( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, String storeVersion, PageCache pageCache )
             throws IOException
     {
         File neoStoreFile = createNeoStoreFile( fileSystem, databaseLayout );
         long value = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
-        return neoStoreFile;
     }
 
     private static File createNeoStoreFile( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException

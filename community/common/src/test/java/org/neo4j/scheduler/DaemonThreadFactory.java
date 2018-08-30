@@ -17,19 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.scheduler;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
-final class DaemonThreadFactory implements ThreadFactory
+public final class DaemonThreadFactory implements ThreadFactory
 {
-    @Override
-    public Thread newThread( Runnable r )
+    private final String prefix;
+    private final AtomicInteger counter = new AtomicInteger();
+
+    public DaemonThreadFactory()
     {
-        ThreadFactory def = Executors.defaultThreadFactory();
-        Thread thread = def.newThread( r );
+        this( "DaemonThread" );
+    }
+
+    public DaemonThreadFactory( String prefix )
+    {
+        this.prefix = prefix;
+    }
+
+    @Override
+    public Thread newThread( Runnable runnable )
+    {
+        ThreadFactory factory = Executors.defaultThreadFactory();
+        Thread thread = factory.newThread( runnable );
         thread.setDaemon( true );
+        thread.setName( prefix + counter.getAndIncrement() );
         return thread;
     }
 }

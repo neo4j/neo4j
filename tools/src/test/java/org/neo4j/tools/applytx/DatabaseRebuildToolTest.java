@@ -28,7 +28,6 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
@@ -44,6 +43,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
@@ -56,6 +56,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.tools.console.input.ConsoleUtil.NULL_PRINT_STREAM;
 
 public class DatabaseRebuildToolTest
@@ -182,12 +183,13 @@ public class DatabaseRebuildToolTest
     private static long lastAppliedTx( DatabaseLayout databaseLayout )
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              PageCache pageCache = createPageCache( fileSystem ) )
+              JobScheduler scheduler = createInitialisedScheduler();
+              PageCache pageCache = createPageCache( fileSystem, scheduler ) )
         {
             return MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(),
                     MetaDataStore.Position.LAST_TRANSACTION_ID );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             throw new RuntimeException( e );
         }

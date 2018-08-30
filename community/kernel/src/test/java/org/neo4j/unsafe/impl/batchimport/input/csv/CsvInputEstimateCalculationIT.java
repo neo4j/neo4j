@@ -55,6 +55,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -115,24 +117,24 @@ public class CsvInputEstimateCalculationIT
         DatabaseLayout databaseLayout = directory.databaseLayout();
         Config config = Config.defaults();
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        new ParallelBatchImporter( databaseLayout, fs, null, Configuration.DEFAULT,
-                NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY, config,
-                format, NO_MONITOR ).doImport( input );
-
-        // then compare estimates with actual disk sizes
-        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
-        try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL,
-                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
-                .getOrCreatePageCache();
-              NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                      NullLogProvider.getInstance(), contextSupplier ).openAllNeoStores() )
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
-            assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );
-            assertRoughlyEqual( estimates.numberOfNodeProperties() + estimates.numberOfRelationshipProperties(),
-                    calculateNumberOfProperties( stores ) );
+            new ParallelBatchImporter( databaseLayout, fs, null, Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(),
+                    AdditionalInitialIds.EMPTY, config, format, NO_MONITOR, jobScheduler ).doImport( input );
+
+            // then compare estimates with actual disk sizes
+            VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
+            try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
+                    contextSupplier, jobScheduler ).getOrCreatePageCache();
+                    NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                            NullLogProvider.getInstance(), contextSupplier ).openAllNeoStores() )
+            {
+                assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
+                assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );
+                assertRoughlyEqual( estimates.numberOfNodeProperties() + estimates.numberOfRelationshipProperties(), calculateNumberOfProperties( stores ) );
+            }
+            assertRoughlyEqual( propertyStorageSize(), estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() );
         }
-        assertRoughlyEqual( propertyStorageSize(), estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() );
     }
 
     @Test

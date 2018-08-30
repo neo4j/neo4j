@@ -41,7 +41,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -53,6 +52,7 @@ import org.neo4j.server.Bootstrapper;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.peel;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 
 public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 {
@@ -67,7 +67,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             life.add( new FileSystemLifecycleAdapter( fileSystem ) );
-            life.add( new CentralJobScheduler() );
+            life.add( createScheduler() );
             new ClusterClientModule(
                     life,
                     new Dependencies(),

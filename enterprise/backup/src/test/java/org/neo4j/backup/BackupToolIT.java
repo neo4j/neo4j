@@ -48,6 +48,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -69,6 +71,7 @@ public class BackupToolIT
     private Path backupDir;
     private BackupTool backupTool;
     private DatabaseLayout backupLayout;
+    private JobScheduler jobScheduler;
 
     @Before
     public void setUp()
@@ -76,7 +79,8 @@ public class BackupToolIT
         backupLayout = testDirectory.databaseLayout( "backups" );
         backupDir = backupLayout.databaseDirectory().toPath();
         fs = new DefaultFileSystemAbstraction();
-        pageCache = StandalonePageCacheFactory.createPageCache( fs );
+        jobScheduler = new ThreadPoolJobScheduler();
+        pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler );
         backupTool = new BackupTool( new BackupProtocolService(), mock( PrintStream.class ) );
     }
 
@@ -84,6 +88,7 @@ public class BackupToolIT
     public void tearDown() throws Exception
     {
         pageCache.close();
+        jobScheduler.close();
         fs.close();
     }
 

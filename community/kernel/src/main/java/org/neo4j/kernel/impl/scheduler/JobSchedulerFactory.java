@@ -17,36 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.kernel.impl.scheduler;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import org.neo4j.scheduler.JobScheduler;
 
-final class BackgroundThreadExecutor implements Executor, AutoCloseable
+public final class JobSchedulerFactory
 {
-    private final ExecutorService executor;
-
-    BackgroundThreadExecutor()
+    private JobSchedulerFactory()
     {
-        executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
     }
 
-    @Override
-    public void execute( Runnable command )
+    public static JobScheduler createScheduler()
     {
-        executor.execute( command );
+        return createCentralScheduler();
     }
 
-    public Future<?> submit( Runnable command )
+    public static JobScheduler createInitialisedScheduler()
     {
-        return executor.submit( command );
+        CentralJobScheduler scheduler = createCentralScheduler();
+        scheduler.init();
+        return scheduler;
     }
 
-    @Override
-    public void close()
+    private static CentralJobScheduler createCentralScheduler()
     {
-        executor.shutdown();
+        return new CentralJobScheduler();
     }
 }

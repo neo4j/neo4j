@@ -174,6 +174,12 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void close()
+    {
+        shutdown();
+    }
+
     class JobHandle implements org.neo4j.scheduler.JobHandle
     {
         private final long id = jobIdGen.incrementAndGet();

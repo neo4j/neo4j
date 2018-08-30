@@ -24,28 +24,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-public class JobSchedulerAdapter implements JobScheduler
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+public class JobSchedulerAdapter extends LifecycleAdapter implements JobScheduler
 {
-    @Override
-    public void init()
-    {   // no-op
-    }
-
-    @Override
-    public void start()
-    {   // no-op
-    }
-
-    @Override
-    public void stop()
-    {   // no-op
-    }
-
-    @Override
-    public void shutdown()
-    {   // no-op
-    }
-
     @Override
     public void setTopLevelGroupName( String name )
     {
@@ -94,5 +76,18 @@ public class JobSchedulerAdapter implements JobScheduler
     public ExecutorService workStealingExecutor( Group group, int parallelism )
     {
         return null;
+    }
+
+    @Override
+    public void close()
+    {
+        try
+        {
+            shutdown();
+        }
+        catch ( Throwable throwable )
+        {
+            throw new RuntimeException( throwable );
+        }
     }
 }

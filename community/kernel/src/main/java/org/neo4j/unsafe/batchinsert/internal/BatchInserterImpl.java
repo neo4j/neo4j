@@ -102,7 +102,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyDeleter;
@@ -201,6 +201,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final StoreLogService logService;
     private final FileSystemAbstraction fileSystem;
     private final Monitors monitors;
+    private final JobScheduler jobScheduler;
     private boolean labelsTouched;
     private boolean isShutdown;
 
@@ -251,10 +252,13 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         life = new LifeSupport();
         this.databaseLayout = DatabaseLayout.of( databaseDirectory );
+        this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+        life.add( jobScheduler );
+
         storeLocker = tryLockStore( fileSystem );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
-                EmptyVersionContextSupplier.EMPTY );
+                EmptyVersionContextSupplier.EMPTY, jobScheduler );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
@@ -499,7 +503,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, NO_LOCK_SERVICE, neoStores, logProvider );
-        JobScheduler jobScheduler = life.add( new CentralJobScheduler() );
         IndexingService indexingService = life.add( IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
                 new NonTransactionalTokenNameLookup( tokenHolders ), emptyList(), logProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ) ) );
         try

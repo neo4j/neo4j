@@ -44,10 +44,10 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.any;
@@ -60,6 +60,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 public class TestMasterCommittingAtSlave
@@ -221,13 +222,12 @@ public class TestMasterCommittingAtSlave
 
         Config config = Config.defaults( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
-        CentralJobScheduler scheduler = cleanup.add( new CentralJobScheduler() );
+        JobScheduler scheduler = cleanup.add( createInitialisedScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
                 NullLog.getInstance(), () -> slaves, new CommitPusher( scheduler ) );
         // Life
         try
         {
-            scheduler.init();
             scheduler.start();
 
             result.init();
@@ -240,7 +240,7 @@ public class TestMasterCommittingAtSlave
         return result;
     }
 
-    private Iterable<Slave> instantiateSlaves( int count, boolean[] failingSlaves )
+    private static Iterable<Slave> instantiateSlaves( int count, boolean[] failingSlaves )
     {
         List<Slave> slaves = new ArrayList<>();
         for ( int i = 0; i < count; i++ )

@@ -38,14 +38,13 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.AppendEntries;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -61,13 +60,14 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.test.matchers.Matchers.hasMessage;
 
 public class RaftLogShipperTest
 {
     @Rule
     public LifeRule life = new LifeRule( true );
-    private JobScheduler scheduler = life.add( new CentralJobScheduler() );
+    private JobScheduler scheduler = life.add( createScheduler() );
 
     private OutboundMessageCollector outbound;
     private RaftLog raftLog;

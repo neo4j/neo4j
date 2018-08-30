@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -67,6 +69,8 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -106,9 +110,10 @@ public class StoreUpgraderTest
 
     private DatabaseLayout databaseLayout;
     private final FileSystemAbstraction fileSystem = fileSystemRule.get();
+    private JobScheduler jobScheduler;
     private final RecordFormats formats;
 
-    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
+    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
 
     public StoreUpgraderTest( RecordFormats formats )
     {
@@ -124,10 +129,17 @@ public class StoreUpgraderTest
     @Before
     public void prepareDb() throws IOException
     {
+        jobScheduler = new ThreadPoolJobScheduler();
         String version = formats.storeVersion();
         databaseLayout = directory.databaseLayout( "db_" + version );
         File prepareDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDirectory );
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        jobScheduler.close();
     }
 
     @Test
@@ -386,7 +398,7 @@ public class StoreUpgraderTest
             MigrationProgressMonitor progressMonitor )
     {
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance );
+        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler );
         CountsMigrator countsMigrator = new CountsMigrator( fileSystem, pageCache, getTuningConfig() );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, IndexProvider.EMPTY );
 

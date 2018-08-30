@@ -49,6 +49,8 @@ import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -277,10 +279,11 @@ public class ClusterBindingIT
         clusterIdStorage.writeState( new ClusterId( UUID.randomUUID() ) );
     }
 
-    private void changeStoreId( DatabaseLayout databaseLayout ) throws IOException
+    private void changeStoreId( DatabaseLayout databaseLayout ) throws Exception
     {
         File neoStoreFile = databaseLayout.metadataStore();
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler ) )
         {
             MetaDataStore.setRecord( pageCache, neoStoreFile, RANDOM_NUMBER, System.currentTimeMillis() );
         }

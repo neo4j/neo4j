@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +34,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -46,13 +49,22 @@ import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_
 public class ConfiguringPageCacheFactoryTest
 {
     @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+
+    private JobScheduler jobScheduler;
 
     @Before
     public void setUp()
     {
+        jobScheduler = new ThreadPoolJobScheduler();
         PageSwapperFactoryForTesting.createdCounter.set( 0 );
         PageSwapperFactoryForTesting.configuredCounter.set( 0 );
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        jobScheduler.close();
     }
 
     @Test
@@ -67,7 +79,7 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
@@ -89,7 +101,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
+                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY, jobScheduler );
 
         // Then
         try ( PageCache ignore = pageCacheFactory.getOrCreatePageCache() )
@@ -112,7 +124,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory cacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
+                        PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY, jobScheduler );
         cacheFactory.getOrCreatePageCache().close();
 
         // Then
@@ -131,6 +143,6 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY ).getOrCreatePageCache().close();
+                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler ).getOrCreatePageCache().close();
     }
 }

@@ -49,10 +49,12 @@ import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class CheckConsistencyCommand implements AdminCommand
 {
@@ -232,8 +234,9 @@ public class CheckConsistencyCommand implements AdminCommand
     private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              JobScheduler jobScheduler = createInitialisedScheduler();
               PageCache pageCache = ConfigurableStandalonePageCacheFactory
-                      .createPageCache( fileSystem, additionalConfiguration ) )
+                      .createPageCache( fileSystem, additionalConfiguration, jobScheduler ) )
         {
             RecoveryRequiredChecker requiredChecker =
                     new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
@@ -245,7 +248,11 @@ public class CheckConsistencyCommand implements AdminCommand
                                 "To perform recovery please start database and perform clean shutdown." ) );
             }
         }
-        catch ( IOException e )
+        catch ( CommandFailed cf )
+        {
+            throw cf;
+        }
+        catch ( Exception e )
         {
             outsideWorld.stdErrLine(
                     "Failure when checking for recovery state: '%s', continuing as normal.%n" + e.getMessage() );

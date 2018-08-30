@@ -36,7 +36,7 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
-public class CentralJobScheduler extends LifecycleAdapter implements JobScheduler
+public class CentralJobScheduler extends LifecycleAdapter implements JobScheduler, AutoCloseable
 {
     private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger();
 
@@ -69,7 +69,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         }
     }
 
-    public CentralJobScheduler()
+    protected CentralJobScheduler()
     {
         workStealingExecutors = new ConcurrentHashMap<>( 1 );
         topLevelGroup = new TopLevelGroup();
@@ -98,8 +98,11 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public void init()
     {
-        schedulerThread.start();
-        started = true;
+        if ( !started )
+        {
+            schedulerThread.start();
+            started = true;
+        }
     }
 
     @Override
@@ -179,6 +182,12 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         {
             throw new RuntimeException( "Unable to shut down job scheduler properly.", exception );
         }
+    }
+
+    @Override
+    public void close()
+    {
+        shutdown();
     }
 
     private InterruptedException shutDownScheduler()

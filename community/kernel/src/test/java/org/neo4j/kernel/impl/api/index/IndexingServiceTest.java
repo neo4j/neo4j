@@ -71,7 +71,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -1259,7 +1259,7 @@ public class IndexingServiceTest
 
         DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider ) ) );
         return life.add( IndexingServiceFactory.createIndexingService( config,
-                        life.add( new CentralJobScheduler() ), providerMap,
+                        life.add( JobSchedulerFactory.createScheduler() ), providerMap,
                         storeView,
                         nameLookup,
                         loop( iterator( rules ) ),

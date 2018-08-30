@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * DatabaseMigrator collects all dependencies required for store migration,
@@ -53,12 +54,13 @@ public class DatabaseMigrator
     private final PageCache pageCache;
     private final RecordFormats format;
     private final LogTailScanner tailScanner;
+    private final JobScheduler jobScheduler;
 
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,
             Config config, LogService logService, IndexProviderMap indexProviderMap,
             ExplicitIndexProvider indexProvider, PageCache pageCache,
-            RecordFormats format, LogTailScanner tailScanner )
+            RecordFormats format, LogTailScanner tailScanner, JobScheduler jobScheduler )
     {
         this.progressMonitor = progressMonitor;
         this.fs = fs;
@@ -69,6 +71,7 @@ public class DatabaseMigrator
         this.pageCache = pageCache;
         this.format = format;
         this.tailScanner = tailScanner;
+        this.jobScheduler = jobScheduler;
     }
 
     /**
@@ -84,7 +87,7 @@ public class DatabaseMigrator
                 logProvider );
 
         ExplicitIndexMigrator explicitIndexMigrator = new ExplicitIndexMigrator( fs, explicitIndexProvider, logProvider );
-        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
+        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, jobScheduler );
         NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator =
                 new NativeLabelScanStoreMigrator( fs, pageCache, config );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );

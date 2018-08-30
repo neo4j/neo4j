@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * A PageCache implementation that delegates to another page cache, whose life cycle is managed elsewhere.
@@ -151,7 +152,7 @@ public class ExternallyManagedPageCache implements PageCache
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
-                                LogService logging, Tracers tracers, VersionContextSupplier versionContextSupplier )
+                                LogService logging, Tracers tracers, VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
                         {
                             return new ExternallyManagedPageCache( delegatePageCache );
                         }

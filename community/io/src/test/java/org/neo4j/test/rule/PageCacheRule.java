@@ -35,9 +35,11 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 
 public class PageCacheRule extends ExternalResource
 {
@@ -157,6 +159,7 @@ public class PageCacheRule extends ExternalResource
         return new PageCacheConfig();
     }
 
+    protected JobScheduler jobScheduler = new ThreadPoolJobScheduler();
     protected PageCache pageCache;
     final PageCacheConfig baseConfig;
 
@@ -195,18 +198,16 @@ public class PageCacheRule extends ExternalResource
 
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fs, Configuration.EMPTY );
-
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
                 new LocalMemoryTracker() );
         if ( pageSize != null )
         {
-            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier,
-                    contextSupplier );
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier, contextSupplier, jobScheduler );
         }
         else
         {
-            pageCache = new MuninnPageCache( factory, mman, cacheTracer, cursorTracerSupplier, contextSupplier );
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, cursorTracerSupplier, contextSupplier, jobScheduler );
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;
@@ -264,6 +265,18 @@ public class PageCacheRule extends ExternalResource
                 throw new AssertionError( "Failed to stop PageCache after test", e );
             }
             pageCache = null;
+        }
+        if ( jobScheduler != null )
+        {
+            try
+            {
+                jobScheduler.close();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Failed to stop job scheduler after test", e );
+            }
+            jobScheduler = null;
         }
     }
 

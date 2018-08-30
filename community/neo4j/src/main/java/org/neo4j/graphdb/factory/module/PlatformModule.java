@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
@@ -194,7 +194,7 @@ public class PlatformModule
         collectionsFactorySupplier = createCollectionsFactorySupplier( config, life );
 
         dependencies.satisfyDependency( versionContextSupplier );
-        pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers, versionContextSupplier ) );
+        pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers, versionContextSupplier, jobScheduler ) );
 
         life.add( new PageCacheLifecycle( pageCache ) );
 
@@ -310,16 +310,16 @@ public class PlatformModule
 
     protected JobScheduler createJobScheduler()
     {
-        return new CentralJobScheduler();
+        return JobSchedulerFactory.createScheduler();
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,
-            Tracers tracers, VersionContextSupplier versionContextSupplier )
+            Tracers tracers, VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, tracers.pageCacheTracer, tracers.pageCursorTracerSupplier, pageCacheLog,
-                versionContextSupplier );
+                versionContextSupplier, jobScheduler );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )

@@ -26,10 +26,10 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.FakeClockJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,6 +45,7 @@ import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.
 import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimerServiceTest.Timers.TIMER_A;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimerServiceTest.Timers.TIMER_B;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class TimerServiceTest
 {
@@ -238,8 +239,7 @@ public class TimerServiceTest
     public void shouldAwaitCancellationUnderRealScheduler() throws Throwable
     {
         // given
-        CentralJobScheduler scheduler = new CentralJobScheduler();
-        scheduler.init();
+        JobScheduler scheduler = createInitialisedScheduler();
         scheduler.start();
 
         TimerService timerService = new TimerService( scheduler, FormattedLogProvider.toOutputStream( System.out ) );
@@ -277,8 +277,7 @@ public class TimerServiceTest
     public void shouldBeAbleToCancelBeforeHandlingWithRealScheduler() throws Throwable
     {
         // given
-        CentralJobScheduler scheduler = new CentralJobScheduler();
-        scheduler.init();
+        JobScheduler scheduler = createInitialisedScheduler();
         scheduler.start();
 
         TimerService timerService = new TimerService( scheduler, FormattedLogProvider.toOutputStream( System.out ) );

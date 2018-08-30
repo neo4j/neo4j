@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
@@ -40,6 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class IndexSamplingJobTrackerTest
 {
@@ -53,8 +53,7 @@ public class IndexSamplingJobTrackerTest
     {
         // given
         when( config.jobLimit() ).thenReturn( 2 );
-        JobScheduler jobScheduler = new CentralJobScheduler();
-        jobScheduler.init();
+        JobScheduler jobScheduler = createInitialisedScheduler();
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
         final DoubleLatch latch = new DoubleLatch();
 
@@ -94,8 +93,7 @@ public class IndexSamplingJobTrackerTest
     {
         // given
         when( config.jobLimit() ).thenReturn( 1 );
-        JobScheduler jobScheduler = new CentralJobScheduler();
-        jobScheduler.init();
+        JobScheduler jobScheduler = createInitialisedScheduler();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
         final DoubleLatch latch = new DoubleLatch();
@@ -158,8 +156,7 @@ public class IndexSamplingJobTrackerTest
         // Given
         when( config.jobLimit() ).thenReturn( 1 );
 
-        JobScheduler jobScheduler = new CentralJobScheduler();
-        jobScheduler.init();
+        JobScheduler jobScheduler = createInitialisedScheduler();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
 
@@ -244,8 +241,7 @@ public class IndexSamplingJobTrackerTest
         // Given
         when( config.jobLimit() ).thenReturn( 2 );
 
-        JobScheduler jobScheduler = new CentralJobScheduler();
-        jobScheduler.init();
+        JobScheduler jobScheduler = createInitialisedScheduler();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
         final CountDownLatch latch1 = new CountDownLatch( 1 );
@@ -282,8 +278,7 @@ public class IndexSamplingJobTrackerTest
         // Given
         when( config.jobLimit() ).thenReturn( 2 );
 
-        JobScheduler jobScheduler = new CentralJobScheduler();
-        jobScheduler.init();
+        JobScheduler jobScheduler = createInitialisedScheduler();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
         final CountDownLatch latch1 = new CountDownLatch( 1 );

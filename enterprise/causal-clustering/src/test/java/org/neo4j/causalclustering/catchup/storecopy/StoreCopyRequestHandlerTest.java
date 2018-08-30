@@ -27,12 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -55,6 +50,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobSchedulerAdapter;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.junit.Assert.assertEquals;
@@ -160,7 +156,7 @@ public class StoreCopyRequestHandlerTest
     }
 
     @Test
-    public void transactionsTooFarBehindStartCheckpointAsynchronously() throws IOException
+    public void transactionsTooFarBehindStartCheckpointAsynchronously()
     {
         // given checkpoint will fail if performed
         checkPointer._tryCheckPoint = Optional.empty();
@@ -264,79 +260,13 @@ public class StoreCopyRequestHandlerTest
         }
     }
 
-    class FakeSingleThreadedJobScheduler implements JobScheduler
+    static class FakeSingleThreadedJobScheduler extends JobSchedulerAdapter
     {
-        @Override
-        public void setTopLevelGroupName( String name )
-        {
-            // do nothing
-        }
-
-        @Override
-        public Executor executor( Group group )
-        {
-            throw new RuntimeException( "Unimplemented" );
-        }
-
-        @Override
-        public ExecutorService workStealingExecutor( Group group, int parallelism )
-        {
-            throw new RuntimeException( "Unimplemented" );
-        }
-
-        @Override
-        public ThreadFactory threadFactory( Group group )
-        {
-            throw new RuntimeException( "Unimplemented" );
-        }
-
         @Override
         public JobHandle schedule( Group group, Runnable job )
         {
             job.run();
             return mock( JobHandle.class );
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-        {
-            throw new RuntimeException( "Unimplemented" );
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
-        {
-            throw new RuntimeException( "Unimplemented" );
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
-        {
-            throw new RuntimeException( "Unimplemented" );
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-            // do nothing
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-            // do nothing
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-            // do nothing
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-            // do nothing
         }
     }
 }

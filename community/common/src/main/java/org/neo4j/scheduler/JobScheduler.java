@@ -31,7 +31,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so
  * on.
  */
-public interface JobScheduler extends Lifecycle
+public interface JobScheduler extends Lifecycle, AutoCloseable
 {
     /**
      * Assign a specific name to the top-most scheduler group.

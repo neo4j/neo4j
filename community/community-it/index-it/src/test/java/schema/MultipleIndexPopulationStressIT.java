@@ -50,6 +50,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
@@ -293,15 +295,15 @@ public class MultipleIndexPopulationStressIT
         }
     }
 
-    private void createRandomData( int count ) throws IOException
+    private void createRandomData( int count ) throws Exception
     {
         Config config = Config.defaults();
-        RecordFormats recordFormats =
-                RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
-        BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(),
-                null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR );
-        try ( RandomDataInput input = new RandomDataInput( count ) )
+        RecordFormats recordFormats = RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
+        try ( RandomDataInput input = new RandomDataInput( count );
+              JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
+            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, DEFAULT, NullLogService.getInstance(),
+                    ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler );
             importer.doImport( input );
         }
     }

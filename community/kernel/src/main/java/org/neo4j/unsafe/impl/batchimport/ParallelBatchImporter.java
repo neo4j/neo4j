@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
@@ -55,10 +56,12 @@ public class ParallelBatchImporter implements BatchImporter
     private final ExecutionMonitor executionMonitor;
     private final AdditionalInitialIds additionalInitialIds;
     private final ImportLogic.Monitor monitor;
+    private final JobScheduler jobScheduler;
 
     public ParallelBatchImporter( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem, PageCache externalPageCache,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor )
+            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
+            JobScheduler jobScheduler )
     {
         this.externalPageCache = externalPageCache;
         this.directoryStructure = directoryStructure;
@@ -70,13 +73,14 @@ public class ParallelBatchImporter implements BatchImporter
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
         this.monitor = monitor;
+        this.jobScheduler = jobScheduler;
     }
 
     @Override
     public void doImport( Input input ) throws IOException
     {
         try ( BatchingNeoStores store = instantiateNeoStores( fileSystem, directoryStructure.databaseDirectory(), externalPageCache, recordFormats,
-                      config, logService, additionalInitialIds, dbConfig );
+                      config, logService, additionalInitialIds, dbConfig, jobScheduler );
               ImportLogic logic = new ImportLogic( directoryStructure.databaseDirectory(), fileSystem, store, config, logService,
                       executionMonitor, recordFormats, monitor ) )
         {

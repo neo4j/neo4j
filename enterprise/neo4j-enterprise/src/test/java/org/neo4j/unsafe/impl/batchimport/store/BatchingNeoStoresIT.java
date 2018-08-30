@@ -27,7 +27,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,6 +40,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.metrics.MetricsExtension;
 import org.neo4j.metrics.MetricsSettings;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -73,9 +74,10 @@ public class BatchingNeoStoresIT
     public void startBatchingNeoStoreWithMetricsPluginEnabled() throws Exception
     {
         Config config = Config.defaults( MetricsSettings.metricsEnabled, "true"  );
-        try ( BatchingNeoStores batchingNeoStores = BatchingNeoStores
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+                BatchingNeoStores batchingNeoStores = BatchingNeoStores
                 .batchingNeoStores( fileSystem, databaseDirectory, RecordFormatSelector.defaultFormat(), Configuration.DEFAULT,
-                        logService, AdditionalInitialIds.EMPTY, config ) )
+                        logService, AdditionalInitialIds.EMPTY, config, jobScheduler ) )
         {
             batchingNeoStores.createNew();
         }
@@ -83,11 +85,12 @@ public class BatchingNeoStoresIT
     }
 
     @Test
-    public void createStoreWithNotEmptyInitialIds() throws IOException
+    public void createStoreWithNotEmptyInitialIds() throws Exception
     {
-        try ( BatchingNeoStores batchingNeoStores = BatchingNeoStores
+        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+                BatchingNeoStores batchingNeoStores = BatchingNeoStores
                 .batchingNeoStores( fileSystem, databaseDirectory, RecordFormatSelector.defaultFormat(), Configuration.DEFAULT,
-                        logService, new TestAdditionalInitialIds(), Config.defaults() ) )
+                        logService, new TestAdditionalInitialIds(), Config.defaults(), jobScheduler ) )
         {
             batchingNeoStores.createNew();
         }

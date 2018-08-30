@@ -38,6 +38,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -61,6 +62,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
@@ -77,7 +79,7 @@ public class StoreMigration
 {
     private static final String HELP_FLAG = "help";
 
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args ) throws Exception
     {
         Args arguments = Args.withFlags( HELP_FLAG ).parse( args );
         if ( arguments.getBoolean( HELP_FLAG, false ) || args.length == 0 )
@@ -98,7 +100,7 @@ public class StoreMigration
         return Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
     }
 
-    public static void run( final FileSystemAbstraction fs, final File storeDirectory, Config config, LogProvider userLogProvider ) throws IOException
+    public static void run( final FileSystemAbstraction fs, final File storeDirectory, Config config, LogProvider userLogProvider ) throws Exception
     {
         StoreLogService logService = StoreLogService.withUserLogProvider( userLogProvider )
                 .withInternalLog( config.get( store_internal_log_path ) ).build( fs );
@@ -114,7 +116,8 @@ public class StoreMigration
         DefaultExplicitIndexProvider migrationIndexProvider = new DefaultExplicitIndexProvider();
 
         Log log = userLogProvider.getLog( StoreMigration.class );
-        try ( PageCache pageCache = createPageCache( fs, config ) )
+        JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+        try ( PageCache pageCache = createPageCache( fs, config, jobScheduler ) )
         {
             Dependencies deps = new Dependencies();
             Monitors monitors = new Monitors();
@@ -139,7 +142,7 @@ public class StoreMigration
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
                     indexProviderMap, migrationIndexProvider,
-                    pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ), tailScanner );
+                    pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ), tailScanner, jobScheduler );
             migrator.migrate( databaseLayout );
 
             // Append checkpoint so the last log entry will have the latest version
@@ -155,6 +158,7 @@ public class StoreMigration
         finally
         {
             life.shutdown();
+            jobScheduler.close();
         }
     }
 

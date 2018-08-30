@@ -29,17 +29,17 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobHandle;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class RobustJobSchedulerWrapperTest
@@ -48,7 +48,7 @@ public class RobustJobSchedulerWrapperTest
 
     @Rule
     public LifeRule schedulerLife = new LifeRule( true );
-    private final JobScheduler actualScheduler = new CentralJobScheduler();
+    private final JobScheduler actualScheduler = createInitialisedScheduler();
 
     private final Log log = mock( Log.class );
 

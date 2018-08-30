@@ -41,6 +41,7 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -82,9 +83,9 @@ class DatabaseShutdownTest
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
-                                VersionContextSupplier versionContextSupplier )
+                                VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
                         {
-                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, versionContextSupplier );
+                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, versionContextSupplier, jobScheduler );
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override

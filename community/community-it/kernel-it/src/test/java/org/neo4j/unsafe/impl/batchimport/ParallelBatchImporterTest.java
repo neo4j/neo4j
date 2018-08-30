@@ -58,6 +58,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -169,15 +171,16 @@ public class ParallelBatchImporterTest
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         DatabaseLayout databaseLayout = directory.databaseLayout( "dir" + random.nextAlphaNumericString( 8, 8 ) );
-        final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
-                fileSystemRule.get(), null, config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR );
 
         boolean successful = false;
         Groups groups = new Groups();
         IdGroupDistribution groupDistribution = new IdGroupDistribution( NODE_COUNT, NUMBER_OF_ID_GROUPS, random.random(), groups );
         long nodeRandomSeed = random.nextLong();
         long relationshipRandomSeed = random.nextLong();
+        JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+        final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
+                fileSystemRule.get(), null, config, NullLogService.getInstance(),
+                processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR, jobScheduler );
         try
         {
             // WHEN
@@ -215,6 +218,7 @@ public class ParallelBatchImporterTest
         }
         finally
         {
+            jobScheduler.close();
             if ( !successful )
             {
                 File failureFile = new File( databaseLayout.databaseDirectory(), "input" );

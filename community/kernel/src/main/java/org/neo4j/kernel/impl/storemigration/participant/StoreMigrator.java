@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -122,15 +123,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private final LogService logService;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
+    private final JobScheduler jobScheduler;
 
     public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
-            LogService logService )
+            LogService logService, JobScheduler jobScheduler )
     {
         super( "Store files" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
         this.logService = logService;
+        this.jobScheduler = jobScheduler;
     }
 
     @Override
@@ -351,7 +354,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( migrationDirectoryStructure,
                     fileSystem, pageCache, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR );
+                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler );
             InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration );
             InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +

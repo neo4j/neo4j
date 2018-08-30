@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +46,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -70,6 +73,7 @@ public class StoreMigratorTest
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final RandomRule random = new RandomRule();
     private PageCache pageCache;
+    private JobScheduler jobScheduler;
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( directory )
@@ -80,7 +84,14 @@ public class StoreMigratorTest
     @Before
     public void setUp()
     {
+        jobScheduler = new ThreadPoolJobScheduler();
         pageCache = pageCacheRule.getPageCache( fileSystemRule );
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        jobScheduler.close();
     }
 
     @Test
@@ -109,7 +120,7 @@ public class StoreMigratorTest
         setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
 
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, jobScheduler );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
@@ -133,7 +144,7 @@ public class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, jobScheduler );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
@@ -178,7 +189,7 @@ public class StoreMigratorTest
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
                 MetaDataRecordFormat.FIELD_NOT_PRESENT );
         Config config = Config.defaults( logical_logs_location, path );
-        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, jobScheduler );
         LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100 );
 
         File[] logFiles = customLogLocation.listFiles();
@@ -204,7 +215,7 @@ public class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, jobScheduler );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
@@ -260,8 +271,7 @@ public class StoreMigratorTest
 
     private StoreMigrator newStoreMigrator()
     {
-        return new StoreMigrator( fileSystemRule, pageCache,
-                Config.defaults(), NullLogService.getInstance() );
+        return new StoreMigrator( fileSystemRule, pageCache, Config.defaults(), NullLogService.getInstance(), jobScheduler );
     }
 
     private static class MyProgressReporter implements ProgressReporter

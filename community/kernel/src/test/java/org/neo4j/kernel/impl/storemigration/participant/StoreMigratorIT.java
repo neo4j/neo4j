@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -58,6 +60,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -79,6 +83,7 @@ public class StoreMigratorIT
 
     private final Monitors monitors = new Monitors();
     private final FileSystemAbstraction fs = fileSystemRule.get();
+    private JobScheduler jobScheduler;
 
     @Parameterized.Parameter( 0 )
     public String version;
@@ -100,10 +105,16 @@ public class StoreMigratorIT
         );
     }
 
-    private static Function<TransactionId,Boolean> txInfoAcceptanceOnIdAndTimestamp( long id, long timestamp )
+    @Before
+    public void setUp() throws Exception
     {
-        return txInfo -> txInfo.transactionId() == id &&
-               txInfo.commitTimestamp() == timestamp;
+        jobScheduler = new ThreadPoolJobScheduler();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        jobScheduler.close();
     }
 
     @Test
@@ -121,7 +132,7 @@ public class StoreMigratorIT
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
@@ -131,7 +142,7 @@ public class StoreMigratorIT
                         upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
@@ -162,7 +173,7 @@ public class StoreMigratorIT
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
@@ -200,7 +211,7 @@ public class StoreMigratorIT
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
@@ -237,7 +248,7 @@ public class StoreMigratorIT
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
         // WHEN migrating
@@ -263,7 +274,7 @@ public class StoreMigratorIT
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
         // when
@@ -288,5 +299,11 @@ public class StoreMigratorIT
     private static RecordFormats selectFormat()
     {
         return Standard.LATEST_RECORD_FORMATS;
+    }
+
+    private static Function<TransactionId,Boolean> txInfoAcceptanceOnIdAndTimestamp( long id, long timestamp )
+    {
+        return txInfo -> txInfo.transactionId() == id &&
+                txInfo.commitTimestamp() == timestamp;
     }
 }

@@ -25,7 +25,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -33,9 +32,9 @@ import org.neo4j.scheduler.JobScheduler;
 public class CountingJobScheduler implements JobScheduler
 {
     private final AtomicInteger counter;
-    private final CentralJobScheduler delegate;
+    private final JobScheduler delegate;
 
-    public CountingJobScheduler( AtomicInteger counter, CentralJobScheduler delegate )
+    public CountingJobScheduler( AtomicInteger counter, JobScheduler delegate )
     {
         this.counter = counter;
         this.delegate = delegate;
@@ -96,7 +95,7 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public void init()
+    public void init() throws Throwable
     {
         delegate.init();
     }
@@ -114,8 +113,21 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public void shutdown()
+    public void shutdown() throws Throwable
     {
         delegate.shutdown();
+    }
+
+    @Override
+    public void close()
+    {
+        try
+        {
+            shutdown();
+        }
+        catch ( Throwable throwable )
+        {
+            throw new RuntimeException( throwable );
+        }
     }
 }
