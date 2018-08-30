@@ -424,6 +424,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           generateAnds(coerced)
       }
 
+    case AndedPropertyInequalities(_, _, inequalities) =>
+      val compiledInequalities = inequalities.toIndexedSeq.flatMap(i => internalCompileExpression(i, currentContext))
+      if (compiledInequalities.size < inequalities.size) None
+      else Some(generateAnds(compiledInequalities.toList))
+
     case Not(arg) =>
       internalCompileExpression(arg, currentContext).map(a => {
         val in = if (isPredicate(arg)) a else coerceToPredicate(a)

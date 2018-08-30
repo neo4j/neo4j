@@ -135,7 +135,7 @@ object CodeGeneration {
       val invocation = invoke(compileExpression(target, block), method.asReference,
                               params.map(p => compileExpression(p, block)): _*)
 
-      if (method.output == TypeReference.VOID) block.expression(invocation)
+      if (method.output.isVoid) block.expression(invocation)
       else block.expression(Expression.pop(invocation))
       Expression.EMPTY
 
