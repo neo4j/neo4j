@@ -103,7 +103,7 @@
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
     <cypher.compatibility.34>3.4.6</cypher.compatibility.34>
     <caffeine.version>2.6.2</caffeine.version>
-    <required.maven.version>3.5.4</required.maven.version>
+    <required.maven.version>3.5.2</required.maven.version>
   </properties>
 
   <modules>
