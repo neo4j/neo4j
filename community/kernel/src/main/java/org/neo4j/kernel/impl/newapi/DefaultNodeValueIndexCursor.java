@@ -40,8 +40,6 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
@@ -93,35 +91,55 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.needsValues = needsValues;
         this.query = query;
 
-        IndexQuery firstPredicate = query[0];
-        switch ( firstPredicate.type() )
+        if ( read.hasTxStateWithChanges() )
         {
-        case exact:
-            seekQuery( descriptor, query );
-            break;
+            IndexQuery firstPredicate = query[0];
+            switch ( firstPredicate.type() )
+            {
+            case exact:
+                // No need to order, all values are the same
+                this.indexOrder = IndexOrder.NONE;
+                seekQuery( descriptor, query );
+                break;
 
-        case exists:
-            scanQuery( descriptor );
-            break;
+            case exists:
+                setNeedsValuesIfRequiresOrder();
+                scanQuery( descriptor );
+                break;
 
-        case range:
-            assert query.length == 1;
-            rangeQuery( descriptor, (IndexQuery.RangePredicate) firstPredicate );
-            break;
+            case range:
+                assert query.length == 1;
+                setNeedsValuesIfRequiresOrder();
+                rangeQuery( descriptor, (IndexQuery.RangePredicate) firstPredicate );
+                break;
 
-        case stringPrefix:
-            assert query.length == 1;
-            prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) firstPredicate );
-            break;
+            case stringPrefix:
+                assert query.length == 1;
+                setNeedsValuesIfRequiresOrder();
+                prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) firstPredicate );
+                break;
 
-        case stringSuffix:
-        case stringContains:
-            assert query.length == 1;
-            suffixOrContainsQuery( descriptor, firstPredicate );
-            break;
+            case stringSuffix:
+            case stringContains:
+                assert query.length == 1;
+                suffixOrContainsQuery( descriptor, firstPredicate );
+                break;
 
-        default:
-            throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( query ) );
+            default:
+                throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( query ) );
+            }
+        }
+    }
+
+    /**
+     * If we require order, we can only do the merge sort if we also get values.
+     * This implicitly relies on the fact that if we can get order, we can also get values.
+     */
+    private void setNeedsValuesIfRequiresOrder()
+    {
+        if ( indexOrder != IndexOrder.NONE )
+        {
+            this.needsValues = true;
         }
     }
 
@@ -301,132 +319,91 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             String keys = query == null ? "unknown" : Arrays.toString( stream( query ).map( IndexQuery::propertyKeyId ).toArray( Integer[]::new ) );
             return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" + keys +
-                   ", values=" + Arrays.toString( values ) +
-                   ", underlying record=" + super.toString() + "]";
+                    ", values=" + Arrays.toString( values ) +
+                    ", underlying record=" + super.toString() + "]";
         }
     }
 
     private void prefixQuery( IndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
     {
-        if ( read.hasTxStateWithChanges() )
-        {
-            TransactionState txState = read.txState();
+        TransactionState txState = read.txState();
 
-            if ( needsValues )
-            {
-                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
-                addedWithValues = changes.added.iterator();
-                removed = removed( txState, changes.removed );
-            }
-            else
-            {
-                AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
-                added = changes.added.longIterator();
-                removed = removed( txState, changes.removed );
-            }
+        if ( needsValues )
+        {
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
+            addedWithValues = changes.added.iterator();
+            removed = removed( txState, changes.removed );
         }
-    }
-
-    private void setNeedsValues( boolean needsValues )
-    {
-        this.needsValues = needsValues;
-        if ( !this.needsValues )
+        else
         {
-            // Cannot merge-sort with transaction state if we do not have values
-            this.indexOrder = IndexOrder.NONE;
+            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
+            added = changes.added.longIterator();
+            removed = removed( txState, changes.removed );
         }
     }
 
     private void rangeQuery( IndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
     {
-        ValueGroup valueGroup = predicate.valueGroup();
-        ValueCategory category = valueGroup.category();
+        TransactionState txState = read.txState();
 
-        // TODO: Cleanup the logic around exactly when we should get values and can order, or not
-        if ( indexOrder != IndexOrder.NONE )
+        if ( needsValues )
         {
-            this.needsValues = true;
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate, indexOrder );
+            addedWithValues = changes.added.iterator();
+            removed = removed( txState, changes.removed );
         }
-        // We have values for text, number, and temporal but nor for other categories, so even if a NodeValueClientValue
-        // wants values, we can't provide them
-        setNeedsValues( this.needsValues && (category == ValueCategory.TEXT || category == ValueCategory.NUMBER || category == ValueCategory.TEMPORAL) );
-
-        if ( read.hasTxStateWithChanges() )
+        else
         {
-            TransactionState txState = read.txState();
-
-            if ( needsValues )
-            {
-                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate, indexOrder );
-                addedWithValues = changes.added.iterator();
-                removed = removed( txState, changes.removed );
-            }
-            else
-            {
-                AddedAndRemoved changes = indexUpdatesForRangeSeek( txState, descriptor, predicate, indexOrder );
-                added = changes.added.longIterator();
-                removed = removed( txState, changes.removed );
-            }
+            AddedAndRemoved changes = indexUpdatesForRangeSeek( txState, descriptor, predicate, indexOrder );
+            added = changes.added.longIterator();
+            removed = removed( txState, changes.removed );
         }
     }
 
     private void scanQuery( IndexDescriptor descriptor )
     {
-        if ( read.hasTxStateWithChanges() )
-        {
-            TransactionState txState = read.txState();
+        TransactionState txState = read.txState();
 
-            if ( needsValues )
-            {
-                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
-                addedWithValues = changes.added.iterator();
-                removed = removed( txState, changes.removed );
-            }
-            else
-            {
-                AddedAndRemoved changes = indexUpdatesForScan( txState, descriptor, indexOrder );
-                added = changes.added.longIterator();
-                removed = removed( txState, changes.removed );
-            }
+        if ( needsValues )
+        {
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
+            addedWithValues = changes.added.iterator();
+            removed = removed( txState, changes.removed );
+        }
+        else
+        {
+            AddedAndRemoved changes = indexUpdatesForScan( txState, descriptor, indexOrder );
+            added = changes.added.longIterator();
+            removed = removed( txState, changes.removed );
         }
     }
 
     private void suffixOrContainsQuery( IndexDescriptor descriptor, IndexQuery query )
     {
-        if ( read.hasTxStateWithChanges() )
-        {
-            TransactionState txState = read.txState();
+        TransactionState txState = read.txState();
 
-            if ( needsValues )
-            {
-                AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
-                addedWithValues = changes.added.iterator();
-                removed = removed( txState, changes.removed );
-            }
-            else
-            {
-                AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query );
-                added = changes.added.longIterator();
-                removed = removed( txState, changes.removed );
-            }
+        if ( needsValues )
+        {
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
+            addedWithValues = changes.added.iterator();
+            removed = removed( txState, changes.removed );
+        }
+        else
+        {
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query );
+            added = changes.added.longIterator();
+            removed = removed( txState, changes.removed );
         }
     }
 
     private void seekQuery( IndexDescriptor descriptor, IndexQuery[] query )
     {
-        // We should never be asked to provide values for a seek query. But a NodeValueClientFilter
-        // might ask us, and then we just have to ignore that and set it back to false
-        setNeedsValues( false );
-
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );
-        if ( read.hasTxStateWithChanges() )
-        {
-            TransactionState txState = read.txState();
+        TransactionState txState = read.txState();
 
-            AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, IndexQuery.asValueTuple( exactPreds ) );
-            added = changes.added.longIterator();
-            removed = removed( txState, changes.removed );
-        }
+        AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, IndexQuery.asValueTuple( exactPreds ) );
+        added = changes.added.longIterator();
+        removed = removed( txState, changes.removed );
     }
 
     private LongSet removed( TransactionState txState, LongSet removedFromIndex )

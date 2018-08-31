@@ -96,9 +96,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
                             boolean needsValues )
     {
         this.progressor = progressor;
-        // We set needsValues to true for the target, since this will enable us to execute the cheaper filterByIndexValues
-        // instead of filterByCursors if the target can provide values
-        target.initialize( descriptor, this, query, indexOrder, true );
+        target.initialize( descriptor, this, query, indexOrder, needsValues );
     }
 
     @Override
@@ -180,6 +178,8 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     @Override
     public boolean needsValues()
     {
+        // We return needsValues = true to the progressor, since this will enable us to execute the cheaper filterByIndexValues
+        // instead of filterByCursors if the progressor can provide values.
         return true;
     }
 
