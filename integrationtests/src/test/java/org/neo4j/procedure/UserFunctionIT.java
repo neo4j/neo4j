@@ -647,6 +647,22 @@ public class UserFunctionIT
         }
     }
 
+    @Test
+    public void shouldBeAbleToUseUDFForLimit()
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "UNWIND range(0, 100) AS r RETURN r LIMIT org.neo4j.procedure.squareLong(2)");
+
+            // Then
+            List<Object> list =
+                    Iterators.asList( res ).stream().map( m  -> m.get( "r" ) ).collect( Collectors.toList() );
+            assertThat( list, equalTo( Arrays.asList( 0L, 1L, 2L, 3L ) ) );
+        }
+    }
+
     private String createCsvFile( String... lines ) throws IOException
     {
         File file = plugins.newFile();

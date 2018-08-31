@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.opencypher.v9_0.util.{Cardinality, Multiplier, Selectivity}
-import org.opencypher.v9_0.expressions.IntegerLiteral
 import org.neo4j.values.storable.NumberValue
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.IntegerLiteral
+import org.opencypher.v9_0.util.{Cardinality, Multiplier, Selectivity}
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
 
@@ -51,7 +51,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case RegularQueryProjection(_, QueryShuffle(_, _, Some(limit))) =>
       val cannotEvaluateStableValue =
         simpleExpressionEvaluator.hasParameters(limit) ||
-          simpleExpressionEvaluator.isNonDeterministic(limit)
+          !simpleExpressionEvaluator.isDeterministic(limit)
 
       val limitCardinality =
         if (cannotEvaluateStableValue) GraphStatistics.DEFAULT_LIMIT_CARDINALITY

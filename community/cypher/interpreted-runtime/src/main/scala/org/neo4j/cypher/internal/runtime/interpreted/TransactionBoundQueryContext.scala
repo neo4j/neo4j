@@ -23,7 +23,7 @@ import java.net.URL
 import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.collection.{PrimitiveLongResourceIterator, RawIterator}
+import org.neo4j.collection.PrimitiveLongResourceIterator
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
@@ -39,10 +39,8 @@ import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
-import org.neo4j.internal.kernel.api.procs.{UserAggregator, QualifiedName => KernelQualifiedName}
 import org.neo4j.io.IOUtils
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.{ResourceManager => NotTheTypeWeWant, _}
@@ -975,149 +973,42 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       .asScala
   }
 
-  type KernelProcedureCall = (Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
+  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    CallSupport.callReadOnlyProcedure(transactionalContext.tc, id, args, allowed)
 
-  private def shouldElevate(allowed: Array[String]): Boolean = {
-    // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
-    // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
-    val accessMode = transactionalContext.securityContext.mode()
-    allowed.nonEmpty && !accessMode.isOverridden && accessMode.allowsProcedureWith(allowed)
-  }
+  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    CallSupport.callReadWriteProcedure(transactionalContext.tc, id, args, allowed)
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall =
-      if (shouldElevate(allowed))
-        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _)
-      else
-        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _)
+  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, allowed)
 
-    callProcedure(args, call)
-  }
+  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]) : Iterator[Array[AnyRef]] =
+    CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, allowed)
 
-  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall =
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallWriteOverride(id, _)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallWrite(id, _)
-    callProcedure(args, call)
-  }
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    CallSupport.callReadOnlyProcedure(transactionalContext.tc, name, args, allowed)
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall =
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallSchemaOverride(id, _)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallSchema(id, _)
-    callProcedure(args, call)
-  }
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    CallSupport.callReadWriteProcedure(transactionalContext.tc, name, args, allowed)
 
-  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(args,
-      transactionalContext.dbmsOperations.procedureCallDbms(id,
-        _,
-        transactionalContext.graph.getDependencyResolver,
-        transactionalContext.securityContext,
-        transactionalContext.resourceTracker))
-  }
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    CallSupport.callSchemaWriteProcedure(transactionalContext.tc, name, args, allowed)
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val call: KernelProcedureCall =
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallReadOverride(kn, _)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallRead(kn, _)
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    CallSupport.callDbmsProcedure(transactionalContext.tc, name, args, allowed)
 
-    callProcedure(args, call)
-  }
 
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val call: KernelProcedureCall =
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallWriteOverride(kn, _)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallWrite(kn, _)
-    callProcedure(args, call)
-  }
+  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue =
+    CallSupport.callFunction(transactionalContext.tc, id, args, allowed)
 
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val call: KernelProcedureCall =
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallSchemaOverride(kn, _)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallSchema(kn, _)
-    callProcedure(args, call)
-  }
+  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue =
+    CallSupport.callFunction(transactionalContext.tc, name, args, allowed)
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    callProcedure(args,
-      transactionalContext.dbmsOperations.procedureCallDbms(kn,
-        _,
-        transactionalContext.graph.getDependencyResolver,
-        transactionalContext.securityContext,
-        transactionalContext.resourceTracker))
-  }
+  override def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator =
+    CallSupport.aggregateFunction(transactionalContext.tc, id, allowed)
 
-  private def callProcedure(args: Seq[Any], call: KernelProcedureCall) = {
-    val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    val read = call(toArray)
-    new scala.Iterator[Array[AnyRef]] {
-      override def hasNext: Boolean = read.hasNext
-
-      override def next(): Array[AnyRef] = read.next
-    }
-  }
-
-  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) = {
-    if (shouldElevate(allowed))
-      transactionalContext.tc.kernelTransaction().procedures().functionCallOverride(id, args.toArray)
-    else
-      transactionalContext.tc.kernelTransaction().procedures().functionCall(id, args.toArray)
-  }
-
-  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    if (shouldElevate(allowed))
-      transactionalContext.tc.kernelTransaction().procedures().functionCallOverride(kn, args.toArray)
-    else
-      transactionalContext.tc.kernelTransaction().procedures().functionCall(kn, args.toArray)
-  }
-
-  override def aggregateFunction(id: Int, allowed: Array[String]) = {
-    val aggregator: UserAggregator =
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().aggregationFunctionOverride(id)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().aggregationFunction(id)
-
-    userDefinedAggregator(aggregator)
-  }
-
-  override def aggregateFunction(name: QualifiedName, allowed: Array[String]) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val aggregator: UserAggregator =
-      if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().aggregationFunctionOverride(kn)
-      else
-        transactionalContext.tc.kernelTransaction().procedures().aggregationFunction(kn)
-
-    userDefinedAggregator(aggregator)
-  }
-
-  private def userDefinedAggregator(aggregator: UserAggregator) = {
-    new UserDefinedAggregator {
-      override def result: AnyRef = aggregator.result()
-
-      override def update(args: IndexedSeq[Any]): Unit = {
-        val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-        aggregator.update(toArray)
-      }
-    }
-  }
+  override def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator =
+    CallSupport.aggregateFunction(transactionalContext.tc, name, allowed)
 
   private def buildPathFinder(depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {

@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.graphdb.Notification
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -136,7 +135,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
                                           maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
                                           clock,
                                           logicalPlanIdGen,
-                                          simpleExpressionEvaluator)
+                                          simpleExpressionEvaluator(PlanningQueryContext(transactionalContext)))
 
       // Prepare query for caching
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)

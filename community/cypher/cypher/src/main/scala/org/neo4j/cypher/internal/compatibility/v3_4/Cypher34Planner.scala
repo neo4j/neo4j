@@ -187,7 +187,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
                                      maybeUpdateStrategy.map(helpers.as3_5).getOrElse(defaultUpdateStrategy),
                                      clock,
                                      logicalPlanIdGenv3_5,
-                                     simpleExpressionEvaluator)
+                                     simpleExpressionEvaluator(PlanningQueryContext(transactionalContext)))
 
       // Prepare query for caching
       val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_4)

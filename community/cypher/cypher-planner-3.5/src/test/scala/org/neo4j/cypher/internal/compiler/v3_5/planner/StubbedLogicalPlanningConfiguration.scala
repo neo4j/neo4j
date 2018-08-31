@@ -43,7 +43,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
     override def evaluateExpression(expr: Expression): Option[Any] = ???
 
-    override def isNonDeterministic(expr: Expression): Boolean = ???
+    override def isDeterministic(expr: Expression): Boolean = ???
 
     override def hasParameters(expr: Expression): Boolean = ???
   }

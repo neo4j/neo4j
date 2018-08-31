@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.{PlannerContext, PlannerCo
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext}
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.kernel.api.{KernelTransaction, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -104,7 +105,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       val statement = kernelTransaction.acquireStatement()
       val context = PlannerContextCreator.create(tracer, logger, planContext(kernelTransaction, statement), parsed.queryText, Set.empty,
                                                  None, monitors, metricsFactory, createQueryGraphSolver(), configuration, defaultUpdateStrategy, Clock.systemUTC(), new SequentialIdGen(),
-                                                 simpleExpressionEvaluator)
+                                                 simpleExpressionEvaluator(mock[QueryContext]))
 
       try {
         val normalized = compiler.normalizeQuery(parsed, context)
@@ -115,6 +116,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       }
     }
   }
+
   private val configuration = CypherPlannerConfiguration(
     queryCacheSize = 128,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
