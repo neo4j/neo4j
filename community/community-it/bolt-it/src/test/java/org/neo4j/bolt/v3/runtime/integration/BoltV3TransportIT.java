@@ -33,12 +33,15 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
+import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 
@@ -472,6 +475,24 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
     }
 
+    @Test
+    public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction() throws Throwable
+    {
+        negotiateBoltV3();
+
+        // bookmark is expected to advance once the auto-commit transaction is committed
+        long lastClosedTransactionId = getLastClosedTransactionId();
+        String expectedBookmark = new Bookmark( lastClosedTransactionId + 1 ).toString();
+
+        connection.send( util.chunk(
+                new RunMessage( "CREATE ()" ),
+                PullAllMessage.INSTANCE ) );
+
+        assertThat( connection, util.eventuallyReceives(
+                msgSuccess(),
+                msgSuccess( allOf( hasEntry( "bookmark", expectedBookmark ) ) ) ) );
+    }
+
     private byte[] beginMessage( Map<String,Object> metadata ) throws IOException
     {
         PackedOutputArray out = new PackedOutputArray();
@@ -494,5 +515,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         packer.pack( asMapValue( metadata ) );
 
         return out.bytes();
+    }
+
+    private long getLastClosedTransactionId()
+    {
+        DependencyResolver resolver = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver();
+        TransactionIdStore txIdStore = resolver.resolveDependency( TransactionIdStore.class );
+        return txIdStore.getLastClosedTransactionId();
     }
 }

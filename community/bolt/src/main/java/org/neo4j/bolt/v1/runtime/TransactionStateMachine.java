@@ -330,15 +330,15 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         assert ctx.currentResult != null;
 
-                        boolean success = false;
                         try
                         {
-                            success = consumeResult( ctx, resultConsumer );
+                            consumeResult( ctx, resultConsumer );
+                            closeTransaction( ctx, true );
                             return newestBookmark( spi );
                         }
                         finally
                         {
-                            closeTransaction( ctx, success );
+                            closeTransaction( ctx, false );
                         }
                     }
 
