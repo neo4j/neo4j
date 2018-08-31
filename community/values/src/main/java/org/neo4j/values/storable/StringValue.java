@@ -171,12 +171,83 @@ public abstract class StringValue extends TextValue
     @Override
     public int compareTo( TextValue other )
     {
+        /*
+         * The normal String::compareTo contrary to what documentation claims sort in code point order. It does not
+         * properly handle chars in the surrogate range. This leads to inconsistent sort-orders when mixing
+         * with UT8StringValue.
+         *
+         * This is based on https://ssl.icu-project.org/docs/papers/utf16_code_point_order.html. The basic idea
+         * is to first check for identical string prefixes and only when we find two different chars we perform
+         * a fix-up if necessary before comparing.
+         */
+
+        if ( this == other )
+        {
+            return 0;
+        }
+
         String thisString = value();
         String thatString = other.stringValue();
-        return thisString.compareTo( thatString );
+
+        char c1, c2;
+        int pos1 = 0, pos2 = 0;
+        final int l1 = thisString.length();
+        final int l2 = thatString.length();
+        //handle empty strings first so we can have less branching in main loop
+        if ( l1 == 0 || l2 == 0 )
+        {
+            return l1 - l2;
+        }
+
+        //First compare identical substrings, here we need no fix-up
+        while ( true )
+        {
+            //NOTE: If this is a bottle neck we could use unsafe to access the underlying char[].
+            //This will remove a function call and a range-check.
+            c1 = thisString.charAt( pos1 );
+            c2 = thatString.charAt( pos2 );
+            if ( c1 == c2 )
+            {
+                //if we are at the end of both strings they are the same
+                if ( pos1 == l1 - 1 || pos2 == l2 - 1 )
+                {
+                    return l1 - l2;
+                }
+                pos1++;
+                pos2++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        //We found c1, and c2 where c1 != c2, before comparing we need
+        //to perform fix-up if they are in surrogate range before comparing.
+        if ( c1 >= 0xd800 && c2 >= 0xd800 )
+        {
+            if ( c1 >= 0xe000 )
+            {
+                c1 -= 0x800;
+            }
+            else
+            {
+                c1 += 0x2000;
+            }
+            if ( c2 >= 0xe000 )
+            {
+                c2 -= 0x800;
+            }
+            else
+            {
+                c2 += 0x2000;
+            }
+        }
+
+        return (int) c1 - (int) c2;
     }
 
-    static TextValue EMTPY = new StringValue()
+    static TextValue EMPTY = new StringValue()
     {
         @Override
         protected int computeHash()
