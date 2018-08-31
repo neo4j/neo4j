@@ -569,11 +569,29 @@ public class DurationValueTest
     }
 
     @Test
+    public void shouldNotThrowWhenInsideNegativeOverflowLimit()
+    {
+        // when
+        duration(0, 0, Long.MIN_VALUE, -999_999_999 );
+
+        // then should not throw
+    }
+
+    @Test
     public void shouldThrowOnOverflowOnNanos()
     {
         // when
         int nanos = 1_000_000_000;
         long seconds = Long.MAX_VALUE;
+        assertConstructorThrows( 0, 0, seconds, nanos );
+    }
+
+    @Test
+    public void shouldThrowOnNegativeOverflowOnNanos()
+    {
+        // when
+        int nanos = -1_000_000_000;
+        long seconds = Long.MIN_VALUE;
         assertConstructorThrows( 0, 0, seconds, nanos );
     }
 
@@ -587,12 +605,30 @@ public class DurationValueTest
     }
 
     @Test
+    public void shouldThrowOnNegativeOverflowOnDays()
+    {
+        // when
+        long days = Long.MIN_VALUE / TemporalUtil.SECONDS_PER_DAY;
+        long seconds = Long.MIN_VALUE - days * TemporalUtil.SECONDS_PER_DAY;
+        assertConstructorThrows( 0, days, seconds - 1, 0 );
+    }
+
+    @Test
     public void shouldThrowOnOverflowOnMonths()
     {
         // when
         long months = Long.MAX_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
         long seconds = Long.MAX_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
         assertConstructorThrows( months, 0, seconds + 1, 0 );
+    }
+
+    @Test
+    public void shouldThrowOnNegativeOverflowOnMonths()
+    {
+        // when
+        long months = Long.MIN_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
+        long seconds = Long.MIN_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
+        assertConstructorThrows( months, 0, seconds - 1, 0 );
     }
 
     private void assertConstructorThrows( long months, long days, long seconds, int nanos )

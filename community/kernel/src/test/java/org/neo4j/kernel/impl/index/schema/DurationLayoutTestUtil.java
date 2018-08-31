@@ -51,10 +51,7 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
     public static DurationValue randomDuration( Randoms random )
     {
         // not using random.randomDuration, since it cannot mix durations greater and smaller than 1 day
-        return DurationValue.duration( random.nextLong( -999_999_999L * 12, 999_999_999L * 12),
-                random.nextLong( -999_999_999L * 12 * 28, 999_999_999L * 12 * 28),
-                random.nextLong(),
-                random.nextLong() );
+        return DurationValue.duration( 0, 0, random.nextLong(), random.nextLong( -999_999_999, 999_999_999 ) );
     }
 
     DurationLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
