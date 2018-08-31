@@ -66,10 +66,10 @@ public class TextValueTest
         assertThat( value.apply( "hello" ).substring( 2, 5 ), equalTo( value.apply( "llo" ) ) );
         assertThat( value.apply( "hello" ).substring( 4, 5 ), equalTo( value.apply( "o" ) ) );
         assertThat( value.apply( "hello" ).substring( 1, 3 ), equalTo( value.apply( "ell" ) ) );
-        assertThat( value.apply( "hello" ).substring( 8, 5 ), equalTo( StringValue.EMTPY ) );
+        assertThat( value.apply( "hello" ).substring( 8, 5 ), equalTo( StringValue.EMPTY ) );
         assertThat( value.apply( "0123456789" ).substring( 1 ), equalTo( value.apply( "123456789" ) ) );
         assertThat( value.apply( "0123456789" ).substring( 5 ), equalTo( value.apply( "56789" ) ) );
-        assertThat( value.apply( "0123456789" ).substring( 15 ), equalTo( StringValue.EMTPY ) );
+        assertThat( value.apply( "0123456789" ).substring( 15 ), equalTo( StringValue.EMPTY ) );
         assertThat( value.apply( "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B" ).substring( 1, 1 ),
                 equalTo( value.apply( "\uD83D\uDCA9" ) ) );
         assertThat( value.apply( "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B" ).substring( 1, 2 ),
@@ -129,7 +129,7 @@ public class TextValueTest
     public void reverse()
     {
         assertThat( value.apply( "Foo" ).reverse(), equalTo( value.apply( "ooF" ) ) );
-        assertThat( value.apply( "" ).reverse(), equalTo( StringValue.EMTPY ) );
+        assertThat( value.apply( "" ).reverse(), equalTo( StringValue.EMPTY ) );
         assertThat( value.apply( " L" ).reverse(), equalTo( value.apply( "L " ) ) );
         assertThat( value.apply( "\r\n" ).reverse(), equalTo( value.apply( "\n\r" ) ) );
         assertThat( value.apply( "\uD801\uDC37" ).reverse(), equalTo( value.apply( "\uD801\uDC37" ) ) );

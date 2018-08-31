@@ -116,7 +116,7 @@ public final class CharValue extends TextValue
     {
         if ( length != 1 && start != 0 )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
 
         return this;
@@ -127,7 +127,7 @@ public final class CharValue extends TextValue
     {
         if ( Character.isWhitespace( value ) )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
         else
         {

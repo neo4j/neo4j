@@ -112,7 +112,7 @@ class UTF8StringValueTest
         }
     }
 
-    public static void assertCompareTo( String string1, String string2 )
+    static void assertCompareTo( String string1, String string2 )
     {
         TextValue textValue1 = stringValue( string1 );
         TextValue textValue2 = stringValue( string2 );
@@ -177,7 +177,7 @@ class UTF8StringValueTest
         TextValue substring = value.substring( 8, 5 );
 
         // Then
-        assertThat( substring, equalTo( StringValue.EMTPY ) );
+        assertThat( substring, equalTo( StringValue.EMPTY ) );
     }
 
     @Test

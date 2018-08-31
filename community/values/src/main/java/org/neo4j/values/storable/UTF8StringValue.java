@@ -222,7 +222,7 @@ public final class UTF8StringValue extends StringValue
         }
         if ( length == 0 )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
 
         int end = start + length;
@@ -260,7 +260,7 @@ public final class UTF8StringValue extends StringValue
         }
         if ( byteStart < 0 )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
         return new UTF8StringValue( values, byteStart, byteEnd - byteStart );
     }
@@ -279,7 +279,7 @@ public final class UTF8StringValue extends StringValue
         int endIndex = trimRightIndex();
         if ( startIndex > endIndex )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
 
         return new UTF8StringValue( values, startIndex, Math.max( endIndex + 1 - startIndex, 0 ) );
@@ -297,7 +297,7 @@ public final class UTF8StringValue extends StringValue
         int startIndex = trimLeftIndex();
         if ( startIndex >= values.length )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
         return new UTF8StringValue( values, startIndex, values.length - startIndex );
     }
@@ -314,7 +314,7 @@ public final class UTF8StringValue extends StringValue
         int endIndex = trimRightIndex();
         if ( endIndex < 0 )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
         return new UTF8StringValue( values, offset, endIndex + 1 - offset );
     }
@@ -337,7 +337,7 @@ public final class UTF8StringValue extends StringValue
 
         if ( values.length == 0 || byteLength == 0 )
         {
-            return StringValue.EMTPY;
+            return StringValue.EMPTY;
         }
 
         int i = offset, len = offset + byteLength;

@@ -30,7 +30,7 @@ import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 public abstract class TextValue extends ScalarValue
 {
-    protected static final ListValue EMPTY_SPLIT = fromArray( stringArray( "", "" ) );
+    static final ListValue EMPTY_SPLIT = fromArray( stringArray( "", "" ) );
 
     TextValue()
     {
