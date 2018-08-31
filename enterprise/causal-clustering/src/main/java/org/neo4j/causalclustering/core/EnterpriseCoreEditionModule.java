@@ -309,7 +309,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 .withFactoryWrapper( generator -> new FreeIdFilteredIdGeneratorFactory( generator, coreStateMachinesModule.freeIdCondition ) ).build();
 
         // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...
-        this.tokenHoldersSupplier = () -> coreStateMachinesModule.tokenHolders;
+        this.tokenHoldersProvider = databaseName -> coreStateMachinesModule.tokenHolders;
         this.locksSupplier = coreStateMachinesModule.locksSupplier;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );

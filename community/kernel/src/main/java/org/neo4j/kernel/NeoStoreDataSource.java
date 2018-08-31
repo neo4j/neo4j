@@ -262,7 +262,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.accessCapability = context.getAccessCapability();
         this.recoveryCleanupWorkCollector = context.getRecoveryCleanupWorkCollector();
 
-        readOnly = context.getConfig().get( GraphDatabaseSettings.read_only );
+        this.readOnly = context.getConfig().get( GraphDatabaseSettings.read_only );
         this.idController = context.getIdController();
         this.databaseInfo = context.getDatabaseInfo();
         this.versionContextSupplier = context.getVersionContextSupplier();

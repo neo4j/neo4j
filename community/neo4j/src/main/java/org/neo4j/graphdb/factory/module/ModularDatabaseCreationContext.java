@@ -132,7 +132,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
         this.globalDependencies =  platformModule.dependencies;
-        this.tokenHolders = editionModule.tokenHoldersSupplier.get();
+        this.tokenHolders = editionModule.tokenHoldersProvider.apply( databaseName );
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = editionModule.locksSupplier.get();
         this.statementLocksFactory = editionModule.statementLocksFactoryProvider.apply( locks );

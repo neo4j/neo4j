@@ -78,7 +78,7 @@ public abstract class EditionModule
 {
     public IdContextFactory idContextFactory;
 
-    public Supplier<TokenHolders> tokenHoldersSupplier;
+    public Function<String, TokenHolders> tokenHoldersProvider;
 
     public Supplier<Locks> locksSupplier;
 

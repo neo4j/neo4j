@@ -518,7 +518,7 @@ public class HighlyAvailableEditionModule extends EditionModule
 
         // HA will only support a single token holder
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
-        tokenHoldersSupplier = () -> tokenHolders;
+        tokenHoldersProvider = ignored -> tokenHolders;
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.dataSourceManager, members, fs, platformModule.pageCache,

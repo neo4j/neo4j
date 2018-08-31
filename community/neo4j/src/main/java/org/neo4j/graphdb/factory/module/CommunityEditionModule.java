@@ -20,12 +20,15 @@
 package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -103,10 +106,7 @@ public class CommunityEditionModule extends EditionModule
 
         idContextFactory = createIdContextFactory( platformModule, fileSystem );
 
-        tokenHoldersSupplier = () -> new TokenHolders(
-                new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        tokenHoldersProvider = createTokenHolderProvider( platformModule );
 
         File kernelContextDirectory = platformModule.storeLayout.storeDirectory();
         dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, kernelContextDirectory, config, life, dataSourceManager ) );
@@ -126,6 +126,16 @@ public class CommunityEditionModule extends EditionModule
         connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+    }
+
+    protected Function<String,TokenHolders> createTokenHolderProvider( PlatformModule platform )
+    {
+        Config config = platform.config;
+        DataSourceManager dataSourceManager = platform.dataSourceManager;
+        return ignored -> new TokenHolders(
+                new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
     }
 
     protected IdContextFactory createIdContextFactory( PlatformModule platformModule, FileSystemAbstraction fileSystem )
@@ -161,7 +171,7 @@ public class CommunityEditionModule extends EditionModule
         return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
-    private TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager )
+    protected static TokenCreator createRelationshipTypeCreator( Config config, Supplier<Kernel> kernelSupplier )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -169,11 +179,11 @@ public class CommunityEditionModule extends EditionModule
         }
         else
         {
-            return new DefaultRelationshipTypeCreator( dataSourceManager );
+            return new DefaultRelationshipTypeCreator( kernelSupplier );
         }
     }
 
-    private TokenCreator createPropertyKeyCreator( Config config, DataSourceManager dataSourceManager )
+    protected static TokenCreator createPropertyKeyCreator( Config config, Supplier<Kernel> kernelSupplier )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -181,11 +191,11 @@ public class CommunityEditionModule extends EditionModule
         }
         else
         {
-            return new DefaultPropertyTokenCreator( dataSourceManager );
+            return new DefaultPropertyTokenCreator( kernelSupplier );
         }
     }
 
-    private TokenCreator createLabelIdCreator( Config config, DataSourceManager dataSourceManager )
+    protected static TokenCreator createLabelIdCreator( Config config, Supplier<Kernel> kernelSupplier )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -193,7 +203,7 @@ public class CommunityEditionModule extends EditionModule
         }
         else
         {
-            return new DefaultLabelIdCreator( dataSourceManager );
+            return new DefaultLabelIdCreator( kernelSupplier );
         }
     }
 
