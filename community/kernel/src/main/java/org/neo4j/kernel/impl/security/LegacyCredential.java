@@ -92,17 +92,15 @@ public class LegacyCredential implements Credential
         }
 
         int actualLength = actual.length;
-        if ( actualLength == 0 )
-        {
-            return false;
-        }
-
-        boolean result = true;
         int givenLength = given.length;
+        boolean result = true;
 
         for ( int i = 0; i < givenLength; ++i )
         {
-            result &= actual[i % actualLength] == given[i];
+            if ( actualLength > 0 )
+            {
+                result &= actual[i % actualLength] == given[i];
+            }
         }
         return result && actualLength == givenLength;
     }
