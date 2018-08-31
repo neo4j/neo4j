@@ -1181,7 +1181,7 @@
       <dependency>
         <groupId>org.scalacheck</groupId>
         <artifactId>scalacheck_2.11</artifactId>
-        <version>1.14.0</version>
+        <version>1.12.5</version>
         <scope>test</scope>
       </dependency>
       <dependency>
