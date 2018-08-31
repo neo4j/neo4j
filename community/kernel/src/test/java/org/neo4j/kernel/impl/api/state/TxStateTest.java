@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1085,6 +1086,21 @@ public class TxStateTest
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 43L );
+
+        // WHEN
+        PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForRangeSeekByPrefix( indexOn_1_1, "value" );
+
+        // THEN
+        assertEquals( asSet( 42L, 43L ), toSet( diffSets.getAdded() ) );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNonStringNodes() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
+        addNodesToIndex( indexOn_1_1 ).withNumberProperties( Collections.singleton( Pair.of( 44L, 101L ) ) );
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 43L );
 
         // WHEN

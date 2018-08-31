@@ -105,6 +105,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveLongObjectMap<NodeStateImpl> nodeStatesMap;
     private PrimitiveLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
+    private static final ValueTuple MAX_STRING_TUPLE = ValueTuple.of( Values.MAX_STRING );
+
     private PrimitiveIntObjectMap<String> createdLabelTokens;
     private PrimitiveIntObjectMap<String> createdPropertyKeyTokens;
     private PrimitiveIntObjectMap<String> createdRelationshipTypeTokens;
@@ -1132,7 +1134,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
         ValueTuple floor = ValueTuple.of( Values.stringValue( prefix ) );
         PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
-        for ( Map.Entry<ValueTuple,PrimitiveLongDiffSets> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        for ( Map.Entry<ValueTuple,PrimitiveLongDiffSets> entry : sortedUpdates.subMap( floor, MAX_STRING_TUPLE ).entrySet() )
         {
             ValueTuple key = entry.getKey();
             if ( ((TextValue) key.getOnlyValue()).stringValue().startsWith( prefix ) )
