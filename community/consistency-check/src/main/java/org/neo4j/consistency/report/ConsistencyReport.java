@@ -268,6 +268,12 @@ public interface ConsistencyReport
 
         @Documented( "The next record in the target chain does not have this record as its previous record." )
         void targetNextDoesNotReferenceBack( RelationshipRecord relationship );
+
+        @Documented( "This relationship was not found in the expected index." )
+        void notIndexed( StoreIndexDescriptor index, Object[] propertyValues );
+
+        @Documented( "This relationship was found in the expected index, although multiple times" )
+        void indexedMultipleTimes( StoreIndexDescriptor index, Object[] propertyValues, long count );
     }
 
     interface PropertyConsistencyReport extends ConsistencyReport

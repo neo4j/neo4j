@@ -21,6 +21,8 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.NodeRecordCheck;
@@ -48,6 +50,7 @@ import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static java.lang.String.format;
@@ -138,13 +141,27 @@ public class ConsistencyCheckTasks
             tasks.add( create( "RelationshipGroupStore-RelGrp", nativeStores.getRelationshipGroupStore(),
                     relGrpProcessor, ROUND_ROBIN ) );
 
-            NodePropertyReader propertyReader = new NodePropertyReader( nativeStores );
+            PropertyReader propertyReader = new PropertyReader( nativeStores );
             tasks.add( recordScanner( CheckStage.Stage8_PS_Props.name(),
                     new IterableStore<>( nativeStores.getNodeStore(), true ),
                     new PropertyAndNode2LabelIndexProcessor( reporter, checkIndexes ? indexes : null,
                             propertyReader, cacheAccess, mandatoryProperties.forNodes( reporter ) ),
                     CheckStage.Stage8_PS_Props, ROUND_ROBIN,
                     new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
+
+            // Checking that relationships are in their expected relationship indexes.
+            List<StoreIndexDescriptor> relationshipIndexes = StreamSupport.stream( indexes.onlineRules().spliterator(), false )
+                    .filter( rule -> rule.schema().entityType() == EntityType.RELATIONSHIP )
+                    .collect( Collectors.toList() );
+            if ( checkIndexes && !relationshipIndexes.isEmpty() )
+            {
+                tasks.add( recordScanner( CheckStage.Stage9_RS_Indexes.name(),
+                        new IterableStore<>( nativeStores.getRelationshipStore(), true ),
+                        new RelationshipIndexProcessor( reporter, indexes, propertyReader, cacheAccess, relationshipIndexes ),
+                        CheckStage.Stage9_RS_Indexes,
+                        ROUND_ROBIN,
+                        new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
+            }
 
             tasks.add( create( "StringStore-Str", nativeStores.getStringStore(),
                     multiPass.processor( Stage.SEQUENTIAL_FORWARD, STRINGS ), ROUND_ROBIN ) );

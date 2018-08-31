@@ -29,8 +29,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -61,10 +59,10 @@ import static java.lang.String.format;
 public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
     private final IndexAccessors indexes;
-    private final NodePropertyReader propertyReader;
+    private final PropertyReader propertyReader;
     private final CacheAccess cacheAccess;
 
-    public PropertyAndNodeIndexedCheck( IndexAccessors indexes, NodePropertyReader propertyReader, CacheAccess cacheAccess )
+    public PropertyAndNodeIndexedCheck( IndexAccessors indexes, PropertyReader propertyReader, CacheAccess cacheAccess )
     {
         this.indexes = indexes;
         this.propertyReader = propertyReader;
@@ -108,9 +106,10 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 }
 
                 int[] indexPropertyIds = schema.getPropertyIds();
-                if ( nodeHasSchemaProperties( nodePropertyMap, indexPropertyIds ) )
+                boolean requireAllProperties = schema.propertySchemaType() == SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+                if ( requireAllProperties ? hasAllProperties( nodePropertyMap, indexPropertyIds ) : hasAnyProperty( nodePropertyMap, indexPropertyIds ) )
                 {
-                    Value[] values = getPropertyValues( nodePropertyMap, indexPropertyIds );
+                    Value[] values = getPropertyValues( propertyReader, nodePropertyMap, indexPropertyIds );
                     try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
                     {
                         long nodeId = record.getId();
@@ -204,7 +203,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
     }
 
-    private Value[] getPropertyValues( IntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
+    static Value[] getPropertyValues( PropertyReader propertyReader, IntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
     {
         Value[] values = new Value[indexPropertyIds.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
@@ -215,7 +214,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return values;
     }
 
-    private IntObjectMap<PropertyBlock> properties( List<PropertyBlock> propertyBlocks )
+    static IntObjectMap<PropertyBlock> properties( List<PropertyBlock> propertyBlocks )
     {
         final MutableIntObjectMap<PropertyBlock> propertyIds = new IntObjectHashMap<>();
         for ( PropertyBlock propertyBlock : propertyBlocks )
@@ -255,16 +254,27 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
     }
 
-    private static boolean nodeHasSchemaProperties(
-            IntObjectMap<PropertyBlock> nodePropertyMap, int[] indexPropertyIds )
+    static boolean hasAllProperties( IntObjectMap<PropertyBlock> blockMap, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {
-            if ( !nodePropertyMap.containsKey( indexPropertyId ) )
+            if ( !blockMap.containsKey( indexPropertyId ) )
             {
                 return false;
             }
         }
         return true;
+    }
+
+    static boolean hasAnyProperty( IntObjectMap<PropertyBlock> blockMap, int[] indexPropertyIds )
+    {
+        for ( int indexPropertyId : indexPropertyIds )
+        {
+            if ( blockMap.containsKey( indexPropertyId ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

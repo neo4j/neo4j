@@ -40,8 +40,9 @@ public enum CheckStage implements Stage
     Stage7_RS_Backward( true, false, "RelationshipStore pass - reverse scan of source chain using the cache", 1, 1,
             ID_SLOT_SIZE, ID_SLOT_SIZE, 1 ),
     Stage8_PS_Props( true, true, "PropertyStore and Node to Index check pass" ),
-    Stage9_NS_LabelCounts( true, true, "NodeStore pass - Label counts" ),
-    Stage10_NS_PropertyRelocator( true, true, "Property store relocation" );
+    Stage9_RS_Indexes( true, true, "Relationship to Index check pass" ),
+    Stage10_NS_LabelCounts( true, true, "NodeStore pass - Label counts" ),
+    Stage11_NS_PropertyRelocator( true, true, "Property store relocation" );
 
     private final boolean parallel;
     private final boolean forward;
