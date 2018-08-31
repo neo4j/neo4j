@@ -23,7 +23,6 @@ import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -49,6 +48,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
@@ -63,7 +63,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
-@Ignore
 public class FileWatchIT
 {
     private static final long TEST_TIMEOUT = 600_000;
@@ -107,7 +106,7 @@ public class FileWatchIT
         }
         while ( !deletionListener.awaitModificationNotification() );
 
-        deleteFile( testDirectory.databaseDir(), fileName );
+        deleteFile( testDirectory.storeDir(), fileName );
         deletionListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
@@ -222,7 +221,7 @@ public class FileWatchIT
         String fileName = TransactionLogFiles.DEFAULT_NAME + ".0";
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
         fileWatcher.addFileWatchEventListener( deletionListener );
-        deleteFile( testDirectory.databaseDir(), fileName );
+        deleteFile( testDirectory.storeDir(), fileName );
         deletionListener.awaitDeletionNotification();
 
         AssertableLogProvider.LogMatcher logMatcher =
@@ -271,7 +270,7 @@ public class FileWatchIT
             db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                     .setFileSystem( new NonWatchableFileSystemAbstraction() )
                     .newEmbeddedDatabaseBuilder( testDirectory.directory( "failed-start-db" ) )
-                    .setConfig( GraphDatabaseSettings.filewatcher_enabled, "false" )
+                    .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE )
                     .newGraphDatabase();
 
             logProvider.assertContainsMessageContaining( "File watcher disabled by configuration." );
