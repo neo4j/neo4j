@@ -29,6 +29,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
 
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
   with CreateTempFileTestSupport {
@@ -210,5 +211,39 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assert(result.hasNext)
     result.next.get("c") shouldEqual(1)
+  }
+
+  val MISSING_NODE_ERRORS = List("Failed to create relationship `r`, node `c` is missing. If you prefer to simply ignore rows " +
+                                 "where a relationship node is missing, set 'cypher.lenient_create_relationship = true' in neo4j.conf",
+                                 "Expected to find a node, but found instead: null",
+                                 "Expected to find a node at c but found nothing Some(null)",
+                                 "Other node is null")
+
+  // No CLG decision on this AFAIK, so not TCK material
+  test("should throw on CREATE relationship if start-point is missing") {
+    graph.execute("CREATE (a), (b)")
+
+    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+
+    failWithError(config, """MATCH (a), (b)
+                            |WHERE id(a)=0 AND id(b)=1
+                            |OPTIONAL MATCH (b)-[:LINK_TO]->(c)
+                            |CREATE (b)-[:LINK_TO]->(a)
+                            |CREATE (c)-[r:MISSING_C]->(a)""".stripMargin,
+      errorType = MISSING_NODE_ERRORS)
+  }
+
+  // No CLG decision on this AFAIK, so not TCK material
+  test("should throw on CREATE relationship if end-point is missing") {
+    graph.execute("CREATE (a), (b)")
+
+    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+
+    failWithError(config, """MATCH (a), (b)
+                            |WHERE id(a)=0 AND id(b)=1
+                            |OPTIONAL MATCH (b)-[:LINK_TO]->(c)
+                            |CREATE (b)-[:LINK_TO]->(a)
+                            |CREATE (a)-[r:MISSING_C]->(c)""".stripMargin,
+      errorType = MISSING_NODE_ERRORS)
   }
 }

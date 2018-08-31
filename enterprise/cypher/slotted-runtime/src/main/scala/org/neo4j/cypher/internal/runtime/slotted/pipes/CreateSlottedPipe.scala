@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.Slot
+import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.kernel.api.StatementConstants.{NO_SUCH_NODE, NO_SUCH_RELATIONSHIP}
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.{InternalException, InvalidSemanticsException}
 
@@ -48,19 +51,32 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
   protected def createRelationship(context: ExecutionContext,
                                    state: QueryState,
                                    command: CreateRelationshipSlottedCommand): Long = {
+
+    def handleMissingNode(nodeName: String) =
+      if (state.lenientCreateRelationship) NO_SUCH_RELATIONSHIP
+      else throw new InternalException(LenientCreateRelationship.errorMsg(command.relName, nodeName))
+
     val startNodeId = command.startNodeIdGetter(context)
     val endNodeId = command.endNodeIdGetter(context)
     val typeId = command.relType.typ(state.query)
 
-    if (startNodeId == -1) {
-      throw new InternalException(s"Expected to find a node, but found instead: null")
+    if (startNodeId == NO_SUCH_NODE) handleMissingNode(command.startName)
+    else if (endNodeId == NO_SUCH_NODE) handleMissingNode(command.endName)
+    else {
+      val relationship = state.query.createRelationship(startNodeId, endNodeId, typeId)
+      command.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
+      relationship.id()
     }
-    if (endNodeId == -1) {
-      throw new InternalException(s"Expected to find a node, but found instead: null")
-    }
-    val relationship = state.query.createRelationship(startNodeId, endNodeId, typeId)
-    command.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
-    relationship.id
+
+//    if (startNodeId == -1) {
+//      throw new InternalException(s"Expected to find a node, but found instead: null")
+//    }
+//    if (endNodeId == -1) {
+//      throw new InternalException(s"Expected to find a node, but found instead: null")
+//    }
+//    val relationship = state.query.createRelationship(startNodeId, endNodeId, typeId)
+//    command.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
+//    relationship.id
   }
 }
 
@@ -68,11 +84,14 @@ case class CreateNodeSlottedCommand(idOffset: Int,
                                     labels: Seq[LazyLabel],
                                     properties: Option[Expression])
 
-case class CreateRelationshipSlottedCommand(idOffset: Int,
+case class CreateRelationshipSlottedCommand(relIdOffset: Int,
                                             startNodeIdGetter: ExecutionContext => Long,
                                             relType: LazyType,
                                             endNodeIdGetter: ExecutionContext => Long,
-                                            properties: Option[Expression])
+                                            properties: Option[Expression],
+                                            relName: String,
+                                            startName: String,
+                                            endName: String)
 
 /**
   * Create nodes and relationships from slotted commands.
@@ -98,7 +117,7 @@ case class CreateSlottedPipe(source: Pipe,
         while (i < relationships.length) {
           val command = relationships(i)
           val relationshipId = createRelationship(row, state, command)
-          row.setLongAt(command.idOffset, relationshipId)
+          row.setLongAt(command.relIdOffset, relationshipId)
           i += 1
         }
 
@@ -142,7 +161,7 @@ case class MergeCreateRelationshipSlottedPipe(source: Pipe,
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       row =>
-        row.setLongAt(command.idOffset, createRelationship(row, state, command))
+        row.setLongAt(command.relIdOffset, createRelationship(row, state, command))
         row
     }
   }

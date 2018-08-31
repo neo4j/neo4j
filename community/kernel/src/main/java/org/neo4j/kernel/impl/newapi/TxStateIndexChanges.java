@@ -44,6 +44,8 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 class TxStateIndexChanges
 {
+    private static final ValueTuple MAX_STRING_TUPLE = ValueTuple.of( Values.MAX_STRING );
+
     static LongDiffSets indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor descriptor )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
@@ -278,7 +280,7 @@ class TxStateIndexChanges
         }
         ValueTuple floor = ValueTuple.of( Values.stringValue( prefix ) );
         MutableLongDiffSetsImpl diffs = new MutableLongDiffSetsImpl();
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.subMap( floor, MAX_STRING_TUPLE ).entrySet() )
         {
             ValueTuple key = entry.getKey();
             if ( ((TextValue) key.getOnlyValue()).stringValue().startsWith( prefix ) )

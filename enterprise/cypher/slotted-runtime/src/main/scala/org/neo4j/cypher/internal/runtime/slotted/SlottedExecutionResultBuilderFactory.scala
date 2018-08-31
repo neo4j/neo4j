@@ -34,7 +34,8 @@ class SlottedExecutionResultBuilderFactory(pipe: Pipe,
                                            readOnly: Boolean,
                                            columns: List[String],
                                            logicalPlan: LogicalPlan,
-                                           pipelines: SlotConfigurations)
+                                           pipelines: SlotConfigurations,
+                                           lenientCreateRelationship: Boolean)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
 
   override def create(): ExecutionResultBuilder =
@@ -42,8 +43,13 @@ class SlottedExecutionResultBuilderFactory(pipe: Pipe,
 
   class SlottedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
     override protected def createQueryState(params: MapValue): SlottedQueryState = {
-      new SlottedQueryState(queryContext, externalResource, params, pipeDecorator,
-        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+      new SlottedQueryState(queryContext,
+                            externalResource,
+                            params,
+                            pipeDecorator,
+                            triadicState = mutable.Map.empty,
+                            repeatableReads = mutable.Map.empty,
+                            lenientCreateRelationship = lenientCreateRelationship)
     }
 
     override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult = {

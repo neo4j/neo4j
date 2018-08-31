@@ -100,15 +100,21 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     readOnly: Boolean,
                                                     columns: List[String],
-                                                    logicalPlan: LogicalPlan)
+                                                    logicalPlan: LogicalPlan,
+                                                    lenientCreateRelationship: Boolean)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
 
   override def create(): ExecutionResultBuilder = InterpretedExecutionWorkflowBuilder()
 
   case class InterpretedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
     override def createQueryState(params: MapValue): QueryState = {
-      new QueryState(queryContext, externalResource, params, pipeDecorator,
-        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+      new QueryState(queryContext,
+                     externalResource,
+                     params,
+                     pipeDecorator,
+                     triadicState = mutable.Map.empty,
+                     repeatableReads = mutable.Map.empty,
+                     lenientCreateRelationship = lenientCreateRelationship)
     }
 
     override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult = {

@@ -72,7 +72,8 @@ object CypherReductionSupport {
     csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
     nonIndexedLabelWarningThreshold = 0,
     planWithMinimumCardinalityEstimates = true,
-    disableCompiledExpressions = true)
+    disableCompiledExpressions = true,
+    lenientCreateRelationship = true)
   private val kernelMonitors = new Monitors
   private val compiler = CypherPlanner(WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
     MasterCompiler.CLOCK, PlannerContextCreator)
@@ -198,7 +199,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
         CypherReductionSupport.config,
         morselRuntimeState = null)
      else
-      CommunityRuntimeContextCreator
+      CommunityRuntimeContextCreator(CypherReductionSupport.config)
 
     val runtimeContext = runtimeContextCreator.create(devNullLogger, planContext, MasterCompiler.CLOCK, Set(), readOnly)
     val executionPlan = runtime.compileToExecutable(logicalPlanState, runtimeContext)

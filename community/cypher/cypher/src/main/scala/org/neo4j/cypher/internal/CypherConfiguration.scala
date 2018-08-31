@@ -45,6 +45,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.csv_buffer_size),
       config.get(GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates),
       config.get(GraphDatabaseSettings.cypher_disable_compiled_expressions),
+      config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
       config.get(GraphDatabaseSettings.cypher_worker_count),
       config.get(GraphDatabaseSettings.cypher_morsel_size),
       config.get(GraphDatabaseSettings.enable_morsel_runtime_trace)
@@ -79,6 +80,7 @@ case class CypherConfiguration(version: CypherVersion,
                                csvBufferSize: Int,
                                planWithMinimumCardinalityEstimates: Boolean,
                                disableCompiledExpressions: Boolean,
+                               lenientCreateRelationship: Boolean,
                                workers: Int,
                                morselSize: Int,
                                doSchedulerTracing: Boolean) {
@@ -102,6 +104,7 @@ case class CypherConfiguration(version: CypherVersion,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
       planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
-      disableCompiledExpressions = disableCompiledExpressions
+      disableCompiledExpressions = disableCompiledExpressions,
+      lenientCreateRelationship = lenientCreateRelationship
     )
 }

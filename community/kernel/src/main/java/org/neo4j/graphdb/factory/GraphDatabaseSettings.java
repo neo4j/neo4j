@@ -222,6 +222,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> forbid_shortestpath_common_nodes = setting(
             "cypher.forbid_shortestpath_common_nodes", BOOLEAN, TRUE );
 
+    @Description( "Set this to change the behavior for Cypher create relationship when the start or end node is missing. " +
+            "By default this fails the query and stops execution, but by setting this flag the create operation is " +
+            "simply not performed and execution continues." )
+    public static final Setting<Boolean> cypher_lenient_create_relationship = setting( "cypher.lenient_create_relationship", BOOLEAN, FALSE );
+
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(

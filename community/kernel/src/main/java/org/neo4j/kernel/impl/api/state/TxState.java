@@ -59,6 +59,7 @@ import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.values.storable.Values.NO_VALUE;

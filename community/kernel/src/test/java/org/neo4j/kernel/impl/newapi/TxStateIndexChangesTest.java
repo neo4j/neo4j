@@ -32,10 +32,12 @@ import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -354,6 +356,23 @@ class TxStateIndexChangesTest
                             nodeWithPropertyValues( 42L, "Andreas" ),
                             nodeWithPropertyValues( 43L, "Andrea" ) ),
                     diffSets2.getAdded() );
+        }
+
+        @Test
+        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNonStringNodes() throws Exception
+        {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded( 42L, "barry" )
+                    .withAdded( 44L, 101L )
+                    .withAdded( 43L, "bar" )
+                    .build();
+
+            // WHEN
+            LongDiffSets diffSets = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "bar" );
+
+            // THEN
+            assertEquals( newSetWith( 42L, 43L ), diffSets.getAdded() );
         }
     }
 

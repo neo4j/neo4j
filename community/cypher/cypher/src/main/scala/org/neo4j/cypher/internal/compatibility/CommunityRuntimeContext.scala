@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
@@ -29,14 +30,15 @@ import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
   */
 case class CommunityRuntimeContext(notificationLogger: InternalNotificationLogger,
                                    tokenContext: TokenContext,
-                                   readOnly: Boolean) extends RuntimeContext
+                                   readOnly: Boolean,
+                                   config: CypherPlannerConfiguration) extends RuntimeContext
 
-object CommunityRuntimeContextCreator extends RuntimeContextCreator[RuntimeContext] {
+case class CommunityRuntimeContextCreator(config: CypherPlannerConfiguration) extends RuntimeContextCreator[RuntimeContext] {
   override def create(notificationLogger: InternalNotificationLogger,
                       tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
                       readOnly: Boolean
                      ): RuntimeContext =
-    CommunityRuntimeContext(notificationLogger, tokenContext, readOnly)
+    CommunityRuntimeContext(notificationLogger, tokenContext, readOnly, config)
 }

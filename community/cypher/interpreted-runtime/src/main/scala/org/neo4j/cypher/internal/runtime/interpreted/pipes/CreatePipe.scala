@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.{LenientCreateRelationship, Operations, QueryContext}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
@@ -101,19 +101,28 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
     */
   protected def createRelationship(context: ExecutionContext,
                                    state: QueryState,
-                                   data: CreateRelationshipCommand): (String, RelationshipValue) = {
-    val start = getNode(context, data.startNode)
-    val end = getNode(context, data.endNode)
-    val typeId = data.relType.typ(state.query)
-    val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
-    data.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
+                                   data: CreateRelationshipCommand): (String, AnyValue) = {
+    val start = getNode(context, data.idName, data.startNode, state.lenientCreateRelationship)
+    val end = getNode(context, data.idName, data.endNode, state.lenientCreateRelationship)
+
+    val relationship =
+      if (start == null || end == null)
+        Values.NO_VALUE // lenient create relationship NOOPs on missing node
+      else {
+        val typeId = data.relType.typ(state.query)
+        val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
+        data.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
+        relationship
+      }
     data.idName -> relationship
   }
 
-  private def getNode(row: ExecutionContext, name: String): NodeValue =
+  private def getNode(row: ExecutionContext, relName: String, name: String, lenient: Boolean): NodeValue =
     row.get(name) match {
       case Some(n: NodeValue) => n
-      case Some(Values.NO_VALUE) => throw new InternalException(s"Expected to find a node at '$name' but found instead: null")
+      case Some(Values.NO_VALUE) =>
+        if (lenient) null
+        else throw new InternalException(LenientCreateRelationship.errorMsg(relName, name))
       case Some(x) => throw new InternalException(s"Expected to find a node at '$name' but found instead: $x")
       case None => throw new InternalException(s"Expected to find a node at '$name' but found instead: null")
     }

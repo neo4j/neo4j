@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_5.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
@@ -56,6 +56,7 @@ abstract class RuntimeContext {
   def notificationLogger: InternalNotificationLogger
   def tokenContext: TokenContext
   def readOnly: Boolean
+  def config: CypherPlannerConfiguration
 }
 
 /**

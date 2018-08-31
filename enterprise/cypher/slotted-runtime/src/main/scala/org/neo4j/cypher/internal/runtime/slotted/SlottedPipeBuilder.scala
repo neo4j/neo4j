@@ -215,7 +215,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
               SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
               LazyType(r.relType.name),
               SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
-              r.properties.map(convertExpressions))
+              r.properties.map(convertExpressions),
+              r.idName, r.startNode, r.endNode
+            )
           ).toIndexedSeq
         )(id)
 
@@ -237,7 +239,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(startNode)),
             LazyType(relType.name),
             SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(endNode)),
-            properties.map(convertExpressions)
+            properties.map(convertExpressions),
+            idName, startNode, endNode
           )
         )(id)
 

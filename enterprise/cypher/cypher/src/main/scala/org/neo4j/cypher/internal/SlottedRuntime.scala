@@ -84,7 +84,12 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
       val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
       val columns = state.statement().returnColumns
       val resultBuilderFactory =
-        new SlottedExecutionResultBuilderFactory(pipe, context.readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
+        new SlottedExecutionResultBuilderFactory(pipe,
+                                                 context.readOnly,
+                                                 columns,
+                                                 logicalPlan,
+                                                 physicalPlan.slotConfigurations,
+                                                 context.config.lenientCreateRelationship)
 
       if (ENABLE_DEBUG_PRINTS) {
         if (!PRINT_PLAN_INFO_EARLY) {

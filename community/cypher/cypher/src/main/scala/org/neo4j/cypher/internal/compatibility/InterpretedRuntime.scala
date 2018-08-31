@@ -45,7 +45,11 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.tokenContext)
     val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
     val columns = state.statement().returnColumns
-    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe, context.readOnly, columns, logicalPlan)
+    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
+                                                                        context.readOnly,
+                                                                        columns,
+                                                                        logicalPlan,
+                                                                        context.config.lenientCreateRelationship)
 
     new InterpretedExecutionPlan(periodicCommitInfo,
                                  resultBuilderFactory,

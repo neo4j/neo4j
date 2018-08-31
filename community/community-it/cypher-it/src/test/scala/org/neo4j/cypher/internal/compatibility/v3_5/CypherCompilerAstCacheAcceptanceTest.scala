@@ -57,7 +57,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true,
-      disableCompiledExpressions = false
+      disableCompiledExpressions = false,
+      lenientCreateRelationship = false
     )
   }
 
@@ -78,7 +79,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     CypherCurrentCompiler(
       planner,
       CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
-      CommunityRuntimeContextCreator,
+      CommunityRuntimeContextCreator(config),
       kernelMonitors)
 
   }
