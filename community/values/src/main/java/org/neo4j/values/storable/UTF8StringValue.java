@@ -397,9 +397,7 @@ public final class UTF8StringValue extends StringValue
     public static int byteArrayCompare( byte[] value1, int value1Offset, int value1Length,
             byte[] value2, int value2Offset, int value2Length )
     {
-        int len1 = value1Length;
-        int len2 = value2Length;
-        int lim = Math.min( len1, len2 );
+        int lim = Math.min( value1Length, value2Length );
         int i = 0;
         while ( i < lim )
         {
@@ -411,42 +409,13 @@ public final class UTF8StringValue extends StringValue
             }
             i++;
         }
-        return len1 - len2;
+        return value1Length - value2Length;
     }
 
     @Override
     Matcher matcher( Pattern pattern )
     {
         return pattern.matcher( value() ); // TODO: can we do better here?
-    }
-
-    private static int codePointAt( byte[] bytes, int i )
-    {
-        assert i < bytes.length;
-        byte b = bytes[i];
-        if ( b >= 0 )
-        {
-            return b;
-        }
-        int bytesNeeded = 0;
-        while ( b < 0 )
-        {
-            bytesNeeded++;
-            b = (byte) (b << 1);
-        }
-        switch ( bytesNeeded )
-        {
-        case 2:
-            return (b << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
-        case 3:
-            return (b << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
-        case 4:
-            return (b << 14) | ((bytes[i + 1] & HIGH_BIT_MASK) << 12) |
-                   ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
-                   | (bytes[i + 3] & HIGH_BIT_MASK);
-        default:
-            throw new IllegalArgumentException( "Malformed UTF8 value " + bytesNeeded );
-        }
     }
 
     /**
