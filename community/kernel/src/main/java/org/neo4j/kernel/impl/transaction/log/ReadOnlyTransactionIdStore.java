@@ -126,12 +126,6 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public boolean closedTransactionIdIsOnParWithOpenedTransactionId()
-    {
-        throw new UnsupportedOperationException( "Read-only transaction ID store" );
-    }
-
-    @Override
     public void flush()
     {   // Nothing to flush
     }

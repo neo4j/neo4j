@@ -39,8 +39,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
  * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
  * <li>{@link #transactionClosed(long, long, long)} is called with this id again, this time after all changes the
- * transaction imposes have been applied to the store. At this point this id is regarded in
- * {@link #closedTransactionIdIsOnParWithOpenedTransactionId()} as well.
+ * transaction imposes have been applied to the store.
  * </ol>
  */
 public interface TransactionIdStore
@@ -162,15 +161,6 @@ public interface TransactionIdStore
      * @param byteOffset offset in the log file where start writing the next log entry.
      */
     void transactionClosed( long transactionId, long logVersion, long byteOffset );
-
-    /**
-     * Should be called in a place where no more committed transaction ids are returned, so that
-     * applied transactions can catch up.
-     *
-     * @return {@code true} if the latest applied transaction (without any lower transaction id gaps)
-     * is the same as the highest returned {@code committed transaction id}.
-     */
-    boolean closedTransactionIdIsOnParWithOpenedTransactionId();
 
     /**
      * Forces the transaction id counters to persistent storage.

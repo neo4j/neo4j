@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -132,12 +131,6 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     public void transactionClosed( long transactionId, long logVersion, long byteOffset )
     {
         closedTransactionId.offer( transactionId, new long[]{logVersion, byteOffset} );
-    }
-
-    @Override
-    public boolean closedTransactionIdIsOnParWithOpenedTransactionId()
-    {
-        return closedTransactionId.getHighestGapFreeNumber() == committedTransactionId.get().transactionId();
     }
 
     @Override
