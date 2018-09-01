@@ -33,10 +33,10 @@ final class StringHelpers
 {
     private StringHelpers()
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
-    static <T> void assertConsistent( String string,  Function<TextValue, T> test)
+    static <T> void assertConsistent( String string, Function<TextValue,T> test )
     {
         TextValue textValue = stringValue( string );
         TextValue utf8Value = utf8Value( string.getBytes( UTF_8 ) );
@@ -48,7 +48,7 @@ final class StringHelpers
         assertThat( errorMsg, b, equalTo( a ) );
     }
 
-    static <T> void assertConsistent( String string1, String string2,  BiFunction<TextValue, TextValue, T> test)
+    static <T> void assertConsistent( String string1, String string2, BiFunction<TextValue,TextValue,T> test )
     {
         TextValue textValue1 = stringValue( string1 );
         TextValue textValue2 = stringValue( string2 );
@@ -61,7 +61,10 @@ final class StringHelpers
 
         String errorMsg = format( "operation not consistent for `%s` and `%s`", string1, string2 );
         assertThat( errorMsg, a, equalTo( x ) );
+        assertThat( errorMsg, x, equalTo( a ) );
         assertThat( errorMsg, a, equalTo( y ) );
+        assertThat( errorMsg, y, equalTo( a ) );
         assertThat( errorMsg, a, equalTo( z ) );
+        assertThat( errorMsg, z, equalTo( a ) );
     }
 }
