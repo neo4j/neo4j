@@ -76,8 +76,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     // TODO copy-pasted from individual keys
     // TODO also put this in Type enum
-    private static final int SIZE_GEOMETRY =       Long.BYTES +    /* rawValueBits */
-                                                   3;              /* 2b tableId and 22b code */
+    private static final int SIZE_GEOMETRY_HEADER = 3;             /* 2b tableId and 22b code */
+    private static final int SIZE_GEOMETRY =       Long.BYTES;     /* rawValueBits */
     public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
                                                    Integer.BYTES + /* nanoOfSecond */
                                                    Integer.BYTES;  /* timeZone */
@@ -113,13 +113,13 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private static final int MASK_TABLE_READ = 0xC00000; // 2b
     private static final int MASK_TABLE_PUT = MASK_TABLE_READ >>> SHIFT_TABLE;
 
+    // Immutable
+    private final IndexSpecificSpaceFillingCurveSettingsCache settings;
+
+    // Mutable, meta-state
     Type type;
     NativeIndexKey.Inclusion inclusion;
     private boolean isArray;
-    private boolean isHighestArray;
-    private int arrayLength;
-    private int currentArrayOffset;
-    private final IndexSpecificSpaceFillingCurveSettingsCache settings;
 
     // spatial                long0 (rawValueBits), long1 (coordinate reference system tableId), long2 (coordinate reference system code)
     // zoned date time:       long0 (epochSecondUTC), long1 (nanoOfSecond), long2 (zoneId), long3 (zoneOffsetSeconds)
@@ -132,22 +132,27 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     // boolean:               long0
     // number:                long0 (value), long1 (number type)
 
-    // for non-array values
+    // Mutable, non-array values
     private long long0;
     private long long1;
     private long long2;
     private long long3;
     private byte[] byteArray;
 
-    // for array values
+    // Mutable, array values
     private long[] long0Array;
     private long[] long1Array;
     private long[] long2Array;
     private long[] long3Array;
     private byte[][] byteArrayArray;
+    private boolean isHighestArray;
+    private int arrayLength;
+    private int currentArrayOffset;
 
-    // for spatial values
-    private CoordinateReferenceSystem crs;
+    // Mutable, spatial values
+    /*
+     * Settings for a specific crs retrieved from #settings using #long1 and #long2.
+     */
     private SpaceFillingCurve spaceFillingCurve;
 
     GenericKeyState( IndexSpecificSpaceFillingCurveSettingsCache settings )
@@ -168,6 +173,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         arrayLength = 0;
         isHighestArray = false;
         currentArrayOffset = 0;
+        spaceFillingCurve = null;
     }
 
     void initializeToDummyValue()
@@ -214,6 +220,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case NUMBER:
             writeValue( Values.of( Double.NEGATIVE_INFINITY ), LOW );
             break;
+        // array types
         case GEOMETRY_ARRAY:
         case ZONED_DATE_TIME_ARRAY:
         case LOCAL_DATE_TIME_ARRAY:
@@ -237,6 +244,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
         switch ( type )
         {
+        case GEOMETRY:
+            // Cartesian_3D is the CRS w/ highest table/code at the time of writing this. Update as more CRSs gets added?
+            writePointDerived( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, HIGH );
+            break;
         case NUMBER:
             writeValue( Values.of( Double.POSITIVE_INFINITY ), HIGH );
             break;
@@ -265,6 +276,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case BOOLEAN:
             writeValue( Values.of( true ), HIGH );
             break;
+        // array types
+        case GEOMETRY_ARRAY:
         case ZONED_DATE_TIME_ARRAY:
         case LOCAL_DATE_TIME_ARRAY:
         case DATE_ARRAY:
@@ -309,8 +322,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             this.long2 = key.long2;
             this.long3 = key.long3;
             this.copyByteArrayFromIfExists( key, (int) key.long0 );
-            this.crs = key.crs;
-            this.spaceFillingCurve = key.spaceFillingCurve;
         }
         else
         {
@@ -349,7 +360,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             default:
                 throw new IllegalStateException( "Expected an array type but was " + type );
             }
-            this.isHighestArray = key.isHighestArray;
         }
     }
 
@@ -358,6 +368,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         this.type = key.type;
         this.inclusion = key.inclusion;
         this.isArray = key.isArray;
+        this.isHighestArray = key.isHighestArray;
+        this.spaceFillingCurve = key.spaceFillingCurve;
     }
 
     private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
@@ -532,7 +544,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         switch ( type )
         {
         case GEOMETRY:
-            return SIZE_GEOMETRY;
+            return SIZE_GEOMETRY_HEADER + SIZE_GEOMETRY;
         case ZONED_DATE_TIME:
             return SIZE_ZONED_DATE_TIME;
         case LOCAL_DATE_TIME:
@@ -552,8 +564,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return SIZE_BOOLEAN;
         case NUMBER:
             return numberKeySize( long1 ) + SIZE_NUMBER_TYPE;
+        // array types
         case GEOMETRY_ARRAY:
-            return arrayKeySize( SIZE_GEOMETRY );
+            return SIZE_GEOMETRY_HEADER + arrayKeySize( SIZE_GEOMETRY );
         case ZONED_DATE_TIME_ARRAY:
             return arrayKeySize( SIZE_ZONED_DATE_TIME );
         case LOCAL_DATE_TIME_ARRAY:
@@ -616,7 +629,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         switch ( type )
         {
         case GEOMETRY:
-            // TODO actually the existing spatial index stuff doesn't deserialize into Value instances for some reason, because it's lossy anyway?
             return NO_VALUE;
         case ZONED_DATE_TIME:
             return zonedDateTimeAsValue( long0, long1, long2, long3 );
@@ -637,9 +649,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return booleanAsValue( long0 );
         case NUMBER:
             return numberAsValue( long0, long1 );
-
+        // array types
         case GEOMETRY_ARRAY:
-            // TODO actually the existing spatial index stuff doesn't deserialize into Value instances for some reason, because it's lossy anyway?
             return NO_VALUE;
         case ZONED_DATE_TIME_ARRAY:
             return Values.of( populateValueArray( new ZonedDateTime[arrayLength],
@@ -779,7 +790,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return compareNumber(
                     this.long0, this.long1,
                     that.long0, that.long1 );
-
+        // array types
         case GEOMETRY_ARRAY:
             return compareArrays( that, ( o1, o2, i ) -> compareGeometry(
                     o1.long0Array[i], o1.long1, o1.long2,
@@ -1028,7 +1039,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case NUMBER:
             putNumberIncludingType( cursor, long0, long1 );
             break;
-
+        // array types
         case GEOMETRY_ARRAY:
             putGeometryCrs( cursor, long1, long2 );
             putArray( cursor, ( c, i ) -> putGeometry( c, long0Array[i] ) );
@@ -1085,7 +1096,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         }
     }
 
-    private void putGeometryCrs( PageCursor cursor, long long1, long long2 )
+    private static void putGeometryCrs( PageCursor cursor, long long1, long long2 )
     {
         if ( (long1 & ~MASK_TABLE_PUT) != 0 )
         {
@@ -1105,7 +1116,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         cursor.putByte( (byte) (value >>> Short.SIZE) );
     }
 
-    private void putGeometry( PageCursor cursor, long long0 )
+    private static void putGeometry( PageCursor cursor, long long0 )
     {
         cursor.putLong( long0 );
     }
@@ -1241,7 +1252,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return readBoolean( cursor );
         case NUMBER:
             return readNumber( cursor );
-
+        // array types
         case GEOMETRY_ARRAY:
             readGeometryCrs( cursor );
             return readArray( cursor, ArrayType.POINT, this::readGeometryArrayItem );
@@ -1420,11 +1431,12 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         long2 = tableAndCode & MASK_CODE;
         try
         {
-            crs = CoordinateReferenceSystem.get( (int) long1, (int) long2 );
+            CoordinateReferenceSystem.get( (int) long1, (int) long2 );
         }
         catch ( Exception e )
         {
-            cursor.setCursorException( e.getMessage() );
+            setCursorException( cursor, e.getMessage() );
+            return false;
         }
         return true;
     }
@@ -1433,8 +1445,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         int low = cursor.getShort() & 0xFFFF;
         int high = cursor.getByte() & 0xFF;
-        int i = high << Short.SIZE | low;
-        return i;
+        return high << Short.SIZE | low;
     }
 
     private boolean readNumber( PageCursor cursor )
@@ -1796,7 +1807,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         if ( !isArray )
         {
-            updateCurve( crs );
+            updateCurve( crs.getTable().getTableId(), crs.getCode() );
             type = Type.GEOMETRY;
             long0 = spaceFillingCurve.derivedValueFor( coordinate );
         }
@@ -1804,13 +1815,13 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         {
             if ( currentArrayOffset == 0 )
             {
-                updateCurve( crs );
+                updateCurve( crs.getTable().getTableId(), crs.getCode() );
             }
-            else if ( this.crs != crs )
+            else if ( this.long1 != crs.getTable().getTableId() || this.long2 != crs.getCode() )
             {
                 throw new IllegalStateException( format(
                         "Tried to assign a geometry array containing different coordinate reference systems, first:%s, violating:%s at array position:%d",
-                        this.crs, crs, currentArrayOffset ) );
+                        CoordinateReferenceSystem.get( (int) long1, (int) long2 ), crs, currentArrayOffset ) );
             }
             long0Array[currentArrayOffset] = spaceFillingCurve.derivedValueFor( coordinate );
         }
@@ -1820,21 +1831,24 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         if ( isArray )
         {
-            throw new IllegalStateException( "Not sure we're doing arrays like this, are we?" );
+            throw new IllegalStateException(
+                    "This method is intended to be called when querying, where one or more sub-ranges are derived " +
+                    "from a queried range and each sub-range written to separate keys. " +
+                    "As such it's unexpected that this key state thinks that it's holds state for an array" );
         }
         type = Type.GEOMETRY;
         this.inclusion = inclusion;
         long0 = derivedValue;
-        updateCurve( crs );
+        updateCurve( crs.getTable().getTableId(), crs.getCode() );
     }
 
-    private void updateCurve( CoordinateReferenceSystem crs )
+    private void updateCurve( int tableId, int code )
     {
-        if ( this.crs == null || this.crs != crs )
+        if ( this.long1 != tableId || this.long2 != code )
         {
-            long1 = crs.getTable().getTableId();
-            long2 = crs.getCode();
-            spaceFillingCurve = settings.forCrs( (int) long1, (int) long2, true );
+            long1 = tableId;
+            long2 = code;
+            spaceFillingCurve = settings.forCrs( tableId, code, true );
         }
     }
 
@@ -1911,10 +1925,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         }
     }
 
-    private void initializeArrayMeta( int size )
+    private void initializeArrayMeta( int size, boolean isHighest )
     {
         isArray = true;
-        isHighestArray = false;
+        isHighestArray = isHighest;
         arrayLength = size;
         currentArrayOffset = 0;
     }
@@ -1989,6 +2003,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeGeometryArray( int size )
     {
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
         // plain long1 for tableId
         // plain long2 for code
@@ -1996,20 +2011,20 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeNumberArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
         // plain long1 for number type
     }
 
     private void initializeBooleanArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeTextArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
         byteArrayArray = ensureBigEnough( byteArrayArray, size );
         // long1 (bytesDereferenced) - Not needed because we never leak bytes from string array
@@ -2019,7 +2034,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeDurationArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
         long2Array = ensureBigEnough( long2Array, size );
@@ -2028,33 +2043,33 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeLocalTimeArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeZonedTimeArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
     }
 
     private void initializeDateArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeLocalDateTimeArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
     }
 
     private void initializeZonedDateTimeArray( int size )
     {
-        initializeArrayMeta( size );
+        initializeArrayMeta( size, false );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
         long2Array = ensureBigEnough( long2Array, size );
@@ -2063,7 +2078,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeLowestArray()
     {
-        initializeArrayMeta( 0 );
+        initializeArrayMeta( 0, false );
         long0Array = ensureBigEnough( long0Array, 0 );
         long1Array = ensureBigEnough( long1Array, 0 );
         long2Array = ensureBigEnough( long2Array, 0 );
@@ -2072,12 +2087,11 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeHighestArray()
     {
-        initializeArrayMeta( 0 );
+        initializeArrayMeta( 0, true );
         long0Array = ensureBigEnough( long0Array, 0 );
         long1Array = ensureBigEnough( long1Array, 0 );
         long2Array = ensureBigEnough( long2Array, 0 );
         long3Array = ensureBigEnough( long3Array, 0 );
-        isHighestArray = true;
     }
     /* </write.array> */
     /* </write> */

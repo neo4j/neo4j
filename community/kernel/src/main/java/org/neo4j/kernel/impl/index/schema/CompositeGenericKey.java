@@ -47,17 +47,6 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         }
     }
 
-    /**
-     * Special init method for when doing sub-queries for geometry range. This given slot will not be initialized with a {@link PointValue},
-     * but a 1D value which is derived from that point, calculated based on intersecting tiles.
-     *
-     * @see SpaceFillingCurve#getTilesIntersectingEnvelope(double[], double[], SpaceFillingCurveConfiguration)
-     */
-    void initFromDerivedSpatialValue( int stateSlot, CoordinateReferenceSystem crs, long derivedValue, Inclusion inclusion )
-    {
-        states[stateSlot].writePointDerived( crs, derivedValue, inclusion );
-    }
-
     @Override
     void writeValue( int stateSlot, Value value, Inclusion inclusion )
     {
@@ -110,6 +99,27 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         states[stateSlot].initValueAsHighest( valueGroup );
     }
 
+    /**
+     * Special init method for when doing sub-queries for geometry range. This given slot will not be initialized with a {@link PointValue},
+     * but a 1D value which is derived from that point, calculated based on intersecting tiles.
+     *
+     * @see SpaceFillingCurve#getTilesIntersectingEnvelope(double[], double[], SpaceFillingCurveConfiguration)
+     */
+    void initFromDerivedSpatialValue( int stateSlot, CoordinateReferenceSystem crs, long derivedValue, Inclusion inclusion )
+    {
+        states[stateSlot].writePointDerived( crs, derivedValue, inclusion );
+    }
+
+    void initAsPrefixLow( int stateSlot, String prefix )
+    {
+        states[stateSlot].initAsPrefixLow( prefix );
+    }
+
+    void initAsPrefixHigh( int stateSlot, String prefix )
+    {
+        states[stateSlot].initAsPrefixHigh( prefix );
+    }
+
     @Override
     int compareValueTo( CompositeGenericKey other )
     {
@@ -122,16 +132,6 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
             }
         }
         return 0;
-    }
-
-    void initAsPrefixLow( int stateSlot, String prefix )
-    {
-        states[stateSlot].initAsPrefixLow( prefix );
-    }
-
-    void initAsPrefixHigh( int stateSlot, String prefix )
-    {
-        states[stateSlot].initAsPrefixHigh( prefix );
     }
 
     void copyValuesFrom( CompositeGenericKey key )

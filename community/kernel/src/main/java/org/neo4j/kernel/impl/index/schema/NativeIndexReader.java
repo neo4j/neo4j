@@ -128,7 +128,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         KEY treeKeyTo = layout.newKey();
         initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
-        boolean needFilter = initializeRangeForQuery( cursor, treeKeyFrom, treeKeyTo, predicates );
+        boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
         startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter, needsValues );
     }
 
@@ -146,7 +146,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     /**
      * @return true if query results from seek will need to be filtered through the predicates, else false
      */
-    abstract boolean initializeRangeForQuery( IndexProgressor.NodeValueClient cursor, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
+    abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
     void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter,
             boolean needsValues )

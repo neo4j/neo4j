@@ -73,11 +73,10 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
     @Override
     public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
     {
-        validateQuery( indexOrder, query );
-
         IndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
         if ( geometryRangePredicate != null )
         {
+            validateQuery( indexOrder, query );
             try
             {
                 // If there's a GeometryRangeQuery among the predicates then this query changes from a straight-forward: build from/to and seek...
@@ -96,7 +95,7 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
                     CompositeGenericKey treeKeyFrom = layout.newKey();
                     CompositeGenericKey treeKeyTo = layout.newKey();
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
-                    boolean needFiltering = initializeRangeForGeometrySubQuery( multiProgressor, treeKeyFrom, treeKeyTo, query, crs, range );
+                    boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
 
                     // TODO needsValues==true could be problematic, no?
                     startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, needFiltering, needsValues );
@@ -110,16 +109,28 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
         }
         else
         {
-            CompositeGenericKey treeKeyFrom = layout.newKey();
-            CompositeGenericKey treeKeyTo = layout.newKey();
-            initializeFromToKeys( treeKeyFrom, treeKeyTo );
-
-            boolean needFilter = initializeRangeForQuery( client, treeKeyFrom, treeKeyTo, query );
-            startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, query, needFilter, needsValues );
+            super.query( client, indexOrder, needsValues, query );
         }
     }
 
-    private boolean initializeRangeForGeometrySubQuery( IndexProgressor.NodeValueClient client, CompositeGenericKey treeKeyFrom, CompositeGenericKey treeKeyTo,
+    /**
+     * Initializes {@code treeKeyFrom} and {@code treeKeyTo} from the {@link IndexQuery query}.
+     * Geometry range queries makes an otherwise straight-forward key construction complex in that a geometry range internally is performed
+     * by executing multiple sub-range queries to the index. Each of those sub-range queries still needs to construct the full composite key -
+     * in the case of a composite index. Therefore this method can be called either with null or non-null {@code crs} and {@code range} and
+     * constructing a key when coming across a {@link IndexQuery.GeometryRangePredicate} will use the provided crs/range instead
+     * of the predicate, where the specific range is one out of many sub-ranges calculated from the {@link IndexQuery.GeometryRangePredicate}
+     * by the caller.
+     *
+     * @param treeKeyFrom the "from" key to construct from the query.
+     * @param treeKeyTo the "to" key to construct from the query.
+     * @param query the query to construct keys from to later send to {@link GBPTree} when reading.
+     * @param crs {@link CoordinateReferenceSystem} for the specific {@code range}, if range is specified too.
+     * @param range sub-range of a larger {@link IndexQuery.GeometryRangePredicate} to use instead of {@link IndexQuery.GeometryRangePredicate}
+     * in the query.
+     * @return {@code true} if filtering is needed for the results from the reader, otherwise {@code false}.
+     */
+    private boolean initializeRangeForGeometrySubQuery( CompositeGenericKey treeKeyFrom, CompositeGenericKey treeKeyTo,
             IndexQuery[] query, CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
     {
         boolean needsFiltering = false;
@@ -170,10 +181,9 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
     }
 
     @Override
-    boolean initializeRangeForQuery( IndexProgressor.NodeValueClient client, CompositeGenericKey treeKeyFrom, CompositeGenericKey treeKeyTo,
-            IndexQuery[] query )
+    boolean initializeRangeForQuery( CompositeGenericKey treeKeyFrom, CompositeGenericKey treeKeyTo, IndexQuery[] query )
     {
-        return initializeRangeForGeometrySubQuery( client, treeKeyFrom, treeKeyTo, query, null, null );
+        return initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, null, null );
     }
 
     private static void initFromForRange( int stateSlot, RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyFrom )

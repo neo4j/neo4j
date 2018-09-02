@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -51,7 +50,7 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
     }
 
     @Override
-    boolean initializeRangeForQuery( IndexProgressor.NodeValueClient cursor, NumberIndexKey treeKeyFrom, NumberIndexKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( NumberIndexKey treeKeyFrom, NumberIndexKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )

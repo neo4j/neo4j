@@ -39,7 +39,6 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -69,18 +68,7 @@ public abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAc
                     .collect( Collectors.toList() );
             IndexQuery.ExactPredicate exact = IndexQuery.exact( 100, value );
             List<Long> result = query( exact );
-            if ( isGeometryValue( value ) )
-            {
-                // Because spatial index can have false positives we can only assert on contains
-                for ( Long expectedEntityId : expectedEntityIds )
-                {
-                    assertTrue( "query: " + exact, result.contains( expectedEntityId ) );
-                }
-            }
-            else
-            {
-                assertThat( "query: " + exact, result, equalTo( expectedEntityIds ) );
-            }
+            assertThat( "query: " + exact, result, equalTo( expectedEntityIds ) );
         }
     }
 

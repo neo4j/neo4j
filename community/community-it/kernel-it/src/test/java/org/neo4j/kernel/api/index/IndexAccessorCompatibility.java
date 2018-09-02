@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -98,10 +99,16 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         Value[] values = committedValues.get( entityId );
         for ( int i = 0; i < values.length; i++ )
         {
-            if ( !predicates[i].acceptsValue( values[i] ) )
+            IndexQuery predicate = predicates[i];
+            if ( predicate.valueGroup() == ValueGroup.GEOMETRY || predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY )
             {
-                return false;
+                if ( !predicates[i].acceptsValue( values[i] ) )
+                {
+                    return false;
+                }
             }
+            // else there's no functional need to let values, other than those of GEOMETRY type, to pass through the IndexQuery filtering
+            // avoiding this filtering will have testing be more strict in what index readers returns.
         }
         return true;
     }

@@ -79,7 +79,7 @@ class IndexSpecificSpaceFillingCurveSettingsCacheTest
     }
 
     @Test
-    void shouldNotCreateIndexSpecificSettingFOrReadRequest()
+    void shouldNotCreateIndexSpecificSettingForReadRequest()
     {
         // given
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();

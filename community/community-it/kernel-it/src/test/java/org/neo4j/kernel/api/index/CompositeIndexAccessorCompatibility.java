@@ -35,6 +35,7 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -175,7 +176,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByString() throws Exception
     {
-        testIndexSeekExactWithRange( ValueGroup.TEXT, Values.of( "a" ), Values.of( "b" ),
+        testIndexSeekExactWithRange( Values.of( "a" ), Values.of( "b" ),
                 Values.of( "Anabelle" ),
                 Values.of( "Anna" ),
                 Values.of( "Bob" ),
@@ -186,7 +187,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByNumber() throws Exception
     {
-        testIndexSeekExactWithRange( ValueGroup.NUMBER, Values.of( 303 ), Values.of( 101 ),
+        testIndexSeekExactWithRange( Values.of( 303 ), Values.of( 101 ),
                 Values.of( 111 ),
                 Values.of( 222 ),
                 Values.of( 333 ),
@@ -197,7 +198,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByTemporal() throws Exception
     {
-        testIndexSeekExactWithRange( ValueGroup.DATE, epochDate( 303 ), epochDate( 101 ),
+        testIndexSeekExactWithRange( epochDate( 303 ), epochDate( 101 ),
                 epochDate( 111 ),
                 epochDate( 222 ),
                 epochDate( 333 ),
@@ -218,7 +219,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByStringArray() throws Exception
     {
-        testIndexSeekExactWithRange( ValueGroup.TEXT_ARRAY, stringArray( "a", "c" ), stringArray( "b", "c" ),
+        testIndexSeekExactWithRange( stringArray( "a", "c" ), stringArray( "b", "c" ),
                 stringArray( "Anabelle", "c" ),
                 stringArray( "Anna", "c" ),
                 stringArray( "Bob", "c" ),
@@ -230,7 +231,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByNumberArray() throws Exception
     {
-        testIndexSeekExactWithRange( ValueGroup.NUMBER_ARRAY, longArray( new long[]{333, 9000} ), longArray( new long[]{101, 900} ),
+        testIndexSeekExactWithRange( longArray( new long[]{333, 9000} ), longArray( new long[]{101, 900} ),
                 longArray( new long[]{111, 900} ),
                 longArray( new long[]{222, 900} ),
                 longArray( new long[]{333, 900} ),
@@ -242,7 +243,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByBooleanArray() throws Exception
     {
-        testIndexSeekExactWithRange( ValueGroup.BOOLEAN_ARRAY, booleanArray( new boolean[]{true, true} ), booleanArray( new boolean[]{false, false} ),
+        testIndexSeekExactWithRange( booleanArray( new boolean[]{true, true} ), booleanArray( new boolean[]{false, false} ),
                 booleanArray( new boolean[]{false, false} ),
                 booleanArray( new boolean[]{false, true} ),
                 booleanArray( new boolean[]{true, false} ),
@@ -254,7 +255,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeByTemporalArray() throws Exception
     {
-        testIndexSeekExactWithRange( ValueGroup.DATE_ARRAY, dateArray( 303, 900 ), dateArray( 101, 900 ),
+        testIndexSeekExactWithRange( dateArray( 303, 900 ), dateArray( 101, 900 ),
                 dateArray( 111, 900 ),
                 dateArray( 222, 900 ),
                 dateArray( 333, 900 ),
@@ -265,7 +266,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithRangeBySpatial() throws Exception
     {
-        testIndexSeekExactWithRange( GEOMETRY, intValue( 100 ), intValue( 10 ),
+        testIndexSeekExactWithRange( intValue( 100 ), intValue( 10 ),
                 pointValue( WGS84, -10D, -10D ),
                 pointValue( WGS84, -1D, -1D ),
                 pointValue( WGS84, 0D, 0D ),
@@ -273,7 +274,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 pointValue( WGS84, 10D, 10D ) );
     }
 
-    private void testIndexSeekExactWithRange( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 )
+    private void testIndexSeekExactWithRange( Value base1, Value base2, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 )
             throws Exception
     {
         Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
@@ -307,11 +308,32 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ), equalTo( singletonList( 7L ) ) );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj3, false ) ), equalTo( singletonList( 7L ) ) );
 
+        ValueGroup valueGroup = obj1.valueGroup();
         if ( valueGroup != GEOMETRY && valueGroup != GEOMETRY_ARRAY )
         {
-            assertThat( query( exact( 0, base1 ), range( 1, obj1.valueGroup() ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-            assertThat( query( exact( 0, base2 ), range( 1, obj1.valueGroup() ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
+            assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+            assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
         }
+        else
+        {
+            CoordinateReferenceSystem crs = getCrs( obj1 );
+            assertThat( query( exact( 0, base1 ), range( 1, crs ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+            assertThat( query( exact( 0, base2 ), range( 1, crs ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
+        }
+    }
+
+    private CoordinateReferenceSystem getCrs( Value value )
+    {
+        if ( Values.isGeometryValue( value ) )
+        {
+            return ((PointValue) value).getCoordinateReferenceSystem();
+        }
+        else if ( Values.isGeometryArray( value ) )
+        {
+            PointArray array = (PointArray) value;
+            return array.pointValue( 0 ).getCoordinateReferenceSystem();
+        }
+        throw new IllegalArgumentException( "Expected some geometry value to get CRS from, but got " + value );
     }
 
     private void testIndexSeekExactWithRangeByBooleanType( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2 ) throws Exception
@@ -479,13 +501,13 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekRangeWithExistsByString() throws Exception
     {
-        testIndexSeekRangeWithExists( ValueGroup.TEXT, "Anabelle", "Anna", "Bob", "Harriet", "William" );
+        testIndexSeekRangeWithExists( "Anabelle", "Anna", "Bob", "Harriet", "William" );
     }
 
     @Test
     public void testIndexSeekRangeWithExistsByNumber() throws Exception
     {
-        testIndexSeekRangeWithExists( ValueGroup.NUMBER, -5, 0, 5.5, 10.0, 100.0 );
+        testIndexSeekRangeWithExists( -5, 0, 5.5, 10.0, 100.0 );
     }
 
     @Test
@@ -496,7 +518,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         DateTimeValue d3 = datetime( 10000, 100, ZoneId.of( "+01:00" ) );
         DateTimeValue d4 = datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) );
         DateTimeValue d5 = datetime( 10000, 100, ZoneId.of( "+03:00" ) );
-        testIndexSeekRangeWithExists( ValueGroup.DATE, d1, d2, d3, d4, d5  );
+        testIndexSeekRangeWithExists( d1, d2, d3, d4, d5  );
     }
 
     @Test
@@ -521,7 +543,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekRangeWithExistsByStringArray() throws Exception
     {
-        testIndexSeekRangeWithExists( ValueGroup.TEXT_ARRAY,
+        testIndexSeekRangeWithExists(
                 new String[]{"Anabelle", "Anabelle"},
                 new String[]{"Anabelle", "Anablo"},
                 new String[]{"Anna", "Anabelle"},
@@ -532,7 +554,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekRangeWithExistsByNumberArray() throws Exception
     {
-        testIndexSeekRangeWithExists( ValueGroup.NUMBER_ARRAY,
+        testIndexSeekRangeWithExists(
                 new long[]{303, 303},
                 new long[]{303, 404},
                 new long[]{600, 303},
@@ -543,7 +565,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekRangeWithExistsByBooleanArray() throws Exception
     {
-        testIndexSeekRangeWithExists( ValueGroup.NUMBER_ARRAY,
+        testIndexSeekRangeWithExists(
                 new boolean[]{false, false},
                 new boolean[]{false, true},
                 new boolean[]{true, false},
@@ -554,7 +576,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekRangeWithExistsByTemporalArray() throws Exception
     {
-        testIndexSeekRangeWithExists( ValueGroup.NUMBER_ARRAY,
+        testIndexSeekRangeWithExists(
                 dateArray( 303, 303 ),
                 dateArray( 303, 404 ),
                 dateArray( 404, 303 ),
@@ -565,7 +587,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekRangeWithExistsBySpatial() throws Exception
     {
-        testIndexSeekRangeWithExists( GEOMETRY,
+        testIndexSeekRangeWithExists(
                 pointValue( Cartesian, 0D, 0D ),
                 pointValue( Cartesian, 1D, 1D ),
                 pointValue( Cartesian, 2D, 2D ),
@@ -576,7 +598,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekRangeWithExistsBySpatialArray() throws Exception
     {
-        testIndexSeekRangeWithExists( ValueGroup.GEOMETRY_ARRAY,
+        testIndexSeekRangeWithExists(
                 pointArray( new PointValue[] {pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 0D, 1D )} ),
                 pointArray( new PointValue[] {pointValue( Cartesian, 10D, 1D ), pointValue( Cartesian, 10D, 2D )} ),
                 pointArray( new PointValue[] {pointValue( Cartesian, 20D, 2D ), pointValue( Cartesian, 20D, 3D )} ),
@@ -584,12 +606,12 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 pointArray( new PointValue[] {pointValue( Cartesian, 40D, 4D ), pointValue( Cartesian, 40D, 5D )} ) );
     }
 
-    private void testIndexSeekRangeWithExists( ValueGroup valueGroup, Object obj1, Object obj2, Object obj3, Object obj4, Object obj5 ) throws Exception
+    private void testIndexSeekRangeWithExists( Object obj1, Object obj2, Object obj3, Object obj4, Object obj5 ) throws Exception
     {
-        testIndexSeekRangeWithExists( valueGroup, Values.of( obj1 ), Values.of( obj2 ), Values.of( obj3 ), Values.of( obj4 ), Values.of( obj5 ) );
+        testIndexSeekRangeWithExists( Values.of( obj1 ), Values.of( obj2 ), Values.of( obj3 ), Values.of( obj4 ), Values.of( obj5 ) );
     }
 
-    private void testIndexSeekRangeWithExists( ValueGroup valueGroup, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 ) throws Exception
+    private void testIndexSeekRangeWithExists( Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 ) throws Exception
     {
         Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
         updateAndCommit( asList(
@@ -605,6 +627,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( range( 0, obj5, false, obj2, true ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( range( 0, null, false, obj3, false ), exists( 1 ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( range( 0, null, true, obj3, true ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        ValueGroup valueGroup = obj1.valueGroup();
         if ( valueGroup != GEOMETRY && valueGroup != GEOMETRY_ARRAY )
         {
             // This cannot be done for spatial values because each bound in a spatial query needs a coordinate reference system,
