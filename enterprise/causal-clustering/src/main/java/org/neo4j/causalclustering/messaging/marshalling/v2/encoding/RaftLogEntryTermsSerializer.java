@@ -30,7 +30,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
-public class RaftLogEntryTermsSerialize
+class RaftLogEntryTermsSerializer
 {
     static ByteBuf serializeTerms( RaftLogEntry[] raftLogEntries, ByteBufAllocator byteBufAllocator )
     {

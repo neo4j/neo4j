@@ -28,6 +28,7 @@ import java.io.IOException;
 
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.messaging.MessageTooBigException;
+import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
 import static org.neo4j.io.ByteUnit.gibiBytes;
@@ -67,10 +68,7 @@ public interface ByteBufChunkHandler
 
         MaxTotalSize( long maxSize )
         {
-            if ( maxSize < 0 )
-            {
-                throw new IllegalArgumentException( "Max size cannot be less than 0. Got " + maxSize );
-            }
+            Preconditions.requirePositive( maxSize );
             this.maxSize = maxSize;
         }
 

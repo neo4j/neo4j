@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.ContentTypeEncoder;
-import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermsSerialize;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftMessageContentEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftMessageEncoder;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;

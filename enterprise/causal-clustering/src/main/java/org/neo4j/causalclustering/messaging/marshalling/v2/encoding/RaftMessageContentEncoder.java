@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
-import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermsSerialize.serializeTerms;
+import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermsSerializer.serializeTerms;
 
 /**
  * Serializes a raft messages content in the order Message, RaftLogTerms, ReplicatedContent.

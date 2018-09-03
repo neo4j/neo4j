@@ -54,8 +54,8 @@ public class ContentTypeDispatcher extends ChannelInboundHandlerAdapter
             }
         }
 
-            ctx.fireChannelRead( msg );
-        }
+        ctx.fireChannelRead( msg );
+    }
 
     private ContentType getContentType( byte messageCode )
     {

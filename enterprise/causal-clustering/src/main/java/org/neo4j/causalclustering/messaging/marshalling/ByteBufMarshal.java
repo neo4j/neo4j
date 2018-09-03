@@ -55,7 +55,7 @@ public class ByteBufMarshal extends DefaultByteBufHolder implements ChunkedEncod
             ByteBufInputStream byteBufInputStream = new ByteBufInputStream( content() );
             byte[] bytes = new byte[CHUNK_SIZE];
             int read;
-            while ( (read = byteBufInputStream.read( bytes )) != -1 )
+            while ( ( read = byteBufInputStream.read( bytes ) ) != -1 )
             {
                 channel.put( bytes, read );
             }
