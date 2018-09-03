@@ -370,7 +370,7 @@ class GenericKeyStateTest
         assertHighest( of( Float.POSITIVE_INFINITY ) );
         assertHighest( of( Double.POSITIVE_INFINITY ) );
         // GEOMETRY_ARRAY
-        assertHighest( pointArray( new PointValue[0] ) );
+        assertHighest( pointArray( new PointValue[]{PointValue.MAX_VALUE} ) );
         // ZONED_DATE_TIME_ARRAY
         assertHighest( dateTimeArray( new ZonedDateTime[]{DateTimeValue.MAX_VALUE.asObjectCopy()} ) );
         // LOCAL_DATE_TIME_ARRAY
