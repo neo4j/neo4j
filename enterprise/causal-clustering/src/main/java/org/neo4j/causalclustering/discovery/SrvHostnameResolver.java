@@ -30,25 +30,32 @@ import java.util.stream.Collectors;
 import javax.naming.NamingException;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class SrvHostnameResolver implements HostnameResolver
+public class SrvHostnameResolver extends RetryingHostnameResolver
 {
     private final Log userLog;
     private final Log log;
     private final SrvRecordResolver srvRecordResolver;
 
-    public SrvHostnameResolver( LogProvider logProvider, LogProvider userLogProvider,
-            SrvRecordResolver srvRecordResolver )
+    public static SrvHostnameResolver getInstance( LogProvider logProvider, LogProvider userLogProvider, SrvRecordResolver srvHostnameResolver, Config config )
     {
+        return new SrvHostnameResolver( logProvider, userLogProvider, srvHostnameResolver, config, defaultRetryStrategy( config, logProvider ) );
+    }
+
+    SrvHostnameResolver( LogProvider logProvider, LogProvider userLogProvider, SrvRecordResolver srvRecordResolver, Config config,
+            MultiRetryStrategy<AdvertisedSocketAddress,Collection<AdvertisedSocketAddress>> retryStrategy )
+    {
+        super( config, retryStrategy );
         log = logProvider.getLog( getClass() );
         userLog = userLogProvider.getLog( getClass() );
         this.srvRecordResolver = srvRecordResolver;
     }
 
     @Override
-    public Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress initialAddress )
+    public Collection<AdvertisedSocketAddress> resolveOnce( AdvertisedSocketAddress initialAddress )
     {
         try
         {

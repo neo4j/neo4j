@@ -25,7 +25,6 @@ package org.neo4j.causalclustering.core;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
@@ -40,10 +39,11 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
+import org.neo4j.function.TriFunction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
@@ -85,6 +85,10 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "The time limit within which a new leader election will occur if no messages are received." )
     public static final Setting<Duration> leader_election_timeout =
             setting( "causal_clustering.leader_election_timeout", DURATION, "7s" );
+
+    @Internal
+    @Description( "Configures the time after which we give up trying to bind to a cluster formed of the other initial discovery members." )
+    public static final Setting<Duration> cluster_binding_timeout = setting( "causal_clustering.cluster_binding_timeout", DURATION, "5m" );
 
     @Description( "Prevents the current instance from volunteering to become Raft leader. Defaults to false, and " +
             "should only be used in exceptional circumstances by expert users. Using this can result in reduced " +
@@ -201,24 +205,34 @@ public class CausalClusteringSettings implements LoadableConfig
 
     public enum DiscoveryType
     {
-        DNS( ( logProvider, userLogProvider ) -> new DnsHostnameResolver( logProvider, userLogProvider, new DomainNameResolverImpl() ) ),
+        DNS( ( logProvider, userLogProvider, conf ) -> DnsHostnameResolver.getInstance( logProvider, userLogProvider, new DomainNameResolverImpl(), conf ) ),
 
-        LIST( ( logProvider, userLogProvider ) -> new NoOpHostnameResolver() ),
+        LIST( ( logProvider, userLogProvider, conf ) -> new NoOpHostnameResolver() ),
 
-        SRV( ( logProvider, userLogProvider ) -> new SrvHostnameResolver( logProvider, userLogProvider, new SrvRecordResolverImpl() ) );
+        SRV( ( logProvider, userLogProvider, conf ) -> SrvHostnameResolver.getInstance( logProvider, userLogProvider, new SrvRecordResolverImpl(), conf ) );
 
-        private final BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier;
+        private final TriFunction<LogProvider,LogProvider,Config,HostnameResolver> resolverSupplier;
 
-        DiscoveryType( BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier )
+        DiscoveryType( TriFunction<LogProvider,LogProvider,Config,HostnameResolver> resolverSupplier )
         {
             this.resolverSupplier = resolverSupplier;
         }
 
-        public HostnameResolver getHostnameResolver( LogProvider logProvider, LogProvider userLogProvider )
+        public HostnameResolver getHostnameResolver( LogProvider logProvider, LogProvider userLogProvider, Config config )
         {
-            return this.resolverSupplier.apply( logProvider, userLogProvider );
+            return this.resolverSupplier.apply( logProvider, userLogProvider, config );
         }
     }
+
+    @Internal
+    @Description( "The polling interval when attempting to resolve initial_discovery_members from DNS and SRV records." )
+    public static final Setting<Duration> discovery_resolution_retry_interval =
+            setting( "causal_clustering.discovery_resolution_retry_interval", DURATION, "5s" );
+
+    @Internal
+    @Description( "Configures the time after which we give up trying to resolve a DNS/SRV record into a list of initial discovery members." )
+    public static final Setting<Duration> discovery_resolution_timeout =
+            setting( "causal_clustering.discovery_resolution_timeout", DURATION, "5m" );
 
     @Description( "Configure the discovery type used for cluster name resolution" )
     public static final Setting<DiscoveryType> discovery_type =

@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
+import org.neo4j.function.TriFunction;
 
 /**
  * Decodes messages received by the client.
@@ -98,11 +99,5 @@ public class ClientMessageDecoder extends ByteToMessageDecoder
                 .map( status -> constructor.apply( status, identifier, version ) )
                 .orElseThrow( () -> new ClientHandshakeException(
                         String.format( "Unknown status code %s for protocol %s version %s", statusCodeValue, identifier, version ) ) );
-    }
-
-    @FunctionalInterface
-    interface TriFunction<T,U,V,W>
-    {
-        W apply( T t, U u, V v );
     }
 }

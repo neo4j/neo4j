@@ -28,37 +28,41 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class DnsHostnameResolver implements HostnameResolver
+public class DnsHostnameResolver extends RetryingHostnameResolver
 {
     private final Log userLog;
     private final Log log;
     private final DomainNameResolver domainNameResolver;
 
-    public DnsHostnameResolver( LogProvider logProvider, LogProvider userLogProvider,
-            DomainNameResolver domainNameResolver )
+    public static DnsHostnameResolver getInstance( LogProvider logProvider, LogProvider userLogProvider, DomainNameResolver domainNameResolver, Config config )
     {
+        return new DnsHostnameResolver( logProvider, userLogProvider, domainNameResolver, config, defaultRetryStrategy( config, logProvider ) );
+    }
+
+    DnsHostnameResolver( LogProvider logProvider, LogProvider userLogProvider, DomainNameResolver domainNameResolver, Config config,
+            MultiRetryStrategy<AdvertisedSocketAddress,Collection<AdvertisedSocketAddress>> retryStrategy )
+    {
+        super( config, retryStrategy );
         log = logProvider.getLog( getClass() );
         userLog = userLogProvider.getLog( getClass() );
         this.domainNameResolver = domainNameResolver;
     }
 
     @Override
-    public Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress initialAddress )
+    protected Collection<AdvertisedSocketAddress> resolveOnce( AdvertisedSocketAddress initialAddress )
     {
         Set<AdvertisedSocketAddress> addresses = new HashSet<>();
-        InetAddress[] ipAddresses = new InetAddress[0];
-        try
+        InetAddress[] ipAddresses;
+        ipAddresses = domainNameResolver.resolveDomainName( initialAddress.getHostname() );
+        if ( ipAddresses.length == 0 )
         {
-            ipAddresses = domainNameResolver.resolveDomainName( initialAddress.getHostname() );
-        }
-        catch ( UnknownHostException e )
-        {
-            log.error( format("Failed to resolve host '%s'", initialAddress.getHostname()), e);
+            log.error( "Failed to resolve host '%s'", initialAddress.getHostname() );
         }
 
         for ( InetAddress ipAddress : ipAddresses )
@@ -69,4 +73,5 @@ public class DnsHostnameResolver implements HostnameResolver
         userLog.info( "Resolved initial host '%s' to %s", initialAddress, addresses );
         return addresses;
     }
+
 }

@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.identity;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -60,7 +61,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     private final Monitor monitor;
     private final Clock clock;
     private final ThrowingAction<InterruptedException> retryWaiter;
-    private final long timeoutMillis;
+    private final Duration timeout;
     private final String dbName;
     private final int minCoreHosts;
 
@@ -68,7 +69,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
     public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage,
             CoreTopologyService topologyService, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
-            long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts, Monitors monitors )
+            Duration timeout, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts, Monitors monitors )
     {
         this.monitor = monitors.newMonitor( Monitor.class );
         this.clusterIdStorage = clusterIdStorage;
@@ -77,7 +78,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         this.coreBootstrapper = coreBootstrapper;
         this.clock = clock;
         this.retryWaiter = retryWaiter;
-        this.timeoutMillis = timeoutMillis;
+        this.timeout = timeout;
         this.dbName = dbName;
         this.minCoreHosts = minCoreHosts;
     }
@@ -141,7 +142,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
         CoreSnapshot snapshot = null;
         CoreTopology topology;
-        long endTime = clock.millis() + timeoutMillis;
+        long endTime = clock.millis() + timeout.toMillis();
 
         do
         {

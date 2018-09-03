@@ -24,8 +24,11 @@ package org.neo4j.causalclustering.discovery;
 
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MapDomainNameResolver implements DomainNameResolver
 {
@@ -39,11 +42,7 @@ public class MapDomainNameResolver implements DomainNameResolver
     @Override
     public InetAddress[] resolveDomainName( String hostname ) throws UnknownHostException
     {
-        if ( domainNameMapping.containsKey( hostname ) )
-        {
-            return domainNameMapping.get( hostname );
-        }
-        throw new UnknownHostException( new java.net.UnknownHostException() );
+        return Optional.ofNullable( domainNameMapping.get( hostname ) ).orElse( new InetAddress[0] );
     }
 
     public void setHostnameAddresses( String hostname, Collection<String> addresses )

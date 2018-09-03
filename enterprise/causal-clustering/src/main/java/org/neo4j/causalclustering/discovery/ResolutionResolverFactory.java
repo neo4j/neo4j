@@ -32,6 +32,6 @@ public class ResolutionResolverFactory
             LogProvider userLogProvider )
     {
         CausalClusteringSettings.DiscoveryType discoveryType = config.get( CausalClusteringSettings.discovery_type );
-        return discoveryType.getHostnameResolver( logProvider, userLogProvider );
+        return discoveryType.getHostnameResolver( logProvider, userLogProvider, config );
     }
 }

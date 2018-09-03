@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.LongBinaryOperator;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.BoundedPriorityQueue.Removable;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
@@ -43,6 +45,7 @@ import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.stream.Streams;
 
 import static java.lang.Long.max;
 import static java.util.concurrent.TimeUnit.SECONDS;

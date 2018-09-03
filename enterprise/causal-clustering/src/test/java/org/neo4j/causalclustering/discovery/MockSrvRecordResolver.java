@@ -26,8 +26,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import javax.naming.NamingException;
+
+import org.neo4j.stream.Streams;
 
 public class MockSrvRecordResolver extends SrvRecordResolver
 {
@@ -56,15 +59,8 @@ public class MockSrvRecordResolver extends SrvRecordResolver
     }
 
     @Override
-    public Stream<SrvRecord> resolveSrvRecord( String url ) throws NamingException
+    public Stream<SrvRecord> resolveSrvRecord( String url )
     {
-        List<SrvRecord> srvRecords = records.get( url );
-        if ( srvRecords == null )
-        {
-            NamingException e = new NamingException( "No SRV records found" );
-            e.appendRemainingComponent( url );
-            throw e;
-        }
-        return srvRecords.stream();
+        return Optional.ofNullable( records.get( url ) ).map( List::stream ).orElse( Stream.empty() );
     }
 }

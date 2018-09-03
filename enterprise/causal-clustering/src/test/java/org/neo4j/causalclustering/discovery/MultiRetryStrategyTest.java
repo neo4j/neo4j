@@ -98,7 +98,7 @@ public class MultiRetryStrategyTest
         assertEquals( 1, countingSleeper.invocationCount() );
     }
 
-    private class CountingSleeper implements LongConsumer
+    public static class CountingSleeper implements LongConsumer
     {
         private int counter;
 

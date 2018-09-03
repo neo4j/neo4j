@@ -24,6 +24,8 @@ package org.neo4j.causalclustering.identity;
 
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +47,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -68,8 +71,8 @@ public class ClusterBinderTest
     private ClusterBinder clusterBinder( SimpleStorage<ClusterId> clusterIdStorage,
             CoreTopologyService topologyService )
     {
-        return new ClusterBinder( clusterIdStorage, new StubSimpleStorage<>(), topologyService, clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper, dbName, minCoreHosts, new Monitors() );
+        return new ClusterBinder( clusterIdStorage, new StubSimpleStorage<>(), topologyService, clock, () -> clock.forward( 1, TimeUnit.SECONDS ),
+                Duration.of( 3_000, MILLIS ), coreBootstrapper, dbName, minCoreHosts, new Monitors() );
     }
 
     @Test
