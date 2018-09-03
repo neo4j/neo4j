@@ -25,14 +25,13 @@ package org.neo4j.cypher.internal.runtime.parallel
 import java.util.concurrent._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.{Failure, Success, Try}
 
 /**
   * A simple implementation of the Scheduler trait
   */
 class SimpleScheduler(executor: Executor) extends Scheduler {
 
-  private val executionService = new ExecutorCompletionService[Try[TaskResult]](executor)
+  private val executionService = new ExecutorCompletionService[TaskResult](executor)
 
   override def execute(task: Task, tracer: SchedulerTracer): QueryExecution = {
     val queryTracer: QueryExecutionTracer = tracer.traceQuery()
@@ -41,13 +40,13 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
 
   def isMultiThreaded: Boolean = true
 
-  def schedule(task: Task, upstreamWorkUnit: Option[WorkUnitEvent], queryTracer: QueryExecutionTracer): Future[Try[TaskResult]] = {
+  def schedule(task: Task, upstreamWorkUnit: Option[WorkUnitEvent], queryTracer: QueryExecutionTracer): Future[TaskResult] = {
     val scheduledWorkUnitEvent = queryTracer.scheduleWorkUnit(task, upstreamWorkUnit)
     val callableTask =
-      new Callable[Try[TaskResult]] {
-        override def call(): Try[TaskResult] = {
+      new Callable[TaskResult] {
+        override def call(): TaskResult = {
           val workUnitEvent = scheduledWorkUnitEvent.start()
-          val result = Try(TaskResult(task, workUnitEvent, task.executeWorkUnit()))
+          val result = TaskResult(task, workUnitEvent, task.executeWorkUnit())
           workUnitEvent.stop()
           result
         }
@@ -56,28 +55,27 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
     executionService.submit(callableTask)
   }
 
-  class SimpleQueryExecution(initialTask: Future[Try[TaskResult]],
+  class SimpleQueryExecution(initialTask: Future[TaskResult],
                              scheduler: SimpleScheduler,
                              queryTracer: QueryExecutionTracer) extends QueryExecution {
 
-    var inFlightTasks = new ArrayBuffer[Future[Try[TaskResult]]]
+    var inFlightTasks = new ArrayBuffer[Future[TaskResult]]
     inFlightTasks += initialTask
 
     override def await(): Option[Throwable] = {
 
       while (inFlightTasks.nonEmpty) {
-        val newInFlightTasks = new ArrayBuffer[Future[Try[TaskResult]]]
+        val newInFlightTasks = new ArrayBuffer[Future[TaskResult]]
         for (future <- inFlightTasks) {
-          val taskResultTry = future.get(30, TimeUnit.SECONDS)
-          taskResultTry match {
-            case Success(taskResult) =>
-              for (newTask <- taskResult.newDownstreamTasks)
-                newInFlightTasks += scheduler.schedule(newTask, Some(taskResult.workUnitEvent), queryTracer)
+          try {
+            val taskResult = future.get(30, TimeUnit.SECONDS)
+            for (newTask <- taskResult.newDownstreamTasks)
+              newInFlightTasks += scheduler.schedule(newTask, Some(taskResult.workUnitEvent), queryTracer)
 
-              if (taskResult.task.canContinue)
-                newInFlightTasks += scheduler.schedule(taskResult.task, Some(taskResult.workUnitEvent), queryTracer)
-
-            case Failure(exception) =>
+            if (taskResult.task.canContinue)
+              newInFlightTasks += scheduler.schedule(taskResult.task, Some(taskResult.workUnitEvent), queryTracer)
+          } catch {
+            case exception: Exception =>
               queryTracer.stopQuery()
               return Some(exception)
           }
@@ -91,4 +89,4 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
 
 }
 
-case class TaskResult(task: Task, workUnitEvent: WorkUnitEvent,  newDownstreamTasks: Seq[Task])
+case class TaskResult(task: Task, workUnitEvent: WorkUnitEvent, newDownstreamTasks: Seq[Task])
