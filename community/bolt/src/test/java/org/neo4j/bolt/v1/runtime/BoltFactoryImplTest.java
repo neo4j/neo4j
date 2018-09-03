@@ -95,9 +95,9 @@ public class BoltFactoryImplTest
         GraphDatabaseAPI db = newDbMock();
         DependencyResolver dependencyResolver = db.getDependencyResolver();
         TransactionIdStore txIdStoreBeforeRestart = mock( TransactionIdStore.class );
-        when( txIdStoreBeforeRestart.getLastClosedTransactionId() ).thenReturn( 42L );
+        when( txIdStoreBeforeRestart.getLastCommittedTransactionId() ).thenReturn( 42L );
         TransactionIdStore txIdStoreAfterRestart = mock( TransactionIdStore.class );
-        when( txIdStoreAfterRestart.getLastClosedTransactionId() ).thenReturn( 4242L );
+        when( txIdStoreAfterRestart.getLastCommittedTransactionId() ).thenReturn( 4242L );
         when( dependencyResolver.provideDependency( TransactionIdStore.class ) )
                 .thenReturn( () -> txIdStoreBeforeRestart ).thenReturn( () -> txIdStoreAfterRestart );
 

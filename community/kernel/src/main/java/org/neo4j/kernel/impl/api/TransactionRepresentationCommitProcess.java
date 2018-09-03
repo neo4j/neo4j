@@ -70,7 +70,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
     }
 
-    private void applyToStore( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
+    protected void applyToStore( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
             throws TransactionFailureException
     {
         try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
