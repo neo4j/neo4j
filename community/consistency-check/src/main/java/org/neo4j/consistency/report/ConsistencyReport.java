@@ -536,6 +536,9 @@ public interface ConsistencyReport
         @Warning
         @Documented( "Index was not properly shutdown and rebuild is required." )
         void dirtyIndex();
+
+        @Documented( "This index entry is for a relationship index, but it is used as a constraint index" )
+        void relationshipConstraintIndex();
     }
 
     interface CountsConsistencyReport extends ConsistencyReport

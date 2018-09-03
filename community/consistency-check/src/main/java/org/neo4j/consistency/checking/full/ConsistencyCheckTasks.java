@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking.full;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.NodeRecordCheck;
@@ -42,6 +41,7 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.synthetic.IndexRecord;
 import org.neo4j.consistency.store.synthetic.LabelScanIndex;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -150,14 +150,14 @@ public class ConsistencyCheckTasks
                     new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
 
             // Checking that relationships are in their expected relationship indexes.
-            List<StoreIndexDescriptor> relationshipIndexes = StreamSupport.stream( indexes.onlineRules().spliterator(), false )
+            List<StoreIndexDescriptor> relationshipIndexes = Iterables.stream( indexes.onlineRules() )
                     .filter( rule -> rule.schema().entityType() == EntityType.RELATIONSHIP )
                     .collect( Collectors.toList() );
             if ( checkIndexes && !relationshipIndexes.isEmpty() )
             {
                 tasks.add( recordScanner( CheckStage.Stage9_RS_Indexes.name(),
                         new IterableStore<>( nativeStores.getRelationshipStore(), true ),
-                        new RelationshipIndexProcessor( reporter, indexes, propertyReader, cacheAccess, relationshipIndexes ),
+                        new RelationshipIndexProcessor( reporter, indexes, propertyReader, relationshipIndexes ),
                         CheckStage.Stage9_RS_Indexes,
                         ROUND_ROBIN,
                         new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );

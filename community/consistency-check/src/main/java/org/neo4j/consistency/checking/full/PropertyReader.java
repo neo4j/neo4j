@@ -27,14 +27,12 @@ import java.util.List;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -44,13 +42,11 @@ public class PropertyReader implements NodePropertyAccessor
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
-    private final RelationshipStore relationshipStore;
 
     PropertyReader( StoreAccess storeAccess )
     {
         this.propertyStore = storeAccess.getRawNeoStores().getPropertyStore();
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
-        this.relationshipStore = storeAccess.getRawNeoStores().getRelationshipStore();
     }
 
     Collection<PropertyRecord> getPropertyRecordChain( PrimitiveRecord entityRecord )
@@ -110,22 +106,6 @@ public class PropertyReader implements NodePropertyAccessor
         if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE ).inUse() )
         {
             for ( PropertyBlock block : propertyBlocks( nodeRecord ) )
-            {
-                if ( block.getKeyIndexId() == propertyKeyId )
-                {
-                    return propertyValue( block );
-                }
-            }
-        }
-        return Values.NO_VALUE;
-    }
-
-    public Value getRelationshipPropertyValue( long relId, int propertyKeyId )
-    {
-        RelationshipRecord record = relationshipStore.newRecord();
-        if ( relationshipStore.getRecord( relId, record, FORCE ).inUse() )
-        {
-            for ( PropertyBlock block : propertyBlocks( record ) )
             {
                 if ( block.getKeyIndexId() == propertyKeyId )
                 {

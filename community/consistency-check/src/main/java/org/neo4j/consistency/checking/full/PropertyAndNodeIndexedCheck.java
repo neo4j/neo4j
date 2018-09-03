@@ -62,7 +62,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     private final PropertyReader propertyReader;
     private final CacheAccess cacheAccess;
 
-    public PropertyAndNodeIndexedCheck( IndexAccessors indexes, PropertyReader propertyReader, CacheAccess cacheAccess )
+    PropertyAndNodeIndexedCheck( IndexAccessors indexes, PropertyReader propertyReader, CacheAccess cacheAccess )
     {
         this.indexes = indexes;
         this.propertyReader = propertyReader;
@@ -105,11 +105,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                     nodePropertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
                 }
 
-                int[] indexPropertyIds = schema.getPropertyIds();
-                boolean requireAllProperties = schema.propertySchemaType() == SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
-                if ( requireAllProperties ? hasAllProperties( nodePropertyMap, indexPropertyIds ) : hasAnyProperty( nodePropertyMap, indexPropertyIds ) )
+                if ( entityIntersectsSchema( nodePropertyMap, schema ) )
                 {
-                    Value[] values = getPropertyValues( propertyReader, nodePropertyMap, indexPropertyIds );
+                    Value[] values = getPropertyValues( propertyReader, nodePropertyMap, schema.getPropertyIds() );
                     try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
                     {
                         long nodeId = record.getId();
@@ -120,7 +118,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                         }
                         else
                         {
-                            long count = reader.countIndexedNodes( nodeId, indexPropertyIds, values );
+                            long count = reader.countIndexedNodes( nodeId, schema.getPropertyIds(), values );
                             reportIncorrectIndexCount( values, engine, indexRule, count );
                         }
                     }
@@ -254,7 +252,20 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
     }
 
-    static boolean hasAllProperties( IntObjectMap<PropertyBlock> blockMap, int[] indexPropertyIds )
+    static boolean entityIntersectsSchema( IntObjectMap<PropertyBlock> entityPropertyMap, SchemaDescriptor schema )
+    {
+        boolean requireAllTokens = schema.propertySchemaType() == SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+        if ( requireAllTokens )
+        {
+            return hasAllProperties( entityPropertyMap, schema.getPropertyIds() );
+        }
+        else
+        {
+            return hasAnyProperty( entityPropertyMap, schema.getPropertyIds() );
+        }
+    }
+
+    private static boolean hasAllProperties( IntObjectMap<PropertyBlock> blockMap, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {
@@ -266,7 +277,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return true;
     }
 
-    static boolean hasAnyProperty( IntObjectMap<PropertyBlock> blockMap, int[] indexPropertyIds )
+    private static boolean hasAnyProperty( IntObjectMap<PropertyBlock> blockMap, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {

@@ -28,24 +28,24 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
-public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport>
+public class IndexCheck implements RecordCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>
 {
-    private final long[] entityTokenLongIds;
-    private final SchemaDescriptor.PropertySchemaType propertySchemaType;
     private final EntityType entityType;
+    private final StoreIndexDescriptor indexRule;
     private NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport> nodeChecker;
     private RelationshipInUseWithCorrectRelationshipTypeCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport> relationshipChecker;
 
-    public IndexCheck( StoreIndexDescriptor indexRule )
+    IndexCheck( StoreIndexDescriptor indexRule )
     {
+        this.indexRule = indexRule;
         SchemaDescriptor schema = indexRule.schema();
         int[] entityTokenIntIds = schema.getEntityTokenIds();
-        entityTokenLongIds = new long[entityTokenIntIds.length];
+        long[] entityTokenLongIds = new long[entityTokenIntIds.length];
         for ( int i = 0; i < entityTokenIntIds.length; i++ )
         {
             entityTokenLongIds[i] = entityTokenIntIds[i];
         }
-        propertySchemaType = schema.propertySchemaType();
+        SchemaDescriptor.PropertySchemaType propertySchemaType = schema.propertySchemaType();
         entityType = schema.entityType();
         if ( entityType == EntityType.NODE )
         {
@@ -58,19 +58,22 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     }
 
     @Override
-    public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
+    public void check( IndexEntry record, CheckerEngine<IndexEntry,ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
         long id = record.getId();
-        if ( entityType == EntityType.NODE )
+        switch ( entityType )
         {
+        case NODE:
             engine.comparativeCheck( records.node( id ), nodeChecker );
-        }
-        else if ( entityType == EntityType.RELATIONSHIP )
-        {
+            break;
+        case RELATIONSHIP:
+            if ( indexRule.canSupportUniqueConstraint() )
+            {
+                engine.report().relationshipConstraintIndex();
+            }
             engine.comparativeCheck( records.relationship( id ), relationshipChecker );
-        }
-        else
-        {
+            break;
+        default:
             throw new IllegalStateException( "Don't know how to check index entry of entity type " + entityType );
         }
     }

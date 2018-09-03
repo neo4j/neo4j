@@ -35,6 +35,7 @@ public interface IndexReader extends Resource
 {
     /**
      * @param nodeId node id to match.
+     * @param propertyKeyIds the property key ids that correspond to each of the property values.
      * @param propertyValues property values to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValues}.
      */

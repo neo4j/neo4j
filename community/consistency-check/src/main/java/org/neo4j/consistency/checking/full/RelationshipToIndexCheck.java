@@ -22,13 +22,11 @@ package org.neo4j.consistency.checking.full;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
-import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
@@ -41,9 +39,8 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.entityIntersectsSchema;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.getPropertyValues;
-import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.hasAllProperties;
-import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.hasAnyProperty;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.properties;
 
 public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
@@ -52,7 +49,7 @@ public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord,
     private final StoreIndexDescriptor[] relationshipIndexes;
     private final PropertyReader propertyReader;
 
-    RelationshipToIndexCheck( List<StoreIndexDescriptor> relationshipIndexes, IndexAccessors indexes, PropertyReader propertyReader, CacheAccess cacheAccess )
+    RelationshipToIndexCheck( List<StoreIndexDescriptor> relationshipIndexes, IndexAccessors indexes, PropertyReader propertyReader )
     {
         this.relationshipIndexes = relationshipIndexes.toArray( new StoreIndexDescriptor[0] );
         this.indexes = indexes;
@@ -63,28 +60,25 @@ public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord,
     public void check( RelationshipRecord record, CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
             RecordAccess records )
     {
-        IntObjectMap<PropertyBlock> nodePropertyMap = null;
+        IntObjectMap<PropertyBlock> propertyMap = null;
         for ( StoreIndexDescriptor index : relationshipIndexes )
         {
             SchemaDescriptor schema = index.schema();
             if ( ArrayUtils.contains( schema.getEntityTokenIds(), record.getType() ) )
             {
-                if ( nodePropertyMap == null )
+                if ( propertyMap == null )
                 {
                     Collection<PropertyRecord> propertyRecs = propertyReader.getPropertyRecordChain( record );
-                    nodePropertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
+                    propertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
                 }
 
-                int[] indexPropertyIds = schema.getPropertyIds();
-                boolean requireAllProperties = schema.propertySchemaType() == SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
-                if ( requireAllProperties ? hasAllProperties( nodePropertyMap, indexPropertyIds ) : hasAnyProperty( nodePropertyMap, indexPropertyIds ) )
+                if ( entityIntersectsSchema( propertyMap, schema ) )
                 {
-                    Value[] values = getPropertyValues( propertyReader, nodePropertyMap, indexPropertyIds );
+                    Value[] values = getPropertyValues( propertyReader, propertyMap, schema.getPropertyIds() );
                     try ( IndexReader reader = indexes.accessorFor( index ).newReader() )
                     {
-                        assert !index.canSupportUniqueConstraint();
                         long entityId = record.getId();
-                        long count = reader.countIndexedNodes( entityId, indexPropertyIds, values );
+                        long count = reader.countIndexedNodes( entityId, schema.getPropertyIds(), values );
                         reportIncorrectIndexCount( values, engine, index, count );
                     }
                 }
