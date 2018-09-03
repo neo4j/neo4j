@@ -151,7 +151,8 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
             case range:
                 if ( isGeometryRangeQuery( predicate ) )
                 {
-                    // Use the supplied SpaceFillingCurve range instead
+                    // Use the supplied SpaceFillingCurve range instead of the GeometryRangePredicate because at the time of calling this method
+                    // the original geometry range have been split up into multiple sub-ranges and this invocation is for one of those sub-ranges.
                     treeKeyFrom.initFromDerivedSpatialValue( i, crs, range.min, fromInclusion( (RangePredicate<?>) predicate ) );
                     treeKeyTo.initFromDerivedSpatialValue( i, crs, range.max + 1, toInclusion( (RangePredicate<?>) predicate ) );
                 }
