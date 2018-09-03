@@ -50,6 +50,10 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -233,16 +237,24 @@ public class ConsistencyCheckService
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
         JobScheduler jobScheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
+        TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( databaseLayout.databaseDirectory(),
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache, jobScheduler,
                 RecoveryCleanupWorkCollector.ignore(),
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
                 COMMUNITY,
-                monitors ) );
+                monitors, tokenHolders ) );
         DefaultIndexProviderMap indexes = life.add( new DefaultIndexProviderMap( extensions ) );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
+            // Load tokens before starting extensions, etc.
+            tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
+            tokenHolders.labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getTokens() );
+            tokenHolders.relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getTokens() );
+
             life.start();
 
             LabelScanStore labelScanStore =

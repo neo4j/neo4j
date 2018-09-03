@@ -54,6 +54,10 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -219,8 +223,12 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                                             Config config, JobScheduler scheduler, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
+        TokenHolders tokenHolders = new TokenHolders(
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
-                pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors ) );
+                pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
         return life.add( new DefaultIndexProviderMap( extensions ) );
     }
 

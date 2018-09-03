@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -45,12 +46,12 @@ public class SchemaIndexExtensionLoader
 {
 
     @SuppressWarnings( "unchecked" )
-    public static DatabaseKernelExtensions instantiateKernelExtensions( File databaseDirectory, FileSystemAbstraction fileSystem,
-            Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-            RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors )
+    public static DatabaseKernelExtensions instantiateKernelExtensions(
+            File databaseDirectory, FileSystemAbstraction fileSystem, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
+            RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors, TokenHolders tokenHolders )
     {
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler );
+        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders );
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( databaseDirectory, databaseInfo, deps );
