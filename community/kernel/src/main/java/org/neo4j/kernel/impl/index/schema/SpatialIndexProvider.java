@@ -21,9 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -40,7 +38,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
@@ -69,29 +67,13 @@ public class SpatialIndexProvider extends IndexProvider
         this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
-        this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
+        this.configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         this.configuredSettings = getConfiguredSpaceFillingCurveSettings( config );
     }
 
     private ConfiguredSpaceFillingCurveSettingsCache getConfiguredSpaceFillingCurveSettings( Config config )
     {
         return new ConfiguredSpaceFillingCurveSettingsCache( config );
-    }
-
-    static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
-    {
-        int extraLevels = config.get( SpatialIndexSettings.space_filling_curve_extra_levels );
-        double topThreshold = config.get( SpatialIndexSettings.space_filling_curve_top_threshold );
-        double bottomThreshold = config.get( SpatialIndexSettings.space_filling_curve_bottom_threshold );
-
-        if ( topThreshold == 0.0 || bottomThreshold == 0.0 )
-        {
-            return new StandardConfiguration( extraLevels );
-        }
-        else
-        {
-            return new PartialOverlapConfiguration( extraLevels, topThreshold, bottomThreshold );
-        }
     }
 
     @Override

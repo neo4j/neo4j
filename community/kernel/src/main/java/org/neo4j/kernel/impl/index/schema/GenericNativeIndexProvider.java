@@ -49,7 +49,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.kernel.impl.index.schema.SpatialIndexProvider.getConfiguredSpaceFillingCurveConfiguration;
+import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
 
 /**
  * Native index able to handle all value types in a single {@link GBPTree}. Single-key as well as composite-key is supported.
