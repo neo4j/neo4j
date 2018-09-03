@@ -65,7 +65,7 @@ public class EnterpriseSecurityModuleTest
         thrown.expectMessage( "Illegal configuration: No valid auth provider is active." );
 
         // When
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null, null );
     }
 
     @Test
@@ -82,7 +82,7 @@ public class EnterpriseSecurityModuleTest
         thrown.expectMessage( "Illegal configuration: All authentication providers are disabled." );
 
         // When
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null, null );
     }
 
     @Test
@@ -99,7 +99,7 @@ public class EnterpriseSecurityModuleTest
         thrown.expectMessage( "Illegal configuration: All authorization providers are disabled." );
 
         // When
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null, null );
     }
 
     @Test
@@ -117,7 +117,7 @@ public class EnterpriseSecurityModuleTest
                                 "but both authentication and authorization are disabled." );
 
         // When
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null, null );
     }
 
     @Test
@@ -138,7 +138,7 @@ public class EnterpriseSecurityModuleTest
                 "Illegal configuration: Failed to load auth plugin 'plugin-IllConfiguredAuthorizationPlugin'." );
 
         // When
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null, null );
     }
 
     @Test
@@ -154,7 +154,7 @@ public class EnterpriseSecurityModuleTest
         );
 
         // When
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null, null );
     }
 
     @Test
@@ -170,7 +170,7 @@ public class EnterpriseSecurityModuleTest
         when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.property_level_authorization_permissions ) ).thenReturn( "smith=alias" );
 
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null, null );
     }
 
     @Test
@@ -190,7 +190,7 @@ public class EnterpriseSecurityModuleTest
         thrown.expectMessage(
                 "Illegal configuration: Property level authorization is enabled but there is a error in the permissions mapping." );
 
-        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null, null );
     }
 
     @Test

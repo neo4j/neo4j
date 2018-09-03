@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.security;
 
 import org.junit.Test;
 
+import org.neo4j.server.security.auth.LegacyCredential;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.security.LegacyCredential.INACCESSIBLE;
+import static org.neo4j.server.security.auth.LegacyCredential.INACCESSIBLE;
 
 public class LegacyCredentialTest
 {

@@ -108,4 +108,16 @@ public class FileUserRepository extends AbstractUserRepository
             return new ListSnapshot<>( lastLoaded.get(), new ArrayList<>( users ), FROM_MEMORY );
         }
     }
+
+    @Override
+    public void purge() throws IOException
+    {
+        super.purge(); // Clears all cached data
+
+        // Delete the file
+        if ( !fileSystem.deleteFile( authFile ) )
+        {
+            throw new IOException( "Failed to delete file '" + authFile.getAbsolutePath() + "'" );
+        }
+    }
 }

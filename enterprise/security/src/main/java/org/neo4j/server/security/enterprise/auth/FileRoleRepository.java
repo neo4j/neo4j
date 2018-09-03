@@ -106,4 +106,16 @@ public class FileRoleRepository extends AbstractRoleRepository
             return new ListSnapshot<>( lastLoaded.get(), new ArrayList<>( roles ), FROM_MEMORY );
         }
     }
+
+    @Override
+    public void purge() throws IOException
+    {
+        super.purge(); // Clears all cached data
+
+        // Delete the file
+        if ( !fileSystem.deleteFile( roleFile ) )
+        {
+            throw new IOException( "Failed to delete file '" + roleFile.getAbsolutePath() + "'" );
+        }
+    }
 }

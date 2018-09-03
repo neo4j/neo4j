@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.impl.security.LegacyCredential;
+import org.neo4j.server.security.auth.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;

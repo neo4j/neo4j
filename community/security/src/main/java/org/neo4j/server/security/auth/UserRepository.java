@@ -97,4 +97,10 @@ public interface UserRepository extends Lifecycle
      * @throws IOException
      */
     ListSnapshot<User> getPersistedSnapshot() throws IOException;
+
+    /**
+     * Permanently deletes all data in this repository
+     * @throws IOException
+     */
+    void purge() throws IOException;
 }

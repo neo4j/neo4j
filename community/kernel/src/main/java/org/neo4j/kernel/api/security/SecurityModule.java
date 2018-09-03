@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -79,5 +80,7 @@ public abstract class SecurityModule extends Service implements Lifecycle, Secur
         FileSystemAbstraction fileSystem();
 
         DependencySatisfier dependencySatisfier();
+
+        AccessCapability accessCapability();
     }
 }

@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.UTF8;
 

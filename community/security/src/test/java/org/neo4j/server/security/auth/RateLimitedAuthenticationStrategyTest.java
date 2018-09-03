@@ -27,7 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.security.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;

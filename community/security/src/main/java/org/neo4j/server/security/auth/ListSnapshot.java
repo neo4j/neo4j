@@ -39,7 +39,7 @@ public class ListSnapshot<T>
         return timestamp;
     }
 
-    public List<T> values()
+    public List<T>  values()
     {
         return values;
     }

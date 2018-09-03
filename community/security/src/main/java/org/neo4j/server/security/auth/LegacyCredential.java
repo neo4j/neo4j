@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.security;
+package org.neo4j.server.security.auth;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -25,6 +25,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.string.HexString;
 import org.neo4j.string.UTF8;
 
@@ -69,6 +70,12 @@ public class LegacyCredential implements Credential
     public boolean matchesPassword( String password )
     {
         return byteEquals( passwordHash, hash( salt, password ) );
+    }
+
+    @Override
+    public String serialize()
+    {
+        return new UserSerialization().serialize( this );
     }
 
     /**

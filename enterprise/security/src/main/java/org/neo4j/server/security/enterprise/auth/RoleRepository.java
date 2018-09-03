@@ -103,6 +103,12 @@ public interface RoleRepository extends Lifecycle
      */
     ListSnapshot<RoleRecord> getPersistedSnapshot() throws IOException;
 
+    /**
+     * Permanently deletes all data in this repository
+     * @throws IOException
+     */
+    void purge() throws IOException;
+
     static boolean validate( List<User> users, List<RoleRecord> roles )
     {
         Set<String> usernamesInRoles = roles.stream()

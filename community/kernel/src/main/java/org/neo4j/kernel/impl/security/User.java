@@ -128,7 +128,7 @@ public class User
     public static class Builder
     {
         private String name;
-        private Credential credential = LegacyCredential.INACCESSIBLE;
+        private Credential credential = Credential.INACCESSIBLE;
         private TreeSet<String> flags = new TreeSet<>();
 
         public Builder()

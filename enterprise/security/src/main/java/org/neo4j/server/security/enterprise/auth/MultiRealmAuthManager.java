@@ -62,7 +62,7 @@ import org.neo4j.server.security.enterprise.log.SecurityLog;
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 
-class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
+public class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
 {
     private final EnterpriseUserManager userManager;
     private final Collection<Realm> realms;

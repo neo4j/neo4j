@@ -20,8 +20,11 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.neo4j.kernel.impl.security.User;
+
+import static org.neo4j.server.security.auth.ListSnapshot.FROM_MEMORY;
 
 /** A user repository implementation that just stores users in memory */
 public class InMemoryUserRepository extends AbstractUserRepository
@@ -41,6 +44,6 @@ public class InMemoryUserRepository extends AbstractUserRepository
     @Override
     public ListSnapshot<User> getPersistedSnapshot()
     {
-        return null;
+        return new ListSnapshot<>( lastLoaded.get(), new ArrayList<>( users ), FROM_MEMORY );
     }
 }

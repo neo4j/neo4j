@@ -250,6 +250,12 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
         return roles.stream().map( RoleRecord::name ).collect( Collectors.toSet() );
     }
 
+    @Override
+    public void purge() throws IOException
+    {
+        clear(); // Clear all cached data
+    }
+
     /**
      * Override this in the implementing class to persist roles
      *

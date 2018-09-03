@@ -22,4 +22,21 @@ package org.neo4j.kernel.impl.security;
 public interface Credential
 {
     boolean matchesPassword( String password );
+
+    String serialize();
+
+    Credential INACCESSIBLE = new Credential()
+    {
+        @Override
+        public boolean matchesPassword( String password )
+        {
+            return false;
+        }
+
+        @Override
+        public String serialize()
+        {
+            return ",,,";
+        }
+    };
 }

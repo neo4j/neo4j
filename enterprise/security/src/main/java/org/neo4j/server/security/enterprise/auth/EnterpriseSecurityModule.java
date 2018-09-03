@@ -48,6 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.LogProvider;
@@ -72,7 +73,7 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 @Service.Implementation( SecurityModule.class )
 public class EnterpriseSecurityModule extends SecurityModule
 {
-    private static final String ROLE_STORE_FILENAME = "roles";
+    public static final String ROLE_STORE_FILENAME = "roles";
     private static final String DEFAULT_ADMIN_STORE_FILENAME = SetDefaultAdminCommand.ADMIN_INI;
 
     private EnterpriseAuthAndUserManager authManager;
@@ -96,6 +97,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         LogProvider logProvider = dependencies.logService().getUserLogProvider();
         JobScheduler jobScheduler = dependencies.scheduler();
         FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        AccessCapability accessCapability = dependencies.accessCapability();
 
         SecurityLog securityLog = SecurityLog.create(
                 config,
@@ -105,7 +107,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             );
         life.add( securityLog );
 
-        authManager = newAuthManager( config, logProvider, securityLog, fileSystem, jobScheduler );
+        authManager = newAuthManager( config, logProvider, securityLog, fileSystem, jobScheduler, accessCapability );
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         // Register procedures
@@ -157,15 +159,15 @@ public class EnterpriseSecurityModule extends SecurityModule
         throw new RuntimeException( "Expected EnterpriseSecurityContext, got " + securityContext.getClass().getName() );
     }
 
-    public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+    public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog, FileSystemAbstraction fileSystem,
+            JobScheduler jobScheduler, AccessCapability accessCapability )
     {
         securityConfig = getValidatedSecurityConfig( config );
 
         List<Realm> realms = new ArrayList<>( securityConfig.authProviders.size() + 1 );
         SecureHasher secureHasher = new SecureHasher();
 
-        EnterpriseUserManager internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
+        EnterpriseUserManager internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler, accessCapability );
         if ( internalRealm != null )
         {
             realms.add( (Realm) internalRealm );
@@ -218,8 +220,8 @@ public class EnterpriseSecurityModule extends SecurityModule
         return orderedActiveRealms;
     }
 
-    protected EnterpriseUserManager createInternalRealm( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+    protected EnterpriseUserManager createInternalRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem, JobScheduler jobScheduler,
+            AccessCapability accessCapability )
     {
         EnterpriseUserManager internalRealm = null;
         if ( securityConfig.hasNativeProvider )
@@ -355,7 +357,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new FileUserRepository( fileSystem, getDefaultAdminRepositoryFile( config ), logProvider );
     }
 
-    private static File getRoleRepositoryFile( Config config )
+    public static File getRoleRepositoryFile( Config config )
     {
         return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ), ROLE_STORE_FILENAME );
     }

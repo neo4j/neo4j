@@ -229,7 +229,7 @@ public class CommunityEditionModule extends DefaultEditionModule
     {
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
         {
-            SecurityModule securityModule = setupSecurityModule( platformModule,
+            SecurityModule securityModule = setupSecurityModule( platformModule, this,
                     platformModule.logging.getUserLog( getClass() ),
                     procedures, COMMUNITY_SECURITY_MODULE_ID );
             platformModule.life.add( securityModule );
