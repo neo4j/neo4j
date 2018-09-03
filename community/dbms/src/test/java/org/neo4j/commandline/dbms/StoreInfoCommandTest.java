@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -177,7 +178,7 @@ public class StoreInfoCommandTest
     {
         prepareNeoStoreFile( "v9.9.9" );
 
-        expected.expect( IllegalArgumentException.class );
+        expected.expect( new RootCauseMatcher( IllegalArgumentException.class ) );
         expected.expectMessage( "Unknown store version 'v9.9.9'" );
 
         execute( databaseDirectory.toString() );
