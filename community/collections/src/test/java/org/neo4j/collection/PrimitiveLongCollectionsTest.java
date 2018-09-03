@@ -25,9 +25,12 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -154,6 +157,31 @@ class PrimitiveLongCollectionsTest
 
         // THEN
         assertArrayEquals( new long[] {1L, 2L, 5L, 6L}, deduped );
+    }
+
+    @Test
+    void shouldDeduplicateWithRandomArrays()
+    {
+        int arrayLength = 5000;
+        int iterations = 10;
+        for ( int i = 0; i < iterations; i++ )
+        {
+            long[] array = ThreadLocalRandom.current().longs( arrayLength, 0, arrayLength ).sorted().toArray();
+            long[] dedupedActual = PrimitiveLongCollections.deduplicate( array );
+            TreeSet<Long> set = new TreeSet<>();
+            for ( long value : array )
+            {
+                set.add( value );
+            }
+            long[] dedupedExpected = new long[set.size()];
+            Iterator<Long> itr = set.iterator();
+            for ( int j = 0; j < dedupedExpected.length; j++ )
+            {
+                assertTrue( itr.hasNext() );
+                dedupedExpected[j] = itr.next();
+            }
+            assertArrayEquals( dedupedExpected, dedupedActual );
+        }
     }
 
     @Test
