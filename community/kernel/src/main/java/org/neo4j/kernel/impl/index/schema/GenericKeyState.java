@@ -438,6 +438,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
                     o1.long0Array[i], o1.long1, o1.long2,
                     o2.long0Array[i], o2.long1, o2.long2 ),
                     GenericKeyState::copyGeometryArrayFrom );
+            break;
         case ZONED_DATE_TIME_ARRAY:
             minimalSplitterArray( left, right, into, ( o1, o2, i ) -> compareZonedDateTime(
                     o1.long0Array[i], o1.long1Array[i], o1.long2Array[i], o1.long3Array[i],
