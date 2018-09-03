@@ -58,6 +58,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
+    public ExecutorService workStealingExecutor( Group group, int parallelism, boolean asyncMode )
+    {
+        return executor;
+    }
+
+    @Override
     public ThreadFactory threadFactory( Group group )
     {
         throw new UnsupportedOperationException();

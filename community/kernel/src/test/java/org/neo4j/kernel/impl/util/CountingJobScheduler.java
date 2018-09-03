@@ -65,6 +65,12 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
+    public ExecutorService workStealingExecutor( Group group, int parallelism, boolean asyncMode )
+    {
+        return delegate.workStealingExecutor( group, parallelism, asyncMode );
+    }
+
+    @Override
     public JobHandle schedule( Group group, Runnable job )
     {
         counter.getAndIncrement();

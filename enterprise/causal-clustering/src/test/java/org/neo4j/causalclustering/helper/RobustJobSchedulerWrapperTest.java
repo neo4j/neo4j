@@ -69,7 +69,7 @@ public class RobustJobSchedulerWrapperTest
         IllegalStateException e = new IllegalStateException();
 
         // when
-        JobHandle jobHandle = robustWrapper.schedule( Group.TOPOLOGY_HEALTH, 100, () ->
+        JobHandle jobHandle = robustWrapper.schedule( Group.HZ_TOPOLOGY_HEALTH, 100, () ->
         {
             count.incrementAndGet();
             throw e;
@@ -92,7 +92,7 @@ public class RobustJobSchedulerWrapperTest
 
         // when
         int nRuns = 100;
-        JobHandle jobHandle = robustWrapper.scheduleRecurring( Group.TOPOLOGY_REFRESH, 1, () ->
+        JobHandle jobHandle = robustWrapper.scheduleRecurring( Group.HZ_TOPOLOGY_REFRESH, 1, () ->
         {
             if ( count.get() < nRuns )
             {
@@ -117,7 +117,7 @@ public class RobustJobSchedulerWrapperTest
         Error e = new Error();
 
         // when
-        JobHandle jobHandle = robustWrapper.scheduleRecurring( Group.TOPOLOGY_REFRESH, 1, () ->
+        JobHandle jobHandle = robustWrapper.scheduleRecurring( Group.HZ_TOPOLOGY_REFRESH, 1, () ->
         {
             count.incrementAndGet();
             throw e;

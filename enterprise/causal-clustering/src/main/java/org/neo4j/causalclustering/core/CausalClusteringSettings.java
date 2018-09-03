@@ -43,6 +43,7 @@ import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
@@ -240,6 +241,11 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Hazelcast license key" )
     public static final Setting<String> hazelcast_license_key =
             setting( "hazelcast.license_key", STRING, NO_DEFAULT );
+
+    @Internal
+    @Description( "Parallelism level used by Akka based cluster topology discovery" )
+    public static final Setting<Integer> middleware_akka_parallelism_level =
+            setting( "causal_clustering.middleware.akka.parallelism", INTEGER, Integer.toString( 2 ) );
 
     @Description( "The maximum file size before the storage file is rotated (in unit of entries)" )
     public static final Setting<Integer> last_flushed_state_size =

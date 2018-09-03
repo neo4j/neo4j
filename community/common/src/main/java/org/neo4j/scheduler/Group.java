@@ -70,9 +70,10 @@ public enum Group
     RAFT_LOG_PRUNING( "RaftLogPruning" ),
     RAFT_BATCH_HANDLER( "RaftBatchHandler" ),
     RAFT_READER_POOL_PRUNER( "RaftReaderPoolPruner" ),
-    TOPOLOGY_HEALTH( "HazelcastHealth" ),
-    TOPOLOGY_KEEP_ALIVE( "KeepAlive" ),
-    TOPOLOGY_REFRESH( "TopologyRefresh" ),
+    HZ_TOPOLOGY_HEALTH( "HazelcastHealth" ),
+    HZ_TOPOLOGY_KEEP_ALIVE( "KeepAlive" ),
+    HZ_TOPOLOGY_REFRESH( "TopologyRefresh" ),
+    AKKA_TOPOLOGY_WORKER( "AkkaTopologyWorkers", ExecutorServiceFactory.workStealing() ),
     MEMBERSHIP_WAITER( "MembershipWaiter" ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
 

@@ -114,7 +114,13 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public ExecutorService workStealingExecutor( Group group, int parallelism )
     {
-        return workStealingExecutors.computeIfAbsent( group, g -> createNewWorkStealingExecutor( g, parallelism ) );
+        return workStealingExecutor( group, parallelism, false );
+    }
+
+    @Override
+    public ExecutorService workStealingExecutor( Group group, int parallelism, boolean asyncMode )
+    {
+        return workStealingExecutors.computeIfAbsent( group, g -> createNewWorkStealingExecutor( g, parallelism, asyncMode ) );
     }
 
     @Override
@@ -123,11 +129,11 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         return pools.getThreadPool( group ).getThreadFactory();
     }
 
-    private ExecutorService createNewWorkStealingExecutor( Group group, int parallelism )
+    private ExecutorService createNewWorkStealingExecutor( Group group, int parallelism, boolean asyncMode )
     {
         ForkJoinPool.ForkJoinWorkerThreadFactory factory =
                 new GroupedDaemonThreadFactory( group, topLevelGroup );
-        return new ForkJoinPool( parallelism, factory, null, false );
+        return new ForkJoinPool( parallelism, factory, null, asyncMode );
     }
 
     @Override

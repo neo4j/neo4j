@@ -182,7 +182,7 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
             {
                 return;
             }
-            refreshJob = scheduler.scheduleRecurring( Group.TOPOLOGY_REFRESH, refreshPeriod,
+            refreshJob = scheduler.scheduleRecurring( Group.HZ_TOPOLOGY_REFRESH, refreshPeriod,
                     HazelcastCoreTopologyService.this::refreshTopology );
             log.info( "Cluster discovery service started" );
         } );
@@ -293,7 +293,7 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
         logConnectionInfo( initialMembers );
         c.addListenerConfig( new ListenerConfig( new OurMembershipListener() ) );
 
-        JobHandle logJob = scheduler.schedule( Group.TOPOLOGY_HEALTH, HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
+        JobHandle logJob = scheduler.schedule( Group.HZ_TOPOLOGY_HEALTH, HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
                 () -> log.warn( "The server has not been able to connect in a timely fashion to the " +
                                 "cluster. Please consult the logs for more details. Rebooting the server may " +
                                 "solve the problem." ) );
