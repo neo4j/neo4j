@@ -29,11 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -65,8 +65,7 @@ public class ReplicatedTransactionStateMachineTest
         // given
         int lockSessionId = 23;
 
-        ReplicatedTransaction tx = ReplicatedTransactionFactory.
-                createImmutableReplicatedTransaction( physicalTx( lockSessionId ) );
+        ReplicatedTransaction tx = ReplicatedTransaction.from( physicalTx( lockSessionId ) );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         PageCursorTracer cursorTracer = mock( PageCursorTracer.class );
@@ -93,8 +92,7 @@ public class ReplicatedTransactionStateMachineTest
         int txLockSessionId = 23;
         int currentLockSessionId = 24;
 
-        ReplicatedTransaction tx =
-                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( physicalTx( txLockSessionId ) );
+        ReplicatedTransaction tx = ReplicatedTransaction.from( physicalTx( txLockSessionId ) );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
@@ -137,8 +135,7 @@ public class ReplicatedTransactionStateMachineTest
         int currentLockSessionId = 24;
         long txId = 42L;
 
-        ReplicatedTransaction tx = ReplicatedTransactionFactory.
-                createImmutableReplicatedTransaction( physicalTx( txLockSessionId ) );
+        ReplicatedTransaction tx = ReplicatedTransaction.from( physicalTx( txLockSessionId ) );
 
         TransactionCommitProcess localCommitProcess = createFakeTransactionCommitProcess( txId );
 

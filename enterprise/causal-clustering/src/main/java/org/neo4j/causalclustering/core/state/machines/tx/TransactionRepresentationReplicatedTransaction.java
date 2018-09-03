@@ -25,6 +25,7 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,6 +34,7 @@ import java.util.Queue;
 import org.neo4j.causalclustering.helper.ErrorHandler;
 import org.neo4j.causalclustering.messaging.BoundedNetworkChannel;
 import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
+import org.neo4j.causalclustering.messaging.marshalling.OutputStreamWritableChannel;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.StorageCommandSerializer;
@@ -132,12 +134,19 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
         @Override
         public void marshal( WritableChannel channel ) throws IOException
         {
-            // Unknown length - this does not play well with RaftV1 which requires a size. Needs special care if used in raft-v1 to set size after marshalling
-            channel.putInt( -1 );
+            /*
+            Unknown length. This method will never be used in production. When a ReplicatedTransaction is serialized it has already passed over the network
+            and a more efficient marshalling is used in their implementation.
+             */
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream( 1024 );
+            OutputStreamWritableChannel outputStreamWritableChannel = new OutputStreamWritableChannel( outputStream );
             while ( txWriter.canWrite() )
             {
-                txWriter.write( channel );
+                txWriter.write( outputStreamWritableChannel );
             }
+            int length = outputStream.size();
+            channel.putInt( length );
+            channel.put( outputStream.toByteArray(), length );
         }
 
         @Override

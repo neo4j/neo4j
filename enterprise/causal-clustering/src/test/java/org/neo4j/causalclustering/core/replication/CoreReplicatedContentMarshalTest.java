@@ -31,20 +31,23 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.UUID;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
-import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.causalclustering.core.state.machines.token.TokenType;
+import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory;
-import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
+import org.neo4j.causalclustering.core.state.machines.tx.TransactionRepresentationReplicatedTransaction;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
+import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -64,9 +67,9 @@ public class CoreReplicatedContentMarshalTest
         PhysicalTransactionRepresentation representation =
                 new PhysicalTransactionRepresentation( Collections.emptyList() );
         representation.setHeader( new byte[]{0}, 1, 1, 1, 1, 1, 1 );
+        byte[] bytes = representation.additionalHeader();
 
-        ReplicatedContent replicatedTx =
-                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
+        TransactionRepresentationReplicatedTransaction replicatedTx = ReplicatedTransaction.from( representation );
 
         assertMarshalingEquality( buffer, replicatedTx );
     }
@@ -78,8 +81,7 @@ public class CoreReplicatedContentMarshalTest
         PhysicalTransactionRepresentation representation =
                 new PhysicalTransactionRepresentation( Collections.emptyList() );
 
-        ReplicatedContent replicatedTx =
-                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
+        TransactionRepresentationReplicatedTransaction replicatedTx = ReplicatedTransaction.from( representation );
 
         assertMarshalingEquality( buffer, replicatedTx );
     }
@@ -129,5 +131,26 @@ public class CoreReplicatedContentMarshalTest
         marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
 
         assertThat( marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) ), equalTo( replicatedTx ) );
+    }
+
+    private void assertMarshalingEquality( ByteBuf buffer, TransactionRepresentationReplicatedTransaction replicatedTx )
+            throws IOException, EndOfStreamException
+    {
+        marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
+
+        ReplicatedContent unmarshal = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
+
+        TransactionRepresentation tx = replicatedTx.tx();
+        byte[] extraHeader = tx.additionalHeader();
+        if ( extraHeader == null )
+        {
+            // hackishly set additional header to empty array...
+            ((PhysicalTransactionRepresentation) tx).setHeader( new byte[0], tx.getMasterId(), tx.getAuthorId(), tx.getTimeStarted(),
+                    tx.getLatestCommittedTxWhenStarted(), tx.getTimeCommitted(), tx.getLockSessionId() );
+            extraHeader = tx.additionalHeader();
+        }
+        TransactionRepresentation representation =
+                ReplicatedTransactionFactory.extractTransactionRepresentation( (ReplicatedTransaction) unmarshal, extraHeader );
+        assertThat( representation, equalTo( tx ) );
     }
 }
