@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
+import scala.concurrent.duration.Duration
 import scala.util.Try
 
 /**
@@ -124,4 +125,5 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
 
 case class CypherRuntimeConfiguration(workers: Int,
                                       morselSize: Int,
-                                      doSchedulerTracing: Boolean)
+                                      doSchedulerTracing: Boolean,
+                                      waitTimeout: Duration)

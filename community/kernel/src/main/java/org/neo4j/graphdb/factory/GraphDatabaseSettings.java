@@ -376,6 +376,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> cypher_morsel_size =
             setting( "unsupported.cypher.morsel_size", INTEGER, "10000" );
 
+    @Description( "Duration in milliseconds that parallel runtime waits on a task before trying another task" )
+    @Internal
+    public static final Setting<Integer> cypher_task_wait =
+            setting( "unsupported.cypher.task_wait", INTEGER, "30000" );
+
     @Description( "Number of threads to allocate to Cypher worker threads. If set to 0, two workers will be started" +
             " for every physical core in the system." )
     @Internal

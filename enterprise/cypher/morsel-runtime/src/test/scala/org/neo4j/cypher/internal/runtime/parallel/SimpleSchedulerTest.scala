@@ -22,9 +22,11 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
-import java.util.concurrent.Executors
+import java.util.concurrent.{Executors, TimeUnit}
+
+import scala.concurrent.duration.Duration
 
 class SimpleSchedulerTest extends SchedulerTest {
   override def newScheduler(maxConcurrency: Int): Scheduler =
-    new SimpleScheduler( Executors.newFixedThreadPool( maxConcurrency ) )
+    new SimpleScheduler(Executors.newFixedThreadPool(maxConcurrency), Duration(1, TimeUnit.SECONDS))
 }

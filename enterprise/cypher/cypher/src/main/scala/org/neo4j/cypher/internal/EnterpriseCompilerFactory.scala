@@ -41,7 +41,6 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 import org.neo4j.scheduler.{Group, JobScheduler}
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.attribution.IdGen
 
 class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
                                 graph: GraphDatabaseQueryService,
@@ -119,7 +118,7 @@ case class RuntimeEnvironment(config:CypherRuntimeConfiguration, jobScheduler: J
       else {
         val numberOfThreads = if (config.workers == 0) java.lang.Runtime.getRuntime.availableProcessors() else config.workers
         val executorService = jobScheduler.workStealingExecutor(Group.CYPHER_WORKER, numberOfThreads)
-        new SimpleScheduler(executorService)
+        new SimpleScheduler(executorService, config.waitTimeout)
       }
     new Dispatcher(config.morselSize, scheduler)
   }
@@ -144,7 +143,7 @@ case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogg
                                     clock: Clock,
                                     debugOptions: Set[String],
                                     config: CypherPlannerConfiguration,
-                                    morselRuntimeState: RuntimeEnvironment) extends RuntimeContext
+                                    runtimeEnvironment: RuntimeEnvironment) extends RuntimeContext
 
 /**
   * Creator of EnterpriseRuntimeContext

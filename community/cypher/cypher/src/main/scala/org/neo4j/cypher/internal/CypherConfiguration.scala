@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.configuration.Config
+
+import scala.concurrent.duration.Duration
 
 /**
   * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
@@ -48,7 +52,8 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
       config.get(GraphDatabaseSettings.cypher_worker_count),
       config.get(GraphDatabaseSettings.cypher_morsel_size),
-      config.get(GraphDatabaseSettings.enable_morsel_runtime_trace)
+      config.get(GraphDatabaseSettings.enable_morsel_runtime_trace),
+      config.get(GraphDatabaseSettings.cypher_task_wait)
     )
   }
 
@@ -83,12 +88,14 @@ case class CypherConfiguration(version: CypherVersion,
                                lenientCreateRelationship: Boolean,
                                workers: Int,
                                morselSize: Int,
-                               doSchedulerTracing: Boolean) {
+                               doSchedulerTracing: Boolean,
+                               waitTimeout: Int) {
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
       workers = workers,
       morselSize = morselSize,
-      doSchedulerTracing = doSchedulerTracing
+      doSchedulerTracing = doSchedulerTracing,
+      waitTimeout = Duration(waitTimeout, TimeUnit.MILLISECONDS)
     )
 
   def toCypherPlannerConfiguration(config: Config): CypherPlannerConfiguration =

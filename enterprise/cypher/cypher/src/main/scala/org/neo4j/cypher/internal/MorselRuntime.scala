@@ -55,8 +55,8 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       val operatorBuilder = new PipelineBuilder(physicalPlan, converters, context.readOnly)
 
       val operators = operatorBuilder.create(logicalPlan)
-      val dispatcher = context.morselRuntimeState.getDispatcher(context.debugOptions)
-      val tracer = context.morselRuntimeState.tracer
+      val dispatcher = context.runtimeEnvironment.getDispatcher(context.debugOptions)
+      val tracer = context.runtimeEnvironment.tracer
       val fieldNames = state.statement().returnColumns.toArray
 
       context.notificationLogger.log(

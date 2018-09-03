@@ -25,17 +25,18 @@ package org.neo4j.cypher.internal.runtime.parallel
 import java.util.concurrent._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.duration.Duration
 
 /**
   * A simple implementation of the Scheduler trait
   */
-class SimpleScheduler(executor: Executor) extends Scheduler {
+class SimpleScheduler(executor: Executor, waitTimeout: Duration) extends Scheduler {
 
   private val executionService = new ExecutorCompletionService[TaskResult](executor)
 
   override def execute(task: Task, tracer: SchedulerTracer): QueryExecution = {
     val queryTracer: QueryExecutionTracer = tracer.traceQuery()
-    new SimpleQueryExecution(schedule(task, None, queryTracer), this, queryTracer)
+    new SimpleQueryExecution(schedule(task, None, queryTracer), this, queryTracer, waitTimeout.toMillis)
   }
 
   def isMultiThreaded: Boolean = true
@@ -57,7 +58,8 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
 
   class SimpleQueryExecution(initialTask: Future[TaskResult],
                              scheduler: SimpleScheduler,
-                             queryTracer: QueryExecutionTracer) extends QueryExecution {
+                             queryTracer: QueryExecutionTracer,
+                             waitTimeoutMilli: Long) extends QueryExecution {
 
     var inFlightTasks = new ArrayBuffer[Future[TaskResult]]
     inFlightTasks += initialTask
@@ -67,14 +69,14 @@ class SimpleScheduler(executor: Executor) extends Scheduler {
         val newInFlightTasks = new ArrayBuffer[Future[TaskResult]]
         for (future <- inFlightTasks) {
           try {
-            val taskResult = future.get(30, TimeUnit.SECONDS)
+            val taskResult = future.get(waitTimeoutMilli, TimeUnit.MILLISECONDS)
             for (newTask <- taskResult.newDownstreamTasks)
               newInFlightTasks += scheduler.schedule(newTask, Some(taskResult.workUnitEvent), queryTracer)
 
             if (taskResult.task.canContinue)
               newInFlightTasks += scheduler.schedule(taskResult.task, Some(taskResult.workUnitEvent), queryTracer)
           } catch {
-            case TimeoutException =>
+            case e: TimeoutException =>
               // got tired of waiting for future to complete, put it back into the queue
               newInFlightTasks += future
             case e: Exception =>
