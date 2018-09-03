@@ -42,6 +42,7 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.PrimitiveArrayWriting;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.TimeZones;
@@ -190,8 +191,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         switch ( type )
         {
         case GEOMETRY:
-            // WGS84 is the CRS w/ lowest table/code at the time of writing this. Update as more CRSs gets added?
-            writePointDerived( CoordinateReferenceSystem.WGS84, Long.MIN_VALUE, LOW );
+            writeValue( PointValue.MIN_VALUE, LOW );
             break;
         case ZONED_DATE_TIME:
             writeValue( DateTimeValue.MIN_VALUE, LOW );
@@ -245,8 +245,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         switch ( type )
         {
         case GEOMETRY:
-            // Cartesian_3D is the CRS w/ highest table/code at the time of writing this. Update as more CRSs gets added?
-            writePointDerived( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, HIGH );
+            writeValue( PointValue.MAX_VALUE, HIGH );
             break;
         case NUMBER:
             writeValue( Values.of( Double.POSITIVE_INFINITY ), HIGH );

@@ -39,6 +39,10 @@ import static java.util.Collections.singletonList;
 
 public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
+    // WGS84 is the CRS w/ lowest table/code at the time of writing this. Update as more CRSs gets added.
+    public static final PointValue MIN_VALUE = new PointValue( CoordinateReferenceSystem.WGS84, -180D, -90 );
+    // Cartesian_3D is the CRS w/ highest table/code at the time of writing this. Update as more CRSs gets added.
+    public static final PointValue MAX_VALUE = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
 
     private CoordinateReferenceSystem crs;
     private double[] coordinate;

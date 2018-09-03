@@ -53,6 +53,7 @@ import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
@@ -76,6 +77,7 @@ import static org.neo4j.values.storable.Values.localDateTimeArray;
 import static org.neo4j.values.storable.Values.localTimeArray;
 import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.of;
+import static org.neo4j.values.storable.Values.pointArray;
 import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.timeArray;
 
@@ -282,7 +284,8 @@ class GenericKeyStateTest
     @Test
     void lowestMustBeLowest()
     {
-        // todo GEOMETRY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // GEOMETRY
+        assertLowest( PointValue.MIN_VALUE );
         // ZONED_DATE_TIME
         assertLowest( DateTimeValue.MIN_VALUE );
         // LOCAL_DATE_TIME
@@ -307,7 +310,8 @@ class GenericKeyStateTest
         assertLowest( of( Long.MIN_VALUE ) );
         assertLowest( of( Float.NEGATIVE_INFINITY ) );
         assertLowest( of( Double.NEGATIVE_INFINITY ) );
-        // todo GEOMETRY_ARRAY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // GEOMETRY_ARRAY
+        assertLowest( pointArray( new PointValue[0] ) );
         // ZONED_DATE_TIME_ARRAY
         assertLowest( dateTimeArray( new ZonedDateTime[0] ) );
         // LOCAL_DATE_TIME_ARRAY
@@ -337,7 +341,8 @@ class GenericKeyStateTest
     @Test
     void highestMustBeHighest()
     {
-        // todo GEOMETRY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // GEOMETRY
+        assertHighest( PointValue.MAX_VALUE );
         // ZONED_DATE_TIME
         assertHighest( DateTimeValue.MAX_VALUE );
         // LOCAL_DATE_TIME
@@ -362,7 +367,8 @@ class GenericKeyStateTest
         assertHighest( of( Long.MAX_VALUE ) );
         assertHighest( of( Float.POSITIVE_INFINITY ) );
         assertHighest( of( Double.POSITIVE_INFINITY ) );
-        // todo GEOMETRY_ARRAY (cartesian, cartesian_3D, WGS84, WGS84_3D)
+        // GEOMETRY_ARRAY
+        assertHighest( pointArray( new PointValue[0] ) );
         // ZONED_DATE_TIME_ARRAY
         assertHighest( dateTimeArray( new ZonedDateTime[]{DateTimeValue.MAX_VALUE.asObjectCopy()} ) );
         // LOCAL_DATE_TIME_ARRAY
