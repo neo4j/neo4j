@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -31,6 +32,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith( RandomExtension.class )
 class CompositeGenericKeyTest
@@ -45,7 +47,7 @@ class CompositeGenericKeyTest
     @Test
     void testDocumentedStringArrayKeySizeFormulaIsCorrect()
     {
-        CompositeGenericKey key = new CompositeGenericKey( 1 );
+        CompositeGenericKey key = new CompositeGenericKey( 1, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) );
         int maxArrayLength = random.nextInt( 500 );
         int maxStringLength = random.nextInt( 100 );
         for ( int i = 0; i < 100; i++ )
