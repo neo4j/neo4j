@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 
@@ -96,6 +97,12 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         public boolean isPropertyChangedOrRemoved( int propertyKey )
         {
             return false;
+        }
+
+        @Override
+        public Value propertyValue( int propertyKey )
+        {
+            return null;
         }
 
         @Override

@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import java.util.Iterator;
 
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 
@@ -49,6 +50,8 @@ public interface PropertyContainerState
     boolean hasPropertyChanges();
 
     boolean isPropertyChangedOrRemoved( int propertyKey );
+
+    Value propertyValue( int propertyKey );
 
     PropertyContainerState EMPTY = new EmptyPropertyContainerState();
 
@@ -88,6 +91,12 @@ public interface PropertyContainerState
         public boolean isPropertyChangedOrRemoved( int propertyKey )
         {
             return false;
+        }
+
+        @Override
+        public Value propertyValue( int propertyKey )
+        {
+            return null;
         }
     }
 }

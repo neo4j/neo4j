@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyIterator;
@@ -169,7 +170,33 @@ class PropertyContainerStateImpl implements PropertyContainerState
     public boolean isPropertyChangedOrRemoved( int propertyKey )
     {
         return (removedProperties != null && removedProperties.contains( propertyKey ))
-               || (changedProperties != null && changedProperties.containsKey( propertyKey ));
+                || (changedProperties != null && changedProperties.containsKey( propertyKey ));
+    }
+
+    @Override
+    public Value propertyValue( int propertyKey )
+    {
+        if ( removedProperties != null && removedProperties.contains( propertyKey ) )
+        {
+            return Values.NO_VALUE;
+        }
+        if ( addedProperties != null )
+        {
+            Value addedValue = addedProperties.get( propertyKey );
+            if ( addedValue != null )
+            {
+                return addedValue;
+            }
+        }
+        if ( changedProperties != null )
+        {
+            Value changedValue = changedProperties.get( propertyKey );
+            if ( changedValue != null )
+            {
+                return changedValue;
+            }
+        }
+        return null;
     }
 
     private Iterator<StorageProperty> toPropertyIterator( LongObjectMap<Value> propertyMap )

@@ -20,6 +20,8 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 /**
  * Defines the graph read operations of the Kernel.
@@ -321,6 +323,15 @@ public interface Read
      * @return <code>true</code> if the relationship was deleted otherwise <code>false</code>
      */
     boolean relationshipDeletedInTransaction( long relationship );
+
+    /**
+     * Returns the value of a node property if set in this transaction.
+     * @param node the node
+     * @param propertyKeyId the property key id of interest
+     * @return <code>null</code> if the property has not been changed for the node in this transaction. Otherwise returns
+     *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
+     */
+    Value nodePropertyChangeInTransaction( long node, int propertyKeyId );
 
     void graphProperties( PropertyCursor cursor );
 
