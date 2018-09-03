@@ -90,7 +90,7 @@ public class ConsecutiveInFlightCacheTest
             else
             {
                 assertTrue( entry.content().size().isPresent() );
-                assertEquals( i, (long) entry.content().size().get() );
+                assertEquals( i, entry.content().size().getAsLong() );
             }
         }
     }
@@ -124,7 +124,7 @@ public class ConsecutiveInFlightCacheTest
             else
             {
                 assertTrue( entry.content().size().isPresent() );
-                assertEquals( i, (long) entry.content().size().get() );
+                assertEquals( i, entry.content().size().getAsLong() );
             }
         }
     }

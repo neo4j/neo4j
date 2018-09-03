@@ -24,7 +24,7 @@ package org.neo4j.causalclustering.core.state.machines.dummy;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
@@ -46,9 +46,9 @@ public class DummyRequest implements CoreReplicatedContent
     }
 
     @Override
-    public Optional<Long> size()
+    public OptionalLong size()
     {
-        return Optional.of( (long) data.length );
+        return OptionalLong.of( (long) data.length );
     }
 
     public long byteCount()

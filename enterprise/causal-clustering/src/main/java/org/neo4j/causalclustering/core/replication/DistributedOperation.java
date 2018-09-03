@@ -24,7 +24,7 @@ package org.neo4j.causalclustering.core.replication;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
@@ -67,7 +67,7 @@ public class  DistributedOperation implements ReplicatedContent
     }
 
     @Override
-    public Optional<Long> size()
+    public OptionalLong size()
     {
         return content.size();
     }

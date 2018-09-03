@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
@@ -59,90 +58,90 @@ public interface RaftMessages
         T handle( PruneRequest pruneRequest ) throws E;
     }
 
-    abstract class OptionalHandler<T, E extends Exception> implements Handler<Optional<T>,E>
+    abstract class HandlerAdaptor<T, E extends Exception> implements Handler<T,E>
     {
         @Override
-        public Optional<T> handle( RaftMessages.Vote.Request request ) throws E
+        public T handle( RaftMessages.Vote.Request request ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.Vote.Response response ) throws E
+        public T handle( RaftMessages.Vote.Response response ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.PreVote.Request request ) throws E
+        public T handle( RaftMessages.PreVote.Request request ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.PreVote.Response response ) throws E
+        public T handle( RaftMessages.PreVote.Response response ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.AppendEntries.Request request ) throws E
+        public T handle( RaftMessages.AppendEntries.Request request ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.AppendEntries.Response response ) throws E
+        public T handle( RaftMessages.AppendEntries.Response response ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.Heartbeat heartbeat ) throws E
+        public T handle( RaftMessages.Heartbeat heartbeat ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws E
+        public T handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws E
+        public T handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.Timeout.Election election ) throws E
+        public T handle( RaftMessages.Timeout.Election election ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws E
+        public T handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( NewEntry.Request request ) throws E
+        public T handle( NewEntry.Request request ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws E
+        public T handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws E
         {
-            return Optional.empty();
+            return null;
         }
 
         @Override
-        public Optional<T> handle( RaftMessages.PruneRequest pruneRequest ) throws E
+        public T handle( RaftMessages.PruneRequest pruneRequest ) throws E
         {
-            return Optional.empty();
+            return null;
         }
     }
 

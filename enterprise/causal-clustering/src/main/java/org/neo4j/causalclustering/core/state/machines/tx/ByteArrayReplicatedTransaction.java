@@ -23,7 +23,7 @@
 package org.neo4j.causalclustering.core.state.machines.tx;
 
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.OptionalLong;
 
 import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
@@ -33,9 +33,9 @@ public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
     private final byte[] txBytes;
 
     @Override
-    public Optional<Long> size()
+    public OptionalLong size()
     {
-        return Optional.of( (long) txBytes.length );
+        return OptionalLong.of( (long) txBytes.length );
     }
 
     ByteArrayReplicatedTransaction( byte[] txBytes )

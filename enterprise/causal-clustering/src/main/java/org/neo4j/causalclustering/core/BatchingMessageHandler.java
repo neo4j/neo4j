@@ -168,10 +168,10 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<Receiv
             return;
         }
 
-        Optional<ReceivedInstantClusterIdAwareMessage> batchedMessage = baseMessage.get().message().dispatch(
+        ReceivedInstantClusterIdAwareMessage batchedMessage = baseMessage.get().message().dispatch(
                 new BatchingHandler( baseMessage.get() ) );
 
-        handler.handle( batchedMessage.orElse( baseMessage.get() ) );
+        handler.handle( batchedMessage == null ? baseMessage.get() : batchedMessage );
     }
 
     /**
@@ -195,7 +195,7 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<Receiv
 
             ReplicatedContent content = peeked.get().get().content();
 
-            if ( content.size().isPresent() && (totalBytes + content.size().get()) > batchConfig.maxBatchBytes )
+            if ( content.size().isPresent() && (totalBytes + content.size().getAsLong()) > batchConfig.maxBatchBytes )
             {
                 break;
             }
@@ -299,7 +299,7 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<Receiv
                 .map( r -> r.map( m -> acceptedType.cast( m.message() ) ) );
     }
 
-    private static class ContentSize extends RaftMessages.OptionalHandler<Long,RuntimeException>
+    private static class ContentSize extends RaftMessages.HandlerAdaptor<Long,RuntimeException>
     {
         private static final ContentSize INSTANCE = new ContentSize();
 
@@ -309,67 +309,68 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<Receiv
 
         static long of( ReceivedInstantClusterIdAwareMessage<?> message )
         {
-            return message.dispatch( INSTANCE ).orElse( 0L );
+            Long dispatch = message.dispatch( INSTANCE );
+            return dispatch == null ? 0L : dispatch;
         }
 
         @Override
-        public Optional<Long> handle( NewEntry.Request request ) throws RuntimeException
+        public Long handle( NewEntry.Request request ) throws RuntimeException
         {
-            return request.content().size();
+            return request.content().size().orElse( 0L );
         }
 
         @Override
-        public Optional<Long> handle( AppendEntries.Request request ) throws RuntimeException
+        public Long handle( AppendEntries.Request request ) throws RuntimeException
         {
             long totalSize = 0L;
             for ( RaftLogEntry entry : request.entries() )
             {
                 if ( entry.content().size().isPresent() )
                 {
-                    totalSize += entry.content().size().get();
+                    totalSize += entry.content().size().getAsLong();
                 }
             }
-            return Optional.of( totalSize );
+            return totalSize;
         }
     }
 
-    private class MessagePriority extends RaftMessages.OptionalHandler<Integer,RuntimeException>
+    private class MessagePriority extends RaftMessages.HandlerAdaptor<Integer,RuntimeException>
             implements Comparator<ReceivedInstantClusterIdAwareMessage<?>>
     {
         private final Integer BASE_PRIORITY = 10; // lower number means higher priority
 
         @Override
-        public Optional<Integer> handle( AppendEntries.Request request )
+        public Integer handle( AppendEntries.Request request )
         {
-            if ( request.entries().length == 0 )
-            {
-                // this is a heartbeat, so let it be handled with higher priority
-                return Optional.of( BASE_PRIORITY );
-            }
-            else
-            {
-                return Optional.of( 20 );
-            }
+
+            // 0 length means this is a heartbeat, so let it be handled with higher priority
+            return request.entries().length == 0 ? BASE_PRIORITY : 20;
         }
 
         @Override
-        public Optional<Integer> handle( NewEntry.Request request )
+        public Integer handle( NewEntry.Request request )
         {
-            return Optional.of( 30 );
+            return 30;
         }
 
         @Override
         public int compare( ReceivedInstantClusterIdAwareMessage<?> messageA,
                 ReceivedInstantClusterIdAwareMessage<?> messageB )
         {
-            int priorityA = messageA.dispatch( this ).orElse( BASE_PRIORITY );
-            int priorityB = messageB.dispatch( this ).orElse( BASE_PRIORITY );
+            int priorityA = getPriority( messageA );
+            int priorityB = getPriority( messageB );
 
             return Integer.compare( priorityA, priorityB );
         }
+
+        private int getPriority( ReceivedInstantClusterIdAwareMessage<?> message )
+        {
+            Integer priority = message.dispatch( this );
+            return priority == null ? BASE_PRIORITY : priority;
+        }
     }
 
-    private class BatchingHandler extends RaftMessages.OptionalHandler<ReceivedInstantClusterIdAwareMessage,RuntimeException>
+    private class BatchingHandler extends RaftMessages.HandlerAdaptor<ReceivedInstantClusterIdAwareMessage,RuntimeException>
     {
         private final ReceivedInstantClusterIdAwareMessage<?> baseMessage;
 
@@ -379,28 +380,24 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<Receiv
         }
 
         @Override
-        public Optional<ReceivedInstantClusterIdAwareMessage> handle( NewEntry.Request request ) throws RuntimeException
+        public ReceivedInstantClusterIdAwareMessage handle( NewEntry.Request request ) throws RuntimeException
         {
             NewEntry.BatchRequest newEntryBatch = batchNewEntries( request );
-            ReceivedInstantClusterIdAwareMessage<NewEntry.BatchRequest> newMessage = ReceivedInstantClusterIdAwareMessage
-                    .of( baseMessage.receivedAt(), baseMessage.clusterId(), newEntryBatch );
-            return Optional.of( newMessage );
+            return ReceivedInstantClusterIdAwareMessage.of( baseMessage.receivedAt(), baseMessage.clusterId(), newEntryBatch );
         }
 
         @Override
-        public Optional<ReceivedInstantClusterIdAwareMessage> handle( AppendEntries.Request request ) throws
+        public ReceivedInstantClusterIdAwareMessage handle( AppendEntries.Request request ) throws
                 RuntimeException
         {
             if ( request.entries().length == 0 )
             {
                 // this is a heartbeat, so let it be solo handled
-                return Optional.empty();
+                return null;
             }
 
             AppendEntries.Request appendEntriesBatch = batchAppendEntries( request );
-            ReceivedInstantClusterIdAwareMessage<AppendEntries.Request> newMessage = ReceivedInstantClusterIdAwareMessage
-                    .of( baseMessage.receivedAt(), baseMessage.clusterId(), appendEntriesBatch );
-            return Optional.of( newMessage );
+            return ReceivedInstantClusterIdAwareMessage.of( baseMessage.receivedAt(), baseMessage.clusterId(), appendEntriesBatch );
         }
     }
 }

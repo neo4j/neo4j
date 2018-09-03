@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.util.ReferenceCountUtil;
 
-import java.util.Optional;
+import java.util.OptionalLong;
 
 import org.neo4j.causalclustering.messaging.marshalling.ByteBufMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
@@ -34,9 +34,9 @@ import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 public class ByteBufReplicatedTransaction extends DefaultByteBufHolder implements ReplicatedTransaction, AutoCloseable
 {
     @Override
-    public Optional<Long> size()
+    public OptionalLong size()
     {
-        return Optional.of( (long) content().writerIndex() );
+        return OptionalLong.of( (long) content().writerIndex() );
     }
 
     ByteBufReplicatedTransaction( ByteBuf txBytes )
