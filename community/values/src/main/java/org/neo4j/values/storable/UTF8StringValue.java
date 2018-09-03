@@ -398,16 +398,14 @@ public final class UTF8StringValue extends StringValue
             byte[] value2, int value2Offset, int value2Length )
     {
         int lim = Math.min( value1Length, value2Length );
-        int i = 0;
-        while ( i < lim )
+        for ( int i = 0; i < lim; i++ )
         {
-            int b1 = ((int) value1[i + value1Offset]) & 0xFF;
-            int b2 = ((int) value2[i + value2Offset]) & 0xFF;
+            byte b1 = value1[i + value1Offset];
+            byte b2 = value2[i + value2Offset];
             if ( b1 != b2 )
             {
-                return b1 - b2;
+                return (((int) b1) & 0xFF) - (((int) b2) & 0xFF);
             }
-            i++;
         }
         return value1Length - value2Length;
     }

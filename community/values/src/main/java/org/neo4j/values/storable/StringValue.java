@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.storable.helpers.UnsafeStringUtils;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -186,35 +187,30 @@ public abstract class StringValue extends TextValue
             return 0;
         }
 
-        String thisString = value();
-        String thatString = other.stringValue();
-
+        final String thisString = value();
+        final String thatString = other.stringValue();
+        final char[] chars1 = UnsafeStringUtils.toCharArray( thisString );
+        final char[] chars2 = UnsafeStringUtils.toCharArray( thatString );
+        final int offset1 = UnsafeStringUtils.offsetOf( thisString );
+        final int offset2 = UnsafeStringUtils.offsetOf( thatString );
+        final int l1 = chars1.length;
+        final int l2 = chars2.length;
         char c1, c2;
-        int pos1 = 0, pos2 = 0;
-        final int l1 = thisString.length();
-        final int l2 = thatString.length();
-        //handle empty strings first so we can have less branching in main loop
-        if ( l1 == 0 || l2 == 0 )
-        {
-            return l1 - l2;
-        }
+        int pos = 0;
 
         //First compare identical substrings, here we need no fix-up
         while ( true )
         {
-            //NOTE: If this is a bottle neck we could use unsafe to access the underlying char[].
-            //This will remove a function call and a range-check.
-            c1 = thisString.charAt( pos1 );
-            c2 = thatString.charAt( pos2 );
+            //if we are at the end any of the strings they are the same
+            if ( pos >= l1 || pos >= l2 )
+            {
+                return l1 - l2;
+            }
+            c1 = chars1[ pos + offset1 ];
+            c2 = chars2[ pos + offset2 ];
             if ( c1 == c2 )
             {
-                //if we are at the end of both strings they are the same
-                if ( pos1 == l1 - 1 || pos2 == l2 - 1 )
-                {
-                    return l1 - l2;
-                }
-                pos1++;
-                pos2++;
+                pos++;
             }
             else
             {
@@ -224,23 +220,28 @@ public abstract class StringValue extends TextValue
 
         //We found c1, and c2 where c1 != c2, before comparing we need
         //to perform fix-up if they are in surrogate range before comparing.
-        if ( c1 >= 0xd800 && c2 >= 0xd800 )
+        return normalizeChars( c1, c2 );
+    }
+
+    private int normalizeChars( char c1, char c2 )
+    {
+        if ( c1 >= Character.MIN_HIGH_SURROGATE && c2 >= Character.MIN_HIGH_SURROGATE )
         {
-            if ( c1 >= 0xe000 )
+            if ( c1 >= '\ue000' )
             {
-                c1 -= 0x800;
+                c1 -= '\u0800';
             }
             else
             {
-                c1 += 0x2000;
+                c1 += '\u2000';
             }
-            if ( c2 >= 0xe000 )
+            if ( c2 >= '\ue000' )
             {
-                c2 -= 0x800;
+                c2 -= '\u0800';
             }
             else
             {
-                c2 += 0x2000;
+                c2 += '\u2000';
             }
         }
 
