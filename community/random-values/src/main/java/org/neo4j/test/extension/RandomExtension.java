@@ -20,17 +20,21 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.AssertionFailedError;
 import org.opentest4j.TestAbortedException;
 
+import java.lang.reflect.AnnotatedElement;
+import java.util.Optional;
+
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
 
-public class RandomExtension extends StatefullFieldExtension<RandomRule> implements AfterEachCallback, TestExecutionExceptionHandler
+public class RandomExtension extends StatefullFieldExtension<RandomRule> implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler
 {
     private static final String RANDOM = "random";
     private static final Namespace RANDOM_NAMESPACE = Namespace.create( RANDOM );
@@ -63,6 +67,21 @@ public class RandomExtension extends StatefullFieldExtension<RandomRule> impleme
     }
 
     @Override
+    public void beforeEach( ExtensionContext extensionContext )
+    {
+        Optional<AnnotatedElement> el = extensionContext.getElement();
+        if ( el.isPresent() )
+        {
+            AnnotatedElement annotatedElement = el.get();
+            RandomRule.Seed seedAnnotation = annotatedElement.getAnnotation( RandomRule.Seed.class );
+            if ( seedAnnotation != null )
+            {
+                getStoredValue( extensionContext ).setSeed( seedAnnotation.value() );
+            }
+        }
+    }
+
+    @Override
     public void afterEach( ExtensionContext context )
     {
         removeStoredValue( context );
@@ -77,6 +96,10 @@ public class RandomExtension extends StatefullFieldExtension<RandomRule> impleme
         }
 
         final long seed = getStoredValue( context ).seed();
+
+        // The reason we throw a new exception wrapping the actual exception here, instead of simply enhancing the message is:
+        // - AssertionFailedError has its own 'message' field, in addition to Throwable's 'detailedMessage' field
+        // - Even if 'message' field is updated the test doesn't seem to print the updated message on assertion failure
         throw new AssertionFailedError( format( "%s [ random seed used: %dL ]", t.getMessage(), seed ), t );
     }
 }
