@@ -1824,6 +1824,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
                         CoordinateReferenceSystem.get( (int) long1, (int) long2 ), crs, currentArrayOffset ) );
             }
             long0Array[currentArrayOffset] = spaceFillingCurve.derivedValueFor( coordinate );
+            currentArrayOffset++;
         }
     }
 
