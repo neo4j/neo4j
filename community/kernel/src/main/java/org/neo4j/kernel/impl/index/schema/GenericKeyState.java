@@ -247,9 +247,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         case GEOMETRY:
             writeValue( PointValue.MAX_VALUE, HIGH );
             break;
-        case NUMBER:
-            writeValue( Values.of( Double.POSITIVE_INFINITY ), HIGH );
-            break;
         case ZONED_DATE_TIME:
             writeValue( DateTimeValue.MAX_VALUE, HIGH );
             break;
@@ -274,6 +271,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             break;
         case BOOLEAN:
             writeValue( Values.of( true ), HIGH );
+            break;
+        case NUMBER:
+            writeValue( Values.of( Double.POSITIVE_INFINITY ), HIGH );
             break;
         // array types
         case GEOMETRY_ARRAY:
@@ -359,6 +359,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             default:
                 throw new IllegalStateException( "Expected an array type but was " + type );
             }
+            this.isHighestArray = key.isHighestArray;
         }
     }
 
@@ -367,7 +368,6 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         this.type = key.type;
         this.inclusion = key.inclusion;
         this.isArray = key.isArray;
-        this.isHighestArray = key.isHighestArray;
         this.spaceFillingCurve = key.spaceFillingCurve;
     }
 
@@ -1926,10 +1926,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         }
     }
 
-    private void initializeArrayMeta( int size, boolean isHighest )
+    private void initializeArrayMeta( int size )
     {
         isArray = true;
-        isHighestArray = isHighest;
         arrayLength = size;
         currentArrayOffset = 0;
     }
@@ -2004,7 +2003,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeGeometryArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         // plain long1 for tableId
         // plain long2 for code
@@ -2012,20 +2011,20 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeNumberArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         // plain long1 for number type
     }
 
     private void initializeBooleanArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeTextArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         byteArrayArray = ensureBigEnough( byteArrayArray, size );
         // long1 (bytesDereferenced) - Not needed because we never leak bytes from string array
@@ -2035,7 +2034,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeDurationArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
         long2Array = ensureBigEnough( long2Array, size );
@@ -2044,33 +2043,33 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeLocalTimeArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeZonedTimeArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
     }
 
     private void initializeDateArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
     }
 
     private void initializeLocalDateTimeArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
     }
 
     private void initializeZonedDateTimeArray( int size )
     {
-        initializeArrayMeta( size, false );
+        initializeArrayMeta( size );
         long0Array = ensureBigEnough( long0Array, size );
         long1Array = ensureBigEnough( long1Array, size );
         long2Array = ensureBigEnough( long2Array, size );
@@ -2079,7 +2078,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeLowestArray()
     {
-        initializeArrayMeta( 0, false );
+        initializeArrayMeta( 0 );
         long0Array = ensureBigEnough( long0Array, 0 );
         long1Array = ensureBigEnough( long1Array, 0 );
         long2Array = ensureBigEnough( long2Array, 0 );
@@ -2088,7 +2087,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void initializeHighestArray()
     {
-        initializeArrayMeta( 0, true );
+        initializeArrayMeta( 0 );
+        isHighestArray = true;
         long0Array = ensureBigEnough( long0Array, 0 );
         long1Array = ensureBigEnough( long1Array, 0 );
         long2Array = ensureBigEnough( long2Array, 0 );
