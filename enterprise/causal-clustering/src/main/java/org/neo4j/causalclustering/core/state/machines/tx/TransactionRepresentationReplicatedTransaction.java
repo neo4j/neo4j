@@ -93,18 +93,10 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
             }
             try
             {
-                // check if there are chunks to send
-                if ( !output.isEmpty() )
+                // write to output if empty and there is more to write
+                while ( txWriter.canWrite() && output.isEmpty() )
                 {
-                    return output.poll();
-                }
-                // otherwise continue writing
-                if ( txWriter.canWrite() )
-                {
-                    while ( txWriter.canWrite() && output.isEmpty() )
-                    {
-                        txWriter.write( channel );
-                    }
+                    txWriter.write( channel );
                 }
                 // nothing more to write, flush latest chunk and close channel
                 if ( output.isEmpty() )
