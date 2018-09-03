@@ -59,6 +59,7 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
@@ -88,7 +89,7 @@ class GenericKeyStateTest
     private static RandomRule random;
 
     @BeforeEach
-    public void setupRandomConfig()
+    void setupRandomConfig()
     {
         random = random.withConfiguration( new RandomValues.Configuration()
         {
@@ -126,7 +127,7 @@ class GenericKeyStateTest
     }
 
     @ParameterizedTest
-    @MethodSource( "validValueGenerators" )
+    @MethodSource( "validLosslessValueGenerators" )
     void readWhatIsWritten( ValueGenerator valueGenerator )
     {
         // Given
@@ -146,7 +147,7 @@ class GenericKeyStateTest
         assertTrue( readState.read( cursor, size ), "failed to read" );
         assertEquals( 0, readState.compareValueTo( writeState ), "key states are not equal" );
         Value readValue = readState.asValue();
-        assertEquals( value, readValue, "deserialized valued are not equal" );
+        assertEquals( value, readValue, "deserialized values are not equal" );
     }
 
     @ParameterizedTest
@@ -175,9 +176,7 @@ class GenericKeyStateTest
 
         for ( ValueGroup valueGroup : ValueGroup.values() )
         {
-            if ( valueGroup != ValueGroup.GEOMETRY &&
-                 valueGroup != ValueGroup.GEOMETRY_ARRAY &&
-                 valueGroup != ValueGroup.NO_VALUE )
+            if ( valueGroup != ValueGroup.NO_VALUE )
             {
                 extreme.initValueAsLowest( valueGroup );
                 copy.copyFrom( extreme );
@@ -204,7 +203,7 @@ class GenericKeyStateTest
     }
 
     @ParameterizedTest
-    @MethodSource( "validValueGenerators" )
+    @MethodSource( "validLosslessValueGenerators" )
     void compareToMustAlignWithValuesCompareTo( ValueGenerator valueGenerator )
     {
         // Given
@@ -231,8 +230,11 @@ class GenericKeyStateTest
         }
     }
 
+    // The reason this test doesn't test geometry, a.k.a. lossy values, is that this test asserts that PointValue comparison matches
+    // comparison between point keys in the index. They won't match because the point keys in the index are ordered according to
+    // the 2D/3D -> 1D mapping value and not the actual points.
     @ParameterizedTest
-    @MethodSource( "validValueGenerators" )
+    @MethodSource( "validLosslessValueGenerators" )
     void mustProduceValidMinimalSplitters( ValueGenerator valueGenerator )
     {
         // Given
@@ -471,32 +473,32 @@ class GenericKeyStateTest
         GenericKeyState minimalSplitter = newKeyState();
         GenericKeyState.minimalSplitter( leftState, rightState, minimalSplitter );
 
-        assertTrue( leftState.compareValueTo( minimalSplitter ) == 0,
+        assertEquals( 0, leftState.compareValueTo( minimalSplitter ),
                 "left state not equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
-        assertTrue( rightState.compareValueTo( minimalSplitter ) == 0,
+        assertEquals( 0, rightState.compareValueTo( minimalSplitter ),
                 "right state equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
     }
 
-    private static Value nextValidValue()
+    private static Value nextValidValue( boolean includeLossy )
     {
         Value value;
         do
         {
             value = random.randomValues().nextValue();
         }
-        while ( isInvalid( value ) );
+        while ( !includeLossy && isLossy( value ) );
         return value;
     }
 
-    private static boolean isInvalid( Value value )
+    private static boolean isLossy( Value value )
     {
-        // todo update when spatial is supported
         return isGeometryValue( value ) || isGeometryArray( value );
     }
 
-    private static Stream<ValueGenerator> validValueGenerators()
+    private static ValueGenerator[] listValueGenerators( boolean includeLossy )
     {
-        return Stream.of(
+        List<ValueGenerator> generators = new ArrayList<>( asList(
+                // single
                 () -> random.randomValues().nextDateTimeValue(),
                 () -> random.randomValues().nextLocalDateTimeValue(),
                 () -> random.randomValues().nextDateValue(),
@@ -508,7 +510,7 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextAlphaNumericTextValue(),
                 () -> random.randomValues().nextBooleanValue(),
                 () -> random.randomValues().nextNumberValue(),
-                // todo GEOMETRY
+                // array
                 () -> random.randomValues().nextDateTimeArray(),
                 () -> random.randomValues().nextLocalDateTimeArray(),
                 () -> random.randomValues().nextDateArray(),
@@ -525,9 +527,38 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextLongArray(),
                 () -> random.randomValues().nextFloatArray(),
                 () -> random.randomValues().nextDoubleArray(),
-                // todo GEOMETRY_ARRAY
-                GenericKeyStateTest::nextValidValue // and a random
-        );
+                // and a random
+                () -> nextValidValue( includeLossy )
+        ) );
+
+        if ( includeLossy )
+        {
+            generators.addAll( asList(
+                    // single
+                    () -> random.randomValues().nextPointValue(),
+                    () -> random.randomValues().nextGeographicPoint(),
+                    () -> random.randomValues().nextGeographic3DPoint(),
+                    () -> random.randomValues().nextCartesianPoint(),
+                    () -> random.randomValues().nextCartesian3DPoint(),
+                    // array
+                    () -> random.randomValues().nextGeographicPointArray(),
+                    () -> random.randomValues().nextGeographic3DPoint(),
+                    () -> random.randomValues().nextCartesianPointArray(),
+                    () -> random.randomValues().nextCartesian3DPointArray()
+            ) );
+        }
+
+        return generators.toArray( new ValueGenerator[0] );
+    }
+
+    private static Stream<ValueGenerator> validValueGenerators()
+    {
+        return Stream.of( listValueGenerators( true ) );
+    }
+
+    private static Stream<ValueGenerator> validLosslessValueGenerators()
+    {
+        return Stream.of( listValueGenerators( false ) );
     }
 
     private GenericKeyState genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
