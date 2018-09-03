@@ -310,7 +310,7 @@ public class PlatformModule
 
     protected JobScheduler createJobScheduler()
     {
-        return JobSchedulerFactory.createScheduler();
+        return JobSchedulerFactory.createInitialisedScheduler();
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,
