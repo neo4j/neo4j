@@ -54,15 +54,15 @@ object ExpressionConverter {
 
   def createPredicate(expression: ast.Expression)
                      (implicit context: CodeGenContext): CodeGenExpression = expression match {
-    case ast.HasLabels(ast.Variable(name), label :: Nil) =>
+    case ast.HasLabels(x:ast.LogicalVariable, label :: Nil) =>
       val labelIdVariable = context.namer.newVarName()
-      val nodeVariable = context.getVariable(name)
+      val nodeVariable = context.getVariable(x.name)
       HasLabel(nodeVariable, labelIdVariable, label.name).asPredicate
 
-    case exp@ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
+    case exp@ast.Property(x:ast.LogicalVariable, propKey) if context.semanticTable.isNode(x) =>
       createExpression(exp).asPredicate
 
-    case exp@ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isRelationship(node) =>
+    case exp@ast.Property(x:ast.LogicalVariable, propKey) if context.semanticTable.isRelationship(x) =>
       createExpression(exp).asPredicate
 
     case ast.Not(e) => Not(createExpression(e)).asPredicate
@@ -71,7 +71,7 @@ object ExpressionConverter {
 
     case ast.Or(lhs, rhs) => Or(createExpression(lhs), createExpression(rhs)).asPredicate
 
-    case exp: ast.Variable =>
+    case exp: ast.LogicalVariable =>
       createExpression(exp).asPredicate
 
     case _:ast.False => False
@@ -125,19 +125,19 @@ object ExpressionConverter {
                       (implicit context: CodeGenContext): CodeGenExpression = {
 
     expression match {
-      case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        NodeExpression(context.getVariable(name))
+      case node:ast.LogicalVariable if context.semanticTable.isNode(node) =>
+        NodeExpression(context.getVariable(node.name))
 
-      case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        RelationshipExpression(context.getVariable(name))
+      case rel:ast.LogicalVariable if context.semanticTable.isRelationship(rel) =>
+        RelationshipExpression(context.getVariable(rel.name))
 
-      case ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
+      case ast.Property(node:ast.LogicalVariable, propKey) if context.semanticTable.isNode(node) =>
         val token = context.semanticTable.id(propKey).map(_.id)
-        NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
+        NodeProperty(token, propKey.name, context.getVariable(node.name), context.namer.newVarName())
 
-      case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
+      case ast.Property(rel:ast.LogicalVariable, propKey) if context.semanticTable.isRelationship(rel) =>
         val token = context.semanticTable.id(propKey).map(_.id)
-        RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
+        RelProperty(token, propKey.name, context.getVariable(rel.name), context.namer.newVarName())
 
       case ast.Property(mapExpression, ast.PropertyKeyName(propKeyName)) =>
         MapProperty(callback(mapExpression), propKeyName)
@@ -193,9 +193,9 @@ object ExpressionConverter {
         }.toMap
         MyMap(map)
 
-      case ast.HasLabels(ast.Variable(name), label :: Nil) =>
+      case ast.HasLabels(x:ast.LogicalVariable, label :: Nil) =>
         val labelIdVariable = context.namer.newVarName()
-        val nodeVariable = context.getVariable(name)
+        val nodeVariable = context.getVariable(x.name)
         HasLabel(nodeVariable, labelIdVariable, label.name)
 
       case ast.Equals(lhs, rhs) => Equals(callback(lhs), callback(rhs))
@@ -206,7 +206,7 @@ object ExpressionConverter {
 
       case f: ast.FunctionInvocation => functionConverter(f, callback)
 
-      case ast.Variable(name) => LoadVariable(context.getVariable(name))
+      case x:ast.LogicalVariable => LoadVariable(context.getVariable(x.name))
 
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }

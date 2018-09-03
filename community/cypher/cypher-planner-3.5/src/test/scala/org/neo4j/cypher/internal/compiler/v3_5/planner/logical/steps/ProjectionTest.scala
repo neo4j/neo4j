@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, PlanMatchHelp}
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, ColumnOrder, LogicalPlan, Projection}
@@ -30,7 +30,7 @@ import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
 
   val x: Expression = UnsignedDecimalIntegerLiteral("110") _
   val y: Expression = UnsignedDecimalIntegerLiteral("10") _
@@ -106,7 +106,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 
-  test("does not add projection when variable available from index") {
+  test("does add CachedNodeProperty projection when variable available from index") {
     val n = Variable("n")(pos)
     val prop = Property(n, PropertyKeyName("prop")(pos))(pos)
     // given
@@ -119,7 +119,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
-    result should equal(startPlan)
+    result should equal(Projection(startPlan, Map(cachedNodePropertyProj("n", "proj"))))
     solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 
@@ -136,7 +136,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, projections, context, solveds, cardinalities)._1
 
     // then
-    val actualProjections = Map("foo" -> Variable("n.prop")(pos))
+    val actualProjections = Map(cachedNodePropertyProj("foo", "n", "prop"))
     result should equal(Projection(startPlan, actualProjections))
     solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }

@@ -83,7 +83,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   private val builder = {
-    val converters = new ExpressionConverters(CommunityExpressionConverter)
+    val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     new PipeExecutionPlanBuilder(factory, expressionConverters = converters)
   }
   private val tokenContext: TokenContext = newMockedPlanContext

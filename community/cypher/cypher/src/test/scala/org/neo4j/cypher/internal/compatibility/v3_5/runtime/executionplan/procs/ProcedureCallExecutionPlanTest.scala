@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.{any, anyInt}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext, ResourceManager}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -40,7 +41,7 @@ import scala.collection.JavaConverters._
 
 class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter)
+  private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   private val idGen = new SequentialIdGen()
 
   test("should be able to call procedure with single argument") {

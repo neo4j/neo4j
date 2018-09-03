@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -27,12 +28,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedR
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions.functions._
-import org.opencypher.v9_0.expressions.{DesugaredMapProjection, Expression, functions}
+import org.opencypher.v9_0.expressions.{DesugaredMapProjection, Expression, PropertyKeyName, functions}
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.{InternalException, NonEmptyList}
 import org.opencypher.v9_0.{expressions => ast}
 
-object CommunityExpressionConverter extends ExpressionConverter {
+case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
 
   import PatternConverters._
 
@@ -82,6 +83,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
       case e: ast.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case e: ast.CountStar => commandexpressions.CountStar()
       case e: ast.Property => toCommandProperty(id, e, self)
+      case e: CachedNodeProperty => commandexpressions.CachedNodeProperty(e.nodeVariableName, getPropertyKey(e.propertyKey), e.name)
       case e: ast.Parameter => toCommandParameter(e)
       case e: ast.CaseExpression => caseExpression(id, e, self)
       case e: ast.PatternExpression =>
@@ -200,8 +202,8 @@ object CommunityExpressionConverter extends ExpressionConverter {
       case Exists =>
         invocation.arguments.head match {
           case property: ast.Property =>
-            commands.predicates
-              .PropertyExists(self.toCommandExpression(id, property.map), PropertyKey(property.propertyKey.name))
+            val propertyKey = getPropertyKey(property.propertyKey)
+            commands.predicates.PropertyExists(self.toCommandExpression(id, property.map), propertyKey)
           case expression: ast.PatternExpression =>
             self.toCommandPredicate(id, expression)
           case expression: pipes.NestedPipeExpression =>
@@ -357,7 +359,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
   private def toCommandParameter(e: ast.Parameter) = commandexpressions.ParameterExpression(e.name)
 
   private def toCommandProperty(id: Id, e: ast.LogicalProperty, self: ExpressionConverters): commandexpressions.Property =
-    commandexpressions.Property(self.toCommandExpression(id, e.map), PropertyKey(e.propertyKey.name))
+    commandexpressions.Property(self.toCommandExpression(id, e.map), getPropertyKey(e.propertyKey))
 
   private def toCommandExpression(id: Id, expression: Option[ast.Expression],
                                   self: ExpressionConverters): Option[CommandExpression] =
@@ -452,4 +454,10 @@ object CommunityExpressionConverter extends ExpressionConverter {
     }
   }
 
+  private def getPropertyKey(propertyKey: PropertyKeyName) = tokenContext.getOptPropertyKeyId(propertyKey.name) match {
+    case Some(propertyKeyId) =>
+      PropertyKey(propertyKey.name, propertyKeyId)
+    case _ =>
+      PropertyKey(propertyKey.name)
+  }
 }

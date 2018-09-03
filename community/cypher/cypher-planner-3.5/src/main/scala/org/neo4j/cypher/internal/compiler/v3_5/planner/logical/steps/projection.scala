@@ -88,10 +88,15 @@ object projection {
     val ids = plan.availableSymbols
 
     val projectAllCoveredIds: Set[(String, Expression)] = ids.map(id => id -> Variable(id)(null))
-    val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
+    val projections: Seq[(String, Expression)] = projectionsMap.toIndexedSeq
 
     // The projections that are not covered yet
-    val projectionsDiff = (projections -- projectAllCoveredIds).toMap
+    val projectionsDiff =
+      projections.filter({
+        case (x, Variable(y)) if x == y => !ids.contains(x)
+        case _ => true
+      }).toMap
+
     if (projectionsDiff.isEmpty) {
       context.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved, context)
     } else {

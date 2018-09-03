@@ -30,3 +30,25 @@ trait TokenContext {
   def getOptRelTypeId(relType: String): Option[Int]
   def getRelTypeId(relType: String): Int
 }
+
+object TokenContext {
+  val EMPTY = new TokenContext {
+    override def getLabelName(id: Int): String = throw new IllegalArgumentException("No such label.", null)
+
+    override def getOptLabelId(labelName: String): Option[Int] = None
+
+    override def getLabelId(labelName: String): Int = throw new IllegalArgumentException("No such label.", null)
+
+    override def getPropertyKeyName(id: Int): String = throw new IllegalArgumentException("No such property.", null)
+
+    override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = None
+
+    override def getPropertyKeyId(propertyKeyName: String): Int = throw new IllegalArgumentException("No such property.", null)
+
+    override def getRelTypeName(id: Int): String = throw new IllegalArgumentException("No such relationship.", null)
+
+    override def getOptRelTypeId(relType: String): Option[Int] = None
+
+    override def getRelTypeId(relType: String): Int = throw new IllegalArgumentException("No such relationship.", null)
+  }
+}

@@ -69,12 +69,12 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
       if (context.config.disableCompiledExpressions || context.debugOptions.contains("disableCompiledExpressions")) {
         new ExpressionConverters(
           SlottedExpressionConverters(physicalPlan),
-          CommunityExpressionConverter)
+          CommunityExpressionConverter(context.tokenContext))
       } else {
         new ExpressionConverters(
-          new CompiledExpressionConverter(context.log, physicalPlan),
+          new CompiledExpressionConverter(context.log, physicalPlan, context.tokenContext),
           SlottedExpressionConverters(physicalPlan),
-          CommunityExpressionConverter)
+          CommunityExpressionConverter(context.tokenContext))
       }
 
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)

@@ -57,9 +57,9 @@ abstract class LogicalPlan(idGen: IdGen)
     * Indexes can provide property values. This is the map of the property name (e.g. "a.prop")
     * to the property expression for all properties that leaves of this plan get from indexes.
     */
-  def availablePropertiesFromIndexes: Map[Property, String] = {
-    lhs.fold(Map.empty[Property, String])(_.availablePropertiesFromIndexes) ++
-      rhs.fold(Map.empty[Property, String])(_.availablePropertiesFromIndexes)
+  def availablePropertiesFromIndexes: Map[Property, CachedNodeProperty] = {
+    lhs.fold(Map.empty[Property, CachedNodeProperty])(_.availablePropertiesFromIndexes) ++
+      rhs.fold(Map.empty[Property, CachedNodeProperty])(_.availablePropertiesFromIndexes)
   }
 
   val id: Id = idGen.id()
@@ -244,12 +244,8 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
   /**
     * Map of a the subset of properties where the property values will be read from the index.
     */
-  override def availablePropertiesFromIndexes: Map[Property, String] = {
-    properties.filter(_.getValueFromIndex != DoNotGetValue).map( ip => {
-      val propName = ip.propertyKeyToken.name
-      (Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), idName + "." + propName)
-    }).toMap
-  }
+  override def availablePropertiesFromIndexes: Map[Property, CachedNodeProperty] =
+    properties.filter(_.getValueFromIndex != DoNotGetValue).flatMap(_.asAvailablePropertyMap(idName)).toMap
 }
 
 case object Flattener extends TreeBuilder[Seq[LogicalPlan]] {

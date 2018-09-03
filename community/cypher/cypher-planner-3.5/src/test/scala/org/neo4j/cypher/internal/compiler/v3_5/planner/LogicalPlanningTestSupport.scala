@@ -305,8 +305,13 @@ case object namePatternPredicatePatternElements extends Rewriter {
   })
 }
 
-case class FakePlan(availableSymbols: Set[String] = Set.empty, override val availablePropertiesFromIndexes: Map[Property, String] = Map.empty)(implicit idGen: IdGen)
+case class FakePlan(availableSymbols: Set[String] = Set.empty, propertyMap: Map[Property, String] = Map.empty)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   def rhs = None
   def lhs = None
+
+  override val availablePropertiesFromIndexes: Map[Property, CachedNodeProperty] = propertyMap.mapValues(s => {
+    val (nodeName, propertyKey) = s.span(_ != '.')
+    CachedNodeProperty(nodeName, PropertyKeyName(propertyKey.tail)(InputPosition.NONE))(InputPosition.NONE)
+  })
 }

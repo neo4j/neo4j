@@ -154,6 +154,19 @@ public class TestProcedure
         return StreamSupport.stream( path.nodes().spliterator(), false ).map( NodeResult::new  );
     }
 
+    @Procedure( name = "org.neo4j.setProperty", mode = WRITE )
+    public Stream<NodeResult> setProperty( @Name( "node" ) Node node, @Name( "propertyKey" ) String propertyKeyName, @Name( "value" ) String value )
+    {
+        if ( value == null ) {
+            node.removeProperty( propertyKeyName );
+        }
+        else
+        {
+            node.setProperty( propertyKeyName, value );
+        }
+        return Stream.of( new NodeResult( node ) );
+    }
+
     public static class NodeResult
     {
         public Node node;

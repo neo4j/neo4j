@@ -578,6 +578,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
+    override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Option[Value] = {
+      val nodePropertyInTx = reads().nodePropertyChangeInTransaction(nodeId, propertyKeyId)
+      Option(nodePropertyInTx)
+    }
+
     override def hasProperty(id: Long, propertyKey: Int): Boolean = {
       val node = allocateNodeCursor()
       val property = allocatePropertyCursor()
@@ -797,6 +802,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def releaseExclusiveLock(obj: Long): Unit =
       transactionalContext.kernelTransaction.locks().releaseExclusiveRelationshipLock(obj)
+
+    override def getTxStateProperty(obj: Long, propertyKeyId: Int): Option[Value] =
+      throw new UnsupportedOperationException("Not implemented: there was no user of this method as there are no relationship indexes.")
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =

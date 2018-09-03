@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.ir.v3_5.DistinctQueryProjection
 import org.neo4j.cypher.internal.v3_5.logical.plans.Distinct
 import org.opencypher.v9_0.ast.ASTAnnotationMap
@@ -27,7 +28,7 @@ import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class DistinctTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class DistinctTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
 
   test("adds renaming distinct when variable available from index") {
     val prop = Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos)
@@ -44,7 +45,7 @@ class DistinctTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (result, _) = distinct(startPlan, projection, context, new StubSolveds, new StubCardinalities)
     // Then
     result should equal(
-      Distinct(startPlan, Map("x.prop" -> Variable("x.prop")(pos)))
+      Distinct(startPlan, Map(cachedNodePropertyProj("x", "prop")))
     )
   }
 }

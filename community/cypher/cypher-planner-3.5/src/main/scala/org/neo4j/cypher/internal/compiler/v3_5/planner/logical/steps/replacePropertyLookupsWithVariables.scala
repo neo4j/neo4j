@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.{Property, Variable}
+import org.opencypher.v9_0.expressions.Property
 import org.opencypher.v9_0.util.{Rewriter, topDown}
 
-case class replacePropertyLookupsWithVariables(availablePropertyVariables: Map[Property, String])  {
+case class replacePropertyLookupsWithVariables(availablePropertyVariables: Map[Property, CachedNodeProperty])  {
 
   /**
     * Rewrites any object to replace property lookups with variables, if they are available.
@@ -35,7 +36,7 @@ case class replacePropertyLookupsWithVariables(availablePropertyVariables: Map[P
 
     val rewriter = topDown(Rewriter.lift {
       case property:Property if availablePropertyVariables.contains(property) =>
-        val newVar = Variable(availablePropertyVariables(property))(property.position)
+        val newVar = availablePropertyVariables(property)
         // Register the new variables in the semantic table
         currentTypes = currentTypes.updated(newVar, currentTypes(property))
         newVar

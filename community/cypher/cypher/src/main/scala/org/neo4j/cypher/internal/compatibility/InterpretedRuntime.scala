@@ -37,7 +37,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
     val cardinalities = state.cardinalities
     val logicalPlan = state.logicalPlan
-    val converters = new ExpressionConverters(CommunityExpressionConverter)
+    val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val executionPlanBuilder = new PipeExecutionPlanBuilder(
       expressionConverters = converters,
       pipeBuilderFactory = InterpretedPipeBuilderFactory)

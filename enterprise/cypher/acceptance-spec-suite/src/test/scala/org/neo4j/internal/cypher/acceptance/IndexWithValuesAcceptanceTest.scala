@@ -23,7 +23,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.kernel.impl.proc.Procedures
 
 class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -56,7 +58,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.All, "MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Projection")) and
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeek")
           .withExactVariables("n", "n.prop1"))
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 42)))
@@ -66,7 +68,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.All, "PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1, n.prop2", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
-      .containingArgument("{n.prop2 : n.prop2}")
+      .containingArgument("{n.prop1 : `n.prop1`, n.prop2 : n.prop2}")
       // just for n.prop2, not for n.prop1
       .withDBHits(2)
       .onTopOf(aPlan("NodeIndexSeek")
@@ -102,7 +104,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.All, "MATCH (n:Awesome) WHERE n.prop1 = 42 WITH n MATCH (m)-[r]-(n) RETURN n.prop1", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Projection")) and
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("Expand(All)")
           .onTopOf(aPlan("NodeIndexSeek")
             .withExactVariables("n", "n.prop1")))
@@ -175,7 +177,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop3 STARTS WITH 'foo' RETURN n.prop3", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Projection")) and
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeekByRange")
           .withExactVariables("n", "n.prop3"))
     result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "footurama"), Map("n.prop3" -> "fooism"), Map("n.prop3" -> "fooism")))
@@ -185,7 +187,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop3 ENDS WITH 'ama' RETURN n.prop3", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Projection")) and
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexEndsWithScan")
           .withExactVariables("n", "n.prop3"))
     result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "footurama"), Map("n.prop3" -> "ismfama"), Map("n.prop3" -> "ismfama")))
@@ -195,7 +197,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop3 CONTAINS 'ism' RETURN n.prop3", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Projection")) and
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexContainsScan")
           .withExactVariables("n", "n.prop3"))
     result.toList.toSet should equal(Set(Map("n.prop3" -> "fooism"), Map("n.prop3" -> "fooism"), Map("n.prop3" -> "ismfama"), Map("n.prop3" -> "ismfama")))
@@ -205,7 +207,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 3 RETURN n.prop1, n.prop2", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Projection")) and
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeek")
           .withExactVariables("n", "n.prop1", "n.prop2"))
     result.toList should equal(List(Map("n.prop1" -> 42, "n.prop2" -> 3), Map("n.prop1" -> 42, "n.prop2" -> 3)))
@@ -215,7 +217,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 3 RETURN n.prop1", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Projection")) and
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeek")
           .withExactVariables("n", "n.prop1"))
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 42)))
@@ -229,11 +231,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
         |RETURN n.prop1, projected""".stripMargin
 
     val result = executeWith(Configs.All, query)
-
-    result.executionPlanDescription() should
-      includeSomewhere.aPlan("NodeIndexSeek")
-        .withExactVariables("n", "n.prop1")
-
+    assertIndexSeekWithValues(result)
     result.toList should equal(List(Map("n.prop1" -> 42, "projected" -> 42)))
   }
 
@@ -245,11 +243,61 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
         |RETURN n.prop1, `n.prop1` AS trap""".stripMargin
 
     val result = executeWith(Configs.All, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("n.prop1" -> 42, "trap" -> "Whoops!")))
+  }
 
+  test("index-backed property values should be updated on property write") {
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 SET n.prop1 = 'newValue' RETURN n.prop1"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("n.prop1" -> "newValue")))
+  }
+
+  test("index-backed property values should be removed on property remove") {
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 REMOVE n.prop1 RETURN n.prop1"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("n.prop1" -> null)))
+  }
+
+  test("index-backed property values should be updated on map property write") {
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 SET n = {decoy1: 1, prop1: 'newValue', decoy2: 2} RETURN n.prop1"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("n.prop1" -> "newValue")))
+  }
+
+  test("index-backed property values should be removed on map property remove") {
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 SET n = {decoy1: 1, decoy2: 2} RETURN n.prop1"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("n.prop1" -> null)))
+  }
+
+  test("index-backed property values should be updated on procedure property write") {
+    registerTestProcedures()
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 CALL org.neo4j.setProperty(n, 'prop1', 'newValue') YIELD node RETURN n.prop1"
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("n.prop1" -> "newValue")))
+  }
+
+  test("index-backed property values should be updated on procedure property remove") {
+    registerTestProcedures()
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 CALL org.neo4j.setProperty(n, 'prop1', null) YIELD node RETURN n.prop1"
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("n.prop1" -> null)))
+  }
+
+  private def assertIndexSeekWithValues(result: RewindableExecutionResult) = {
     result.executionPlanDescription() should
       includeSomewhere.aPlan("NodeIndexSeek")
-        .containingVariables("n", "n.prop1")
+        .withExactVariables("n", "n.prop1")
+  }
 
-    result.toList should equal(List(Map("n.prop1" -> 42, "trap" -> "Whoops!")))
+  private def registerTestProcedures(): Unit = {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
   }
 }

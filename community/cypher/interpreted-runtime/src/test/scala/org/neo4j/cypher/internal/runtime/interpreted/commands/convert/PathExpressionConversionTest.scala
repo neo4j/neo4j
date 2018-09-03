@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.opencypher.v9_0.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath._
@@ -27,7 +28,7 @@ import org.opencypher.v9_0.expressions._
 
 class PathExpressionConversionTest extends CypherFunSuite {
 
-  val converters = new ExpressionConverters(CommunityExpressionConverter)
+  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
 
   val pos = DummyPosition(0)
 

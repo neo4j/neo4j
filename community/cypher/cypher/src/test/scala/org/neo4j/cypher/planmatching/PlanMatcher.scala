@@ -52,6 +52,8 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def withDBHits(hits: Long): PlanMatcher
 
+  def withDBHits(): PlanMatcher
+
   def withDBHitsBetween(min: Long, max: Long): PlanMatcher
 
   def withExactVariables(variables: String*): PlanMatcher
@@ -112,6 +114,8 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 
   override def withDBHits(hits: Long): PlanMatcher = copy(inner = inner.withDBHits(hits))
 
+  override def withDBHits(): PlanMatcher = copy(inner = inner.withDBHits())
+
   override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withDBHitsBetween(min, max))
 
   override def withExactVariables(variables: String*): PlanMatcher = copy(inner = inner.withExactVariables(variables: _*))
@@ -166,6 +170,8 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
   override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withEstimatedRowsBetween(min, max))
 
   override def withDBHits(hits: Long): PlanMatcher = copy(inner = inner.withDBHits(hits))
+
+  override def withDBHits(): PlanMatcher = copy(inner = inner.withDBHits())
 
   override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withDBHitsBetween(min, max))
 
@@ -277,6 +283,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
   override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(estimatedRows = Some(new RangeArgumentMatcher(min, max) with EstimatedRowsMatcher))
 
   override def withDBHits(hits: Long): PlanMatcher = copy(dbHits = Some(new ExactArgumentMatcher(hits) with DBHitsMatcher))
+
+  override def withDBHits(): PlanMatcher = copy(dbHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with DBHitsMatcher))
 
   override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = copy(dbHits = Some(new RangeArgumentMatcher(min, max) with DBHitsMatcher))
 

@@ -63,7 +63,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   private val emptyExpression = mock[Expression]
   when(emptyExpression.children).thenReturn(Seq.empty)
 
-  private val expressionConverter = new ExpressionConverters(CommunityExpressionConverter)
+  private val expressionConverter = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   private def convertExpression(astExpression: ast.Expression): Expression = {
     def resolveTokens(expr: Expression, ctx: TokenContext): Expression = expr match {
       case keyToken: KeyToken => keyToken.resolve(ctx)

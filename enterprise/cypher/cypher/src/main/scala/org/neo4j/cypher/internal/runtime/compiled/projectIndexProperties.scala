@@ -40,7 +40,9 @@ case object projectIndexProperties {
 
     val rewriter = topDown(Rewriter.lift {
       case indexLeafPlan: IndexLeafPlan if indexLeafPlan.propertyNamesWithValues.nonEmpty =>
-        val projections = indexLeafPlan.availablePropertiesFromIndexes.map(_.swap)
+        val projections = indexLeafPlan.availablePropertiesFromIndexes.map {
+          case (prop, cachedNodeProperty) => (cachedNodeProperty.name, prop)
+        }
         // Register all variables in the property lookups as nodes
         projections.values.foreach { prop =>
           currentTypes = currentTypes.updated(prop.map, ExpressionTypeInfo(CTNode.invariant, None))

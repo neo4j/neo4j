@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration.Si
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{HardcodedGraphStatistics, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, VarPatternLength}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanContext, TokenContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
@@ -56,7 +56,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val slottedRewriter = new SlottedRewriter(planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     val converters = new ExpressionConverters(SlottedExpressionConverters(physicalPlan),
-                                                                          CommunityExpressionConverter)
+                                                                          CommunityExpressionConverter(TokenContext.EMPTY))
     val executionPlanBuilder = new PipeExecutionPlanBuilder(SlottedPipeBuilder.Factory(physicalPlan), converters)
     val context = PipeExecutionBuilderContext(table, true)
     executionPlanBuilder.build(logicalPlan)(context, planContext)

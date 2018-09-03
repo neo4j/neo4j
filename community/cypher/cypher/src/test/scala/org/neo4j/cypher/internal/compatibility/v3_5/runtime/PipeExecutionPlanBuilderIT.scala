@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanContext, TokenContext}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
@@ -45,10 +45,10 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   val planContext: PlanContext = newMockedPlanContext
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val converters = new ExpressionConverters(CommunityExpressionConverter)
+  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
 
   private val planBuilder = {
-    val converters = new ExpressionConverters(CommunityExpressionConverter)
+    val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = InterpretedPipeBuilderFactory)
   }
 

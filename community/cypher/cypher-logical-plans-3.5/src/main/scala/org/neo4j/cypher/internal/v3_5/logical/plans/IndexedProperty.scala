@@ -25,14 +25,14 @@ import org.opencypher.v9_0.util.InputPosition
 case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {
   def shouldGetValue: Boolean = getValueFromIndex == GetValue
 
-  def asAvailablePropertyMap(entity: String): Map[Property, String] =
+  def asAvailablePropertyMap(entity: String): Map[Property, CachedNodeProperty] =
     if (getValueFromIndex != DoNotGetValue)
       Map((
         Property(
           Variable(entity)(InputPosition.NONE),
           PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE)
         )(InputPosition.NONE),
-        entity + "." + propertyKeyToken.name
+        CachedNodeProperty(entity, PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
       ))
     else Map.empty
 

@@ -27,7 +27,7 @@ import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
   test("should do projection if necessary") {
     // Given
@@ -44,7 +44,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }
   }
 
-  test("should not do projection if index provides the value already") {
+  test("should do CachedNodeProperty projection if index provides the value already") {
     // Given
     val property = prop("n", "prop")
     new given {
@@ -57,7 +57,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(inputPlan)
+      producedPlan should equal(Projection(inputPlan, Map(cachedNodePropertyProj("n", "prop"))))
     }
   }
 
@@ -74,7 +74,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(Projection(inputPlan, Map("foo" -> varFor("n.prop"))))
+      producedPlan should equal(Projection(inputPlan, Map(cachedNodePropertyProj("foo", "n", "prop"))))
     }
   }
 
@@ -91,7 +91,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(Aggregation(inputPlan, Map("n.prop" -> varFor("n.prop")), Map.empty))
+      producedPlan should equal(Aggregation(inputPlan, Map(cachedNodePropertyProj("n","prop")), Map.empty))
     }
   }
 
@@ -108,7 +108,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(Aggregation(inputPlan, Map.empty, Map("foo" -> varFor("n.prop"))))
+      producedPlan should equal(Aggregation(inputPlan, Map.empty, Map(cachedNodePropertyProj("foo", "n", "prop"))))
     }
   }
 
@@ -125,7 +125,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(Distinct(inputPlan, Map("n.prop" -> varFor("n.prop"))))
+      producedPlan should equal(Distinct(inputPlan, Map(cachedNodePropertyProj("n","prop"))))
     }
   }
 
@@ -142,7 +142,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(Distinct(inputPlan, Map("foo" -> varFor("n.prop"))))
+      producedPlan should equal(Distinct(inputPlan, Map(cachedNodePropertyProj("foo", "n", "prop"))))
     }
   }
 
@@ -159,7 +159,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(UnwindCollection(inputPlan, "foo", ListLiteral(Seq(varFor("n.prop")))(pos)))
+      producedPlan should equal(UnwindCollection(inputPlan, "foo", ListLiteral(Seq(cachedNodeProperty("n", "prop")))(pos)))
     }
   }
 
@@ -186,7 +186,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }
   }
 
-  test("should plan renaming procedure calls  if index provides the value already") {
+  test("should plan renaming procedure calls if index provides the value already") {
     // Given
     val property = prop("n", "prop")
     new given {
@@ -208,7 +208,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val (producedPlan, _) = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
-      producedPlan should equal(ProcedureCall(inputPlan, ResolvedCall(signature, Seq(ListLiteral(Seq(varFor("n.prop")))(pos)), callResults)(pos)))
+      producedPlan should equal(ProcedureCall(inputPlan, ResolvedCall(signature, Seq(ListLiteral(Seq(cachedNodeProperty("n","prop")))(pos)), callResults)(pos)))
     }
   }
 

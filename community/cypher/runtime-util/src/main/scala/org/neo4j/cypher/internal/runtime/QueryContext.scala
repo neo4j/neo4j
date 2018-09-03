@@ -242,6 +242,8 @@ trait Operations[T] {
 
   def hasProperty(obj: Long, propertyKeyId: Int): Boolean
 
+  def getTxStateProperty(obj: Long, propertyKeyId: Int): Option[Value]
+
   def propertyKeyIds(obj: Long): Array[Int]
 
   def getById(id: Long): T

@@ -38,7 +38,7 @@ case class NodeIndexScan(idName: String,
 
   override val availableSymbols: Set[String] = argumentIds + idName ++ maybePropertyNameWithValues
 
-  override def availablePropertiesFromIndexes: Map[Property, String] = property.asAvailablePropertyMap(idName)
+  override def availablePropertiesFromIndexes: Map[Property, CachedNodeProperty] = property.asAvailablePropertyMap(idName)
 
   override def copyWithoutGettingValues: NodeIndexScan =
     NodeIndexScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), argumentIds)(SameId(this.id))

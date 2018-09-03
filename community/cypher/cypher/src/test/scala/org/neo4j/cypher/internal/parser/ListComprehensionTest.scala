@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
@@ -46,6 +47,6 @@ class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Exp
       legacy.ExtractFunction(filterCommand, "a", legacy.Property(legacy.Variable("a"), PropertyKey("foo")))
   }
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter)
+  private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   def convert(astNode: ast.ListComprehension): legacy.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
 import org.opencypher.v9_0.ast.ASTAnnotationMap
@@ -27,7 +28,7 @@ import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
 
   val propExp: Expression = Property(varFor("n"), PropertyKeyName("prop")(pos))(pos)
@@ -117,7 +118,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (result, _) = aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities)
     // Then
     result should equal(
-      Aggregation(startPlan, Map("x.prop" -> Variable("x.prop")(pos)), aggregatingMap)
+      Aggregation(startPlan, Map(cachedNodePropertyProj("x", "prop")), aggregatingMap)
     )
   }
 }

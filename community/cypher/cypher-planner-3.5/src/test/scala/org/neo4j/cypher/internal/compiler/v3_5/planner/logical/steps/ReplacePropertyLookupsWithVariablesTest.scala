@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.opencypher.v9_0.ast.{ASTAnnotationMap, AstConstructionTestSupport}
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
@@ -32,24 +33,24 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
   private val variable = Variable("n")(InputPosition(1,2,3))
   private val property = Property(variable, PropertyKeyName("prop")(InputPosition(1,2,4)))(InputPosition(1,2,5))
 
-  private val newVariable = Variable("foo")(property.position)
+  private val cachedNodeProperty = CachedNodeProperty("n", PropertyKeyName("prop")(pos))(property.position)
 
-  test("should rewrite n.prop to foo") {
-    val rewriter = replacePropertyLookupsWithVariables(Map(property -> "foo"))
+  test("should rewrite n.prop to CachedNodeProperty(n,prop)") {
+    val rewriter = replacePropertyLookupsWithVariables(Map(property -> cachedNodeProperty))
     val initialTable = SemanticTable(types = ASTAnnotationMap[Expression, ExpressionTypeInfo]((property, ExpressionTypeInfo(CTInteger))))
 
     val (newExpression, newTable) = firstAs[Expression](rewriter(property, initialTable))
-    newExpression should equal(varFor("foo"))
-    newTable.types(property) should equal(newTable.types(newVariable))
+    newExpression should equal(cachedNodeProperty)
+    newTable.types(property) should equal(newTable.types(cachedNodeProperty))
   }
 
-  test("should rewrite [n.prop] to [foo]") {
-    val rewriter = replacePropertyLookupsWithVariables(Map(property -> "foo"))
+  test("should rewrite [n.prop] to [CachedNodeProperty(n,prop)]") {
+    val rewriter = replacePropertyLookupsWithVariables(Map(property -> cachedNodeProperty))
     val initialTable = SemanticTable(types = ASTAnnotationMap[Expression, ExpressionTypeInfo]((property, ExpressionTypeInfo(CTInteger))))
 
     val (newExpression, newTable) = firstAs[Expression](rewriter(ListLiteral(Seq(property))(pos), initialTable))
-    newExpression should equal(ListLiteral(Seq(varFor("foo")))(pos))
-    newTable.types(property) should equal(newTable.types(newVariable))
+    newExpression should equal(ListLiteral(Seq(cachedNodeProperty))(pos))
+    newTable.types(property) should equal(newTable.types(cachedNodeProperty))
   }
 
 }
