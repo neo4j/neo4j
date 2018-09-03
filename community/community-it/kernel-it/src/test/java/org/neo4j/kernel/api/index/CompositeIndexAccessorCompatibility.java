@@ -211,7 +211,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
 
-        testIndexSeekExactWithRangeByBooleanType( ValueGroup.BOOLEAN_ARRAY, BooleanValue.TRUE, BooleanValue.FALSE,
+        testIndexSeekExactWithRangeByBooleanType( BooleanValue.TRUE, BooleanValue.FALSE,
                 BooleanValue.FALSE,
                 BooleanValue.TRUE );
     }
@@ -336,7 +336,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         throw new IllegalArgumentException( "Expected some geometry value to get CRS from, but got " + value );
     }
 
-    private void testIndexSeekExactWithRangeByBooleanType( ValueGroup valueGroup, Value base1, Value base2, Value obj1, Value obj2 ) throws Exception
+    private void testIndexSeekExactWithRangeByBooleanType( Value base1, Value base2, Value obj1, Value obj2 ) throws Exception
     {
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), base1, obj1 ),
