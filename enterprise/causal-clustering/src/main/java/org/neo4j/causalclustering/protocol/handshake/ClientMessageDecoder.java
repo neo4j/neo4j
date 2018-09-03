@@ -97,7 +97,7 @@ public class ClientMessageDecoder extends ByteToMessageDecoder
         return statusCode
                 .map( status -> constructor.apply( status, identifier, version ) )
                 .orElseThrow( () -> new ClientHandshakeException(
-                        String.format( "Unknown status code %s for protocol %s version %d", statusCodeValue, identifier, version ) ) );
+                        String.format( "Unknown status code %s for protocol %s version %s", statusCodeValue, identifier, version ) ) );
     }
 
     @FunctionalInterface

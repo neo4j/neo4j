@@ -120,7 +120,7 @@ public class PrepareStoreCopyResponse
     @Override
     public int hashCode()
     {
-        return Objects.hash( files, indexIds, transactionId, status );
+        return Objects.hash( Arrays.hashCode( files ), indexIds, transactionId, status );
     }
 
     public static class StoreListingMarshal extends SafeChannelMarshal<PrepareStoreCopyResponse>
