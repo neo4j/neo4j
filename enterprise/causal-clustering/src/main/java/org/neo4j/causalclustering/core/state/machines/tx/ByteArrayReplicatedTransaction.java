@@ -27,6 +27,7 @@ import java.util.OptionalLong;
 
 import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
 {
@@ -73,5 +74,11 @@ public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
     public ChunkedEncoder marshal()
     {
         return new ByteArrayChunkedEncoder( getTxBytes() );
+    }
+
+    @Override
+    public TransactionRepresentation extract( TransactionRepresentationExtractor extractor )
+    {
+        return extractor.extract( this );
     }
 }

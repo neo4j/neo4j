@@ -55,6 +55,12 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
         return new TxRepresentationMarshal( tx );
     }
 
+    @Override
+    public TransactionRepresentation extract( TransactionRepresentationExtractor extractor )
+    {
+        return extractor.extract( this );
+    }
+
     public TransactionRepresentation tx()
     {
         return tx;

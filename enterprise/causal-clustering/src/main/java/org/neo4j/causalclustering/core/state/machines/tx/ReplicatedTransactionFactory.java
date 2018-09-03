@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.neo4j.io.ByteUnit.gibiBytes;
 
@@ -88,31 +87,82 @@ public class ReplicatedTransactionFactory
 
     public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction transactionCommand, byte[] extraHeader )
     {
-        if ( transactionCommand instanceof TransactionRepresentationReplicatedTransaction )
-        {
-            return ((TransactionRepresentationReplicatedTransaction) transactionCommand).tx();
-        }
-        else
-        {
-            ByteBuf txBuffer;
-            if ( transactionCommand instanceof ByteBufReplicatedTransaction )
-            {
-                txBuffer = ((ByteBufReplicatedTransaction) transactionCommand).content();
-            }
-            else
-            {
-                txBuffer = Unpooled.wrappedBuffer( ((ByteArrayReplicatedTransaction) transactionCommand).getTxBytes() );
-            }
-            NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
+        return transactionCommand.extract( new TransactionRepresentationReader( extraHeader ) );
+    }
 
+    private static class TransactionRepresentationReader implements TransactionRepresentationExtractor
+    {
+
+        private final byte[] extraHeader;
+
+        TransactionRepresentationReader( byte[] extraHeader )
+        {
+            this.extraHeader = extraHeader;
+        }
+
+        @Override
+        public TransactionRepresentation extract( TransactionRepresentationReplicatedTransaction replicatedTransaction )
+        {
+            return replicatedTransaction.tx();
+        }
+
+        @Override
+        public TransactionRepresentation extract( ByteArrayReplicatedTransaction replicatedTransaction )
+        {
+            ByteBuf buffer = Unpooled.wrappedBuffer( replicatedTransaction.getTxBytes() );
+            NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( buffer );
+            return read( channel );
+        }
+
+        @Override
+        public TransactionRepresentation extract( ByteBufReplicatedTransaction replicatedTransaction )
+        {
+            NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( replicatedTransaction.content() );
+            return read( channel );
+        }
+
+        private TransactionRepresentation read( NetworkReadableClosableChannelNetty4 channel )
+        {
             try
             {
-                return read( channel, extraHeader );
+                LogEntryReader<ReadableClosablePositionAwareChannel> reader =
+                        new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+
+                int authorId = channel.getInt();
+                int masterId = channel.getInt();
+                long latestCommittedTxWhenStarted = channel.getLong();
+                long timeStarted = channel.getLong();
+                long timeCommitted = channel.getLong();
+                int lockSessionId = channel.getInt();
+
+                int headerLength = channel.getInt();
+                byte[] header;
+                if ( headerLength == 0 )
+                {
+                    header = extraHeader;
+                }
+                else
+                {
+                    header = new byte[headerLength];
+                }
+
+                channel.get( header, headerLength );
+
+                LogEntryCommand entryRead;
+                List<StorageCommand> commands = new LinkedList<>();
+
+                while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
+                {
+                    commands.add( entryRead.getCommand() );
+                }
+
+                PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
+                tx.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSessionId );
+
+                return tx;
             }
             catch ( IOException e )
             {
-                // TODO: This should not happen. All operations are in memory, no IOException should be thrown
-                // Easier said than done though, we use the LogEntry handling routines which throw IOException
                 throw new RuntimeException( e );
             }
         }
@@ -143,44 +193,5 @@ public class ReplicatedTransactionFactory
 
             new LogEntryWriter( channel ).serialize( tx );
         }
-    }
-
-    public static TransactionRepresentation read( NetworkReadableClosableChannelNetty4 channel, byte[] extraHeader ) throws IOException
-    {
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
-
-        int authorId = channel.getInt();
-        int masterId = channel.getInt();
-        long latestCommittedTxWhenStarted = channel.getLong();
-        long timeStarted = channel.getLong();
-        long timeCommitted = channel.getLong();
-        int lockSessionId = channel.getInt();
-
-        int headerLength = channel.getInt();
-        byte[] header;
-        if ( headerLength == 0 )
-        {
-            header = extraHeader;
-        }
-        else
-        {
-            header = new byte[headerLength];
-        }
-
-        channel.get( header, headerLength );
-
-        LogEntryCommand entryRead;
-        List<StorageCommand> commands = new LinkedList<>();
-
-        while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
-        {
-            commands.add( entryRead.getCommand() );
-        }
-
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
-        tx.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSessionId );
-
-        return tx;
     }
 }

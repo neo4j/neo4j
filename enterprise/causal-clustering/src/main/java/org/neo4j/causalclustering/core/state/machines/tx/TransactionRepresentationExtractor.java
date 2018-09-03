@@ -22,44 +22,13 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.DefaultByteBufHolder;
-import io.netty.util.ReferenceCountUtil;
-
-import java.util.OptionalLong;
-
-import org.neo4j.causalclustering.messaging.marshalling.ByteBufMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
-public class ByteBufReplicatedTransaction extends DefaultByteBufHolder implements ReplicatedTransaction, AutoCloseable
+public interface TransactionRepresentationExtractor
 {
-    @Override
-    public OptionalLong size()
-    {
-        return OptionalLong.of( (long) content().writerIndex() );
-    }
+    TransactionRepresentation extract( TransactionRepresentationReplicatedTransaction replicatedTransaction );
 
-    ByteBufReplicatedTransaction( ByteBuf txBytes )
-    {
-        super( txBytes );
-    }
+    TransactionRepresentation extract( ByteArrayReplicatedTransaction replicatedTransaction );
 
-    @Override
-    public ChunkedEncoder marshal()
-    {
-        return new ByteBufMarshal( content().slice() );
-    }
-
-    @Override
-    public TransactionRepresentation extract( TransactionRepresentationExtractor extractor )
-    {
-        return extractor.extract( this );
-    }
-
-    @Override
-    public void close()
-    {
-        ReferenceCountUtil.release( this );
-    }
+    TransactionRepresentation extract( ByteBufReplicatedTransaction replicatedTransaction );
 }

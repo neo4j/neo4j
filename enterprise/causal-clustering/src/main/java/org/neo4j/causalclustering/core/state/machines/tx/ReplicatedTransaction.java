@@ -55,4 +55,6 @@ public interface ReplicatedTransaction extends CoreReplicatedContent
     }
 
     ChunkedEncoder marshal();
+
+    TransactionRepresentation extract( TransactionRepresentationExtractor extractor );
 }
