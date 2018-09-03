@@ -31,6 +31,8 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Randoms;
@@ -134,6 +136,11 @@ public class RandomRule implements TestRule
         return random.nextDouble();
     }
 
+    public DoubleStream doubles( int dimension, double minValue, double maxValue )
+    {
+        return random.doubles( dimension, minValue, maxValue );
+    }
+
     public float nextFloat()
     {
         return random.nextFloat();
@@ -152,6 +159,11 @@ public class RandomRule implements TestRule
     public int nextInt( int origin, int bound )
     {
         return random.nextInt( (bound - origin) + 1 ) + origin;
+    }
+
+    public IntStream ints( long streamSize, int randomNumberOrigin, int randomNumberBound )
+    {
+        return random.ints( streamSize, randomNumberOrigin, randomNumberBound );
     }
 
     public double nextGaussian()

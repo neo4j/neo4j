@@ -27,9 +27,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAmount;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -349,16 +349,21 @@ public class Randoms
 
     public ZonedDateTime randomDateTime()
     {
-        return ZonedDateTime.ofInstant( randomInstant(), UTC );
+        return randomDateTime( UTC );
     }
 
-    public TemporalAmount randomPeriod()
+    public ZonedDateTime randomDateTime( ZoneId zoneId )
+    {
+        return ZonedDateTime.ofInstant( randomInstant(), zoneId );
+    }
+
+    public Period randomPeriod()
     {
         // Based on Java period (years, months and days)
         return Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) );
     }
 
-    public TemporalAmount randomDuration()
+    public Duration randomDuration()
     {
         // Based on java duration (seconds)
         return Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS );
