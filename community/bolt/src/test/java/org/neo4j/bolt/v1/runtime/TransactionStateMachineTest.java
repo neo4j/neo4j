@@ -21,15 +21,19 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import java.util.Optional;
 
+import org.neo4j.bolt.BoltConnectionDescriptor;
+import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -47,15 +51,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class TransactionStateMachineTest
 {
+    private static final String PERIODIC_COMMIT_QUERY =
+            "USING PERIODIC COMMIT 1 " +
+            "LOAD CSV FROM ''https://neo4j.com/test.csv'' AS line " +
+            "CREATE (:Node {id: line[0], name: line[1]})";
+
     private TransactionStateMachineV1SPI stateMachineSPI;
     private TransactionStateMachine.MutableTransactionState mutableState;
     private TransactionStateMachine stateMachine;
@@ -423,6 +435,42 @@ class TransactionStateMachineTest
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
         assertNotNull( stateMachine.ctx.currentTransaction );
+    }
+
+    @Test
+    public void shouldNotOpenExplicitTransactionForPeriodicCommitQuery() throws Exception
+    {
+        BoltQuerySource source = new BoltQuerySource( "Hello", "World", mock( BoltConnectionDescriptor.class ) );
+        KernelTransaction transaction = newTransaction();
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
+
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        stateMachine.setQuerySource( source );
+
+        stateMachine.run( PERIODIC_COMMIT_QUERY, EMPTY_MAP );
+
+        // transaction was created only to stream back result of the periodic commit query
+        assertEquals( transaction, stateMachine.ctx.currentTransaction );
+
+        InOrder inOrder = inOrder( stateMachineSPI );
+        inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
+        // periodic commit query was executed without starting an explicit transaction
+        inOrder.verify( stateMachineSPI ).executeQuery( eq( source ), any( LoginContext.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ), any(), any() );
+        // explicit transaction was started only after query execution to stream the result
+        inOrder.verify( stateMachineSPI ).beginTransaction( any( LoginContext.class ), any(), any() );
+    }
+
+    @Test
+    public void shouldNotMarkForTerminationWhenNoTransaction() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        stateMachine.markCurrentTransactionForTermination();
+        verify( transaction, never() ).markForTermination( any() );
     }
 
     private static KernelTransaction newTransaction()

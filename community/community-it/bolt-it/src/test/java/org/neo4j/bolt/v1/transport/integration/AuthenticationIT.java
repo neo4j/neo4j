@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.Description;
-import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
@@ -64,6 +63,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
@@ -71,6 +71,8 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class AuthenticationIT extends AbstractBoltTransportsTest
@@ -141,8 +143,15 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 "The client is unauthorized due to authentication failure." ) ) );
 
         assertThat( connection, eventuallyDisconnects() );
-        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( Matchers.containsString( BoltServer.class.getPackage().getName() ) ).warn(
-                containsString( "The client is unauthorized due to authentication failure." ) ) );
+        assertEventually( ignore -> "Matching log call not found in\n" + logProvider.serialize(),
+                this::authFailureLoggedToUserLog, is( true ), 30, SECONDS );
+    }
+
+    private boolean authFailureLoggedToUserLog()
+    {
+        String boltPackageName = BoltServer.class.getPackage().getName();
+        return logProvider.containsMatchingLogCall( inLog( containsString( boltPackageName ) )
+                .warn( containsString( "The client is unauthorized due to authentication failure." ) ) );
     }
 
     @Test
