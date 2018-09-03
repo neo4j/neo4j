@@ -32,8 +32,8 @@ import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.helpers.FutureAdapter.future;
 
 /**
  * Accepts jobs and processes them, potentially in parallel. Each task is given a ticket, an incrementing
@@ -130,7 +130,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
      */
     public Future<Void> slurp( Iterator<FROM> input, boolean closeAfterAllSubmitted )
     {
-        return future( () ->
+        return runAsync( () ->
         {
             try
             {
@@ -142,7 +142,6 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
                 {
                     close();
                 }
-                return null;
             }
             catch ( Throwable e )
             {
