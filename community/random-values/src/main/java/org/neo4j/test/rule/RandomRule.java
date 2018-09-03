@@ -48,6 +48,7 @@ import static java.lang.System.currentTimeMillis;
  */
 public class RandomRule implements TestRule
 {
+    private long globalSeed;
     private long seed;
     private boolean hasGlobalSeed;
     private Random random;
@@ -64,7 +65,7 @@ public class RandomRule implements TestRule
     public RandomRule withSeedForAllTests( long seed )
     {
         hasGlobalSeed = true;
-        this.seed = seed;
+        this.globalSeed = seed;
         return this;
     }
 
@@ -87,6 +88,10 @@ public class RandomRule implements TestRule
                     {
                         setSeed( currentTimeMillis() );
                     }
+                }
+                else
+                {
+                    setSeed( globalSeed );
                 }
                 reset();
                 try
