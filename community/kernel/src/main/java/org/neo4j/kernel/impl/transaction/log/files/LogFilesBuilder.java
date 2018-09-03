@@ -187,7 +187,8 @@ public class LogFilesBuilder
         {
             return logsDirectory;
         }
-        if ( config != null )
+        // try to use absolute position only for default database. For other databases use database directory
+        if ( tryConfigureDefaultDatabaseLogsDirectory() )
         {
             File neo4jHome = config.get( GraphDatabaseSettings.neo4j_home );
             File databasePath = config.get( database_path );
@@ -198,7 +199,6 @@ public class LogFilesBuilder
             }
             if ( logicalLogsLocation.isAbsolute() )
             {
-                // rewrite for default db?
                 return logicalLogsLocation;
             }
             if ( neo4jHome == null || !databaseLayout.databaseDirectory().equals( databasePath ) )
@@ -209,6 +209,11 @@ public class LogFilesBuilder
             return logicalLogsLocation;
         }
         return databaseLayout.databaseDirectory();
+    }
+
+    private boolean tryConfigureDefaultDatabaseLogsDirectory()
+    {
+        return config != null && config.get( GraphDatabaseSettings.active_database ).equals( databaseLayout.getDatabaseName() );
     }
 
     TransactionLogFilesContext buildContext() throws IOException
