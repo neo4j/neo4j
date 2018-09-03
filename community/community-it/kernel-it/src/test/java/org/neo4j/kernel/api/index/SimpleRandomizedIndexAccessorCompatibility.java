@@ -100,7 +100,7 @@ public abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAc
         {
             removeSpatialTypes( validValueTypes );
         }
-        Collections.shuffle( validValueTypes );
+        Collections.shuffle( validValueTypes, random.random() );
         int numberOfGroupsToUse = random.nextInt( 1, validValueTypes.size() - 1 );
         while ( validValueTypes.size() > numberOfGroupsToUse )
         {
