@@ -37,6 +37,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterators;
@@ -170,6 +171,7 @@ public class StoreCopyClientTest
         File originalCustomLogFilesLocation = new File( originalDir, "originalCustomLogFilesLocation" );
 
         Config config = Config.defaults( logical_logs_location, copyCustomLogFilesLocation.getName() );
+        config.augment( GraphDatabaseSettings.active_database, copyLayout.getDatabaseName() );
         StoreCopyClient copier = new StoreCopyClient(
                 copyLayout, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 new StoreCopyClientMonitor.Adapter(), false );
