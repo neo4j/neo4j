@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -37,12 +38,25 @@ public class TextValueFuzzTest
 
     private static final int ITERATIONS = 1000;
 
+    @Disabled(
+            "we have decided to stick with String::compareTo under the hood which doesn't respect code point order " +
+            "whenever the code point doesn't fit 16bits" )
     @Test
-    void shouldCompareTo()
+    void shouldCompareToForAllValidStrings()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             assertConsistent( random.nextString(), random.nextString(),
+                    ( t1, t2 ) -> Math.signum( t1.compareTo( t2 ) ) );
+        }
+    }
+
+    @Test
+    void shouldCompareToForAllStringsInBasicMultilingualPlane()
+    {
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            assertConsistent( random.nextBasicMultilingualPlaneString(), random.nextBasicMultilingualPlaneString(),
                     ( t1, t2 ) -> Math.signum( t1.compareTo( t2 ) ) );
         }
     }
