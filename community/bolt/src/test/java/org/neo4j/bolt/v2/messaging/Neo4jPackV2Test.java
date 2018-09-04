@@ -441,7 +441,7 @@ public class Neo4jPackV2Test
 
     private ZoneId randomZoneIdWithName()
     {
-        String timeZoneName = TIME_ZONE_NAMES[ random.nextInt( TIME_ZONE_NAMES.length )];
+        String timeZoneName = TIME_ZONE_NAMES[random.nextInt( TIME_ZONE_NAMES.length )];
         return ZoneId.of( timeZoneName );
     }
 }

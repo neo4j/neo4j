@@ -29,7 +29,6 @@ import java.time.OffsetTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,7 +37,6 @@ import java.util.function.Consumer;
 import static java.lang.Integer.bitCount;
 import static java.lang.Math.abs;
 import static java.time.ZoneOffset.UTC;
-import static java.time.temporal.ChronoUnit.DAYS;
 
 /**
  * Set of useful randomizing utilities, for example randomizing a string or property value of random type and value.
@@ -366,7 +364,7 @@ public class Randoms
     public Duration randomDuration()
     {
         // Based on java duration (seconds)
-        return Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS );
+        return Duration.ofSeconds( nextLong(), nextLong( -999_999_999, 999_999_999 ) );
     }
 
     private char symbol()
