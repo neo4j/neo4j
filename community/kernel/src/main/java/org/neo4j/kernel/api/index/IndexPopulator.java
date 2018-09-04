@@ -48,9 +48,8 @@ public interface IndexPopulator
 
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
-     * called by the same thread every time. Data coming in here may have been added previously from
-     * {@link IndexUpdater}, so additional checks needs to be performed before applying it, i.e. to be
-     * treated as an update if exists, otherwise add.
+     * called by the same thread every time. All data coming in here is guaranteed to not
+     * have been added to this index previously, so no checks needs to be performed before applying it.
      * Implementations may verify constraints at this time, or defer them until the first verification
      * of {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
      *
