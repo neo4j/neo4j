@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -110,7 +109,7 @@ class RaceTest
         race.addContestants( 3, () -> { } );
 
         // WHEN
-        Exception exception = assertThrows( Exception.class, (Executable) race::go );
+        Exception exception = assertThrows( Exception.class, () -> race.go() );
         assertEquals( error, exception.getMessage() );
     }
 
