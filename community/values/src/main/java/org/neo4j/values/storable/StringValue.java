@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.storable.helpers.UnsafeStringUtils;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -189,12 +188,8 @@ public abstract class StringValue extends TextValue
 
         final String thisString = value();
         final String thatString = other.stringValue();
-        final char[] chars1 = UnsafeStringUtils.toCharArray( thisString );
-        final char[] chars2 = UnsafeStringUtils.toCharArray( thatString );
-        final int offset1 = UnsafeStringUtils.offsetOf( thisString );
-        final int offset2 = UnsafeStringUtils.offsetOf( thatString );
-        final int l1 = chars1.length;
-        final int l2 = chars2.length;
+        final int l1 = thisString.length();
+        final int l2 = thatString.length();
         char c1, c2;
         int pos = 0;
 
@@ -206,8 +201,8 @@ public abstract class StringValue extends TextValue
             {
                 return l1 - l2;
             }
-            c1 = chars1[ pos + offset1 ];
-            c2 = chars2[ pos + offset2 ];
+            c1 = thisString.charAt( pos );
+            c2 = thatString.charAt( pos );
             if ( c1 == c2 )
             {
                 pos++;
@@ -245,7 +240,7 @@ public abstract class StringValue extends TextValue
             }
         }
 
-        return (int) c1 - (int) c2;
+        return c1 - c2;
     }
 
     static TextValue EMPTY = new StringValue()
