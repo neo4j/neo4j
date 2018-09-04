@@ -22,19 +22,16 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +47,6 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
-import org.neo4j.causalclustering.diagnostics.CoreMembershipMonitor;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -79,7 +75,6 @@ public class CoreStatusTest
     private final LogProvider logProvider = NullLogProvider.getInstance();
 
     // Dependency resolved
-    private CoreMembershipMonitor coreMembershipMonitor;
     private RaftMembershipManager raftMembershipManager;
     private DatabaseHealth databaseHealth;
     private FakeTopologyService topologyService;
@@ -90,6 +85,7 @@ public class CoreStatusTest
     private final MemberId myself = new MemberId( new UUID( 0x1234, 0x5678 ) );
     private final MemberId core2 = new MemberId( UUID.randomUUID() );
     private final MemberId core3 = new MemberId( UUID.randomUUID() );
+    private final MemberId replica = new MemberId( UUID.randomUUID() );
 
     @Before
     public void setup() throws Exception
@@ -103,9 +99,8 @@ public class CoreStatusTest
         databaseHealth = dependencyResolver.satisfyDependency(
                 new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), logProvider.getLog( DatabaseHealth.class ) ) );
 
-        topologyService = dependencyResolver.satisfyDependency( new FakeTopologyService( 2, 3, myself, RoleInfo.FOLLOWER ) );
-
-        coreMembershipMonitor = dependencyResolver.satisfyDependency( new CoreMembershipMonitor( mock( RaftMachine.class ) ) );
+        topologyService = dependencyResolver.satisfyDependency(
+                new FakeTopologyService( Arrays.asList( core2, core3 ), Collections.singleton( replica ), myself, RoleInfo.FOLLOWER ) );
 
         raftMessageTimerResetMonitor = dependencyResolver.satisfyDependency( new DurationSinceLastMessageMonitor( logProvider ) );
         raftMachine = dependencyResolver.satisfyDependency( mock( RaftMachine.class ) );
@@ -180,13 +175,11 @@ public class CoreStatusTest
         assertEquals( "false", writable.getEntity() );
     }
 
-
     @Test
     public void expectedStatusFieldsAreIncluded() throws IOException, NoLeaderFoundException
     {
         // given ideal normal conditions
         commandIndexTracker.setAppliedCommandIndex( 123 );
-        coreMembershipMonitor.joinedRaftGroup();
         when( raftMachine.getLeader() ).thenReturn( core2 );
         raftMessageTimerResetMonitor.timerReset();
 
@@ -210,10 +203,11 @@ public class CoreStatusTest
     }
 
     @Test
-    public void notParticipatingInRaftGroupWhenNotJoinedRaft() throws IOException
+    public void notParticipatingInRaftGroupWhenNotInVoterSet() throws IOException
     {
-        // given
-        topologyService.makeLeader( myself );
+        // given not in voting set
+        topologyService.replaceWithRole( core2, RoleInfo.LEADER ); // TODO necessary?
+        when( raftMembershipManager.votingMembers() ).thenReturn( new HashSet<>( Arrays.asList( core2, core3 ) ) );
 
         // when
         Response description = status.description();
@@ -226,9 +220,8 @@ public class CoreStatusTest
     @Test
     public void notParticipatingInRaftGroupWhenLeaderUnknown() throws IOException
     {
-        // given
-        coreMembershipMonitor.joinedRaftGroup();
-        topologyService.makeLeader( null ); // TODO not necessary?
+        // given leader is unknown
+        topologyService.replaceWithRole( null, RoleInfo.LEADER );
 
         // when
         Response description = status.description();
@@ -243,7 +236,7 @@ public class CoreStatusTest
     {
         // given database is not healthy
         databaseHealth.panic( new RuntimeException() );
-        topologyService.makeLeader( myself );
+        topologyService.replaceWithRole( myself, RoleInfo.LEADER ); // TODO necessary?
 
         // when
         Response description = status.description();
@@ -257,7 +250,7 @@ public class CoreStatusTest
     public void leaderIsEmptyStringIfNonExistent() throws IOException
     {
         // given no leader
-        topologyService.makeLeader( null );
+        topologyService.replaceWithRole( null, RoleInfo.LEADER );
 
         // when
         Response description = status.description();
@@ -316,5 +309,4 @@ public class CoreStatusTest
             }
         };
     }
-
 }

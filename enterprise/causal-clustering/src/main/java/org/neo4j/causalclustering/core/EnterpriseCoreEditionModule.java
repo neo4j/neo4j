@@ -50,7 +50,6 @@ import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.machines.id.FreeIdFilteredIdGeneratorFactory;
-import org.neo4j.causalclustering.diagnostics.CoreMembershipMonitor;
 import org.neo4j.causalclustering.diagnostics.CoreMonitor;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
@@ -296,9 +295,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 clusterStateDirectory.get(), topologyService );
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
-
-        CoreMembershipMonitor coreMembershipMonitor = dependencies.satisfyDependency( new CoreMembershipMonitor( consensusModule.raftMachine() ) );
-        platformModule.monitors.addMonitorListener( coreMembershipMonitor );
 
         replicationModule =
                 new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,

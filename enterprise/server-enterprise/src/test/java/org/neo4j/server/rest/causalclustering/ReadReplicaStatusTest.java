@@ -30,11 +30,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
@@ -73,7 +75,7 @@ public class ReadReplicaStatusTest
     {
         OutputFormat output = new OutputFormat( new JsonFormat(), new URI( "http://base.local:1234/" ), null );
         ReadReplicaGraphDatabase db = mock( ReadReplicaGraphDatabase.class );
-        topologyService = new FakeTopologyService( 3, 3, myself, RoleInfo.READ_REPLICA );
+        topologyService = new FakeTopologyService( randomMembers( 3 ), randomMembers( 2 ), myself, RoleInfo.READ_REPLICA );
         dependencyResolver.satisfyDependencies( topologyService );
 
         when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
@@ -166,7 +168,7 @@ public class ReadReplicaStatusTest
                 .stream()
                 .findFirst()
                 .orElseThrow( () -> new IllegalStateException( "No cores in topology" ) );
-        topologyService.makeLeader( selectedLead );
+        topologyService.replaceWithRole( selectedLead, RoleInfo.LEADER );
         description = status.description();
         assertEquals( selectedLead.getUuid().toString(), responseAsMap( description ).get( "leader" ) );
     }
@@ -177,6 +179,14 @@ public class ReadReplicaStatusTest
         Response description = status.description();
         assertTrue( responseAsMap( description ).containsKey( "core" ) );
         assertEquals( false, responseAsMap( status.description() ).get( "core" ) );
+    }
+
+    static Collection<MemberId> randomMembers( int size )
+    {
+        return IntStream.range( 0, size )
+                .mapToObj( i -> UUID.randomUUID() )
+                .map( MemberId::new )
+                .collect( Collectors.toList());
     }
 
     static Map<String,Object> responseAsMap( Response response ) throws IOException

@@ -22,11 +22,14 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
@@ -48,37 +51,37 @@ class FakeTopologyService implements TopologyService
     private final String dbName = "dbName";
     private final MemberId myself;
 
-    FakeTopologyService( int numCores, int numReplicas, MemberId myself, RoleInfo myselfRole )
+    FakeTopologyService( Collection<MemberId> cores, Collection<MemberId> replicas, MemberId myself, RoleInfo myselfRole )
     {
         this.myself = myself;
         clusterId = new ClusterId( UUID.randomUUID() );
         roles = new HashMap<>();
         coreMembers = new HashMap<>();
 
-        for ( int i = 0; i < numCores; i++ )
+        for ( MemberId coreMemberId : cores )
         {
             CoreServerInfo coreServerInfo = coreServerInfo( dbName );
-            MemberId memberId = new MemberId( UUID.randomUUID() );
-            coreMembers.put( memberId, coreServerInfo );
-            roles.put( memberId, RoleInfo.FOLLOWER );
+            coreMembers.put( coreMemberId, coreServerInfo );
+            roles.put( coreMemberId, RoleInfo.FOLLOWER );
         }
 
         replicaMembers = new HashMap<>();
-        for ( int i = 0; i < numReplicas; i++ )
+        for ( MemberId replicaMemberId : replicas )
         {
             ReadReplicaInfo readReplicaInfo = readReplicaInfo( dbName );
-            MemberId memberId = new MemberId( UUID.randomUUID() );
-            replicaMembers.put( memberId, readReplicaInfo );
-            roles.put( memberId, RoleInfo.READ_REPLICA );
+            replicaMembers.put( replicaMemberId, readReplicaInfo );
+            roles.put( replicaMemberId, RoleInfo.READ_REPLICA );
         }
 
         if ( RoleInfo.READ_REPLICA.equals( myselfRole ) )
         {
             replicaMembers.put( myself, readReplicaInfo( dbName ) );
+            roles.put( myself, RoleInfo.READ_REPLICA );
         }
         else
         {
             coreMembers.put( myself, coreServerInfo( dbName ) );
+            roles.put( myself, RoleInfo.FOLLOWER );
         }
         roles.put( myself, myselfRole );
     }
@@ -176,16 +179,16 @@ class FakeTopologyService implements TopologyService
 
     }
 
-    public void makeLeader( MemberId memberId )
+    public void replaceWithRole( MemberId memberId, RoleInfo role )
     {
-        Optional<MemberId> leader = roles.keySet().stream().filter( member -> roles.get( member ).equals( RoleInfo.LEADER ) ).findFirst();
-        if ( leader.isPresent() )
+        List<MemberId> membersWithRole = roles.keySet().stream().filter( member -> roles.get( member ).equals( role ) ).collect( Collectors.toList());
+        if ( membersWithRole.size() == 1 )
         {
-            roles.put( leader.get(), RoleInfo.FOLLOWER );
+            roles.put( membersWithRole.get( 0 ), RoleInfo.FOLLOWER );
         }
         if ( memberId != null )
         {
-            roles.put( memberId, RoleInfo.LEADER );
+            roles.put( memberId, role );
         }
     }
 }

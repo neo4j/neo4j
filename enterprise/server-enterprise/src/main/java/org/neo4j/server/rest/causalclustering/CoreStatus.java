@@ -35,7 +35,6 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
-import org.neo4j.causalclustering.diagnostics.CoreMembershipMonitor;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.DependencyResolver;
@@ -50,7 +49,6 @@ class CoreStatus extends BaseStatus
     private final CoreGraphDatabase db;
 
     // Dependency resolved
-    private final CoreMembershipMonitor coreMembershipMonitor;
     private final RaftMembershipManager raftMembershipManager;
     private final DatabaseHealth databaseHealth;
     private final TopologyService topologyService;
@@ -65,7 +63,6 @@ class CoreStatus extends BaseStatus
         this.db = db;
 
         DependencyResolver dependencyResolver = db.getDependencyResolver();
-        this.coreMembershipMonitor = dependencyResolver.resolveDependency( CoreMembershipMonitor.class );
         this.raftMembershipManager = dependencyResolver.resolveDependency( RaftMembershipManager.class );
         this.databaseHealth = dependencyResolver.resolveDependency( DatabaseHealth.class );
         this.topologyService = dependencyResolver.resolveDependency( TopologyService.class );
@@ -102,12 +99,15 @@ class CoreStatus extends BaseStatus
     @Override
     public Response description()
     {
-        List<MemberId> votingMembers = new ArrayList<>( raftMembershipManager.votingMembers() );
-        long lastAppliedRaftIndex = commandIndexTracker.getAppliedCommandIndex();
+        MemberId myself = topologyService.myself();
         MemberId leader = getLeader();
-        boolean participatingInRaftGroup = coreMembershipMonitor.hasJoinedRaft() && Objects.nonNull( leader );
+        List<MemberId> votingMembers = new ArrayList<>( raftMembershipManager.votingMembers() );
+        boolean participatingInRaftGroup = votingMembers.contains( myself ) && Objects.nonNull( leader );
+
+        long lastAppliedRaftIndex = commandIndexTracker.getAppliedCommandIndex();
         long millisSinceLastLeaderMessage = raftMessageTimerResetMonitor.durationSinceLastMessage().toMillis();
-        return statusResponse( lastAppliedRaftIndex, participatingInRaftGroup, votingMembers, databaseHealth.isHealthy(), topologyService.myself(), leader,
+
+        return statusResponse( lastAppliedRaftIndex, participatingInRaftGroup, votingMembers, databaseHealth.isHealthy(), myself, leader,
                 millisSinceLastLeaderMessage, true );
     }
 
