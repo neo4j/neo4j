@@ -65,9 +65,9 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
     }
 
     @Test
-    public void shouldWarnWhenUsingNativeAndOtherProvider() throws Throwable
+    public void shouldWarnWhenUsingInternalAndOtherProvider() throws Throwable
     {
-        configuredSetup( stringMap( SecuritySettings.auth_providers.name(), "native ,LDAP" ) );
+        configuredSetup( stringMap( SecuritySettings.auth_providers.name(), internalSecurityName() + " ,LDAP" ) );
         assertSuccess( adminSubject, "CALL dbms.security.listUsers",
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( userList ) ) );
         GraphDatabaseFacade localGraph = neo.getLocalGraph();
@@ -83,9 +83,9 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
     }
 
     @Test
-    public void shouldNotWarnWhenOnlyUsingNativeProvider() throws Throwable
+    public void shouldNotWarnWhenOnlyUsingInternalProvider() throws Throwable
     {
-        configuredSetup( stringMap( SecuritySettings.auth_provider.name(), "native" ) );
+        configuredSetup( stringMap( SecuritySettings.auth_provider.name(), internalSecurityName() ) );
         assertSuccess( adminSubject, "CALL dbms.security.listUsers",
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( userList ) ) );
         GraphDatabaseFacade localGraph = neo.getLocalGraph();
@@ -126,5 +126,10 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
             found |= itr.next().getDescription().equals( description );
         }
         return found;
+    }
+
+    protected String internalSecurityName()
+    {
+        return "native";
     }
 }
