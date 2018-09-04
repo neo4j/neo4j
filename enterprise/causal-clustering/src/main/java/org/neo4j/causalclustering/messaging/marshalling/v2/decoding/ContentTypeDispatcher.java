@@ -42,18 +42,21 @@ public class ContentTypeDispatcher extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
-        if ( contentTypeProtocol.isExpecting( ContentType.ContentType ) )
+        if ( msg instanceof ByteBuf )
         {
-            byte messageCode = ((ByteBuf) msg).readByte();
-            ContentType contentType = getContentType( messageCode );
-            contentTypeProtocol.expect( contentType );
-            if ( ((ByteBuf) msg).readableBytes() == 0 )
+            ByteBuf buffer = (ByteBuf) msg;
+            if ( contentTypeProtocol.isExpecting( ContentType.ContentType ) )
             {
-                ReferenceCountUtil.release( msg );
-                return;
+                byte messageCode = buffer.readByte();
+                ContentType contentType = getContentType( messageCode );
+                contentTypeProtocol.expect( contentType );
+                if ( buffer.readableBytes() == 0 )
+                {
+                    ReferenceCountUtil.release( msg );
+                    return;
+                }
             }
         }
-
         ctx.fireChannelRead( msg );
     }
 
