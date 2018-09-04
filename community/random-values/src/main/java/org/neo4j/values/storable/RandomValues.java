@@ -603,6 +603,38 @@ public class RandomValues
     }
 
     /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of characters in the Basic Multilingual Plane(BMP).
+     * <p>
+     * The length of the text will be between {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()}
+     *
+     * @return a {@link TextValue} consisting only of characters in the BMP.
+     */
+    public TextValue nextBasicMultilingualPlaneTextValue()
+    {
+        return nextBasicMultilingualPlaneTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of printable ascii characters.
+     *
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a {@link TextValue} consisting only of printable ascii characters.
+     */
+    public TextValue nextBasicMultilingualPlaneTextValue( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        UTF8StringValueBuilder builder = new UTF8StringValueBuilder( nextPowerOf2( length ) );
+
+        for ( int i = 0; i < length; i++ )
+        {
+            builder.addCodePoint( nextValidCodePoint( 0xFFFF ) );
+        }
+        return builder.build();
+    }
+
+    /**
      * Returns the next pseudorandom {@link TextValue}.
      * <p>
      * The length of the text will be between {@link Configuration#stringMinLength()} and
@@ -642,11 +674,23 @@ public class RandomValues
      */
     private int nextValidCodePoint()
     {
+        return nextValidCodePoint( configuration.maxCodePoint() );
+    }
+
+    /**
+     * Generate next code point that is valid for composition of a string.
+     * Additional limitation on code point range is given by configuration.
+     *
+     * @param maxCodePoint the maximum code point to consider
+     * @return A pseudorandom valid code point
+     */
+    private int nextValidCodePoint( int maxCodePoint )
+    {
         int codePoint;
         int type;
         do
         {
-            codePoint = intBetween( Character.MIN_CODE_POINT, configuration.maxCodePoint() );
+            codePoint = intBetween( Character.MIN_CODE_POINT, maxCodePoint );
             type = Character.getType( codePoint );
         }
         while ( type == Character.UNASSIGNED ||

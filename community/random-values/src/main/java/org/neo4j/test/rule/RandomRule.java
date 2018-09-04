@@ -241,6 +241,16 @@ public class RandomRule implements TestRule
         return randoms.nextAlphaNumericTextValue( minLength, maxLength );
     }
 
+    public TextValue nextBasicMultilingualPlaneTextValue()
+    {
+        return randoms.nextBasicMultilingualPlaneTextValue();
+    }
+
+    public String nextBasicMultilingualPlaneString()
+    {
+        return nextBasicMultilingualPlaneTextValue().stringValue();
+    }
+
     public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
     {
         return randoms.selection( among, min, max, allowDuplicates );

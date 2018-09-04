@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -324,6 +325,18 @@ public class RandomValuesTest
         }
 
         assertThat( seen, empty() );
+    }
+
+    @Test
+    public void nextBasicMultilingualPlaneTextValue()
+    {
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            TextValue value = randomValues.nextBasicMultilingualPlaneTextValue();
+            //make sure the value fits in 16bits, meaning that the size of the char[]
+            //matches the number of code points.
+            assertThat( value.length(), equalTo( value.stringValue().length() ) );
+        }
     }
 
     private void assertKnownType( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> types )
