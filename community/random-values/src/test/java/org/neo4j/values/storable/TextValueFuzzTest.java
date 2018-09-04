@@ -19,22 +19,26 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Rule;
-import org.junit.Test;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.neo4j.values.storable.StringHelpers.assertConsistent;
 
+@ExtendWith( RandomExtension.class )
 public class TextValueFuzzTest
 {
-    @Rule
+    @Inject
     public RandomRule random = new RandomRule();
 
     private static final int ITERATIONS = 1000;
 
     @Test
-    public void shouldCompareTo()
+    void shouldCompareTo()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
@@ -44,7 +48,7 @@ public class TextValueFuzzTest
     }
 
     @Test
-    public void shouldAdd()
+    void shouldAdd()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
@@ -53,7 +57,7 @@ public class TextValueFuzzTest
     }
 
     @Test
-    public void shouldComputeLength()
+    void shouldComputeLength()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
@@ -62,7 +66,7 @@ public class TextValueFuzzTest
     }
 
     @Test
-    public void shouldReverse()
+    void shouldReverse()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
@@ -71,7 +75,7 @@ public class TextValueFuzzTest
     }
 
     @Test
-    public void shouldTrim()
+    void shouldTrim()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
