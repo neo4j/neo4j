@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{GetValue, IndexedProperty}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -32,12 +29,13 @@ import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, 
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
-class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
+class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
   implicit val windowsSafe = WindowsStringSafe
 
   private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))
+  override val propertyKeys = Seq(propertyKey)
   private val node = nodeValue(1)
   private val node2 = nodeValue(2)
 
@@ -50,9 +48,9 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use index provided values when available for ends with") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(
-        "hello" -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
-        "bye" -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
+      query = stringIndexFor(
+        "hello" -> Seq(nodeValueHit(node, "hello")),
+        "bye" -> Seq(nodeValueHit(node2, "bye"))
       )
     )
 
@@ -69,9 +67,9 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use index provided values when available for contains with") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(
-        "hello" -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
-        "bye" -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
+      query = stringIndexFor(
+        "hello" -> Seq(nodeValueHit(node, "hello")),
+        "bye" -> Seq(nodeValueHit(node2, "bye"))
       )
     )
 
@@ -83,19 +81,5 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     result.toList should equal(List(
       Map("n" -> node2, "n." + propertyKey.name -> Values.stringValue("bye"))
     ))
-  }
-
-  private def indexFor(values: (String, Iterable[IndexedNodeWithProperties])*): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexSeek(any(), any(), any())).thenReturn(Iterator.empty)
-    when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
-
-    values.foreach {
-      case (searchTerm, resultIterable) =>
-        when(query.indexSeekByContains(any(), any(), ArgumentMatchers.eq(searchTerm))).thenReturn(resultIterable.toIterator)
-        when(query.indexSeekByEndsWith(any(), any(), ArgumentMatchers.eq(searchTerm))).thenReturn(resultIterable.toIterator)
-    }
-
-    query
   }
 }

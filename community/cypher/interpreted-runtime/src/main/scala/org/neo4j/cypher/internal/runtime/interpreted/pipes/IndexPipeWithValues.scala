@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.IndexedNodeWithProperties
+import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, NodeValueHit, ResultCreator}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 
 /**
@@ -44,6 +44,19 @@ trait IndexPipeWithValues extends Pipe {
         val valueEntries = values.indices.map(i => propertyNamesWithValues(i) -> values(i) )
         val newEntries = (ident -> node) +: valueEntries
         executionContextFactory.copyWith(baseContext, newEntries)
+    }
+  }
+
+  case class CtxResultCreator(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
+    override def createResult(nodeValueHit: NodeValueHit): ExecutionContext =
+      executionContextFactory.copyWith(baseContext, ident, nodeValueHit.node)
+  }
+
+  case class CtxResultCreatorWithValues(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
+    override def createResult(nodeValueHit: NodeValueHit): ExecutionContext = {
+      val valueEntries = propertyIndicesWithValues.indices.map(i => propertyNamesWithValues(i) -> nodeValueHit.propertyValue(i))
+      val newEntries = (ident -> nodeValueHit.node) +: valueEntries
+      executionContextFactory.copyWith(baseContext, newEntries)
     }
   }
 }

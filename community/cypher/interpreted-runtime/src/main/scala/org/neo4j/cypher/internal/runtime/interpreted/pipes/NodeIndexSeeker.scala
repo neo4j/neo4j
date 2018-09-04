@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.IndexedNodeWithProperties
+import org.neo4j.cypher.internal.runtime.ResultCreator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsList, makeValueNeoSafe}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -46,19 +46,20 @@ trait NodeIndexSeeker {
   def propertyIds: Array[Int]
 
   // index seek
-  protected def indexSeek(state: QueryState,
-                          indexReference: IndexReference,
-                          propertyIndicesWithValues: Array[Int],
-                          baseContext: ExecutionContext): Iterator[IndexedNodeWithProperties] =
+  protected def indexSeek[RESULT <: AnyRef](state: QueryState,
+                                            indexReference: IndexReference,
+                                            needsValues: Boolean,
+                                            baseContext: ExecutionContext,
+                                            resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
     indexMode match {
       case _: ExactSeek |
            _: SeekByRange =>
         val indexQueries = computeIndexQueries(state, baseContext)
-        indexQueries.toIterator.flatMap(query => state.query.indexSeek(indexReference, propertyIndicesWithValues, query))
+        indexQueries.toIterator.flatMap(query => state.query.indexSeek(indexReference, needsValues, resultCreator, query))
 
       case LockingUniqueIndexSeek =>
         val indexQueries = computeExactQueries(state, baseContext)
-        indexQueries.flatMap(indexQuery => state.query.lockingUniqueIndexSeek(indexReference, propertyIndicesWithValues, indexQuery)).toIterator
+        indexQueries.flatMap(indexQuery => state.query.lockingUniqueIndexSeek(indexReference, resultCreator, indexQuery)).toIterator
     }
 
   // helpers

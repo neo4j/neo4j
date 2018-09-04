@@ -39,9 +39,15 @@ trait QueryContextAdaptation {
 
   override def createNewQueryContext(): QueryContext = ???
 
-  override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): scala.Iterator[IndexedNodeWithProperties] = ???
+  override def indexSeekByContains[RESULT](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT],
+                                           value: String): scala.Iterator[RESULT] = ???
 
-  override def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties] = ???
+  override def indexSeekByEndsWith[RESULT](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT],
+                                           value: String): Iterator[RESULT] = ???
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = ???
 
@@ -93,7 +99,10 @@ trait QueryContextAdaptation {
 
   override def indexReference(label: Int, properties: Int*): IndexReference = ???
 
-  override def indexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], value: Seq[IndexQuery]): scala.Iterator[IndexedNodeWithProperties] = ???
+  override def indexSeek[RESULT](index: IndexReference,
+                                 needsValues: Boolean,
+                                 resultCreator: ResultCreator[RESULT],
+                                 values: Seq[IndexQuery]): scala.Iterator[RESULT] = ???
 
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[RelationshipValue] = ???
 
@@ -149,7 +158,9 @@ trait QueryContextAdaptation {
 
   override def getNodesByLabelPrimitive(id: Int): LongIterator = ???
 
-  override def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], values: Seq[IndexQuery.ExactPredicate]): Option[IndexedNodeWithProperties] = ???
+  override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
+                                              resultCreator: ResultCreator[RESULT],
+                                              values: Seq[IndexQuery.ExactPredicate]): Option[RESULT] = ???
 
   override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 

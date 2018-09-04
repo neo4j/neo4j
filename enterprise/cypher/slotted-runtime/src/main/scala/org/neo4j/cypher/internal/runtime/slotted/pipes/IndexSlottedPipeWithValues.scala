@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, IndexedPrimitiveNodeWithProperties}
+import org.neo4j.cypher.internal.runtime.{IndexedPrimitiveNodeWithProperties, NodeValueHit, ResultCreator}
 
 /**
   * Provides helper methods for slotted index pipes that get nodes together with actual property values.
@@ -32,21 +32,12 @@ trait IndexSlottedPipeWithValues extends Pipe {
 
   // Offset of the long slot of node variable
   val offset: Int
-  // the offsets of the ref slots of properties where we will get values
+  // the indices of the index properties where we will get values
+  val propertyIndicesWithValues: Array[Int]
+  // the offsets of the ref slots of properties where we will set values
   val propertyOffsets: Array[Int]
   // Number of longs and refs
   val argumentSize: SlotConfiguration.Size
-
-  /**
-    * Create an Iterator of ExecutionContexts given an Iterator of tuples of nodes and property values,
-    * by copying the node and all values into the given context.
-    */
-  def createResultsFromTupleIterator(state: QueryState, slots: SlotConfiguration, tupleIterator: Iterator[IndexedNodeWithProperties]): Iterator[ExecutionContext] = {
-    val primitiveIterator = tupleIterator.map {
-      case IndexedNodeWithProperties(node, values) => IndexedPrimitiveNodeWithProperties(node.id, values)
-    }
-    createResultsFromPrimitiveTupleIterator(state, slots, primitiveIterator)
-  }
 
   /**
     * Create an Iterator of ExecutionContexts given an Iterator of tuples of nodes ids and property values,
@@ -64,6 +55,21 @@ trait IndexSlottedPipeWithValues extends Pipe {
           i += 1
         }
         slottedContext
+    }
+  }
+
+  case class CtxResultCreator(state: QueryState, slots: SlotConfiguration) extends ResultCreator[ExecutionContext] {
+    override def createResult(nodeValueHit: NodeValueHit): ExecutionContext = {
+      val slottedContext: SlottedExecutionContext = SlottedExecutionContext(slots)
+      state.copyArgumentStateTo(slottedContext, argumentSize.nLongs, argumentSize.nReferences)
+      slottedContext.setLongAt(offset, nodeValueHit.nodeId)
+      var i = 0
+      while (i < propertyIndicesWithValues.length) {
+        val value = nodeValueHit.propertyValue(propertyIndicesWithValues(i))
+        slottedContext.setRefAt(propertyOffsets(i), value)
+        i += 1
+      }
+      slottedContext
     }
   }
 }

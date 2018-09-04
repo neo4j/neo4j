@@ -103,8 +103,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropIndexRule(descriptor: IndexDescriptor) =
     translateException(inner.dropIndexRule(descriptor))
 
-  override def indexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], values: Seq[IndexQuery]): Iterator[IndexedNodeWithProperties] =
-    translateException(inner.indexSeek(index, propertyIndicesWithValues, values))
+  override def indexSeek[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT],
+                                           values: Seq[IndexQuery]): Iterator[RESULT] =
+    translateException(inner.indexSeek(index, needsValues, resultCreator, values))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] =
     translateException(inner.getNodesByLabel(id))
@@ -214,8 +217,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelTypeName(id: Int) =
     translateException(inner.getRelTypeName(id))
 
-  override def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], values: Seq[IndexQuery.ExactPredicate]): Option[IndexedNodeWithProperties] =
-    translateException(inner.lockingUniqueIndexSeek(index, propertyIndicesWithValues, values))
+  override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
+                                              resultCreator: ResultCreator[RESULT],
+                                              values: Seq[IndexQuery.ExactPredicate]): Option[RESULT] =
+    translateException(inner.lockingUniqueIndexSeek(index, resultCreator, values))
 
   override def getImportURL(url: URL) =
     translateException(inner.getImportURL(url))
@@ -244,11 +249,17 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))
 
-  override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties] =
-    translateException(inner.indexSeekByContains(index, propertyIndicesWithValues, value))
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] =
+    translateException(inner.indexSeekByContains(index, needsValues, resultCreator, value))
 
-  override def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties] =
-    translateException(inner.indexSeekByEndsWith(index, propertyIndicesWithValues, value))
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] =
+    translateException(inner.indexSeekByEndsWith(index, needsValues, resultCreator, value))
 
   override def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties] =
     translateException(inner.indexScan(index, propertyIndicesWithValues))

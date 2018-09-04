@@ -282,7 +282,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ValueGroup.ZONED_TIME,
     ValueGroup.DURATION)
 
-  override def indexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], predicates: Seq[IndexQuery]): Iterator[IndexedNodeWithProperties] = {
+  override def indexSeek[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT],
+                                           predicates: Seq[IndexQuery]): Iterator[RESULT] = {
 
     val impossiblePredicate =
       predicates.exists {
@@ -292,31 +295,53 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
 
     if (impossiblePredicate) Iterator.empty
-    else seek(index, propertyIndicesWithValues, predicates: _*)
+    else seek(index, needsValues, resultCreator, predicates: _*)
   }
 
   override def indexReference(label: Int,
                               properties: Int*): IndexReference =
     transactionalContext.kernelTransaction.schemaRead().index(label, properties: _*)
 
-  private def seek(index: IndexReference, propertyIndicesWithValues: Array[Int], queries: IndexQuery*): CursorIterator[IndexedNodeWithProperties] = {
+  private def seek[RESULT <: AnyRef](index: IndexReference,
+                                     needsValues: Boolean,
+                                     resultCreator: ResultCreator[RESULT],
+                                     queries: IndexQuery*) = {
+
     val nodeCursor: NodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
-    val actualValues =
-      if (queries.forall(_.isInstanceOf[ExactPredicate])) {
+    val maybeActualValues =
+      if (needsValues && queries.forall(_.isInstanceOf[ExactPredicate])) {
         // We don't need property values from the index for an exact seek
-        Some(propertyIndicesWithValues.map(queries(_).asInstanceOf[ExactPredicate].value()))
+        Some(queries.map(_.asInstanceOf[ExactPredicate].value()))
       } else {
         None
       }
 
-    val needsValuesFromIndexSeek = actualValues.isEmpty && propertyIndicesWithValues.nonEmpty
+    val nodeValueHit: NodeValueHit =
+      maybeActualValues match {
+        case Some(actualValues) =>
+          new NodeValueHit {
+            override def nodeId: Long = nodeCursor.nodeReference()
+            override def node: NodeValue = fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+            override def numberOfProperties: Int = actualValues.length
+            override def propertyValue(i: Int): Value = actualValues(i)
+          }
+        case None =>
+          new NodeValueHit {
+            override def nodeId: Long = nodeCursor.nodeReference()
+            override def node: NodeValue = fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+            override def numberOfProperties: Int = nodeCursor.numberOfProperties()
+            override def propertyValue(i: Int): Value = nodeCursor.propertyValue(i)
+          }
+      }
+
+    val needsValuesFromIndexSeek = maybeActualValues.isEmpty && needsValues
     reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, needsValuesFromIndexSeek, queries: _*)
-    new CursorIterator[IndexedNodeWithProperties] {
-      override protected def fetchNext(): IndexedNodeWithProperties = {
-        getNextNodeRefAndValuesFromCursor(nodeCursor, if (needsValuesFromIndexSeek) propertyIndicesWithValues else Array.emptyIntArray).map {
-          case (nodeRef, cursorValues) =>
-            IndexedNodeWithProperties(fromNodeProxy(entityAccessor.newNodeProxy(nodeRef)), actualValues.getOrElse(cursorValues))
-        }.orNull
+    new CursorIterator[RESULT] {
+      override protected def fetchNext(): RESULT = {
+        if (nodeCursor.next())
+          resultCreator.createResult(nodeValueHit)
+        else
+          null.asInstanceOf[RESULT]
       }
 
       override protected def close(): Unit = nodeCursor.close()
@@ -362,25 +387,39 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-  override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties] =
-    seek(index, propertyIndicesWithValues, IndexQuery.stringContains(index.properties()(0), value))
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] =
+    seek(index, needsValues, resultCreator, IndexQuery.stringContains(index.properties()(0), value))
 
-  override def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties] =
-    seek(index, propertyIndicesWithValues, IndexQuery.stringSuffix(index.properties()(0), value))
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] =
+    seek(index, needsValues, resultCreator, IndexQuery.stringSuffix(index.properties()(0), value))
 
-  override def lockingUniqueIndexSeek(indexReference: IndexReference, propertyIndicesWithValues: Array[Int], queries: Seq[IndexQuery.ExactPredicate]): Option[IndexedNodeWithProperties] = {
+  override def lockingUniqueIndexSeek[RESULT](indexReference: IndexReference,
+                                              resultCreator: ResultCreator[RESULT],
+                                              queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
     if (queries.exists(q => q.value() == Values.NO_VALUE))
       None
     else {
-      val values = propertyIndicesWithValues.map(queries(_).value())
       val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.schema())
-      val nodeId = reads().lockingNodeUniqueIndexSeek(index, queries: _*)
-      if (StatementConstants.NO_SUCH_NODE == nodeId) {
+      val resultNodeId = reads().lockingNodeUniqueIndexSeek(index, queries: _*)
+      if (StatementConstants.NO_SUCH_NODE == resultNodeId) {
         None
       } else {
-        val nodeValue = nodeOps.getById(nodeId)
-        Some(IndexedNodeWithProperties(nodeValue, values))
+        val nodeValue = nodeOps.getById(resultNodeId)
+        val values = queries.map(_.value())
+        val nodeValueHit: NodeValueHit = new NodeValueHit {
+          override def nodeId: Long = resultNodeId
+          override def node: NodeValue = nodeValue
+          override def numberOfProperties: Int = values.length
+          override def propertyValue(i: Int): Value = values(i)
+        }
+        Some(resultCreator.createResult(nodeValueHit))
       }
     }
   }
@@ -1201,7 +1240,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     resources.trace(cursor)
     cursor
   }
-
 
   abstract class CursorIterator[T] extends Iterator[T] {
     private var _next: T = fetchNext()

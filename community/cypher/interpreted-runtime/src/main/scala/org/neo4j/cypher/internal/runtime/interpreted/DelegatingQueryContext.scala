@@ -119,8 +119,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexReference(label: Int, properties: Int*): IndexReference = singleDbHit(inner.indexReference(label, properties:_*))
 
-  override def indexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], values: Seq[IndexQuery]): Iterator[IndexedNodeWithProperties] =
-    manyDbHits(inner.indexSeek(index, propertyIndicesWithValues, values))
+  override def indexSeek[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT],
+                                           queries: Seq[IndexQuery]): Iterator[RESULT] =
+    manyDbHits(inner.indexSeek(index, needsValues, resultCreator, queries))
 
   override def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties] =
     manyDbHits(inner.indexScan(index, propertyIndicesWithValues))
@@ -130,11 +133,17 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties] =
     manyDbHits(inner.indexScanPrimitiveWithValues(index, propertyIndicesWithValues))
 
-  override def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): scala.Iterator[IndexedNodeWithProperties] =
-    manyDbHits(inner.indexSeekByContains(index, propertyIndicesWithValues, value))
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] =
+    manyDbHits(inner.indexSeekByContains(index, needsValues, resultCreator, value))
 
-  override def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): scala.Iterator[IndexedNodeWithProperties] =
-    manyDbHits(inner.indexSeekByEndsWith(index, propertyIndicesWithValues, value))
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] =
+    manyDbHits(inner.indexSeekByEndsWith(index, needsValues, resultCreator, value))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = manyDbHits(inner.getNodesByLabel(id))
 
@@ -182,9 +191,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  override def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], values: Seq[IndexQuery.ExactPredicate]):
-  Option[IndexedNodeWithProperties] =
-    singleDbHit(inner.lockingUniqueIndexSeek(index, propertyIndicesWithValues, values))
+  override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
+                                              resultCreator: ResultCreator[RESULT],
+                                              queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT] =
+    singleDbHit(inner.lockingUniqueIndexSeek(index, resultCreator, queries))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
 

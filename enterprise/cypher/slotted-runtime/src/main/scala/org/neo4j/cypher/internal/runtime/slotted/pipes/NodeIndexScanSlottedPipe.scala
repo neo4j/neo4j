@@ -40,7 +40,7 @@ case class NodeIndexScanSlottedPipe(ident: String,
   override val offset: Int = slots.getLongOffsetFor(ident)
 
   override val propertyOffsets: Array[Int] = property.maybePropertyValueSlot.toArray
-  private val propertyIndicesWithValues: Array[Int] = propertyOffsets.map(_ => 0)
+  override val propertyIndicesWithValues: Array[Int] = propertyOffsets.map(_ => 0)
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 

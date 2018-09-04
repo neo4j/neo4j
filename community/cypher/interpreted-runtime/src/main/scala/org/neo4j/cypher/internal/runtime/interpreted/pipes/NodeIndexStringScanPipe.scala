@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
+import org.neo4j.cypher.internal.runtime.{QueryContext, ResultCreator}
 import org.neo4j.cypher.internal.v3_5.logical.plans.IndexedProperty
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.{TextValue, Values}
@@ -36,6 +36,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   override val propertyIndicesWithValues: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
   override val propertyNamesWithValues: Array[String] = Array(ident + "." + property.propertyKeyToken.name)
+  protected val needsValues = propertyIndicesWithValues.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -54,8 +55,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
     val resultNodes = value match {
       case value: TextValue =>
-        val results = queryContextCall(state, reference(state.query), value.stringValue())
-        createResultsFromTupleIterator(baseContext, results)
+        queryContextCall(state, reference(state.query), value.stringValue(), CtxResultCreatorWithValues(baseContext))
       case Values.NO_VALUE =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
@@ -64,8 +64,10 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     resultNodes
   }
 
-  protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties]
-
+  protected def queryContextCall(state: QueryState,
+                                 indexReference: IndexReference,
+                                 value: String,
+                                 resultCreator: ResultCreator[ExecutionContext]): Iterator[ExecutionContext]
 }
 
 case class NodeIndexContainsScanPipe(ident: String,
@@ -75,8 +77,11 @@ case class NodeIndexContainsScanPipe(ident: String,
                                     (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
 
-  override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties] =
-    state.query.indexSeekByContains(indexReference, propertyIndicesWithValues, value)
+  override protected def queryContextCall(state: QueryState,
+                                          indexReference: IndexReference,
+                                          value: String,
+                                          resultCreator: ResultCreator[ExecutionContext]): Iterator[ExecutionContext] =
+    state.query.indexSeekByContains(indexReference, needsValues, resultCreator, value)
 }
 
 case class NodeIndexEndsWithScanPipe(ident: String,
@@ -86,6 +91,9 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                     (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
 
-  override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String): Iterator[IndexedNodeWithProperties] =
-    state.query.indexSeekByEndsWith(indexReference, propertyIndicesWithValues, value)
+  override protected def queryContextCall(state: QueryState,
+                                          indexReference: IndexReference,
+                                          value: String,
+                                          resultCreator: ResultCreator[ExecutionContext]): Iterator[ExecutionContext] =
+    state.query.indexSeekByEndsWith(indexReference, needsValues, resultCreator, value)
 }

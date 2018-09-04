@@ -42,8 +42,9 @@ case class NodeIndexSeekSlottedPipe(ident: String,
 
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyId)
 
-  private val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  override val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
   override val propertyOffsets: Array[Int] = properties.map(_.maybePropertyValueSlot).collect{ case Some(o) => o }
+  private val needsValues: Boolean = propertyIndicesWithValues.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -59,8 +60,8 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val results = indexSeek(state, indexReference, propertyIndicesWithValues, baseContext)
-    createResultsFromTupleIterator(state, slots, results)
+    val resultCreator = CtxResultCreator(state, slots)
+    indexSeek(state, indexReference, needsValues, baseContext, resultCreator)
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekSlottedPipe]

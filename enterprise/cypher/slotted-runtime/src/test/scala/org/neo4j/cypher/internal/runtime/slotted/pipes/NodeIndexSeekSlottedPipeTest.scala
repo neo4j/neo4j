@@ -19,16 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockingUniqueIndexSeek
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexMockingHelp, LockingUniqueIndexSeek}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression}
-import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
@@ -36,11 +32,11 @@ import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
-class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos with SlottedPipeTestHelper {
+class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos with SlottedPipeTestHelper with IndexMockingHelp {
 
   private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   private val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
-  private val propertyKeys = propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11))
+  override val propertyKeys = propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11))
   private val node = nodeValue(1)
   private val node2 = nodeValue(2)
 
@@ -54,8 +50,8 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
-        Seq("bye") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
+        Seq("hello") -> Seq(nodeValueHit(node, "hello")),
+        Seq("bye") -> Seq(nodeValueHit(node2, "bye"))
       )
     )
 
@@ -83,8 +79,8 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello", "world") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello"), Values.stringValue("world")))),
-        Seq("bye", "cruel") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"), Values.stringValue("cruel"))))
+        Seq("hello", "world") -> Seq(nodeValueHit(node, "hello", "world")),
+        Seq("bye", "cruel") -> Seq(nodeValueHit(node2, "bye", "cruel"))
       )
     )
 
@@ -117,8 +113,8 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
-        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
+        Seq("hello") -> Seq(nodeValueHit(node, "hello")),
+        Seq("world") -> Seq(nodeValueHit(node2, "bye"))
       )
     )
 
@@ -137,20 +133,4 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
       Map("n" -> node2.id, "n." + propertyKey(0).name -> Values.stringValue("bye"))
     ))
   }
-
-  private def indexFor(values: (Seq[AnyRef], Iterable[IndexedNodeWithProperties])*): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexSeek(any(), any(), any())).thenReturn(Iterator.empty)
-    when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
-
-    values.foreach {
-      case (searchTerm, resultIterable) =>
-        val indexQueries = propertyKeys.zip(searchTerm).map(t => IndexQuery.exact(t._1.nameId.id, t._2))
-        when(query.indexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(resultIterable.toIterator)
-        when(query.lockingUniqueIndexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(Some(resultIterable.toIterator.next()))
-    }
-
-    query
-  }
-
 }

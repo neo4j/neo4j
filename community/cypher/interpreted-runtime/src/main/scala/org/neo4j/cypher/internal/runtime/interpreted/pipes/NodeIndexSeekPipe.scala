@@ -38,6 +38,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   override val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.shouldGetValue).map(_._2)
   override val propertyNamesWithValues: Array[String] = propertyIndicesWithValues.map(offset => ident + "." + properties(offset).propertyKeyToken.name)
+  private val needsValues: Boolean = propertyIndicesWithValues.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -54,8 +55,10 @@ case class NodeIndexSeekPipe(ident: String,
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
 
-    val results = indexSeek(state, indexReference, propertyIndicesWithValues, baseContext)
-    createResultsFromTupleIterator(baseContext, results)
+    val resultCreator =
+      if (needsValues) CtxResultCreatorWithValues(baseContext)
+      else CtxResultCreator(baseContext)
+    indexSeek(state, indexReference, needsValues, baseContext, resultCreator)
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekPipe]

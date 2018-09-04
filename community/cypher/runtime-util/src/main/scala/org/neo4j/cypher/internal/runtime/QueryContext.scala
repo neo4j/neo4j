@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualNodeValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
 import scala.collection.Iterator
@@ -100,11 +100,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
-  def indexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], queries: Seq[IndexQuery]): Iterator[IndexedNodeWithProperties]
+  def indexSeek[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], queries: Seq[IndexQuery]): Iterator[RESULT]
 
-  def indexSeekByContains(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties]
+  def indexSeekByContains[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], value: String): Iterator[RESULT]
 
-  def indexSeekByEndsWith(index: IndexReference, propertyIndicesWithValues: Array[Int], value: String): Iterator[IndexedNodeWithProperties]
+  def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], value: String): Iterator[RESULT]
 
   def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties]
 
@@ -112,7 +112,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexScanPrimitive(index: IndexReference): LongIterator
 
-  def lockingUniqueIndexSeek(index: IndexReference, propertyIndicesWithValues: Array[Int], queries: Seq[IndexQuery.ExactPredicate]): Option[IndexedNodeWithProperties]
+  def lockingUniqueIndexSeek[RESULT](index: IndexReference, resultCreator: ResultCreator[RESULT], queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
@@ -306,6 +306,17 @@ trait UserDefinedAggregator {
 
 trait CloseableResource {
   def close(success: Boolean)
+}
+
+trait NodeValueHit {
+  def nodeId: Long
+  def node: VirtualNodeValue
+  def numberOfProperties: Int
+  def propertyValue(i: Int): Value
+}
+
+trait ResultCreator[RESULT] {
+  def createResult(nodeValueHit: NodeValueHit): RESULT
 }
 
 /**

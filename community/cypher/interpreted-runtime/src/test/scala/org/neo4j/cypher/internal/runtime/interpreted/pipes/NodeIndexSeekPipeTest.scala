@@ -19,41 +19,34 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{any, anyInt}
+import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
+import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.opencypher.v9_0.util.{CypherTypeException, LabelId, PropertyKeyId}
 
-class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
+class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
   implicit val windowsSafe = WindowsStringSafe
 
   private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   private val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
-  private val propertyKeys = propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11))
-  private val node = nodeValue(1)
-  private val node2 = nodeValue(2)
-
-  private def nodeValue(id: Long) = {
-    val node = mock[NodeValue]
-    when(node.id()).thenReturn(id)
-    node
-  }
+  override val propertyKeys = propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11))
+  private val node = VirtualValues.node(1)
+  private val node2 = VirtualValues.node(2)
 
   test("should return nodes found by index lookup when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)))
+      query = indexFor(Seq("hello") -> Seq(nodeValueHit(node)))
     )
 
     // when
@@ -69,8 +62,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
-        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node)),
+        Seq("world") -> Seq(nodeValueHit(node2))
       )
     )
 
@@ -87,8 +80,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
-        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node)),
+        Seq("world") -> Seq(nodeValueHit(node2))
       )
     )
 
@@ -105,8 +98,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
-        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node)),
+        Seq("world") -> Seq(nodeValueHit(node2))
       )
     )
 
@@ -123,7 +116,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node))
       )
     )
 
@@ -143,7 +136,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node))
       )
     )
 
@@ -163,7 +156,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node))
       )
     )
 
@@ -180,7 +173,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node))
       )
     )
 
@@ -200,8 +193,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
-        Seq("world") -> Seq(IndexedNodeWithProperties(node, Array.empty))
+        Seq("hello") -> Seq(nodeValueHit(node)),
+        Seq("world") -> Seq(nodeValueHit(node))
       )
     )
 
@@ -221,8 +214,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop = 'hello' AND n.prop2 = 'world']
       query = indexFor(
-        Seq("hello", "world") -> Seq(IndexedNodeWithProperties(node, Array.empty)),
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty), IndexedNodeWithProperties(node2, Array.empty))
+        Seq("hello", "world") -> Seq(nodeValueHit(node)),
+        Seq("hello") -> Seq(nodeValueHit(node), nodeValueHit(node2))
       )
     )
 
@@ -255,7 +248,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
-    val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))))
+    val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Seq(nodeValueHit(node))))
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
@@ -269,7 +262,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use existing values from arguments when available") {
     //  GIVEN "hello" as x MATCH a WHERE a.prop = x
     val queryState: QueryState = QueryStateHelper.emptyWith(
-      query = indexFor(Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array.empty))),
+      query = indexFor(Seq("hello") -> Seq(nodeValueHit(node))),
       initialContext = Some(ExecutionContext.from("x" -> stringValue("hello")))
     )
 
@@ -286,8 +279,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
-        Seq("bye") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
+        Seq("hello") -> Seq(nodeValueHit(node, "hello")),
+        Seq("bye") -> Seq(nodeValueHit(node2, "bye"))
       )
     )
 
@@ -310,8 +303,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello", "world") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello"), Values.stringValue("world")))),
-        Seq("bye", "cruel") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"), Values.stringValue("cruel"))))
+        Seq("hello", "world") -> Seq(nodeValueHit(node, "hello", "world")),
+        Seq("bye", "cruel") -> Seq(nodeValueHit(node2, "bye", "cruel"))
       )
     )
 
@@ -339,8 +332,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq("hello") -> Seq(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))),
-        Seq("world") -> Seq(IndexedNodeWithProperties(node2, Array(Values.stringValue("bye"))))
+        Seq("hello") -> Seq(nodeValueHit(node, "hello")),
+        Seq("world") -> Seq(nodeValueHit(node2, "bye"))
       )
     )
 
@@ -354,20 +347,5 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
       Map("n" -> node, "n." + propertyKey(0).name -> Values.stringValue("hello")),
       Map("n" -> node2, "n." + propertyKey(0).name -> Values.stringValue("bye"))
     ))
-  }
-
-  private def indexFor(values: (Seq[AnyRef], Iterable[IndexedNodeWithProperties])*): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexSeek(any(), any(), any())).thenReturn(Iterator.empty)
-    when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
-
-    values.foreach {
-      case (searchTerm, resultIterable) =>
-        val indexQueries = propertyKeys.zip(searchTerm).map(t => IndexQuery.exact(t._1.nameId.id, t._2))
-        when(query.indexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(resultIterable.toIterator)
-        when(query.lockingUniqueIndexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(Some(resultIterable.toIterator.next()))
-    }
-
-    query
   }
 }
