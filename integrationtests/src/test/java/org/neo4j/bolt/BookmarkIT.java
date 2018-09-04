@@ -146,7 +146,11 @@ public class BookmarkIT
 
     private static Config configWithBoltEnabled()
     {
-        return Config.defaults().augment( singletonMap( "dbms.connector.bolt.enabled", TRUE ) );
+        Config config = Config.defaults();
+
+        config.augment( singletonMap( "dbms.connector.bolt.enabled", TRUE ) );
+
+        return config;
     }
 
     private static class CustomCommunityEditionModule extends CommunityEditionModule
