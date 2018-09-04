@@ -42,10 +42,11 @@ public interface LabelScanReader extends Resource
     void nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId );
 
     /**
+     * @param startId the entity id to start at.
      * @param labelIds label token ids.
      * @return node ids with any of the given label ids.
      */
-    PrimitiveLongResourceIterator nodesWithAnyOfLabels( int... labelIds );
+    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long startId, int... labelIds );
 
     /**
      * @param labelIds label token ids.

@@ -83,7 +83,7 @@ public class DynamicIndexStoreViewTest
         PrimitiveLongResourceIterator labeledNodesIterator = PrimitiveLongResourceCollections.iterator( null, 1, 2, 3, 4, 5, 6, 7, 8 );
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 200L );
         when( nodeStore.getHighId() ).thenReturn( 20L );
-        when( labelScanReader.nodesWithAnyOfLabels( 2, 6)).thenReturn( labeledNodesIterator );
+        when( labelScanReader.nodesWithAnyOfLabels( 0, 2, 6)).thenReturn( labeledNodesIterator );
 
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 6 );

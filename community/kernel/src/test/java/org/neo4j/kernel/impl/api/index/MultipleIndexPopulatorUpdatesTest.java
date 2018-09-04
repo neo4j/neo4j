@@ -194,10 +194,10 @@ public class MultipleIndexPopulatorUpdatesTest
         }
 
         @Override
-        public void process( NodeRecord nodeRecord ) throws FAILURE
+        public boolean process( NodeRecord nodeRecord ) throws FAILURE
         {
             processListener.receive( nodeRecord );
-            super.process( nodeRecord );
+            return super.process( nodeRecord );
         }
     }
 }

@@ -79,7 +79,7 @@ public class NativeLabelScanWriterTest
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>() ) );
+            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>(), 0 ) );
             assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
     }

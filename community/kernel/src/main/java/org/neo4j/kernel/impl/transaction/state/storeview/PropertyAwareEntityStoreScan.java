@@ -20,13 +20,12 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.Iterator;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -104,7 +103,7 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
     @Override
     public void run() throws FAILURE
     {
-        try ( PrimitiveLongResourceIterator entityIdIterator = getEntityIdIterator() )
+        try ( EntityIdIterator entityIdIterator = getEntityIdIterator() )
         {
             continueScanning = true;
             while ( continueScanning && entityIdIterator.hasNext() )
@@ -115,7 +114,10 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
                     count++;
                     if ( store.getRecord( id, this.record, FORCE ).inUse() )
                     {
-                        process( this.record );
+                        if ( process( this.record ) )
+                        {
+                            entityIdIterator.invalidateCache();
+                        }
                     }
                 }
             }
@@ -132,7 +134,15 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
         }
     }
 
-    protected abstract void process( RECORD record ) throws FAILURE;
+    /**
+     * Process the given {@code record}.
+     *
+     * @param record RECORD to process.
+     * @return {@code true} if external updates have been applied such that the scan iterator needs to be 100% up to date with store,
+     * i.e. invalidate any caches if it has any.
+     * @throws FAILURE on failure.
+     */
+    protected abstract boolean process( RECORD record ) throws FAILURE;
 
     protected Value valueOf( PropertyBlock property )
     {
@@ -164,9 +174,35 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
         return PopulationProgress.DONE;
     }
 
-    protected PrimitiveLongResourceIterator getEntityIdIterator()
+    protected EntityIdIterator getEntityIdIterator()
     {
-        return PrimitiveLongCollections.resourceIterator( new StoreIdIterator( store ), null );
+        LongIterator ids = new StoreIdIterator( store );
+        return new EntityIdIterator()
+        {
+            @Override
+            public void invalidateCache()
+            {
+                // Nothing to invalidate, we're reading directly from the store
+            }
+
+            @Override
+            public long next()
+            {
+                return ids.next();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return ids.hasNext();
+            }
+
+            @Override
+            public void close()
+            {
+                // Nothing to close
+            }
+        };
     }
 
     protected class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>

@@ -348,9 +348,9 @@ public class MultipleIndexPopulator implements IndexPopulator
         return populations.remove( indexPopulation );
     }
 
-    void populateFromQueueBatched( long currentlyIndexedNodeId )
+    boolean populateFromQueueBatched( long currentlyIndexedNodeId )
     {
-        populateFromQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
+        return populateFromQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
     }
 
     void flushAll()
@@ -372,8 +372,10 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     /**
      * Populates external updates from the update queue if there are {@code queueThreshold} or more queued updates.
+     *
+     * @return whether or not there were external updates applied.
      */
-    void populateFromQueue( int queueThreshold, long currentlyIndexedNodeId )
+    boolean populateFromQueue( int queueThreshold, long currentlyIndexedNodeId )
     {
         int queueSize = updatesQueue.size();
         if ( queueSize > 0 && queueSize >= queueThreshold )
@@ -392,7 +394,9 @@ public class MultipleIndexPopulator implements IndexPopulator
                 }
                 while ( !updatesQueue.isEmpty() );
             }
+            return true;
         }
+        return false;
     }
 
     private void forEachPopulation( ThrowingConsumer<IndexPopulation,Exception> action )
@@ -632,8 +636,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( EntityUpdates updates )
         {
             add( updates );
-            populateFromQueueBatched( updates.getEntityId() );
-            return false;
+            return populateFromQueueBatched( updates.getEntityId() );
         }
 
         private void add( EntityUpdates updates )

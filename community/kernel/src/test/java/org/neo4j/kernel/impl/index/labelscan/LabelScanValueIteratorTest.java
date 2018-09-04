@@ -45,7 +45,7 @@ public class LabelScanValueIteratorTest
         RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = mock( RawCursor.class );
         when( cursor.next() ).thenReturn( false );
         Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFrom = new HashSet<>();
-        LabelScanValueIterator iterator = new LabelScanValueIterator( cursor, toRemoveFrom );
+        LabelScanValueIterator iterator = new LabelScanValueIterator( cursor, toRemoveFrom, 0 );
         verify( cursor, never() ).close();
 
         // WHEN

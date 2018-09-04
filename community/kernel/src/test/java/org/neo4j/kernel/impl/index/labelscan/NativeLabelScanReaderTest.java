@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -135,6 +136,38 @@ public class NativeLabelScanReaderTest
         // THEN
         verify( cursor1, times( 1 ) ).close();
         verify( cursor2, times( 1 ) ).close();
+    }
+
+    @Test
+    public void shouldStartFromGivenId() throws IOException
+    {
+        // given
+        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = mock( RawCursor.class );
+        when( cursor.next() ).thenReturn( true, true, false );
+        when( cursor.get() ).thenReturn(
+                // range, bits
+                hit( 1, 0b0001_1000__0101_1110L ),
+                //                        ^--fromId, i.e. ids after this id should be visible
+                hit( 3, 0b0010_0000__1010_0001L ),
+                null );
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
+                .thenReturn( cursor );
+
+        // when
+        long fromId = LabelScanValue.RANGE_SIZE + 3;
+        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
+              PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, LABEL_ID ) )
+        {
+            // then
+            assertArrayEquals( new long[] {
+                            // base 1*64 = 64
+                            64 + 4, 64 + 6, 64 + 11, 64 + 12,
+                            // base 3*64 = 192
+                            192 + 0, 192 + 5, 192 + 7, 192 + 13 },
+
+                    asArray( iterator ) );
+        }
     }
 
     private static Hit<LabelScanKey,LabelScanValue> hit( long baseNodeId, long bits )

@@ -42,7 +42,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
     }
 
     @Override
-    protected void process( RelationshipRecord record ) throws FAILURE
+    protected boolean process( RelationshipRecord record ) throws FAILURE
     {
         int reltype = record.getType();
 
@@ -53,8 +53,9 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
 
             if ( hasRelevantProperty( record, updates ) )
             {
-                propertyUpdatesVisitor.visit( updates.build() );
+                return propertyUpdatesVisitor.visit( updates.build() );
             }
         }
+        return false;
     }
 }

@@ -39,9 +39,21 @@ import org.neo4j.index.internal.gbptree.Hit;
  */
 class LabelScanValueIterator extends LabelScanValueIndexAccessor implements PrimitiveLongResourceIterator
 {
+    private long fromId;
     private boolean hasNextDecided;
     private boolean hasNext;
     protected long next;
+
+    /**
+     * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets and the fromId may
+     * be somewhere inside a bit-set range.
+     */
+    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
+            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed, long fromId )
+    {
+        super( toRemoveFromWhenClosed, cursor );
+        this.fromId = fromId;
+    }
 
     @Override
     public boolean hasNext()
@@ -63,12 +75,6 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
         }
         hasNextDecided = false;
         return next;
-    }
-
-    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
-            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed )
-    {
-        super( toRemoveFromWhenClosed, cursor );
     }
 
     /**
@@ -105,6 +111,15 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
             Hit<LabelScanKey,LabelScanValue> hit = cursor.get();
             baseNodeId = hit.key().idRange * LabelScanValue.RANGE_SIZE;
             bits = hit.value().bits;
+
+            if ( fromId > 0 )
+            {
+                // If we've been told to start at a specific id then trim off ids in this range less than or equal to that id
+                long relativeStartId = fromId % LabelScanValue.RANGE_SIZE;
+                bits &= ~((1L << (relativeStartId + 1)) - 1);
+                // ... and let's not do that again, only for the first idRange
+                fromId = 0;
+            }
 
             //noinspection AssertWithSideEffects
             assert keysInOrder( hit.key() );

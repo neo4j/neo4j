@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -79,6 +78,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
@@ -529,20 +529,20 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public PrimitiveLongResourceIterator getEntityIdIterator()
+        public EntityIdIterator getEntityIdIterator()
         {
-            PrimitiveLongResourceIterator originalIterator = delegate.getEntityIdIterator();
-            return new DelegatingPrimitiveLongResourceIterator( originalIterator, customAction );
+            EntityIdIterator originalIterator = delegate.getEntityIdIterator();
+            return new DelegatingEntityIdIterator( originalIterator, customAction );
         }
     }
 
-    private class DelegatingPrimitiveLongResourceIterator implements PrimitiveLongResourceIterator
+    private class DelegatingEntityIdIterator implements EntityIdIterator
     {
         private final Runnable customAction;
-        private final PrimitiveLongResourceIterator delegate;
+        private final EntityIdIterator delegate;
 
-        DelegatingPrimitiveLongResourceIterator(
-                PrimitiveLongResourceIterator delegate,
+        DelegatingEntityIdIterator(
+                EntityIdIterator delegate,
                 Runnable customAction )
         {
             this.delegate = delegate;
@@ -570,6 +570,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public void close()
         {
             delegate.close();
+        }
+
+        @Override
+        public void invalidateCache()
+        {
+            delegate.invalidateCache();
         }
     }
 

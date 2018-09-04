@@ -54,13 +54,13 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
     }
 
     @Override
-    public void process( NodeRecord node ) throws FAILURE
+    public boolean process( NodeRecord node ) throws FAILURE
     {
         long[] labels = parseLabelsField( node ).get( this.nodeStore );
         if ( labels.length == 0 && labelIds.length != 0 )
         {
             // This node has no labels at all
-            return;
+            return false;
         }
 
         if ( labelUpdateVisitor != null )
@@ -76,8 +76,9 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
 
             if ( hasRelevantProperty( node, updates ) )
             {
-                propertyUpdatesVisitor.visit( updates.build() );
+                return propertyUpdatesVisitor.visit( updates.build() );
             }
         }
+        return false;
     }
 }

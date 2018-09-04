@@ -253,7 +253,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         }
     }
 
-    private static long rangeOf( long nodeId )
+    static long rangeOf( long nodeId )
     {
         return nodeId / RANGE_SIZE;
     }

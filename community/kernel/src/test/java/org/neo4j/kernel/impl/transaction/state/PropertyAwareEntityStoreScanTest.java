@@ -69,13 +69,14 @@ public class PropertyAwareEntityStoreScanTest
                     private int read;
 
                     @Override
-                    public void process( NodeRecord node )
+                    public boolean process( NodeRecord node )
                     {
                         // then
                         read++;
                         float expected = (float) read / total;
                         float actual = percentageSupplier.get();
                         assertEquals( String.format( "%f==%f", expected, actual ), expected, actual, 0.0 );
+                        return false;
                     }
                 };
         percentageSupplier.setStoreScan( scan );
