@@ -81,6 +81,8 @@ public class TransactionIdTracker
 
         try
         {
+            // await for the last closed transaction id to to have at least the expected value
+            // it has to be "last closed" and not "last committed" becase all transactions before the expected one should also be committed
             transactionIdStore().awaitClosedTransactionId( oldestAcceptableTxId, timeout.toMillis() );
         }
         catch ( InterruptedException | TimeoutException e )
@@ -113,6 +115,8 @@ public class TransactionIdTracker
      */
     public long newestEncounteredTxId()
     {
-        return transactionIdStore().getLastClosedTransactionId();
+        // return the "last committed" because it is the newest id
+        // "last closed" will return the last gap-free id, pottentially for some old transaction because there might be other committing transactions
+        return transactionIdStore().getLastCommittedTransactionId();
     }
 }

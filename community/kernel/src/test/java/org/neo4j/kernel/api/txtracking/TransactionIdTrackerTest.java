@@ -123,4 +123,13 @@ public class TransactionIdTrackerTest
 
         verify( transactionIdStore, never() ).awaitClosedTransactionId( anyLong(), anyLong() );
     }
+
+    @Test
+    public void shouldReturnNewestTransactionId()
+    {
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 4242L );
+
+        assertEquals( 4242L, transactionIdTracker.newestEncounteredTxId() );
+    }
 }
