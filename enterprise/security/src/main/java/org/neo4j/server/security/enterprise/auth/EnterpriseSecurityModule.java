@@ -114,8 +114,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         procedures.registerComponent( EnterpriseSecurityContext.class,
                 ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ), true );
 
-        if ( config.get( SecuritySettings.native_authentication_enabled )
-             || config.get( SecuritySettings.native_authorization_enabled ) )
+        if ( securityConfig.internal_security_enabled )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
                     ctx -> authManager.getUserManager( ctx.get( SECURITY_CONTEXT ).subject(), ctx.get( SECURITY_CONTEXT ).isAdmin() ), true );
@@ -376,17 +375,18 @@ public class EnterpriseSecurityModule extends SecurityModule
     {
         protected final List<String> authProviders;
         public final boolean hasNativeProvider;
-        final boolean hasLdapProvider;
-        final List<String> pluginAuthProviders;
+        protected final boolean hasLdapProvider;
+        protected final List<String> pluginAuthProviders;
         protected final boolean nativeAuthentication;
         protected final boolean nativeAuthorization;
-        final boolean ldapAuthentication;
-        final boolean ldapAuthorization;
-        final boolean pluginAuthentication;
-        final boolean pluginAuthorization;
-        final boolean propertyAuthorization;
+        protected final boolean ldapAuthentication;
+        protected final boolean ldapAuthorization;
+        protected final boolean pluginAuthentication;
+        protected final boolean pluginAuthorization;
+        protected final boolean propertyAuthorization;
         private final String propertyAuthMapping;
         final Map<String,List<String>> propertyBlacklist = new HashMap<>();
+        protected boolean internal_security_enabled;
 
         protected SecurityConfig( Config config )
         {
@@ -399,6 +399,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
             nativeAuthentication = config.get( SecuritySettings.native_authentication_enabled );
             nativeAuthorization = config.get( SecuritySettings.native_authorization_enabled );
+            internal_security_enabled = nativeAuthentication || nativeAuthorization;
             ldapAuthentication = config.get( SecuritySettings.ldap_authentication_enabled );
             ldapAuthorization = config.get( SecuritySettings.ldap_authorization_enabled );
             pluginAuthentication = config.get( SecuritySettings.plugin_authentication_enabled );
@@ -443,7 +444,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             }
         }
 
-        private boolean parsePropertyPermissions()
+        protected boolean parsePropertyPermissions()
         {
             if ( propertyAuthMapping != null && !propertyAuthMapping.isEmpty() )
             {
@@ -480,12 +481,12 @@ public class EnterpriseSecurityModule extends SecurityModule
             return true;
         }
 
-        public boolean onlyPluginAuthentication()
+        protected boolean onlyPluginAuthentication()
         {
             return !nativeAuthentication && !ldapAuthentication && pluginAuthentication;
         }
 
-        public boolean onlyPluginAuthorization()
+        protected boolean onlyPluginAuthorization()
         {
             return !nativeAuthorization && !ldapAuthorization && pluginAuthorization;
         }
