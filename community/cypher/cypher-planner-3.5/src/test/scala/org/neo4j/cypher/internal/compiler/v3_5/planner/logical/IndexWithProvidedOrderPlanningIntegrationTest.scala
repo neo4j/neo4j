@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
@@ -5,7 +24,6 @@ import org.neo4j.cypher.internal.ir.v3_5.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.AscIndexOrder
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -211,39 +229,87 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     )
   }
 
-  test("Planner works without sorted index") {
+  test("Order by index backed property in a plan with an Apply") {
     val plan = new given {
-      cardinality = mapCardinality {
-        // expand - expensive
-        case RegularPlannerQuery(queryGraph, _, _, _) => Math.pow(100, queryGraph.patternRelationships.size)
-        // everything else - cheap
-        case _ => 1.0
-      }
-    } getLogicalPlanFor "MATCH (a:Awesome)-[x]->(b)-[y]->(c) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop"
+      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      indexOn("B", "prop").providesOrder(AscIndexOrder)
+    } getLogicalPlanFor "MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop"
 
-    // Without having interesting/required order in IDP, this will always plan the sort after the expands
-    val aProp = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     plan._2 should equal(
+
       Projection(
-        Sort(
-          Projection(
-            Selection(
-              Seq(Not(Equals(Variable("x")(pos), Variable("y")(pos))(pos))(pos)),
-              Expand(
-                Expand(
-                  Selection(
-                    Seq(expressions.AndedPropertyInequalities(Variable("a")(pos), aProp, NonEmptyList(GreaterThan(
-                      aProp, StringLiteral("foo")(pos))(pos)))),
-                    NodeByLabelScan("a", LabelName("Awesome")(pos), Set.empty)),
-                  "a", SemanticDirection.OUTGOING, Seq.empty, "b", "x"),
-                "b", SemanticDirection.OUTGOING, Seq.empty, "c", "y")),
-            Map("  FRESHID66" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
-          Seq(Ascending("  FRESHID66"))),
-        Map("a.prop" -> Variable("  FRESHID66")(pos)))
+        Projection(
+          Apply(
+            NodeIndexSeek(
+              "a",
+              LabelToken("A", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+              Set.empty,
+              IndexOrderAscending),
+            NodeIndexSeek(
+              "b",
+              LabelToken("B", LabelId(1)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              SingleQueryExpression(prop("a", "prop")),
+              Set("a"),
+              IndexOrderAscending)
+          ),
+          Map("  FRESHID69" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
+        Map("a.prop" -> Variable("  FRESHID69")(pos)))
     )
   }
 
-  // TODO MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop ORDER BY a.prop
+  test("Order by index backed property in a plan with an renaming Projection") {
+    val plan = new given {
+      indexOn("A", "prop").providesOrder(AscIndexOrder)
+    } getLogicalPlanFor "MATCH (a:A) WHERE a.prop > 'foo' WITH a.prop AS theProp, 1 AS x RETURN theProp ORDER BY theProp"
+
+    plan._2 should equal(
+
+      Projection(
+        Projection(
+          Projection(
+            NodeIndexSeek(
+              "a",
+              LabelToken("A", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+              Set.empty,
+              IndexOrderAscending),
+            Map("  theProp@48" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "x" -> SignedDecimalIntegerLiteral("1")(pos))),
+          Map("  FRESHID71" -> varFor("  theProp@48"))),
+        Map("theProp" -> Variable("  FRESHID71")(pos)))
+    )
+  }
+
+  test("Order by index backed property in a plan with an aggregation and an expand") {
+    val plan = new given {
+      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      cardinality = mapCardinality {
+        // Force the planner to start at a
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+      }
+    } getLogicalPlanFor "MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop, count(b) ORDER BY a.prop"
+
+    plan._2 should equal(
+
+      Projection(
+        Aggregation(
+          Expand(
+            NodeIndexSeek(
+              "a",
+              LabelToken("A", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+              Set.empty,
+              IndexOrderAscending),
+            "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
+          Map("  FRESHID51" -> prop("a", "prop")), Map("  FRESHID57" -> FunctionInvocation(Namespace(List())(pos),FunctionName("count")(pos), distinct = false,Vector(varFor("b")))(pos))),
+        Map("a.prop" -> Variable("  FRESHID51")(pos), "count(b)" -> Variable("  FRESHID57")(pos)))
+    )
+  }
 
   // TODO WITH 2 as x MATCH (m:Awesome) WHERE m.prop > 'foo' RETURN m.prop ORDER BY m.prop
   // does not work because NIS is planned as RHS of apply. We could recognize that LHS has only 1 row.

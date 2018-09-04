@@ -224,7 +224,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         // We might override some of these later if they value is known in an equality predicate
         val propertyBehaviorFromIndex = indexDescriptor.valueCapability(types)
 
-        // Combine plannables with their available properties
+        // Combine plannable predicates with their available properties
         val propertyBehaviours = propertyBehaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
           case (_, true) => CanGetValue
           case (behavior, _) => behavior
@@ -241,6 +241,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   private def isValidPredicateCombination(foundPredicates: Seq[IndexCompatiblePredicate]): Boolean = {
     // We currently only support range queries against single prop indexes
+    // TODO: Consider fixing this once kernel support native composite indexes for range queries
     foundPredicates.length == 1 ||
       foundPredicates.forall(_.queryExpression match {
         case _: SingleQueryExpression[_] => true

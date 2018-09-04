@@ -43,7 +43,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val (query, context, startPlan) = queryGraphWithRegularProjection(skip = Some(x))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Skip(startPlan, x))
@@ -55,7 +55,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val (query, context, startPlan) = queryGraphWithRegularProjection(limit = Some(x))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Limit(startPlan, x, DoNotIncludeTies))
@@ -67,7 +67,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val (query, context, startPlan) = queryGraphWithRegularProjection(skip = Some(y), limit = Some(x))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Limit(Skip(startPlan, y), x, DoNotIncludeTies))
@@ -79,7 +79,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val (query, context, startPlan) = queryGraphWithRegularProjection(sortItems = Seq(variableSortItem))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(startPlan, Seq(columnOrder)))
@@ -103,7 +103,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(Projection(startPlan, Map("m" -> mSortVar)), Seq(Ascending("m"))))
@@ -125,7 +125,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(Projection(startPlan, Map("  FRESHID0" -> sortExpression)), Seq(Ascending("  FRESHID0"))))
@@ -151,7 +151,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(Projection(Projection(startPlan, Map(mVar.name -> mExpr)), Map("  FRESHID0" -> sortExpression)), Seq(Ascending("  FRESHID0"))))
@@ -182,7 +182,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"), RequiredOrder.empty, DistinctQueryProjection(Map(mSortVar.name -> mSortVar))))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(startPlan, Seq(Ascending("m"))))
@@ -219,7 +219,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"), RequiredOrder.empty, AggregatingQueryProjection(Map(mSortVar.name -> mSortVar), Map(oSortVar.name -> oSortVar))))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(startPlan, Seq(Ascending("m"), Ascending("o"))))
@@ -241,7 +241,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(startPlan, Seq(Ascending("m"))))
@@ -264,7 +264,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       solved = RegularPlannerQuery(QueryGraph.empty, RequiredOrder.empty, RegularQueryProjection(Map(sortVariable.name -> sortExpression))))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     result should equal(Sort(startPlan, Seq(columnOrder)))
@@ -277,7 +277,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val (query, context, startPlan) = queryGraphWithRegularProjection(skip = Some(y), limit = Some(x), sortItems = Seq(variableSortItem))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)._1
+    val result = sortSkipAndLimit(startPlan, query, query.requiredOrder, context)._1
 
     // then
     val sorted = Sort(startPlan, Seq(columnOrder))

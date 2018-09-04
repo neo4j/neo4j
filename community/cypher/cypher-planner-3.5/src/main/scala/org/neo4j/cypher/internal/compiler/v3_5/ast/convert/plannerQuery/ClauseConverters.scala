@@ -113,47 +113,50 @@ object ClauseConverters {
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
   }
 
-  // TODO does string really suffice or do we need to put expressions into the required order ?
   def findRequiredOrder(horizon: QueryHorizon): RequiredOrder = {
     val columns = horizon match {
-      case proj@RegularQueryProjection(_, shuffle) =>
-        shuffle.sortItems.foldLeft((Seq.empty[(String, RequiredColumnOrder)], true))({
-
-          case ((seq, true), AscSortItem(Property(v@LogicalVariable(varName), propName))) =>
-            proj.projections.get(varName) match {
-              case Some(LogicalVariable(originalVarName)) => (seq :+ ((s"$originalVarName.${propName.name}", AscColumnOrder)), true)
-              case Some(_) => (Seq.empty, false)
-              case None => (seq :+ ((s"$varName.${propName.name}", AscColumnOrder)), true)
-
-              //          case ((seq, true), AscSortItem(prop@Property(LogicalVariable(varName), propName))) =>
-              //            proj.projections.get(varName) match {
-              //              case Some(newVar:LogicalVariable) => (seq :+ ((prop.copy(map = newVar)(prop.position), AscColumnOrder)), true)
-              //              case Some(_) => (Seq.empty, false)
-              //              case None => (seq :+ ((prop, AscColumnOrder)), true)
-            }
-          case ((seq, true), DescSortItem(Property(LogicalVariable(varName), propName))) =>
-            proj.projections.get(varName) match {
-              case Some(LogicalVariable(originalVarName)) => (seq :+ ((s"$originalVarName.${propName.name}", DescColumnOrder)), true)
-              case Some(_) => (Seq.empty, false)
-              case None => (seq :+ ((s"$varName.${propName.name}", DescColumnOrder)), true)
-            }
-
-          case ((seq, true), AscSortItem(LogicalVariable(name))) =>
-            proj.projections(name) match {
-              case Property(LogicalVariable(varName), propName) => (seq :+ ((s"$varName.${propName.name}", AscColumnOrder)), true)
-              case _ => (Seq.empty, false)
-            }
-          case ((seq, true), DescSortItem(LogicalVariable(name))) =>
-            proj.projections(name) match {
-              case Property(LogicalVariable(varName), propName) => (seq :+ ((s"$varName.${propName.name}", DescColumnOrder)), true)
-              case _ => (Seq.empty, false)
-            }
-
-          case _ => (Seq.empty, false)
-        })._1
+      case RegularQueryProjection(projections, shuffle) =>
+        extractColumnsFromHorizon(shuffle, projections)
+      case AggregatingQueryProjection(groupingExpressions, _, shuffle) =>
+        extractColumnsFromHorizon(shuffle, groupingExpressions)
       case _ => Seq.empty
     }
     RequiredOrder(columns)
+  }
+
+  private def extractColumnsFromHorizon(shuffle: QueryShuffle, projections: Map[String, Expression]): Seq[(String, RequiredColumnOrder)] = {
+    shuffle.sortItems.foldLeft((Seq.empty[(String, RequiredColumnOrder)], true))({
+
+      case ((seq, true), AscSortItem(Property(LogicalVariable(varName), propName))) =>
+        projections.get(varName) match {
+          case Some(LogicalVariable(originalVarName)) => (seq :+ ((s"$originalVarName.${propName.name}", AscColumnOrder)), true)
+          case Some(_) => (Seq.empty, false)
+          case None => (seq :+ ((s"$varName.${propName.name}", AscColumnOrder)), true)
+        }
+      case ((seq, true), DescSortItem(Property(LogicalVariable(varName), propName))) =>
+        projections.get(varName) match {
+          case Some(LogicalVariable(originalVarName)) => (seq :+ ((s"$originalVarName.${propName.name}", DescColumnOrder)), true)
+          case Some(_) => (Seq.empty, false)
+          case None => (seq :+ ((s"$varName.${propName.name}", DescColumnOrder)), true)
+        }
+
+      case ((seq, true), AscSortItem(LogicalVariable(name))) =>
+        projections.get(name) match {
+          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ ((s"$varName.${propName.name}", AscColumnOrder)), true)
+          case Some(Variable(oldName)) => (seq :+ ((oldName, AscColumnOrder)), true)
+          case Some(_) => (Seq.empty, false)
+          case None => (seq :+ ((name, AscColumnOrder)), true)
+        }
+      case ((seq, true), DescSortItem(LogicalVariable(name))) =>
+        projections.get(name) match {
+          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ ((s"$varName.${propName.name}", DescColumnOrder)), true)
+          case Some(Variable(oldName)) => (seq :+ ((oldName, DescColumnOrder)), true)
+          case Some(_) => (Seq.empty, false)
+          case None => (seq :+ ((name, DescColumnOrder)), true)
+        }
+
+      case _ => (Seq.empty, false)
+    })._1
   }
 
   private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder =

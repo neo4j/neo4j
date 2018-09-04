@@ -29,7 +29,12 @@ import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
 
 object sortSkipAndLimit extends PlanAndContextTransformer {
 
-  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = query.horizon match {
+  /**
+    * @param query query.requiredOrder will be the one marked as solved.
+    * @param requiredOrder this required order can potentially be different from query.providedOrder. It can contain renames and
+    *                      will be used to check if we need to sort.
+    */
+  def apply(plan: LogicalPlan, query: PlannerQuery, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
        (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
@@ -90,7 +95,6 @@ object sortSkipAndLimit extends PlanAndContextTransformer {
           // plan the actual sort
           val newSortItems = aliasedSortItems ++ newUnaliasedSortItems
           val columnOrders = newSortItems.map(columnOrder)
-          val requiredOrder = query.requiredOrder
 
           val (sortedPlan, context2) =
             // The !requiredOrder.isEmpty check is only here because we do not recognize more complex required orders
@@ -98,7 +102,8 @@ object sortSkipAndLimit extends PlanAndContextTransformer {
             if (!requiredOrder.isEmpty && ResultOrdering.satisfiedWith(requiredOrder, context.planningAttributes.providedOrders.get(plan.id))) {
               // We can't override solved, but right now we want to set it such that it solves ORDER BY
               // on a plan that has already assigned solved.
-              (context.logicalPlanProducer.updateSolvedForSortedItems(plan, sortItems, requiredOrder, context), context)
+              // Use query.requiredOrder to mark the original required order as solved.
+              (context.logicalPlanProducer.updateSolvedForSortedItems(plan, sortItems, query.requiredOrder, context), context)
             } else {
               // Project all variables needed for sort in two steps
               // First the ones that are part of projection list and may introduce variables that are needed for the second projection
@@ -106,7 +111,8 @@ object sortSkipAndLimit extends PlanAndContextTransformer {
               // And then all the ones from unaliased sort items that may refer to newly introduced variables
               val (preProjected2, context2) = projection(preProjected1, projectItemsForUnaliasedSortItems.toMap, Map.empty, requiredOrder, context1)
 
-              (context2.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, requiredOrder, context2), context2)
+              // Use query.requiredOrder to mark the original required order as solved.
+              (context2.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, query.requiredOrder, context2), context2)
             }
 
           (addLimit(limit, addSkip(skip, sortedPlan, context2), context2), context2)

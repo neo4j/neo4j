@@ -30,11 +30,11 @@ import org.opencypher.v9_0.expressions.{Expression, LabelToken}
  * Plan the following type of plan
  *
  *  - as := AssertSame
- *  - ui := NodeUniqueIndexSeek)
+ *  - ui := NodeUniqueIndexSeek
  *
  *       (as)
  *       /  \
- *    (as) (ui2)
+ *    (as) (ui3)
  *    /  \
  * (ui1) (ui2)
  */

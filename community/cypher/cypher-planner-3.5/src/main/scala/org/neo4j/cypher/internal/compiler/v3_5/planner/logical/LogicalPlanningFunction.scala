@@ -37,7 +37,7 @@ trait PlanTransformer {
 }
 
 trait PlanAndContextTransformer {
-  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(plan: LogicalPlan, query: PlannerQuery, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
 }
 
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]

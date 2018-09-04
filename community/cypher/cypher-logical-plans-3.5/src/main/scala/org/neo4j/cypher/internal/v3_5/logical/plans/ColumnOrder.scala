@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
+import org.neo4j.cypher.internal.ir.v3_5.StringPropertyLookup
+
 sealed trait ColumnOrder {
   def id: String
 
@@ -38,14 +40,17 @@ object ColumnOrder {
     if (ascending) Ascending(id) else Descending(id)
   }
 
+  def unapply(arg: ColumnOrder): Option[String] = {
+    Some(arg.id)
+  }
+}
+
+object ColumnOrderOfProperty {
   /**
     * Split the id into varName and propName, if the
     * ordered column is a property lookup.
     */
   def unapply(arg: ColumnOrder): Option[(String, String)] = {
-    arg.id.split("\\.", 2) match {
-      case Array(varName, propName) => Some((varName, propName))
-      case _ => None
-    }
+    StringPropertyLookup.unapply(arg.id)
   }
 }

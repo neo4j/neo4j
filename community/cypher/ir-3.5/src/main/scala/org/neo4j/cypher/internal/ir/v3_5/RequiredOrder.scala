@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
+import org.opencypher.v9_0.expressions.{Expression, Property, PropertyKeyName, Variable}
+
 sealed trait RequiredColumnOrder
 case object AscColumnOrder extends RequiredColumnOrder
 case object DescColumnOrder extends RequiredColumnOrder
@@ -40,4 +42,33 @@ object RequiredOrder {
 case class RequiredOrder(columns: Seq[(String, RequiredColumnOrder)]) {
 
   val isEmpty: Boolean = columns.isEmpty
+
+  def withRenamedColumns(projectExpressions: Map[String, Expression]) : RequiredOrder = {
+    val renamedColumns = columns.map {
+      case column@(StringPropertyLookup(varName, propName), order) =>
+        projectExpressions.collectFirst {
+          case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`))) => (newName, order)
+          case (newName, Variable(`varName`)) => (newName + "." + propName, order)
+        }.getOrElse(column)
+
+      case column@(varName, order) =>
+        projectExpressions.collectFirst {
+          case (newName, Variable(`varName`)) => (newName, order)
+        }.getOrElse(column)
+    }
+    RequiredOrder(renamedColumns)
+  }
+}
+
+object StringPropertyLookup {
+  /**
+    * Split the id into varName and propName, if the
+    * ordered column is a property lookup.
+    */
+  def unapply(arg: String): Option[(String, String)] = {
+    arg.split("\\.", 2) match {
+      case Array(varName, propName) => Some((varName, propName))
+      case _ => None
+    }
+  }
 }

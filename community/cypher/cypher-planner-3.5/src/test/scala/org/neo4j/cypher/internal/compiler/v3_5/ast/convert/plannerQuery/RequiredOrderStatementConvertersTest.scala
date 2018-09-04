@@ -44,6 +44,22 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
     result should equal(expectation)
   }
 
+  test("Extracts required order from query not returning the sort column") {
+    val result = buildPlannerQuery("MATCH (n) RETURN n.prop2 ORDER BY n.prop")
+
+    val expectation = RegularPlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set("n")),
+      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      horizon = RegularQueryProjection(Map("  FRESHID19" -> prop("n", "prop2")), QueryShuffle(Seq(AscSortItem(prop("n", "prop"))(pos)))),
+      tail = Some(RegularPlannerQuery(
+        queryGraph = QueryGraph(argumentIds = Set("  FRESHID19")),
+        horizon = RegularQueryProjection(Map("n.prop2" -> varFor("  FRESHID19")))
+      ))
+    )
+
+    result should equal(expectation)
+  }
+
   test("Extracts required order if variable is not projected") {
     val result = buildPlannerQuery("MATCH (n) RETURN n.prop ORDER BY n.prop2 DESC")
 
@@ -75,7 +91,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
     result should equal(expectation)
   }
 
-  test("Extracts required order from query not returning the sort column") {
+  test("Extracts required order from query not returning the sort column, but a dependency") {
     val result = buildPlannerQuery("MATCH (n) RETURN n ORDER BY n.prop")
 
     val expectation = RegularPlannerQuery(
@@ -156,6 +172,48 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
         tail = Some(RegularPlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set("  FRESHID51")),
           horizon = RegularQueryProjection(Map("foo.bar" -> varFor("  FRESHID51")))
+        ))
+      ))
+    )
+
+    result should equal(expectation)
+  }
+
+  test("Extracts required order from query with WITH where a property lookup is projected to a variable and returned") {
+    val result = buildPlannerQuery("MATCH (n) WITH n, n.prop AS foo ORDER BY n.prop RETURN n.bar, foo ORDER BY foo")
+
+    val expectation = RegularPlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set("n")),
+      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      horizon = RegularQueryProjection(Map( "n" -> varFor("n"), "  foo@28" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(varFor("  foo@28"))(pos)))),
+      tail = Some(RegularPlannerQuery(
+        queryGraph = QueryGraph(argumentIds = Set("  foo@28", "n")),
+        requiredOrder = RequiredOrder(Seq(("  foo@28", AscColumnOrder))),
+        horizon = RegularQueryProjection(Map("  FRESHID57" -> prop("n", "bar"), "  FRESHID62" -> varFor("  foo@28")), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID62"))(pos)))),
+        tail = Some(RegularPlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set("  FRESHID57", "  FRESHID62")),
+          horizon = RegularQueryProjection(Map("n.bar" -> varFor("  FRESHID57"),  "foo" -> varFor("  FRESHID62")))
+        ))
+      ))
+    )
+
+    result should equal(expectation)
+  }
+
+  test("Extracts required order from query with WITH where a property lookup is projected to a variable") {
+    val result = buildPlannerQuery("MATCH (n) WITH n, n.prop AS foo ORDER BY n.prop RETURN n.bar ORDER BY foo")
+
+    val expectation = RegularPlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set("n")),
+      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      horizon = RegularQueryProjection(Map( "n" -> varFor("n"), "foo" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(varFor("foo"))(pos)))),
+      tail = Some(RegularPlannerQuery(
+        queryGraph = QueryGraph(argumentIds = Set("foo", "n")),
+        requiredOrder = RequiredOrder(Seq(("foo", AscColumnOrder))),
+        horizon = RegularQueryProjection(Map("  FRESHID57" -> prop("n", "bar")), QueryShuffle(Seq(AscSortItem(varFor("foo"))(pos)))),
+        tail = Some(RegularPlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set("  FRESHID57")),
+          horizon = RegularQueryProjection(Map("n.bar" -> varFor("  FRESHID57")))
         ))
       ))
     )
