@@ -261,14 +261,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                                      value: String): Iterator[RESULT] =
     translateException(inner.indexSeekByEndsWith(index, needsValues, resultCreator, value))
 
-  override def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties] =
-    translateException(inner.indexScan(index, propertyIndicesWithValues))
-
-  override def indexScanPrimitive(index: IndexReference): LongIterator =
-    translateException(inner.indexScanPrimitive(index))
-
-  override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties] =
-    translateException(inner.indexScanPrimitiveWithValues(index, propertyIndicesWithValues))
+  override def indexScan[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
+    translateException(inner.indexScan(index, needsValues, resultCreator))
 
   override def nodeIsDense(node: Long) =
     translateException(inner.nodeIsDense(node))

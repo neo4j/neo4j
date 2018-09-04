@@ -60,7 +60,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultCreator = CtxResultCreator(state, slots)
+    val resultCreator = SlottedCtxResultCreator(state, slots)
     indexSeek(state, indexReference, needsValues, baseContext, resultCreator)
   }
 

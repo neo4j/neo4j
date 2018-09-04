@@ -326,12 +326,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
             override def propertyValue(i: Int): Value = actualValues(i)
           }
         case None =>
-          new NodeValueHit {
-            override def nodeId: Long = nodeCursor.nodeReference()
-            override def node: NodeValue = fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
-            override def numberOfProperties: Int = nodeCursor.numberOfProperties()
-            override def propertyValue(i: Int): Value = nodeCursor.propertyValue(i)
-          }
+          new CursorWrappingNodeValueHit(nodeCursor)
       }
 
     val needsValuesFromIndexSeek = maybeActualValues.isEmpty && needsValues
@@ -348,44 +343,23 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties] = {
+  override def indexScan[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, propertyIndicesWithValues.nonEmpty)
-    new CursorIterator[IndexedNodeWithProperties] {
-      override protected def fetchNext(): IndexedNodeWithProperties = {
-        getNextNodeRefAndValuesFromCursor(nodeCursor, propertyIndicesWithValues).map {
-          case (nodeRef, cursorValues) => IndexedNodeWithProperties(fromNodeProxy(entityAccessor.newNodeProxy(nodeRef)), cursorValues)
-        }.orNull
+    val nodeValueHit: NodeValueHit = new CursorWrappingNodeValueHit(nodeCursor)
+    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, needsValues)
+    new CursorIterator[RESULT] {
+      override protected def fetchNext(): RESULT = {
+        if (nodeCursor.next())
+          resultCreator.createResult(nodeValueHit)
+        else
+          null.asInstanceOf[RESULT]
       }
 
       override protected def close(): Unit = nodeCursor.close()
     }
   }
-
-  override def indexScanPrimitive(index: IndexReference): PrimitiveLongResourceIterator = {
-    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    // for a primitive cursor, we don't need values
-    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, false)
-    new PrimitiveCursorIterator {
-      override protected def fetchNext(): Long =
-        if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
-
-      override protected def close(): Unit = nodeCursor.close()
-    }
-  }
-
-    override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties] = {
-      val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-      reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE, propertyIndicesWithValues.nonEmpty)
-      new CursorIterator[IndexedPrimitiveNodeWithProperties] {
-        override protected def fetchNext(): IndexedPrimitiveNodeWithProperties =
-          getNextNodeRefAndValuesFromCursor(nodeCursor, propertyIndicesWithValues).map {
-            case (nodeRef, cursorValues) => IndexedPrimitiveNodeWithProperties(nodeRef, cursorValues)
-          }.orNull
-
-        override protected def close(): Unit = nodeCursor.close()
-      }
-    }
 
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
@@ -1338,6 +1312,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
       current
     }
+  }
+
+  class CursorWrappingNodeValueHit(nodeCursor: NodeValueIndexCursor) extends NodeValueHit {
+    override def nodeId: Long = nodeCursor.nodeReference()
+    override def node: NodeValue = fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+    override def numberOfProperties: Int = nodeCursor.numberOfProperties()
+    override def propertyValue(i: Int): Value = nodeCursor.propertyValue(i)
   }
 }
 

@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
@@ -41,6 +39,7 @@ case class NodeIndexScanSlottedPipe(ident: String,
 
   override val propertyOffsets: Array[Int] = property.maybePropertyValueSlot.toArray
   override val propertyIndicesWithValues: Array[Int] = propertyOffsets.map(_ => 0)
+  private val needsValues: Boolean = propertyIndicesWithValues.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -51,20 +50,6 @@ case class NodeIndexScanSlottedPipe(ident: String,
     reference
   }
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    if (propertyIndicesWithValues.isEmpty) {
-      val nodes = state.query.indexScanPrimitive(reference(state.query))
-      PrimitiveLongHelper.map(nodes, { node =>
-
-        val context = SlottedExecutionContext(slots)
-        state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
-        context.setLongAt(offset, node)
-        context
-      })
-    } else {
-      val results = state.query.indexScanPrimitiveWithValues(reference(state.query), propertyIndicesWithValues)
-      createResultsFromPrimitiveTupleIterator(state, slots, results)
-    }
-  }
-
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+    state.query.indexScan(reference(state.query), needsValues, SlottedCtxResultCreator(state, slots))
 }

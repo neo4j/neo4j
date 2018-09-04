@@ -106,11 +106,9 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], value: String): Iterator[RESULT]
 
-  def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties]
-
-  def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties]
-
-  def indexScanPrimitive(index: IndexReference): LongIterator
+  def indexScan[RESULT <: AnyRef](index: IndexReference,
+                                  needsValues: Boolean,
+                                  resultCreator: ResultCreator[RESULT]): Iterator[RESULT]
 
   def lockingUniqueIndexSeek[RESULT](index: IndexReference, resultCreator: ResultCreator[RESULT], queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT]
 
@@ -317,41 +315,4 @@ trait NodeValueHit {
 
 trait ResultCreator[RESULT] {
   def createResult(nodeValueHit: NodeValueHit): RESULT
-}
-
-/**
-  * A node together with some of its properties, as fetched together from an index.
-  */
-case class IndexedNodeWithProperties(node: NodeValue, values: Array[Value]) {
-  def canEqual(other: Any): Boolean = other.isInstanceOf[IndexedNodeWithProperties]
-
-  override def equals(other: Any): Boolean = other match {
-    case that: IndexedNodeWithProperties =>
-      (that canEqual this) &&
-        node == that.node &&
-        (values sameElements that.values)
-    case _ => false
-  }
-
-  override def hashCode(): Int = {
-    val state = Seq(node, values.toSeq)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-  }
-}
-
-case class IndexedPrimitiveNodeWithProperties(node: Long, values: Array[Value]) {
-  def canEqual(other: Any): Boolean = other.isInstanceOf[IndexedPrimitiveNodeWithProperties]
-
-  override def equals(other: Any): Boolean = other match {
-    case that: IndexedPrimitiveNodeWithProperties =>
-      (that canEqual this) &&
-        node == that.node &&
-        (values sameElements that.values)
-    case _ => false
-  }
-
-  override def hashCode(): Int = {
-    val state = Seq(node, values.toSeq)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-  }
 }

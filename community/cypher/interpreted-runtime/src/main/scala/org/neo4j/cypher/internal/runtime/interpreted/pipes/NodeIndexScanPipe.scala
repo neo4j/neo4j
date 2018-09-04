@@ -33,7 +33,7 @@ case class NodeIndexScanPipe(ident: String,
 
   override val propertyIndicesWithValues: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
   override val propertyNamesWithValues: Array[String] = if (property.shouldGetValue) Array(ident + "." + property.propertyKeyToken.name) else Array.empty
-
+  private val needsValues = propertyIndicesWithValues.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -45,7 +45,9 @@ case class NodeIndexScanPipe(ident: String,
   }
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val results = state.query.indexScan(reference(state.query), propertyIndicesWithValues)
-    createResultsFromTupleIterator(baseContext, results)
+    val resultCreator =
+      if (needsValues) CtxResultCreatorWithValues(baseContext)
+      else CtxResultCreator(baseContext)
+    state.query.indexScan(reference(state.query), needsValues, resultCreator)
   }
 }

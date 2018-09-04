@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, GetValue, IndexedProperty}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -30,10 +28,11 @@ import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, 
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
-class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
+class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
+  override val propertyKeys = Seq(propertyKey)
   private val node = nodeValue(11)
 
   private def nodeValue(id: Long) = {
@@ -45,7 +44,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should return nodes found by index scan when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Iterator(IndexedNodeWithProperties(node, Array.empty)))
+      query = scanFor(List(nodeValueHit(node)))
     )
 
     // when
@@ -59,7 +58,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
   test("should use index provided values when available") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Iterator(IndexedNodeWithProperties(node, Array(Values.stringValue("hello")))))
+      query = scanFor(List(nodeValueHit(node, "hello")))
     )
 
     // when
@@ -70,11 +69,5 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
     result.toList should equal(List(
       Map("n" -> node, "n." + propertyKey.name -> Values.stringValue("hello"))
     ))
-  }
-
-  private def scanFor(nodes: Iterator[IndexedNodeWithProperties]): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexScan(any(), any())).thenReturn(nodes)
-    query
   }
 }

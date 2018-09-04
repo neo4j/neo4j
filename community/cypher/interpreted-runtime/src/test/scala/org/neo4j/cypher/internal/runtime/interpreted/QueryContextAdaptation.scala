@@ -132,11 +132,9 @@ trait QueryContextAdaptation {
 
   override def getOrCreateLabelId(labelName: String): Int = ???
 
-  override def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): scala.Iterator[IndexedNodeWithProperties] = ???
-
-  override def indexScanPrimitive(index: IndexReference): LongIterator = ???
-
-  override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties] = ???
+  override def indexScan[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] = ???
 
   override def getImportURL(url: URL): Either[String, URL] = ???
 

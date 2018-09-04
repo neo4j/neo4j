@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.PrimitiveLongHelper
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexMockingHelp
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{IndexedPrimitiveNodeWithProperties, QueryContext}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
@@ -32,10 +30,11 @@ import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
-class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos with SlottedPipeTestHelper {
+class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos with SlottedPipeTestHelper with IndexMockingHelp {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
+  override val propertyKeys = Seq(propertyKey)
   private val node = nodeValue(11)
 
   private def nodeValue(id: Long) = {
@@ -47,7 +46,7 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
   test("should return nodes found by index scan when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Seq(IndexedPrimitiveNodeWithProperties(node.id, Array.empty)))
+      query = scanFor(Seq(nodeValueHit(node)))
     )
 
     // when
@@ -63,7 +62,7 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
   test("should use index provided values when available") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = scanFor(Seq(IndexedPrimitiveNodeWithProperties(node.id, Array(Values.stringValue("hello")))))
+      query = scanFor(Seq(nodeValueHit(node, "hello")))
     )
 
     // when
@@ -79,12 +78,4 @@ class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
       Map("n" -> node.id, "n." + propertyKey.name -> Values.stringValue("hello"))
     ))
   }
-
-  private def scanFor(results: Iterable[IndexedPrimitiveNodeWithProperties]): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexScanPrimitive(any())).thenReturn(PrimitiveLongHelper.mapToPrimitive[IndexedPrimitiveNodeWithProperties](results.iterator, _.node))
-    when(query.indexScanPrimitiveWithValues(any(), any())).thenReturn(results.iterator)
-    query
-  }
-
 }

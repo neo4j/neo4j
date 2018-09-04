@@ -125,13 +125,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                            queries: Seq[IndexQuery]): Iterator[RESULT] =
     manyDbHits(inner.indexSeek(index, needsValues, resultCreator, queries))
 
-  override def indexScan(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties] =
-    manyDbHits(inner.indexScan(index, propertyIndicesWithValues))
-
-  override def indexScanPrimitive(index: IndexReference): LongIterator = manyDbHits(inner.indexScanPrimitive(index))
-
-  override def indexScanPrimitiveWithValues(index: IndexReference, propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties] =
-    manyDbHits(inner.indexScanPrimitiveWithValues(index, propertyIndicesWithValues))
+  override def indexScan[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
+    manyDbHits(inner.indexScan(index, needsValues, resultCreator))
 
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,

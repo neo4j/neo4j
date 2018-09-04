@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{IndexedNodeWithProperties, NodeValueHit, ResultCreator}
+import org.neo4j.cypher.internal.runtime.{NodeValueHit, ResultCreator}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 
 /**
@@ -33,19 +33,6 @@ trait IndexPipeWithValues extends Pipe {
   val propertyIndicesWithValues: Array[Int]
   // the names of the properties where we will get values
   val propertyNamesWithValues: Array[String]
-
-  /**
-    * Create an Iterator of ExecutionContexts given an Iterator of tuples of nodes and property values,
-    * by copying the node and all values into the given baseContext.
-    */
-  def createResultsFromTupleIterator(baseContext: ExecutionContext, tupleIterator: Iterator[IndexedNodeWithProperties]): Iterator[ExecutionContext] = {
-    tupleIterator.map {
-      case IndexedNodeWithProperties(node, values) =>
-        val valueEntries = values.indices.map(i => propertyNamesWithValues(i) -> values(i) )
-        val newEntries = (ident -> node) +: valueEntries
-        executionContextFactory.copyWith(baseContext, newEntries)
-    }
-  }
 
   case class CtxResultCreator(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
     override def createResult(nodeValueHit: NodeValueHit): ExecutionContext =

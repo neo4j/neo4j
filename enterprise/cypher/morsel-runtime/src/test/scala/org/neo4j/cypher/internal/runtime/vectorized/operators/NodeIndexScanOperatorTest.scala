@@ -22,12 +22,15 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.mockito.ArgumentMatchers.any
+
 import org.mockito.Mockito.{RETURNS_DEEP_STUBS, when}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexMockingHelp
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
-import org.neo4j.cypher.internal.runtime.{IndexedPrimitiveNodeWithProperties, QueryContext}
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -37,12 +40,11 @@ import org.opencypher.v9_0.util.symbols.{CTAny, CTNode}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
-import scala.collection.JavaConverters._
-
-class NodeIndexScanOperatorTest extends CypherFunSuite with ImplicitDummyPos {
+class NodeIndexScanOperatorTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
   private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))
+  override val propertyKeys = Seq(propertyKey)
   private val node = nodeValue(11)
 
   private def nodeValue(id: Long) = {
@@ -53,7 +55,7 @@ class NodeIndexScanOperatorTest extends CypherFunSuite with ImplicitDummyPos {
 
   test("should use index provided values when available") {
     // given
-    val queryContext = scanFor(Seq(IndexedPrimitiveNodeWithProperties(node.id, Array(Values.stringValue("hello")))))
+    val queryContext = kernelScanFor(Seq(nodeValueHit(node, "hello")))
 
     // input data
     val inputMorsel = new Morsel(new Array[Long](0), new Array[AnyValue](0), 0)
@@ -86,14 +88,15 @@ class NodeIndexScanOperatorTest extends CypherFunSuite with ImplicitDummyPos {
     outputMorsel.validRows should equal(1)
   }
 
-  private def scanFor(results: Iterable[IndexedPrimitiveNodeWithProperties]): QueryContext = {
+  private def kernelScanFor(results: Iterable[TestNodeValueHit]): QueryContext = {
+    import scala.collection.JavaConverters._
+
     val context = mock[QueryContext](RETURNS_DEEP_STUBS)
 
-   val jIterator =  results.map { case IndexedPrimitiveNodeWithProperties(l,vs) =>  org.neo4j.helpers.collection.Pair.of(new java.lang.Long(l), vs)}.iterator.asJava
+    val jIterator = results.map( hit => org.neo4j.helpers.collection.Pair.of(new java.lang.Long(hit.nodeId), hit.values)).iterator.asJava
 
-    val cursor = new StubNodeValueIndexCursor(jIterator)
+    val cursor = new org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor(jIterator)
     when(context.transactionalContext.cursors.allocateNodeValueIndexCursor).thenReturn(cursor)
     context
   }
-
 }

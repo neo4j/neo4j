@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.runtime.{IndexedPrimitiveNodeWithProperties, NodeValueHit, ResultCreator}
+import org.neo4j.cypher.internal.runtime.{NodeValueHit, ResultCreator}
 
 /**
   * Provides helper methods for slotted index pipes that get nodes together with actual property values.
@@ -39,26 +39,7 @@ trait IndexSlottedPipeWithValues extends Pipe {
   // Number of longs and refs
   val argumentSize: SlotConfiguration.Size
 
-  /**
-    * Create an Iterator of ExecutionContexts given an Iterator of tuples of nodes ids and property values,
-    * by copying the node and all values into the given context.
-    */
-  def createResultsFromPrimitiveTupleIterator(state: QueryState, slots: SlotConfiguration, tupleIterator: Iterator[IndexedPrimitiveNodeWithProperties]): Iterator[ExecutionContext] = {
-    tupleIterator.map {
-      case IndexedPrimitiveNodeWithProperties(node, values) =>
-        val slottedContext: SlottedExecutionContext = SlottedExecutionContext(slots)
-        state.copyArgumentStateTo(slottedContext, argumentSize.nLongs, argumentSize.nReferences)
-        slottedContext.setLongAt(offset, node)
-        var i = 0
-        while (i < values.length) {
-          slottedContext.setRefAt(propertyOffsets(i), values(i))
-          i += 1
-        }
-        slottedContext
-    }
-  }
-
-  case class CtxResultCreator(state: QueryState, slots: SlotConfiguration) extends ResultCreator[ExecutionContext] {
+  case class SlottedCtxResultCreator(state: QueryState, slots: SlotConfiguration) extends ResultCreator[ExecutionContext] {
     override def createResult(nodeValueHit: NodeValueHit): ExecutionContext = {
       val slottedContext: SlottedExecutionContext = SlottedExecutionContext(slots)
       state.copyArgumentStateTo(slottedContext, argumentSize.nLongs, argumentSize.nReferences)

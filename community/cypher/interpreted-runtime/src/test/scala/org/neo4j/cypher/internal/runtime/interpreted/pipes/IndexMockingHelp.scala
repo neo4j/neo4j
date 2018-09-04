@@ -65,10 +65,16 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     query
   }
 
-  protected def nodeValueHit(nodeValue: VirtualNodeValue, values: Object*): NodeValueHit =
-    TestNodeValueHit(nodeValue.id, values.map(Values.of))
+  protected def scanFor(nodes: Iterable[TestNodeValueHit]): QueryContext = {
+    val query = mock[QueryContext]
+    when(query.indexScan(any(), any(), any())).thenAnswer(PredefinedIterator(nodes))
+    query
+  }
 
-  case class TestNodeValueHit(nodeId: Long, values: Seq[Value]) extends NodeValueHit {
+  protected def nodeValueHit(nodeValue: VirtualNodeValue, values: Object*): TestNodeValueHit =
+    TestNodeValueHit(nodeValue.id, values.map(Values.of).toArray)
+
+  case class TestNodeValueHit(nodeId: Long, values: Array[Value]) extends NodeValueHit {
     override def node: VirtualNodeValue = VirtualValues.node(nodeId)
     override def numberOfProperties: Int = values.size
     override def propertyValue(i: Int): Value = values(i)
