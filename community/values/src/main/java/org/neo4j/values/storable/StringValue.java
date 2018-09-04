@@ -30,6 +30,7 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.lang.Character.MIN_HIGH_SURROGATE;
 import static java.lang.String.format;
 
 public abstract class StringValue extends TextValue
@@ -215,32 +216,47 @@ public abstract class StringValue extends TextValue
 
         //We found c1, and c2 where c1 != c2, before comparing we need
         //to perform fix-up if they are in surrogate range before comparing.
-        return normalizeChars( c1, c2 );
+        return orderCharsByCodePoint( c1, c2 );
     }
 
-    private int normalizeChars( char c1, char c2 )
+    /*
+     * In UTF-16 when a code point doesn't fit in a single char - two chars (also known as surrogate pairs) are used
+     * following the schema:
+     *
+     * - Subtract `0x010000` -> now we have a 20bit number in range ` 0x000000..0x0FFFFF`
+     * - Take the top ten bits and add `0xD800`. This number is used as the first char and is referred to as the high
+     *    surrogate, it will be in the range ` 0xD800..0xDBFF`
+     * - Take the low ten bits and add ` 0xDC00`. This number will be the second char or the low surrogate, it will be
+     *   in range `0xDC00..0xDFFF`.
+     * - Note that the higher surrogate range is lower that the low surrogate range, meaning that it is enough to
+     *   to check if a character is bigger than `0xD800`(MIN_HIGH_SURROGATE) in order to check if the character is a
+     *   supplementary character.
+     *
+     * This algorithm uses the following characteristics of UTF-16:
+     *  - If any of the characters are not in surrogate range the characters are already ordered by code points.
+     *  - If a char is in the surrogate range it needs a fixup in order to preserve order.
+     */
+    private int orderCharsByCodePoint( char c1, char c2 )
     {
-        if ( c1 >= Character.MIN_HIGH_SURROGATE && c2 >= Character.MIN_HIGH_SURROGATE )
+        if ( c1 >= MIN_HIGH_SURROGATE && c2 >= MIN_HIGH_SURROGATE )
         {
-            if ( c1 >= '\ue000' )
-            {
-                c1 -= '\u0800';
-            }
-            else
-            {
-                c1 += '\u2000';
-            }
-            if ( c2 >= '\ue000' )
-            {
-                c2 -= '\u0800';
-            }
-            else
-            {
-                c2 += '\u2000';
-            }
+            return fixUp( c1 ) - fixUp( c2 );
         }
 
         return c1 - c2;
+    }
+
+    private char fixUp( char c1 )
+    {
+        if ( c1 >= '\ue000' )
+        {
+            c1 -= '\u0800';
+        }
+        else
+        {
+            c1 += '\u2000';
+        }
+        return c1;
     }
 
     static TextValue EMPTY = new StringValue()
