@@ -57,7 +57,6 @@ import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
-import static org.eclipse.collections.impl.utility.ArrayIterate.take;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -349,9 +348,9 @@ public class MultipleIndexPopulator implements IndexPopulator
         return populations.remove( indexPopulation );
     }
 
-    void populateFromQueueBatched()
+    void populateFromQueueBatched( long currentlyIndexedNodeId )
     {
-        populateFromQueue( QUEUE_THRESHOLD );
+        populateFromQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
     }
 
     void flushAll()
@@ -374,7 +373,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     /**
      * Populates external updates from the update queue if there are {@code queueThreshold} or more queued updates.
      */
-    void populateFromQueue( int queueThreshold )
+    void populateFromQueue( int queueThreshold, long currentlyIndexedNodeId )
     {
         int queueSize = updatesQueue.size();
         if ( queueSize > 0 && queueSize >= queueThreshold )
@@ -387,7 +386,9 @@ public class MultipleIndexPopulator implements IndexPopulator
             {
                 do
                 {
-                    updater.process( updatesQueue.poll() );
+                    // no need to check for null as nobody else is emptying this queue
+                    IndexEntryUpdate<?> update = updatesQueue.poll();
+                    storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
                 while ( !updatesQueue.isEmpty() );
             }
@@ -560,7 +561,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                     if ( populationOngoing )
                     {
                         populator.add( takeCurrentBatch() );
-                        populateFromQueue( 0 );
+                        populateFromQueue( 0, Long.MAX_VALUE );
                         if ( populations.contains( IndexPopulation.this ) )
                         {
                             if ( verifyBeforeFlipping )
@@ -631,7 +632,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( EntityUpdates updates )
         {
             add( updates );
-            populateFromQueueBatched();
+            populateFromQueueBatched( updates.getEntityId() );
             return false;
         }
 
@@ -665,6 +666,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         public void stop()
         {
             delegate.stop();
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
+        {
+            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
         }
 
         @Override

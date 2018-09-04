@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -95,6 +96,12 @@ public interface IndexStoreView extends NodePropertyAccessor, PropertyLoader
 
         @Override
         public void stop()
+        {
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
+                long currentlyIndexedNodeId )
         {
         }
 

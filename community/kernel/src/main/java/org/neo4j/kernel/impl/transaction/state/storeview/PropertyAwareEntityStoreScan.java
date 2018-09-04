@@ -28,7 +28,9 @@ import java.util.function.LongFunction;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
+import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -117,6 +119,16 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
                     }
                 }
             }
+        }
+    }
+
+    @Override
+    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
+            long currentlyIndexedNodeId )
+    {
+        if ( update.getEntityId() <= currentlyIndexedNodeId )
+        {
+            updater.process( update );
         }
     }
 

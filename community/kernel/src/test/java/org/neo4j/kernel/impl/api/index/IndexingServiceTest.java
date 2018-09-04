@@ -296,8 +296,6 @@ public class IndexingServiceTest
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator, times( 3 ) ).add( any( Collection.class ) );
         order.verify( populator ).newPopulatingUpdater( storeView );
-        order.verify( populator ).includeSample( value2 );
-        order.verify( updater ).process( value2 );
         order.verify( updater ).close();
         order.verify( populator ).sampleResult();
         order.verify( populator ).close( true );
@@ -1321,6 +1319,14 @@ public class IndexingServiceTest
                 public void stop()
                 {
                     stop = true;
+                }
+
+                @Override
+                public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater,
+                        IndexEntryUpdate<?> update,
+                        long currentlyIndexedNodeId )
+                {
+                    // no-op
                 }
 
                 @Override

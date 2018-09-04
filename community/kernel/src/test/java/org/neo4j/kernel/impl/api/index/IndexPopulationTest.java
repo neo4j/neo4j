@@ -131,6 +131,15 @@ public class IndexPopulationTest
                     }
 
                     @Override
+                    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update, long currentlyIndexedNodeId )
+                    {
+                        if ( update.getEntityId() <= currentlyIndexedNodeId )
+                        {
+                            updater.process( update );
+                        }
+                    }
+
+                    @Override
                     public PopulationProgress getProgress()
                     {
                         return null;
