@@ -31,10 +31,10 @@ import org.neo4j.test.rule.RandomRule;
 import static org.neo4j.values.storable.StringHelpers.assertConsistent;
 
 @ExtendWith( RandomExtension.class )
-public class TextValueFuzzTest
+class TextValueFuzzTest
 {
     @Inject
-    public RandomRule random = new RandomRule();
+    private RandomRule random;
 
     private static final int ITERATIONS = 1000;
 
