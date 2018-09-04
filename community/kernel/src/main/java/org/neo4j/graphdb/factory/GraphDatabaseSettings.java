@@ -309,9 +309,14 @@ public class GraphDatabaseSettings implements LoadableConfig
             buildSetting( "dbms.import.csv.buffer_size", INTEGER, Integer.toString( 2 * Configuration.MB ) )
                     .constraint( min( 1 ) ).build();
 
-    @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU." )
+    @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU. " +
+                  "Calling `dbms.listQueries` will display the time. " +
+                  "This can also be logged in the query log by using `log_queries_detailed_time_logging_enabled`." )
     public static Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, TRUE );
-    @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query." )
+    
+    @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query. " +
+                  "Calling `dbms.listQueries` will display the time. " +
+                  "This can also be logged in the query log by using `log_queries_allocation_logging_enabled`." )
     public static Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, TRUE );
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
