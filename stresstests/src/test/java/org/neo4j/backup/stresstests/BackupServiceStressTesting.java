@@ -45,10 +45,9 @@ import org.neo4j.util.concurrent.Futures;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
-import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static java.lang.System.getProperty;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
 import static org.neo4j.helper.DatabaseConfiguration.configureBackup;
@@ -61,7 +60,6 @@ import static org.neo4j.helper.StressTestingHelper.fromEnv;
  */
 public class BackupServiceStressTesting
 {
-    private static final String DEFAULT_DURATION_IN_MINUTES = "30";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
     private static final String DEFAULT_HOSTNAME = "localhost";
     private static final String DEFAULT_PORT = "8200";
@@ -71,7 +69,6 @@ public class BackupServiceStressTesting
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception
     {
-        long durationInMinutes = parseLong( fromEnv( "BACKUP_SERVICE_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
         String directory = fromEnv( "BACKUP_SERVICE_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );
         String backupHostname = fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_HOSTNAME", DEFAULT_HOSTNAME );
         int backupPort = parseInt( fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_PORT", DEFAULT_PORT ) );
@@ -108,7 +105,7 @@ public class BackupServiceStressTesting
             Future<?> backupWorker = service.submit( new BackupLoad( control, backupHostname, backupPort, workDirectory ) );
             Future<?> startStopWorker = service.submit( new StartStop( control, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
-            Futures.combine( workload, backupWorker, startStopWorker ).get(durationInMinutes + 5, MINUTES );
+            control.awaitEnd( asList( workload, backupWorker, startStopWorker ) );
             control.assertNoFailure();
 
             service.shutdown();
