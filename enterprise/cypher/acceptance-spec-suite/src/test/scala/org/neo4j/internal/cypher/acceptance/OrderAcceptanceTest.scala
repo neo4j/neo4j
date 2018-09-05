@@ -23,6 +23,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 // TODO this should actually be a PlanningIntegrationTest, or it should have some assertions on the results
@@ -54,6 +55,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Projection")
       .containingArgument("{a.name : a.name}")
       .onTopOf(aPlan("Sort")
+        .withOrder(ProvidedOrder.asc("anon[42]"))
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
           .containingArgument("{ : a.age}")
@@ -73,6 +75,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Projection")
       .containingArgument("{a.name : a.name, a.age : a.age}")
       .onTopOf(aPlan("Sort")
+        .withOrder(ProvidedOrder.asc("anon[42]"))
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
           .containingArgument("{ : a.age}")
@@ -92,6 +95,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Projection")
       .containingArgument("{a.name : a.name}")
       .onTopOf(aPlan("Sort")
+        .withOrder(ProvidedOrder.asc("age"))
         .containingArgument("age")
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
@@ -113,6 +117,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Projection")
       .containingArgument("{age : a.age}")
       .onTopOf(aPlan("Sort")
+        .withOrder(ProvidedOrder.asc("b"))
         .containingArgument("b")
         .onTopOf(aPlan("Projection")
           .containingArgument("{b : a}")
@@ -133,6 +138,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Projection")
       .containingArgument("{age : a.age}")
       .onTopOf(aPlan("Sort")
+        .withOrder(ProvidedOrder.asc("b"))
         .containingArgument("b")
         .onTopOf(aPlan("Projection")
           .containingArgument("{b : a}")
@@ -191,6 +197,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Projection")
       .containingArgument("{ : a.name}")
       .onTopOf(aPlan("Sort")
+        .withOrder(ProvidedOrder.asc("anon[49]"))
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
           .containingArgument("{ : a.age}")
@@ -313,6 +320,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Sort")
+      .withOrder(ProvidedOrder.asc("age"))
       .containingArgument("age")
       .onTopOf(aPlan("Distinct")
         .containingVariables("age")
@@ -331,6 +339,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Sort")
+      .withOrder(ProvidedOrder.asc("anon[71]"))
       .onTopOf(aPlan("Projection")
         .containingArgument("{ : a.age}")
         .onTopOf(aPlan("Distinct")
@@ -352,6 +361,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Sort")
+      .withOrder(ProvidedOrder.asc("age"))
       .containingArgument("age")
       .onTopOf(aPlan("EagerAggregation")
         .containingVariables("age", "name") // the introduced variables
@@ -371,6 +381,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Sort")
+      .withOrder(ProvidedOrder.asc("name"))
       .containingArgument("name")
       .onTopOf(aPlan("EagerAggregation")
         .containingVariables("age", "name") // the introduced variables
@@ -390,6 +401,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Sort")
+      .withOrder(ProvidedOrder.asc("anon[77]"))
       .onTopOf(aPlan("Projection")
         .containingArgument("{ : a.foo}")
         .onTopOf(aPlan("EagerAggregation")

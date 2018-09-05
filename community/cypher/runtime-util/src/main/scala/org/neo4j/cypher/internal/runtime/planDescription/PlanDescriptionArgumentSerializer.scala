@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
+import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.opencypher.v9_0.ast.prettifier.ExpressionStringifier
 import org.opencypher.v9_0.expressions
@@ -63,6 +64,7 @@ object PlanDescriptionArgumentSerializer {
       case Rows(value) => Long.box(value)
       case Time(value) => Long.box(value)
       case EstimatedRows(value) => Double.box(value)
+      case Order(providedOrder) => serializeProvidedOrder(providedOrder)
       case Version(version) => version
       case Planner(planner) => planner
       case PlannerImpl(plannerName) => plannerName
@@ -102,7 +104,14 @@ object PlanDescriptionArgumentSerializer {
     }
   }
 
-   def removeGeneratedNames(s: String): String = {
+  def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {
+    providedOrder.columns.map(col => {
+      val direction = if (col.isAscending) "ASC" else "DESC"
+      s"${removeGeneratedNames(col.id)} $direction"
+    }).mkString(", ")
+  }
+
+  def removeGeneratedNames(s: String): String = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
     DEDUP_PATTERN.replaceAllIn(named, _.group(1))
   }

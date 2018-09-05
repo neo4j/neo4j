@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.PlanDescrip
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{ExplainExecutionResult, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
@@ -99,6 +99,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlan,
       runtimeContext.readOnly,
       logicalPlanResult.logicalPlanState.planningAttributes.cardinalities,
+      logicalPlanResult.logicalPlanState.planningAttributes.providedOrders,
       executionPlan3_5,
       preParsingNotifications,
       planningNotificationLogger.notifications.map(asKernelNotification(planningNotificationLogger.offset)),
@@ -146,6 +147,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   protected class CypherExecutableQuery(logicalPlan: LogicalPlan,
                                         readOnly: Boolean,
                                         cardinalities: Cardinalities,
+                                        providedOrders: ProvidedOrders,
                                         executionPlan: ExecutionPlan_v3_5,
                                         preParsingNotifications: Set[Notification],
                                         planningNotifications: Set[Notification],
@@ -181,7 +183,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         taskCloser.addTask(queryContext.resources.close)
 
         val planDescriptionBuilder =
-          new PlanDescriptionBuilder(logicalPlan, plannerName, readOnly, cardinalities, executionPlan.runtimeName, executionPlan.metadata)
+          new PlanDescriptionBuilder(logicalPlan, plannerName, readOnly, cardinalities, providedOrders, executionPlan.runtimeName, executionPlan.metadata)
 
         val internalExecutionResult =
           if (innerExecutionMode == ExplainMode) {

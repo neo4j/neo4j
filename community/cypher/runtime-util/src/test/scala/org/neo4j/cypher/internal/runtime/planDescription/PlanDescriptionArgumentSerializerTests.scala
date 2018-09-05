@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
+import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.PlanDescriptionArgumentSerializer.serialize
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
@@ -76,6 +77,12 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   test("should serialize point distance index seeks") {
     serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = false)) should equal(":L(location) WHERE distance(_,p) < 300")
     serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = true)) should equal(":L(location) WHERE distance(_,p) <= 300")
+  }
+
+  test("should serialize provided order") {
+    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc("a"), ProvidedOrder.Desc("b"), ProvidedOrder.Asc("c.foo"))))) should be("a ASC, b DESC, c.foo ASC")
+    serialize(Order(ProvidedOrder.empty)) should be("")
+    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc("  FRESHID42"))))) should be("anon[42] ASC")
   }
 
 }

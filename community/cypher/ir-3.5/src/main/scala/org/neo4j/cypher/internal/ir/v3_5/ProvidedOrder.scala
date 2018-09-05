@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
+import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder.{Asc, Desc}
+
 
 object ProvidedOrder {
 
@@ -54,6 +56,9 @@ object ProvidedOrder {
   }
 
   val empty: ProvidedOrder = ProvidedOrder(Seq.empty[Column])
+
+  def asc(id: String): ProvidedOrder = empty.asc(id)
+  def desc(id: String): ProvidedOrder = empty.desc(id)
 }
 
 /**
@@ -63,6 +68,11 @@ object ProvidedOrder {
   * @param columns a sequence of columns with sort direction
   */
 case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
+
+  val isEmpty: Boolean = columns.isEmpty
+
+  def asc(id: String): ProvidedOrder = ProvidedOrder(columns :+ Asc(id))
+  def desc(id: String): ProvidedOrder = ProvidedOrder(columns :+ Desc(id))
 
   /**
     * Returns a new provided order where the order columns of this are concatenated with

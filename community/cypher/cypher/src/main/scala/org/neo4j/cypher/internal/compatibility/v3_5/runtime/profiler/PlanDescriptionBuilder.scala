@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -32,12 +32,13 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              plannerName: PlannerName,
                              readOnly: Boolean,
                              cardinalities: Cardinalities,
+                             providedOrders: ProvidedOrders,
                              runtimeName: RuntimeName,
                              metadata: Seq[Argument]) {
 
   def explain(): InternalPlanDescription = {
     val description =
-      LogicalPlan2PlanDescription(logicalPlan, plannerName, readOnly, cardinalities)
+      LogicalPlan2PlanDescription(logicalPlan, plannerName, readOnly, cardinalities, providedOrders)
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.name))
 

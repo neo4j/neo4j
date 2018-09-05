@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.runtime.planDescription
 import java.util
 
 import org.neo4j.cypher.exceptionHandler
+import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.symbols.CypherType
-import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_5.logical.plans.{QualifiedName, SeekableArgs}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
+import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.symbols.CypherType
 import org.opencypher.v9_0.{expressions => ast}
 
 import scala.collection.mutable
@@ -138,6 +139,8 @@ object InternalPlanDescription {
     case class Rows(value: Long) extends Argument
 
     case class DbHits(value: Long) extends Argument
+
+    case class Order(order: ProvidedOrder) extends Argument
 
     case class PageCacheHits(value: Long) extends Argument
 

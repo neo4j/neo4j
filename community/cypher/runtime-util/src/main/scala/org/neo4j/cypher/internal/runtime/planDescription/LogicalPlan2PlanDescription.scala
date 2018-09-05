@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -28,13 +28,14 @@ import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName, LabelT
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.util.InternalException
 
-object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, Boolean, Cardinalities) => InternalPlanDescription) {
+object LogicalPlan2PlanDescription {
 
-  override def apply(input: LogicalPlan,
+  def apply(input: LogicalPlan,
                      plannerName: PlannerName,
                      readOnly: Boolean,
-                     cardinalities: Cardinalities): InternalPlanDescription = {
-    new LogicalPlan2PlanDescription(readOnly, cardinalities).create(input)
+                     cardinalities: Cardinalities,
+                     providedOrders: ProvidedOrders): InternalPlanDescription = {
+    new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders).create(input)
       .addArgument(Version("CYPHER "+plannerName.version))
       .addArgument(RuntimeVersion("3.5"))
       .addArgument(Planner(plannerName.toTextOutput))
@@ -43,7 +44,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, Boolean, 
   }
 }
 
-case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities)
+case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, providedOrders: ProvidedOrders)
   extends TreeBuilder[InternalPlanDescription] {
 
   override protected def build(plan: LogicalPlan): InternalPlanDescription = {
@@ -150,10 +151,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    if (cardinalities.isDefinedAt(plan.id))
-      result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
-    else
-      result
+    addPlanningAttributes(result, plan)
   }
 
   override protected def build(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
@@ -325,7 +323,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
+    addPlanningAttributes(result, plan)
   }
 
   override protected def build(plan: LogicalPlan, lhs: InternalPlanDescription,
@@ -413,7 +411,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
+    addPlanningAttributes(result, plan)
+  }
+
+  private def addPlanningAttributes(description: InternalPlanDescription, plan: LogicalPlan): InternalPlanDescription = {
+    val withEstRows = if (cardinalities.isDefinedAt(plan.id))
+      description.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
+    else
+      description
+
+    if (providedOrders.isDefinedAt(plan.id) && !providedOrders(plan.id).isEmpty)
+      withEstRows.addArgument(Order(providedOrders(plan.id)))
+    else
+      withEstRows
   }
 
   private def getDescriptions(label: LabelToken,
