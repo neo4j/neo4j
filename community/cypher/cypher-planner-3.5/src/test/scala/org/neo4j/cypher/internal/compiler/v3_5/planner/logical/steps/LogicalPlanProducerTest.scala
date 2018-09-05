@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, ProvidedOrder}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, Descending, ProvidedOrder}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -163,6 +163,25 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(Ascending("z"))))
+    }
+  }
+
+  test("should trim provided order (3 columns) in left outer hash join") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+      // plan with provided order
+      val lhs = fakeLogicalPlanFor(context.planningAttributes, "x", "z.bar")
+      context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder(Seq(Ascending("z.bar"), Descending("x"))))
+      val rhs = fakeLogicalPlanFor(context.planningAttributes, "x", "y.bar", "x.foo")
+      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder(Seq(Ascending("y.bar"), Ascending("x"), Descending("x.foo"))))
+
+      val joinColumns = Set("x")
+
+      //when
+      val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Nil, context)
+
+      // then
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(Ascending("y.bar"))))
     }
   }
 

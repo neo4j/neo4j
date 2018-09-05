@@ -343,13 +343,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planLeftOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).amendQueryGraph(_.withAddedOptionalMatch(solveds.get(right.id).queryGraph.addHints(hints)))
-    // TODO check where null gets sorted, and fix the Pipes. After that: providedOrders.get(right.id)
-    annotate(LeftOuterHashJoin(nodes, left, right), solved, ProvidedOrder.empty, context)
+    val providedOrder = providedOrders.get(right.id).upToExcluding(nodes)
+    annotate(LeftOuterHashJoin(nodes, left, right), solved, providedOrder, context)
   }
 
   def planRightOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(right.id).amendQueryGraph(_.withAddedOptionalMatch(solveds.get(left.id).queryGraph.addHints(hints)))
-    // TODO assert order in Pipe test
     annotate(RightOuterHashJoin(nodes, left, right), solved, providedOrders.get(right.id), context)
   }
 

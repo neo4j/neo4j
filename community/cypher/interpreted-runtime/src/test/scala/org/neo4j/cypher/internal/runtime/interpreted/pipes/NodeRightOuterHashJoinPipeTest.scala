@@ -23,11 +23,11 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper, TestableIterator}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
 
@@ -51,7 +51,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("a"))().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.toList should equal(List(
       Map("b" -> fromNodeProxy(node1), "a" -> NO_VALUE),
       Map("b" -> fromNodeProxy(node2), "a" -> intValue(2))
     ))
@@ -73,7 +73,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.toList should equal(List(
       Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> NO_VALUE),
       Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(30)),
       Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(40))
@@ -113,7 +113,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.toList should equal(List(
       Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> NO_VALUE),
       Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> NO_VALUE),
       Map("a" -> intValue(30), "b" -> fromNodeProxy(node3), "c" -> NO_VALUE)
@@ -138,7 +138,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.toList should equal(List(
       Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> intValue(10)),
       Map("a" -> intValue(20), "b" -> NO_VALUE , "c" -> NO_VALUE),
       Map("a" -> intValue(30), "b" -> fromNodeProxy(node3), "c" -> intValue(30))
@@ -163,7 +163,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.toList should equal(List(
       Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> NO_VALUE),
       Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(20)),
       Map("a" -> intValue(30), "b" -> fromNodeProxy(node3), "c" -> intValue(30))
@@ -184,7 +184,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.toList should equal(List(
       Map("a" -> intValue(20), "b" -> NO_VALUE , "c" -> NO_VALUE)
     ))
   }
@@ -211,7 +211,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val result = NodeRightOuterHashJoinPipe(Set("a","b"), left, right, Set("d"))().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.toList should equal(List(
       Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node2), "c" -> intValue(1), "d" -> intValue(1)),
       Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(2), "d" -> intValue(2)),
       Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(3), "d" -> intValue(2)),
