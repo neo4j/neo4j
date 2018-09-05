@@ -36,10 +36,11 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -56,7 +57,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -73,15 +73,12 @@ public class BookmarkIT
     public final TestDirectory directory = TestDirectory.testDirectory( getClass() );
 
     private Driver driver;
-    private GraphDatabaseService db;
+    private GraphDatabaseAPI db;
 
     @After
     public void tearDown() throws Exception
     {
-        if ( driver != null )
-        {
-            driver.close();
-        }
+        IOUtils.closeAllSilently( driver );
         if ( db != null )
         {
             db.shutdown();
@@ -93,7 +90,7 @@ public class BookmarkIT
     {
         CommitBlocker commitBlocker = new CommitBlocker();
         db = createDb( commitBlocker );
-        driver = GraphDatabase.driver( "bolt://localhost:7687" );
+        driver = GraphDatabase.driver( boltAddress( db ) );
 
         String firstBookmark = createNode( driver );
 
@@ -148,9 +145,16 @@ public class BookmarkIT
     {
         Config config = Config.defaults();
 
-        config.augment( singletonMap( "dbms.connector.bolt.enabled", TRUE ) );
+        config.augment( "dbms.connector.bolt.enabled", TRUE );
+        config.augment( "dbms.connector.bolt.listen_address", "localhost:0" );
 
         return config;
+    }
+
+    private static String boltAddress( GraphDatabaseAPI db )
+    {
+        ConnectorPortRegister portRegister = db.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+        return "bolt://" + portRegister.getLocalAddress( "bolt" );
     }
 
     private static class CustomCommunityEditionModule extends CommunityEditionModule
