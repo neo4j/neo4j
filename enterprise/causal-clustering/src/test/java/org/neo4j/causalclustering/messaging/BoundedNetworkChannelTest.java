@@ -42,7 +42,7 @@ public class BoundedNetworkChannelTest
     public final Buffers buffers = new Buffers();
 
     @Test
-    public void shouldSerializeIntoChunksOfGivenSize() throws IOException
+    public void shouldSerializeIntoChunksOfGivenSize()
     {
         // given
         int chunkSize = 8;
@@ -58,7 +58,7 @@ public class BoundedNetworkChannelTest
         channel.putShort( (short) 1 );
         channel.putLong( 1 );
         channel.put( array, array.length );
-        channel.prepareForFlush().flush();
+        channel.flush();
 
         // when
         ByteBuf combinedByteBuf = buffers.buffer();
@@ -83,7 +83,7 @@ public class BoundedNetworkChannelTest
     }
 
     @Test
-    public void shouldReturnNullIfQueueIsEmpty() throws IOException
+    public void shouldReturnNullIfQueueIsEmpty()
     {
         // given
         int chunkSize = 8;
@@ -107,14 +107,14 @@ public class BoundedNetworkChannelTest
         assertNull( byteBufs.poll() );
 
         // when
-        channel.prepareForFlush().flush();
+        channel.flush();
 
         // then
         assertNotNull( byteBufs.poll() );
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldThrowIllegalStatAfterClosed() throws IOException
+    public void shouldThrowIllegalStatAfterClosed()
     {
         int chunkSize = 8;
         BoundedNetworkChannel channel = new BoundedNetworkChannel( buffers, chunkSize, new LinkedList<>() );

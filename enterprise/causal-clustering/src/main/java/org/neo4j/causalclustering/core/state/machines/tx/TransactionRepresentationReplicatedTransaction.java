@@ -156,10 +156,9 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
                 {
                     txWriter.write( channel );
                 }
-                // nothing more to write, flush latest chunk and close channel
+                // nothing more to write, close the channel to get the potential last buffer
                 if ( output.isEmpty() )
                 {
-                    channel.prepareForFlush().flush();
                     channel.close();
                 }
                 return output.poll();

@@ -24,22 +24,19 @@ package org.neo4j.causalclustering.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufUtil;
 
-import java.io.Flushable;
-import java.io.IOException;
 import java.util.Objects;
 import java.util.Queue;
 
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.Integer.min;
 
 /**
- * Uses provied allocator to create {@link ByteBuf}. The byte bufs will be split if maxChunkSize is reached. The full buffer is then added
- * to the provided output and a new buffer is allocated.
+ * Uses provided allocator to create {@link ByteBuf}. The buffers will be split if maximum size is reached. The full buffer is then added
+ * to the provided output and a new buffer is allocated. If the output queue is bounded then writing to this channel may block!
  */
-public class BoundedNetworkChannel implements FlushableChannel
+public class BoundedNetworkChannel implements WritableChannel, AutoCloseable
 {
     private static final int DEFAULT_INIT_CHUNK_SIZE = 512;
     private final ByteBufAllocator allocator;
@@ -52,7 +49,7 @@ public class BoundedNetworkChannel implements FlushableChannel
     /**
      * @param allocator used to allocated {@link ByteBuf}
      * @param maxChunkSize when reached the current buffer will be moved to the @param outputQueue and a new {@link ByteBuf} is allocated
-     * @param outputQueue full or flushed buffers are added here.
+     * @param outputQueue full or flushed buffers are added here. If this queue is bounded then writing to this channel may block!
      */
     public BoundedNetworkChannel( ByteBufAllocator allocator, int maxChunkSize, Queue<ByteBuf> outputQueue )
     {
@@ -68,19 +65,8 @@ public class BoundedNetworkChannel implements FlushableChannel
         this.byteBufs = outputQueue;
     }
 
-    /**
-     * @return When called will move the current buffer to the queue.
-     * This should always be called when finished writing to the buffer to ensure
-     * that the last buffer is moved to the output.
-     */
     @Override
-    public Flushable prepareForFlush()
-    {
-        return this::storeCurrent;
-    }
-
-    @Override
-    public FlushableChannel put( byte value )
+    public WritableChannel put( byte value )
     {
         checkState();
         prepareWrite( 1 );
@@ -89,7 +75,7 @@ public class BoundedNetworkChannel implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putShort( short value )
+    public WritableChannel putShort( short value )
     {
         checkState();
         prepareWrite( Short.BYTES );
@@ -98,7 +84,7 @@ public class BoundedNetworkChannel implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putInt( int value )
+    public WritableChannel putInt( int value )
     {
         checkState();
         prepareWrite( Integer.BYTES );
@@ -107,7 +93,7 @@ public class BoundedNetworkChannel implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putLong( long value )
+    public WritableChannel putLong( long value )
     {
         checkState();
         prepareWrite( Long.BYTES );
@@ -116,7 +102,7 @@ public class BoundedNetworkChannel implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putFloat( float value )
+    public WritableChannel putFloat( float value )
     {
         checkState();
         prepareWrite( Float.BYTES );
@@ -125,7 +111,7 @@ public class BoundedNetworkChannel implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putDouble( double value )
+    public WritableChannel putDouble( double value )
     {
         checkState();
         prepareWrite( Double.BYTES );
@@ -134,7 +120,7 @@ public class BoundedNetworkChannel implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length )
+    public WritableChannel put( byte[] value, int length )
     {
         checkState();
         int writeIndex = 0;
@@ -147,6 +133,15 @@ public class BoundedNetworkChannel implements FlushableChannel
             writeIndex += toWrite;
             remaining = length - writeIndex;
         }
+        return this;
+    }
+
+    /**
+     * Move the current buffer to the output.
+     */
+    public WritableChannel flush()
+    {
+        storeCurrent();
         return this;
     }
 
@@ -219,12 +214,17 @@ public class BoundedNetworkChannel implements FlushableChannel
         }
     }
 
+    /**
+     * Flushes and closes the channel
+     *
+     * @see #flush()
+     */
     @Override
-    public void close() throws IOException
+    public void close()
     {
         try
         {
-            prepareForFlush().flush();
+            flush();
         }
         finally
         {
