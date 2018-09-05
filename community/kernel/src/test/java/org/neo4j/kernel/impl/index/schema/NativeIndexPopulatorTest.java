@@ -80,7 +80,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     abstract NativeIndexPopulator<KEY,VALUE> createPopulator( IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Test
-    public void createShouldCreateFile() throws Exception
+    public void createShouldCreateFile()
     {
         // given
         assertFileNotPresent();
@@ -114,7 +114,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void dropShouldDeleteExistingFile() throws Exception
+    public void dropShouldDeleteExistingFile()
     {
         // given
         populator.create();
@@ -127,7 +127,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void dropShouldSucceedOnNonExistentFile() throws Exception
+    public void dropShouldSucceedOnNonExistentFile()
     {
         // given
         assertFileNotPresent();
@@ -265,7 +265,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void unsuccessfulCloseMustSucceedWithoutMarkAsFailed() throws Exception
+    public void unsuccessfulCloseMustSucceedWithoutMarkAsFailed()
     {
         // given
         populator.create();
@@ -341,7 +341,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void successfulCloseMustThrowIfMarkedAsFailed() throws Exception
+    public void successfulCloseMustThrowIfMarkedAsFailed()
     {
         // given
         populator.create();
@@ -381,7 +381,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void dropMustSucceedAfterSuccessfulClose() throws Exception
+    public void dropMustSucceedAfterSuccessfulClose()
     {
         // given
         populator.create();
@@ -395,7 +395,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void dropMustSucceedAfterUnsuccessfulClose() throws Exception
+    public void dropMustSucceedAfterUnsuccessfulClose()
     {
         // given
         populator.create();
@@ -409,7 +409,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void successfulCloseMustThrowWithoutPriorSuccessfulCreate() throws Exception
+    public void successfulCloseMustThrowWithoutPriorSuccessfulCreate()
     {
         // given
         assertFileNotPresent();
@@ -442,7 +442,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void successfulCloseMustThrowAfterDrop() throws Exception
+    public void successfulCloseMustThrowAfterDrop()
     {
         // given
         populator.create();
@@ -463,7 +463,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     @Test
-    public void unsuccessfulCloseMustThrowAfterDrop() throws Exception
+    public void unsuccessfulCloseMustThrowAfterDrop()
     {
         // given
         populator.create();
@@ -484,7 +484,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     private int interleaveLargeAmountOfUpdates( Random updaterRandom,
-            Iterator<IndexEntryUpdate<IndexDescriptor>> updates ) throws IOException, IndexEntryConflictException
+            Iterator<IndexEntryUpdate<IndexDescriptor>> updates ) throws IndexEntryConflictException
     {
         int count = 0;
         for ( int i = 0; i < LARGE_AMOUNT_OF_UPDATES; i++ )
@@ -540,7 +540,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
     }
 
     private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, NativeIndexPopulator<KEY,VALUE> populator )
-            throws IOException, IndexEntryConflictException
+            throws IndexEntryConflictException
     {
         boolean useUpdater = true;
         Collection<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();

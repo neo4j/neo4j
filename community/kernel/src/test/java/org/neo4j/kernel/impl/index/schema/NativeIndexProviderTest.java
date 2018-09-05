@@ -122,7 +122,7 @@ public abstract class NativeIndexProviderTest
     /* getPopulationFailure */
 
     @Test
-    public void getPopulationFailureMustThrowIfNoFailure() throws IOException
+    public void getPopulationFailureMustThrowIfNoFailure()
     {
         // given
         provider = newProvider();
@@ -147,7 +147,7 @@ public abstract class NativeIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustThrowEvenIfFailureOnOtherIndex() throws IOException
+    public void getPopulationFailureMustThrowEvenIfFailureOnOtherIndex()
     {
         // given
         provider = newProvider();
@@ -179,7 +179,7 @@ public abstract class NativeIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustReturnReportedFailure() throws IOException
+    public void getPopulationFailureMustReturnReportedFailure()
     {
         // given
         provider = newProvider();
@@ -197,7 +197,7 @@ public abstract class NativeIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustReturnReportedFailuresForDifferentIndexIds() throws IOException
+    public void getPopulationFailureMustReturnReportedFailuresForDifferentIndexIds()
     {
         // given
         provider = newProvider();
@@ -235,7 +235,7 @@ public abstract class NativeIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustPersistReportedFailure() throws IOException
+    public void getPopulationFailureMustPersistReportedFailure()
     {
         // given
         provider = newProvider();
@@ -279,7 +279,7 @@ public abstract class NativeIndexProviderTest
     }
 
     @Test
-    public void shouldReportInitialStateAsPopulatingIfPopulationStartedButIncomplete() throws IOException
+    public void shouldReportInitialStateAsPopulatingIfPopulationStartedButIncomplete()
     {
         // given
         provider = newProvider();
@@ -295,7 +295,7 @@ public abstract class NativeIndexProviderTest
     }
 
     @Test
-    public void shouldReportInitialStateAsFailedIfMarkedAsFailed() throws IOException
+    public void shouldReportInitialStateAsFailedIfMarkedAsFailed()
     {
         // given
         provider = newProvider();
@@ -312,7 +312,7 @@ public abstract class NativeIndexProviderTest
     }
 
     @Test
-    public void shouldReportInitialStateAsOnlineIfPopulationCompletedSuccessfully() throws IOException
+    public void shouldReportInitialStateAsOnlineIfPopulationCompletedSuccessfully()
     {
         // given
         provider = newProvider();

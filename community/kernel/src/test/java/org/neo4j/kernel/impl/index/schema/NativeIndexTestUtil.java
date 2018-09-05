@@ -125,7 +125,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
         assertSameHits( expectedHits, actualHits.toArray( new Hit[0] ), hitComparator );
     }
 
-    GBPTree<KEY,VALUE> getTree() throws IOException
+    GBPTree<KEY,VALUE> getTree()
     {
         return new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() );

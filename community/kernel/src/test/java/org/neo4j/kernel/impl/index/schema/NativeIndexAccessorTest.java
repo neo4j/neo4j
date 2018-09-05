@@ -100,7 +100,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     abstract NativeIndexAccessor<KEY,VALUE> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException;
 
     @After
-    public void closeAccessor() throws IOException
+    public void closeAccessor()
     {
         accessor.close();
     }
@@ -532,7 +532,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     }
 
     @Test
-    public void dropShouldDeleteAndCloseIndex() throws Exception
+    public void dropShouldDeleteAndCloseIndex()
     {
         // given
         assertFilePresent();
@@ -607,7 +607,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     }
 
     @Test
-    public void readingAfterDropShouldThrow() throws Exception
+    public void readingAfterDropShouldThrow()
     {
         // given
         accessor.drop();
@@ -620,7 +620,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     }
 
     @Test
-    public void writingAfterDropShouldThrow() throws Exception
+    public void writingAfterDropShouldThrow()
     {
         // given
         accessor.drop();
@@ -633,7 +633,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     }
 
     @Test
-    public void readingAfterCloseShouldThrow() throws Exception
+    public void readingAfterCloseShouldThrow()
     {
         // given
         accessor.close();
@@ -646,7 +646,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     }
 
     @Test
-    public void writingAfterCloseShouldThrow() throws Exception
+    public void writingAfterCloseShouldThrow()
     {
         // given
         accessor.close();
@@ -884,7 +884,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
 
     @SafeVarargs
     final void processAll( IndexEntryUpdate<IndexDescriptor>... updates )
-            throws IOException, IndexEntryConflictException
+            throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
@@ -902,7 +902,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     }
 
     private void processAll( IndexUpdater updater, IndexEntryUpdate<IndexDescriptor>[] updates )
-            throws IOException, IndexEntryConflictException
+            throws IndexEntryConflictException
     {
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
