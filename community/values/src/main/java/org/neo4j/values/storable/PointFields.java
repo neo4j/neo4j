@@ -21,7 +21,10 @@ package org.neo4j.values.storable;
 
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 
-public enum PointProperties
+/**
+ * Defines all valid field accessors for points
+ */
+public enum PointFields
 {
     X( "x" )
             {
@@ -90,12 +93,12 @@ public enum PointProperties
 
     public String propertyKey;
 
-    PointProperties( String propertyKey )
+    PointFields( String propertyKey )
     {
         this.propertyKey = propertyKey;
     }
 
-    public static PointProperties fromName( String fieldName )
+    public static PointFields fromName( String fieldName )
     {
         switch ( fieldName.toLowerCase() )
         {

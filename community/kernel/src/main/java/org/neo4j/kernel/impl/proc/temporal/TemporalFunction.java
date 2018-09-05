@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.proc.temporal;
 
 import java.time.Clock;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +42,6 @@ import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TemporalProperties;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -283,15 +284,51 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 if ( unit instanceof TextValue && input instanceof TemporalValue && fields instanceof MapValue )
                 {
                     return function.truncate(
-                            TemporalProperties.fromName( ((TextValue) unit).stringValue() ).unit,
-                            (TemporalValue) input,
+                            unit( ((TextValue) unit).stringValue() ),
+                            (TemporalValue)input,
                             (MapValue) fields,
                             function.defaultZone );
                 }
             }
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Invalid call signature for " + getClass().getSimpleName() +
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
                     ": Provided input was " + Arrays.toString( args ) );
+        }
+
+        private static TemporalUnit unit( String unit )
+        {
+            switch ( unit )
+            {
+            case "millennium":
+                return ChronoUnit.MILLENNIA;
+            case "century":
+                return ChronoUnit.CENTURIES;
+            case "decade":
+                return ChronoUnit.DECADES;
+            case "year":
+                return ChronoUnit.YEARS;
+            case "weekYear":
+                return IsoFields.WEEK_BASED_YEARS;
+            case "quarter":
+                return IsoFields.QUARTER_YEARS;
+            case "month":
+                return ChronoUnit.MONTHS;
+            case "week":
+                return ChronoUnit.WEEKS;
+            case "day":
+                return ChronoUnit.DAYS;
+            case "hour":
+                return ChronoUnit.HOURS;
+            case "minute":
+                return ChronoUnit.MINUTES;
+            case "second":
+                return ChronoUnit.SECONDS;
+            case "millisecond":
+                return ChronoUnit.MILLIS;
+            case "microsecond":
+                return ChronoUnit.MICROS;
+            default:
+                throw new IllegalArgumentException( "Unsupported unit: " + unit );
+            }
         }
     }
 }

@@ -505,7 +505,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
      */
     public Value get( String fieldName )
     {
-       return PointProperties.fromName( fieldName ).get( this );
+       return PointFields.fromName( fieldName ).get( this );
     }
 
     DoubleValue getNthCoordinate( int n, String fieldName, boolean onlyGeographic )

@@ -23,7 +23,10 @@ import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
 
-public enum DurationProperties
+/**
+ * Defines all valid field accessors for durations
+ */
+public enum DurationFields
 {
     YEARS( "years" )
             {
@@ -186,17 +189,16 @@ public enum DurationProperties
                 }
             };
 
-
     public String propertyKey;
 
-    DurationProperties( String propertyKey )
+    DurationFields( String propertyKey )
     {
         this.propertyKey = propertyKey;
     }
 
     public abstract long asTimeStamp( long months, long days, long seconds, long nanos );
 
-    public static DurationProperties fromName( String fieldName )
+    public static DurationFields fromName( String fieldName )
     {
         switch ( fieldName.toLowerCase() )
         {

@@ -755,7 +755,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
      */
     public LongValue get( String fieldName )
     {
-        long val = DurationProperties.fromName( fieldName ).asTimeStamp( months, days, seconds, nanos );
+        long val = DurationFields.fromName( fieldName ).asTimeStamp( months, days, seconds, nanos );
         return Values.longValue( val );
     }
 
