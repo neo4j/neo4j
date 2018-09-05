@@ -77,7 +77,7 @@ public class CoreReplicatedContentMarshallingTest
     @Test
     public void shouldSerializeAndDeserialize() throws Exception
     {
-        ChannelMarshal<ReplicatedContent> coreReplicatedContentMarshal = new CoreReplicatedContentMarshal();
+        ChannelMarshal<ReplicatedContent> coreReplicatedContentMarshal = CoreReplicatedContentMarshal.marshaller();
         ByteBuf buffer = buffers.buffer();
         NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( buffer );
         coreReplicatedContentMarshal.marshal( replicatedContent, channel );

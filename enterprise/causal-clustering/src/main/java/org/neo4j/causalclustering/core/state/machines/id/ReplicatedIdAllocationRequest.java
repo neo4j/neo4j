@@ -22,12 +22,14 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 import org.neo4j.kernel.impl.store.id.IdType;
 
 import static java.lang.String.format;
@@ -119,5 +121,11 @@ public class ReplicatedIdAllocationRequest implements CoreReplicatedContent
     public void dispatch( CommandDispatcher commandDispatcher, long commandIndex, Consumer<Result> callback )
     {
         commandDispatcher.dispatch( this, commandIndex, callback );
+    }
+
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
+    {
+        contentHandler.handle( this );
     }
 }

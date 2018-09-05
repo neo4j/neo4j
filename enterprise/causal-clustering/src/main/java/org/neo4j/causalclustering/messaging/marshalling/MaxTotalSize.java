@@ -23,67 +23,59 @@
 package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.stream.ChunkedInput;
 
-import java.io.IOException;
-
-import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.messaging.MessageTooBigException;
-import org.neo4j.util.Preconditions;
+import org.neo4j.io.ByteUnit;
 
 import static java.lang.String.format;
-import static org.neo4j.io.ByteUnit.gibiBytes;
+import static org.neo4j.util.Preconditions.requirePositive;
 
-/**
- * Handles chunks for {@link ReplicatedContent} being serialized through {@link ChunkedReplicatedContent}.
- */
-public interface ByteBufChunkHandler
+public class MaxTotalSize implements ChunkedInput<ByteBuf>
 {
-    static MaxTotalSize maxSizeHandler()
+    private final ChunkedInput<ByteBuf> chunkedInput;
+    private final int maxSize;
+    private int totalSize;
+    private static final int DEFAULT_MAX_SIZE = (int) ByteUnit.gibiBytes( 1 );
+
+    MaxTotalSize( ChunkedInput<ByteBuf> chunkedInput, int maxSize )
     {
-        return new MaxTotalSize();
+        requirePositive( maxSize );
+        this.chunkedInput = chunkedInput;
+        this.maxSize = maxSize;
     }
 
-    /**
-     * This method is called just before the chunk is sent to the netty pipeline.
-     *
-     * @param byteBuf chunk of the {@link ReplicatedContent}
-     * @throws IOException if the encoding should be interrupted. Use carefully and consider possible memory leak!
-     */
-    void handle( ByteBuf byteBuf ) throws IOException;
-
-    class NoOp implements ByteBufChunkHandler
+    MaxTotalSize( ChunkedInput<ByteBuf> chunkedInput )
     {
-        @Override
-        public void handle( ByteBuf byteBuf )
-        {
-            // do nothing
-        }
+        this( chunkedInput, DEFAULT_MAX_SIZE );
     }
 
-    class MaxTotalSize implements ByteBufChunkHandler
+    @Override
+    public boolean isEndOfInput() throws Exception
     {
-        private static final long DEFAULT_MAX_SERIALIZED_SIZE = gibiBytes( 1 );
-        private final long maxSize;
-        long totalSize;
+        return chunkedInput.isEndOfInput();
+    }
 
-        MaxTotalSize( long maxSize )
-        {
-            Preconditions.requirePositive( maxSize );
-            this.maxSize = maxSize;
-        }
+    @Override
+    public void close() throws Exception
+    {
+        chunkedInput.close();
+    }
 
-        MaxTotalSize()
-        {
-            this.maxSize = DEFAULT_MAX_SERIALIZED_SIZE;
-        }
+    @Override
+    public ByteBuf readChunk( ChannelHandlerContext ctx ) throws Exception
+    {
+        return readChunk( ctx.alloc() );
+    }
 
-        @Override
-        public void handle( ByteBuf byteBuf ) throws MessageTooBigException
+    @Override
+    public ByteBuf readChunk( ByteBufAllocator allocator ) throws Exception
+    {
+        ByteBuf byteBuf = chunkedInput.readChunk( allocator );
+        if ( byteBuf != null )
         {
-            if ( byteBuf == null )
-            {
-                return;
-            }
             int additionalBytes = byteBuf.readableBytes();
             this.totalSize += additionalBytes;
             if ( this.totalSize > maxSize )
@@ -92,5 +84,18 @@ public interface ByteBufChunkHandler
                         totalSize - additionalBytes ) );
             }
         }
+        return byteBuf;
+    }
+
+    @Override
+    public long length()
+    {
+        return chunkedInput.length();
+    }
+
+    @Override
+    public long progress()
+    {
+        return chunkedInput.progress();
     }
 }

@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
@@ -87,5 +88,11 @@ public class RaftTestGroup implements RaftGroup<MemberId>
     public String toString()
     {
         return format( "RaftTestGroup{members=%s}", members );
+    }
+
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler )
+    {
+        throw new UnsupportedOperationException( "No handler for this " + this.getClass() );
     }
 }

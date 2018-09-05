@@ -23,11 +23,17 @@
 package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.stream.ChunkedInput;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Iterator;
+
 import org.neo4j.causalclustering.helpers.Buffers;
 import org.neo4j.causalclustering.messaging.MessageTooBigException;
+import org.neo4j.helpers.collection.Iterators;
 
 public class ByteBufChunkHandlerTest
 {
@@ -35,35 +41,77 @@ public class ByteBufChunkHandlerTest
     public final Buffers buffers = new Buffers();
 
     @Test( expected = MessageTooBigException.class )
-    public void shouldThrowExceptioIfToLarge() throws MessageTooBigException
+    public void shouldThrowExceptioIfToLarge() throws Exception
     {
-        ByteBufChunkHandler.MaxTotalSize maxTotalSize = new ByteBufChunkHandler.MaxTotalSize( 10 );
-        ByteBuf buffer1 = buffers.buffer( 10 );
-        ByteBuf buffer2 = buffers.buffer( 1 );
+        MaxTotalSize maxTotalSize = new MaxTotalSize( new PredictableChunkedInput( 10, 1 ), 10 );
 
-        buffer1.writerIndex( 10 );
-        buffer2.writerIndex( 1 );
-        maxTotalSize.handle( buffer1 );
-        maxTotalSize.handle( buffer2 );
+        maxTotalSize.readChunk( buffers );
+        maxTotalSize.readChunk( buffers );
     }
 
     @Test
-    public void shouldIgnoreNull() throws MessageTooBigException
+    public void shouldAllowIfNotTooLarge() throws Exception
     {
-        ByteBufChunkHandler.MaxTotalSize maxTotalSize = new ByteBufChunkHandler.MaxTotalSize( 11 );
-        ByteBuf buffer1 = buffers.buffer( 10 );
-        ByteBuf buffer2 = buffers.buffer( 1 );
+        MaxTotalSize maxTotalSize = new MaxTotalSize( new PredictableChunkedInput( 10, 1 ), 11 );
 
-        buffer1.writerIndex( 10 );
-        buffer2.writerIndex( 1 );
-        maxTotalSize.handle( buffer1 );
-        maxTotalSize.handle( null );
-        maxTotalSize.handle( buffer2 );
+        maxTotalSize.readChunk( buffers );
+        maxTotalSize.readChunk( buffers );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void shouldThrowIfIllegalSizeValue()
     {
-        new ByteBufChunkHandler.MaxTotalSize( -1 );
+        new MaxTotalSize( new PredictableChunkedInput(), -1 );
+    }
+
+    private class PredictableChunkedInput implements ChunkedInput<ByteBuf>
+    {
+        private final Iterator<Integer> sizes;
+
+        private PredictableChunkedInput( int... sizes )
+        {
+            this.sizes = Iterators.asIterator( sizes );
+        }
+
+        @Override
+        public boolean isEndOfInput()
+        {
+            return !sizes.hasNext();
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public ByteBuf readChunk( ChannelHandlerContext ctx )
+        {
+            return readChunk( ctx.alloc() );
+        }
+
+        @Override
+        public ByteBuf readChunk( ByteBufAllocator allocator )
+        {
+            Integer size = sizes.next();
+            if ( size == null )
+            {
+                return null;
+            }
+            return allocator.buffer( size ).writerIndex( size );
+        }
+
+        @Override
+        public long length()
+        {
+            return 0;
+        }
+
+        @Override
+        public long progress()
+        {
+            return 0;
+        }
     }
 }

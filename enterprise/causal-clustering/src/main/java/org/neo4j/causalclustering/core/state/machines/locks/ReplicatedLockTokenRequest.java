@@ -22,6 +22,7 @@
  */
 package org.neo4j.causalclustering.core.state.machines.locks;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -29,6 +30,7 @@ import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 
 import static java.lang.String.format;
 
@@ -89,5 +91,11 @@ public class ReplicatedLockTokenRequest implements CoreReplicatedContent, LockTo
     public void dispatch( CommandDispatcher commandDispatcher, long commandIndex, Consumer<Result> callback )
     {
         commandDispatcher.dispatch( this, commandIndex, callback );
+    }
+
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
+    {
+        contentHandler.handle( this );
     }
 }

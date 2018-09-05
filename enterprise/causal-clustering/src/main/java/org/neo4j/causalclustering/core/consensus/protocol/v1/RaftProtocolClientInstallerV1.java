@@ -28,8 +28,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.messaging.marshalling.v1.RaftMessageEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.v1.RaftMessageEncoder;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -68,8 +68,7 @@ public class RaftProtocolClientInstallerV1 implements ProtocolInstaller<Orientat
     {
         clientPipelineBuilderFactory.client( channel, log )
                 .modify( modifiers )
-                .addFraming()
-                .add( "raft_encoder", new RaftMessageEncoder( new CoreReplicatedContentMarshal() ) )
+                .addFraming().add( "raft_encoder", new RaftMessageEncoder( CoreReplicatedContentMarshal.marshaller() ) )
                 .install();
     }
 

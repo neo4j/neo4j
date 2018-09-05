@@ -29,12 +29,14 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
+import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import org.neo4j.causalclustering.messaging.marshalling.Codec;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 
 public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
 {
-    private final CoreReplicatedContentMarshal contentMarshal = new CoreReplicatedContentMarshal();
-    private byte contentType = -1;
+    private final Codec<ReplicatedContent> codec = CoreReplicatedContentMarshal.codec();
+    private boolean expectingNewContent = true;
     private boolean isLast;
 
     ReplicatedContentChunkDecoder()
@@ -45,16 +47,16 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
-        if ( contentType == -1 )
+        if ( expectingNewContent )
         {
             isLast = in.readBoolean();
-            contentType = in.readByte();
+            expectingNewContent = false;
         }
         if ( isLast )
         {
-            out.add( contentMarshal.unmarshalContent( contentType, in ) );
+            out.add( codec.decode( in ) );
             isLast = false;
-            contentType = -1;
+            expectingNewContent = true;
         }
     }
 

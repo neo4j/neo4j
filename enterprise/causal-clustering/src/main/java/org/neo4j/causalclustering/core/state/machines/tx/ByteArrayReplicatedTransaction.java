@@ -22,12 +22,17 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.stream.ChunkedInput;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.OptionalLong;
 
 import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
 {
@@ -37,6 +42,12 @@ public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
     public OptionalLong size()
     {
         return OptionalLong.of( (long) txBytes.length );
+    }
+
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
+    {
+        contentHandler.handle( this );
     }
 
     ByteArrayReplicatedTransaction( byte[] txBytes )
@@ -71,9 +82,15 @@ public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
     }
 
     @Override
-    public ChunkedEncoder marshal()
+    public ChunkedInput<ByteBuf> encode()
     {
         return new ByteArrayChunkedEncoder( getTxBytes() );
+    }
+
+    @Override
+    public void marshal( WritableChannel channel ) throws IOException
+    {
+        ReplicatedTransactionSerializer.marshal( channel, this );
     }
 
     @Override

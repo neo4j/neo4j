@@ -79,7 +79,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         LogProvider logProvider = getInstance();
         CoreLogPruningStrategy pruningStrategy =
                 new CoreLogPruningStrategyFactory( "100 entries", logProvider ).newInstance();
-        return new SegmentedRaftLog( fsRule.get(), logDirectory, rotateAtSize, new CoreReplicatedContentMarshal(),
+        return new SegmentedRaftLog( fsRule.get(), logDirectory, rotateAtSize, CoreReplicatedContentMarshal.marshaller(),
                 logProvider, 8, Clocks.fakeClock(), new OnDemandJobScheduler(), pruningStrategy );
     }
 
@@ -87,8 +87,8 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
     {
         FileNames fileNames = new FileNames( logDirectory );
         return new RecoveryProtocol( fsRule.get(), fileNames,
-                new ReaderPool( 8, getInstance(), fileNames, fsRule.get(), Clocks.fakeClock() ),
-                new CoreReplicatedContentMarshal(), getInstance() );
+                new ReaderPool( 8, getInstance(), fileNames, fsRule.get(), Clocks.fakeClock() ), CoreReplicatedContentMarshal.marshaller(),
+                getInstance() );
     }
 
     @Test

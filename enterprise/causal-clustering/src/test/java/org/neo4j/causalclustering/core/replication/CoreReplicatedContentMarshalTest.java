@@ -58,7 +58,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreReplicatedContentMarshalTest
 {
-    private final ChannelMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
+    private final ChannelMarshal<ReplicatedContent> marshal = CoreReplicatedContentMarshal.marshaller();
 
     @Test
     public void shouldMarshalTransactionReference() throws Exception
@@ -67,7 +67,6 @@ public class CoreReplicatedContentMarshalTest
         PhysicalTransactionRepresentation representation =
                 new PhysicalTransactionRepresentation( Collections.emptyList() );
         representation.setHeader( new byte[]{0}, 1, 1, 1, 1, 1, 1 );
-        byte[] bytes = representation.additionalHeader();
 
         TransactionRepresentationReplicatedTransaction replicatedTx = ReplicatedTransaction.from( representation );
 

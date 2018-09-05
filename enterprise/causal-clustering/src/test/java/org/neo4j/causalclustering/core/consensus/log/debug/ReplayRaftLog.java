@@ -71,7 +71,7 @@ public class ReplayRaftLog
             CoreLogPruningStrategy pruningStrategy =
                     new CoreLogPruningStrategyFactory( config.get( raft_log_pruning_strategy ), logProvider ).newInstance();
             SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, logDirectory, config.get( raft_log_rotation_size ),
-                    new CoreReplicatedContentMarshal(), logProvider, config.get( raft_log_reader_pool_size ),
+                    CoreReplicatedContentMarshal.marshaller(), logProvider, config.get( raft_log_reader_pool_size ),
                     Clocks.systemClock(), new ThreadPoolJobScheduler(), pruningStrategy );
 
             long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index

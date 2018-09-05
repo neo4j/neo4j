@@ -25,11 +25,9 @@ package org.neo4j.causalclustering.messaging.marshalling;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.stream.ChunkedInput;
 import org.junit.Test;
-
-import java.io.IOException;
-
-import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.Integer.min;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,9 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ChunkedReplicatedContentTest
 {
     @Test
-    public void shouldProvideExpectedMetaData() throws IOException
+    public void shouldProvideExpectedMetaData() throws Exception
     {
-        ChunkedReplicatedContent replicatedContent = new ChunkedReplicatedContent( (byte) 1, new ThreeChunks( -1, 8 ) );
+        ChunkedInput<ByteBuf> replicatedContent = ChunkedReplicatedContent.chunked( (byte) 1, new ThreeChunks( -1, 8 ) );
 
         UnpooledByteBufAllocator allocator = UnpooledByteBufAllocator.DEFAULT;
 
@@ -67,7 +65,7 @@ public class ChunkedReplicatedContentTest
         assertNull( replicatedContent.readChunk( allocator ) );
     }
 
-    private class ThreeChunks implements ChunkedEncoder
+    private class ThreeChunks implements ChunkedInput<ByteBuf>
     {
         private final int length;
         private int leftTowWrite;
@@ -82,7 +80,25 @@ public class ChunkedReplicatedContentTest
         }
 
         @Override
-        public ByteBuf encodeChunk( ByteBufAllocator allocator )
+        public boolean isEndOfInput()
+        {
+            return count == 3;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public ByteBuf readChunk( ChannelHandlerContext ctx )
+        {
+            return readChunk( ctx.alloc() );
+        }
+
+        @Override
+        public ByteBuf readChunk( ByteBufAllocator allocator )
         {
             if ( count == 3 )
             {
@@ -97,15 +113,15 @@ public class ChunkedReplicatedContentTest
         }
 
         @Override
-        public void marshal( WritableChannel channel )
+        public long length()
         {
-            throw new UnsupportedOperationException( "Should not be used" );
+            return length;
         }
 
         @Override
-        public boolean isEndOfInput()
+        public long progress()
         {
-            return count == 3;
+            return 0;
         }
     }
 }

@@ -39,31 +39,31 @@ public class ByteArrayChunkedEncoderTest
     @Rule
     public final Buffers buffers = new Buffers();
     @Test
-    public void shouldWriteToBufferInChunks() throws IOException
+    public void shouldWriteToBufferInChunks()
     {
         byte[] data = new byte[]{1, 2, 3, 4, 5, 6};
         byte[] readData = new byte[6];
         ByteArrayChunkedEncoder byteArraySerializer = new ByteArrayChunkedEncoder( data, 5 );
 
-        ByteBuf buffer = byteArraySerializer.encodeChunk( buffers );
+        ByteBuf buffer = byteArraySerializer.readChunk( buffers );
         assertEquals( 6, buffer.readInt() );
         assertEquals( 1, buffer.readableBytes() );
         buffer.readBytes( readData, 0, 1 );
 
-        buffer = byteArraySerializer.encodeChunk( buffers );
+        buffer = byteArraySerializer.readChunk( buffers );
         buffer.readBytes( readData, 1, buffer.readableBytes() );
         assertArrayEquals( data, readData );
         assertEquals( 0, buffer.readableBytes() );
 
-        assertNull( byteArraySerializer.encodeChunk( buffers ) );
+        assertNull( byteArraySerializer.readChunk( buffers ) );
     }
 
     @Test
-    public void shouldHandleSmallByteBuf() throws IOException
+    public void shouldHandleSmallByteBuf()
     {
         byte[] data = new byte[1];
 
-        ByteBuf byteBuf = new ByteArrayChunkedEncoder( data ).encodeChunk( buffers );
+        ByteBuf byteBuf = new ByteArrayChunkedEncoder( data ).readChunk( buffers );
         assertEquals( 1, byteBuf.readInt() );
         assertEquals( 1, byteBuf.readableBytes() );
     }

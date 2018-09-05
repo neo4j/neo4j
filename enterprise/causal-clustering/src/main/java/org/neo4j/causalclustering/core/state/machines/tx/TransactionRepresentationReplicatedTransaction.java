@@ -24,21 +24,18 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.stream.ChunkedInput;
+import io.netty.util.ReferenceCountUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 
 import org.neo4j.causalclustering.helper.ErrorHandler;
 import org.neo4j.causalclustering.messaging.BoundedNetworkChannel;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
-import org.neo4j.causalclustering.messaging.marshalling.OutputStreamWritableChannel;
-import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.StorageCommandSerializer;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public class TransactionRepresentationReplicatedTransaction implements ReplicatedTransaction
@@ -52,9 +49,15 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
     }
 
     @Override
-    public ChunkedEncoder marshal()
+    public ChunkedInput<ByteBuf> encode()
     {
-        return new TxRepresentationMarshal( tx );
+        return new TxRepresentationMarshal( this );
+    }
+
+    @Override
+    public void marshal( WritableChannel writableChannel ) throws IOException
+    {
+        ReplicatedTransactionSerializer.marshal( writableChannel, this );
     }
 
     @Override
@@ -68,19 +71,72 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
         return tx;
     }
 
-    public class TxRepresentationMarshal implements ChunkedEncoder
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
     {
-        private final TxRepresentationMarshal.TransactionRepresentationWriter txWriter;
+        contentHandler.handle( this );
+    }
+
+    public class TxRepresentationMarshal implements ChunkedInput<ByteBuf>
+    {
+        private final ReplicatedTransactionFactory.TransactionRepresentationWriter txWriter;
+        private final TransactionRepresentationReplicatedTransaction thisTx;
         private BoundedNetworkChannel channel;
         private Queue<ByteBuf> output = new LinkedList<>();
 
-        private TxRepresentationMarshal( TransactionRepresentation tx )
+        private TxRepresentationMarshal( TransactionRepresentationReplicatedTransaction tx )
         {
-            txWriter = new TxRepresentationMarshal.TransactionRepresentationWriter( tx );
+            txWriter = ReplicatedTransactionFactory.transactionalRepresentationWriter( tx.tx );
+            thisTx = tx;
         }
 
         @Override
-        public ByteBuf encodeChunk( ByteBufAllocator allocator ) throws IOException
+        public boolean isEndOfInput()
+        {
+            return channel != null && channel.closed() && output.isEmpty();
+        }
+
+        @Override
+        public void close()
+        {
+            try ( ErrorHandler errorHandler = new ErrorHandler( "Closing TxRepresentationMarshal" ) )
+            {
+                if ( channel != null )
+                {
+                    try
+                    {
+                        channel.close();
+                    }
+                    catch ( Throwable t )
+                    {
+                        errorHandler.add( t );
+                    }
+                }
+                if ( !output.isEmpty() )
+                {
+                    for ( ByteBuf byteBuf : output )
+                    {
+                        try
+                        {
+                            ReferenceCountUtil.release( byteBuf );
+                        }
+                        catch ( Throwable t )
+                        {
+                            errorHandler.add( t );
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public ByteBuf readChunk( ChannelHandlerContext ctx ) throws Exception
+        {
+            return readChunk( ctx.alloc() );
+        }
+
+        @Override
+        public ByteBuf readChunk( ByteBufAllocator allocator ) throws Exception
         {
             if ( isEndOfInput() )
             {
@@ -90,8 +146,8 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
             {
                 // Ensure that the written buffers does not overflow the allocators chunk size.
                 channel = new BoundedNetworkChannel( allocator, CHUNK_SIZE, output );
-                // Unknown length
-                channel.putInt( -1 );
+                // Add metadata to first chunk
+                ReplicatedTransactionSerializer.writeInitialMetaData( channel, thisTx );
             }
             try
             {
@@ -112,16 +168,7 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
             {
                 try
                 {
-                    channel.close();
-                }
-                catch ( IOException e )
-                {
-                    t.addSuppressed( e );
-                }
-                try
-                {
-                    ErrorHandler.runAll( "releasing buffers",
-                            output.stream().map( b -> (ErrorHandler.ThrowingRunnable) b::release ).toArray( ErrorHandler.ThrowingRunnable[]::new ) );
+                    close();
                 }
                 catch ( Exception e )
                 {
@@ -132,77 +179,15 @@ public class TransactionRepresentationReplicatedTransaction implements Replicate
         }
 
         @Override
-        public void marshal( WritableChannel channel ) throws IOException
+        public long length()
         {
-            /*
-            Unknown length. This method will never be used in production. When a ReplicatedTransaction is serialized it has already passed over the network
-            and a more efficient marshalling is used in their implementation.
-             */
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream( 1024 );
-            OutputStreamWritableChannel outputStreamWritableChannel = new OutputStreamWritableChannel( outputStream );
-            while ( txWriter.canWrite() )
-            {
-                txWriter.write( outputStreamWritableChannel );
-            }
-            int length = outputStream.size();
-            channel.putInt( length );
-            channel.put( outputStream.toByteArray(), length );
+            return -1;
         }
 
         @Override
-        public boolean isEndOfInput()
+        public long progress()
         {
-            return channel != null && channel.closed() && output.isEmpty();
-        }
-
-        private class TransactionRepresentationWriter
-        {
-            private final Iterator<StorageCommand> iterator;
-            private ThrowingConsumer<WritableChannel,IOException> nextJob;
-
-            private TransactionRepresentationWriter( TransactionRepresentation tx )
-            {
-                nextJob = channel ->
-                {
-                    channel.putInt( tx.getAuthorId() );
-                    channel.putInt( tx.getMasterId() );
-                    channel.putLong( tx.getLatestCommittedTxWhenStarted() );
-                    channel.putLong( tx.getTimeStarted() );
-                    channel.putLong( tx.getTimeCommitted() );
-                    channel.putInt( tx.getLockSessionId() );
-
-                    byte[] additionalHeader = tx.additionalHeader();
-                    if ( additionalHeader != null )
-                    {
-                        channel.putInt( additionalHeader.length );
-                        channel.put( additionalHeader, additionalHeader.length );
-                    }
-                    else
-                    {
-                        channel.putInt( 0 );
-                    }
-                };
-                iterator = tx.iterator();
-            }
-
-            void write( WritableChannel channel ) throws IOException
-            {
-                nextJob.accept( channel );
-                if ( iterator.hasNext() )
-                {
-                    StorageCommand storageCommand = iterator.next();
-                    nextJob = c -> new StorageCommandSerializer( c ).visit( storageCommand );
-                }
-                else
-                {
-                    nextJob = null;
-                }
-            }
-
-            boolean canWrite()
-            {
-                return nextJob != null;
-            }
+            return 0;
         }
     }
 }

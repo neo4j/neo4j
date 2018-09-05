@@ -46,6 +46,7 @@ import org.neo4j.causalclustering.core.consensus.vote.VoteState;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.replication.SendToMyself;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
+import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.RaftCoreTopologyConnector;
@@ -92,7 +93,7 @@ public class ConsensusModule
 
         LogProvider logProvider = logging.getInternalLogProvider();
 
-        final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
+        final SafeChannelMarshal<ReplicatedContent> marshal = CoreReplicatedContentMarshal.marshaller();
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
                 platformModule.jobScheduler );

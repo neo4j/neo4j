@@ -24,13 +24,12 @@ package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.stream.ChunkedInput;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import org.neo4j.storageengine.api.WritableChannel;
-
-public class ByteArrayChunkedEncoder implements ChunkedEncoder
+public class ByteArrayChunkedEncoder implements ChunkedInput<ByteBuf>
 {
     private static final int DEFAULT_CHUNK_SIZE = 32 * 1024;
     private final byte[] content;
@@ -58,8 +57,36 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
         this( content, DEFAULT_CHUNK_SIZE );
     }
 
+    private int available()
+    {
+        return content.length - pos;
+    }
+
+    private boolean isFirst()
+    {
+        return pos == 0;
+    }
+
     @Override
-    public ByteBuf encodeChunk( ByteBufAllocator allocator )
+    public boolean isEndOfInput()
+    {
+        return pos == content.length;
+    }
+
+    @Override
+    public void close()
+    {
+        pos = content.length;
+    }
+
+    @Override
+    public ByteBuf readChunk( ChannelHandlerContext ctx )
+    {
+        return readChunk( ctx.alloc() );
+    }
+
+    @Override
+    public ByteBuf readChunk( ByteBufAllocator allocator )
     {
         if ( isEndOfInput() )
         {
@@ -86,27 +113,15 @@ public class ByteArrayChunkedEncoder implements ChunkedEncoder
         }
     }
 
-    private int available()
+    @Override
+    public long length()
     {
-        return content.length - pos;
-    }
-
-    private boolean isFirst()
-    {
-        return pos == 0;
+        return content.length;
     }
 
     @Override
-    public boolean isEndOfInput()
+    public long progress()
     {
-        return pos == content.length;
-    }
-
-    @Override
-    public void marshal( WritableChannel channel ) throws IOException
-    {
-        int length = content.length;
-        channel.putInt( length );
-        channel.put( content, length );
+        return pos;
     }
 }

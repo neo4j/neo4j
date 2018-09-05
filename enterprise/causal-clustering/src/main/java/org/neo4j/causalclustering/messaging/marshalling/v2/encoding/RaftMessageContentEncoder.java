@@ -26,12 +26,13 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.Codec;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
 import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermsSerializer.serializeTerms;
@@ -42,11 +43,11 @@ import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftL
 public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
 {
 
-    private final CoreReplicatedContentMarshal serializer;
+    private final Codec<ReplicatedContent> codec;
 
-    public RaftMessageContentEncoder( CoreReplicatedContentMarshal serializer )
+    public RaftMessageContentEncoder( Codec<ReplicatedContent> replicatedContentCodec )
     {
-        this.serializer = serializer;
+        this.codec = replicatedContentCodec;
     }
 
     @Override
@@ -164,10 +165,10 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
             throw new IllegalStateException( "Illegal outbound call: " + raftMessage.getClass() );
         }
 
-        private void serializableContents( ReplicatedContent content, List<Object> out )
+        private void serializableContents( ReplicatedContent content, List<Object> out ) throws IOException
         {
             out.add( ContentType.ReplicatedContent );
-            serializer.marshal( content, out::add );
+            codec.encode( content, out );
         }
     }
 }

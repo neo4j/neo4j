@@ -29,6 +29,4 @@ public interface TransactionRepresentationExtractor
     TransactionRepresentation extract( TransactionRepresentationReplicatedTransaction replicatedTransaction );
 
     TransactionRepresentation extract( ByteArrayReplicatedTransaction replicatedTransaction );
-
-    TransactionRepresentation extract( ByteBufReplicatedTransaction replicatedTransaction );
 }

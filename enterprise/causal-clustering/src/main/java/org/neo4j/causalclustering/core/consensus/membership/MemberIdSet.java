@@ -22,9 +22,11 @@
  */
 package org.neo4j.causalclustering.core.consensus.membership;
 
+import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 
 public class MemberIdSet implements RaftGroup<MemberId>
 {
@@ -69,5 +71,11 @@ public class MemberIdSet implements RaftGroup<MemberId>
     public int hashCode()
     {
         return members != null ? members.hashCode() : 0;
+    }
+
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
+    {
+        contentHandler.handle( this );
     }
 }

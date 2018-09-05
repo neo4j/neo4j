@@ -75,7 +75,7 @@ public class RaftProtocolClientInstallerV2 implements ProtocolInstaller<Orientat
                 .add( "raft_message_encoder", new RaftMessageEncoder() )
                 .add( "raft_content_type_encoder", new ContentTypeEncoder() )
                 .add( "raft_chunked_writer", new ChunkedWriteHandler(  ) )
-                .add( "raft_message_content_encoder", new RaftMessageContentEncoder( new CoreReplicatedContentMarshal() ) )
+                .add( "raft_message_content_encoder", new RaftMessageContentEncoder( CoreReplicatedContentMarshal.codec() ) )
                 .install();
     }
 

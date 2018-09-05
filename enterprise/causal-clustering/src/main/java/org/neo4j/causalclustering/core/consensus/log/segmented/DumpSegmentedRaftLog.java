@@ -101,7 +101,7 @@ class DumpSegmentedRaftLog
 
                 try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
                 {
-                    new DumpSegmentedRaftLog( fileSystem, new CoreReplicatedContentMarshal() )
+                    new DumpSegmentedRaftLog( fileSystem, CoreReplicatedContentMarshal.marshaller() )
                             .dump( fileAsString, printer.getFor( fileAsString ) );
                 }
                 catch ( IOException | DisposedException | DamagedLogStorageException e )

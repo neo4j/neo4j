@@ -22,12 +22,14 @@
  */
 package org.neo4j.causalclustering.core.state.machines.token;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 
 public class ReplicatedTokenRequest implements CoreReplicatedContent
 {
@@ -103,5 +105,11 @@ public class ReplicatedTokenRequest implements CoreReplicatedContent
     public void dispatch( CommandDispatcher commandDispatcher, long commandIndex, Consumer<Result> callback )
     {
         commandDispatcher.dispatch( this, commandIndex, callback );
+    }
+
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
+    {
+        contentHandler.handle( this );
     }
 }

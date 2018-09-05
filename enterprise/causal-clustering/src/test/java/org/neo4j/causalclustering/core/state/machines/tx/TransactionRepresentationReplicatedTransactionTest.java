@@ -27,16 +27,13 @@ import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.Assert.assertEquals;
 
@@ -52,24 +49,14 @@ public class TransactionRepresentationReplicatedTransactionTest
 
         ByteBuf buffer = Unpooled.buffer();
         TransactionRepresentationReplicatedTransaction replicatedTransaction = ReplicatedTransaction.from( expectedTx );
-        replicatedTransaction.marshal().marshal( new NetworkFlushableChannelNetty4( buffer ) );
+        replicatedTransaction.marshal( new NetworkFlushableChannelNetty4( buffer ) );
 
-        ReplicatedTransaction decoded = ReplicatedTransactionSerializer.decode( buffer );
+        ReplicatedTransaction decoded = ReplicatedTransactionSerializer.unmarshal( buffer );
         buffer.readerIndex( 0 );
-        ReplicatedTransaction unmarshaled = ReplicatedTransactionSerializer.decode( buffer );
+        ReplicatedTransaction unmarshaled = ReplicatedTransactionSerializer.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
         assertEquals( decoded, unmarshaled );
 
         buffer.release();
-    }
-
-    private Collection<StorageCommand> ofSize( int size )
-    {
-        List<StorageCommand> commands = new ArrayList<>();
-        for ( int i = 0; i < size; i++ )
-        {
-            commands.add( new Command.NodeCommand( new NodeRecord( 1 ), new NodeRecord( 2 ) ) );
-        }
-        return commands;
     }
 }

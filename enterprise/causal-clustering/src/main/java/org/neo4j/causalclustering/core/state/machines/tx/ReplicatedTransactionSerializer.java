@@ -24,9 +24,14 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 
 import io.netty.buffer.ByteBuf;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import org.neo4j.causalclustering.messaging.marshalling.OutputStreamWritableChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+
+import static org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory.transactionalRepresentationWriter;
 
 public class ReplicatedTransactionSerializer
 {
@@ -34,7 +39,7 @@ public class ReplicatedTransactionSerializer
     {
     }
 
-    public static ReplicatedTransaction decode( ByteBuf byteBuf )
+    public static ReplicatedTransaction unmarshal( ByteBuf byteBuf )
     {
         int length = byteBuf.readInt();
         if ( length == -1 )
@@ -52,5 +57,39 @@ public class ReplicatedTransactionSerializer
         byte[] txBytes = new byte[txBytesLength];
         channel.get( txBytes, txBytesLength );
         return ReplicatedTransaction.from( txBytes );
+    }
+
+    public static void marshal( WritableChannel writableChannel, ByteArrayReplicatedTransaction replicatedTransaction ) throws IOException
+    {
+        int length = replicatedTransaction.getTxBytes().length;
+        writableChannel.putInt( length );
+        writableChannel.put( replicatedTransaction.getTxBytes(), length );
+    }
+
+    public static void marshal( WritableChannel writableChannel, TransactionRepresentationReplicatedTransaction replicatedTransaction ) throws IOException
+    {
+       /*
+        Unknown length. This method will never be used in production. When a ReplicatedTransaction is serialized it has already passed over the network
+        and a more efficient marshalling is used in ByteArrayReplicatedTransaction.
+        */
+        ReplicatedTransactionFactory.TransactionRepresentationWriter txWriter = transactionalRepresentationWriter( replicatedTransaction.tx() );
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream( 1024 );
+        OutputStreamWritableChannel outputStreamWritableChannel = new OutputStreamWritableChannel( outputStream );
+        while ( txWriter.canWrite() )
+        {
+            txWriter.write( outputStreamWritableChannel );
+        }
+        int length = outputStream.size();
+        writableChannel.putInt( length );
+        writableChannel.put( outputStream.toByteArray(), length );
+    }
+
+    static void writeInitialMetaData( WritableChannel firstChunk, TransactionRepresentationReplicatedTransaction tx ) throws IOException
+    {
+        /*
+        Unknown length. The reason for sending this int is to avoid conflicts with Raft V1.
+        This way, the serialized result of this object is identical to a serialized byte array. Which is the only type in Raft V1.
+        */
+        firstChunk.putInt( -1 );
     }
 }

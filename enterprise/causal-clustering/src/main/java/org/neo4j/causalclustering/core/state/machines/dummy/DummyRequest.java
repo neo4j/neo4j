@@ -22,6 +22,9 @@
  */
 package org.neo4j.causalclustering.core.state.machines.dummy;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.stream.ChunkedInput;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.OptionalLong;
@@ -32,7 +35,7 @@ import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -51,6 +54,12 @@ public class DummyRequest implements CoreReplicatedContent
         return OptionalLong.of( (long) data.length );
     }
 
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
+    {
+        contentHandler.handle( this );
+    }
+
     public long byteCount()
     {
         return data != null ? data.length : 0;
@@ -62,16 +71,14 @@ public class DummyRequest implements CoreReplicatedContent
         commandDispatcher.dispatch( this, commandIndex, callback );
     }
 
-    public ChunkedEncoder serializer()
+    public ChunkedInput<ByteBuf> encoder()
     {
-        if ( data != null )
+        byte[] array = data;
+        if ( array == null )
         {
-            return new ByteArrayChunkedEncoder( data );
+            array = new byte[0];
         }
-        else
-        {
-            return ChunkedEncoder.single( channel -> channel.putInt( 0 ) );
-        }
+        return new ByteArrayChunkedEncoder( array );
     }
 
     public static class Marshal extends SafeChannelMarshal<DummyRequest>

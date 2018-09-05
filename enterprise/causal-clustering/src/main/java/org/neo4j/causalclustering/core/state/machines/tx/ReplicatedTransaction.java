@@ -23,13 +23,15 @@
 package org.neo4j.causalclustering.core.state.machines.tx;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.stream.ChunkedInput;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public interface ReplicatedTransaction extends CoreReplicatedContent
 {
@@ -43,18 +45,15 @@ public interface ReplicatedTransaction extends CoreReplicatedContent
         return new ByteArrayReplicatedTransaction( bytes );
     }
 
-    static ByteBufReplicatedTransaction from( ByteBuf byteBuf )
-    {
-        return new ByteBufReplicatedTransaction( byteBuf );
-    }
-
     @Override
     default void dispatch( CommandDispatcher commandDispatcher, long commandIndex, Consumer<Result> callback )
     {
         commandDispatcher.dispatch( this, commandIndex, callback );
     }
 
-    ChunkedEncoder marshal();
+    ChunkedInput<ByteBuf> encode();
+
+    void marshal( WritableChannel writableChannel ) throws IOException;
 
     TransactionRepresentation extract( TransactionRepresentationExtractor extractor );
 }

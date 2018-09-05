@@ -20,22 +20,18 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.core.replication;
+package org.neo4j.causalclustering.messaging.marshalling;
+
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.util.OptionalLong;
+import java.util.List;
 
-import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 
-/**
- * Marker interface for types that can be replicated around.
- */
-public interface ReplicatedContent
+public interface Codec<CONTENT>
 {
-    default OptionalLong size()
-    {
-        return OptionalLong.empty();
-    }
+    void encode( CONTENT type, List<Object> output ) throws IOException;
 
-    void handle( ReplicatedContentHandler contentHandler ) throws IOException;
+    ContentBuilder<CONTENT> decode( ByteBuf byteBuf ) throws IOException, EndOfStreamException;
 }

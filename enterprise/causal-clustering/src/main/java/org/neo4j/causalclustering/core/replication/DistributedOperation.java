@@ -31,9 +31,10 @@ import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.ContentBuilder;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 /**
  * A uniquely identifiable operation.
@@ -72,22 +73,24 @@ public class  DistributedOperation implements ReplicatedContent
         return content.size();
     }
 
+    @Override
+    public void handle( ReplicatedContentHandler contentHandler ) throws IOException
+    {
+        contentHandler.handle( this );
+        content().handle( contentHandler );
+    }
+
     /**
      * This this consumer ignores the content which is handles by its own serializer.
-     *
-     * @return Consumer with instructions for writing to channel.
      */
-    public ChunkedEncoder serialize()
+    public void marshalMetaData( WritableChannel channel ) throws IOException
     {
-        return ChunkedEncoder.single( channel1 ->
-        {
-            channel1.putLong( globalSession().sessionId().getMostSignificantBits() );
-            channel1.putLong( globalSession().sessionId().getLeastSignificantBits() );
-            new MemberId.Marshal().marshal( globalSession().owner(), channel1 );
+        channel.putLong( globalSession().sessionId().getMostSignificantBits() );
+        channel.putLong( globalSession().sessionId().getLeastSignificantBits() );
+        new MemberId.Marshal().marshal( globalSession().owner(), channel );
 
-            channel1.putLong( operationId.localSessionId() );
-            channel1.putLong( operationId.sequenceNumber() );
-        } );
+        channel.putLong( operationId.localSessionId() );
+        channel.putLong( operationId.sequenceNumber() );
     }
 
     public static ContentBuilder<ReplicatedContent> deserialize( ReadableChannel channel ) throws IOException, EndOfStreamException

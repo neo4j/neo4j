@@ -28,6 +28,7 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.stream.ChunkedInput;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +36,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,7 +60,6 @@ import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedEncoder;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.FormattedLogProvider;
@@ -89,8 +88,6 @@ public class RaftMessageEncoderDecoderTest
         return setUpParams( new RaftMessages.RaftMessage[]{new RaftMessages.Heartbeat( MEMBER_ID, 1, 2, 3 ), new RaftMessages.HeartbeatResponse( MEMBER_ID ),
                 new RaftMessages.NewEntry.Request( MEMBER_ID, ReplicatedTransaction.from( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) ),
                 new RaftMessages.NewEntry.Request( MEMBER_ID, ReplicatedTransaction.from( new PhysicalTransactionRepresentation( Collections.emptyList() ) ) ),
-                new RaftMessages.NewEntry.Request( MEMBER_ID,
-                        ReplicatedTransaction.from( Unpooled.wrappedBuffer( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ).retain( 4 ) ) ),
                 new RaftMessages.NewEntry.Request( MEMBER_ID, new DistributedOperation(
                         new DistributedOperation( ReplicatedTransaction.from( new byte[]{1, 2, 3, 4, 5} ), new GlobalSession( UUID.randomUUID(), MEMBER_ID ),
                                 new LocalOperationId( 1, 2 ) ), new GlobalSession( UUID.randomUUID(), MEMBER_ID ), new LocalOperationId( 3, 4 ) ) ),
@@ -157,7 +154,7 @@ public class RaftMessageEncoderDecoderTest
     }
 
     @Test
-    public void shouldEncodeDecodeRaftMessage() throws IOException
+    public void shouldEncodeDecodeRaftMessage() throws Exception
     {
         ClusterId clusterId = new ClusterId( UUID.randomUUID() );
         RaftMessages.ReceivedInstantClusterIdAwareMessage<RaftMessages.RaftMessage> idAwareMessage =
@@ -177,7 +174,7 @@ public class RaftMessageEncoderDecoderTest
         ReferenceCountUtil.release( handler.msg );
     }
 
-    private void raftMessageEquals( RaftMessages.RaftMessage raftMessage, RaftMessages.RaftMessage message ) throws IOException
+    private void raftMessageEquals( RaftMessages.RaftMessage raftMessage, RaftMessages.RaftMessage message ) throws Exception
     {
         if ( raftMessage instanceof RaftMessages.NewEntry.Request )
         {
@@ -201,14 +198,14 @@ public class RaftMessageEncoderDecoderTest
         }
     }
 
-    private void contentEquals( ReplicatedContent one, ReplicatedContent two ) throws IOException
+    private void contentEquals( ReplicatedContent one, ReplicatedContent two ) throws Exception
     {
         if ( one instanceof ReplicatedTransaction )
         {
             ByteBuf buffer1 = Unpooled.buffer();
             ByteBuf buffer2 = Unpooled.buffer();
-            encode( buffer1, ((ReplicatedTransaction) one).marshal() );
-            encode( buffer2, ((ReplicatedTransaction) two).marshal() );
+            encode( buffer1, ((ReplicatedTransaction) one).encode() );
+            encode( buffer2, ((ReplicatedTransaction) two).encode() );
             assertEquals( buffer1, buffer2 );
         }
         else if ( one instanceof DistributedOperation )
@@ -223,11 +220,11 @@ public class RaftMessageEncoderDecoderTest
         }
     }
 
-    private static void encode( ByteBuf buffer, ChunkedEncoder marshal ) throws IOException
+    private static void encode( ByteBuf buffer, ChunkedInput<ByteBuf> marshal ) throws Exception
     {
         while ( !marshal.isEndOfInput() )
         {
-            ByteBuf tmp = marshal.encodeChunk( UnpooledByteBufAllocator.DEFAULT );
+            ByteBuf tmp = marshal.readChunk( UnpooledByteBufAllocator.DEFAULT );
             if ( tmp != null )
             {
                 buffer.writeBytes( tmp );

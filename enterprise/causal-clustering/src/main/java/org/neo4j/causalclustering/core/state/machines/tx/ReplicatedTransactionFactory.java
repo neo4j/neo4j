@@ -26,11 +26,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -38,9 +39,10 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.StorageCommandSerializer;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedTransactionFactory
 {
@@ -55,9 +57,13 @@ public class ReplicatedTransactionFactory
         return transactionCommand.extract( new TransactionRepresentationReader( extraHeader ) );
     }
 
+    public static TransactionRepresentationWriter transactionalRepresentationWriter( TransactionRepresentation transactionCommand )
+    {
+        return new TransactionRepresentationWriter( transactionCommand );
+    }
+
     private static class TransactionRepresentationReader implements TransactionRepresentationExtractor
     {
-
         private final byte[] extraHeader;
 
         TransactionRepresentationReader( byte[] extraHeader )
@@ -76,13 +82,6 @@ public class ReplicatedTransactionFactory
         {
             ByteBuf buffer = Unpooled.wrappedBuffer( replicatedTransaction.getTxBytes() );
             NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( buffer );
-            return read( channel );
-        }
-
-        @Override
-        public TransactionRepresentation extract( ByteBufReplicatedTransaction replicatedTransaction )
-        {
-            NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( replicatedTransaction.content() );
             return read( channel );
         }
 
@@ -130,6 +129,56 @@ public class ReplicatedTransactionFactory
             {
                 throw new RuntimeException( e );
             }
+        }
+    }
+
+    static class TransactionRepresentationWriter
+    {
+        private final Iterator<StorageCommand> iterator;
+        private ThrowingConsumer<WritableChannel,IOException> nextJob;
+
+        private TransactionRepresentationWriter( TransactionRepresentation tx )
+        {
+            nextJob = channel ->
+            {
+                channel.putInt( tx.getAuthorId() );
+                channel.putInt( tx.getMasterId() );
+                channel.putLong( tx.getLatestCommittedTxWhenStarted() );
+                channel.putLong( tx.getTimeStarted() );
+                channel.putLong( tx.getTimeCommitted() );
+                channel.putInt( tx.getLockSessionId() );
+
+                byte[] additionalHeader = tx.additionalHeader();
+                if ( additionalHeader != null )
+                {
+                    channel.putInt( additionalHeader.length );
+                    channel.put( additionalHeader, additionalHeader.length );
+                }
+                else
+                {
+                    channel.putInt( 0 );
+                }
+            };
+            iterator = tx.iterator();
+        }
+
+        void write( WritableChannel channel ) throws IOException
+        {
+            nextJob.accept( channel );
+            if ( iterator.hasNext() )
+            {
+                StorageCommand storageCommand = iterator.next();
+                nextJob = c -> new StorageCommandSerializer( c ).visit( storageCommand );
+            }
+            else
+            {
+                nextJob = null;
+            }
+        }
+
+        boolean canWrite()
+        {
+            return nextJob != null;
         }
     }
 }
