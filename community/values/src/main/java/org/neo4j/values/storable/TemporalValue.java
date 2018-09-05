@@ -62,6 +62,9 @@ import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
+import static org.neo4j.values.storable.TemporalProperties.DAY;
+import static org.neo4j.values.storable.TemporalProperties.MONTH;
+import static org.neo4j.values.storable.TemporalProperties.YEAR;
 import static org.neo4j.values.storable.TimeValue.time;
 
 public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<T,V>>
@@ -1161,7 +1164,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( date == null )
             {
-                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( month, "month" ), Pair.of( day, "day" ) );
+                assertDefinedInOrder( Pair.of( year, YEAR.propertyKey ), Pair.of( month, MONTH.propertyKey ), Pair.of( day, DAY.propertyKey ) );
             }
         }
 
@@ -1170,7 +1173,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( date == null )
             {
-                assertAllDefined( Pair.of( year, "year" ), Pair.of( month, "month" ), Pair.of( day, "day" ) );
+                assertAllDefined( Pair.of( year, YEAR.propertyKey ), Pair.of( month, MONTH.propertyKey ), Pair.of( day, DAY.propertyKey ) );
             }
         }
     }

@@ -755,73 +755,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
      */
     public LongValue get( String fieldName )
     {
-        long val;
-        switch ( fieldName.toLowerCase() )
-        {
-        case "years":
-            val = months / 12;
-            break;
-        case "months":
-            val = months;
-            break;
-        case "monthsofyear":
-            val = months % 12;
-            break;
-        case "monthsofquarter":
-            val = months % 3;
-            break;
-        case "quarters":
-            val = months / 3;
-            break;
-        case "quartersofyear":
-            val = (months / 3) % 4;
-            break;
-        case "weeks":
-            val = days / 7;
-            break;
-        case "daysofweek":
-            val = days % 7;
-            break;
-        case "days":
-            val = days;
-            break;
-        case "hours":
-            val = seconds / 3600;
-            break;
-        case "minutesofhour":
-            val = (seconds / 60) % 60;
-            break;
-        case "minutes":
-            val = seconds / 60;
-            break;
-        case "secondsofminute":
-            val = seconds % 60;
-            break;
-        case "seconds":
-            val = seconds;
-            break;
-        case "millisecondsofsecond":
-            val = nanos / 1000_000;
-            break;
-        case "milliseconds":
-            val = seconds * 1000 + nanos / 1000_000;
-            break;
-        case "microsecondsofsecond":
-            val = nanos / 1000;
-            break;
-        case "microseconds":
-            val = seconds * 1000_000 + nanos / 1000;
-            break;
-        case "nanosecondsofsecond":
-            val = nanos;
-            break;
-        case "nanoseconds":
-            val = seconds * NANOS_PER_SECOND + nanos;
-            break;
-        default:
-            throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
-        }
-
+        long val = DurationProperties.fromName( fieldName ).asTimeStamp( months, days, seconds, nanos );
         return Values.longValue( val );
     }
 

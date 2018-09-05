@@ -505,30 +505,10 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
      */
     public Value get( String fieldName )
     {
-        switch ( fieldName.toLowerCase() )
-        {
-        case "x":
-            return getNthCoordinate( 0, fieldName, false );
-        case "y":
-            return getNthCoordinate( 1, fieldName, false );
-        case "z":
-            return getNthCoordinate( 2, fieldName, false );
-        case "longitude":
-            return getNthCoordinate( 0, fieldName, true );
-        case "latitude":
-            return getNthCoordinate( 1, fieldName, true );
-        case "height":
-            return getNthCoordinate( 2, fieldName, true );
-        case "crs":
-            return Values.stringValue( crs.toString() );
-        case "srid":
-            return Values.intValue( crs.getCode() );
-        default:
-            throw new InvalidValuesArgumentException( "No such field: " + fieldName );
-        }
+       return PointProperties.fromName( fieldName ).get( this );
     }
 
-    private DoubleValue getNthCoordinate( int n, String fieldName, boolean onlyGeographic )
+    DoubleValue getNthCoordinate( int n, String fieldName, boolean onlyGeographic )
     {
         if ( onlyGeographic && !this.getCoordinateReferenceSystem().isGeographic() )
         {
