@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4,
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexOrderNone, IndexedProperty, ProcedureAccessMode, ProvidedOrder, QualifiedName, LogicalPlan => LogicalPlanv3_5, UserFunctionSignature}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexOrderNone, IndexedProperty, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5, UserFunctionSignature}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
 import org.opencypher.v9_0.expressions.{PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.opencypher.v9_0.util.Rewritable.RewritableAny

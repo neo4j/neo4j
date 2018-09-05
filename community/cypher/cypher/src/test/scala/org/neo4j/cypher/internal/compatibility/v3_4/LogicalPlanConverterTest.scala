@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4, 
 import org.neo4j.cypher.internal.util.{v3_4 => utilv3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ErrorPlan, IndexOrderNone, ProcedureCall, ProvidedOrder}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ErrorPlan, IndexOrderNone, ProcedureCall}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
 import org.opencypher.v9_0.expressions.{PathExpression, SemanticDirection}
 import org.opencypher.v9_0.util.attribution.{SequentialIdGen => SequentialIdGenv3_5}

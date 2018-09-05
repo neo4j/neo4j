@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.{AscSortItem, DescSortItem, SortItem}
@@ -99,7 +98,7 @@ object sortSkipAndLimit extends PlanAndContextTransformer {
           val (sortedPlan, context2) =
             // The !requiredOrder.isEmpty check is only here because we do not recognize more complex required orders
             // at the moment and do not want to abort sorting only because an empty required order is satisfied by anything.
-            if (!requiredOrder.isEmpty && ResultOrdering.satisfiedWith(requiredOrder, context.planningAttributes.providedOrders.get(plan.id))) {
+            if (!requiredOrder.isEmpty && requiredOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) {
               // We can't override solved, but right now we want to set it such that it solves ORDER BY
               // on a plan that has already assigned solved.
               // Use query.requiredOrder to mark the original required order as solved.

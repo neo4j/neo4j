@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
-import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, ProvidedOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.ProvidedOrder
 import org.opencypher.v9_0.util.Cardinality
 import org.opencypher.v9_0.util.attribution.{Attribute, Attributes, IdGen}
 

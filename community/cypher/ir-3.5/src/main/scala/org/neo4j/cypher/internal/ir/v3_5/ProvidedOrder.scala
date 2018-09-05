@@ -17,10 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_5.logical.plans
+package org.neo4j.cypher.internal.ir.v3_5
+
 
 object ProvidedOrder {
-  val empty: ProvidedOrder = ProvidedOrder(Seq.empty[ColumnOrder])
+
+  object Column {
+    def unapply(arg: Column): Option[String] = {
+      Some(arg.id)
+    }
+    def apply(id: String, ascending: Boolean): Column = {
+      if (ascending) Asc(id) else Desc(id)
+    }
+  }
+
+  object ColumnOfProperty {
+    /**
+      * Split the id into varName and propName, if the
+      * ordered column is a property lookup.
+      */
+    def unapply(arg: Column): Option[(String, String)] = {
+      StringPropertyLookup.unapply(arg.id)
+    }
+  }
+
+  sealed trait Column {
+    def id: String
+    def isAscending: Boolean
+  }
+
+  case class Asc(id: String) extends Column {
+    override val isAscending: Boolean = true
+  }
+  case class Desc(id: String) extends Column {
+    override val isAscending: Boolean = false
+  }
+
+  val empty: ProvidedOrder = ProvidedOrder(Seq.empty[Column])
 }
 
 /**
@@ -29,7 +62,7 @@ object ProvidedOrder {
   * if they are in any defined order.
   * @param columns a sequence of columns with sort direction
   */
-case class ProvidedOrder(columns: Seq[ColumnOrder]) {
+case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
 
   /**
     * Returns a new provided order where the order columns of this are concatenated with
@@ -51,7 +84,7 @@ case class ProvidedOrder(columns: Seq[ColumnOrder]) {
     * Trim provided order up until a sort column that matches any of the given args.
     */
   def upToExcluding(args: Set[String]): ProvidedOrder = {
-    val trimmed = columns.foldLeft((false,Seq.empty[ColumnOrder])) {
+    val trimmed = columns.foldLeft((false,Seq.empty[ProvidedOrder.Column])) {
       case (acc, _) if acc._1 => acc
       case (acc, col) if args.contains(col.id) => (true, acc._2)
       case (acc, col) => (acc._1, acc._2 :+ col)

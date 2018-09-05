@@ -58,6 +58,19 @@ case class RequiredOrder(columns: Seq[(String, RequiredColumnOrder)]) {
     }
     RequiredOrder(renamedColumns)
   }
+
+  /**
+    * Checks if a RequiredOrder is satisfied by a ProvidedOrder
+    */
+  def satisfiedBy(orderedBy: ProvidedOrder): Boolean = {
+    columns.zipAll(orderedBy.columns, null, null).forall {
+      case (null, _) => true
+      case (_, null) => false
+      case ((name, AscColumnOrder), ProvidedOrder.Asc(id)) => name == id
+      case ((name, DescColumnOrder), ProvidedOrder.Desc(id)) => name == id
+      case _ => false
+    }
+  }
 }
 
 object StringPropertyLookup {

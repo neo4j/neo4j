@@ -446,12 +446,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     ))
     // Trim provided order for each sort column, if it is a non-grouping column
     val trimmed = providedOrders.get(left.id).columns.takeWhile {
-      case ColumnOrderOfProperty((varName, propName)) =>
+      case ProvidedOrder.ColumnOfProperty((varName, propName)) =>
         grouping.values.exists {
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }
-      case ColumnOrder(varName) =>
+      case ProvidedOrder.Column(varName) =>
         grouping.values.exists {
           case Variable(`varName`) => true
           case _ => false
@@ -527,7 +527,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], reportedSortItems: Seq[ast.SortItem], requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(reportedSortItems))).withRequiredOrder(requiredOrder))
-    val providedOrder = ProvidedOrder(sortColumns)
+    val providedOrder = ProvidedOrder(sortColumns.map(sortColumnToProvided))
     annotate(Sort(inner, sortColumns), solved, providedOrder, context)
   }
 
@@ -801,19 +801,25 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     case _ => throw new IllegalStateException("Cannot mix ascending and descending columns when using index order")
   }
 
+  private def sortColumnToProvided(columnOrder: ColumnOrder): ProvidedOrder.Column =
+    columnOrder match {
+      case Ascending(id) => ProvidedOrder.Asc(id)
+      case Descending(id) => ProvidedOrder.Desc(id)
+    }
+
   /**
     * Rename sort columns if they are renamed in a projection.
     */
-  private def renameProvidedOrderColumns(columns: Seq[ColumnOrder], projectExpressions: Map[String, Expression]): Seq[ColumnOrder] = {
+  private def renameProvidedOrderColumns(columns: Seq[ProvidedOrder.Column], projectExpressions: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
     columns.map {
-      case columnOrder@ColumnOrderOfProperty((varName, propName)) =>
+      case columnOrder@ProvidedOrder.ColumnOfProperty((varName, propName)) =>
         projectExpressions.collectFirst {
-          case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`))) => ColumnOrder(newName, columnOrder.isAscending)
-          case (newName, Variable(`varName`)) => ColumnOrder(newName + "." + propName, columnOrder.isAscending)
+          case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`))) => ProvidedOrder.Column(newName, columnOrder.isAscending)
+          case (newName, Variable(`varName`)) => ProvidedOrder.Column(newName + "." + propName, columnOrder.isAscending)
         }.getOrElse(columnOrder)
-      case columnOrder@ColumnOrder(varName) =>
+      case columnOrder@ProvidedOrder.Column(varName) =>
         projectExpressions.collectFirst {
-          case (newName, Variable(`varName`)) => ColumnOrder(newName, columnOrder.isAscending)
+          case (newName, Variable(`varName`)) => ProvidedOrder.Column(newName, columnOrder.isAscending)
         }.getOrElse(columnOrder)
     }
   }
