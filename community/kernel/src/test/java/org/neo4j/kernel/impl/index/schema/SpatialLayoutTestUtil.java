@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
@@ -54,11 +53,6 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,Native
     private final SpaceFillingCurve curve;
 
     SpatialLayoutTestUtil( IndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
-    {
-        this( descriptor.withId( 0 ), settings, crs );
-    }
-
-    SpatialLayoutTestUtil( StoreIndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
     {
         super( descriptor );
         this.curve = settings.curve();

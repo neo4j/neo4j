@@ -47,7 +47,7 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeIndexKey,Na
 
     LocalTimeLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor.withId( 0 ) );
+        super( indexDescriptor );
     }
 
     @Override

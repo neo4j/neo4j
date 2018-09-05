@@ -50,7 +50,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeIndexKey,NativeI
 
     TimeLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor.withId( 0 ) );
+        super( indexDescriptor );
     }
 
     @Override
