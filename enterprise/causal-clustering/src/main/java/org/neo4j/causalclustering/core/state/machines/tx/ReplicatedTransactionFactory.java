@@ -134,7 +134,7 @@ public class ReplicatedTransactionFactory
 
     static class TransactionRepresentationWriter
     {
-        private final Iterator<StorageCommand> iterator;
+        private final Iterator<StorageCommand> commands;
         private ThrowingConsumer<WritableChannel,IOException> nextJob;
 
         private TransactionRepresentationWriter( TransactionRepresentation tx )
@@ -159,15 +159,15 @@ public class ReplicatedTransactionFactory
                     channel.putInt( 0 );
                 }
             };
-            iterator = tx.iterator();
+            commands = tx.iterator();
         }
 
         void write( WritableChannel channel ) throws IOException
         {
             nextJob.accept( channel );
-            if ( iterator.hasNext() )
+            if ( commands.hasNext() )
             {
-                StorageCommand storageCommand = iterator.next();
+                StorageCommand storageCommand = commands.next();
                 nextJob = c -> new StorageCommandSerializer( c ).visit( storageCommand );
             }
             else

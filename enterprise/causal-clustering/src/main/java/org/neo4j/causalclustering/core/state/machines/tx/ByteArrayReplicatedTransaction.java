@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.OptionalLong;
 
-import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentHandler;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -84,7 +83,7 @@ public class ByteArrayReplicatedTransaction implements ReplicatedTransaction
     @Override
     public ChunkedInput<ByteBuf> encode()
     {
-        return new ByteArrayChunkedEncoder( getTxBytes() );
+        return ReplicatedTransactionSerializer.encode( this );
     }
 
     @Override
