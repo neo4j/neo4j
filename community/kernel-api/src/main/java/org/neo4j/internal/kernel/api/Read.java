@@ -64,7 +64,7 @@ public interface Read
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
      * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
-     * @param needsValues
+     * @param needsValues if the index should fetch property values together with node ids for index queries
      */
     void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues ) throws KernelException;
 
