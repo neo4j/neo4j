@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_5.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.AscIndexOrder
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Skip => SkipPlan, _}
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util._
@@ -46,6 +46,28 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             Set.empty,
             IndexOrderAscending),
           Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+        Map("n.prop" -> Variable("  FRESHID48")(pos)))
+    )
+  }
+
+  test("Order by index backed property should plan sort if index does not provide order") {
+    val plan = new given {
+      indexOn("Awesome", "prop")
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop"
+
+    plan._2 should equal(
+      Projection(
+        Sort(
+          Projection(
+            NodeIndexSeek(
+              "n",
+              LabelToken("Awesome", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+              Set.empty,
+              IndexOrderNone),
+            Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+          Seq(Ascending("  FRESHID48"))),
         Map("n.prop" -> Variable("  FRESHID48")(pos)))
     )
   }
@@ -260,6 +282,36 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     )
   }
 
+  test("Order by index backed properties in a plan with an Apply") {
+    val plan = new given {
+      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      indexOn("B", "prop").providesOrder(AscIndexOrder)
+    } getLogicalPlanFor "MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop < b.prop RETURN a.prop ORDER BY a.prop, b.prop"
+
+    plan._2 should equal(
+      Projection(
+        Projection(
+          Apply(
+            NodeIndexSeek(
+              "a",
+              LabelToken("A", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+              Set.empty,
+              IndexOrderAscending),
+            NodeIndexSeek(
+              "b",
+              LabelToken("B", LabelId(1)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(prop("a", "prop")))))(pos)),
+              Set("a"),
+              IndexOrderAscending)
+          ),
+          Map("  FRESHID69" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
+        Map("a.prop" -> Variable("  FRESHID69")(pos)))
+    )
+  }
+
   test("Order by index backed property in a plan with an renaming Projection") {
     val plan = new given {
       indexOn("A", "prop").providesOrder(AscIndexOrder)
@@ -311,6 +363,31 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     )
   }
 
-  // TODO WITH 2 as x MATCH (m:Awesome) WHERE m.prop > 'foo' RETURN m.prop ORDER BY m.prop
-  // does not work because NIS is planned as RHS of apply. We could recognize that LHS has only 1 row.
+  test("Order by index backed property in a plan with a tail apply") {
+    val plan = new given {
+      indexOn("A", "prop").providesOrder(AscIndexOrder)
+    } getLogicalPlanFor
+      """MATCH (a:A) WHERE a.prop > 'foo' WITH a SKIP 0
+        |MATCH (b)
+        |RETURN a.prop, b ORDER BY a.prop""".stripMargin
+
+    plan._2 should equal(
+      Projection(
+        Projection(
+          Apply(
+            SkipPlan(
+              NodeIndexSeek(
+                "a",
+                LabelToken("A", LabelId(0)),
+                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+                Set.empty,
+                IndexOrderAscending),
+              SignedDecimalIntegerLiteral("0")(pos)),
+            AllNodesScan("  b@54", Set("a"))),
+          Map("  FRESHID66" -> prop("a", "prop"), "  FRESHID72" -> varFor("  b@54"))),
+        Map("a.prop" -> Variable("  FRESHID66")(pos), "b" -> Variable("  FRESHID72")(pos)))
+    )
+  }
+
 }
