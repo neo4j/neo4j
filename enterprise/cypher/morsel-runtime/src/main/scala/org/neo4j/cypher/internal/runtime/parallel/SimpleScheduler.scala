@@ -47,9 +47,11 @@ class SimpleScheduler(executor: Executor, waitTimeout: Duration) extends Schedul
       new Callable[TaskResult] {
         override def call(): TaskResult = {
           val workUnitEvent = scheduledWorkUnitEvent.start()
-          val result = TaskResult(task, workUnitEvent, task.executeWorkUnit())
-          workUnitEvent.stop()
-          result
+          try {
+            TaskResult(task, workUnitEvent, task.executeWorkUnit())
+          } finally {
+            workUnitEvent.stop()
+          }
         }
       }
 
