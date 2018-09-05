@@ -19,7 +19,6 @@
  */
 package org.neo4j.backup.stresstests;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -33,19 +32,16 @@ class WorkLoad extends RepeatUntilCallable
 {
     private static final Label label = Label.label( "Label" );
     private final Supplier<GraphDatabaseService> dbRef;
-    private final AtomicLong dbStopCounter;
 
-    WorkLoad( BooleanSupplier keepGoing, Runnable onFailure, Supplier<GraphDatabaseService> dbRef, AtomicLong dbStopCounter )
+    WorkLoad( BooleanSupplier keepGoing, Runnable onFailure, Supplier<GraphDatabaseService> dbRef )
     {
         super( keepGoing, onFailure );
         this.dbRef = dbRef;
-        this.dbStopCounter = dbStopCounter;
     }
 
     @Override
     protected void doWork()
     {
-        final long oldStopCounter = dbStopCounter.get();
         GraphDatabaseService db = dbRef.get();
         try ( Transaction tx = db.beginTx() )
         {
@@ -59,7 +55,7 @@ class WorkLoad extends RepeatUntilCallable
         catch ( RuntimeException e )
         {
             // fail if exception is thrown not during db shutdown
-            if ( dbStopCounter.get() == oldStopCounter )
+            if ( db.isAvailable( 1 ) )
             {
                 throw e;
             }

@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
@@ -104,12 +103,11 @@ public class BackupServiceStressTesting
             {
                 WorkLoad.setupIndexes( dbRef.get() );
             }
-            final AtomicLong dbStopCounter = new AtomicLong( );
-            Future<?> workload = service.submit( new WorkLoad( keepGoingSupplier, onFailure, dbRef::get, dbStopCounter ) );
+            Future<?> workload = service.submit( new WorkLoad( keepGoingSupplier, onFailure, dbRef::get ) );
             Future<?> backupWorker = service.submit(
                     new BackupLoad( keepGoingSupplier, onFailure, backupHostname, backupPort, workDirectory ) );
             Future<?> startStopWorker = service.submit(
-                    new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef, dbStopCounter ) );
+                    new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
             Futures.combine( workload, backupWorker, startStopWorker ).get( durationInMinutes + 5, MINUTES );
 
