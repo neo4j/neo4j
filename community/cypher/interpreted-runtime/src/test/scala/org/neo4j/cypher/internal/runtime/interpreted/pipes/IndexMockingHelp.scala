@@ -89,7 +89,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   case class PredefinedOption(nodeValueHits: Iterable[NodeValueHit]) extends Answer[Option[ExecutionContext]] {
     override def answer(invocationOnMock: InvocationOnMock): Option[ExecutionContext] = {
-      val resultCreator = invocationOnMock.getArgument[ResultCreator[ExecutionContext]](2)
+      val resultCreator = invocationOnMock.getArgument[ResultCreator[ExecutionContext]](1)
       nodeValueHits.headOption.map(resultCreator.createResult)
     }
   }
