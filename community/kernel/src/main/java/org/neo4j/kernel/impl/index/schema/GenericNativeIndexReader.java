@@ -60,7 +60,14 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
     @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
-        // TODO except spatial tho
+        for ( IndexQuery predicate : predicates )
+        {
+            ValueGroup valueGroup = predicate.valueGroup();
+            if ( valueGroup == ValueGroup.GEOMETRY_ARRAY || valueGroup == ValueGroup.GEOMETRY )
+            {
+                return false;
+            }
+        }
         return true;
     }
 
