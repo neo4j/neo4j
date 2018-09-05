@@ -282,33 +282,36 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     )
   }
 
-  test("Order by index backed properties in a plan with an Apply") {
+  test("Order by index backed properties in a plan with an Apply needs Sort if RHS order required") {
     val plan = new given {
       indexOn("A", "prop").providesOrder(AscIndexOrder)
       indexOn("B", "prop").providesOrder(AscIndexOrder)
-    } getLogicalPlanFor "MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop < b.prop RETURN a.prop ORDER BY a.prop, b.prop"
+      // This query is very fragile in the sense that the slightest modification will result in a stupid plan
+    } getLogicalPlanFor "MATCH (a:A), (b:B) WHERE a.prop STARTS WITH 'foo' AND b.prop > a.prop RETURN a.prop, b.prop ORDER BY a.prop, b.prop"
 
     plan._2 should equal(
       Projection(
-        Projection(
-          Apply(
-            NodeIndexSeek(
-              "a",
-              LabelToken("A", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-              Set.empty,
-              IndexOrderAscending),
-            NodeIndexSeek(
-              "b",
-              LabelToken("B", LabelId(1)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(prop("a", "prop")))))(pos)),
-              Set("a"),
-              IndexOrderAscending)
-          ),
-          Map("  FRESHID69" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
-        Map("a.prop" -> Variable("  FRESHID69")(pos)))
+        Sort(
+          Projection(
+            Apply(
+              NodeIndexSeek(
+                "a",
+                LabelToken("A", LabelId(0)),
+                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+                RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("foo")(pos)))(pos)),
+                Set.empty,
+                IndexOrderAscending),
+              NodeIndexSeek(
+                "b",
+                LabelToken("B", LabelId(1)),
+                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(prop("a", "prop")))))(pos)),
+                Set("a"),
+                IndexOrderAscending)
+            ),
+            Map("  FRESHID79" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "  FRESHID87" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
+          Seq(Ascending("  FRESHID79"), Ascending("  FRESHID87"))),
+        Map("a.prop" -> Variable("  FRESHID79")(pos), "b.prop" -> Variable("  FRESHID87")(pos)))
     )
   }
 

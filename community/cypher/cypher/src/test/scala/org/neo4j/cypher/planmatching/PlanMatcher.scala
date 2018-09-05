@@ -92,7 +92,7 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
         MatchResult(
           matches = false,
           rawFailureMessage = s"Expected to find $toPlanDescription\n but got: \n $plan",
-          rawNegatedFailureMessage = ""
+          rawNegatedFailureMessage = s"Expected not to find $toPlanDescription\n but got: \n $plan"
         )
       )
     }

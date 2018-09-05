@@ -103,9 +103,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          labelName <- labelPredicate.labels;
          labelId: LabelId <- semanticTable.id(labelName).toSeq;
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
-         (predicates, canGetValues, orderBy) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, requiredOrder))
+         (predicates, canGetValues, providedOrder) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, requiredOrder))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, canGetValues, orderBy, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, canGetValues, providedOrder, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -232,10 +232,10 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
         // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
         val indexNamesAndTypes = matchingPredicates.map(mp => s"${mp.name}.${mp.propertyKeyName.name}").zip(types)
-        val orderBy = ResultOrdering.withIndexOrderCapability(requiredOrder, indexNamesAndTypes, indexDescriptor.orderCapability)
+        val providedOrder = ResultOrdering.withIndexOrderCapability(requiredOrder, indexNamesAndTypes, indexDescriptor.orderCapability)
 
         // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
-        (matchingPredicates, propertyBehaviours, orderBy)
+        (matchingPredicates, propertyBehaviours, providedOrder)
       }
   }
 

@@ -71,19 +71,22 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
     val rhsSolved: PlannerQuery = solveds.get(right.id).updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
     val solved: PlannerQuery = solveds.get(left.id) ++ rhsSolved
-    val providedOrder = providedOrders.get(left.id).followedBy(providedOrders.get(right.id))
+    // If the LHS has duplicate values, twe cannot guarantee any added order from the RHS
+    val providedOrder = providedOrders.get(left.id)
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).updateTailOrSelf(_.withTail(solveds.get(right.id)))
-    val providedOrder = providedOrders.get(left.id).followedBy(providedOrders.get(right.id))
+    // If the LHS has duplicate values, twe cannot guarantee any added order from the RHS
+    val providedOrder = providedOrders.get(left.id)
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = solveds.get(left.id) ++ solveds.get(right.id)
-    val providedOrder = providedOrders.get(left.id).followedBy(providedOrders.get(right.id))
+    // If the LHS has duplicate values, twe cannot guarantee any added order from the RHS
+    val providedOrder = providedOrders.get(left.id)
     annotate(CartesianProduct(left, right), solved, providedOrder, context)
   }
 
@@ -625,14 +628,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(lhs.id) ++ solveds.get(rhs.id)
-    val providedOrder = providedOrders.get(lhs.id).followedBy(providedOrders.get(rhs.id))
+    // If the LHS has duplicate values, twe cannot guarantee any added order from the RHS
+    val providedOrder = providedOrders.get(lhs.id)
     annotate(ConditionalApply(lhs, rhs, idNames), solved, providedOrder, context)
   }
 
 
   def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext, maybeSolved: Option[PlannerQuery] = None): LogicalPlan = {
     val solved = maybeSolved.getOrElse(solveds.get(inner.id) ++ solveds.get(outer.id))
-    val providedOrder = providedOrders.get(inner.id).followedBy(providedOrders.get(outer.id))
+    // If the LHS has duplicate values, twe cannot guarantee any added order from the RHS
+    val providedOrder = providedOrders.get(inner.id)
     annotate(AntiConditionalApply(inner, outer, idNames), solved, providedOrder, context)
   }
 
