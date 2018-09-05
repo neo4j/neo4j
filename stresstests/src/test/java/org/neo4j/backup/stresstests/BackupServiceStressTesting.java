@@ -109,6 +109,7 @@ public class BackupServiceStressTesting
             Future<?> startStopWorker = service.submit( new StartStop( control, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
             Futures.combine( workload, backupWorker, startStopWorker ).get(durationInMinutes + 5, MINUTES );
+            control.assertNoFailure();
 
             service.shutdown();
             if ( !service.awaitTermination( 30, SECONDS ) )
