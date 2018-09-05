@@ -52,6 +52,7 @@ import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -90,6 +91,29 @@ public abstract class IndexProviderCompatibilityTestSuite
     {
         return false;
     };
+
+    public List<RandomValues.Types> supportedValueTypes()
+    {
+        List<RandomValues.Types> types = new ArrayList<>( Arrays.asList( RandomValues.Types.values() ) );
+        if ( !supportsSpatial() )
+        {
+            types.remove( RandomValues.Types.CARTESIAN_POINT );
+            types.remove( RandomValues.Types.CARTESIAN_POINT_3D );
+            types.remove( RandomValues.Types.GEOGRAPHIC_POINT );
+            types.remove( RandomValues.Types.GEOGRAPHIC_POINT_3D );
+        }
+        return types;
+    }
+
+    public void consistencyCheck( IndexAccessor accessor )
+    {
+        // no-op by default
+    }
+
+    public void consistencyCheck( IndexPopulator populator )
+    {
+        // no-op by default
+    }
 
     public abstract static class Compatibility
     {
@@ -254,6 +278,10 @@ public abstract class IndexProviderCompatibilityTestSuite
             {
                 populator.create();
                 runWithPopulator.accept( populator );
+                if ( closeSuccessfully )
+                {
+                    testSuite.consistencyCheck( populator );
+                }
             }
             finally
             {

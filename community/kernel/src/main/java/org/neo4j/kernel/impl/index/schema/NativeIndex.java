@@ -101,6 +101,18 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         }
     }
 
+    public void consistencyCheck()
+    {
+        try
+        {
+            tree.consistencyCheck();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     private class NativeIndexTreeMonitor extends GBPTree.Monitor.Adaptor
     {
         @Override

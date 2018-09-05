@@ -25,7 +25,11 @@ import org.junit.Test;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -37,8 +41,10 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.time.LocalDate.ofEpochDay;
@@ -46,7 +52,9 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.IndexQuery.exists;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
@@ -604,6 +612,37 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 pointArray( new PointValue[] {pointValue( Cartesian, 20D, 2D ), pointValue( Cartesian, 20D, 3D )} ),
                 pointArray( new PointValue[] {pointValue( Cartesian, 30D, 3D ), pointValue( Cartesian, 30D, 4D )} ),
                 pointArray( new PointValue[] {pointValue( Cartesian, 40D, 4D ), pointValue( Cartesian, 40D, 5D )} ) );
+    }
+
+    @Test
+    public void testExactMatchOnRandomCompositeValues() throws Exception
+    {
+        // given
+        List<RandomValues.Types> types = testSuite.supportedValueTypes();
+        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        Set<ValueTuple> duplicateChecker = new HashSet<>();
+        for ( long id = 0; id < 10_000; id++ )
+        {
+            IndexEntryUpdate<SchemaDescriptor> update;
+            do
+            {
+                update = add( id, descriptor.schema(),
+                        random.nextValue( random.among( types ) ),
+                        random.nextValue( random.among( types ) ) );
+            }
+            while ( !duplicateChecker.add( ValueTuple.of( update.values() ) ) );
+            updates.add( update );
+        }
+        updateAndCommit( updates );
+
+        // when
+        for ( IndexEntryUpdate<?> update : updates )
+        {
+            // then
+            List<Long> hits = query( exact( 0, update.values()[0] ), exact( 1, update.values()[1] ) );
+            assertEquals( update + " " + hits.toString(), 1, hits.size() );
+            assertThat( single( hits ), equalTo( update.getEntityId() ) );
+        }
     }
 
     private void testIndexSeekRangeWithExists( Object obj1, Object obj2, Object obj3, Object obj4, Object obj5 ) throws Exception

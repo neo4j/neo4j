@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.After;
 import org.junit.Before;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -63,8 +64,15 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     @After
     public void after()
     {
-        accessor.drop();
-        accessor.close();
+        try
+        {
+            testSuite.consistencyCheck( accessor );
+        }
+        finally
+        {
+            accessor.drop();
+            accessor.close();
+        }
     }
 
     protected List<Long> query( IndexQuery... predicates ) throws Exception
@@ -117,7 +125,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
      * Commit these updates to the index. Also store the values, which currently are stored for all types except geometry,
      * so therefore it's done explicitly here so that we can filter on them later.
      */
-    void updateAndCommit( List<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
+    void updateAndCommit( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
