@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -1593,7 +1594,12 @@ public class RandomValues
      */
     public DateTimeValue nextDateTimeValue()
     {
-        return datetime( ZonedDateTime.ofInstant( randomInstant(), UTC ) );
+        return nextDateTimeValue( UTC );
+    }
+
+    public DateTimeValue nextDateTimeValue( ZoneId zoneId )
+    {
+        return datetime( ZonedDateTime.ofInstant( randomInstant(), zoneId ) );
     }
 
     /**

@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -28,7 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.TemporalParseException;
+import org.neo4j.values.utils.TemporalUtil;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
@@ -37,6 +40,7 @@ import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -370,8 +374,8 @@ class DurationValueTest
         DurationValue duration1 = duration( 0, 0, Long.MAX_VALUE, 500_000_000 );
         DurationValue duration2 = duration( 0, 0, 1, 0 );
         DurationValue duration3 = duration( 0, 0, 0, 500_000_000 );
-        assertThrows( ArithmeticException.class, () -> duration1.add( duration2 ) );
-        assertThrows( ArithmeticException.class, () -> duration1.add( duration3 ) );
+        assertThrows( InvalidValuesArgumentException.class, () -> duration1.add( duration2 ) );
+        assertThrows( InvalidValuesArgumentException.class, () -> duration1.add( duration3 ) );
     }
 
     @Test
@@ -379,22 +383,22 @@ class DurationValueTest
     {
         DurationValue duration1 = duration( 0, 0, Long.MIN_VALUE, 0 );
         DurationValue duration2 = duration( 0, 0, 1, 0 );
-        assertThrows( ArithmeticException.class, () -> duration1.sub( duration2 ) );
+        assertThrows( InvalidValuesArgumentException.class, () -> duration1.sub( duration2 ) );
     }
 
     @Test
     void shouldThrowExceptionOnMultiplyOverflow()
     {
         DurationValue duration = duration( 0, 0, Long.MAX_VALUE, 0 );
-        assertThrows( ArithmeticException.class, () -> duration.mul( Values.intValue( 2 ) ) );
-        assertThrows( ArithmeticException.class, () -> duration.mul( Values.floatValue( 2 ) ) );
+        assertThrows( InvalidValuesArgumentException.class, () -> duration.mul( Values.intValue( 2 ) ) );
+        assertThrows( InvalidValuesArgumentException.class, () -> duration.mul( Values.floatValue( 2 ) ) );
     }
 
     @Test
     void shouldThrowExceptionOnDivideOverflow()
     {
         DurationValue duration = duration( 0, 0, Long.MAX_VALUE, 0 );
-        assertThrows( ArithmeticException.class, () -> duration.div( Values.floatValue( 0.5f ) ) );
+        assertThrows( InvalidValuesArgumentException.class, () -> duration.div( Values.floatValue( 0.5f ) ) );
     }
 
     @Test
@@ -570,5 +574,90 @@ class DurationValueTest
 
         // average nbr of days in 400 years doesn't imply equality
         assertNotEqual( duration( 400 * 12, 0, 0, 0 ), duration( 0, 146_097, 0, 0 ) );
+    }
+
+    @Test
+    void shouldNotThrowWhenInsideOverflowLimit()
+    {
+        // when
+        duration(0, 0, Long.MAX_VALUE, 999_999_999 );
+
+        // then should not throw
+    }
+
+    @Test
+    void shouldNotThrowWhenInsideNegativeOverflowLimit()
+    {
+        // when
+        duration(0, 0, Long.MIN_VALUE, -999_999_999 );
+
+        // then should not throw
+    }
+
+    @Test
+    void shouldThrowOnOverflowOnNanos()
+    {
+        // when
+        int nanos = 1_000_000_000;
+        long seconds = Long.MAX_VALUE;
+        assertConstructorThrows( 0, 0, seconds, nanos );
+    }
+
+    @Test
+    void shouldThrowOnNegativeOverflowOnNanos()
+    {
+        // when
+        int nanos = -1_000_000_000;
+        long seconds = Long.MIN_VALUE;
+        assertConstructorThrows( 0, 0, seconds, nanos );
+    }
+
+    @Test
+    void shouldThrowOnOverflowOnDays()
+    {
+        // when
+        long days = Long.MAX_VALUE / TemporalUtil.SECONDS_PER_DAY;
+        long seconds = Long.MAX_VALUE - days * TemporalUtil.SECONDS_PER_DAY;
+        assertConstructorThrows( 0, days, seconds + 1, 0 );
+    }
+
+    @Test
+    void shouldThrowOnNegativeOverflowOnDays()
+    {
+        // when
+        long days = Long.MIN_VALUE / TemporalUtil.SECONDS_PER_DAY;
+        long seconds = Long.MIN_VALUE - days * TemporalUtil.SECONDS_PER_DAY;
+        assertConstructorThrows( 0, days, seconds - 1, 0 );
+    }
+
+    @Test
+    void shouldThrowOnOverflowOnMonths()
+    {
+        // when
+        long months = Long.MAX_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
+        long seconds = Long.MAX_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
+        assertConstructorThrows( months, 0, seconds + 1, 0 );
+    }
+
+    @Test
+    void shouldThrowOnNegativeOverflowOnMonths()
+    {
+        // when
+        long months = Long.MIN_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
+        long seconds = Long.MIN_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
+        assertConstructorThrows( months, 0, seconds - 1, 0 );
+    }
+
+    private void assertConstructorThrows( long months, long days, long seconds, int nanos )
+    {
+        InvalidValuesArgumentException e = assertThrows( InvalidValuesArgumentException.class, () -> duration( months, days, seconds, nanos ) );
+
+        assertThat( e.getMessage(), Matchers.allOf(
+                Matchers.containsString( "Invalid value for duration" ),
+                Matchers.containsString( "months=" + months ),
+                Matchers.containsString( "days=" + days ),
+                Matchers.containsString( "seconds=" + seconds ),
+                Matchers.containsString( "nanos=" + nanos )
+        ) );
     }
 }

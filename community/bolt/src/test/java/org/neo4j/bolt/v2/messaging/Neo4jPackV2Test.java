@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v2.messaging;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -28,9 +29,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoField;
-import java.time.temporal.ValueRange;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -38,6 +36,7 @@ import java.util.stream.IntStream;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -52,15 +51,6 @@ import org.neo4j.values.virtual.ListValue;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
-import static java.time.temporal.ChronoField.DAY_OF_MONTH;
-import static java.time.temporal.ChronoField.EPOCH_DAY;
-import static java.time.temporal.ChronoField.HOUR_OF_DAY;
-import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
-import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
-import static java.time.temporal.ChronoField.NANO_OF_DAY;
-import static java.time.temporal.ChronoField.NANO_OF_SECOND;
-import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
-import static java.time.temporal.ChronoField.YEAR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.packstream.PackStream.INT_16;
@@ -70,11 +60,6 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
-import static org.neo4j.values.storable.DateValue.epochDate;
-import static org.neo4j.values.storable.DurationValue.duration;
-import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
-import static org.neo4j.values.storable.LocalTimeValue.localTime;
-import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.unsafePointValue;
@@ -90,6 +75,9 @@ public class Neo4jPackV2Test
     private static final int RANDOM_VALUES_TO_TEST = 1_000;
     private static final int RANDOM_LISTS_TO_TEST = 1_000;
     private static final int RANDOM_LIST_MAX_SIZE = 500;
+
+    @Rule
+    public RandomRule random = new RandomRule();
 
     @Test
     public void shouldFailToPackPointWithIllegalDimensions()
@@ -171,6 +159,12 @@ public class Neo4jPackV2Test
     public void shouldPackAndUnpackDuration()
     {
         testPackingAndUnpacking( this::randomDuration );
+    }
+
+    @Test
+    public void shouldPackAndUnpackPeriod()
+    {
+        testPackingAndUnpacking( this::randomPeriod );
     }
 
     @Test
@@ -306,7 +300,7 @@ public class Neo4jPackV2Test
                 } );
     }
 
-    private static void testPackingPointsWithWrongDimensions( int dimensions )
+    private void testPackingPointsWithWrongDimensions( int dimensions )
     {
         PointValue point = randomPoint( 0, dimensions );
         try
@@ -357,15 +351,15 @@ public class Neo4jPackV2Test
         }
     }
 
-    private static <T extends AnyValue> ListValue randomList( Supplier<T> randomValueGenerator )
+    private <T extends AnyValue> ListValue randomList( Supplier<T> randomValueGenerator )
     {
         return randomList( index -> randomValueGenerator.get() );
     }
 
-    private static <T extends AnyValue> ListValue randomList( Function<Integer,T> randomValueGenerator )
+    private <T extends AnyValue> ListValue randomList( Function<Integer,T> randomValueGenerator )
     {
-        AnyValue[] values = random().ints( RANDOM_LISTS_TO_TEST, 1, RANDOM_LIST_MAX_SIZE )
-                .mapToObj( index -> randomValueGenerator.apply( index ) )
+        AnyValue[] values = random.ints( RANDOM_LISTS_TO_TEST, 1, RANDOM_LIST_MAX_SIZE )
+                .mapToObj( randomValueGenerator::apply )
                 .toArray( AnyValue[]::new );
 
         return list( values );
@@ -381,7 +375,7 @@ public class Neo4jPackV2Test
         return randomPoint( index, 3 );
     }
 
-    private static PointValue randomPoint( int index, int dimension )
+    private PointValue randomPoint( int index, int dimension )
     {
         CoordinateReferenceSystem crs;
         if ( index % 2 == 0 )
@@ -393,77 +387,57 @@ public class Neo4jPackV2Test
             crs = dimension == 2 ? Cartesian : Cartesian_3D;
         }
 
-        return unsafePointValue( crs, random().doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
+        return unsafePointValue( crs, random.doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
     }
 
-    private DurationValue randomDuration( int index )
+    private DurationValue randomDuration()
     {
-        return duration( randomLong( index ), randomLong( index ), randomLong( index ), randomLong( index ) );
+        return random.randomValues().nextDuration();
+    }
+
+    private DurationValue randomPeriod()
+    {
+        return random.randomValues().nextPeriod();
     }
 
     private DateValue randomDate()
     {
-        return epochDate( random( EPOCH_DAY ) );
+        return random.randomValues().nextDateValue();
     }
 
     private LocalTimeValue randomLocalTime()
     {
-        return localTime( random( NANO_OF_DAY ) );
+        return random.randomValues().nextLocalTimeValue();
     }
 
     private TimeValue randomTime()
     {
-        return time( random( NANO_OF_DAY ), randomZoneOffset() );
+        return random.randomValues().nextTimeValue();
     }
 
     private LocalDateTimeValue randomLocalDateTime()
     {
-        return localDateTime( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
-                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ) );
+        return random.randomValues().nextLocalDateTimeValue();
     }
 
     private DateTimeValue randomDateTimeWithTimeZoneName()
     {
-        return datetime( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
-                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ), randomZoneIdWithName() );
+        return random.randomValues().nextDateTimeValue( randomZoneIdWithName() );
     }
 
     private DateTimeValue randomDateTimeWithTimeZoneOffset()
     {
-        return datetime( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
-                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ), randomZoneOffset() );
+        return random.randomValues().nextDateTimeValue( randomZoneOffset() );
     }
 
-    private static long randomLong( long origin )
+    private ZoneOffset randomZoneOffset()
     {
-        return random().nextLong( origin, Long.MAX_VALUE );
+        return ZoneOffset.ofTotalSeconds( random.nextInt( ZoneOffset.MIN.getTotalSeconds(), ZoneOffset.MAX.getTotalSeconds() ) );
     }
 
-    private static int random( ChronoField chronoField )
+    private ZoneId randomZoneIdWithName()
     {
-        ValueRange range = chronoField.range();
-        int min = (int) range.getMinimum();
-        int max = (int) range.getSmallestMaximum();
-        if ( max != range.getSmallestMaximum() )
-        {
-            max = Integer.MAX_VALUE;
-        }
-        return random().nextInt( min, max );
-    }
-
-    private static ZoneOffset randomZoneOffset()
-    {
-        return ZoneOffset.ofTotalSeconds( random().nextInt( ZoneOffset.MIN.getTotalSeconds(), ZoneOffset.MAX.getTotalSeconds() + 1 ) );
-    }
-
-    private static ZoneId randomZoneIdWithName()
-    {
-        String timeZoneName = TIME_ZONE_NAMES[random().nextInt( TIME_ZONE_NAMES.length )];
+        String timeZoneName = TIME_ZONE_NAMES[random.nextInt( TIME_ZONE_NAMES.length )];
         return ZoneId.of( timeZoneName );
-    }
-
-    private static ThreadLocalRandom random()
-    {
-        return ThreadLocalRandom.current();
     }
 }
