@@ -19,12 +19,15 @@
  */
 package org.neo4j.test.extension;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.test.rule.RandomRule;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith( RandomExtension.class )
 class RandomExtensionTest
@@ -42,5 +45,25 @@ class RandomExtensionTest
     void randomIsInitialised()
     {
         assertNotNull( random.nextAlphaNumericString() );
+    }
+
+    @Nested
+    class NestedRandomTest
+    {
+        @Inject
+        RandomRule nestedRandom;
+
+        @Test
+        @RandomRule.Seed( 15 )
+        void randomSeedSetupTest()
+        {
+            assertEquals( 15, nestedRandom.seed() );
+        }
+
+        @Test
+        void randomExtensionIgnoreAssumptionFailure()
+        {
+            assumeTrue( false );
+        }
     }
 }

@@ -27,12 +27,13 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.AssertionFailedError;
 import org.opentest4j.TestAbortedException;
 
-import java.lang.reflect.AnnotatedElement;
 import java.util.Optional;
 
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.RandomRule.Seed;
 
 import static java.lang.String.format;
+import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 
 public class RandomExtension extends StatefullFieldExtension<RandomRule> implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler
 {
@@ -69,16 +70,8 @@ public class RandomExtension extends StatefullFieldExtension<RandomRule> impleme
     @Override
     public void beforeEach( ExtensionContext extensionContext )
     {
-        Optional<AnnotatedElement> el = extensionContext.getElement();
-        if ( el.isPresent() )
-        {
-            AnnotatedElement annotatedElement = el.get();
-            RandomRule.Seed seedAnnotation = annotatedElement.getAnnotation( RandomRule.Seed.class );
-            if ( seedAnnotation != null )
-            {
-                getStoredValue( extensionContext ).setSeed( seedAnnotation.value() );
-            }
-        }
+        Optional<Seed> optionalSeed = findAnnotation( extensionContext.getElement(), Seed.class );
+        optionalSeed.map( Seed::value ).ifPresent( seed -> getStoredValue( extensionContext ).setSeed( seed ) );
     }
 
     @Override
