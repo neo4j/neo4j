@@ -93,20 +93,6 @@ public class SecuritySettings implements LoadableConfig
             derivedSetting( "dbms.security.native.authorization_enabled", auth_providers,
                     providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
 
-    @Description( "Enable authentication via system-graph provider. " +
-            "Available in Commercial Edition only." )
-    @Internal
-    public static final Setting<Boolean> system_graph_authentication_enabled =
-            derivedSetting( "dbms.security.system_graph.authentication_enabled", auth_providers,
-                    providers -> providers.contains(SYSTEM_GRAPH_REALM_NAME ) , BOOLEAN );
-
-    @Description( "Enable authorization via system-graph authorization provider. " +
-            "Available in Commercial Edition only." )
-    @Internal
-    public static final Setting<Boolean> system_graph_authorization_enabled =
-            derivedSetting( "dbms.security.system_graph.authorization_enabled", auth_providers,
-                    providers -> providers.contains( SYSTEM_GRAPH_REALM_NAME ), BOOLEAN );
-
     @Description( "Enable authentication via settings configurable LDAP authentication provider." )
     @Internal
     public static final Setting<Boolean> ldap_authentication_enabled =
