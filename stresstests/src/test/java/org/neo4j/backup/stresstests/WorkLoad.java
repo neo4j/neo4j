@@ -19,32 +19,33 @@
  */
 package org.neo4j.backup.stresstests;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.helper.RepeatUntilCallable;
 
 class WorkLoad extends RepeatUntilCallable
 {
     private static final Label label = Label.label( "Label" );
     private final Supplier<GraphDatabaseService> dbRef;
+    private final AtomicLong dbStopCounter;
 
-    WorkLoad( BooleanSupplier keepGoing, Runnable onFailure, Supplier<GraphDatabaseService> dbRef )
+    WorkLoad( BooleanSupplier keepGoing, Runnable onFailure, Supplier<GraphDatabaseService> dbRef, AtomicLong dbStopCounter )
     {
         super( keepGoing, onFailure );
         this.dbRef = dbRef;
+        this.dbStopCounter = dbStopCounter;
     }
 
     @Override
     protected void doWork()
     {
+        final long oldStopCounter = dbStopCounter.get();
         GraphDatabaseService db = dbRef.get();
         try ( Transaction tx = db.beginTx() )
         {
@@ -55,9 +56,13 @@ class WorkLoad extends RepeatUntilCallable
             }
             tx.success();
         }
-        catch ( DatabaseShutdownException | TransactionFailureException | TransientFailureException e )
+        catch ( RuntimeException e )
         {
-            // whatever let's go on with the workload
+            // fail if exception is thrown not during db shutdown
+            if ( dbStopCounter.get() == oldStopCounter )
+            {
+                throw e;
+            }
         }
     }
 

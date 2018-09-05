@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
@@ -42,7 +43,6 @@ import org.neo4j.test.ThreadTestUtils;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
-import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -104,13 +104,14 @@ public class BackupServiceStressTesting
             {
                 WorkLoad.setupIndexes( dbRef.get() );
             }
-            Future<?> workload = service.submit( new WorkLoad( keepGoingSupplier, onFailure, dbRef::get ) );
+            final AtomicLong dbStopCounter = new AtomicLong( );
+            Future<?> workload = service.submit( new WorkLoad( keepGoingSupplier, onFailure, dbRef::get, dbStopCounter ) );
             Future<?> backupWorker = service.submit(
                     new BackupLoad( keepGoingSupplier, onFailure, backupHostname, backupPort, workDirectory ) );
             Future<?> startStopWorker = service.submit(
-                    new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
+                    new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef, dbStopCounter ) );
 
-            Futures.combine( workload, backupWorker, startStopWorker ).get(durationInMinutes + 5, MINUTES );
+            Futures.combine( workload, backupWorker, startStopWorker ).get( durationInMinutes + 5, MINUTES );
 
             service.shutdown();
             if ( !service.awaitTermination( 30, SECONDS ) )
@@ -121,7 +122,7 @@ public class BackupServiceStressTesting
         }
         catch ( TimeoutException t )
         {
-            System.err.println( format( "Timeout waiting task completion. Dumping all threads." ) );
+            System.err.println( "Timeout waiting task completion. Dumping all threads." );
             ThreadTestUtils.dumpAllStackTraces();
             throw t;
         }
