@@ -97,5 +97,6 @@ class NodeIndexSeekOperator(offset: Int,
     }
   }
 
-  class NodeWithValues(val nodeId: Long, val values: Array[Value])
 }
+
+class NodeWithValues(val nodeId: Long, val values: Array[Value])

@@ -24,7 +24,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos}
+import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext, ResultCreator}
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.values.storable.{Value, Values}
@@ -36,7 +36,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   def propertyKeys: Seq[PropertyKeyToken]
 
-  protected def indexFor(values: (Seq[AnyRef], Iterable[NodeValueHit])*): QueryContext = {
+  protected def indexFor[T](values: (Seq[AnyRef], Iterable[NodeValueHit])*): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexSeek(any(), any(), any(), any())).thenReturn(Iterator.empty)
     when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
@@ -44,8 +44,8 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     values.foreach {
       case (searchTerm, resultIterable) =>
         val indexQueries = propertyKeys.zip(searchTerm).map(t => IndexQuery.exact(t._1.nameId.id, t._2))
-        when(query.indexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedIterator(resultIterable))
-        when(query.lockingUniqueIndexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedOption(resultIterable))
+        when(query.indexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedIterator[T](resultIterable))
+        when(query.lockingUniqueIndexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedOption[T](resultIterable))
     }
 
     query
@@ -80,16 +80,16 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     override def propertyValue(i: Int): Value = values(i)
   }
 
-  case class PredefinedIterator(nodeValueHits: Iterable[NodeValueHit]) extends Answer[Iterator[ExecutionContext]] {
-    override def answer(invocationOnMock: InvocationOnMock): Iterator[ExecutionContext] = {
-      val resultCreator = invocationOnMock.getArgument[ResultCreator[ExecutionContext]](2)
+  case class PredefinedIterator[T](nodeValueHits: Iterable[NodeValueHit]) extends Answer[Iterator[T]] {
+    override def answer(invocationOnMock: InvocationOnMock): Iterator[T] = {
+      val resultCreator = invocationOnMock.getArgument[ResultCreator[T]](2)
       nodeValueHits.iterator.map(resultCreator.createResult)
     }
   }
 
-  case class PredefinedOption(nodeValueHits: Iterable[NodeValueHit]) extends Answer[Option[ExecutionContext]] {
-    override def answer(invocationOnMock: InvocationOnMock): Option[ExecutionContext] = {
-      val resultCreator = invocationOnMock.getArgument[ResultCreator[ExecutionContext]](1)
+  case class PredefinedOption[T](nodeValueHits: Iterable[NodeValueHit]) extends Answer[Option[T]] {
+    override def answer(invocationOnMock: InvocationOnMock): Option[T] = {
+      val resultCreator = invocationOnMock.getArgument[ResultCreator[T]](1)
       nodeValueHits.headOption.map(resultCreator.createResult)
     }
   }

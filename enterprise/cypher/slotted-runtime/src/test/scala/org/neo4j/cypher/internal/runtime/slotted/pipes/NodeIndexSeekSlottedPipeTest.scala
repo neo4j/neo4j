@@ -49,7 +49,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
   test("should use index provided values when available") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(
+      query = indexFor[ExecutionContext](
         Seq("hello") -> Seq(nodeValueHit(node, "hello")),
         Seq("bye") -> Seq(nodeValueHit(node2, "bye"))
       )
@@ -78,7 +78,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
   test("should use composite index provided values when available") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(
+      query = indexFor[ExecutionContext](
         Seq("hello", "world") -> Seq(nodeValueHit(node, "hello", "world")),
         Seq("bye", "cruel") -> Seq(nodeValueHit(node2, "bye", "cruel"))
       )
@@ -112,7 +112,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos 
   test("should use locking unique index provided values when available") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(
+      query = indexFor[ExecutionContext](
         Seq("hello") -> Seq(nodeValueHit(node, "hello")),
         Seq("world") -> Seq(nodeValueHit(node2, "bye"))
       )

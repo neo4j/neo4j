@@ -54,7 +54,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos wit
 
   test("should use index provided values when available") {
     // given
-    val queryContext = indexFor(
+    val queryContext = indexFor[NodeWithValues](
       Seq("hello") -> Seq(nodeValueHit(node, "hello")),
       Seq("bye") -> Seq(nodeValueHit(node2, "bye"))
     )
@@ -98,7 +98,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos wit
 
   test("should use composite index provided values when available") {
     // given
-    val queryContext = indexFor(
+    val queryContext = indexFor[NodeWithValues](
       Seq("hello", "world") -> Seq(nodeValueHit(node, "hello", "world")),
       Seq("bye", "cruel") -> Seq(nodeValueHit(node2, "bye", "cruel"))
     )
@@ -145,7 +145,7 @@ class NodeIndexSeekOperatorTest extends CypherFunSuite with ImplicitDummyPos wit
 
   test("should use locking unique index provided values when available") {
     // given
-    val queryContext = indexFor(
+    val queryContext = indexFor[NodeWithValues](
         Seq("hello") -> Seq(nodeValueHit(node, "hello")),
         Seq("world") -> Seq(nodeValueHit(node2, "bye"))
     )
