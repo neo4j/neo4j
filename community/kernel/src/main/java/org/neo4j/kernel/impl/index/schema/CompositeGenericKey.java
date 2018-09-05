@@ -234,10 +234,9 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         {
             into.states[i].copyFrom( right.states[i] );
         }
-        GenericKeyState.minimalSplitter( left.states[firstStateToDiffer], right.states[firstStateToDiffer], into.states[firstStateToDiffer] );
-        for ( int i = firstStateToDiffer + 1; i < into.states.length; i++ )
+        for ( int i = firstStateToDiffer; i < into.states.length; i++ )
         {
-            into.states[i].initializeToDummyValue();
+            GenericKeyState.minimalSplitter( left.states[i], right.states[i], into.states[i] );
         }
         into.setCompareId( right.getCompareId() );
         into.setEntityId( right.getEntityId() );
