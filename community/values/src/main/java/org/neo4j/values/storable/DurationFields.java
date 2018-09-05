@@ -231,7 +231,7 @@ public enum DurationFields
         case "seconds":
             return SECONDS;
         case "millisecondsofsecond":
-            return MICROSECONDS_OF_SECOND;
+            return MILLISECONDS_OF_SECOND;
         case "milliseconds":
             return MILLISECONDS;
         case "microsecondsofsecond":
