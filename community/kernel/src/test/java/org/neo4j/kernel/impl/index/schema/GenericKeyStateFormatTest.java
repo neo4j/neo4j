@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -34,15 +35,17 @@ import java.util.function.Consumer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
 public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
 {
@@ -111,8 +114,15 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         values.add( rnd.nextLongValue() );
         values.add( rnd.nextFloatValue() );
         values.add( rnd.nextDoubleValue() );
-        // todo GEOMETRY
-        // todo GEOMETRY_ARRAY
+        // GEOMETRY
+        values.add( rnd.nextGeographicPoint() );
+        values.add( rnd.nextGeographicPointArray() );
+        values.add( rnd.nextGeographic3DPoint() );
+        values.add( rnd.nextGeographic3DPointArray() );
+        values.add( rnd.nextCartesianPoint() );
+        values.add( rnd.nextCartesianPointArray() );
+        values.add( rnd.nextCartesian3DPoint() );
+        values.add( rnd.nextCartesian3DPointArray() );
     }
 
     @Override
@@ -188,13 +198,18 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         CompositeGenericKey key = layout.newKey();
         for ( Value value : values )
         {
-            key.initialize( ENTITY_ID );
-            for ( int i = 0; i < NUMBER_OF_SLOTS; i++ )
-            {
-                key.initFromValue( i, value, NativeIndexKey.Inclusion.NEUTRAL );
-            }
+            initializeFromValue( key, value );
             c.putInt( key.size() );
             layout.writeKey( c, key );
+        }
+    }
+
+    private void initializeFromValue( CompositeGenericKey key, Value value )
+    {
+        key.initialize( ENTITY_ID );
+        for ( int i = 0; i < NUMBER_OF_SLOTS; i++ )
+        {
+            key.initFromValue( i, value, NativeIndexKey.Inclusion.NEUTRAL );
         }
     }
 
@@ -202,20 +217,27 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     {
         GenericLayout layout = getLayout();
         CompositeGenericKey into = layout.newKey();
+        CompositeGenericKey comparison = layout.newKey();
         for ( Value value : values )
         {
             int keySize = c.getInt();
             layout.readKey( c, into, keySize );
             for ( Value readValue : into.asValues() )
             {
-                assertEquals( value, readValue, "expected read value to be " + value + ", but was " + readValue );
+                initializeFromValue( comparison, value );
+                assertEquals( 0, layout.compare( into, comparison ) );
+                if ( readValue != Values.NO_VALUE )
+                {
+                    assertEquals( value, readValue, "expected read value to be " + value + ", but was " + readValue );
+                }
             }
         }
     }
 
     private GenericLayout getLayout()
     {
-        return new GenericLayout( NUMBER_OF_SLOTS, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ) );
+        return new GenericLayout( NUMBER_OF_SLOTS,
+                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() ) );
     }
 
     private void withCursor( File storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException

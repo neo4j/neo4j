@@ -78,7 +78,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     // TODO copy-pasted from individual keys
     // TODO also put this in Type enum
     private static final int SIZE_GEOMETRY_HEADER = 3;             /* 2b tableId and 22b code */
-    private static final int SIZE_GEOMETRY =       Long.BYTES;     /* rawValueBits */
+    public static final int SIZE_GEOMETRY =       Long.BYTES;     /* rawValueBits */
     public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
                                                    Integer.BYTES + /* nanoOfSecond */
                                                    Integer.BYTES;  /* timeZone */

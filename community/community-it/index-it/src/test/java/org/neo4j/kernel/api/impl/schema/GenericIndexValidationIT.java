@@ -47,6 +47,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_pro
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_BOOLEAN;
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_DATE;
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_DURATION;
+import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_GEOMETRY;
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_LOCAL_DATE_TIME;
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_LOCAL_TIME;
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_NUMBER_BYTE;
@@ -96,7 +97,7 @@ public class GenericIndexValidationIT
         NamedDynamicValueGenerator[] dynamicValueGenerators = NamedDynamicValueGenerator.values();
         for ( NamedDynamicValueGenerator generator : dynamicValueGenerators )
         {
-            String propKey = PROP_KEYS[0] + generator.identifier;
+            String propKey = PROP_KEYS[0] + generator.name();
             createIndex( propKey );
 
             BinarySearch binarySearch = new BinarySearch();
@@ -129,7 +130,7 @@ public class GenericIndexValidationIT
             }
             assertEquals( format( "expected longest successful array length for type %s, to be %d but was %d. " +
                             "This is a strong indication that documentation of max limit needs to be updated.",
-                    generator.identifier, generator.expectedMax, binarySearch.longestSuccessful ), generator.expectedMax, binarySearch.longestSuccessful );
+                    generator.name(), generator.expectedMax, binarySearch.longestSuccessful ), generator.expectedMax, binarySearch.longestSuccessful );
         }
     }
 
@@ -339,38 +340,36 @@ public class GenericIndexValidationIT
 
     private enum NamedDynamicValueGenerator
     {
-        string( "string", Byte.BYTES, 4036, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
-        byteArray( "byteArray", SIZE_NUMBER_BYTE, 4033, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
-        shortArray( "shortArray", SIZE_NUMBER_SHORT, 2016, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
-        intArray( "intArray", SIZE_NUMBER_INT, 1008, i -> random.randomValues().nextIntArrayRaw( i, i ) ),
-        longArray( "longArray", SIZE_NUMBER_LONG, 504, i -> random.randomValues().nextLongArrayRaw( i, i ) ),
-        floatArray( "floatArray", SIZE_NUMBER_FLOAT, 1008, i -> random.randomValues().nextFloatArrayRaw( i, i ) ),
-        doubleArray( "doubleArray", SIZE_NUMBER_DOUBLE, 504, i -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
-        booleanArray( "booleanArray", SIZE_BOOLEAN, 4034, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
-        stringArray1( "stringArray1", SIZE_STRING_LENGTH + 1, 1344, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
-        stringArray10( "stringArray10", SIZE_STRING_LENGTH + 10, 336, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
-        stringArray100( "stringArray100", SIZE_STRING_LENGTH + 100, 39, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
-        stringArray1000( "stringArray1000", SIZE_STRING_LENGTH + 1000, 4, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
-        dateArray( "dateArray", SIZE_DATE, 504, i -> random.randomValues().nextDateArrayRaw( i, i ) ),
-        timeArray( "timeArray", SIZE_ZONED_TIME, 336, i -> random.randomValues().nextTimeArrayRaw( i, i ) ),
-        localTimeArray( "localTimeArray", SIZE_LOCAL_TIME, 504, i -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
-        dateTimeArray( "dateTimeArray", SIZE_ZONED_DATE_TIME, 252, i -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
-        localDateTimeArray( "localDateTimeArray", SIZE_LOCAL_DATE_TIME, 336, i -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
-        durationArray( "durationArray", SIZE_DURATION, 144, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
-        periodArray( "periodArray", SIZE_DURATION, 144, i -> random.randomValues().nextPeriodArrayRaw( i, i ) );
-        // TODO Point (Cartesian)
-        // TODO Point (Cartesian 3D)
-        // TODO Point (WGS-84)
-        // TODO Point (WGS-84 3D)
+        string( Byte.BYTES, 4036, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
+        byteArray( SIZE_NUMBER_BYTE, 4033, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
+        shortArray( SIZE_NUMBER_SHORT, 2016, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
+        intArray( SIZE_NUMBER_INT, 1008, i -> random.randomValues().nextIntArrayRaw( i, i ) ),
+        longArray( SIZE_NUMBER_LONG, 504, i -> random.randomValues().nextLongArrayRaw( i, i ) ),
+        floatArray( SIZE_NUMBER_FLOAT, 1008, i -> random.randomValues().nextFloatArrayRaw( i, i ) ),
+        doubleArray( SIZE_NUMBER_DOUBLE, 504, i -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
+        booleanArray( SIZE_BOOLEAN, 4034, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
+        stringArray1( SIZE_STRING_LENGTH + 1, 1344, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
+        stringArray10( SIZE_STRING_LENGTH + 10, 336, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
+        stringArray100( SIZE_STRING_LENGTH + 100, 39, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
+        stringArray1000( SIZE_STRING_LENGTH + 1000, 4, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
+        dateArray( SIZE_DATE, 504, i -> random.randomValues().nextDateArrayRaw( i, i ) ),
+        timeArray( SIZE_ZONED_TIME, 336, i -> random.randomValues().nextTimeArrayRaw( i, i ) ),
+        localTimeArray( SIZE_LOCAL_TIME, 504, i -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
+        dateTimeArray( SIZE_ZONED_DATE_TIME, 252, i -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
+        localDateTimeArray( SIZE_LOCAL_DATE_TIME, 336, i -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
+        durationArray( SIZE_DURATION, 144, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
+        periodArray( SIZE_DURATION, 144, i -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
+        cartesianPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
+        cartesian3DPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
+        geographicPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
+        geographicDPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
 
-        private final String identifier;
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;
         private final int expectedMax;
 
-        NamedDynamicValueGenerator( String identifier, int singleArrayEntrySize, int expectedLongestArrayLength, DynamicValueGenerator generator )
+        NamedDynamicValueGenerator( int singleArrayEntrySize, int expectedLongestArrayLength, DynamicValueGenerator generator )
         {
-            this.identifier = identifier;
             this.singleArrayEntrySize = singleArrayEntrySize;
             this.expectedMax = expectedLongestArrayLength;
             this.generator = generator;

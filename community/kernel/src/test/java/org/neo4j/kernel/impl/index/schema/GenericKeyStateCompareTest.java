@@ -112,15 +112,15 @@ class GenericKeyStateCompareTest
                         DurationValue.duration( 12, 10, 10, 10 ),
                         DurationValue.duration( 12, 10, 10, 10 )
                 } )
-//                Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
-//                Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) // todo add when spatial is supported
+                // PointValue/PointArray comparison can't be compared to that of the GenericKeyState for those points
+                // since the index compares in a way which is designed to be queryable, so they have different sorting.
         );
         allValues.sort( Values.COMPARATOR );
 
         List<GenericKeyState> states = new ArrayList<>();
         for ( Value value : allValues )
         {
-            GenericKeyState state = new GenericKeyState( null ); // TODO <-- also do something with this one when spatial is supported
+            GenericKeyState state = new GenericKeyState( null );
             state.writeValue( value, NativeIndexKey.Inclusion.NEUTRAL );
             states.add( state );
         }
