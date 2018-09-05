@@ -22,15 +22,13 @@
  */
 package org.neo4j.causalclustering.messaging;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 class WritabilityThrottler
 {
-    private AtomicBoolean isWritable = new AtomicBoolean( true );
+    private boolean isWritable = true;
 
     synchronized void awaitWritable() throws InterruptedException
     {
-        if ( !isWritable.get() )
+        while ( !isWritable )
         {
             wait();
         }
@@ -38,9 +36,10 @@ class WritabilityThrottler
 
     synchronized void setIsWritable( boolean isWritable )
     {
-        if ( this.isWritable.compareAndSet( !isWritable, isWritable ) && isWritable )
+        this.isWritable = isWritable;
+        if ( isWritable )
         {
-            notify();
+            notifyAll();
         }
     }
 }

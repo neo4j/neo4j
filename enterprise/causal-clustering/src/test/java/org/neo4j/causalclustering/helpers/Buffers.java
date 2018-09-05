@@ -33,7 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * For tests that uses {@link ByteBuf}. All bufferes that are allocated using {@link ByteBufAllocator} will be
+ * For tests that uses {@link ByteBuf}. All buffers that are allocated using {@link ByteBufAllocator} will be
  * released after test has executed.
  */
 public class Buffers extends ExternalResource implements ByteBufAllocator

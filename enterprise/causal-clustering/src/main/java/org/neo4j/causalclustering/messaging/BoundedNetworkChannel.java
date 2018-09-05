@@ -60,7 +60,7 @@ public class BoundedNetworkChannel implements FlushableChannel
         Objects.requireNonNull( outputQueue, "outputQueue cannot be null" );
         this.allocator = allocator;
         this.maxChunkSize = maxChunkSize;
-        initSize = min( DEFAULT_INIT_CHUNK_SIZE, maxChunkSize );
+        this.initSize = min( DEFAULT_INIT_CHUNK_SIZE, maxChunkSize );
         if ( maxChunkSize < Double.BYTES )
         {
             throw new IllegalArgumentException( "Chunk size must be at least 8. Got " + maxChunkSize );
