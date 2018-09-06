@@ -109,6 +109,12 @@ public interface RoleRepository extends Lifecycle
      */
     void purge() throws IOException;
 
+    /**
+     * Mark this repository as migrated to prevent accidental use.
+     * @throws IOException
+     */
+    void markAsMigrated() throws IOException;
+
     static boolean validate( List<User> users, List<RoleRecord> roles )
     {
         Set<String> usernamesInRoles = roles.stream()

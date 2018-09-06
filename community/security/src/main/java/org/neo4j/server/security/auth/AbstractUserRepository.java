@@ -221,4 +221,10 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     {
         clear(); // Clear all cached data
     }
+
+    @Override
+    public void markAsMigrated() throws IOException
+    {
+        clear(); // Clear all cached data
+    }
 }

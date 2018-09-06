@@ -256,6 +256,12 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
         clear(); // Clear all cached data
     }
 
+    @Override
+    public void markAsMigrated() throws IOException
+    {
+        clear(); // Clear all cached data
+    }
+
     /**
      * Override this in the implementing class to persist roles
      *

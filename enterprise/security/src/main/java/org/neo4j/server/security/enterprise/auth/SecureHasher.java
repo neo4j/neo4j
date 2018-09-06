@@ -28,6 +28,9 @@ import org.apache.shiro.crypto.SecureRandomNumberGenerator;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.util.ByteSource;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class SecureHasher
 {
     // TODO: Do we need to make this configurable?
@@ -37,6 +40,7 @@ public class SecureHasher
 
     private RandomNumberGenerator randomNumberGenerator;
     private HashedCredentialsMatcher hashedCredentialsMatcher;
+    private Map<Integer,HashedCredentialsMatcher> hashedCredentialsMatchers;
 
     private RandomNumberGenerator getRandomNumberGenerator()
     {
@@ -63,6 +67,24 @@ public class SecureHasher
         }
 
         return hashedCredentialsMatcher;
+    }
+
+    public HashedCredentialsMatcher getHashedCredentialsMatcherWithIterations( int iterations )
+    {
+        if ( hashedCredentialsMatchers == null )
+        {
+            hashedCredentialsMatchers = new HashMap<>();
+        }
+
+        HashedCredentialsMatcher matcher = hashedCredentialsMatchers.get( iterations );
+        if ( matcher == null )
+        {
+            matcher = new HashedCredentialsMatcher( HASH_ALGORITHM );
+            matcher.setHashIterations( iterations );
+            hashedCredentialsMatchers.put( iterations, matcher );
+        }
+
+        return matcher;
     }
 
     private ByteSource generateRandomSalt( int bytesSize )

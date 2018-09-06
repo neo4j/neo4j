@@ -103,4 +103,10 @@ public interface UserRepository extends Lifecycle
      * @throws IOException
      */
     void purge() throws IOException;
+
+    /**
+     * Mark this repository as migrated to prevent accidental use.
+     * @throws IOException
+     */
+    void markAsMigrated() throws IOException;
 }

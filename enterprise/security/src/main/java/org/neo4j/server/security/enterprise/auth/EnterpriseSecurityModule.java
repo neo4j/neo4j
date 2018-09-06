@@ -167,7 +167,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         List<Realm> realms = new ArrayList<>( securityConfig.authProviders.size() + 1 );
         SecureHasher secureHasher = new SecureHasher();
 
-        EnterpriseUserManager internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler, accessCapability );
+        EnterpriseUserManager internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler, securityLog, accessCapability );
         if ( internalRealm != null )
         {
             realms.add( (Realm) internalRealm );
@@ -221,7 +221,7 @@ public class EnterpriseSecurityModule extends SecurityModule
     }
 
     protected EnterpriseUserManager createInternalRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem, JobScheduler jobScheduler,
-            AccessCapability accessCapability )
+            SecurityLog securityLog, AccessCapability accessCapability )
     {
         EnterpriseUserManager internalRealm = null;
         if ( securityConfig.hasNativeProvider )
