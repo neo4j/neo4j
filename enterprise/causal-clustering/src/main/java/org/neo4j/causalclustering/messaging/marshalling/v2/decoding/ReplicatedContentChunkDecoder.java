@@ -41,7 +41,7 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
 
     ReplicatedContentChunkDecoder()
     {
-        setCumulator( new ContentChunkCumulator() );
+        setCumulator( new ContentChunkAccumulator() );
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
         }
     }
 
-    private class ContentChunkCumulator implements Cumulator
+    private class ContentChunkAccumulator implements Cumulator
     {
         @Override
         public ByteBuf cumulate( ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf in )

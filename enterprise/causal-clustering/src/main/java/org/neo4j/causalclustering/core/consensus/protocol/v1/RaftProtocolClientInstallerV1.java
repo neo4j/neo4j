@@ -68,7 +68,8 @@ public class RaftProtocolClientInstallerV1 implements ProtocolInstaller<Orientat
     {
         clientPipelineBuilderFactory.client( channel, log )
                 .modify( modifiers )
-                .addFraming().add( "raft_encoder", new RaftMessageEncoder( CoreReplicatedContentMarshal.marshaller() ) )
+                .addFraming()
+                .add( "raft_encoder", new RaftMessageEncoder( CoreReplicatedContentMarshal.marshaller() ) )
                 .install();
     }
 
