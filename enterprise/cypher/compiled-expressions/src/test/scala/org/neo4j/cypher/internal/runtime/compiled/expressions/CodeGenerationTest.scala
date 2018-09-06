@@ -1363,6 +1363,14 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(ValueUtils.asMapValue(Map("foo" -> 1, "bar" -> null, "baz" -> "three").asInstanceOf[Map[String, AnyRef]].asJava))
   }
 
+  test("handle empty map literals") {
+    val literal = literalMap()
+
+    val compiled = compile(literal)
+
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(EMPTY_MAP)
+  }
+
   test("from slice") {
     val slice = compile(sliceFrom(parameter("a"), parameter("b")))
     val list = VirtualValues.list(intValue(1), intValue(2), intValue(3))
@@ -1371,7 +1379,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, NO_VALUE))) should equal(NO_VALUE)
     slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(2)))) should equal(VirtualValues.list(intValue(3)))
     slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(-2)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
-
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(0)))) should equal(list)
   }
 
   test("to slice") {
@@ -1382,6 +1390,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, NO_VALUE))) should equal(NO_VALUE)
     slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(2)))) should equal(VirtualValues.list(intValue(1), intValue(2)))
     slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(-2)))) should equal(VirtualValues.list(intValue(1)))
+    slice.evaluate(ctx, db, map(Array("a", "b"), Array(list, intValue(0)))) should equal(EMPTY_LIST)
   }
 
   test("full slice") {
@@ -1395,6 +1404,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(1), intValue(-2)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
     slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(-4), intValue(3)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
     slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(-4), intValue(-2)))) should equal(VirtualValues.list(intValue(2), intValue(3)))
+    slice.evaluate(ctx, db, map(Array("a", "b", "c"), Array(list, intValue(0), intValue(0)))) should equal(EMPTY_LIST)
   }
 
   test("handle variables") {

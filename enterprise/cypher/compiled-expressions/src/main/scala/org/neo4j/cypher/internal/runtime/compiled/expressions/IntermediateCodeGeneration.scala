@@ -246,7 +246,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         ListValue list = [evaluate collection expression];
         ExecutionContext copyOfContext = context.createClone();
         ArrayList<AnyValue> extracted = new ArrayList<>();
-        for ( AnyValue currentValue : extracted ) {
+        for ( AnyValue currentValue : list ) {
             ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
             extracted.add([result from inner expression using innerContext]);
         }
@@ -307,7 +307,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
         ListValue list = [evaluate collection expression];
         ExecutionContext copyOfContext = context.copyWith(acc, init);
-        for ( AnyValue currentValue : extracted ) {
+        for ( AnyValue currentValue : list ) {
             ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
             copyOfContext = copyOfContext.set(acc, [result from inner expression using innerContext[)
         }
