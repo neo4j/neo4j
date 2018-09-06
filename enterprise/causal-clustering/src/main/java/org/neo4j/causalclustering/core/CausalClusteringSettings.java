@@ -57,6 +57,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.DOUBLE;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
@@ -260,6 +261,58 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Parallelism level used by Akka based cluster topology discovery" )
     public static final Setting<Integer> middleware_akka_parallelism_level =
             setting( "causal_clustering.middleware.akka.parallelism", INTEGER, Integer.toString( 2 ) );
+
+    @Internal
+    @Description( "Akka cluster phi accrual failure detector. " +
+            "How often keep-alive heartbeat messages should be sent to each connection." )
+    public static final Setting<Duration> akka_failure_detector_heartbeat_interval =
+            setting( "causal_clustering.middleware.akka.failure_detector.heartbeat_interval", DURATION, "1s" );
+
+    @Internal
+    @Description( "Akka cluster phi accrual failure detector. " +
+            "Defines the failure detector threshold. " +
+            "A low threshold is prone to generate many wrong suspicions but ensures " +
+            "a quick detection in the event of a real crash. Conversely, a high " +
+            "threshold generates fewer mistakes but needs more time to detect actual crashes." )
+    public static final Setting<Double> akka_failure_detector_threshold =
+            setting( "causal_clustering.middleware.akka.failure_detector.threshold", DOUBLE, "8.0" );
+
+    @Internal
+    @Description( "Akka cluster phi accrual failure detector. " +
+            "Number of the samples of inter-heartbeat arrival times to adaptively " +
+            "calculate the failure timeout for connections." )
+    public static final Setting<Integer> akka_failure_detector_max_sample_size =
+            setting( "causal_clustering.middleware.akka.failure_detector.max_sample_size", INTEGER, "1000" );
+
+    @Internal
+    @Description( "Akka cluster phi accrual failure detector. " +
+            "Minimum standard deviation to use for the normal distribution in " +
+            "AccrualFailureDetector. Too low standard deviation might result in " +
+            "too much sensitivity for sudden, but normal, deviations in heartbeat inter arrival times." )
+    public static final Setting<Duration> akka_failure_detector_min_std_deviation =
+            setting( "causal_clustering.middleware.akka.failure_detector.min_std_deviation", DURATION, "100ms" );
+
+    @Internal
+    @Description( "Akka cluster phi accrual failure detector. " +
+            "Number of potentially lost/delayed heartbeats that will be " +
+            "accepted before considering it to be an anomaly. " + "This margin is important to be able to survive sudden, occasional, " +
+            "pauses in heartbeat arrivals, due to for example garbage collect or network drop." )
+    public static final Setting<Duration> akka_failure_detector_acceptable_heartbeat_pause =
+            setting( "causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause", DURATION, "3s" );
+
+    @Internal
+    @Description( "Akka cluster phi accrual failure detector. " +
+            "Number of member nodes that each member will send heartbeat messages to, " +
+            "i.e. each node will be monitored by this number of other nodes." )
+    public static final Setting<Integer> akka_failure_detector_monitored_by_nr_of_members =
+            setting( "causal_clustering.middleware.akka.failure_detector.monitored_by_nr_of_members", INTEGER, "5" );
+
+    @Internal
+    @Description( "Akka cluster phi accrual failure detector. " +
+            "After the heartbeat request has been sent the first failure detection " +
+            "will start after this period, even though no heartbeat message has been received." )
+    public static final Setting<Duration> akka_failure_detector_expected_response_after =
+            setting( "causal_clustering.middleware.akka.failure_detector.expected_response_after", DURATION, "1s" );
 
     @Description( "The maximum file size before the storage file is rotated (in unit of entries)" )
     public static final Setting<Integer> last_flushed_state_size =
