@@ -394,6 +394,36 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     )
   }
 
+  test("Order by index backed property in a plan with a outer join") {
+    val plan = new given {
+      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      cardinality = mapCardinality {
+        // Force the planner to start at b
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 100.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 20.0
+      }
+    } getLogicalPlanFor "MATCH (b) OPTIONAL MATCH (a:A)-[r]->(b) USING JOIN ON b WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop"
+
+    plan._2 should equal(
+
+      Projection(
+        Projection(
+          LeftOuterHashJoin(Set("b"),
+            AllNodesScan("b", Set.empty),
+            Expand(
+              NodeIndexSeek(
+                "a",
+                LabelToken("A", LabelId(0)),
+                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+                Set.empty,
+                IndexOrderAscending),
+              "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")),
+          Map("  FRESHID86" -> prop("a", "prop"))),
+        Map("a.prop" -> Variable("  FRESHID86")(pos)))
+    )
+  }
+
   test("Order by index backed property in a plan with a tail apply") {
     val plan = new given {
       indexOn("A", "prop").providesOrder(AscIndexOrder)
