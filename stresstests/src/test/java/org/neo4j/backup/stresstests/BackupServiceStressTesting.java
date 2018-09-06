@@ -76,8 +76,8 @@ public class BackupServiceStressTesting
         boolean enableIndexes =
                 parseBoolean( fromEnv( "BACKUP_SERVICE_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
 
-        File store = new File( directory, "store" );
-        File work = new File( directory, "work" );
+        File store = new File( directory, "db/store" );
+        File work = new File( directory, "backup/work" );
         FileUtils.deleteRecursively( store );
         FileUtils.deleteRecursively( work );
         File storeDirectory = ensureExistsAndEmpty( store );
