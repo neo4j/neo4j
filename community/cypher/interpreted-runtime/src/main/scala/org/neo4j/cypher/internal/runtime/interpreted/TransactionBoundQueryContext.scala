@@ -579,7 +579,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Option[Value] = {
-      val nodePropertyInTx = reads().nodePropertyChangeInTransaction(nodeId, propertyKeyId)
+      val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
       Option(nodePropertyInTx)
     }
 

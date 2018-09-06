@@ -190,11 +190,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( changedProperties != null )
         {
-            Value changedValue = changedProperties.get( propertyKey );
-            if ( changedValue != null )
-            {
-                return changedValue;
-            }
+            return changedProperties.get( propertyKey );
         }
         return null;
     }

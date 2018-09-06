@@ -146,7 +146,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Value nodePropertyChangeInTransaction( long node, int propertyKeyId )
+    public Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId )
     {
         ktx.assertOpen();
         return hasTxStateWithChanges() ? txState().getNodeState( node ).propertyValue( propertyKeyId ) : null;

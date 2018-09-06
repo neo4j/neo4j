@@ -212,7 +212,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public Value nodePropertyChangeInTransaction( long node, int propertyKeyId )
+    public Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId )
     {
         throw new UnsupportedOperationException();
     }

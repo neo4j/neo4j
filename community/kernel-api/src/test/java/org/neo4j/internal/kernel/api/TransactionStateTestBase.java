@@ -119,19 +119,19 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
 
             // THEN
             assertNull( "Unchanged existing property is null",
-                        tx.dataRead().nodePropertyChangeInTransaction( node, p1 ) );
+                        tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p1 ) );
 
             assertNull( "Unchanged missing property is null",
-                        tx.dataRead().nodePropertyChangeInTransaction( node, p2 ) );
+                        tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p2 ) );
 
             assertEquals( "Changed property is new value", Values.of( 13 ),
-                          tx.dataRead().nodePropertyChangeInTransaction( node, p3 ) );
+                          tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p3 ) );
 
             assertEquals( "Removed property is NO_VALUE", Values.NO_VALUE,
-                          tx.dataRead().nodePropertyChangeInTransaction( node, p4 ) );
+                          tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p4 ) );
 
             assertEquals( "Added property is new value", Values.of( 15 ),
-                          tx.dataRead().nodePropertyChangeInTransaction( node, p5 ) );
+                          tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p5 ) );
         }
     }
 }

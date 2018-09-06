@@ -331,7 +331,7 @@ public interface Read
      * @return <code>null</code> if the property has not been changed for the node in this transaction. Otherwise returns
      *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
      */
-    Value nodePropertyChangeInTransaction( long node, int propertyKeyId );
+    Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId );
 
     void graphProperties( PropertyCursor cursor );
 
