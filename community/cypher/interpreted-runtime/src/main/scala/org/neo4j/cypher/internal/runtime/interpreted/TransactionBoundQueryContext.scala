@@ -319,12 +319,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val nodeValueHit: NodeValueHit =
       maybeActualValues match {
         case Some(actualValues) =>
-          new NodeValueHit {
-            override def nodeId: Long = nodeCursor.nodeReference()
-            override def node: NodeValue = fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
-            override def numberOfProperties: Int = actualValues.length
-            override def propertyValue(i: Int): Value = actualValues(i)
-          }
+          new CursorWrappingNodeValueHitWithValues(nodeCursor, actualValues)
         case None =>
           new CursorWrappingNodeValueHit(nodeCursor)
       }
@@ -385,14 +380,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       if (StatementConstants.NO_SUCH_NODE == resultNodeId) {
         None
       } else {
-        val nodeValue = nodeOps.getById(resultNodeId)
         val values = queries.map(_.value())
-        val nodeValueHit: NodeValueHit = new NodeValueHit {
-          override def nodeId: Long = resultNodeId
-          override def node: NodeValue = nodeValue
-          override def numberOfProperties: Int = values.length
-          override def propertyValue(i: Int): Value = values(i)
-        }
+        val nodeValueHit = new NodeIdValueHitWithValues(resultNodeId, values)
         Some(resultCreator.createResult(nodeValueHit))
       }
     }
@@ -1168,23 +1157,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
 
-  private def getNextNodeRefAndValuesFromCursor(nodeCursor: NodeValueIndexCursor, propertyIndicesWithValues: Array[Int]): Option[(Long, Array[Value])] = {
-    if (nodeCursor.next()) {
-      val nodeRef = nodeCursor.nodeReference()
-
-      if (propertyIndicesWithValues.nonEmpty && !nodeCursor.hasValue) {
-        // We were promised at plan time that we can get values everywhere, so this should never happen
-        throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
-      }
-      // Get the actual property values for the requested indices
-      val values = propertyIndicesWithValues.map(nodeCursor.propertyValue)
-      Some((nodeRef, values))
-    }
-    else {
-      None
-    }
-  }
-
   private def allocateAndTraceNodeCursor() = {
     val cursor = transactionalContext.cursors.allocateNodeCursor()
     resources.trace(cursor)
@@ -1312,6 +1284,20 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
       current
     }
+  }
+
+  class CursorWrappingNodeValueHitWithValues(nodeCursor: NodeValueIndexCursor, values: Seq[Value]) extends NodeValueHit {
+    override def nodeId: Long = nodeCursor.nodeReference()
+    override def node: NodeValue = fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+    override def numberOfProperties: Int = values.length
+    override def propertyValue(i: Int): Value = values(i)
+  }
+
+  class NodeIdValueHitWithValues(resultNodeId: Long, values: Seq[Value]) extends NodeValueHit {
+    override def nodeId: Long = resultNodeId
+    override def node: NodeValue = nodeOps.getById(resultNodeId)
+    override def numberOfProperties: Int = values.length
+    override def propertyValue(i: Int): Value = values(i)
   }
 
   class CursorWrappingNodeValueHit(nodeCursor: NodeValueIndexCursor) extends NodeValueHit {
