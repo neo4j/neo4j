@@ -180,7 +180,17 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val executedQuery = "EXPLAIN " + actualQuery
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    graph.execute(executedQuery, params1).resultAsString()
+    val notifications = graph.execute(executedQuery, params1).getNotifications
+
+    var acc = 0
+    notifications.foreach(n => {
+      n.getDescription should equal(
+        "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. " +
+          "Expected parameter(s): (m)"
+      )
+      acc = acc + 1
+    })
+    acc should be (1)
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(

@@ -194,6 +194,11 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.ExperimentalFeature,
             "You are using an experimental feature" ),
+    MISSING_PARAMETERS_FOR_EXPLAIN(
+            SeverityLevel.WARNING,
+            Status.Statement.ParameterMissing,
+            "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. " +
+            "Expected parameter(s):" ),
     SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,

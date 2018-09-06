@@ -144,12 +144,14 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       checkForSchemaChanges(planContext)
 
       // If the query is not cached we want to do the full planning
-      def createPlan(shouldBeCached: Boolean): CacheableLogicalPlan = {
+      def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
         val logicalPlanState = planner.planPreparedQuery(preparedQuery, context)
         notification.LogicalPlanNotifications
           .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
           .foreach(notificationLogger.log)
-
+        if (missingParameterNames.nonEmpty) {
+          notificationLogger.log(MissingParametersNotification(missingParameterNames))
+        }
         val reusabilityState = createReusabilityState(logicalPlanState, planContext)
         CacheableLogicalPlan(logicalPlanState, reusabilityState, shouldBeCached)
       }
@@ -160,15 +162,20 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         override def apply(name: String, value: AnyValue): java.lang.Boolean = queryParamNames.contains(name)
       })
 
+      val enoughParametersSupplied = (queryParamNames.nonEmpty && (queryParamNames.size == filteredParams.size)) // this is only relevant if the query has parameters
+
       val cacheableLogicalPlan =
         // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
-        if (preParsedQuery.debugOptions.isEmpty && (queryParamNames.isEmpty || (queryParamNames.nonEmpty && (queryParamNames.size == filteredParams.size))))
+        if (preParsedQuery.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied))
           planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
                                            transactionalContext,
-                                           () => createPlan(true),
+                                           () => createPlan(shouldBeCached = true),
                                            syntacticQuery.queryText).executableQuery
+
+        else if (!enoughParametersSupplied)
+          createPlan(shouldBeCached = false, queryParamNames.filterNot(filteredParams.containsKey))
         else
-          createPlan(false)
+          createPlan(shouldBeCached = false)
 
       LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,

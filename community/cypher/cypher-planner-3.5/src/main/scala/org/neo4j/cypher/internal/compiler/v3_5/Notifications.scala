@@ -63,4 +63,6 @@ case class DeprecatedFieldNotification(position: InputPosition, procedure: Strin
 
 case object DeprecatedPlannerNotification extends InternalNotification
 
+case class MissingParametersNotification(parameters: Seq[String]) extends InternalNotification
+
 case class ExperimentalFeatureNotification(msg: String) extends InternalNotification

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.opencypher.v9_0.util._
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
+import org.opencypher.v9_0.util._
 
 import scala.collection.JavaConverters._
 
@@ -87,6 +87,8 @@ object InternalWrapping {
       NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
     case SuboptimalIndexForEndsWithQueryNotification(label, properties) =>
       NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
+    case MissingParametersNotification(names) =>
+      NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Explain with missing parameters", names.mkString(", ")))
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {
