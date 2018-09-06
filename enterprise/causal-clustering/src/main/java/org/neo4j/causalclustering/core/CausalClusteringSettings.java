@@ -240,8 +240,8 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.discovery_type", options( DiscoveryType.class ), DiscoveryType.LIST.name() );
 
     @Description( "Select the middleware used for cluster topology discovery" )
-    public static final Setting<DiscoveryServiceFactorySelector.DiscoveryMiddleware> middleware_type =
-            setting( "causal_clustering.middleware_type", options( DiscoveryServiceFactorySelector.DiscoveryMiddleware.class ),
+    public static final Setting<DiscoveryServiceFactorySelector.DiscoveryImplementation> discovery_implementation =
+            setting( "causal_clustering.discovery_implementation", options( DiscoveryServiceFactorySelector.DiscoveryImplementation.class ),
                     DiscoveryServiceFactorySelector.DEFAULT.name() );
 
     @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )

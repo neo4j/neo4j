@@ -25,7 +25,7 @@ package org.neo4j.causalclustering.discovery;
 public class EnterpriseDiscoveryServiceFactorySelector extends DiscoveryServiceFactorySelector<DiscoveryServiceFactory>
 {
     @Override
-    protected DiscoveryServiceFactory select( DiscoveryMiddleware middleware )
+    protected DiscoveryServiceFactory select( DiscoveryImplementation middleware )
     {
         switch ( middleware )
         {

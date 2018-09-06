@@ -27,17 +27,17 @@ import org.neo4j.kernel.configuration.Config;
 
 public abstract class DiscoveryServiceFactorySelector<T extends DiscoveryServiceFactory>
 {
-    public static DiscoveryMiddleware DEFAULT = DiscoveryMiddleware.hazelcast;
+    public static DiscoveryImplementation DEFAULT = DiscoveryImplementation.hazelcast;
 
     public T select( Config config )
     {
-        DiscoveryMiddleware middleware = config.get( CausalClusteringSettings.middleware_type );
+        DiscoveryImplementation middleware = config.get( CausalClusteringSettings.discovery_implementation );
         return select( middleware );
     }
 
-    protected abstract T select( DiscoveryMiddleware middleware );
+    protected abstract T select( DiscoveryImplementation middleware );
 
-    public enum DiscoveryMiddleware
+    public enum DiscoveryImplementation
     {
         hazelcast, akka
     }

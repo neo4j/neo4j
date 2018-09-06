@@ -35,7 +35,7 @@ import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 
 public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBuilder
 {
-    private DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
+    private DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
 
     public EnterpriseInProcessServerBuilder()
     {
@@ -57,7 +57,7 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
             GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
     {
         Config config = Config.defaults( configMap );
-        config.augment( CausalClusteringSettings.middleware_type, discoveryServiceFactory.name() );
+        config.augment( CausalClusteringSettings.discovery_implementation, discoveryServiceFactory.name() );
         return new OpenEnterpriseNeoServer( config, dependencies, userLogProvider );
     }
 
@@ -69,7 +69,7 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
      * @param discoveryService
      * @return this builder instance
      */
-    public EnterpriseInProcessServerBuilder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryService )
+    public EnterpriseInProcessServerBuilder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryService )
     {
         this.discoveryServiceFactory = discoveryService;
         return this;

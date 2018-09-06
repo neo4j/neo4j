@@ -70,7 +70,7 @@ public class CausalClusterInProcessBuilder
         private PortPickingFactory portFactory = PortPickingFactory.DEFAULT;
         private final Map<String, String> config = new HashMap<>();
         private List<String> databases = new ArrayList<>( Collections.singletonList( "default" ) );
-        private DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
+        private DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
 
         @Override
         public WithReplicas withCores( int n )
@@ -124,7 +124,7 @@ public class CausalClusterInProcessBuilder
         }
 
         @Override
-        public Builder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory )
+        public Builder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryServiceFactory )
         {
             this.discoveryServiceFactory = discoveryServiceFactory;
             return this;
@@ -172,7 +172,7 @@ public class CausalClusterInProcessBuilder
 
         Builder withOptionalDatabases( List<String> databaseNames );
 
-        Builder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory );
+        Builder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryServiceFactory );
     }
 
     /**
@@ -260,7 +260,7 @@ public class CausalClusterInProcessBuilder
         private final Log log;
         private final PortPickingFactory portFactory;
         private final Map<String,String> config;
-        private final DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory;
+        private final DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryServiceFactory;
 
         private List<ServerControls> coreControls = synchronizedList( new ArrayList<>() );
         private List<ServerControls> replicaControls = synchronizedList( new ArrayList<>() );
