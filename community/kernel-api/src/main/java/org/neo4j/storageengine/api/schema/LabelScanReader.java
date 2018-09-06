@@ -47,7 +47,7 @@ public interface LabelScanReader extends Resource
      * @param labelIds label token ids.
      * @return node ids with any of the given label ids.
      */
-    default PrimitiveLongResourceIterator nodesWithAnyOfLabels( int... labelIds )
+    default PrimitiveLongResourceIterator nodesWithAnyOfLabels( int[] labelIds )
     {
         return nodesWithAnyOfLabels( NO_ID, labelIds );
     }
@@ -57,11 +57,11 @@ public interface LabelScanReader extends Resource
      * @param labelIds label token ids.
      * @return node ids with any of the given label ids.
      */
-    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int... labelIds );
+    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] labelIds );
 
     /**
      * @param labelIds label token ids.
      * @return node ids with all of the given label ids.
      */
-    PrimitiveLongResourceIterator nodesWithAllLabels( int... labelIds );
+    PrimitiveLongResourceIterator nodesWithAllLabels( int[] labelIds );
 }

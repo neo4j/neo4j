@@ -464,13 +464,13 @@ public abstract class LabelScanStoreTest
         {
             assertArrayEquals(
                     new long[] {1, 2, 3, 4, 5, 6, 7},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( labelId1, labelId2 ) ) );
+                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2} ) ) );
             assertArrayEquals(
                     new long[] {1, 2, 3, 4, 5, 8, 9},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( labelId1, labelId3 ) ) );
+                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId3} ) ) );
             assertArrayEquals(
                     new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( labelId1, labelId2, labelId3 ) ) );
+                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2, labelId3} ) ) );
         }
     }
 
@@ -500,13 +500,13 @@ public abstract class LabelScanStoreTest
         {
             assertArrayEquals(
                     new long[] {2, 5},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( labelId1, labelId2 ) ) );
+                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( new int[] {labelId1, labelId2} ) ) );
             assertArrayEquals(
                     new long[] {4, 5},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( labelId1, labelId3 ) ) );
+                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( new int[] {labelId1, labelId3} ) ) );
             assertArrayEquals(
                     new long[] {5},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( labelId1, labelId2, labelId3 ) ) );
+                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( new int[] {labelId1, labelId2, labelId3} ) ) );
         }
     }
 

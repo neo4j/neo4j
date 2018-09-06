@@ -47,6 +47,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.getLabels;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.nodesWithLabel;
+import static org.neo4j.storageengine.api.schema.LabelScanReader.NO_ID;
 
 public class NativeLabelScanWriterTest
 {
@@ -79,7 +80,7 @@ public class NativeLabelScanWriterTest
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>(), 0 ) );
+            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>(), NO_ID ) );
             assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
     }

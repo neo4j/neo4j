@@ -95,7 +95,7 @@ class NativeLabelScanReader implements LabelScanReader
             throw new UncheckedIOException( e );
         }
 
-        return new LabelScanValueIterator( cursor, openCursors, 0 );
+        return new LabelScanValueIterator( cursor, openCursors, NO_ID );
     }
 
     @Override
@@ -108,7 +108,7 @@ class NativeLabelScanReader implements LabelScanReader
     @Override
     public PrimitiveLongResourceIterator nodesWithAllLabels( int... labelIds )
     {
-        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( 0, labelIds );
+        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( NO_ID, labelIds );
         return new CompositeLabelScanValueIterator( iterators, true );
     }
 
