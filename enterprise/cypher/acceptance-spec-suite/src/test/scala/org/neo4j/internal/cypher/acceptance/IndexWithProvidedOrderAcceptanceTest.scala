@@ -153,4 +153,29 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
       Map("a.prop2" -> 9, "count(b)" -> 2)
     ))
   }
+
+  test("Order by index backed property in a plan with a distinct") {
+    val result = executeWith(Configs.Interpreted,
+      "MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN DISTINCT a.prop2 ORDER BY a.prop2", executeBefore = createSomeNodes)
+
+    result.executionPlanDescription() should (
+      not(includeSomewhere.aPlan("Sort")) and
+        includeSomewhere.aPlan("Distinct")
+          .onTopOf(
+            aPlan("Expand(All)")
+              .withOrder(ProvidedOrder.asc("a.prop2"))
+              .onTopOf(
+                aPlan("NodeIndexSeekByRange")
+                  .withOrder(ProvidedOrder.asc("a.prop2"))))
+      )
+
+    result.toList should equal(List(
+      Map("a.prop2" -> 2),
+      Map("a.prop2" -> 3),
+      Map("a.prop2" -> 5),
+      Map("a.prop2" -> 7),
+      Map("a.prop2" -> 8),
+      Map("a.prop2" -> 9)
+    ))
+  }
 }

@@ -93,6 +93,23 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
+  test("should rename provided order of property columns in distinct if property projected") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+      // plan with provided order
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc("x.foo"))))
+      // projection
+      val projections = Map("xfoo" -> prop("x", "foo"))
+
+      //when
+      val result = lpp.planDistinct(plan, projections, projections, context)
+
+      // then
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc("xfoo"))))
+    }
+  }
+
   test("should trim provided order (1 column) of property column if a sort column is also not a grouping column") {
     new given().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)

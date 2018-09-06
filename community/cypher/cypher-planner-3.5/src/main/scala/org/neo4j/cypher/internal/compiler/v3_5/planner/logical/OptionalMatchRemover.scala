@@ -39,17 +39,17 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
   override def postConditions: Set[Condition] = Set.empty
 
   override def instance(ignored: PlannerContext): Rewriter = topDown(Rewriter.lift {
-    case RegularPlannerQuery(graph, _, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _), tail)
+    case RegularPlannerQuery(graph, requiredOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _), tail)
       if validAggregations(aggregations) =>
       val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, proj, tail)
+      rewrite(projectionDeps, graph, requiredOrder, proj, tail)
 
-    case RegularPlannerQuery(graph, _, proj@DistinctQueryProjection(distinctExpressions, _), tail) =>
+    case RegularPlannerQuery(graph, requiredOrder, proj@DistinctQueryProjection(distinctExpressions, _), tail) =>
       val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, proj, tail)
+      rewrite(projectionDeps, graph, requiredOrder, proj, tail)
   })
 
-  private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, proj: QueryProjection, tail: Option[PlannerQuery]): RegularPlannerQuery = {
+  private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, requiredOrder: RequiredOrder, proj: QueryProjection, tail: Option[PlannerQuery]): RegularPlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
     val gen = new PositionGenerator
@@ -100,7 +100,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     }
 
     val matches = graph.withOptionalMatches(optionalMatches)
-    RegularPlannerQuery(matches, horizon = proj, tail = tail)
+    RegularPlannerQuery(matches, requiredOrder, horizon = proj, tail = tail)
 
   }
 

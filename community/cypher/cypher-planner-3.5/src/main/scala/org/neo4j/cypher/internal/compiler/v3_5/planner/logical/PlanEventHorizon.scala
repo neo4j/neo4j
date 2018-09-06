@@ -45,18 +45,19 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val requiredOrderWithRenames = query.requiredOrder.withRenamedColumns(aggregatingProjection.groupingExpressions)
         sortSkipAndLimit(aggregationPlan, query, requiredOrderWithRenames, newContext)
 
-      case queryProjection: RegularQueryProjection =>
+      case regularProjection: RegularQueryProjection =>
         val (sortedAndLimited, contextAfterSort) = sortSkipAndLimit(selectedPlan, query, query.requiredOrder, context)
-        if (queryProjection.projections.isEmpty && query.tail.isEmpty) {
+        if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
           (contextAfterSort.logicalPlanProducer.planEmptyProjection(plan, contextAfterSort), contextAfterSort)
         } else {
-          val (newPlan, newContext) = projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, query.requiredOrder, contextAfterSort)
+          val (newPlan, newContext) = projection(sortedAndLimited, regularProjection.projections, regularProjection.projections, query.requiredOrder, contextAfterSort)
           (newPlan, newContext)
         }
 
-      case queryProjection: DistinctQueryProjection =>
-        val (distinctPlan, newContext) = distinct(selectedPlan, queryProjection, query.requiredOrder, context)
-        sortSkipAndLimit(distinctPlan, query, query.requiredOrder, newContext)
+      case distinctProjection: DistinctQueryProjection =>
+        val (distinctPlan, newContext) = distinct(selectedPlan, distinctProjection, query.requiredOrder, context)
+        val requiredOrderWithRenames = query.requiredOrder.withRenamedColumns(distinctProjection.groupingKeys)
+        sortSkipAndLimit(distinctPlan, query, requiredOrderWithRenames, newContext)
 
       case UnwindProjection(variable, expression) =>
         val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(expression, context.semanticTable))

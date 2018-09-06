@@ -119,6 +119,8 @@ object ClauseConverters {
         extractColumnsFromHorizon(shuffle, projections)
       case AggregatingQueryProjection(groupingExpressions, _, shuffle) =>
         extractColumnsFromHorizon(shuffle, groupingExpressions)
+      case DistinctQueryProjection(groupingExpressions, shuffle) =>
+        extractColumnsFromHorizon(shuffle, groupingExpressions)
       case _ => Seq.empty
     }
     RequiredOrder(columns)

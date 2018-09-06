@@ -44,6 +44,38 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
     result should equal(expectation)
   }
 
+  test("Extracts required order from distinct") {
+    val result = buildPlannerQuery("MATCH (n) RETURN DISTINCT n.prop ORDER BY n.prop")
+
+    val expectation = RegularPlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set("n")),
+      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      horizon = DistinctQueryProjection(Map("  FRESHID28" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID28"))(pos)))),
+      tail = Some(RegularPlannerQuery(
+        queryGraph = QueryGraph(argumentIds = Set("  FRESHID28")),
+        horizon = RegularQueryProjection(Map("n.prop" -> varFor("  FRESHID28")))
+      ))
+    )
+
+    result should equal(expectation)
+  }
+
+  test("Extracts required order from aggregation") {
+    val result = buildPlannerQuery("MATCH (n) RETURN n.prop, count(*) ORDER BY n.prop")
+
+    val expectation = RegularPlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set("n")),
+      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      horizon = AggregatingQueryProjection(Map("  FRESHID19" -> prop("n", "prop")), Map("  FRESHID25" -> CountStar()(pos)), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID19"))(pos)))),
+      tail = Some(RegularPlannerQuery(
+        queryGraph = QueryGraph(argumentIds = Set("  FRESHID19", "  FRESHID25")),
+        horizon = RegularQueryProjection(Map("n.prop" -> varFor("  FRESHID19"), "count(*)" -> varFor("  FRESHID25")))
+      ))
+    )
+
+    result should equal(expectation)
+  }
+
   test("Extracts required order from query not returning the sort column") {
     val result = buildPlannerQuery("MATCH (n) RETURN n.prop2 ORDER BY n.prop")
 

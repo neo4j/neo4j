@@ -567,9 +567,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
-
     val solved: PlannerQuery = solveds.get(left.id).updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
-    annotate(Distinct(left, expressions), solved, providedOrders.get(left.id), context)
+    val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
+    val providedOrder =  ProvidedOrder(columnsWithRenames)
+    annotate(Distinct(left, expressions), solved, providedOrder, context)
   }
 
   def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression], context: LogicalPlanningContext): LogicalPlan = {
