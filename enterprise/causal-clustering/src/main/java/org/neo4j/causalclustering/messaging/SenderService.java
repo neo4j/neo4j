@@ -107,7 +107,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( channel == null )
         {
-            channel = new ReconnectingChannel( bootstrap, destination, log );
+            channel = new ReconnectingChannel( bootstrap, eventLoopGroup.next(), destination, log );
             channel.start();
             ReconnectingChannel existingNonBlockingChannel = channels.putIfAbsent( destination, channel );
 

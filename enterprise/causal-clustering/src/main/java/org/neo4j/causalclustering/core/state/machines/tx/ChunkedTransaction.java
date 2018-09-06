@@ -109,32 +109,18 @@ class ChunkedTransaction implements ChunkedInput<ByteBuf>
             */
             channel.putInt( -1 );
         }
-        try
+
+        // write to chunks if empty and there is more to write
+        while ( txWriter.canWrite() && chunks.isEmpty() )
         {
-            // write to chunks if empty and there is more to write
-            while ( txWriter.canWrite() && chunks.isEmpty() )
-            {
-                txWriter.write( channel );
-            }
-            // nothing more to write, close the channel to get the potential last buffer
-            if ( chunks.isEmpty() )
-            {
-                channel.close();
-            }
-            return chunks.poll();
+            txWriter.write( channel );
         }
-        catch ( Throwable t )
+        // nothing more to write, close the channel to get the potential last buffer
+        if ( chunks.isEmpty() )
         {
-            try
-            {
-                close();
-            }
-            catch ( Exception e )
-            {
-                t.addSuppressed( e );
-            }
-            throw t;
+            channel.close();
         }
+        return chunks.poll();
     }
 
     @Override

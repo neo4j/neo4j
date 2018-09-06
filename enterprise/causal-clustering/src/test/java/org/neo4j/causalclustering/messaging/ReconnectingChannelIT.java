@@ -90,7 +90,7 @@ public class ReconnectingChannelIT
     {
         elg = new NioEventLoopGroup( 0 );
         Bootstrap bootstrap = new Bootstrap().channel( NioSocketChannel.class ).group( elg ).handler( childCounter );
-        channel = new ReconnectingChannel( bootstrap, listenAddress, log );
+        channel = new ReconnectingChannel( bootstrap, elg.next(), listenAddress, log );
     }
 
     @After

@@ -88,7 +88,8 @@ public class ReplicationModule
                 progressRetryStrategy,
                 leaderRetryStrategy,
                 availabilityTimeoutMillis,
-                globalAvailabilityGuard, logProvider, platformModule.monitors );
+                globalAvailabilityGuard, logProvider,
+                platformModule.monitors );
     }
 
     public RaftReplicator getReplicator()
