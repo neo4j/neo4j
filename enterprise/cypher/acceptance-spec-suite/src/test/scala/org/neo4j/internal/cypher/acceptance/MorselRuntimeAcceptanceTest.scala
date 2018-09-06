@@ -274,7 +274,7 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
   test("should support index scans") {
     // Given
     graph.createIndex("Person", "name")
-    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    graph.inTx(graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES))
     val names = (1 to 91).map(i => s"Satia$i")
     names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
 
@@ -290,7 +290,7 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
   test("should support index seek") {
     // Given
     graph.createIndex("Person", "name")
-    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    graph.inTx(graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES))
     val names = (1 to 91).map(i => s"Satia$i")
     names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
 
@@ -306,7 +306,7 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
   test("should support contains index seek") {
     // Given
     graph.createIndex("Person", "name")
-    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    graph.inTx(graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES))
     val names = (1 to 91).map(i => s"Satia$i")
     names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
 
@@ -322,7 +322,7 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
   test("should support composite indexes") {
     // Given
     graph.createIndex("Person", "name", "age")
-    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    graph.inTx(graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES))
     val names = (1 to 91).map(i => (i, s"Satia$i"))
     names.foreach {
       case (i,name) => createLabeledNode(Map("name" -> name, "age" -> i), "Person")
@@ -340,7 +340,7 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
   test("should support range queries") {
     // Given
     graph.createIndex("Person", "age")
-    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    graph.inTx(graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES))
     val names = (1 to 91).map(i => (i, s"Satia$i"))
     names.foreach {
       case (i,name) => createLabeledNode(Map("name" -> name, "age" -> i), "Person")
@@ -428,7 +428,7 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
   ignore("should support apply") {
 
     graph.createIndex("Person", "name")
-    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    graph.inTx(graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES))
 
     for(i <- 0 until 100) {
       createLabeledNode(Map("name" -> "me", "secondName" -> s"me$i"), "Person")
