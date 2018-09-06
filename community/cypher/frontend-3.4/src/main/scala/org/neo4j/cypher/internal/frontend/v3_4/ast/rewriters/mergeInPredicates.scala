@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Where
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -26,13 +25,13 @@ import org.neo4j.cypher.internal.v3_4.expressions._
   *
   * Examples:
   * MATCH (n) WHERE n.prop IN [1,2,3] AND [2,3,4] RETURN n.prop
-  * => MATCH (n) WHERE n.prop IN [2,3]
+  * -> MATCH (n) WHERE n.prop IN [2,3]
   *
   * MATCH (n) WHERE n.prop IN [1,2,3] OR [2,3,4] RETURN n.prop
-  * => MATCH (n) WHERE n.prop IN [1,2,3,4]
+  * -> MATCH (n) WHERE n.prop IN [1,2,3,4]
   *
   * MATCH (n) WHERE n.prop IN [1,2,3] AND [4,5,6] RETURN n.prop
-  * => MATCH (n) WHERE FALSE
+  * -> MATCH (n) WHERE FALSE
   *
   * NOTE: this rewriter must be applied before auto parameterization, since after
   * that we are just dealing with opaque parameters.
@@ -43,13 +42,21 @@ case object mergeInPredicates extends Rewriter {
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
     //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
-    case and@And(lhs, rhs) =>
+    case and@And(lhs, rhs) if noOrs(lhs) && noOrs(rhs ) =>
       rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
     //Look for `a IN [...] OR a IN [...]` and compute union of lists
-    case or@Or(lhs, rhs) =>
+    case or@Or(lhs, rhs) if noAnds(lhs) && noAnds(rhs) =>
       rewriteBinaryOperator(or, (a, b) => a union b,
                             (l, r) => or.copy(l, r)(or.position))
   })
+
+  private def noOrs(expression: Expression):Boolean = !expression.treeExists {
+    case _: Or => true
+  }
+
+  private def noAnds(expression: Expression):Boolean = !expression.treeExists {
+    case _: And => true
+  }
 
   //Takes a binary operator a merge operator and a copy constructor
   //and rewrites the binary operator

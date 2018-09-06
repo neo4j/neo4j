@@ -86,6 +86,14 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
                   "MATCH (n) RETURN n.prop IN [3] AS FOO")
   }
 
+  test("MATCH (n) RETURN (n.prop IN [1,2,3] OR TRUE) AND n.prop IN [3,4,5] AS FOO") {
+    shouldNotRewrite("MATCH (n) RETURN (n.prop IN [1,2,3] OR TRUE) AND n.prop IN [3,4,5] AS FOO")
+  }
+
+  test("MATCH (n) RETURN (n.prop IN [1,2,3] AND FALSE) OR n.prop IN [3,4,5] AS FOO") {
+    shouldNotRewrite("MATCH (n) RETURN (n.prop IN [1,2,3] AND FALSE) OR n.prop IN [3,4,5] AS FOO")
+  }
+
   private def shouldRewrite(from: String, to: String) {
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
@@ -94,4 +102,6 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
 
     common(result) should equal(common(expected))
   }
+
+  private def shouldNotRewrite(query: String) = shouldRewrite(query, query)
 }
