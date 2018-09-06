@@ -272,6 +272,7 @@ public class SecuritySettings implements LoadableConfig
                   "         \"cn=Neo4j Schema Manager,cn=users,dc=example,dc=com\" = architect; \\\n" +
                   "         \"cn=Neo4j Administrator,cn=users,dc=example,dc=com\"  = admin\n" +
                   "----" )
+    @Deprecated
     public static final Setting<String> ldap_authorization_group_to_role_mapping =
             setting( "dbms.security.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
 
@@ -337,6 +338,7 @@ public class SecuritySettings implements LoadableConfig
                   "by the `" + PROC_ALLOWED_SETTING_ROLES + "` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME +
                   "` setting is the empty string (default), procedures will be executed according to the same security " +
                   "rules as normal Cypher statements." )
+    @Deprecated
     public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
 
     @Description( "This provides a finer level of control over which roles can execute procedures than the " +
@@ -346,6 +348,7 @@ public class SecuritySettings implements LoadableConfig
                   "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
                   "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
                   "patterns will be subject to the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting." )
+    @Deprecated
     public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
 
     //=========================================================================
@@ -358,11 +361,17 @@ public class SecuritySettings implements LoadableConfig
     public static final Setting<Boolean> ldap_authorization_connection_pooling =
             setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
 
+    @Internal
+    @Description( "Set to true to import auth data into the system graph. This is typically used by an admin command." )
+    public static final Setting<Boolean> native_import_auth =
+            setting( "unsupported.dbms.security.native.import_auth", BOOLEAN, "false" );
+
     //=========================================================================
     // Property level security settings
     //=========================================================================
 
     @Description( "Set to true to enable property level security." )
+    @Deprecated
     public static final Setting<Boolean> property_level_authorization_enabled =
             setting( "dbms.security.property_level.enabled", BOOLEAN, "false" );
 
@@ -374,6 +383,7 @@ public class SecuritySettings implements LoadableConfig
             "for example: dbms.security.property_level.blacklist=\\\n" +
             "         \"role1\"      = ssn;    \\\n" +
             "         \"role2\"      = ssn,income; \\\n" )
+    @Deprecated
     public static final Setting<String> property_level_authorization_permissions =
             setting( "dbms.security.property_level.blacklist", STRING, NO_DEFAULT );
 }
