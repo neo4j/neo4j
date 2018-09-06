@@ -28,14 +28,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
-import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
@@ -96,10 +94,16 @@ public class UnbindFromClusterCommand implements AdminCommand
                 confirmTargetDirectoryIsWritable( DatabaseLayout.of( pathToSpecificDatabase.toFile() ).getStoreLayout() );
             }
 
-            ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDirectory );
-            clusterStateDirectory.initialize( outsideWorld.fileSystem() );
+            ClusterStateDirectory clusterStateDirectory = ClusterStateDirectory.withoutInitializing( dataDirectory );
 
-            deleteClusterStateIn( clusterStateDirectory.get().toPath() );
+            if ( outsideWorld.fileSystem().fileExists( clusterStateDirectory.get() ) )
+            {
+                deleteClusterStateIn( clusterStateDirectory.get() );
+            }
+            else
+            {
+                outsideWorld.stdErrLine( "This instance was not bound. No work performed." );
+            }
         }
         catch ( StoreLockException e )
         {
@@ -109,7 +113,7 @@ public class UnbindFromClusterCommand implements AdminCommand
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-        catch ( UnbindFailureException | CannotWriteException | IOException | ClusterStateException e )
+        catch ( UnbindFailureException | CannotWriteException | IOException e )
         {
             throw new CommandFailed( e.getMessage(), e );
         }
@@ -124,11 +128,11 @@ public class UnbindFromClusterCommand implements AdminCommand
         }
     }
 
-    private void deleteClusterStateIn( Path target ) throws UnbindFailureException
+    private void deleteClusterStateIn( File target ) throws UnbindFailureException
     {
         try
         {
-            FileUtils.deleteRecursively( target.toFile() );
+            outsideWorld.fileSystem().deleteRecursively( target );
         }
         catch ( IOException e )
         {

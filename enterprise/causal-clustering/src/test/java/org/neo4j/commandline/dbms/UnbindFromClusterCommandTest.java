@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -58,6 +59,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class UnbindFromClusterCommandTest
@@ -158,18 +160,8 @@ public class UnbindFromClusterCommandTest
         // given
         createUnlockedFakeDbDir( homeDir );
         UnbindFromClusterCommand command = new UnbindFromClusterCommand( homeDir, confDir, outsideWorld );
-
-        // when
-        try
-        {
-            // when
-            command.execute( databaseNameParameter( DatabaseManager.DEFAULT_DATABASE_NAME ) );
-        }
-        catch ( CommandFailed e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "Cluster state directory does not exist" ) );
-        }
+        command.execute( databaseNameParameter( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+        verify( outsideWorld ).stdErrLine( "This instance was not bound. No work performed." );
     }
 
     @Test
