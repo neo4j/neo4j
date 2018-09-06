@@ -24,14 +24,12 @@ package org.neo4j.causalclustering.messaging;
 
 import io.netty.buffer.ByteBuf;
 
-import java.io.Flushable;
-
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
-public class NetworkFlushableChannelNetty4 implements FlushableChannel
+public class BoundedNetworkWritableChannel implements WritableChannel, ByteBufBacked
 {
     /**
      * This implementation puts an upper limit to the size of the state serialized in the buffer. The default
@@ -45,12 +43,12 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
 
     private final long sizeLimit;
 
-    public NetworkFlushableChannelNetty4( ByteBuf delegate )
+    public BoundedNetworkWritableChannel( ByteBuf delegate )
     {
         this( delegate, DEFAULT_SIZE_LIMIT );
     }
 
-    public NetworkFlushableChannelNetty4( ByteBuf delegate, long sizeLimit )
+    public BoundedNetworkWritableChannel( ByteBuf delegate, long sizeLimit )
     {
         this.delegate = delegate;
         this.initialWriterIndex = delegate.writerIndex();
@@ -58,13 +56,7 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
     }
 
     @Override
-    public Flushable prepareForFlush()
-    {
-        return null;
-    }
-
-    @Override
-    public FlushableChannel put( byte value ) throws MessageTooBigException
+    public WritableChannel put( byte value ) throws MessageTooBigException
     {
         checkSize( Byte.BYTES );
         delegate.writeByte( value );
@@ -72,7 +64,7 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putShort( short value ) throws MessageTooBigException
+    public WritableChannel putShort( short value ) throws MessageTooBigException
     {
         checkSize( Short.BYTES );
         delegate.writeShort( value );
@@ -80,7 +72,7 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putInt( int value ) throws MessageTooBigException
+    public WritableChannel putInt( int value ) throws MessageTooBigException
     {
         checkSize( Integer.BYTES );
         delegate.writeInt( value );
@@ -88,7 +80,7 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putLong( long value ) throws MessageTooBigException
+    public WritableChannel putLong( long value ) throws MessageTooBigException
     {
         checkSize( Long.BYTES );
         delegate.writeLong( value );
@@ -96,7 +88,7 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putFloat( float value ) throws MessageTooBigException
+    public WritableChannel putFloat( float value ) throws MessageTooBigException
     {
         checkSize( Float.BYTES );
         delegate.writeFloat( value );
@@ -104,7 +96,7 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel putDouble( double value ) throws MessageTooBigException
+    public WritableChannel putDouble( double value ) throws MessageTooBigException
     {
         checkSize( Double.BYTES );
         delegate.writeDouble( value );
@@ -112,16 +104,11 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length ) throws MessageTooBigException
+    public WritableChannel put( byte[] value, int length ) throws MessageTooBigException
     {
         checkSize( length );
         delegate.writeBytes( value, 0, length );
         return this;
-    }
-
-    @Override
-    public void close()
-    {
     }
 
     private void checkSize( int additional ) throws MessageTooBigException
@@ -134,5 +121,11 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
                     "Size limit exceeded. Limit is %d, wanted to write %d with the writer index at %d (started at %d), written so far %d",
                     sizeLimit, additional, delegate.writerIndex(), initialWriterIndex, writtenSoFar ) );
         }
+    }
+
+    @Override
+    public ByteBuf byteBuf()
+    {
+        return delegate;
     }
 }

@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
@@ -35,7 +35,7 @@ public class TxPullResponseEncoder extends MessageToByteEncoder<TxPullResponse>
     @Override
     protected void encode( ChannelHandlerContext ctx, TxPullResponse response, ByteBuf out ) throws Exception
     {
-        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
+        NetworkWritableChannel channel = new NetworkWritableChannel( out );
         StoreIdMarshal.INSTANCE.marshal( response.storeId(), channel );
         new LogEntryWriter( channel ).serialize( response.tx() );
     }

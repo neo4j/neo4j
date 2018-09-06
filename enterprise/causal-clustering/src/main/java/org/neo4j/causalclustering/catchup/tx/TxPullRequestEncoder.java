@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
 public class TxPullRequestEncoder extends MessageToByteEncoder<TxPullRequest>
@@ -35,6 +35,6 @@ public class TxPullRequestEncoder extends MessageToByteEncoder<TxPullRequest>
     protected void encode( ChannelHandlerContext ctx, TxPullRequest request, ByteBuf out ) throws Exception
     {
         out.writeLong( request.previousTxId() );
-        StoreIdMarshal.INSTANCE.marshal( request.expectedStoreId(), new NetworkFlushableChannelNetty4( out ) );
+        StoreIdMarshal.INSTANCE.marshal( request.expectedStoreId(), new BoundedNetworkWritableChannel( out ) );
     }
 }

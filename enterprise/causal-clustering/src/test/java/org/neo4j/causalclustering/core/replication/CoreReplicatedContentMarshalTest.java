@@ -41,7 +41,7 @@ import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFa
 import org.neo4j.causalclustering.core.state.machines.tx.TransactionRepresentationReplicatedTransaction;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
@@ -127,7 +127,7 @@ public class CoreReplicatedContentMarshalTest
 
     private void assertMarshalingEquality( ByteBuf buffer, ReplicatedContent replicatedTx ) throws IOException, EndOfStreamException
     {
-        marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
+        marshal.marshal( replicatedTx, new NetworkWritableChannel( buffer ) );
 
         assertThat( marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) ), equalTo( replicatedTx ) );
     }
@@ -135,7 +135,7 @@ public class CoreReplicatedContentMarshalTest
     private void assertMarshalingEquality( ByteBuf buffer, TransactionRepresentationReplicatedTransaction replicatedTx )
             throws IOException, EndOfStreamException
     {
-        marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
+        marshal.marshal( replicatedTx, new NetworkWritableChannel( buffer ) );
 
         ReplicatedContent unmarshal = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 

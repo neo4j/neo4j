@@ -26,13 +26,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
 
 public class FileChunkEncoder extends MessageToByteEncoder<FileChunk>
 {
     @Override
     protected void encode( ChannelHandlerContext ctx, FileChunk chunk, ByteBuf out ) throws Exception
     {
-        FileChunk.marshal().marshal( chunk, new NetworkFlushableByteBuf( out ) );
+        FileChunk.marshal().marshal( chunk, new NetworkWritableChannel( out ) );
     }
 }

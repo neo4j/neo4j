@@ -29,7 +29,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -143,7 +143,7 @@ public class RaftMembershipStateTest
 
         // when
         ByteBuf buffer = Unpooled.buffer( 1_000 );
-        marshal.marshal( state, new NetworkFlushableChannelNetty4( buffer ) );
+        marshal.marshal( state, new BoundedNetworkWritableChannel( buffer ) );
         final RaftMembershipState recovered = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
         // then

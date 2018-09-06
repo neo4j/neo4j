@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.StoreCopyRequest;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
@@ -102,7 +102,7 @@ public class GetIndexFilesRequest implements StoreCopyRequest
         @Override
         protected void encode( ChannelHandlerContext ctx, GetIndexFilesRequest msg, ByteBuf out ) throws Exception
         {
-            new IndexSnapshotRequestMarshall().marshal( msg, new NetworkFlushableByteBuf( out ) );
+            new IndexSnapshotRequestMarshall().marshal( msg, new NetworkWritableChannel( out ) );
         }
     }
 

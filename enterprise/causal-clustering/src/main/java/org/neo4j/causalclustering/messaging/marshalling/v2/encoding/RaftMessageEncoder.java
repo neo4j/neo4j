@@ -29,7 +29,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
 public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.ClusterIdAwareMessage>
@@ -41,7 +41,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         ClusterId clusterId = decoratedMessage.clusterId();
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
-        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
+        NetworkWritableChannel channel = new NetworkWritableChannel( out );
         channel.put( ContentType.Message.get() );
         ClusterId.Marshal.INSTANCE.marshal( clusterId, channel );
         channel.putInt( message.type().ordinal() );
@@ -53,9 +53,9 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
     private static class Handler implements RaftMessages.Handler<Void,Exception>
     {
         private final MemberId.Marshal memberMarshal;
-        private final NetworkFlushableByteBuf channel;
+        private final NetworkWritableChannel channel;
 
-        Handler( MemberId.Marshal memberMarshal, NetworkFlushableByteBuf channel )
+        Handler( MemberId.Marshal memberMarshal, NetworkWritableChannel channel )
         {
             this.memberMarshal = memberMarshal;
             this.channel = channel;

@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -216,7 +216,7 @@ public class PrepareStoreCopyResponse
         protected void encode( ChannelHandlerContext channelHandlerContext, PrepareStoreCopyResponse prepareStoreCopyResponse, ByteBuf byteBuf )
                 throws Exception
         {
-            new PrepareStoreCopyResponse.StoreListingMarshal().marshal( prepareStoreCopyResponse, new NetworkFlushableChannelNetty4( byteBuf ) );
+            new PrepareStoreCopyResponse.StoreListingMarshal().marshal( prepareStoreCopyResponse, new BoundedNetworkWritableChannel( byteBuf ) );
         }
     }
 

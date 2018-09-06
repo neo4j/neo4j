@@ -26,13 +26,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
 
 public class CoreSnapshotEncoder extends MessageToByteEncoder<CoreSnapshot>
 {
     @Override
     protected void encode( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot, ByteBuf out ) throws Exception
     {
-        new CoreSnapshot.Marshal().marshal( coreSnapshot, new NetworkFlushableByteBuf( out ) );
+        new CoreSnapshot.Marshal().marshal( coreSnapshot, new NetworkWritableChannel( out ) );
     }
 }

@@ -36,7 +36,7 @@ import static java.lang.Integer.min;
  * Uses provided allocator to create {@link ByteBuf}. The buffers will be split if maximum size is reached. The full buffer is then added
  * to the provided output and a new buffer is allocated. If the output queue is bounded then writing to this channel may block!
  */
-public class BoundedNetworkChannel implements WritableChannel, AutoCloseable
+public class ChunkingNetworkChannel implements WritableChannel, AutoCloseable
 {
     private static final int DEFAULT_INIT_CHUNK_SIZE = 512;
     private final ByteBufAllocator allocator;
@@ -51,7 +51,7 @@ public class BoundedNetworkChannel implements WritableChannel, AutoCloseable
      * @param maxChunkSize when reached the current buffer will be moved to the @param outputQueue and a new {@link ByteBuf} is allocated
      * @param outputQueue full or flushed buffers are added here. If this queue is bounded then writing to this channel may block!
      */
-    public BoundedNetworkChannel( ByteBufAllocator allocator, int maxChunkSize, Queue<ByteBuf> outputQueue )
+    public ChunkingNetworkChannel( ByteBufAllocator allocator, int maxChunkSize, Queue<ByteBuf> outputQueue )
     {
         Objects.requireNonNull( allocator, "allocator cannot be null" );
         Objects.requireNonNull( outputQueue, "outputQueue cannot be null" );

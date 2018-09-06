@@ -29,11 +29,12 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.core.state.machines.tx.TransactionRepresentationReplicatedTransaction;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
+import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
+import org.neo4j.io.ByteUnit;
 
 public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.ClusterIdAwareMessage>
 {
@@ -53,7 +54,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         ClusterId clusterId = decoratedMessage.clusterId();
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
-        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
+        NetworkWritableChannel channel = new NetworkWritableChannel( out );
         ClusterId.Marshal.INSTANCE.marshal( clusterId, channel );
         channel.putInt( message.type().ordinal() );
         memberMarshal.marshal( message.from(), channel );
@@ -65,9 +66,9 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
     {
         private final ChannelMarshal<ReplicatedContent> marshal;
         private final MemberId.Marshal memberMarshal;
-        private final NetworkFlushableByteBuf channel;
+        private final NetworkWritableChannel channel;
 
-        Handler( ChannelMarshal<ReplicatedContent> marshal, MemberId.Marshal memberMarshal, NetworkFlushableByteBuf channel )
+        Handler( ChannelMarshal<ReplicatedContent> marshal, MemberId.Marshal memberMarshal, NetworkWritableChannel channel )
         {
             this.marshal = marshal;
             this.memberMarshal = memberMarshal;
@@ -147,18 +148,8 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         @Override
         public Void handle( RaftMessages.NewEntry.Request newEntryRequest ) throws Exception
         {
-            ReplicatedContent content = newEntryRequest.content();
-            ByteBuf buffer = channel.buffer();
-            int contentStartIndex = buffer.writerIndex() + 1;
-            marshal.marshal( content, channel );
-            if ( content instanceof TransactionRepresentationReplicatedTransaction )
-            {
-                // TransactionRepresentationReplicatedTransaction does not support marshal because it has unknown size
-                int contentEndIndex = buffer.writerIndex();
-                int size = contentEndIndex - contentStartIndex - Integer.BYTES; // the integer is the length integer which should be excluded
-                buffer.setInt( contentStartIndex, size );
-            }
-
+            BoundedNetworkWritableChannel sizeBoundChannel = new BoundedNetworkWritableChannel( channel.byteBuf(), ByteUnit.gibiBytes( 1 ) );
+            marshal.marshal( newEntryRequest.content(), sizeBoundChannel );
             return null;
         }
 

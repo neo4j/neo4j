@@ -20,22 +20,11 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.catchup.storecopy;
-
+package org.neo4j.causalclustering.messaging;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.NetworkWritableChannel;
-import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
-
-public class GetStoreIdResponseEncoder extends MessageToByteEncoder<StoreId>
+public interface ByteBufBacked
 {
-    @Override
-    protected void encode( ChannelHandlerContext ctx, StoreId storeId, ByteBuf out ) throws Exception
-    {
-        StoreIdMarshal.INSTANCE.marshal( storeId, new NetworkWritableChannel( out ) );
-    }
+    ByteBuf byteBuf();
 }

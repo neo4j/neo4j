@@ -28,8 +28,10 @@ import io.netty.handler.stream.ChunkedInput;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import org.neo4j.causalclustering.messaging.ByteBufBacked;
 import org.neo4j.causalclustering.messaging.marshalling.ByteArrayChunkedEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.OutputStreamWritableChannel;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -70,20 +72,43 @@ public class ReplicatedTransactionSerializer
 
     public static void marshal( WritableChannel writableChannel, TransactionRepresentationReplicatedTransaction replicatedTransaction ) throws IOException
     {
-       /*
-        Unknown length. This method will never be used in production. When a ReplicatedTransaction is serialized it has already passed over the network
-        and a more efficient marshalling is used in ByteArrayReplicatedTransaction.
-        */
-        ReplicatedTransactionFactory.TransactionRepresentationWriter txWriter = transactionalRepresentationWriter( replicatedTransaction.tx() );
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream( 1024 );
-        OutputStreamWritableChannel outputStreamWritableChannel = new OutputStreamWritableChannel( outputStream );
+        if ( writableChannel instanceof ByteBufBacked )
+        {
+            /*
+             * Marshals more efficiently if Channel is going over the network. In practice, this means maintaining support for
+             * RaftV1 without loosing performance
+             */
+            ByteBuf buffer = ((ByteBufBacked) writableChannel).byteBuf();
+            int metaDataIndex = buffer.writerIndex();
+            int txStartIndex = metaDataIndex + Integer.BYTES;
+            // leave room for length to be set later.
+            buffer.writerIndex( txStartIndex );
+            writeTx( writableChannel, replicatedTransaction.tx() );
+            int txLength = buffer.writerIndex() - txStartIndex;
+            buffer.setInt( metaDataIndex, txLength );
+        }
+        else
+        {
+            /*
+             * Unknown length. This should only be reached in tests. When a ReplicatedTransaction is marshaled to file it has already passed over the network
+             * and is of a different type. More efficient marshalling is used in ByteArrayReplicatedTransaction.
+             */
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream( 1024 );
+            OutputStreamWritableChannel outputStreamWritableChannel = new OutputStreamWritableChannel( outputStream );
+            writeTx( outputStreamWritableChannel, replicatedTransaction.tx() );
+            int length = outputStream.size();
+            writableChannel.putInt( length );
+            writableChannel.put( outputStream.toByteArray(), length );
+        }
+    }
+
+    private static void writeTx( WritableChannel writableChannel, TransactionRepresentation tx ) throws IOException
+    {
+        ReplicatedTransactionFactory.TransactionRepresentationWriter txWriter = transactionalRepresentationWriter( tx );
         while ( txWriter.canWrite() )
         {
-            txWriter.write( outputStreamWritableChannel );
+            txWriter.write( writableChannel );
         }
-        int length = outputStream.size();
-        writableChannel.putInt( length );
-        writableChannel.put( outputStream.toByteArray(), length );
     }
 
     public static ChunkedInput<ByteBuf> encode( TransactionRepresentationReplicatedTransaction representationReplicatedTransaction )

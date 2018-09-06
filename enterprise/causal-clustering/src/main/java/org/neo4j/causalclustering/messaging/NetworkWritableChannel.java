@@ -27,77 +27,68 @@ import java.io.Flushable;
 import io.netty.buffer.ByteBuf;
 
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
-public class NetworkFlushableByteBuf implements FlushableChannel
+public class NetworkWritableChannel implements WritableChannel, ByteBufBacked
 {
     private final ByteBuf delegate;
 
-    public NetworkFlushableByteBuf( ByteBuf byteBuf )
+    public NetworkWritableChannel( ByteBuf byteBuf )
     {
         this.delegate = byteBuf;
     }
 
     @Override
-    public FlushableChannel put( byte value )
+    public WritableChannel put( byte value )
     {
         delegate.writeByte( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putShort( short value )
+    public WritableChannel putShort( short value )
     {
         delegate.writeShort( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putInt( int value )
+    public WritableChannel putInt( int value )
     {
         delegate.writeInt( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putLong( long value )
+    public WritableChannel putLong( long value )
     {
         delegate.writeLong( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putFloat( float value )
+    public WritableChannel putFloat( float value )
     {
         delegate.writeFloat( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putDouble( double value )
+    public WritableChannel putDouble( double value )
     {
         delegate.writeDouble( value );
         return this;
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length )
+    public WritableChannel put( byte[] value, int length )
     {
         delegate.writeBytes( value, 0, length );
         return this;
     }
 
     @Override
-    public void close()
-    {
-    }
-
-    @Override
-    public Flushable prepareForFlush()
-    {
-        return null;
-    }
-
-    public ByteBuf buffer()
+    public ByteBuf byteBuf()
     {
         return delegate;
     }

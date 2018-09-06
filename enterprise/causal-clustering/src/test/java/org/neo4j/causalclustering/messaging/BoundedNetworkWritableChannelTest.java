@@ -28,14 +28,14 @@ import org.junit.Test;
 
 import static org.junit.Assert.fail;
 
-public class NetworkFlushableChannelNetty4Test
+public class BoundedNetworkWritableChannelTest
 {
     @Test
     public void shouldRespectSizeLimit() throws Exception
     {
         // Given
         int sizeLimit = 100;
-        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( Unpooled.buffer(), sizeLimit );
+        BoundedNetworkWritableChannel channel = new BoundedNetworkWritableChannel( Unpooled.buffer(), sizeLimit );
 
         // when
         for ( int i = 0; i < sizeLimit; i++ )
@@ -59,7 +59,7 @@ public class NetworkFlushableChannelNetty4Test
     {
         // Given
         int sizeLimit = 100;
-        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( Unpooled.buffer(), sizeLimit );
+        BoundedNetworkWritableChannel channel = new BoundedNetworkWritableChannel( Unpooled.buffer(), sizeLimit );
 
         // When
         int padding = 10;
@@ -89,7 +89,7 @@ public class NetworkFlushableChannelNetty4Test
         int padding = Long.BYTES;
         buffer.writeLong( 0 );
 
-        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( buffer, sizeLimit );
+        BoundedNetworkWritableChannel channel = new BoundedNetworkWritableChannel( buffer, sizeLimit );
 
         // When
         for ( int i = 0; i < sizeLimit - padding; i++ )

@@ -31,7 +31,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
@@ -97,7 +97,7 @@ public class ReplicatedTokenRequestSerializer
     public static byte[] commandBytes( Collection<StorageCommand> commands )
     {
         ByteBuf commandBuffer = Unpooled.buffer();
-        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( commandBuffer );
+        BoundedNetworkWritableChannel channel = new BoundedNetworkWritableChannel( commandBuffer );
 
         try
         {

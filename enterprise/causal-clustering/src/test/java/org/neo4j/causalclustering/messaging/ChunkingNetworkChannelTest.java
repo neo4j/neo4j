@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBuf;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.LinkedList;
 
 import org.neo4j.causalclustering.helpers.Buffers;
@@ -36,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class BoundedNetworkChannelTest
+public class ChunkingNetworkChannelTest
 {
     @Rule
     public final Buffers buffers = new Buffers();
@@ -47,7 +46,7 @@ public class BoundedNetworkChannelTest
         // given
         int chunkSize = 8;
         LinkedList<ByteBuf> byteBufs = new LinkedList<>();
-        BoundedNetworkChannel channel = new BoundedNetworkChannel( buffers, chunkSize, byteBufs );
+        ChunkingNetworkChannel channel = new ChunkingNetworkChannel( buffers, chunkSize, byteBufs );
 
         // and data is written
         byte[] array = new byte[10];
@@ -89,7 +88,7 @@ public class BoundedNetworkChannelTest
         int chunkSize = 8;
         LinkedList<ByteBuf> byteBufs = new LinkedList<>();
 
-        BoundedNetworkChannel channel = new BoundedNetworkChannel( buffers, chunkSize, byteBufs );
+        ChunkingNetworkChannel channel = new ChunkingNetworkChannel( buffers, chunkSize, byteBufs );
 
         // when
         channel.putLong( 1L );
@@ -117,7 +116,7 @@ public class BoundedNetworkChannelTest
     public void shouldThrowIllegalStatAfterClosed()
     {
         int chunkSize = 8;
-        BoundedNetworkChannel channel = new BoundedNetworkChannel( buffers, chunkSize, new LinkedList<>() );
+        ChunkingNetworkChannel channel = new ChunkingNetworkChannel( buffers, chunkSize, new LinkedList<>() );
         channel.close();
         channel.putInt( 1 );
     }

@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -48,7 +48,7 @@ public class MemberIdMarshalTest
 
         // when
         ByteBuf buffer = Unpooled.buffer( 1_000 );
-        marshal.marshal( member, new NetworkFlushableChannelNetty4( buffer ) );
+        marshal.marshal( member, new BoundedNetworkWritableChannel( buffer ) );
         final MemberId recovered = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
         // then
@@ -66,7 +66,7 @@ public class MemberIdMarshalTest
         ByteBuf buffer = Unpooled.buffer( 1000 );
 
         // and the CoreMember is serialized but for 5 bytes at the end
-        marshal.marshal( aRealMember, new NetworkFlushableChannelNetty4( buffer ) );
+        marshal.marshal( aRealMember, new BoundedNetworkWritableChannel( buffer ) );
         ByteBuf bufferWithMissingBytes = buffer.copy( 0, buffer.writerIndex() - 5 );
 
         // when

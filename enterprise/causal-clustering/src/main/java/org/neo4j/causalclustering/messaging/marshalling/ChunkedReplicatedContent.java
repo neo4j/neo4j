@@ -30,7 +30,7 @@ import io.netty.handler.stream.ChunkedInput;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -173,7 +173,7 @@ public class ChunkedReplicatedContent implements ChunkedInput<ByteBuf>
                 return null;
             }
             ByteBuf buffer = allocator.buffer();
-            marshaller.accept( new NetworkFlushableChannelNetty4( buffer ) );
+            marshaller.accept( new BoundedNetworkWritableChannel( buffer ) );
             isEndOfInput = true;
             offset = buffer.readableBytes();
             return buffer;

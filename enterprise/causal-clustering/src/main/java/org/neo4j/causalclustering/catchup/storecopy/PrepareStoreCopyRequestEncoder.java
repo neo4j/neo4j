@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.BoundedNetworkWritableChannel;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
 public class PrepareStoreCopyRequestEncoder extends MessageToByteEncoder<PrepareStoreCopyRequest>
@@ -34,6 +34,6 @@ public class PrepareStoreCopyRequestEncoder extends MessageToByteEncoder<Prepare
     @Override
     protected void encode( ChannelHandlerContext channelHandlerContext, PrepareStoreCopyRequest prepareStoreCopyRequest, ByteBuf byteBuf ) throws Exception
     {
-        StoreIdMarshal.INSTANCE.marshal( prepareStoreCopyRequest.getStoreId(), new NetworkFlushableChannelNetty4( byteBuf ) );
+        StoreIdMarshal.INSTANCE.marshal( prepareStoreCopyRequest.getStoreId(), new BoundedNetworkWritableChannel( byteBuf ) );
     }
 }
