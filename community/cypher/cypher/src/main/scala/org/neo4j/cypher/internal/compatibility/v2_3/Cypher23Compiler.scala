@@ -71,7 +71,8 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
                                 preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                                 offSet: frontend.v2_3.InputPosition,
                                 override val paramNames: Seq[String],
-                                override val extractedParams: MapValue) extends ExecutableQuery {
+                                override val extractedParams: MapValue,
+                                override val shouldBeCached: Boolean = true) extends ExecutableQuery {
 
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))

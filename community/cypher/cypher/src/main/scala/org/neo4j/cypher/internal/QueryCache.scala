@@ -61,7 +61,7 @@ trait CacheTracer[QUERY_KEY] {
   * @param stalenessCaller Decided whether CachedExecutionPlans are stale
   * @param tracer Traces cache activity
   */
-class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: AnyRef](
+class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: CacheabilityInfo](
     val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
 
   val inner: Cache[QUERY_KEY, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, EXECUTABLE_QUERY]()
@@ -115,8 +115,13 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                         metaData: String
                        ): CacheLookup[EXECUTABLE_QUERY] = {
     val newExecutableQuery = compile()
-    inner.put(queryKey, newExecutableQuery)
-    miss(queryKey, newExecutableQuery, metaData)
+    if (newExecutableQuery.shouldBeCached) {
+      inner.put(queryKey, newExecutableQuery)
+      miss(queryKey, newExecutableQuery, metaData)
+    } else {
+      tracer.queryCacheMiss(queryKey, metaData) // @Reviewer: I think it is debatable if we want to always log a miss here or not. Leaning towards logging a miss, but please give me feedback on that
+      CacheDisabled(newExecutableQuery)
+    }
   }
 
   private def hit(queryKey: QUERY_KEY,
