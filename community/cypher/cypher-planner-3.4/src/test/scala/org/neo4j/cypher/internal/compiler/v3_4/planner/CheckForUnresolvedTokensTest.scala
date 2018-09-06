@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.values.storable.PointFields
+import org.neo4j.values.storable.{DurationFields, PointFields}
+import org.neo4j.values.storable.TemporalValue.TemporalFields
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 
@@ -144,9 +145,10 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val semanticTable = new SemanticTable
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
-    PointFields.values().foreach { property =>
+    import scala.collection.JavaConverters._
+    TemporalFields.allFields().asScala.foreach { property =>
       //when
-      val ast = parse(s"MATCH (a) WHERE date(a.prop).${property.propertyKey} = 42 RETURN a")
+      val ast = parse(s"MATCH (a) WHERE date(a.prop).$property = 42 RETURN a")
 
       //then
       checkForTokens(ast, semanticTable) shouldBe empty
@@ -158,25 +160,13 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val semanticTable = new SemanticTable
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
-    PointFields.values().foreach { property =>
+    DurationFields.values().foreach { property =>
       //when
       val ast = parse(s"MATCH (a) WHERE duration(a.prop).${property.propertyKey} = 42 RETURN a")
 
       //then
       checkForTokens(ast, semanticTable) shouldBe empty
     }
-  }
-
-  test("don't warn when using temporal property") {
-    //given
-    val semanticTable = new SemanticTable
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
-
-    //when
-    val ast = parse("MATCH (a) WHERE point(a.prop).y = 42 RETURN a")
-
-    //then
-    checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
