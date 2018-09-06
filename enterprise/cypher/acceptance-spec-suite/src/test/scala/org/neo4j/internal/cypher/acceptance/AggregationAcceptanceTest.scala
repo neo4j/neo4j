@@ -266,4 +266,25 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN avg(x) AS length"
     failWithError(INTERPRETED_33_35_NO_RULE + Configs.Procs, query, Seq("cannot mix number and durations"))
   }
+
+  test("Aggregations should keep LHS order") {
+    // Please don't remove the ORDER BY, this will make CypherComparisonSupport check that results come in the sam order across runtimes
+    val query = "UNWIND [1, 2, 2, 3, 3, 4, 5, 5, 5, 6, 7, 8, 9, 99] AS n WITH n ORDER BY n RETURN n, count(n)"
+    val result = executeWith(Configs.All, query,
+      // The order of aggregation has been changed in 3.5
+      expectedDifferentResults = Configs.Version3_1 + Configs.Version2_3 + Configs.AllRulePlanners)
+
+    result.toList should be(List(
+      Map("n" -> 1, "count(n)" -> 1),
+      Map("n" -> 2, "count(n)" -> 2),
+      Map("n" -> 3, "count(n)" -> 2),
+      Map("n" -> 4, "count(n)" -> 1),
+      Map("n" -> 5, "count(n)" -> 3),
+      Map("n" -> 6, "count(n)" -> 1),
+      Map("n" -> 7, "count(n)" -> 1),
+      Map("n" -> 8, "count(n)" -> 1),
+      Map("n" -> 9, "count(n)" -> 1),
+      Map("n" -> 99, "count(n)" -> 1)
+    ))
+  }
 }

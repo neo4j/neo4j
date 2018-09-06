@@ -50,6 +50,10 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
         |CREATE (:Awesome {prop1: 42, prop2: 3})-[:R]->()
         |CREATE (:Awesome {prop1: 43, prop2: 1})-[:R]->()
         |CREATE (:Awesome {prop1: 44, prop2: 3})-[:R]->()
+        |CREATE (:Awesome {prop2: 7})-[:R]->()
+        |CREATE (:Awesome {prop2: 9})-[:R]->()
+        |CREATE (:Awesome {prop2: 8})-[:R]->()
+        |CREATE (:Awesome {prop2: 7})-[:R]->()
         |CREATE (:Awesome {prop3: 'footurama', prop4:'bar'})-[:R]->()
         |CREATE (:Awesome {prop3: 'fooism', prop4:'rab'})-[:R]->()
         |CREATE (:Awesome {prop3: 'ismfama', prop4:'rab'})-[:R]->()
@@ -122,6 +126,31 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
       Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
       Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01"),
       Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01")
+    ))
+  }
+
+  test("Order by index backed property in a plan with an aggregation and an expand") {
+    val result = executeWith(Configs.Interpreted,
+      "MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN a.prop2, count(b) ORDER BY a.prop2", executeBefore = createSomeNodes)
+
+    result.executionPlanDescription() should (
+      not(includeSomewhere.aPlan("Sort")) and
+        includeSomewhere.aPlan("EagerAggregation")
+          .onTopOf(
+            aPlan("Expand(All)")
+              .withOrder(ProvidedOrder.asc("a.prop2"))
+              .onTopOf(
+                aPlan("NodeIndexSeekByRange")
+                  .withOrder(ProvidedOrder.asc("a.prop2"))))
+      )
+
+    result.toList should equal(List(
+      Map("a.prop2" -> 2, "count(b)" -> 2),
+      Map("a.prop2" -> 3, "count(b)" -> 4),
+      Map("a.prop2" -> 5, "count(b)" -> 2),
+      Map("a.prop2" -> 7, "count(b)" -> 4),
+      Map("a.prop2" -> 8, "count(b)" -> 2),
+      Map("a.prop2" -> 9, "count(b)" -> 2)
     ))
   }
 }

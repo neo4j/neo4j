@@ -32,7 +32,7 @@ import scala.collection.JavaConverters._
 
 class UnwindSlottedPipeTest extends CypherFunSuite {
 
-  private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
+  private def unwindWithInput(data: Iterable[Map[String, Any]]) = {
     val inputPipeline = SlotConfiguration
       .empty
       .newReference("x", nullable = false, CTAny)
@@ -44,7 +44,7 @@ class UnwindSlottedPipeTest extends CypherFunSuite {
     val x = inputPipeline.getReferenceOffsetFor("x")
     val y = outputPipeline.getReferenceOffsetFor("y")
 
-    val source = FakeSlottedPipe(data.toIterator, inputPipeline)
+    val source = FakeSlottedPipe(data, inputPipeline)
     val unwindPipe = UnwindSlottedPipe(source, ReferenceFromSlot(x), y, outputPipeline)()
     unwindPipe.createResults(QueryStateHelper.empty).map {
       case c: SlottedExecutionContext =>

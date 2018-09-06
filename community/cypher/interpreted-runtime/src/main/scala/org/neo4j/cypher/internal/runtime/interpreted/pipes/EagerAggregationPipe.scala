@@ -26,7 +26,7 @@ import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
 
-import scala.collection.immutable
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
@@ -88,7 +88,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
-    val result = MutableMap[AnyValue, Seq[AggregationFunction]]()
+    val result = mutable.LinkedHashMap[AnyValue, Seq[AggregationFunction]]()
     val keyNames = keyExpressions.keySet.toList
     val aggregationNames: IndexedSeq[String] = aggregations.keys.toIndexedSeq
     val keyNamesSize = keyNames.size

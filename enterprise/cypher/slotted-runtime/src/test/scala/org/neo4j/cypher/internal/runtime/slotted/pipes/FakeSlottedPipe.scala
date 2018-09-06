@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.opencypher.v9_0.util.attribution.Id
 import org.scalatest.mock.MockitoSugar
 
-case class FakeSlottedPipe(data: Iterator[Map[String, Any]], slots: SlotConfiguration)
+case class FakeSlottedPipe(data: Iterable[Map[String, Any]], slots: SlotConfiguration)
   extends Pipe with MockitoSugar {
 
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    data.map { values =>
+    data.iterator.map { values =>
       val result = SlottedExecutionContext(slots)
 
       values foreach {

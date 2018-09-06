@@ -30,8 +30,7 @@ import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
 
-import scala.collection.immutable
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.{immutable, mutable}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -118,7 +117,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
 
-    val result = MutableMap[AnyValue, Seq[AggregationFunction]]()
+    val result = mutable.LinkedHashMap[AnyValue, Seq[AggregationFunction]]()
 
     // Used when we have no input and no grouping expressions. In this case, we'll return a single row
     def createEmptyResult(params: MapValue): Iterator[ExecutionContext] = {

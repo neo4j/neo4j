@@ -48,11 +48,10 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     // When
     aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
-    // Then we expect {A -> [0,2, 4, 6, 8], B -> []}
-    data.refs(0) should equal(stringValue("B"))
-    data.refs(1) should equal(Values.EMPTY_LONG_ARRAY)
-    data.refs(2) should equal(stringValue("A"))
-    data.refs(3) should equal(Values.longArray(Array(0,2,4,6,8)))
+    data.refs(0) should equal(stringValue("A"))
+    data.refs(1) should equal(Values.longArray(Array(0, 2, 4, 6, 8)))
+    data.refs(2) should equal(stringValue("B"))
+    data.refs(3) should equal(Values.EMPTY_LONG_ARRAY)
   }
 
   test("two grouping keys") {
@@ -66,7 +65,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
                                                     Array(GroupingOffsets(groupSlot1, groupSlot1,
                                                                           new DummyExpression(stringValue("A"), stringValue("B"))),
                                                           GroupingOffsets(groupSlot2, groupSlot2,
-                                                                          new DummyExpression(stringValue("C"), stringValue("D")))
+                                                            new DummyExpression(stringValue("C"), stringValue("D"), stringValue("E")))
 
                                                           ))
     val longs = Array[Long](0,1,2,3,4,5,6,7,8,9)
@@ -76,13 +75,30 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     // When
     aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
-    // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
-    data.refs(0) should equal(stringValue("B"))
-    data.refs(1) should equal(stringValue("D"))
-    data.refs(2) should equal(Values.EMPTY_LONG_ARRAY)
-    data.refs(3) should equal(stringValue("A"))
-    data.refs(4) should equal(stringValue("C"))
-    data.refs(5) should equal(Values.longArray(Array(0,2,4,6,8)))
+    data.refs.take(3 * 6) should equal(Array(
+      stringValue("A"),
+      stringValue("C"),
+      Values.longArray(Array(0, 6)),
+
+      stringValue("B"),
+      stringValue("D"),
+      Values.EMPTY_LONG_ARRAY,
+
+      stringValue("A"),
+      stringValue("E"),
+      Values.longArray(Array(2, 8)),
+
+      stringValue("B"),
+      stringValue("C"),
+      Values.EMPTY_LONG_ARRAY,
+
+      stringValue("A"),
+      stringValue("D"),
+      Values.longArray(Array(4)),
+
+      stringValue("B"),
+      stringValue("E"),
+      Values.EMPTY_LONG_ARRAY))
   }
 
   test("three grouping keys") {
@@ -110,15 +126,14 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     // When
     aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
-    // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
-    data.refs(0) should equal(stringValue("B"))
-    data.refs(1) should equal(stringValue("D"))
-    data.refs(2) should equal(stringValue("F"))
-    data.refs(3) should equal(Values.EMPTY_LONG_ARRAY)
-    data.refs(4) should equal(stringValue("A"))
-    data.refs(5) should equal(stringValue("C"))
-    data.refs(6) should equal(stringValue("E"))
-    data.refs(7) should equal(Values.longArray(Array(0,2,4,6,8)))
+    data.refs(0) should equal(stringValue("A"))
+    data.refs(1) should equal(stringValue("C"))
+    data.refs(2) should equal(stringValue("E"))
+    data.refs(3) should equal(Values.longArray(Array(0,2,4,6,8)))
+    data.refs(4) should equal(stringValue("B"))
+    data.refs(5) should equal(stringValue("D"))
+    data.refs(6) should equal(stringValue("F"))
+    data.refs(7) should equal(Values.EMPTY_LONG_ARRAY)
   }
 
   test("more than three grouping keys") {
@@ -153,18 +168,17 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     // When
     aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
-    // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
-    data.refs(0) should equal(stringValue("B"))
-    data.refs(1) should equal(stringValue("D"))
-    data.refs(2) should equal(stringValue("F"))
-    data.refs(3) should equal(stringValue("H"))
-    data.refs(4) should equal(stringValue("J"))
-    data.refs(5) should equal(Values.EMPTY_LONG_ARRAY)
-    data.refs(6) should equal(stringValue("A"))
-    data.refs(7) should equal(stringValue("C"))
-    data.refs(8) should equal(stringValue("E"))
-    data.refs(9) should equal(stringValue("G"))
-    data.refs(10) should equal(stringValue("I"))
-    data.refs(11) should equal(Values.longArray(Array(0,2,4,6,8)))
+    data.refs(0) should equal(stringValue("A"))
+    data.refs(1) should equal(stringValue("C"))
+    data.refs(2) should equal(stringValue("E"))
+    data.refs(3) should equal(stringValue("G"))
+    data.refs(4) should equal(stringValue("I"))
+    data.refs(5) should equal(Values.longArray(Array(0,2,4,6,8)))
+    data.refs(6) should equal(stringValue("B"))
+    data.refs(7) should equal(stringValue("D"))
+    data.refs(8) should equal(stringValue("F"))
+    data.refs(9) should equal(stringValue("H"))
+    data.refs(10) should equal(stringValue("J"))
+    data.refs(11) should equal(Values.EMPTY_LONG_ARRAY)
   }
 }

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.eclipse.collections.impl.factory.Maps
+import java.util
+
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
@@ -49,7 +50,7 @@ case class EagerAggregationSlottedPrimitivePipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
 
-    val result = Maps.mutable.empty[Key, Seq[AggregationFunction]]()
+    val result = new util.LinkedHashMap[Key, Seq[AggregationFunction]]()
 
     def createResultRow(groupingKey: Array[Long], aggregator: Seq[AggregationFunction]): ExecutionContext = {
       val context = SlottedExecutionContext(slots)

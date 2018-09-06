@@ -42,10 +42,10 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
   private def union(lhsSlots: SlotConfiguration,
                     rhsSlots: SlotConfiguration,
-                    out: SlotConfiguration, lhsData: Traversable[Map[String, Any]],
-                    rhsData: Traversable[Map[String, Any]]) = {
-    val lhs = FakeSlottedPipe(lhsData.toIterator, lhsSlots)
-    val rhs = FakeSlottedPipe(rhsData.toIterator, rhsSlots)
+                    out: SlotConfiguration, lhsData: Iterable[Map[String, Any]],
+                    rhsData: Iterable[Map[String, Any]]) = {
+    val lhs = FakeSlottedPipe(lhsData, lhsSlots)
+    val rhs = FakeSlottedPipe(rhsData, rhsSlots)
     val union = UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsSlots, out), computeUnionMapping(rhsSlots, out) )()
     val context = mock[QueryContext]
     val nodeOps = mock[Operations[NodeValue]]

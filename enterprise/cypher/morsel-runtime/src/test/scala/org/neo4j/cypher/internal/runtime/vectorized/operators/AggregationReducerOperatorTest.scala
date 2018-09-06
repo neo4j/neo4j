@@ -132,14 +132,14 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
       .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
     // Then
-    out.refs(0) should equal(stringValue("k21"))
-    out.refs(1) should equal(stringValue("k22"))
-    out.refs(2) should equal(stringValue("k23"))
-    out.refs(3) should equal(Values.longArray(Array(20,40,60,80,100)))
-    out.refs(4) should equal(stringValue("k11"))
-    out.refs(5) should equal(stringValue("k12"))
-    out.refs(6) should equal(stringValue("k13"))
-    out.refs(7) should equal(Values.longArray(Array(2,4,6,8,10)))
+    out.refs(0) should equal(stringValue("k11"))
+    out.refs(1) should equal(stringValue("k12"))
+    out.refs(2) should equal(stringValue("k13"))
+    out.refs(3) should equal(Values.longArray(Array(2, 4, 6, 8, 10)))
+    out.refs(4) should equal(stringValue("k21"))
+    out.refs(5) should equal(stringValue("k22"))
+    out.refs(6) should equal(stringValue("k23"))
+    out.refs(7) should equal(Values.longArray(Array(20, 40, 60, 80, 100)))
 
   }
 
@@ -184,17 +184,17 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
       .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
     // Then
-    out.refs(0) should equal(stringValue("k21"))
-    out.refs(1) should equal(stringValue("k22"))
-    out.refs(2) should equal(stringValue("k23"))
-    out.refs(3) should equal(stringValue("k24"))
-    out.refs(4) should equal(stringValue("k25"))
-    out.refs(5) should equal(Values.longArray(Array(20,40,60,80,100)))
-    out.refs(6) should equal(stringValue("k11"))
-    out.refs(7) should equal(stringValue("k12"))
-    out.refs(8) should equal(stringValue("k13"))
-    out.refs(9) should equal(stringValue("k14"))
-    out.refs(10) should equal(stringValue("k15"))
-    out.refs(11) should equal(Values.longArray(Array(2,4,6,8,10)))
+    out.refs(0) should equal(stringValue("k11"))
+    out.refs(1) should equal(stringValue("k12"))
+    out.refs(2) should equal(stringValue("k13"))
+    out.refs(3) should equal(stringValue("k14"))
+    out.refs(4) should equal(stringValue("k15"))
+    out.refs(5) should equal(Values.longArray(Array(2, 4, 6, 8, 10)))
+    out.refs(6) should equal(stringValue("k21"))
+    out.refs(7) should equal(stringValue("k22"))
+    out.refs(8) should equal(stringValue("k23"))
+    out.refs(9) should equal(stringValue("k24"))
+    out.refs(10) should equal(stringValue("k25"))
+    out.refs(11) should equal(Values.longArray(Array(20, 40, 60, 80, 100)))
   }
 }

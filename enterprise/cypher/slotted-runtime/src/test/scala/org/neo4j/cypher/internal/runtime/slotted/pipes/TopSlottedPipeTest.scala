@@ -219,13 +219,13 @@ object TopSlottedPipeTestSupport {
     }
   }
 
-  def singleColumnTopWithInput(data: Traversable[Any], orderBy: TestColumnOrder, limit: Int, withTies: Boolean = false): List[Any] = {
+  def singleColumnTopWithInput(data: Iterable[Any], orderBy: TestColumnOrder, limit: Int, withTies: Boolean = false): List[Any] = {
     val slots = SlotConfiguration.empty
       .newReference("a", nullable = true, CTAny)
 
     val slot = slots("a")
 
-    val source = FakeSlottedPipe(data.map(v => Map("a" -> v)).toIterator, slots)
+    val source = FakeSlottedPipe(data.map(v => Map("a" -> v)), slots)
 
     val topOrderBy = orderBy match {
       case AscendingOrder => List(Ascending(slot))
@@ -246,14 +246,14 @@ object TopSlottedPipeTestSupport {
     }.toList
   }
 
-  def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder], limit: Int, withTies: Boolean = false): List[(AnyValue, AnyValue)] = {
+  def twoColumnTopWithInput(data: Iterable[(Any, Any)], orderBy: Seq[TestColumnOrder], limit: Int, withTies: Boolean = false): List[(AnyValue, AnyValue)] = {
     val slotConfiguration = SlotConfiguration.empty
       .newReference("a", nullable = true, CTAny)
       .newReference("b", nullable = true, CTAny)
 
     val slots = Seq(slotConfiguration("a"), slotConfiguration("b"))
 
-    val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }.toIterator, slotConfiguration)
+    val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }, slotConfiguration)
 
     val topOrderBy = orderBy.zip(slots).map {
       case (AscendingOrder, slot) => Ascending(slot)
@@ -273,11 +273,11 @@ object TopSlottedPipeTestSupport {
     }.toList
   }
 
-  def singleColumnTop1WithTiesWithInput(data: Traversable[Any], orderBy: TestColumnOrder): List[Any] = {
+  def singleColumnTop1WithTiesWithInput(data: Iterable[Any], orderBy: TestColumnOrder): List[Any] = {
     singleColumnTopWithInput(data, orderBy, limit = 1, withTies = true)
   }
 
-  def twoColumnTop1WithTiesWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder]): List[(AnyValue, AnyValue)] = {
+  def twoColumnTop1WithTiesWithInput(data: Iterable[(Any, Any)], orderBy: Seq[TestColumnOrder]): List[(AnyValue, AnyValue)] = {
     twoColumnTopWithInput(data, orderBy, limit = 1, withTies = true)
   }
 }

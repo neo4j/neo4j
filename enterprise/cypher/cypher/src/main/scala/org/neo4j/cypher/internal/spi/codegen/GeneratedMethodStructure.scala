@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.spi.codegen
 
+import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 
@@ -899,13 +900,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType]) = {
-    if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
-      generator.assign(generator.declare(typeRef[LongLongHashMap], name),
-        createNewInstance(typeRef[LongLongHashMap]))
-    } else {
-      val local = generator.declare(typeRef[JHashMap[Object, java.lang.Long]], name)
-      generator.assign(local, createNewInstance(typeRef[JHashMap[Object, java.lang.Long]]))
-    }
+    val local = generator.declare(typeRef[util.LinkedHashMap[Object, java.lang.Long]], name)
+    generator.assign(local, createNewInstance(typeRef[util.LinkedHashMap[Object, java.lang.Long]]))
   }
 
   override def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType) = {
@@ -970,19 +966,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = generator.declare(typeRef[Long], valueVarName)
     locals += valueVarName -> local
 
-    if (key.size == 1 && key.head._2._1.repr == LongType) {
-      val (_, (_, keyExpression)) = key.head
-      generator.assign(local, invoke(generator.load(mapName), method[LongLongHashMap, Long]("get", typeRef[Long]), keyExpression))
-    } else {
-      newUniqueAggregationKey(keyVar, key)
-      generator.assign(local, unbox(
-        cast(typeRef[java.lang.Long],
-             invoke(generator.load(mapName),
-                    method[JHashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
-                                                                         typeRef[Object]),
-                    generator.load(keyVar), box(constantLong(0L), CodeGenType.javaLong))),
-        CypherCodeGenType(CTInteger, ReferenceType)))
-    }
+    newUniqueAggregationKey(keyVar, key)
+    generator.assign(local, unbox(
+      cast(typeRef[java.lang.Long],
+           invoke(generator.load(mapName),
+                  method[JHashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
+                                                                       typeRef[Object]),
+                  generator.load(keyVar), box(constantLong(0L), CodeGenType.javaLong))),
+      CypherCodeGenType(CTInteger, ReferenceType)))
   }
 
   override def checkDistinct(name: String, key: Map[String, (CodeGenType, Expression)], keyVar: String,
@@ -1092,78 +1083,49 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def aggregationMapPut(name: String, key: Map[String, (CodeGenType, Expression)], keyVar: String,
                                  value: Expression) = {
-    if (key.size == 1 && key.head._2._1.repr == LongType) {
-      val (_, (_, keyExpression)) = key.head
-      generator.expression(pop(invoke(generator.load(name),
-        method[LongLongHashMap, Long]("put", typeRef[Long], typeRef[Long]), keyExpression, value)))
-    } else {
-
-      if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
-      generator.expression(pop(invoke(generator.load(name),
-                                      method[JHashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
-                                                                                           typeRef[Object]),
-                                      generator.load(keyVar), box(value, CodeGenType.javaLong))))
-    }
+    if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
+    generator.expression(pop(invoke(generator.load(name),
+                                    method[JHashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
+                                                                                         typeRef[Object]),
+                                    generator.load(keyVar), box(value, CodeGenType.javaLong))))
   }
 
   override def aggregationMapIterate(name: String, keyTupleDescriptor: HashableTupleDescriptor, valueVar: String)
                                     (block: (MethodStructure[Expression]) => Unit) = {
     val key = keyTupleDescriptor.structure
-    if (key.size == 1 && key.head._2.repr == LongType) {
-      val (keyName, keyType) = key.head
-      val localName = context.namer.newVarName()
-      val variable = generator.declare(typeRef[LongIterator], localName)
-      generator.assign(variable,
-        invoke(
-          invoke(generator.load(name), method[LongLongHashMap, LongSet]("keySet")),
-          method[LongSet, LongIterator]("longIterator")
-        )
-      )
-      using(generator.whileLoop(
-        invoke(generator.load(localName), method[LongIterator, Boolean]("hasNext")))) { body =>
+    val localName = context.namer.newVarName()
+    val next = context.namer.newVarName()
+    val variable = generator
+      .declare(typeRef[JIterator[JMap.Entry[Object, java.lang.Long]]], localName)
+    val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
+    generator.assign(variable,
+                     invoke(invoke(generator.load(name),
+                            method[JHashMap[Object, java.lang.Long], JSet[JMap.Entry[Object, java.lang.Long]]]("entrySet")),
+                            method[JSet[JMap.Entry[Object, java.lang.Long]], JIterator[java.util.Map.Entry[Object, java.lang.Long]]]("iterator")))
+    using(generator.whileLoop(
+      invoke(generator.load(localName),
+             method[JIterator[JMap.Entry[Object, java.lang.Long]], Boolean]("hasNext")))) { body =>
+      body.assign(body.declare(typeRef[JMap.Entry[Object, java.lang.Long]], next),
+                  cast(typeRef[JMap.Entry[Object, java.lang.Long]],
+                       invoke(body.load(localName),
+                              method[JIterator[JMap.Entry[Object, java.lang.Long]], Object]("next"))))
+      key.foreach {
+        case (keyName, keyType) =>
 
-        body.assign(body.declare(typeRef[Long], keyName),
-          invoke(body.load(localName), method[LongIterator, Long]("next")))
-        body.assign(body.declare(typeRef[Long], valueVar),
-          invoke(body.load(name), method[LongLongHashMap, Long]("getIfAbsent", typeRef[Long]),
-            body.load(keyName), constantLong(-1L)))
-        block(copy(generator = body))
+          body.assign(body.declare(lowerType(keyType), keyName),
+                      Expression.get(
+                        cast(keyStruct,
+                             invoke(body.load(next),
+                                    method[JMap.Entry[Object, java.lang.Long], Object]("getKey"))),
+                        FieldReference.field(keyStruct, lowerType(keyType), keyName)))
       }
-    } else {
-      val localName = context.namer.newVarName()
-      val next = context.namer.newVarName()
-      val variable = generator
-        .declare(typeRef[JIterator[JMap.Entry[Object, java.lang.Long]]], localName)
-      val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
-      generator.assign(variable,
-                       invoke(invoke(generator.load(name),
-                              method[JHashMap[Object, java.lang.Long], JSet[JMap.Entry[Object, java.lang.Long]]]("entrySet")),
-                              method[JSet[JMap.Entry[Object, java.lang.Long]], JIterator[java.util.Map.Entry[Object, java.lang.Long]]]("iterator")))
-      using(generator.whileLoop(
-        invoke(generator.load(localName),
-               method[JIterator[JMap.Entry[Object, java.lang.Long]], Boolean]("hasNext")))) { body =>
-        body.assign(body.declare(typeRef[JMap.Entry[Object, java.lang.Long]], next),
-                    cast(typeRef[JMap.Entry[Object, java.lang.Long]],
-                         invoke(body.load(localName),
-                                method[JIterator[JMap.Entry[Object, java.lang.Long]], Object]("next"))))
-        key.foreach {
-          case (keyName, keyType) =>
 
-            body.assign(body.declare(lowerType(keyType), keyName),
-                        Expression.get(
-                          cast(keyStruct,
-                               invoke(body.load(next),
-                                      method[JMap.Entry[Object, java.lang.Long], Object]("getKey"))),
-                          FieldReference.field(keyStruct, lowerType(keyType), keyName)))
-        }
-
-        body.assign(body.declare(typeRef[Long], valueVar),
-                    unbox(cast(typeRef[java.lang.Long],
-                               invoke(body.load(next),
-                                      method[JMap.Entry[Object, java.lang.Long], Object]("getValue"))),
-                          CypherCodeGenType(CTInteger, ReferenceType)))
-        block(copy(generator = body))
-      }
+      body.assign(body.declare(typeRef[Long], valueVar),
+                  unbox(cast(typeRef[java.lang.Long],
+                             invoke(body.load(next),
+                                    method[JMap.Entry[Object, java.lang.Long], Object]("getValue"))),
+                        CypherCodeGenType(CTInteger, ReferenceType)))
+      block(copy(generator = body))
     }
   }
 

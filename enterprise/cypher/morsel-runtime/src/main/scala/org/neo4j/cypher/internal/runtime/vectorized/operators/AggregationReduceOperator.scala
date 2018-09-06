@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.{AggregationHelper, AggregationReducer}
 import org.neo4j.values.AnyValue
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable
 
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
@@ -74,7 +74,7 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets],
 
     private def aggregateInputs(inputMorsels: Array[MorselExecutionContext]) = {
       var morselPos = 0
-      val result = MutableMap[GroupingKey, Array[AggregationReducer]]()
+      val result =  mutable.LinkedHashMap[GroupingKey, Array[AggregationReducer]]()
       while (morselPos < inputMorsels.length) {
         val currentIncomingRow = inputMorsels(morselPos)
         while (currentIncomingRow.hasMoreRows) {
