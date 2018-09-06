@@ -23,7 +23,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -95,11 +94,7 @@ public abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAc
 
     private List<RandomValues.Types> listOfRandomValidValueTypes()
     {
-        List<RandomValues.Types> validValueTypes = new ArrayList<>( Arrays.asList( RandomValues.Types.values() ) );
-        if ( !testSuite.supportsSpatial() )
-        {
-            removeSpatialTypes( validValueTypes );
-        }
+        List<RandomValues.Types> validValueTypes = testSuite.supportedValueTypes();
         Collections.shuffle( validValueTypes, random.random() );
         int numberOfGroupsToUse = random.nextInt( 1, validValueTypes.size() - 1 );
         while ( validValueTypes.size() > numberOfGroupsToUse )
@@ -107,14 +102,6 @@ public abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAc
             validValueTypes.remove( validValueTypes.size() - 1 );
         }
         return validValueTypes;
-    }
-
-    private void removeSpatialTypes( List<RandomValues.Types> targetValueTypes )
-    {
-        targetValueTypes.remove( RandomValues.Types.CARTESIAN_POINT );
-        targetValueTypes.remove( RandomValues.Types.CARTESIAN_POINT_3D );
-        targetValueTypes.remove( RandomValues.Types.GEOGRAPHIC_POINT );
-        targetValueTypes.remove( RandomValues.Types.GEOGRAPHIC_POINT_3D );
     }
 
     private Value randomValueFromValidTypes( List<RandomValues.Types> validValueTypes )
