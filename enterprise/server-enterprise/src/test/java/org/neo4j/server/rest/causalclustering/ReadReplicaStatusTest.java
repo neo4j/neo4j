@@ -54,6 +54,7 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -157,10 +158,10 @@ public class ReadReplicaStatusTest
     }
 
     @Test
-    public void leaderIsReported() throws IOException
+    public void leaderIsOptional() throws IOException
     {
         Response description = status.description();
-        assertEquals( "", responseAsMap( description ).get( "leader" ) );
+        assertFalse( responseAsMap( description ).containsKey( "leader" ) );
 
         MemberId selectedLead = topologyService.allCoreServers()
                 .members()

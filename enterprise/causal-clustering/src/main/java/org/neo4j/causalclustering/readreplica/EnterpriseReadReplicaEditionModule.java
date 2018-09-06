@@ -49,8 +49,6 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
-import org.neo4j.causalclustering.catchup.tx.ReadReplicaLastAppliedTransactionMonitor;
-import org.neo4j.causalclustering.catchup.tx.TrackingLastAppliedTransactionMonitor;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -275,11 +273,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LifeSupport txPulling = new LifeSupport();
         int maxBatchSize = config.get( CausalClusteringSettings.read_replica_transaction_applier_batch_size );
-
-        // Used in the web interface to correctly report the transaction id
-        TrackingLastAppliedTransactionMonitor readReplicaLastAppliedTransactionMonitor = new TrackingLastAppliedTransactionMonitor();
-        dependencies.satisfyDependency( readReplicaLastAppliedTransactionMonitor );
-        platformModule.monitors.addMonitorListener( readReplicaLastAppliedTransactionMonitor );
 
         CommandIndexTracker commandIndexTracker = platformModule.dependencies.satisfyDependency( new CommandIndexTracker() );
         BatchingTxApplier batchingTxApplier = new BatchingTxApplier(

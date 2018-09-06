@@ -61,6 +61,7 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -102,7 +103,7 @@ public class CoreStatusTest
         topologyService = dependencyResolver.satisfyDependency(
                 new FakeTopologyService( Arrays.asList( core2, core3 ), Collections.singleton( replica ), myself, RoleInfo.FOLLOWER ) );
 
-        raftMessageTimerResetMonitor = dependencyResolver.satisfyDependency( new DurationSinceLastMessageMonitor( logProvider ) );
+        raftMessageTimerResetMonitor = dependencyResolver.satisfyDependency( new DurationSinceLastMessageMonitor() );
         raftMachine = dependencyResolver.satisfyDependency( mock( RaftMachine.class ) );
         commandIndexTracker = dependencyResolver.satisfyDependency( new CommandIndexTracker() );
 
@@ -176,12 +177,13 @@ public class CoreStatusTest
     }
 
     @Test
-    public void expectedStatusFieldsAreIncluded() throws IOException, NoLeaderFoundException
+    public void expectedStatusFieldsAreIncluded() throws IOException, NoLeaderFoundException, InterruptedException
     {
         // given ideal normal conditions
         commandIndexTracker.setAppliedCommandIndex( 123 );
         when( raftMachine.getLeader() ).thenReturn( core2 );
         raftMessageTimerResetMonitor.timerReset();
+        Thread.sleep( 1 ); // Sometimes the test can be fast. This guarantees at least 1 ms since message received
 
         // and helpers
         List<String> votingMembers =
@@ -206,7 +208,7 @@ public class CoreStatusTest
     public void notParticipatingInRaftGroupWhenNotInVoterSet() throws IOException
     {
         // given not in voting set
-        topologyService.replaceWithRole( core2, RoleInfo.LEADER ); // TODO necessary?
+        topologyService.replaceWithRole( core2, RoleInfo.LEADER );
         when( raftMembershipManager.votingMembers() ).thenReturn( new HashSet<>( Arrays.asList( core2, core3 ) ) );
 
         // when
@@ -236,7 +238,6 @@ public class CoreStatusTest
     {
         // given database is not healthy
         databaseHealth.panic( new RuntimeException() );
-        topologyService.replaceWithRole( myself, RoleInfo.LEADER ); // TODO necessary?
 
         // when
         Response description = status.description();
@@ -247,7 +248,7 @@ public class CoreStatusTest
     }
 
     @Test
-    public void leaderIsEmptyStringIfNonExistent() throws IOException
+    public void leaderNotIncludedIfUnknown() throws IOException
     {
         // given no leader
         topologyService.replaceWithRole( null, RoleInfo.LEADER );
@@ -257,7 +258,7 @@ public class CoreStatusTest
 
         // then
         Map<String,Object> response = responseAsMap( description );
-        assertThat( response, containsAndEquals( "leader", "" ) );
+        assertFalse( description.getEntity().toString(), response.containsKey( "leader" ) );
     }
 
     static RaftMembershipManager fakeRaftMembershipManager( Set<MemberId> votingMembers )

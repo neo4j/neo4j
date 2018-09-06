@@ -30,24 +30,15 @@ import org.neo4j.logging.LogProvider;
 public class DurationSinceLastMessageMonitor implements RaftMessageTimerResetMonitor
 {
     private long lastMessageNanos = -1;
-    private final Log log;
-
-    public DurationSinceLastMessageMonitor( LogProvider logProvider )
-    {
-        log = logProvider.getLog( DurationSinceLastMessageMonitor.class );
-        log.info( "Created duration tracker" );
-    }
 
     @Override
     public void timerReset()
     {
         lastMessageNanos = System.nanoTime();
-        log.info( "Timer reset" );
     }
 
     public Duration durationSinceLastMessage()
     {
-        log.info( "Duration retrieved" );
         return Duration.ofNanos( System.nanoTime() - lastMessageNanos );
     }
 }

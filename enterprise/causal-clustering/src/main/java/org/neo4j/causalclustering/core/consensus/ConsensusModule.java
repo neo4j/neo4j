@@ -149,7 +149,7 @@ public class ConsensusModule
                 config.get( refuse_to_be_leader ),
                 supportsPreVoting, platformModule.monitors );
 
-        DurationSinceLastMessageMonitor durationSinceLastMessageMonitor = new DurationSinceLastMessageMonitor( logProvider );
+        DurationSinceLastMessageMonitor durationSinceLastMessageMonitor = new DurationSinceLastMessageMonitor();
         platformModule.monitors.addMonitorListener( durationSinceLastMessageMonitor );
         platformModule.dependencies.satisfyDependency( durationSinceLastMessageMonitor );
 

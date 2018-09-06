@@ -23,8 +23,10 @@
 package org.neo4j.server.rest.causalclustering;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collection;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -54,7 +56,7 @@ abstract class BaseStatus implements CausalClusteringStatus
     }
 
     Response statusResponse( long lastAppliedRaftIndex, boolean isParticipatingInRaftGroup, Collection<MemberId> votingMembers, boolean isHealthy,
-            MemberId memberId, MemberId leader, Long millisSinceLastLeaderMessage, boolean isCore )
+            MemberId memberId, MemberId leader, Duration millisSinceLastLeaderMessage, boolean isCore )
     {
         String jsonObject;
         ObjectMapper objectMapper = new ObjectMapper();

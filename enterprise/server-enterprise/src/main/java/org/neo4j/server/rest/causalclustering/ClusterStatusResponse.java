@@ -22,11 +22,17 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import java.time.Duration;
 import java.util.Collection;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
+@JsonSerialize( include = JsonSerialize.Inclusion.NON_NULL )
 public class ClusterStatusResponse
 {
     private final boolean isCore;
@@ -39,22 +45,15 @@ public class ClusterStatusResponse
     private final Long millisSinceLastLeaderMessage;
 
     ClusterStatusResponse( long lastAppliedRaftIndex, boolean isParticipatingInRaftGroup, Collection<MemberId> votingMembers, boolean isHealthy,
-            MemberId memberId, MemberId leader, Long millisSinceLastLeaderMessage, boolean isCore )
+            MemberId memberId, MemberId leader, Duration millisSinceLastLeaderMessage, boolean isCore )
     {
         this.lastAppliedRaftIndex = lastAppliedRaftIndex;
         this.isParticipatingInRaftGroup = isParticipatingInRaftGroup;
         this.votingMembers = votingMembers.stream().map( member -> member.getUuid().toString() ).sorted().collect( Collectors.toList() );
         this.isHealthy = isHealthy;
         this.memberId = memberId.getUuid().toString();
-        if ( leader != null )
-        {
-            this.leader = leader.getUuid().toString();
-        }
-        else
-        {
-            this.leader = "";
-        }
-        this.millisSinceLastLeaderMessage = millisSinceLastLeaderMessage;
+        this.leader = Optional.ofNullable( leader ).map( MemberId::getUuid ).map( UUID::toString ).orElse( null );
+        this.millisSinceLastLeaderMessage = Optional.ofNullable( millisSinceLastLeaderMessage ).map( Duration::toMillis ).orElse( null );
         this.isCore = isCore;
     }
 

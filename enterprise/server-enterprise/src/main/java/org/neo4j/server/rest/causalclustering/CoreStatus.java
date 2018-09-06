@@ -22,6 +22,7 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,7 +106,7 @@ class CoreStatus extends BaseStatus
         boolean participatingInRaftGroup = votingMembers.contains( myself ) && Objects.nonNull( leader );
 
         long lastAppliedRaftIndex = commandIndexTracker.getAppliedCommandIndex();
-        long millisSinceLastLeaderMessage = raftMessageTimerResetMonitor.durationSinceLastMessage().toMillis();
+        Duration millisSinceLastLeaderMessage = raftMessageTimerResetMonitor.durationSinceLastMessage();
 
         return statusResponse( lastAppliedRaftIndex, participatingInRaftGroup, votingMembers, databaseHealth.isHealthy(), myself, leader,
                 millisSinceLastLeaderMessage, true );

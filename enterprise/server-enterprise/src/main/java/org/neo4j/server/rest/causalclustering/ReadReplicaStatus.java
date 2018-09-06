@@ -22,6 +22,7 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
+import java.time.Duration;
 import java.util.Collection;
 import javax.ws.rs.core.Response;
 
@@ -94,7 +95,7 @@ class ReadReplicaStatus extends BaseStatus
                 .orElse( null );
         long lastAppliedRaftIndex = commandIndexTracker.getAppliedCommandIndex();
         // leader message duration is meaningless for replicas since communication is not guaranteed with leader and transactions are streamed periodically
-        Long millisSinceLastLeaderMessage = null;
+        Duration millisSinceLastLeaderMessage = null;
         return statusResponse( lastAppliedRaftIndex, false, votingMembers, isHealthy, memberId, leader, millisSinceLastLeaderMessage, false );
     }
 }

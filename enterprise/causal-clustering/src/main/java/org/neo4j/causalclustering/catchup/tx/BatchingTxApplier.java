@@ -53,7 +53,6 @@ public class BatchingTxApplier extends LifecycleAdapter
     private final PullRequestMonitor monitor;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
-    private final ReadReplicaLastAppliedTransactionMonitor lastAppliedTransactionMonitor;
     private final CommandIndexTracker commandIndexTracker;
     private final Log log;
 
@@ -75,7 +74,6 @@ public class BatchingTxApplier extends LifecycleAdapter
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.log = logProvider.getLog( getClass() );
         this.monitor = monitors.newMonitor( PullRequestMonitor.class );
-        this.lastAppliedTransactionMonitor = monitors.newMonitor( ReadReplicaLastAppliedTransactionMonitor.class );
         this.versionContextSupplier = versionContextSupplier;
         this.commandIndexTracker = commandIndexTracker;
     }
@@ -89,7 +87,6 @@ public class BatchingTxApplier extends LifecycleAdapter
         {
             commitProcess.commit( first, NULL, EXTERNAL );
             pageCursorTracerSupplier.get().reportEvents();  // Report paging metrics for the commit
-            lastAppliedTransactionMonitor.applyTransaction( last.transactionId() );
             long lastAppliedRaftLogIndex = LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader( last.transactionRepresentation().additionalHeader() );
             commandIndexTracker.setAppliedCommandIndex( lastAppliedRaftLogIndex );
         } );
