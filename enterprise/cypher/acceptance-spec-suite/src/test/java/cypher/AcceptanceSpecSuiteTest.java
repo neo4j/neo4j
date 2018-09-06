@@ -32,8 +32,6 @@ import static cypher.SpecSuiteConstants.BLACKLIST_PLUGIN;
 import static cypher.SpecSuiteConstants.CYPHER_OPTION_PLUGIN;
 import static cypher.SpecSuiteConstants.DB_CONFIG;
 import static cypher.SpecSuiteConstants.GLUE_PATH;
-import static cypher.SpecSuiteConstants.HTML_REPORT;
-import static cypher.SpecSuiteConstants.JSON_REPORT;
 import static junit.framework.TestCase.fail;
 
 @RunWith( Enclosed.class )
@@ -71,8 +69,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "default.json",
-                    HTML_REPORT + SUITE_NAME + "/default",
-                    JSON_REPORT + SUITE_NAME + "/default",
                     BLACKLIST_PLUGIN + "default.txt"
             },
             glue = { GLUE_PATH },
@@ -88,8 +84,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "cost.json",
-                    HTML_REPORT + SUITE_NAME + "/cost",
-                    JSON_REPORT + SUITE_NAME + "/cost",
                     BLACKLIST_PLUGIN + "cost.txt"
             },
             glue = { GLUE_PATH },
@@ -105,8 +99,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "cost-compiled.json",
-                    HTML_REPORT + SUITE_NAME + "/cost-compiled",
-                    JSON_REPORT + SUITE_NAME + "/cost-compiled",
                     BLACKLIST_PLUGIN + "cost-compiled.txt"
             },
             glue = { GLUE_PATH },
@@ -122,8 +114,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "cost-compiled.json",
-                    HTML_REPORT + SUITE_NAME + "/cost-compiled-sourcecode",
-                    JSON_REPORT + SUITE_NAME + "/cost-compiled-sourcecode",
                     BLACKLIST_PLUGIN + "cost-compiled.txt",
                     CYPHER_OPTION_PLUGIN + "cost-compiled-sourcecode.txt"
             },
@@ -140,8 +130,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "cost-slotted.json",
-                    HTML_REPORT + SUITE_NAME + "/cost-slotted",
-                    JSON_REPORT + SUITE_NAME + "/cost-slotted",
                     BLACKLIST_PLUGIN + "cost-slotted.txt"
             },
             glue = { GLUE_PATH },
@@ -157,8 +145,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "compatibility-23.json",
-                    HTML_REPORT + SUITE_NAME + "/compatibility-23",
-                    JSON_REPORT + SUITE_NAME + "/compatibility-23",
                     BLACKLIST_PLUGIN + "compatibility-23.txt"
             },
             glue = { GLUE_PATH },
@@ -174,8 +160,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "compatibility-31.json",
-                    HTML_REPORT + SUITE_NAME + "/compatibility-31",
-                    JSON_REPORT + SUITE_NAME + "/compatibility-31",
                     BLACKLIST_PLUGIN + "compatibility-31.txt"
             },
             glue = { GLUE_PATH },
@@ -191,8 +175,6 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "compatibility-32.json",
-                    HTML_REPORT + SUITE_NAME + "/compatibility-32",
-                    JSON_REPORT + SUITE_NAME + "/compatibility-32",
                     BLACKLIST_PLUGIN + "compatibility-32.txt"
             },
             glue = { GLUE_PATH },

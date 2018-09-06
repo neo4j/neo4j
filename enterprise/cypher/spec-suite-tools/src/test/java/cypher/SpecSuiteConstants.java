@@ -23,8 +23,6 @@ interface SpecSuiteConstants
 {
     String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/db-config/";
     String GLUE_PATH = "classpath:cypher/feature/steps";
-    String HTML_REPORT = "html:target/";
-    String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/";
     String BLACKLIST_PLUGIN = "cypher.cucumber.BlacklistPlugin:/blacklists/";
     String CYPHER_OPTION_PLUGIN = "cypher.cucumber.CypherOptionPlugin:/cypher-options/";
 }
