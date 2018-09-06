@@ -37,9 +37,6 @@ import static java.lang.System.nanoTime;
  * Subclasses implement {@link #process(Object, BatchSender)} receiving the batch to process
  * and an {@link BatchSender} for sending the modified batch, or other batches downstream.
  *
- * There's an overlap of functionality in {@link TicketedProcessing}, however the fit isn't perfect
- * for using it as the engine in a {@link ProcessorStep} because the queuing of processed results
- * works a bit differently. Perhaps sometimes this can be addressed.
  */
 public abstract class ProcessorStep<T> extends AbstractStep<T>
 {

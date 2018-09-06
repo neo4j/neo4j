@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -42,8 +41,7 @@ import static java.util.Arrays.asList;
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
  * and then a function for generating the nodes and another for generating the relationships.
- * Data can be generated in parallel and so those generator functions accepts a {@link Range} for which
- * an array of input objects are generated, everything else will be taken care of. So typical usage would be:
+ * So typical usage would be:
  *
  * <pre>
  * {@code
