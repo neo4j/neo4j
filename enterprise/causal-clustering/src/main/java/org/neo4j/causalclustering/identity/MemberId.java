@@ -37,6 +37,9 @@ public class MemberId implements Serializable
 {
     private static final long serialVersionUID = -984540169345015775L;
     private final UUID uuid;
+    // for serialization compatibility with previous versions this field should not be removed.
+    @SuppressWarnings( {"unused", "FieldMayBeStatic"} )
+    private final String shortName = "";
 
     public MemberId( UUID uuid )
     {

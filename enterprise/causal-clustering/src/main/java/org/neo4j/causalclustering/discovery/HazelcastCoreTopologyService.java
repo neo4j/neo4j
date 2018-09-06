@@ -381,12 +381,12 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
 
         if ( localStepDownInfo.isPresent() )
         {
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, localStepDownInfo.get(), localDBName );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, localStepDownInfo.get(), localDBName, log );
             stepDownInfo.compareAndSet( localStepDownInfo, Optional.empty() );
         }
         else if ( localLeaderInfo.memberId() != null && localLeaderInfo.memberId().equals( myself ) )
         {
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, localLeaderInfo, localDBName );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, localLeaderInfo, localDBName, log );
         }
 
         coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );

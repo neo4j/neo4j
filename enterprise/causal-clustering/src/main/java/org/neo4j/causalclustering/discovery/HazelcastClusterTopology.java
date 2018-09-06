@@ -23,7 +23,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;
@@ -216,7 +215,7 @@ public final class HazelcastClusterTopology
         return result;
     }
 
-    static void casLeaders( HazelcastInstance hazelcastInstance, LeaderInfo leaderInfo, String dbName )
+    static void casLeaders( HazelcastInstance hazelcastInstance, LeaderInfo leaderInfo, String dbName, Log log )
     {
         IAtomicReference<LeaderInfo> leaderRef = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
 
@@ -236,7 +235,11 @@ public final class HazelcastClusterTopology
             return;
         }
 
-        leaderRef.compareAndSet( current, leaderInfo );
+        boolean success = leaderRef.compareAndSet( current, leaderInfo );
+        if ( !success )
+        {
+            log.warn( "Fail to set new leader info: %s. Latest leader info: %s.", leaderInfo, leaderRef.get() );
+        }
     }
 
     private static Optional<LeaderInfo> getLeaderForDBName( HazelcastInstance hazelcastInstance, String dbName )

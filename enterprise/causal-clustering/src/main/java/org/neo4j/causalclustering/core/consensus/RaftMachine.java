@@ -82,7 +82,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
     private final Log log;
-    private Role currentRole = Role.FOLLOWER;
+    private volatile Role currentRole = Role.FOLLOWER;
 
     private RaftLogShippingManager logShipping;
 

@@ -35,7 +35,7 @@ public class LeaderInfo implements Serializable
 
     private final MemberId memberId;
     private final long term;
-    private boolean isSteppingDown;
+    private final boolean isSteppingDown;
 
     public LeaderInfo( MemberId memberId, long term )
     {
