@@ -49,12 +49,16 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan) extends Expre
         Some(runtimeExpression.ReferenceFromSlot(offset))
       case runtimeAst.NodeProperty(offset, token, _) =>
         Some(runtimeExpression.NodeProperty(offset, token))
+      case runtimeAst.CachedNodeProperty(offset, token, cachedPropertyOffset) =>
+        Some(runtimeExpression.SlottedCachedNodeProperty(offset, token, cachedPropertyOffset))
       case runtimeAst.RelationshipProperty(offset, token, _) =>
         Some(runtimeExpression.RelationshipProperty(offset, token))
       case runtimeAst.IdFromSlot(offset) =>
         Some(runtimeExpression.IdFromSlot(offset))
       case runtimeAst.NodePropertyLate(offset, propKey, _) =>
         Some(runtimeExpression.NodePropertyLate(offset, propKey))
+      case runtimeAst.CachedNodePropertyLate(offset, propertyKey, cachedPropertyOffset) =>
+        Some(runtimeExpression.SlottedCachedNodePropertyLate(offset, propertyKey, cachedPropertyOffset))
       case runtimeAst.RelationshipPropertyLate(offset, propKey, _) =>
         Some(runtimeExpression.RelationshipPropertyLate(offset, propKey))
       case runtimeAst.PrimitiveEquals(a, b) =>

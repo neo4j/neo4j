@@ -279,7 +279,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     registerTestProcedures()
     val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 CALL org.neo4j.setProperty(n, 'prop1', 'newValue') YIELD node RETURN n.prop1"
     val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query)
-    assertIndexSeekWithValues(result)
+    assertIndexSeek(result)
     result.toList should equal(List(Map("n.prop1" -> "newValue")))
   }
 
@@ -287,14 +287,20 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     registerTestProcedures()
     val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 CALL org.neo4j.setProperty(n, 'prop1', null) YIELD node RETURN n.prop1"
     val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query)
-    assertIndexSeekWithValues(result)
+    assertIndexSeek(result)
     result.toList should equal(List(Map("n.prop1" -> null)))
+  }
+
+  private def assertIndexSeek(result: RewindableExecutionResult) = {
+    result.executionPlanDescription() should
+      includeSomewhere.aPlan("NodeIndexSeek")
+        .containingVariables("n")
   }
 
   private def assertIndexSeekWithValues(result: RewindableExecutionResult) = {
     result.executionPlanDescription() should
       includeSomewhere.aPlan("NodeIndexSeek")
-        .withExactVariables("n", "n.prop1")
+        .containingVariables("n", "n.prop1")
   }
 
   private def registerTestProcedures(): Unit = {

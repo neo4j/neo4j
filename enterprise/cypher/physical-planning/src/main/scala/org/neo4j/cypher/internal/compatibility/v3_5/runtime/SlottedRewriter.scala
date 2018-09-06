@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttr
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NestedPlanExpression, Projection, VarExpand, _}
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions.{FunctionInvocation, functions => frontendFunctions, _}
@@ -165,6 +166,18 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
           case RefSlot(offset, _, _) =>
             prop.copy(map = ReferenceFromSlot(offset, key))(prop.position)
+        }
+
+      case prop@plans.CachedNodeProperty(nodeVariableName, PropertyKeyName(propKey)) =>
+        slotConfiguration(nodeVariableName) match {
+          case LongSlot(offset, _, CTNode) =>
+            tokenContext.getOptPropertyKeyId(propKey) match {
+              case Some(propId) => ast.CachedNodeProperty(offset, propId, slotConfiguration(prop.name).offset)(prop)
+              case None => ast.CachedNodePropertyLate(offset, propKey, slotConfiguration(prop.name).offset)(prop)
+            }
+
+          case slot: Slot =>
+            throw new InternalException(s"We only support cached node properties on known nodes (from index seeks), got slot '$slot'")
         }
 
       case e@Equals(Variable(k1), Variable(k2)) =>

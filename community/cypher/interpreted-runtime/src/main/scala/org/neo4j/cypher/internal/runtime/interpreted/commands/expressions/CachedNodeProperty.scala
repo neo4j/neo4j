@@ -19,38 +19,63 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.opencypher.v9_0.util.CypherTypeException
 
-case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, cachedName: String)
-  extends Expression with Product with Serializable
-{
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
-    ctx(nodeName) match {
-      case Values.NO_VALUE => Values.NO_VALUE
-      case n: VirtualNodeValue =>
-        propertyKey.getOptId(state.query) match {
-          case None => Values.NO_VALUE
-          case Some(propId) =>
-            val maybeTxStateValue = state.query.nodeOps.getTxStateProperty(n.id(), propId)
-            maybeTxStateValue match {
-              case Some(txStateValue) => txStateValue
-              case None => ctx(cachedName)
-            }
-        }
-      case other => throw new CypherTypeException(s"Type mismatch: expected a node but was $other")
+abstract class CachedNodePropertyLogic extends Expression {
+
+  // abstract stuff
+
+  def getNodeId(ctx: ExecutionContext): Long
+  def getPropertyKey(tokenContext: TokenContext): Int
+  def getCachedProperty(ctx: ExecutionContext): AnyValue
+
+  // encapsulated cached-node-property logic
+
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val nodeId = getNodeId(ctx)
+    if (nodeId == StatementConstants.NO_SUCH_NODE)
+      Values.NO_VALUE
+    else {
+      getPropertyKey(state.query) match {
+        case StatementConstants.NO_SUCH_PROPERTY_KEY => Values.NO_VALUE
+        case propId =>
+          val maybeTxStateValue = state.query.nodeOps.getTxStateProperty(nodeId, propId)
+          maybeTxStateValue match {
+            case Some(txStateValue) => txStateValue
+            case None => getCachedProperty(ctx)
+          }
+      }
     }
+  }
 
-  def rewrite(f: Expression => Expression) = f(this)
+  override def rewrite(f: Expression => Expression) = f(this)
 
-  def arguments = Seq()
+  override def arguments: Seq[Expression] = Seq()
+}
 
+case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, cachedName: String)
+  extends CachedNodePropertyLogic with Product with Serializable
+{
   def symbolTableDependencies = Set(nodeName, cachedName)
 
   override def toString: String = cachedName
+
+  override def getNodeId(ctx: ExecutionContext): Long =
+    ctx(nodeName) match {
+      case Values.NO_VALUE => StatementConstants.NO_SUCH_NODE
+      case n: VirtualNodeValue => n.id()
+      case other => throw new CypherTypeException(s"Type mismatch: expected a node but was $other")
+    }
+
+  override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx(cachedName)
+
+  override def getPropertyKey(tokenContext: TokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
 }

@@ -57,7 +57,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
   }
 
   // Expressions that do not get anything in their context from this expression.
-  def arguments:Seq[Expression]
+  def arguments: Seq[Expression]
 
   // Any expressions that this expression builds on
   def children: Seq[AstNode[_]] = arguments
