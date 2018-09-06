@@ -30,6 +30,10 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 
+import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanWriter.rangeOf;
+import static org.neo4j.storageengine.api.schema.LabelScanReader.NO_ID;
+
 /**
  * {@link LongIterator} which iterate over multiple {@link LabelScanValue} and for each
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
@@ -109,16 +113,22 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
             }
 
             Hit<LabelScanKey,LabelScanValue> hit = cursor.get();
-            baseNodeId = hit.key().idRange * LabelScanValue.RANGE_SIZE;
+            baseNodeId = hit.key().idRange * RANGE_SIZE;
             bits = hit.value().bits;
 
-            if ( fromId > 0 )
+            if ( fromId != NO_ID )
             {
                 // If we've been told to start at a specific id then trim off ids in this range less than or equal to that id
-                long relativeStartId = fromId % LabelScanValue.RANGE_SIZE;
-                bits &= ~((1L << (relativeStartId + 1)) - 1);
+                long range = rangeOf( fromId );
+                if ( range == hit.key().idRange )
+                {
+                    // Only do this if we're in the idRange that fromId is in, otherwise there were no ids this time in this range
+                    long relativeStartId = fromId % RANGE_SIZE;
+                    long mask = relativeStartId == RANGE_SIZE - 1 ? -1 : (1L << (relativeStartId + 1)) - 1;
+                    bits &= ~mask;
+                }
                 // ... and let's not do that again, only for the first idRange
-                fromId = 0;
+                fromId = NO_ID;
             }
 
             //noinspection AssertWithSideEffects

@@ -240,7 +240,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor client = (DefaultNodeLabelIndexCursor) cursor;
         client.setRead( this );
-        client.unionScan( new NodeLabelIndexProgressor( labelScanReader().nodesWithAnyOfLabels( 0, labels ), client ),
+        client.unionScan( new NodeLabelIndexProgressor( labelScanReader().nodesWithAnyOfLabels( labels ), client ),
                 false, labels );
     }
 

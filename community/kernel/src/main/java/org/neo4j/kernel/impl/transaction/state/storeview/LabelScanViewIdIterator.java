@@ -36,7 +36,7 @@ class LabelScanViewIdIterator implements EntityIdIterator
     LabelScanViewIdIterator( LabelScanReader labelScanReader, int[] labelIds )
     {
         this.labelScanReader = labelScanReader;
-        this.idIterator = labelScanReader.nodesWithAnyOfLabels( 0, labelIds );
+        this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds );
         this.labelIds = labelIds;
     }
 

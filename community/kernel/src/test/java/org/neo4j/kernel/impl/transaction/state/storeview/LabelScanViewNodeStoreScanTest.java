@@ -64,7 +64,7 @@ public class LabelScanViewNodeStoreScanTest
         PrimitiveLongResourceIterator labeledNodes = PrimitiveLongResourceCollections.iterator( null, 1, 2, 4, 8 );
 
         when( nodeStore.getHighId() ).thenReturn( 15L );
-        when( labelScanReader.nodesWithAnyOfLabels( 0, 1, 2 ) ).thenReturn( labeledNodes );
+        when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) ).thenReturn( labeledNodes );
 
         int[] labelIds = new int[]{1, 2};
 
