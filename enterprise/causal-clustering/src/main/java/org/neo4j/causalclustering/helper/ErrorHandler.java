@@ -44,14 +44,7 @@ public class ErrorHandler implements AutoCloseable
         {
             for ( ThrowingRunnable action : actions )
             {
-                try
-                {
-                    action.run();
-                }
-                catch ( Throwable e )
-                {
-                    errorHandler.add( e );
-                }
+                errorHandler.execute( action );
             }
         }
     }
@@ -59,6 +52,18 @@ public class ErrorHandler implements AutoCloseable
     public ErrorHandler( String message )
     {
         this.message = message;
+    }
+
+    public void execute( ThrowingRunnable throwingRunnable )
+    {
+        try
+        {
+            throwingRunnable.run();
+        }
+        catch ( Throwable e )
+        {
+            throwables.add( e );
+        }
     }
 
     public void add( Throwable throwable )

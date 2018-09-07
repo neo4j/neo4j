@@ -264,18 +264,11 @@ public abstract class Cluster<T extends DiscoveryServiceFactory>
     @SuppressWarnings( "unchecked" )
     private static void shutdownMembers( Collection<? extends ClusterMember> clusterMembers, ErrorHandler errorHandler )
     {
-        try
+        errorHandler.execute( () -> combine( invokeAll( "cluster-shutdown", clusterMembers, cm ->
         {
-            combine( invokeAll( "cluster-shutdown", clusterMembers, cm ->
-            {
-                cm.shutdown();
-                return null;
-            } ) ).get();
-        }
-        catch ( Exception e )
-        {
-            errorHandler.add( e );
-        }
+            cm.shutdown();
+            return null;
+        } ) ).get() );
     }
 
     private static <X extends GraphDatabaseAPI, T extends ClusterMember<X>, R> List<Future<R>> invokeAll( String threadName, Collection<T> members,

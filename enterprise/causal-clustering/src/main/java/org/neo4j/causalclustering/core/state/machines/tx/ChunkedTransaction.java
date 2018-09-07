@@ -60,29 +60,9 @@ class ChunkedTransaction implements ChunkedInput<ByteBuf>
         {
             if ( channel != null )
             {
-                try
-                {
-                    channel.close();
-                }
-                catch ( Throwable t )
-                {
-                    errorHandler.add( t );
-                }
+                errorHandler.execute( () -> channel.close() );
             }
-            if ( !chunks.isEmpty() )
-            {
-                for ( ByteBuf byteBuf : chunks )
-                {
-                    try
-                    {
-                        ReferenceCountUtil.release( byteBuf );
-                    }
-                    catch ( Throwable t )
-                    {
-                        errorHandler.add( t );
-                    }
-                }
-            }
+            chunks.forEach( byteBuf -> errorHandler.execute( () -> ReferenceCountUtil.release( byteBuf ) ) );
         }
     }
 
