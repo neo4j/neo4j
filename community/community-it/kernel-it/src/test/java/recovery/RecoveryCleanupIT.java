@@ -64,7 +64,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 
 public class RecoveryCleanupIT
@@ -152,10 +151,27 @@ public class RecoveryCleanupIT
     }
 
     @Test
-    public void nativeIndexMustLogCrashPointerCleanupDuringRecovery() throws Exception
+    public void nativeIndexFusion10MustLogCrashPointerCleanupDuringRecovery() throws Exception
+    {
+        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE10, "native", "spatial", "temporal" );
+    }
+
+    @Test
+    public void nativeIndexFusion20MustLogCrashPointerCleanupDuringRecovery() throws Exception
+    {
+        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE20, "string", "native", "spatial", "temporal" );
+    }
+
+    @Test
+    public void nativeIndexBTreeMustLogCrashPointerCleanupDuringRecovery() throws Exception
+    {
+        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, "index" );
+    }
+
+    private void nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex setting, String... subTypes ) throws Exception
     {
         // given
-        setTestConfig( GraphDatabaseSettings.default_schema_provider, NATIVE20.providerIdentifier() );
+        setTestConfig( GraphDatabaseSettings.default_schema_provider, setting.providerIdentifier() );
         dirtyDatabase();
 
         // when
@@ -165,7 +181,6 @@ public class RecoveryCleanupIT
 
         // then
         List<Matcher<String>> matchers = new ArrayList<>();
-        String[] subTypes = new String[]{"string", "native", "spatial", "temporal"};
         for ( String subType : subTypes )
         {
             matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job registered", subType ) );
