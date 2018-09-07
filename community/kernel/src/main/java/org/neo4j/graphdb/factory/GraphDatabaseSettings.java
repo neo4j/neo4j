@@ -623,26 +623,17 @@ public class GraphDatabaseSettings implements LoadableConfig
         }
     }
 
-    @Description( "Index provider to use for newly created schema indexes. " +
+    @Description(
+            "Index provider to use for newly created schema indexes. " +
             "An index provider may store different value types in separate physical indexes. " +
-            "lucene-1.0: Store spatial and temporal value types in native indexes, remaining value types in a Lucene index. " +
-            "lucene+native-1.0: Store numbers in a native index and remaining value types like lucene-1.0. " +
-            "This improves read and write performance for non-composite indexed numbers. " +
-            "lucene+native-2.0: Store strings in a native index and remaining value types like lucene+native-1.0. " +
-            "This improves write performance for non-composite indexed strings. " +
-            "This version of the native string index has a value limit of 4039 bytes, such that byte-representation " +
-            "of a string to index cannot be larger than that limit, or the transaction trying to index such a value will fail. " +
-            "This version of the native string index also has reduced performance for CONTAINS and ENDS WITH queries, " +
-            "due to resorting to index scan+filter internally. " +
-            "native-btree-1.0: Store all value, including composite value, in native index. " +
-            "Just like lucene+native-2.0 there is a value size limit of 4039 bytes. For composite indexes this limit is for all of the values in " +
-            "the indexed key combined. The same limitations for CONTAINS and ENDS WITH queries as for lucene+native-2.0 also applies" +
-            "to native-btree-1.0." +
-            "Native indexes generally has these benefits over Lucene:\n" +
-            "- Faster writes\n" +
-            "- Less garbage and heap presence\n" +
-            "- Less CPU resources per operation\n" +
-            "- Controllable memory usage, due to being bound by the page cache" )
+            "lucene-1.0: Spatial and temporal value types are stored in native indexes, remaining value types in Lucene index. " +
+            "lucene+native-1.0: Spatial, temporal and number value types are stored in native indexes and remaining value types in Lucene index. " +
+            "lucene+native-2.0: Spatial, temporal, number and string value types are stored in native indexes and remaining value types in Lucene index. " +
+            "native-btree-1.0: All value types and arrays of all value types, even composite keys, are stored in one native index. " +
+            "A native index has faster updates, less heap and CPU usage compared to a Lucene index. " +
+            "A native index has these limitations: " +
+            "Index key (be it single or composite) size limit of 4039 bytes - transaction resulting in index key surpassing that will fail. " +
+            "Reduced performance of CONTAINS and ENDS WITH string index queries, compared to a Lucene index." )
     public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
                     optionsIgnoreCase( NATIVE20.providerIdentifier(), NATIVE10.providerIdentifier(), LUCENE10.providerIdentifier(),
