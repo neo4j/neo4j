@@ -67,11 +67,7 @@ public class BatchInsertIndexProviderTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<GraphDatabaseSettings.SchemaIndex> data()
     {
-        return Arrays.asList(
-                GraphDatabaseSettings.SchemaIndex.LUCENE10,
-                GraphDatabaseSettings.SchemaIndex.NATIVE10,
-                GraphDatabaseSettings.SchemaIndex.NATIVE20
-        );
+        return Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() );
     }
 
     public BatchInsertIndexProviderTest( GraphDatabaseSettings.SchemaIndex schemaIndex )
