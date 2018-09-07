@@ -27,7 +27,9 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 
-import java.util.Objects;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.util.Preconditions.requireNonNegative;
+import static org.neo4j.util.Preconditions.requirePositive;
 
 public class ByteArrayChunkedEncoder implements ChunkedInput<ByteBuf>
 {
@@ -35,19 +37,13 @@ public class ByteArrayChunkedEncoder implements ChunkedInput<ByteBuf>
     private final byte[] content;
     private int chunkSize;
     private int pos;
+    private boolean hasRead;
 
     ByteArrayChunkedEncoder( byte[] content, int chunkSize )
     {
-        Objects.requireNonNull( content, "content cannot be null" );
-        int minChunkSize = 5;
-        if ( content.length == 0 )
-        {
-            throw new IllegalArgumentException( "Content cannot be an empty array" );
-        }
-        if ( chunkSize < minChunkSize )
-        {
-            throw new IllegalArgumentException( "Illegal chunk size. Must be at least " + minChunkSize );
-        }
+        requireNonNull( content, "content cannot be null" );
+        requireNonNegative( content.length );
+        requirePositive( chunkSize );
         this.content = content;
         this.chunkSize = chunkSize;
     }
@@ -65,7 +61,7 @@ public class ByteArrayChunkedEncoder implements ChunkedInput<ByteBuf>
     @Override
     public boolean isEndOfInput()
     {
-        return pos == content.length;
+        return pos == content.length && hasRead;
     }
 
     @Override
@@ -83,6 +79,7 @@ public class ByteArrayChunkedEncoder implements ChunkedInput<ByteBuf>
     @Override
     public ByteBuf readChunk( ByteBufAllocator allocator )
     {
+        hasRead = true;
         if ( isEndOfInput() )
         {
             return null;

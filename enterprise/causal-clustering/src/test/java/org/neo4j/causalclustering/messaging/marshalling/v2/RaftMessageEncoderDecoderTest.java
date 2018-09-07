@@ -53,6 +53,7 @@ import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
+import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.TokenType;
@@ -86,6 +87,7 @@ public class RaftMessageEncoderDecoderTest
     public static Object[] data()
     {
         return setUpParams( new RaftMessages.RaftMessage[]{new RaftMessages.Heartbeat( MEMBER_ID, 1, 2, 3 ), new RaftMessages.HeartbeatResponse( MEMBER_ID ),
+                new RaftMessages.NewEntry.Request( MEMBER_ID, new DummyRequest( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) ),
                 new RaftMessages.NewEntry.Request( MEMBER_ID, ReplicatedTransaction.from( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) ),
                 new RaftMessages.NewEntry.Request( MEMBER_ID, ReplicatedTransaction.from( new PhysicalTransactionRepresentation( Collections.emptyList() ) ) ),
                 new RaftMessages.NewEntry.Request( MEMBER_ID, new DistributedOperation(

@@ -81,6 +81,14 @@ public class DummyRequest implements CoreReplicatedContent
         return new ByteArrayChunkedEncoder( array );
     }
 
+    public static DummyRequest decode( ByteBuf byteBuf )
+    {
+        int length = byteBuf.readableBytes();
+        byte[] array = new byte[length];
+        byteBuf.readBytes( array );
+        return new DummyRequest( array );
+    }
+
     public static class Marshal extends SafeChannelMarshal<DummyRequest>
     {
         public static final Marshal INSTANCE = new Marshal();

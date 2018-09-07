@@ -80,6 +80,8 @@ public class CoreReplicatedContentMarshal
         {
             return ContentBuilder.finished( ReplicatedTransactionSerializer.decode( buffer ) );
         }
+        case DUMMY_REQUEST:
+            return ContentBuilder.finished( DummyRequest.decode( buffer ) );
         default:
             return unmarshal( contentType, new NetworkReadableClosableChannelNetty4( buffer ) );
         }
