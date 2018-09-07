@@ -81,7 +81,10 @@ class SimpleScheduler(executor: Executor, waitTimeout: Duration) extends Schedul
             case e: TimeoutException =>
               // got tired of waiting for future to complete, put it back into the queue
               newInFlightTasks += future
-            case e: Exception =>
+            case e: ExecutionException =>
+              queryTracer.stopQuery()
+              return Some(e.getCause)
+            case e =>
               queryTracer.stopQuery()
               return Some(e)
           }
