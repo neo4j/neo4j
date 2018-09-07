@@ -257,7 +257,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               executeExpectedFailures: Boolean,
                               rollback: Boolean = true) = {
 
-    def execute = {
+    def execute() = {
       executeBefore()
       val tryRes =
         if (expectedToSucceed || executeExpectedFailures)
@@ -276,7 +276,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       tryRes
     }
 
-    val tryResult = if (rollback) graph.rollback(execute) else execute
+    val tryResult = if (rollback) graph.rollback(execute()) else graph.inTx(execute())
 
     if (expectedToSucceed) {
       tryResult match {
