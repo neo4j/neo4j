@@ -23,53 +23,45 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
 
 public class NonUniqueIndexTest
 {
+    private static final String LABEL = "SomeLabel";
+    private static final String KEY = "key";
+    private static final String VALUE = "value";
+
     @Rule
     public PageCacheAndDependenciesRule resources =
             new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, NonUniqueIndexTest.class );
@@ -80,32 +72,46 @@ public class NonUniqueIndexTest
         // Given
         Config config = Config.defaults();
         GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler( config );
-
-        // When
-        try ( Transaction tx = db.beginTx() )
+        try
         {
-            db.schema().indexFor( label( "SomeLabel" ) ).on( "key" ).create();
-            tx.success();
-        }
-        Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = db.createNode( label( "SomeLabel" ) );
-            node.setProperty( "key", "value" );
-            tx.success();
-        }
+            // When
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().indexFor( label( LABEL ) ).on( KEY ).create();
+                tx.success();
+            }
+            Node node;
+            try ( Transaction tx = db.beginTx() )
+            {
+                node = db.createNode( label( LABEL ) );
+                node.setProperty( KEY, VALUE );
+                tx.success();
+            }
 
-        // Await index population before shutdown, because db.shutdown won't await it. After shutdown this test verifies
-        // the index directly through the index provider so it must have been populated for that to work properly.
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 1, MINUTES );
-            tx.success();
-        }
-        db.shutdown();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, MINUTES );
+                tx.success();
+            }
 
-        // Then
-        assertThat( nodeIdsInIndex( config, 1, "value" ), equalTo( singletonList( node.getId() ) ) );
+            // Then
+            try ( Transaction tx = db.beginTx() )
+            {
+                KernelTransaction ktx = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
+                        ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+                IndexReference index = ktx.schemaRead().index( ktx.tokenRead().nodeLabel( LABEL ), ktx.tokenRead().propertyKey( KEY ) );
+                NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
+                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exact( 1, VALUE ) );
+                assertTrue( cursor.next() );
+                assertEquals( node.getId(), cursor.nodeReference() );
+                assertFalse( cursor.next() );
+                tx.success();
+            }
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler( Config config )
@@ -155,41 +161,5 @@ public class NonUniqueIndexTest
             LockSupport.parkNanos( 100_000_000L );
             target.run();
         };
-    }
-
-    private List<Long> nodeIdsInIndex( Config config, int indexId, String value ) throws Exception
-    {
-        PageCache pageCache = resources.pageCache();
-        File databaseDirectory = resources.directory().databaseDir();
-        FileSystemAbstraction fs = resources.fileSystem();
-        IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        OperationalMode operationalMode = OperationalMode.single;
-        IndexProvider indexProvider = selectIndexProvider( pageCache, databaseDirectory, fs, monitor, config, operationalMode );
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                forSchema( forLabel( 0, 0 ), indexProvider.getProviderDescriptor() ).withId( indexId ), samplingConfig );
-              IndexReader reader = accessor.newReader() )
-        {
-            return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );
-        }
-    }
-
-    private static IndexProvider selectIndexProvider( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
-            Config config, OperationalMode operationalMode )
-    {
-        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        if ( LUCENE10.providerIdentifier().equals( defaultSchemaProvider ) )
-        {
-            return LuceneIndexProviderFactory
-                    .newInstance( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
-        }
-        else if ( NATIVE10.providerIdentifier().equals( defaultSchemaProvider ) )
-        {
-            return NativeLuceneFusionIndexProviderFactory10
-                    .create( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
-        }
-        return NativeLuceneFusionIndexProviderFactory20
-                .create( pageCache, databaseDirectory, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 }
