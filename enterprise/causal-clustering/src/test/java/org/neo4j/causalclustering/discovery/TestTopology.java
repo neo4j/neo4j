@@ -70,28 +70,31 @@ public class TestTopology
                 .build();
     }
 
+    public static Config configFor( ReadReplicaInfo readReplicaInfo )
+    {
+        return Config.builder()
+                .withSetting( "dbms.connector.bolt.listen_address", readReplicaInfo.connectors().boltAddress().toString() )
+                .withSetting( "dbms.connector.bolt.enabled", String.valueOf( true ) )
+                .withSetting( CausalClusteringSettings.transaction_advertised_address, readReplicaInfo.getCatchupServer().toString() )
+                .withSetting( CausalClusteringSettings.server_groups, String.join( ",", readReplicaInfo.groups() ) )
+                .withSetting( CausalClusteringSettings.database, readReplicaInfo.getDatabaseName() )
+                .build();
+    }
+
     public static ReadReplicaInfo addressesForReadReplica( int id )
     {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", 6000 + id );
+        AdvertisedSocketAddress clientConnectorSocketAddress = new AdvertisedSocketAddress( "localhost", 6000 + id );
         ClientConnectorAddresses clientConnectorAddresses = new ClientConnectorAddresses(
-                singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
+                singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, clientConnectorSocketAddress ) ) );
+        AdvertisedSocketAddress catchupSocketAddress = new AdvertisedSocketAddress( "localhost", 4000 + id );
 
-        return new ReadReplicaInfo( clientConnectorAddresses, advertisedSocketAddress,
+        return new ReadReplicaInfo( clientConnectorAddresses, catchupSocketAddress,
                 asSet( "replica", "replica" + id ), "default" );
     }
 
     public static Map<MemberId,ReadReplicaInfo> readReplicaInfoMap( int... ids )
     {
-        return Arrays.stream( ids ).mapToObj( TestTopology::readReplicaInfo ).collect( Collectors
+        return Arrays.stream( ids ).mapToObj( TestTopology::addressesForReadReplica ).collect( Collectors
                 .toMap( p -> new MemberId( UUID.randomUUID() ), Function.identity() ) );
-    }
-
-    private static ReadReplicaInfo readReplicaInfo( int id )
-    {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", 6000 + id );
-        return new ReadReplicaInfo(
-                new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) ),
-                new AdvertisedSocketAddress( "localhost", 4000 + id ),
-                asSet( "replica", "replica" + id ), "default" );
     }
 }
