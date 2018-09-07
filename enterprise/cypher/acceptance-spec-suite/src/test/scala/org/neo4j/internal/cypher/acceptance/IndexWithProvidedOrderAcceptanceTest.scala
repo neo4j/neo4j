@@ -22,8 +22,6 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.LocalDate
-
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
@@ -83,6 +81,34 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
       Map("n.prop2" -> 7), Map("n.prop2" -> 7),
       Map("n.prop2" -> 8), Map("n.prop2" -> 8),
       Map("n.prop2" -> 9), Map("n.prop2" -> 9)
+    ))
+  }
+
+  test("should use DESCENDING index order for range predicate when returning that property") {
+    graph.createIndex("Downwards", "prop")
+    def createData() =
+      graph.execute(
+        """CREATE (:Downwards {prop: 40})-[:R]->(:B)
+          |CREATE (:Downwards {prop: 43})-[:R]->(:B)
+          |CREATE (:Downwards {prop: 44})-[:R]->(:B)
+          |CREATE (:Downwards {prop: 43})-[:R]->(:B)
+          |CREATE (:Downwards {prop: 41})-[:R]->(:B)
+          |CREATE (:Downwards {prop: 41})-[:R]->(:B)
+          |CREATE (:Downwards {prop: 42})-[:R]->(:B)""".stripMargin)
+
+    val result = executeWith(Configs.Interpreted,
+                             "MATCH (n:Downwards) WHERE n.prop > 1 RETURN n.prop ORDER BY n.prop DESCENDING",
+                             executeBefore = createData)
+
+    result.executionPlanDescription() should not (includeSomewhere.aPlan("Sort"))
+    result.toList should be(List(
+      Map("n.prop" -> 44),
+      Map("n.prop" -> 43),
+      Map("n.prop" -> 43),
+      Map("n.prop" -> 42),
+      Map("n.prop" -> 41),
+      Map("n.prop" -> 41),
+      Map("n.prop" -> 40)
     ))
   }
 
