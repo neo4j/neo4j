@@ -27,10 +27,10 @@ import static org.neo4j.util.Preconditions.checkArgument;
 
 final class SortedMergeJoin
 {
-    private long nextFromA;
-    private long nextFromB;
-    private Value[] valuesFromA;
-    private Value[] valuesFromB;
+    private long nextFromA = -1;
+    private long nextFromB = -1;
+    private Value[] valuesFromA = null;
+    private Value[] valuesFromB = null;
     private int indexOrder;
 
     void initialize( IndexOrder indexOrder )

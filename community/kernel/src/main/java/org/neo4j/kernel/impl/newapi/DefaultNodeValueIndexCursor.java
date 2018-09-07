@@ -74,6 +74,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         this.pool = pool;
         node = NO_ID;
+        indexOrder = IndexOrder.NONE;
     }
 
     @Override

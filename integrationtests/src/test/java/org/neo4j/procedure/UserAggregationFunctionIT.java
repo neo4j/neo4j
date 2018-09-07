@@ -107,8 +107,8 @@ public class UserAggregationFunctionIT
         Result result = db.execute( "MATCH (n) RETURN n.prop1, org.neo4j.procedure.count(n.prop2) AS count" );
 
         // Then
-        assertThat( result.next(), equalTo( map( "n.prop1", 1337L, "count", 1L ) ) );
         assertThat( result.next(), equalTo( map( "n.prop1", 42L, "count", 3L ) ) );
+        assertThat( result.next(), equalTo( map( "n.prop1", 1337L, "count", 1L ) ) );
         assertFalse( result.hasNext() );
     }
 

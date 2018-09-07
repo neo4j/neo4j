@@ -262,11 +262,11 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
 
     //Then
     val first :: second :: Nil = asScalaResult(result).toList
-    first("n.group") should equal("FOO")
-    first("collect(n.prop)").asInstanceOf[Seq[_]] should contain theSameElementsAs List(60, 70, 80, 90, 100)
+    first("n.group") should equal("BAR")
+    first("collect(n.prop)").asInstanceOf[Seq[_]] should contain theSameElementsAs List(10, 20, 30, 40, 50)
 
-    second("n.group") should equal("BAR")
-    second("collect(n.prop)").asInstanceOf[Seq[_]] should contain theSameElementsAs List(10, 20, 30, 40, 50)
+    second("n.group") should equal("FOO")
+    second("collect(n.prop)").asInstanceOf[Seq[_]] should contain theSameElementsAs List(60, 70, 80, 90, 100)
 
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
   }

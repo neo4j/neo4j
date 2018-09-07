@@ -78,7 +78,12 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
       Map("n.prop2" -> 2), Map("n.prop2" -> 2),
       Map("n.prop2" -> 3), Map("n.prop2" -> 3),
       Map("n.prop2" -> 3), Map("n.prop2" -> 3),
-      Map("n.prop2" -> 5), Map("n.prop2" -> 5)))
+      Map("n.prop2" -> 5), Map("n.prop2" -> 5),
+      Map("n.prop2" -> 7), Map("n.prop2" -> 7),
+      Map("n.prop2" -> 7), Map("n.prop2" -> 7),
+      Map("n.prop2" -> 8), Map("n.prop2" -> 8),
+      Map("n.prop2" -> 9), Map("n.prop2" -> 9)
+    ))
   }
 
   test("Order by index backed property renamed in an earlier WITH") {
