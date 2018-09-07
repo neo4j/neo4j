@@ -58,7 +58,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
-    public ExecutorService workStealingExecutor( Group group, int parallelism, boolean asyncMode )
+    public ExecutorService workStealingExecutorAsyncMode( Group group, int parallelism )
     {
         return executor;
     }

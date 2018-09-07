@@ -50,10 +50,11 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     ExecutorService workStealingExecutor( Group group, int parallelism );
 
     /**
-     * Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}
-     * @param asyncMode Defaults to false. A value of true may be more suitable for systems where worker threads only process event-style asynchronous tasks
+     * Creates an {@link ExecutorService} that does works-stealing with asyncMode set to true - read more about this in {@link ForkJoinPool}
+     * <p>
+     * This may be more suitable for systems where worker threads only process event-style asynchronous tasks.
      */
-    ExecutorService workStealingExecutor( Group group, int parallelism, boolean asyncMode );
+    ExecutorService workStealingExecutorAsyncMode( Group group, int parallelism );
 
     /**
      * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.
