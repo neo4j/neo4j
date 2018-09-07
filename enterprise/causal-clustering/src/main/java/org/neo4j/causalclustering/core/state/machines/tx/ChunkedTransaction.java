@@ -83,11 +83,6 @@ class ChunkedTransaction implements ChunkedInput<ByteBuf>
         {
             // Ensure that the written buffers does not overflow the allocators chunk size.
             channel = new ChunkingNetworkChannel( allocator, CHUNK_SIZE, chunks );
-            /*
-            Unknown length. The reason for sending this int is to avoid conflicts with Raft V1.
-            This way, the serialized result of this object is identical to a serialized byte array. Which is the only type in Raft V1.
-            */
-            channel.putInt( -1 );
         }
 
         // write to chunks if empty and there is more to write

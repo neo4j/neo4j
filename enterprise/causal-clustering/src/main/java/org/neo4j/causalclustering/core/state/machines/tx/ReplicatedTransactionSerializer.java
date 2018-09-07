@@ -43,13 +43,9 @@ public class ReplicatedTransactionSerializer
     {
     }
 
-    public static ReplicatedTransaction unmarshal( ByteBuf byteBuf )
+    public static ReplicatedTransaction decode( ByteBuf byteBuf )
     {
-        int length = byteBuf.readInt();
-        if ( length == -1 )
-        {
-            length = byteBuf.readableBytes();
-        }
+        int length = byteBuf.readableBytes();
         byte[] bytes = new byte[length];
         byteBuf.readBytes( bytes );
         return ReplicatedTransaction.from( bytes );

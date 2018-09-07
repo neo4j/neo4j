@@ -62,11 +62,6 @@ public class ByteArrayChunkedEncoder implements ChunkedInput<ByteBuf>
         return content.length - pos;
     }
 
-    private boolean isFirst()
-    {
-        return pos == 0;
-    }
-
     @Override
     public boolean isEndOfInput()
     {
@@ -92,16 +87,10 @@ public class ByteArrayChunkedEncoder implements ChunkedInput<ByteBuf>
         {
             return null;
         }
-        int extraBytes = isFirst() ? Integer.BYTES : 0;
-        int toWrite = Math.min( available() + extraBytes, chunkSize );
+        int toWrite = Math.min( available(), chunkSize );
         ByteBuf buffer = allocator.buffer( toWrite );
         try
         {
-            if ( isFirst() )
-            {
-                buffer.writeInt( content.length );
-                toWrite -= extraBytes;
-            }
             buffer.writeBytes( content, pos, toWrite );
             pos += toWrite;
             return buffer;

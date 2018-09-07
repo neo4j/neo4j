@@ -78,7 +78,7 @@ public class CoreReplicatedContentMarshal
         {
         case TX_CONTENT_TYPE:
         {
-            return ContentBuilder.finished( ReplicatedTransactionSerializer.unmarshal( buffer ) );
+            return ContentBuilder.finished( ReplicatedTransactionSerializer.decode( buffer ) );
         }
         default:
             return unmarshal( contentType, new NetworkReadableClosableChannelNetty4( buffer ) );

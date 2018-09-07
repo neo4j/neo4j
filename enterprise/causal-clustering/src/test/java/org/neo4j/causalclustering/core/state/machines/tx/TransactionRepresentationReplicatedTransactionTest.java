@@ -60,7 +60,7 @@ public class TransactionRepresentationReplicatedTransactionTest
         TransactionRepresentationReplicatedTransaction replicatedTransaction = ReplicatedTransaction.from( expectedTx );
         replicatedTransaction.marshal( new BoundedNetworkWritableChannel( buffer ) );
 
-        ReplicatedTransaction decoded = ReplicatedTransactionSerializer.unmarshal( buffer );
+        ReplicatedTransaction decoded = ReplicatedTransactionSerializer.decode( buffer );
         buffer.readerIndex( 0 );
         ReplicatedTransaction unmarshaled = ReplicatedTransactionSerializer.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
