@@ -20,7 +20,12 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,69 +43,47 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 
+@RunWith( Parameterized.class )
 public class DefaultSchemaIndexConfigTest
 {
     private static final String KEY = "key";
     private static final TestLabels LABEL = TestLabels.LABEL_ONE;
     private static final GraphDatabaseBuilder dbBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
 
-    @Test
-    public void shouldUseConfiguredIndexProviderNull() throws IndexNotFoundKernelException
+    @Parameterized.Parameters( name = "{0}" )
+    public static List<GraphDatabaseSettings.SchemaIndex> providers()
     {
-        // given
-        GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider, null ).newGraphDatabase();
-
-        // when
-        createIndex( db );
-
-        // then
-        assertIndexProvider( db, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
+        List<GraphDatabaseSettings.SchemaIndex> providers = new ArrayList<>();
+        providers.addAll( Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() ) );
+        providers.add( null ); // <-- to exercise the default option
+        return providers;
     }
 
-    @Test
-    public void shouldUseConfiguredIndexProviderLucene() throws IndexNotFoundKernelException
-    {
-        // given
-        GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
-                GraphDatabaseSettings.SchemaIndex.LUCENE10.providerIdentifier() ).newGraphDatabase();
-
-        // when
-        createIndex( db );
-
-        // then
-        assertIndexProvider( db, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
-    }
+    @Parameterized.Parameter
+    public GraphDatabaseSettings.SchemaIndex provider;
 
     @Test
-    public void shouldUseConfiguredIndexProviderNative10() throws IndexNotFoundKernelException
+    public void shouldUseConfiguredIndexProvider() throws IndexNotFoundKernelException
     {
         // given
-        GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
-                GraphDatabaseSettings.SchemaIndex.NATIVE10.providerIdentifier() ).newGraphDatabase();
+        GraphDatabaseService db = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerIdentifier() ).newGraphDatabase();
+        try
+        {
+            // when
+            createIndex( db );
 
-        // when
-        createIndex( db );
-
-        // then
-        assertIndexProvider( db, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR );
+            // then
+            assertIndexProvider( db, provider == null ? NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.name() : provider.providerIdentifier() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
-    @Test
-    public void shouldUseConfiguredIndexProviderNative20() throws IndexNotFoundKernelException
-    {
-        // given
-        GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
-                GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() ).newGraphDatabase();
-
-        // when
-        createIndex( db );
-
-        // then
-        assertIndexProvider( db, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
-    }
-
-    private void assertIndexProvider( GraphDatabaseService db, IndexProviderDescriptor expected ) throws IndexNotFoundKernelException
+    private void assertIndexProvider( GraphDatabaseService db, String expectedProviderIdentifier ) throws IndexNotFoundKernelException
     {
         GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) db;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -113,8 +96,8 @@ public class DefaultSchemaIndexConfigTest
             int propertyId = tokenRead.propertyKey( KEY );
             IndexReference index = ktx.schemaRead().index( labelId, propertyId );
 
-            assertEquals( "expected IndexProvider.Descriptor", expected,
-                    new IndexProviderDescriptor( index.providerKey(), index.providerVersion() ) );
+            assertEquals( "expected IndexProvider.Descriptor", expectedProviderIdentifier,
+                    new IndexProviderDescriptor( index.providerKey(), index.providerVersion() ).name() );
             tx.success();
         }
     }
