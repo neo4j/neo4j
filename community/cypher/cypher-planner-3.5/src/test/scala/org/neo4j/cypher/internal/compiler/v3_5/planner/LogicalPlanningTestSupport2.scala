@@ -111,7 +111,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         // Our fake index either can always or never return property values
         val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => propertyKeys.map(_ => canGetValue)
-        val orderCapability: OrderCapability = _ => config.indexesWithOrdering.getOrElse((labelName, propertyKeys), NoIndexOrder)
+        val orderCapability: OrderCapability = _ => config.indexesWithOrdering.getOrElse((labelName, propertyKeys), IndexOrderCapability.NONE)
         IndexDescriptor(
           semanticTable.resolvedLabelNames(labelName),
           propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),

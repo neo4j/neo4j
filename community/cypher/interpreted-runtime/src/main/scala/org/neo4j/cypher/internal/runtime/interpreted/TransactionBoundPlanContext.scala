@@ -91,12 +91,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val limitations = reference.limitations().map(kernelToCypher).toSet
         val orderCapability: OrderCapability = tps => {
            reference.orderCapability(tps.map(typeToValueCategory): _*) match {
-            case Array() => NoIndexOrder
-            case Array(api.IndexOrder.ASCENDING, api.IndexOrder.DESCENDING) => BothAscDescIndexOrder
-            case Array(api.IndexOrder.DESCENDING, api.IndexOrder.ASCENDING) => BothAscDescIndexOrder
-            case Array(api.IndexOrder.ASCENDING) => AscIndexOrder
-            case Array(api.IndexOrder.DESCENDING) => DescIndexOrder
-            case _ => NoIndexOrder
+            case Array() => IndexOrderCapability.NONE
+            case Array(api.IndexOrder.ASCENDING, api.IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
+            case Array(api.IndexOrder.DESCENDING, api.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
+            case Array(api.IndexOrder.ASCENDING) => IndexOrderCapability.ASC
+            case Array(api.IndexOrder.DESCENDING) => IndexOrderCapability.DESC
+            case _ => IndexOrderCapability.NONE
           }
         }
         val valueCapability: ValueCapability = tps => {

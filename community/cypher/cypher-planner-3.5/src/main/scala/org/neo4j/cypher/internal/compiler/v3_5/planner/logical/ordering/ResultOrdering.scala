@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering
 
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.{AscIndexOrder, BothAscDescIndexOrder, IndexOrderCapability, NoIndexOrder}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexOrderCapability
 import org.opencypher.v9_0.util.symbols.CypherType
 
 /**
@@ -40,16 +40,19 @@ object ResultOrdering {
     */
   def withIndexOrderCapability(requiredOrder: RequiredOrder, properties: Seq[(String, CypherType)], capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
     val orderTypes: Seq[CypherType] = properties.map(_._2)
-    // TODO: Currently the list of types must match the index properties, but we might (in Cypher) only care or know about a prefix subset, and
-    // we are waiting for the kernel to change this behaviour so we can pass in only the known prefix subset of types.
-    val orderBehaviorFromIndex: IndexOrderCapability = capabilityLookup(orderTypes)
-    orderBehaviorFromIndex match {
-      case NoIndexOrder => ProvidedOrder.empty
-      case AscIndexOrder =>
+    val firstRequiredOrder: Option[RequiredColumnOrder] = requiredOrder.columns.headOption.map(_._2)
+    val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
+    firstRequiredOrder match {
+      case Some(DescColumnOrder) if indexOrderCapability.desc =>
+        toProvidedOrder(properties.map {case (name, _) => (name, DescColumnOrder)})
+
+      case _ if indexOrderCapability.asc =>
         toProvidedOrder(properties.map {case (name, _) => (name, AscColumnOrder)})
-      case BothAscDescIndexOrder =>
-        toProvidedOrder(properties.map {case (name, _) => (name, AscColumnOrder)})
-      case _ => throw new IllegalStateException("There is no support for this index order: " + orderBehaviorFromIndex)
+
+      case _ if indexOrderCapability.desc =>
+        toProvidedOrder(properties.map {case (name, _) => (name, DescColumnOrder)})
+
+      case _ => ProvidedOrder.empty
     }
   }
 

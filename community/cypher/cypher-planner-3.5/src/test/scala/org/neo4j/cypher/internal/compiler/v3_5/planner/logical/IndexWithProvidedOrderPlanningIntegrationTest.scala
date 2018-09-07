@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_5.RegularPlannerQuery
-import org.neo4j.cypher.internal.planner.v3_5.spi.AscIndexOrder
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexOrderCapability.{ASC, DESC}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Skip => SkipPlan, _}
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions._
@@ -32,13 +32,33 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property should plan with provided order") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop"
 
     plan._2 should equal(
       Projection(
         Projection(
           IndexSeek("n:Awesome(prop > 'foo')", indexOrder = IndexOrderAscending),
+          Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+        Map("n.prop" -> Variable("  FRESHID48")(pos)))
+    )
+  }
+
+  test("DESCENDING order by index backed property should plan with provided order") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesOrder(DESC)
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop DESC"
+
+    plan._2 should equal(
+      Projection(
+        Projection(
+          NodeIndexSeek(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
+            Set.empty,
+            IndexOrderDescending),
           Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("n.prop" -> Variable("  FRESHID48")(pos)))
     )
@@ -62,7 +82,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property DESCENDING (unsupported) should plan sort") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop DESC"
 
     plan._2 should equal(
@@ -78,7 +98,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property renamed in an earlier WITH") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor
       """MATCH (n:Awesome) WHERE n.prop > 'foo'
         |WITH n AS nnn
@@ -100,7 +120,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property renamed in same return") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor
       """MATCH (n:Awesome) WHERE n.prop > 'foo'
         |RETURN n AS m ORDER BY m.prop""".stripMargin
@@ -116,7 +136,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Cannot order by index when ordering is on same property name, but different node") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop"
 
     plan._2 should equal(
@@ -134,7 +154,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property should plan with provided order (starts with scan)") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.prop ORDER BY n.prop"
 
     plan._2 should equal(
@@ -150,7 +170,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
   // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve contains
   test("Order by index backed property should plan with provided order (contains scan)") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop CONTAINS 'foo' RETURN n.prop ORDER BY n.prop"
 
     plan._2 should equal(
@@ -165,7 +185,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
   // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve ends with
   test("Order by index backed property should plan with provided order (ends with scan)") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop ENDS WITH 'foo' RETURN n.prop ORDER BY n.prop"
 
     plan._2 should equal(
@@ -179,7 +199,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property should plan with provided order (scan)") {
     val plan = new given {
-      indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
+      indexOn("Awesome", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE EXISTS(n.prop) RETURN n.prop ORDER BY n.prop"
 
     plan._2 should equal(
@@ -194,8 +214,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property in a plan with an Apply") {
     val plan = new given {
-      indexOn("A", "prop").providesOrder(AscIndexOrder)
-      indexOn("B", "prop").providesOrder(AscIndexOrder)
+      indexOn("A", "prop").providesOrder(ASC)
+      indexOn("B", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop"
 
     plan._2 should equal(
@@ -217,8 +237,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed properties in a plan with an Apply needs Sort if RHS order required") {
     val plan = new given {
-      indexOn("A", "prop").providesOrder(AscIndexOrder)
-      indexOn("B", "prop").providesOrder(AscIndexOrder)
+      indexOn("A", "prop").providesOrder(ASC)
+      indexOn("B", "prop").providesOrder(ASC)
       // This query is very fragile in the sense that the slightest modification will result in a stupid plan
     } getLogicalPlanFor "MATCH (a:A), (b:B) WHERE a.prop STARTS WITH 'foo' AND b.prop > a.prop RETURN a.prop, b.prop ORDER BY a.prop, b.prop"
 
@@ -242,7 +262,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property in a plan with an renaming Projection") {
     val plan = new given {
-      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      indexOn("A", "prop").providesOrder(ASC)
     } getLogicalPlanFor "MATCH (a:A) WHERE a.prop > 'foo' WITH a.prop AS theProp, 1 AS x RETURN theProp ORDER BY theProp"
 
     plan._2 should equal(
@@ -259,7 +279,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property in a plan with an aggregation and an expand") {
     val plan = new given {
-      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      indexOn("A", "prop").providesOrder(ASC)
       cardinality = mapCardinality {
         // Force the planner to start at a
         case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
@@ -281,7 +301,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property in a plan with a distinct") {
     val plan = new given {
-      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      indexOn("A", "prop").providesOrder(ASC)
       cardinality = mapCardinality {
         // Force the planner to start at a
         case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
@@ -303,7 +323,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property in a plan with a outer join") {
     val plan = new given {
-      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      indexOn("A", "prop").providesOrder(ASC)
       cardinality = mapCardinality {
         // Force the planner to start at b
         case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 100.0
@@ -327,7 +347,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed property in a plan with a tail apply") {
     val plan = new given {
-      indexOn("A", "prop").providesOrder(AscIndexOrder)
+      indexOn("A", "prop").providesOrder(ASC)
     } getLogicalPlanFor
       """MATCH (a:A) WHERE a.prop > 'foo' WITH a SKIP 0
         |MATCH (b)

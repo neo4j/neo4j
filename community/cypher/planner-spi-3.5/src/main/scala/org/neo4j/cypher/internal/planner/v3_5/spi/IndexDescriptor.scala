@@ -27,11 +27,14 @@ import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 sealed trait IndexLimitation
 case object SlowContains extends IndexLimitation
 
-sealed trait IndexOrderCapability
-case object BothAscDescIndexOrder extends IndexOrderCapability
-case object AscIndexOrder extends IndexOrderCapability
-case object DescIndexOrder extends IndexOrderCapability
-case object NoIndexOrder extends IndexOrderCapability
+final case class IndexOrderCapability(asc: Boolean, desc: Boolean)
+
+object IndexOrderCapability {
+  val NONE: IndexOrderCapability = IndexOrderCapability(false, false)
+  val ASC: IndexOrderCapability = IndexOrderCapability(true, false)
+  val DESC: IndexOrderCapability = IndexOrderCapability(false, true)
+  val BOTH: IndexOrderCapability = IndexOrderCapability(true, true)
+}
 
 object IndexDescriptor {
   /**
@@ -39,7 +42,7 @@ object IndexDescriptor {
     * can this index guarantee ordered retrieval?
     */
   type OrderCapability = Seq[CypherType] => IndexOrderCapability
-  val noOrderCapability: OrderCapability = _ => NoIndexOrder
+  val noOrderCapability: OrderCapability = _ => IndexOrderCapability.NONE
 
   /**
     * Given the actual types of properties (one for a single-property index and multiple for a composite index)

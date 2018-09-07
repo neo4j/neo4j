@@ -27,6 +27,9 @@ case object DescColumnOrder extends RequiredColumnOrder
 
 object RequiredOrder {
   val empty = RequiredOrder(Seq.empty)
+
+  def asc(id: String): RequiredOrder = empty.asc(id)
+  def desc(id: String): RequiredOrder = empty.desc(id)
 }
 
 /**
@@ -42,6 +45,9 @@ object RequiredOrder {
 case class RequiredOrder(columns: Seq[(String, RequiredColumnOrder)]) {
 
   val isEmpty: Boolean = columns.isEmpty
+
+  def asc(id: String): RequiredOrder = RequiredOrder(columns :+ id -> AscColumnOrder)
+  def desc(id: String): RequiredOrder = RequiredOrder(columns :+ id -> DescColumnOrder)
 
   def withRenamedColumns(projectExpressions: Map[String, Expression]) : RequiredOrder = {
     val renamedColumns = columns.map {

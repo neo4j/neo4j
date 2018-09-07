@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering
 
-import org.neo4j.cypher.internal.ir.v3_5.{AscColumnOrder, DescColumnOrder, ProvidedOrder, RequiredOrder}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{AscIndexOrder, DescIndexOrder, IndexOrderCapability}
+import org.neo4j.cypher.internal.ir.v3_5.{ProvidedOrder, RequiredOrder}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexOrderCapability.{ASC, DESC, BOTH}
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -28,31 +29,23 @@ class ResultOrderingTest extends CypherFunSuite {
 
   test("Empty required order results in provided order of index order capability ascending") {
     val properties = Seq(("x", CTInteger))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    ResultOrdering.withIndexOrderCapability(RequiredOrder.empty, properties, capabilities) should be(ProvidedOrder(Seq(ProvidedOrder.Asc("x"))))
+    ResultOrdering.withIndexOrderCapability(RequiredOrder.empty, properties, capability(ASC)) should be(ProvidedOrder.asc("x"))
   }
 
-  test("Single property required order results in exception if index capability is descending") {
+  test("Single property required DESC still results in provided ASC if index is not capable of DESC") {
     val properties = Seq(("x", CTInteger))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => DescIndexOrder
-    withClue("Throw exception for descending index with ascending required order") {
-      an[IllegalStateException] should be thrownBy {
-        ResultOrdering.withIndexOrderCapability(RequiredOrder(Seq(("x", AscColumnOrder))), properties, capabilities)
-      }
-    }
-    withClue("Throw exception for descending index even with descending required order (not yet supported)") {
-      an[IllegalStateException] should be thrownBy {
-        ResultOrdering.withIndexOrderCapability(RequiredOrder(Seq(("x", DescColumnOrder))), properties, capabilities)
-      }
-    }
+    ResultOrdering.withIndexOrderCapability(RequiredOrder.desc("x"), properties, capability(ASC)) should be(ProvidedOrder.asc("x"))
+  }
+
+  test("Single property required ASC results in provided DESC if index is not capable of ASC") {
+    val properties = Seq(("x", CTInteger))
+    ResultOrdering.withIndexOrderCapability(RequiredOrder.asc("x"), properties, capability(DESC)) should be(ProvidedOrder.desc("x"))
   }
 
   test("Single property required order results in matching provided order for compatible index capability") {
     val properties = Seq(("x", CTInteger))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    ResultOrdering.withIndexOrderCapability(RequiredOrder(Seq(("x", AscColumnOrder))), properties, capabilities) should be(ProvidedOrder(Seq(ProvidedOrder.Asc("x"))))
-    // Index can't give descending. Therefore we take what we have, which is ascending
-    ResultOrdering.withIndexOrderCapability(RequiredOrder(Seq(("x", DescColumnOrder))), properties, capabilities) should be(ProvidedOrder(Seq(ProvidedOrder.Asc("x"))))
+    ResultOrdering.withIndexOrderCapability(RequiredOrder.asc("x"), properties, capability(ASC)) should be(ProvidedOrder.asc("x"))
+    ResultOrdering.withIndexOrderCapability(RequiredOrder.desc("x"), properties, capability(DESC)) should be(ProvidedOrder.desc("x"))
   }
 
   test("Multi property required order results in matching provided order for compatible index capability") {
@@ -61,13 +54,9 @@ class ResultOrderingTest extends CypherFunSuite {
       ("y", CTInteger),
       ("z", CTInteger)
     )
-    val requiredOrder = RequiredOrder(Seq(
-      ("x", AscColumnOrder),
-      ("y", AscColumnOrder),
-      ("z", AscColumnOrder)
-    ))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capabilities) should be(ProvidedOrder(Seq(ProvidedOrder.Asc("x"), ProvidedOrder.Asc("y"), ProvidedOrder.Asc("z"))))
+    val requiredOrder = RequiredOrder.asc("x").asc("y").asc("z")
+
+    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("x").asc("y").asc("z"))
   }
 
   test("Multi property required order results in provided order if property order does not match") {
@@ -76,13 +65,9 @@ class ResultOrderingTest extends CypherFunSuite {
       ("x", CTInteger),
       ("z", CTInteger)
     )
-    val requiredOrder = RequiredOrder(Seq(
-      ("x", AscColumnOrder),
-      ("y", AscColumnOrder),
-      ("z", AscColumnOrder)
-    ))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capabilities) should be(ProvidedOrder(List(ProvidedOrder.Asc("y"), ProvidedOrder.Asc("x"), ProvidedOrder.Asc("z"))))
+    val requiredOrder = RequiredOrder.asc("x").asc("y").asc("z")
+
+    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("y").asc("x").asc("z"))
   }
 
   test("Multi property required order results in provided order if property order partially matches") {
@@ -91,31 +76,22 @@ class ResultOrderingTest extends CypherFunSuite {
       ("z", CTInteger),
       ("y", CTInteger)
     )
-    val requiredOrder = RequiredOrder(Seq(
-      ("x", AscColumnOrder),
-      ("y", AscColumnOrder),
-      ("z", AscColumnOrder)
-    ))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capabilities) should be(ProvidedOrder(List(ProvidedOrder.Asc("x"), ProvidedOrder.Asc("z"), ProvidedOrder.Asc("y"))))
+    val requiredOrder = RequiredOrder.asc("x").asc("y").asc("z")
+
+    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("x").asc("z").asc("y"))
   }
 
-  test("Multi property required order results in  provided order if mixed sort direction") {
+  test("Multi property required order results in provided order if mixed sort direction") {
     val properties = Seq(
       ("x", CTInteger),
       ("y", CTInteger),
       ("z", CTInteger),
       ("w", CTInteger)
     )
-    val requiredOrder = RequiredOrder(Seq(
-      ("x", AscColumnOrder),
-      ("y", AscColumnOrder),
-      ("z", DescColumnOrder),
-      ("w", AscColumnOrder)
-    ))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    // Index can't give descending. Therefore we take what we have, which is ascending
-    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capabilities) should be(ProvidedOrder(List(ProvidedOrder.Asc("x"), ProvidedOrder.Asc("y"), ProvidedOrder.Asc("z"), ProvidedOrder.Asc("w"))))
+    val requiredOrder = RequiredOrder.asc("x").asc("y").desc("z").asc("w")
+
+    // Index can only give full ascending or descending, not a mixture. Therefore we follow the first required order
+    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capability(BOTH)) should be(ProvidedOrder.asc("x").asc("y").asc("z").asc("w"))
   }
 
   test("Shorter multi property required order results in provided order") {
@@ -125,12 +101,9 @@ class ResultOrderingTest extends CypherFunSuite {
       ("z", CTInteger),
       ("w", CTInteger)
     )
-    val requiredOrder = RequiredOrder(Seq(
-      ("x", AscColumnOrder),
-      ("y", AscColumnOrder)
-    ))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capabilities) should be(ProvidedOrder(List(ProvidedOrder.Asc("x"), ProvidedOrder.Asc("y"), ProvidedOrder.Asc("z"), ProvidedOrder.Asc("w"))))
+    val requiredOrder = RequiredOrder.asc("x").asc("y")
+
+    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("x").asc("y").asc("z").asc("w"))
   }
 
   test("Longer multi property required order results in partial matching provided order") {
@@ -138,14 +111,11 @@ class ResultOrderingTest extends CypherFunSuite {
       ("x", CTInteger),
       ("y", CTInteger)
     )
-    val requiredOrder = RequiredOrder(Seq(
-      ("x", AscColumnOrder),
-      ("y", AscColumnOrder),
-      ("z", AscColumnOrder),
-      ("w", AscColumnOrder)
-    ))
-    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => AscIndexOrder
-    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capabilities) should be(ProvidedOrder(Seq(ProvidedOrder.Asc("x"), ProvidedOrder.Asc("y"))))
+    val requiredOrder = RequiredOrder.asc("x").asc("y").asc("z").asc("w")
+
+    val capabilities: Seq[CypherType] => IndexOrderCapability = _ => ASC
+    ResultOrdering.withIndexOrderCapability(requiredOrder, properties, capabilities) should be(ProvidedOrder.asc("x").asc("y"))
   }
 
+  private def capability(capability: IndexOrderCapability): Seq[CypherType] => IndexOrderCapability = _ => capability
 }
