@@ -159,7 +159,7 @@ public class PageCacheRule extends ExternalResource
         return new PageCacheConfig();
     }
 
-    protected JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+    protected JobScheduler jobScheduler;
     protected PageCache pageCache;
     final PageCacheConfig baseConfig;
 
@@ -201,6 +201,7 @@ public class PageCacheRule extends ExternalResource
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
                 new LocalMemoryTracker() );
+        initializeJobScheduler();
         if ( pageSize != null )
         {
             pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier, contextSupplier, jobScheduler );
@@ -211,6 +212,11 @@ public class PageCacheRule extends ExternalResource
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;
+    }
+
+    protected void initializeJobScheduler()
+    {
+        jobScheduler = new ThreadPoolJobScheduler();
     }
 
     protected static <T> T selectConfig( T base, T overridden, T defaultValue )
@@ -237,22 +243,34 @@ public class PageCacheRule extends ExternalResource
 
     protected void closeExistingPageCache()
     {
-        if ( pageCache != null )
-        {
-            try
-            {
-                pageCache.close();
-            }
-            catch ( Exception e )
-            {
-                throw new AssertionError(
-                        "Failed to stop existing PageCache prior to creating a new one", e );
-            }
-        }
+        closePageCache( "Failed to stop existing PageCache prior to creating a new one." );
+        closeJobScheduler( "Failed to stop existing job scheduler prior to creating a new one." );
     }
 
     @Override
     protected void after( boolean success )
+    {
+        closePageCache( "Failed to stop PageCache after test." );
+        closeJobScheduler( "Failed to stop job scheduler after test." );
+    }
+
+    private void closeJobScheduler( String errorMessage )
+    {
+        if ( jobScheduler != null )
+        {
+            try
+            {
+                jobScheduler.close();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( errorMessage, e );
+            }
+            jobScheduler = null;
+        }
+    }
+
+    private void closePageCache( String errorMessage )
     {
         if ( pageCache != null )
         {
@@ -262,21 +280,9 @@ public class PageCacheRule extends ExternalResource
             }
             catch ( Exception e )
             {
-                throw new AssertionError( "Failed to stop PageCache after test", e );
+                throw new AssertionError( errorMessage, e );
             }
             pageCache = null;
-        }
-        if ( jobScheduler != null )
-        {
-            try
-            {
-                jobScheduler.close();
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( "Failed to stop job scheduler after test", e );
-            }
-            jobScheduler = null;
         }
     }
 
