@@ -30,7 +30,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.HTTPServer;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -45,15 +44,14 @@ import org.neo4j.logging.Log;
  */
 public class PrometheusOutput implements Lifecycle, EventReporter
 {
+    protected PrometheusHttpServer server;
     private final HostnamePort hostnamePort;
     private final MetricRegistry registry;
     private final Log logger;
-
-    private HTTPServer server;
-    private Map<String,Object> registeredEvents = new ConcurrentHashMap<>();
+    private final Map<String,Object> registeredEvents = new ConcurrentHashMap<>();
     private final MetricRegistry eventRegistry;
 
-    public PrometheusOutput( HostnamePort hostnamePort, MetricRegistry registry, Log logger )
+    PrometheusOutput( HostnamePort hostnamePort, MetricRegistry registry, Log logger )
     {
         this.hostnamePort = hostnamePort;
         this.registry = registry;
@@ -76,7 +74,7 @@ public class PrometheusOutput implements Lifecycle, EventReporter
     {
         if ( server == null )
         {
-            server = new HTTPServer( hostnamePort.getHost(), hostnamePort.getPort(), true );
+            server = new PrometheusHttpServer( hostnamePort.getHost(), hostnamePort.getPort() );
             logger.info( "Started publishing Prometheus metrics at http://" + hostnamePort + "/metrics" );
         }
     }
