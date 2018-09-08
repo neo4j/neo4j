@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.metrics.MetricsSettings;
@@ -91,10 +92,21 @@ public class ServerMetricsIT
         }
     }
 
-    private static void assertMetricsExists( File metricsPath, String meticsName ) throws IOException, InterruptedException
+    private static void assertMetricsExists( File metricsPath, String metricsName ) throws InterruptedException
     {
-        File file = metricsCsv( metricsPath, meticsName );
-        long threadCount = readLongValue( file );
-        assertEventually( () -> threadCount, greaterThan( 0L ), 1, TimeUnit.MINUTES );
+        File file = metricsCsv( metricsPath, metricsName );
+        assertEventually( () -> threadCountReader( file ), greaterThan( 0L ), 1, TimeUnit.MINUTES );
+    }
+
+    private static Long threadCountReader( File file ) throws InterruptedException
+    {
+        try
+        {
+            return readLongValue( file );
+        }
+        catch ( IOException io )
+        {
+            throw new UncheckedIOException( io );
+        }
     }
 }
