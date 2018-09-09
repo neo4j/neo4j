@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Arrays;
-
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -107,16 +105,18 @@ abstract class Read implements TxStateHolder,
         if ( !reader.hasFullValuePrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
-            int j = 0;
-            for ( IndexQuery q : query )
+            int count = 0;
+            for ( int i = 0; i < query.length; i++ )
             {
+                IndexQuery q = query[i];
                 switch ( q.type() )
                 {
                 case range:
                     ValueGroup valueGroup = q.valueGroup();
                     if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY) && !reader.hasFullValuePrecision( q ) )
                     {
-                        filters[j++] = q;
+                        filters[i] = q;
+                        count++;
                     }
                     break;
                 case exact:
@@ -125,7 +125,8 @@ abstract class Read implements TxStateHolder,
                     {
                         if ( !reader.hasFullValuePrecision( q ) )
                         {
-                            filters[j++] = q;
+                            filters[i] = q;
+                            count++;
                         }
                     }
                     break;
@@ -133,9 +134,10 @@ abstract class Read implements TxStateHolder,
                     break;
                 }
             }
-            if ( j > 0 )
+            if ( count > 0 )
             {
-                filters = Arrays.copyOf( filters, j );
+                // filters[] can contain null elements. The non-null elements are the filters and each sit in the designated slot
+                // matching the values from the index.
                 target = new NodeValueClientFilter( target, cursors.allocateNodeCursor(),
                         cursors.allocatePropertyCursor(), this, filters );
             }

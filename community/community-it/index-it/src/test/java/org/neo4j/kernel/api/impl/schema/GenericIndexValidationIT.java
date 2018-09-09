@@ -360,9 +360,9 @@ public class GenericIndexValidationIT
         durationArray( SIZE_DURATION, 144, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
         periodArray( SIZE_DURATION, 144, i -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
         cartesianPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
-        cartesian3DPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
+        cartesian3DPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
         geographicPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
-        geographicDPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
+        geographic3DPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
 
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;

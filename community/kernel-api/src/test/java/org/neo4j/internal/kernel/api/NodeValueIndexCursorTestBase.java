@@ -772,7 +772,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             long nodeReference = node.nodeReference();
             assertTrue( "all nodes are unique", uniqueIds.add( nodeReference ) );
 
-            assertFalse( node.hasValue() );
+            // We can't quite assert !node.hasValue() because even tho pure SpatialIndexReader is guaranteed to not return any values,
+            // where null could be used, the generic native index, especially when having composite keys including spatial values it's
+            // more of a gray area and some keys may be spatial, some not and therefore a proper Value[] will be extracted
+            // potentially containing some NO_VALUE values.
         }
 
         assertFalse( "no more than " + nodes + " nodes", node.next() );

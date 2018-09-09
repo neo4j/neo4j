@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -30,6 +27,8 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * This class filters acceptNode() calls from an index progressor, to assert that exact entries returned from the
@@ -70,13 +69,11 @@ import org.neo4j.values.storable.Value;
  */
 class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 {
-    private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
     private final NodeValueClient target;
     private final NodeCursor node;
     private final PropertyCursor property;
     private final IndexQuery[] filters;
     private final org.neo4j.internal.kernel.api.Read read;
-    private int[] keys;
     private IndexProgressor progressor;
 
     NodeValueClientFilter(
@@ -88,14 +85,12 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
         this.property = property;
         this.filters = filters;
         this.read = read;
-        Arrays.sort( filters, ASCENDING_BY_KEY );
     }
 
     @Override
     public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, boolean needsValues )
     {
         this.progressor = progressor;
-        this.keys = descriptor.schema().getPropertyIds();
         // We set needsValues to true for the target, since this will enable us to execute the cheaper filterByIndexValues
         // instead of filterByCursors if the target can provide values
         target.initialize( descriptor, this, query, true );
@@ -104,24 +99,77 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     @Override
     public boolean acceptNode( long reference, Value[] values )
     {
-        if ( keys != null && values != null )
+        // First filter on these values, which come from the index. Some values will be NO_VALUE, because some indexed values cannot be read back.
+        // Those values will have to be read from the store using the propertyCursor and is done in one pass after this loop, if needed.
+        int storeLookups = 0;
+        if ( values == null )
         {
-            return filterByIndexValues( reference, values );
+            // values == null effectively means that all values are NO_VALUE so we certainly need the store lookup here
+            for ( IndexQuery filter : filters )
+            {
+                if ( filter != null )
+                {
+                    storeLookups++;
+                }
+            }
         }
         else
         {
-            read.singleNode( reference, node );
-            if ( node.next() )
+            for ( int i = 0; i < filters.length; i++ )
             {
-                node.properties( property );
+                IndexQuery filter = filters[i];
+                if ( filter != null )
+                {
+                    if ( values[i] == NO_VALUE )
+                    {
+                        storeLookups++;
+                    }
+                    else if ( !filter.acceptsValue( values[i] ) )
+                    {
+                        return false;
+                    }
+                }
             }
-            else
-            {
-                property.close();
-                return false;
-            }
-            return filterByCursors( reference, values );
         }
+
+        // If there were one or more NO_VALUE values above then open store cursor and read those values from the store,
+        // applying the same filtering as above, but with a loop designed to do only a single pass over the store values,
+        // because it's the most expensive part.
+        if ( storeLookups > 0 && !acceptByStoreFiltering( reference, storeLookups, values ) )
+        {
+            return false;
+        }
+        return target.acceptNode( reference, values );
+    }
+
+    private boolean acceptByStoreFiltering( long reference, int storeLookups, Value[] values )
+    {
+        // Initialize the property cursor scan
+        read.singleNode( reference, node );
+        if ( !node.next() )
+        {
+            // This node doesn't exist, therefore it cannot be accepted
+            property.close();
+            return false;
+        }
+        node.properties( property );
+
+        while ( storeLookups > 0 && property.next() )
+        {
+            for ( int i = 0; i < filters.length; i++ )
+            {
+                IndexQuery filter = filters[i];
+                if ( filter != null && (values == null || values[i] == NO_VALUE) && property.propertyKey() == filter.propertyKeyId() )
+                {
+                    if ( !filter.acceptsValueAt( property ) )
+                    {
+                        return false;
+                    }
+                    storeLookups--;
+                }
+            }
+        }
+        return storeLookups == 0;
     }
 
     @Override
@@ -142,55 +190,5 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
         node.close();
         property.close();
         progressor.close();
-    }
-
-    private boolean filterByIndexValues( long reference, Value[] values )
-    {
-        FILTERS:
-        for ( IndexQuery filter : filters )
-        {
-            for ( int i = 0; i < keys.length; i++ )
-            {
-                if ( keys[i] == filter.propertyKeyId() )
-                {
-                    if ( !filter.acceptsValue( values[i] ) )
-                    {
-                        return false;
-                    }
-                    continue FILTERS;
-                }
-            }
-            assert false : "Cannot satisfy filter " + filter + " - no corresponding key!";
-            return false;
-        }
-        return target.acceptNode( reference, values );
-    }
-
-    private boolean filterByCursors( long reference, Value[] values )
-    {
-        // note that this way of checking if all filters are matched relies on the node not having duplicate properties
-        int accepted = 0;
-        PROPERTIES:
-        while ( property.next() )
-        {
-            for ( IndexQuery filter : filters )
-            {
-                if ( filter.propertyKeyId() == property.propertyKey() )
-                {
-                    if ( !filter.acceptsValueAt( property ) )
-                    {
-                        return false;
-                    }
-                    accepted++;
-                }
-                else if ( property.propertyKey() < filter.propertyKeyId() )
-                {
-                    continue PROPERTIES;
-                }
-            }
-        }
-        // if not all filters were matched, i.e. accepted < filters.length we reject
-        // otherwise we delegate to target
-        return accepted >= filters.length && target.acceptNode( reference, values );
     }
 }
