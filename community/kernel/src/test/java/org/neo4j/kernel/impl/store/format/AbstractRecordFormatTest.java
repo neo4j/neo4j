@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.store.format;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -63,17 +61,17 @@ public abstract class AbstractRecordFormatTest
     private static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
-    private static final RandomRule random = new RandomRule();
-    private static final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private static final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final RandomRule random = new RandomRule();
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public final TestName name = new TestName();
 
-    @ClassRule
-    public static final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( random );
-    private static PageCache pageCache;
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( random );
+    private PageCache pageCache;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
@@ -89,8 +87,8 @@ public abstract class AbstractRecordFormatTest
         this.propertyBits = propertyBits;
     }
 
-    @BeforeClass
-    public static void setupPageCache()
+    @Before
+    public void setupPageCache()
     {
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
     }
