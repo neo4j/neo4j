@@ -29,8 +29,8 @@ final class SortedMergeJoin
 {
     private long nextFromA = -1;
     private long nextFromB = -1;
-    private Value[] valuesFromA = null;
-    private Value[] valuesFromB = null;
+    private Value[] valuesFromA;
+    private Value[] valuesFromB;
     private int indexOrder;
 
     void initialize( IndexOrder indexOrder )

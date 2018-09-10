@@ -63,8 +63,9 @@ object ProvidedOrder {
 
 /**
   * A LogicalPlan can guarantee to provide its results in a particular order. This class
-  * is uses for the purpose of conveying the information of which order the reuslts are in,
+  * is used for the purpose of conveying the information of which order the results are in,
   * if they are in any defined order.
+  *
   * @param columns a sequence of columns with sort direction
   */
 case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
