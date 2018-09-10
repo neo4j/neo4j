@@ -19,11 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.{LogicalPlanningTestSupport, _}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
-import org.opencypher.v9_0.ast.{Hint, UsingIndexHint}
-import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_5.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.opencypher.v9_0.ast.Hint
+import org.opencypher.v9_0.ast.UsingIndexHint
+import org.opencypher.v9_0.expressions.SemanticDirection.BOTH
+import org.opencypher.v9_0.expressions.SemanticDirection.INCOMING
+import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.helpers.StringHelper._
 import org.opencypher.v9_0.util.symbols._
@@ -823,7 +830,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
 
     val expectation =
-      """RegularPlannerQuery(QueryGraph {Nodes: ['  candidate@60', '  origin@7', 'c'], Rels: ['(  origin@7)--[r1:KNOWS:WORKS_AT]--(c)', '(c)--[r2:KNOWS:WORKS_AT]--(  candidate@60)'], Predicates: ['not r1 = r2', 'not (`  origin@7`)-[`  REL143`:KNOWS]-(`  candidate@60`)', 'type(r1) = type(r2)', '`  origin@7`.name IN ["Clark Kent"]']},InterestingOrder(List(Desc(  FRESHID223)),List()),AggregatingQueryProjection(Map(  FRESHID178 -> Property(Variable(  origin@7),PropertyKeyName(name)),   FRESHID204 -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(  FRESHID223 -> FunctionInvocation(Namespace(List()),FunctionName(SUM),false,Vector(FunctionInvocation(Namespace(List()),FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(Namespace(List()),FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryShuffle(List(DescSortItem(Variable(  FRESHID223))),None,Some(SignedDecimalIntegerLiteral(10)))),Some(RegularPlannerQuery(QueryGraph {Arguments: ['  FRESHID178', '  FRESHID204', '  FRESHID223']},InterestingOrder(List(),List()),RegularQueryProjection(Map(origin -> Variable(  FRESHID178), candidate -> Variable(  FRESHID204), boost -> Variable(  FRESHID223)),QueryShuffle(List(),None,None)),None)))"""
+      """RegularPlannerQuery(QueryGraph {Nodes: ['  candidate@60', '  origin@7', 'c'], Rels: ['(  origin@7)--[r1:KNOWS:WORKS_AT]--(c)', '(c)--[r2:KNOWS:WORKS_AT]--(  candidate@60)'], Predicates: ['not r1 = r2', 'not (`  origin@7`)-[`  REL143`:KNOWS]-(`  candidate@60`)', 'type(r1) = type(r2)', '`  origin@7`.name IN ["Clark Kent"]']},InterestingOrder(List(Desc(boost)),List()),AggregatingQueryProjection(Map(origin -> Property(Variable(  origin@7),PropertyKeyName(name)), candidate -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(boost -> FunctionInvocation(Namespace(List()),FunctionName(SUM),false,Vector(FunctionInvocation(Namespace(List()),FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(Namespace(List()),FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryShuffle(List(DescSortItem(Variable(boost))),None,Some(SignedDecimalIntegerLiteral(10)))),None)"""
 
     result should equal(expectation)
   }

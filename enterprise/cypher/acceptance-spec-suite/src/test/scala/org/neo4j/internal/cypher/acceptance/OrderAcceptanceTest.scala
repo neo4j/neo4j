@@ -195,7 +195,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Projection")
-      .containingArgument("{ : a.name}")
+      .containingArgument("{a.name : a.name}")
       .onTopOf(aPlan("Sort")
         .withOrder(ProvidedOrder.asc("anon[49]"))
         .onTopOf(aPlan("Projection")
@@ -204,7 +204,6 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         ))
   }
 
-  // Does not regress but has some awkward Projections we could get rid of
   test("ORDER BY previously unprojected column in RETURN and return that column") {
     val result = executeWith(Configs.All,
       """
@@ -215,15 +214,14 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Projection")
-      .containingArgument("{ : a.name}")
+      .containingArgument("{a.name : a.name}")
       .onTopOf(aPlan("Sort")
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
-          .containingArgument("{ : a.age}")
+          .containingArgument("{a.age : a.age}")
         ))
   }
 
-  // Does not regress but has some awkward Projections we could get rid of
   test("ORDER BY previously unprojected column in RETURN and project and return that column") {
     val result = executeWith(Configs.All,
       """
@@ -234,11 +232,11 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Projection")
-      .containingArgument("{ : a.name}")
+      .containingArgument("{a.name : a.name}")
       .onTopOf(aPlan("Sort")
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
-          .containingArgument("{ : a.age}")
+          .containingArgument("{age : a.age}")
         ))
   }
 
@@ -270,7 +268,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Sort")
       .onTopOf(aPlan("Projection")
         .containingVariables("a")
-        .containingArgument("{ : a.age}")
+        .containingArgument("{a.age : a.age}")
       )
   }
 
@@ -286,7 +284,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Sort")
       .onTopOf(aPlan("Projection")
         .containingVariables("a")
-        .containingArgument("{ : a.age}")
+        .containingArgument("{age : a.age}")
       )
   }
 

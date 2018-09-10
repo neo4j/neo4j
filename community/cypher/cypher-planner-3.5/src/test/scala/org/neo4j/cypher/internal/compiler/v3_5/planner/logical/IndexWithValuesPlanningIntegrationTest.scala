@@ -291,14 +291,13 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Projection(
-          Sort(
-            Projection(
-              IndexSeek("n:Awesome(prop = 'foo')", GetValue),
-              Map("  FRESHID61" -> FunctionInvocation(Namespace(List())(pos), FunctionName("toUpper")(pos), distinct = false, IndexedSeq(cachedNodeProperty("n", "prop")))(pos))),
-            Seq(Ascending("  FRESHID61"))),
-          Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos))),
-        Map("n.foo" -> Variable("  FRESHID48")(pos)))
+        Sort(
+          Projection(
+            IndexSeek(
+              "n:Awesome(prop = 'foo')", GetValue),
+            Map("  FRESHID61" -> FunctionInvocation(Namespace(List())(pos), FunctionName("toUpper")(pos), distinct = false, IndexedSeq(cachedNodeProperty("n", "prop")))(pos))),
+          Seq(Ascending("  FRESHID61"))),
+        Map("n.foo" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos)))
     )
   }
 
@@ -321,14 +320,13 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 'foo' RETURN sum(n.foo), n.prop ORDER BY n.prop"
 
     plan._2 should equal(
-      Projection(
-        Sort(
-          Aggregation(
-            IndexSeek("n:Awesome(prop = 'foo')", GetValue),
-            Map(cachedNodePropertyProj("  FRESHID60", "n", "prop")),
-            Map("  FRESHID46" -> FunctionInvocation(Namespace(List())(pos), FunctionName("sum")(pos), distinct = false, IndexedSeq(Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos)))(pos))),
-          Seq(Ascending("  FRESHID60"))),
-        Map("sum(n.foo)" -> Variable("  FRESHID46")(pos), "n.prop" -> Variable("  FRESHID60")(pos)))
+      Sort(
+        Aggregation(
+          IndexSeek(
+            "n:Awesome(prop = 'foo')", GetValue),
+          Map(cachedNodePropertyProj("n.prop", "n", "prop")),
+          Map("sum(n.foo)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("sum")(pos), distinct = false, IndexedSeq(Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos)))(pos))),
+        Seq(Ascending("n.prop")))
     )
   }
 

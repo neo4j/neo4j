@@ -230,7 +230,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
   }
 
   // Only tested in ASC mode because it's hard to make compatibility check out otherwise
-  test("ASC: Order by index backed property in a plan with a outer join") {
+  test("ASC: Order by index backed property in a plan with an outer join") {
     // Be careful with what is created in createSomeNodes. It underwent careful cardinality tuning to get exactly the plan we want here.
     val result =  executeWith(Configs.Interpreted - Configs.Cost3_1 - Configs.Cost2_3,
       """MATCH (b:B {foo:1, bar:1})

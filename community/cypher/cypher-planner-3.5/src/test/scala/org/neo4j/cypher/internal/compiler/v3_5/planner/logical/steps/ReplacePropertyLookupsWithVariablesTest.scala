@@ -100,11 +100,4 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
     val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
     (resultState.logicalPlan, resultState.semanticTable())
   }
-
-  // TODO remove after depending on frontend 9.0.8
-  private def mapOf(keysAndValues: (String, Expression)*): MapExpression = MapExpression(keysAndValues.map {
-    case (k, v) => PropertyKeyName(k)(pos) -> v
-  })(pos)
-
-
 }
