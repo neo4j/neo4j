@@ -306,7 +306,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
 
         DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
-                new SimpleKernelContext( databaseDirectory, DatabaseInfo.UNKNOWN, deps ),
+                new SimpleKernelContext( databaseDirectory, DatabaseInfo.TOOL, deps ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
         indexProviderMap = life.add( new DefaultIndexProviderMap( extensions ) );

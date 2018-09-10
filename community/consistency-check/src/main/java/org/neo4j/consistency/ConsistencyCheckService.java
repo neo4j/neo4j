@@ -75,7 +75,7 @@ import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instanti
 import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
 
 public class ConsistencyCheckService
 {
@@ -243,8 +243,7 @@ public class ConsistencyCheckService
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( databaseLayout.databaseDirectory(),
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache, jobScheduler,
                 RecoveryCleanupWorkCollector.ignore(),
-                // May be enterprise edition, but in consistency checker we only care about the operational mode
-                COMMUNITY,
+                TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
                 monitors, tokenHolders ) );
         DefaultIndexProviderMap indexes = life.add( new DefaultIndexProviderMap( extensions ) );
 
