@@ -2,3 +2,8 @@
 
 // Different error type in Neo4j
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+
+
+//will be fixed when updating frontend
+Feature "BooleanExpression": Scenario "Combining IN predicates intersected with OR"
+Feature "BooleanExpression": Scenario "Combining IN predicates intersected with AND"
