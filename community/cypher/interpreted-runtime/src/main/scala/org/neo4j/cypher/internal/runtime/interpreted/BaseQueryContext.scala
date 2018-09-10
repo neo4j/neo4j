@@ -36,7 +36,7 @@ import org.opencypher.v9_0.expressions.SemanticDirection
 
 abstract class BaseQueryContext extends QueryContext {
 
-  def notSupported():Nothing
+  def notSupported(): Nothing
 
   override def entityAccessor: EmbeddedProxySPI = notSupported()
 
@@ -44,7 +44,7 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def withActiveRead: QueryContext = notSupported()
 
-  override def resources: CloseableResource = notSupported()
+  override def resources: ResourceManager = notSupported()
 
   override def nodeOps: Operations[NodeValue] = notSupported()
 
@@ -90,29 +90,6 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def indexReference(label: Int, properties: Int*): IndexReference = notSupported()
 
-  override def indexSeek(index: IndexReference,
-                         propertyIndicesWithValues: Array[Int],
-                         queries: Seq[IndexQuery]): Iterator[IndexedNodeWithProperties] = notSupported()
-
-  override def indexSeekByContains(index: IndexReference,
-                                   propertyIndicesWithValues: Array[Int],
-                                   value: String): Iterator[IndexedNodeWithProperties] = notSupported()
-
-  override def indexSeekByEndsWith(index: IndexReference,
-                                   propertyIndicesWithValues: Array[Int],
-                                   value: String): Iterator[IndexedNodeWithProperties] = notSupported()
-
-  override def indexScan(index: IndexReference,
-                         propertyIndicesWithValues: Array[Int]): Iterator[IndexedNodeWithProperties] = notSupported()
-
-  override def indexScanPrimitiveWithValues(index: IndexReference,
-                                            propertyIndicesWithValues: Array[Int]): Iterator[IndexedPrimitiveNodeWithProperties] = notSupported()
-
-  override def indexScanPrimitive(index: IndexReference): LongIterator = notSupported()
-
-  override def lockingUniqueIndexSeek(index: IndexReference,
-                                      propertyIndicesWithValues: Array[Int],
-                                      queries: Seq[IndexQuery.ExactPredicate]): Option[IndexedNodeWithProperties] = notSupported()
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = notSupported()
 
@@ -256,4 +233,23 @@ abstract class BaseQueryContext extends QueryContext {
   override def nodeAsMap(id: Long): MapValue = notSupported()
 
   override def relationshipAsMap(id: Long): MapValue = notSupported()
+
+  override def indexSeek[RESULT <: AnyRef](index: IndexReference,
+                                           needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT],
+                                           queries: Seq[IndexQuery]): Iterator[RESULT] = notSupported()
+
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] = notSupported()
+
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean,
+                                                     resultCreator: ResultCreator[RESULT],
+                                                     value: String): Iterator[RESULT] = notSupported()
+
+  override def indexScan[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean,
+                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] = notSupported()
+
+  override def lockingUniqueIndexSeek[RESULT](index: IndexReference, resultCreator: ResultCreator[RESULT],
+                                              queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT] = notSupported()
 }
