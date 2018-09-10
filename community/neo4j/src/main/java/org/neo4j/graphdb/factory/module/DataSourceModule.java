@@ -42,11 +42,10 @@ public class DataSourceModule
     public DataSourceModule( String databaseName, PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-
         platformModule.diagnosticsManager.prependProvider( platformModule.config );
-
+        EditionDatabaseContext editionContext = editionModule.createDatabaseContext( databaseName );
         ModularDatabaseCreationContext context =
-                new ModularDatabaseCreationContext( databaseName, platformModule, editionModule, procedures, graphDatabaseFacade );
+                new ModularDatabaseCreationContext( databaseName, platformModule, editionContext, procedures, graphDatabaseFacade );
         neoStoreDataSource = new NeoStoreDataSource( context );
 
         this.coreAPIAvailabilityGuard = context.getCoreAPIAvailabilityGuard();

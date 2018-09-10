@@ -178,7 +178,8 @@ public class GraphDatabaseFacadeFactory
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
         platform.life.add(
-                new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config ), edition.transactionStartTimeout ) );
+                new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config ),
+                        edition.getTransactionStartTimeout() ) );
         platform.dependencies.satisfyDependency( edition.schemaWriteGuard );
         platform.life.setLast( platform.eventHandlers );
 

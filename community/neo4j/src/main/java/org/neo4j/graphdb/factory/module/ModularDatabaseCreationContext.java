@@ -120,53 +120,53 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseLayout databaseLayout;
     private final DatabaseAvailability databaseAvailability;
 
-    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionModule editionModule,
+    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionDatabaseContext editionContext,
             Procedures procedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;
         this.config = platformModule.config;
-        DatabaseIdContext idContext = editionModule.idContextFactory.createIdContext( databaseName );
+        DatabaseIdContext idContext = editionContext.createIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
         this.databaseLayout = platformModule.storeLayout.databaseLayout( databaseName );
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
         this.globalDependencies =  platformModule.dependencies;
-        this.tokenHolders = editionModule.tokenHoldersProvider.apply( databaseName );
+        this.tokenHolders = editionContext.createTokenHolders();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        this.locks = editionModule.locksSupplier.get();
-        this.statementLocksFactory = editionModule.statementLocksFactoryProvider.apply( locks );
-        this.schemaWriteGuard = editionModule.schemaWriteGuard;
+        this.locks = editionContext.createLocks();
+        this.statementLocksFactory = editionContext.createStatementLocksFactory();
+        this.schemaWriteGuard = editionContext.getSchemaWriteGuard();
         this.transactionEventHandlers = new TransactionEventHandlers( facade );
         this.monitors = new Monitors( platformModule.monitors );
         this.indexingServiceMonitor = monitors.newMonitor( IndexingService.Monitor.class );
         this.physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         this.fs = platformModule.fileSystem;
-        this.transactionStats = editionModule.createTransactionMonitor();
+        this.transactionStats = editionContext.createTransactionMonitor();
         this.databaseHealth = new DatabaseHealth( platformModule.panicEventGenerator, logService.getInternalLog( DatabaseHealth.class ) );
-        this.transactionHeaderInformationFactory = editionModule.headerInformationFactory;
-        this.commitProcessFactory = editionModule.commitProcessFactory;
+        this.transactionHeaderInformationFactory = editionContext.getHeaderInformationFactory();
+        this.commitProcessFactory = editionContext.getCommitProcessFactory();
         this.autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
         this.indexConfigStore = new IndexConfigStore( databaseLayout, fs );
         this.explicitIndexProvider = new DefaultExplicitIndexProvider();
         this.pageCache = platformModule.pageCache;
-        this.constraintSemantics = editionModule.constraintSemantics;
+        this.constraintSemantics = editionContext.getConstraintSemantics();
         this.tracers = platformModule.tracers;
         this.procedures = procedures;
-        this.ioLimiter = editionModule.ioLimiter;
+        this.ioLimiter = editionContext.getIoLimiter();
         this.clock = platformModule.clock;
-        this.databaseAvailabilityGuard = editionModule.createDatabaseAvailabilityGuard( databaseName, clock, logService, config );
+        this.databaseAvailabilityGuard = editionContext.createDatabaseAvailabilityGuard( clock, logService, config );
         this.databaseAvailability =
                 new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, platformModule.clock, getAwaitActiveTransactionDeadlineMillis() );
-        this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionModule.transactionStartTimeout );
-        this.accessCapability = editionModule.accessCapability;
+        this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionContext.getTransactionStartTimeout() );
+        this.accessCapability = editionContext.getAccessCapability();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.recoveryCleanupWorkCollector = platformModule.recoveryCleanupWorkCollector;
         this.databaseInfo = platformModule.databaseInfo;
         this.versionContextSupplier = platformModule.versionContextSupplier;
         this.collectionsFactorySupplier = platformModule.collectionsFactorySupplier;
         this.kernelExtensionFactories = platformModule.kernelExtensionFactories;
-        this.watcherServiceFactory = editionModule.watcherServiceFactory;
+        this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
         this.facade = facade;
         this.engineProviders = platformModule.engineProviders;
     }

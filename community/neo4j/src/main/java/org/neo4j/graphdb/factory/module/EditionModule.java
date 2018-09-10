@@ -76,29 +76,29 @@ import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTempo
  */
 public abstract class EditionModule
 {
-    public IdContextFactory idContextFactory;
+    protected IdContextFactory idContextFactory;
 
-    public Function<String, TokenHolders> tokenHoldersProvider;
+    protected Function<String, TokenHolders> tokenHoldersProvider;
 
-    public Supplier<Locks> locksSupplier;
+    protected Supplier<Locks> locksSupplier;
 
-    public Function<Locks, StatementLocksFactory> statementLocksFactoryProvider;
+    protected Function<Locks, StatementLocksFactory> statementLocksFactoryProvider;
 
-    public CommitProcessFactory commitProcessFactory;
+    protected CommitProcessFactory commitProcessFactory;
 
-    public long transactionStartTimeout;
+    protected long transactionStartTimeout;
 
-    public TransactionHeaderInformationFactory headerInformationFactory;
+    protected TransactionHeaderInformationFactory headerInformationFactory;
 
     public SchemaWriteGuard schemaWriteGuard;
 
-    public ConstraintSemantics constraintSemantics;
+    protected ConstraintSemantics constraintSemantics;
 
-    public AccessCapability accessCapability;
+    protected AccessCapability accessCapability;
 
     public IOLimiter ioLimiter;
 
-    public Function<File, FileSystemWatcherService> watcherServiceFactory;
+    protected Function<File, FileSystemWatcherService> watcherServiceFactory;
 
     public AuthManager authManager;
 
@@ -111,6 +111,11 @@ public abstract class EditionModule
     private final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
 
     protected AvailabilityGuard globalAvailabilityGuard;
+
+    EditionDatabaseContext createDatabaseContext( String databaseName )
+    {
+        return new DefaultEditionModuleDatabaseContext( this, databaseName );
+    }
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
             LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )
@@ -263,5 +268,10 @@ public abstract class EditionModule
     public void createDatabases( DatabaseManager databaseManager, Config config )
     {
         databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
+    }
+
+    public long getTransactionStartTimeout()
+    {
+        return transactionStartTimeout;
     }
 }
