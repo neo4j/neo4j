@@ -32,10 +32,15 @@ import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.SortItem
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans.ColumnOrder
-import org.opencypher.v9_0.expressions.{Expression, FunctionInvocation, functions => ast_functions}
+import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.FunctionInvocation
+import org.opencypher.v9_0.expressions.{functions => ast_functions}
 import org.opencypher.v9_0.util.Eagerly.immutableMapValues
 import org.opencypher.v9_0.util.Foldable._
-import org.opencypher.v9_0.util.{InternalException, One, ZeroOneOrMany, symbols}
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.One
+import org.opencypher.v9_0.util.ZeroOneOrMany
+import org.opencypher.v9_0.util.symbols
 import org.opencypher.v9_0.{expressions => ast}
 
 object LogicalPlanConverter {
@@ -691,11 +696,12 @@ object LogicalPlanConverter {
     val variablesToKeep = available.map(a => a -> context.getVariable(a)).toMap
 
     val sortItems = inputSortItems.map {
-      case plans.Ascending(name) => spi.SortItem(name, spi.Ascending)
-      case plans.Descending(name) => spi.SortItem(name, spi.Descending)
+      case plans.Ascending(name) => spi.SortItem(context.getVariable(name).name, spi.Ascending)
+      case plans.Descending(name) => spi.SortItem(context.getVariable(name).name, spi.Descending)
     }
-    val additionalSortVariables = sortItems.collect {
-      case spi.SortItem(name, _) if !variablesToKeep.isDefinedAt(name) => (name, context.getVariable(name))
+    val additionalSortVariables = inputSortItems.collect {
+      case plans.Ascending(name) if !variablesToKeep.isDefinedAt(name) => (name, context.getVariable(name))
+      case plans.Descending(name) if !variablesToKeep.isDefinedAt(name) => (name, context.getVariable(name))
     }
     val tupleVariables = variablesToKeep ++ additionalSortVariables
 

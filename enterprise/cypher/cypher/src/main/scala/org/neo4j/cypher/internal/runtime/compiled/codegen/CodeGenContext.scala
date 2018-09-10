@@ -52,7 +52,7 @@ class CodeGenContext(val semanticTable: SemanticTable,
   def nameToIndex(name: String) = lookup.getOrElse(name, throw new InternalException(s"$name is not a mapped column"))
 
   def updateVariable(queryVariable: String, variable: Variable) {
-    assert(variables.isDefinedAt(queryVariable))
+    assert(variables.isDefinedAt(queryVariable), s"undefined: $queryVariable")
     variables.put(queryVariable, variable)
   }
 
@@ -99,8 +99,4 @@ class CodeGenContext(val semanticTable: SemanticTable,
       throw new IllegalStateException(s"Cannot support multiple operators with the same name. Tried to replace operator '$oldId' with '${plan.id}'"))
     name
   }
-}
-
-object CodeGenContext {
-  def sanitizedName(name: String) = name.replace(" ", "_").replace("@", "__at__")
 }

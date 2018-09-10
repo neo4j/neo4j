@@ -87,7 +87,7 @@ abstract class BuildSortTableBase(opName: String, tableName: String, columnVaria
 
   private val fieldToVariableInfo: Map[String, FieldAndVariableInfo] = columnVariables.map {
     case (queryVariableName: String, incoming: Variable) =>
-      val fieldName = CodeGenContext.sanitizedName(queryVariableName) // < Name the field after the query variable
+      val fieldName = incoming.name
       (fieldName,
         FieldAndVariableInfo(
           fieldName = fieldName,

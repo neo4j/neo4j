@@ -28,20 +28,22 @@ import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
+import org.neo4j.cypher.internal.compiler.v3_5.common.CypherOrderability
 import org.neo4j.cypher.internal.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi._
-import org.neo4j.cypher.internal.compiler.v3_5.common.CypherOrderability
-import org.opencypher.v9_0.frontend.helpers._
-import org.opencypher.v9_0.util.symbols
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
+import org.opencypher.v9_0.frontend.helpers._
+import org.opencypher.v9_0.util.symbols
 
 import scala.collection.mutable
 
-class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
+class AuxGenerator(val packageName: String, val generator: CodeGenerator)(implicit context: CodeGenContext) {
 
-  import GeneratedQueryStructure.{lowerType, method, typeRef}
+  import GeneratedQueryStructure.lowerType
+  import GeneratedQueryStructure.method
+  import GeneratedQueryStructure.typeRef
 
   private val types: scala.collection.mutable.Map[_ >: TupleDescriptor, TypeReference] = mutable.Map.empty
   private var nameId = 0
@@ -121,12 +123,11 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
 
         tupleDescriptor.sortItems.foreach { sortItem =>
           val SortItem(fieldName, sortOrder) = sortItem
-          val sanitizedFieldName = CodeGenContext.sanitizedName(fieldName)
-          val codeGenType = tupleDescriptor.structure(sanitizedFieldName)
+          val codeGenType = tupleDescriptor.structure(fieldName)
           val fieldType: TypeReference = lowerType(codeGenType)
-          val fieldReference = field(clazz.handle(), fieldType, sanitizedFieldName)
-          val thisValueName = s"thisValue_$sanitizedFieldName"
-          val otherValueName = s"otherValue_$sanitizedFieldName"
+          val fieldReference = field(clazz.handle(), fieldType, fieldName)
+          val thisValueName = s"thisValue_$fieldName"
+          val otherValueName = s"otherValue_$fieldName"
 
           // Helper for generating code expressions for the field values to compare, with proper boxing
           def extractFields(block: CodeBlock, reprType: RepresentationType): (Expression, Expression) = {
@@ -199,7 +200,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 }
                 ...
                 */
-                val compareResultName = s"compare_$sanitizedFieldName"
+                val compareResultName = s"compare_$fieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
                 val (thisField, otherField) = extractFields(l2, reprType)
 
@@ -233,7 +234,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
               }
               case _ => {
                 // Use CypherOrderability.compare which handles mixed-types according to Cypher orderability semantics
-                val compareResultName = s"compare_$sanitizedFieldName"
+                val compareResultName = s"compare_$fieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
 
                 val (thisField, otherField) = extractFields(l2, ReferenceType) // NOTE: Always force boxing in this case
