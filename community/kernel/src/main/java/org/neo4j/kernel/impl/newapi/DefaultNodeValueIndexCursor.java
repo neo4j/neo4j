@@ -385,13 +385,13 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
         if ( needsValues )
         {
-            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query, indexOrder );
             addedWithValues = changes.getAdded().iterator();
             removed = removed( txState, changes.getRemoved() );
         }
         else
         {
-            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query );
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query, indexOrder );
             added = changes.getAdded().longIterator();
             removed = removed( txState, changes.getRemoved() );
         }

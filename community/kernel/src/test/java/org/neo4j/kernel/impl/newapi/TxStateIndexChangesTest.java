@@ -303,10 +303,9 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            AddedAndRemoved changes =
-                    indexUpdatesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
-            AddedWithValuesAndRemoved changesWithValues =
-                    indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
+            IndexQuery.StringContainsPredicate indexQuery = IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" );
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
             // THEN
             assertTrue( changes.getAdded().isEmpty() );
@@ -329,16 +328,58 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            AddedAndRemoved changes =
-                    indexUpdatesForSuffixOrContains( state, index, IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
-            AddedWithValuesAndRemoved changesWithValues =
-                    indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
+            IndexQuery.StringSuffixPredicate indexQuery = IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" );
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
             // THEN
             assertContains( changes.getAdded(), 46L, 47L );
             assertContains( changesWithValues.getAdded(),
                             nodeWithPropertyValues( 46L, "Barbarella" ),
                             nodeWithPropertyValues( 47L, "Cinderella" ) );
+        }
+
+        @Test
+        void shouldComputeIndexUpdatesForSuffixWithAscendingOrder()
+        {
+            assertRangeSeekBySuffixForOrder( IndexOrder.ASCENDING );
+        }
+
+        @Test
+        void shouldComputeIndexUpdatesForSuffixWithDescendingOrder()
+        {
+            assertRangeSeekBySuffixForOrder( IndexOrder.DESCENDING );
+        }
+
+        private void assertRangeSeekBySuffixForOrder( IndexOrder indexOrder )
+        {
+            // GIVEN
+            ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded( 40L, "Aaron" )
+                    .withAdded( 41L, "Bonbon" )
+                    .withAdded( 42L, "Crayfish" )
+                    .withAdded( 43L, "Mayonnaise" )
+                    .withAdded( 44L, "Seashell" )
+                    .withAdded( 45L, "Ton" )
+                    .withAdded( 46L, "Macron" )
+                    .withAdded( 47L, "Tony" )
+                    .withAdded( 48L, "Evon" )
+                    .withAdded( 49L, "Andromeda" )
+                    .build();
+
+            // WHEN
+            IndexQuery indexQuery = IndexQuery.stringSuffix( index.schema().getPropertyId(), "on" );
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
+
+            NodeWithPropertyValues[] expected = {nodeWithPropertyValues( 40L, "Aaron" ),
+                                                 nodeWithPropertyValues( 41L, "Bonbon" ),
+                                                 nodeWithPropertyValues( 48L, "Evon" ),
+                                                 nodeWithPropertyValues( 46L, "Macron" ),
+                                                 nodeWithPropertyValues( 45L, "Ton" )};
+
+            // THEN
+            assertContains( indexOrder, changes, changesWithValues, expected );
         }
 
         @Test
@@ -357,16 +398,58 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            AddedAndRemoved changes =
-                    indexUpdatesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
-            AddedWithValuesAndRemoved changesWithValues =
-                    indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
+            IndexQuery.StringContainsPredicate indexQuery = IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" );
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
             // THEN
             assertContains( changes.getAdded(), 45L, 46L );
             assertContains( changesWithValues.getAdded(),
                             nodeWithPropertyValues( 45L, "Barbara" ),
                             nodeWithPropertyValues( 46L, "Barbarella" ) );
+        }
+
+        @Test
+        void shouldComputeIndexUpdatesForContainsWithAscendingOrder()
+        {
+            assertRangeSeekByContainsForOrder( IndexOrder.ASCENDING );
+        }
+
+        @Test
+        void shouldComputeIndexUpdatesForContainsWithDescendingOrder()
+        {
+            assertRangeSeekByContainsForOrder( IndexOrder.DESCENDING );
+        }
+
+        private void assertRangeSeekByContainsForOrder( IndexOrder indexOrder )
+        {
+            // GIVEN
+            ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded( 40L, "Smashing" )
+                    .withAdded( 41L, "Bashley" )
+                    .withAdded( 42L, "Crasch" )
+                    .withAdded( 43L, "Mayonnaise" )
+                    .withAdded( 44L, "Seashell" )
+                    .withAdded( 45L, "Ton" )
+                    .withAdded( 46L, "The Flash" )
+                    .withAdded( 47L, "Strayhound" )
+                    .withAdded( 48L, "Trashy" )
+                    .withAdded( 49L, "Andromeda" )
+                    .build();
+
+            // WHEN
+            IndexQuery indexQuery = IndexQuery.stringContains( index.schema().getPropertyId(), "ash" );
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
+
+            NodeWithPropertyValues[] expected = {nodeWithPropertyValues( 41L, "Bashley" ),
+                                                 nodeWithPropertyValues( 44L, "Seashell" ),
+                                                 nodeWithPropertyValues( 40L, "Smashing" ),
+                                                 nodeWithPropertyValues( 46L, "The Flash" ),
+                                                 nodeWithPropertyValues( 48L, "Trashy" )};
+
+            // THEN
+            assertContains( indexOrder, changes, changesWithValues, expected );
         }
     }
 
@@ -436,7 +519,7 @@ class TxStateIndexChangesTest
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNonStringNodes() throws Exception
+        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNonStringNodes()
         {
             // GIVEN
             final ReadableTransactionState state = new TxStateBuilder()

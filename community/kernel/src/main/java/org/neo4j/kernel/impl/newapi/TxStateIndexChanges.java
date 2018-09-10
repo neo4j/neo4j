@@ -36,7 +36,6 @@ import java.util.NavigableMap;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.TextValue;
@@ -62,118 +61,47 @@ class TxStateIndexChanges
 
     static AddedAndRemoved indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor descriptor, IndexOrder indexOrder )
     {
-        Map<ValueTuple,? extends LongDiffSets> updates =
-                indexOrder == IndexOrder.NONE ?
-                txState.getIndexUpdates( descriptor.schema() ) :
-                txState.getSortedIndexUpdates( descriptor.schema() );
-
-        if ( updates == null )
-        {
-            return EMPTY_ADDED_AND_REMOVED;
-        }
-
-        MutableLongList added = LongLists.mutable.empty();
-        MutableLongSet removed = LongSets.mutable.empty();
-
-        for ( LongDiffSets diffSet : updates.values() )
-        {
-            added.addAll( diffSet.getAdded() );
-            removed.addAll( diffSet.getRemoved() );
-        }
-        return new AddedAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
+        return indexUpdatesForScanAndFilter( txState, descriptor, null, indexOrder );
     }
 
     static AddedWithValuesAndRemoved indexUpdatesWithValuesForScan( ReadableTransactionState txState,
                                                                     IndexDescriptor descriptor,
                                                                     IndexOrder indexOrder )
     {
-        Map<ValueTuple,? extends LongDiffSets> updates =
-                indexOrder == IndexOrder.NONE ?
-                txState.getIndexUpdates( descriptor.schema() ) :
-                txState.getSortedIndexUpdates( descriptor.schema() );
-
-        if ( updates == null )
-        {
-            return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
-        }
-
-        MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
-        MutableLongSet removed = LongSets.mutable.empty();
-
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
-        {
-            Value[] values = entry.getKey().getValues();
-            LongDiffSets diffSets = entry.getValue();
-
-            diffSets.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, values ) ) );
-            removed.addAll( diffSets.getRemoved() );
-        }
-        return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
+        return indexUpdatesWithValuesScanAndFilter( txState, descriptor, null, indexOrder );
     }
 
     // SUFFIX
 
-    static AddedAndRemoved indexUpdatesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor, IndexQuery query )
+    static AddedAndRemoved indexUpdatesForSuffixOrContains( ReadableTransactionState txState,
+                                                            IndexDescriptor descriptor,
+                                                            IndexQuery query,
+                                                            IndexOrder indexOrder )
     {
         if ( descriptor.schema().getPropertyIds().length != 1 )
         {
             throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
         }
-        UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
-        if ( updates == null )
-        {
-            return EMPTY_ADDED_AND_REMOVED;
-        }
-
-        MutableLongList added = LongLists.mutable.empty();
-        MutableLongSet removed = LongSets.mutable.empty();
-
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
-        {
-            if ( query.acceptsValue( entry.getKey().getOnlyValue() ) )
-            {
-                LongDiffSets diffSet = entry.getValue();
-                added.addAll( diffSet.getAdded() );
-                removed.addAll( diffSet.getRemoved() );
-            }
-        }
-        return new AddedAndRemoved( added, removed );
+        return indexUpdatesForScanAndFilter( txState, descriptor, query, indexOrder );
     }
 
-    static AddedWithValuesAndRemoved indexUpdatesWithValuesForSuffixOrContains( ReadableTransactionState txState, IndexDescriptor descriptor,
-            IndexQuery query )
+    static AddedWithValuesAndRemoved indexUpdatesWithValuesForSuffixOrContains( ReadableTransactionState txState,
+                                                                                IndexDescriptor descriptor,
+                                                                                IndexQuery query,
+                                                                                IndexOrder indexOrder )
     {
         if ( descriptor.schema().getPropertyIds().length != 1 )
         {
             throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
         }
-
-        UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
-        if ( updates == null )
-        {
-            return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
-        }
-
-        MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
-        MutableLongSet removed = LongSets.mutable.empty();
-
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
-        {
-            ValueTuple key = entry.getKey();
-            if ( query.acceptsValue( key.getOnlyValue() ) )
-            {
-                Value[] values = key.getValues();
-                LongDiffSets diffSets = entry.getValue();
-                diffSets.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, values ) ) );
-                removed.addAll( diffSets.getRemoved() );
-            }
-        }
-        return new AddedWithValuesAndRemoved( added, removed );
+        return indexUpdatesWithValuesScanAndFilter( txState, descriptor, query, indexOrder );
     }
 
     // SEEK
 
-    static AddedAndRemoved indexUpdatesForSeek( ReadableTransactionState txState, IndexDescriptor descriptor, ValueTuple values )
+    static AddedAndRemoved indexUpdatesForSeek( ReadableTransactionState txState,
+                                                IndexDescriptor descriptor,
+                                                ValueTuple values )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
         if ( updates != null )
@@ -387,6 +315,72 @@ class TxStateIndexChanges
     }
 
     // HELPERS
+
+    private static AddedAndRemoved indexUpdatesForScanAndFilter( ReadableTransactionState txState,
+                                                                 IndexDescriptor descriptor,
+                                                                 IndexQuery filter,
+                                                                 IndexOrder indexOrder )
+    {
+        Map<ValueTuple,? extends LongDiffSets> updates = getUpdates( txState, descriptor, indexOrder );
+
+        if ( updates == null )
+        {
+            return EMPTY_ADDED_AND_REMOVED;
+        }
+
+        MutableLongList added = LongLists.mutable.empty();
+        MutableLongSet removed = LongSets.mutable.empty();
+
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
+        {
+            ValueTuple key = entry.getKey();
+            if ( filter == null || filter.acceptsValue( key.getOnlyValue() ) )
+            {
+                LongDiffSets diffSet = entry.getValue();
+                added.addAll( diffSet.getAdded() );
+                removed.addAll( diffSet.getRemoved() );
+            }
+        }
+        return new AddedAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
+    }
+
+    private static AddedWithValuesAndRemoved indexUpdatesWithValuesScanAndFilter( ReadableTransactionState txState,
+                                                                                  IndexDescriptor descriptor,
+                                                                                  IndexQuery filter,
+                                                                                  IndexOrder indexOrder )
+    {
+        Map<ValueTuple,? extends LongDiffSets> updates = getUpdates( txState, descriptor, indexOrder );
+
+        if ( updates == null )
+        {
+            return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
+        }
+
+        MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
+        MutableLongSet removed = LongSets.mutable.empty();
+
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
+        {
+            ValueTuple key = entry.getKey();
+            if ( filter == null || filter.acceptsValue( key.getOnlyValue() ) )
+            {
+                Value[] values = key.getValues();
+                LongDiffSets diffSet = entry.getValue();
+                diffSet.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, values ) ) );
+                removed.addAll( diffSet.getRemoved() );
+            }
+        }
+        return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
+    }
+
+    private static Map<ValueTuple,? extends LongDiffSets> getUpdates( ReadableTransactionState txState,
+                                                                      IndexDescriptor descriptor,
+                                                                      IndexOrder indexOrder )
+    {
+        return indexOrder == IndexOrder.NONE ?
+               txState.getIndexUpdates( descriptor.schema() ) :
+               txState.getSortedIndexUpdates( descriptor.schema() );
+    }
 
     public static class AddedAndRemoved
     {
