@@ -22,6 +22,8 @@ package org.neo4j.graphdb.factory.module;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
@@ -53,7 +55,8 @@ public class DataSourceModule
         this.kernelAPI = neoStoreDataSource::getKernel;
 
         ProcedureGDSFactory gdsFactory =
-                new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(), editionModule.threadToTransactionBridge );
+                new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(),
+                        editionModule.getThreadToTransactionBridge() );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 

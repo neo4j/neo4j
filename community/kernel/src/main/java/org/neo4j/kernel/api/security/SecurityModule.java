@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.security;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
@@ -30,7 +31,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 
-public abstract class SecurityModule extends Service implements Lifecycle
+public abstract class SecurityModule extends Service implements Lifecycle, SecurityProvider
 {
     protected final LifeSupport life = new LifeSupport();
 
@@ -40,10 +41,6 @@ public abstract class SecurityModule extends Service implements Lifecycle
     }
 
     public abstract void setup( Dependencies dependencies ) throws KernelException;
-
-    public abstract AuthManager authManager();
-
-    public abstract UserManagerSupplier userManagerSupplier();
 
     @Override
     public void init() throws Throwable

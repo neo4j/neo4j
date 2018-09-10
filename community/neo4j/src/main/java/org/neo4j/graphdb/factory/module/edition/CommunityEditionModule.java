@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory.module;
+package org.neo4j.graphdb.factory.module.edition;
 
 import java.io.File;
 import java.util.function.Function;
@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -33,9 +34,8 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -232,16 +232,14 @@ public class CommunityEditionModule extends EditionModule
             SecurityModule securityModule = setupSecurityModule( platformModule,
                     platformModule.logging.getUserLog( getClass() ),
                     procedures, COMMUNITY_SECURITY_MODULE_ID );
-            this.authManager = securityModule.authManager();
-            this.userManagerSupplier = securityModule.userManagerSupplier();
             platformModule.life.add( securityModule );
+            securityProvider = securityModule;
         }
         else
         {
-            this.authManager = AuthManager.NO_AUTH;
-            this.userManagerSupplier = UserManagerSupplier.NO_AUTH;
-            platformModule.life.add( platformModule.dependencies.satisfyDependency( this.authManager ) );
-            platformModule.life.add( platformModule.dependencies.satisfyDependency( this.userManagerSupplier ) );
+            NoAuthSecurityProvider noAuthSecurityProvider = NoAuthSecurityProvider.INSTANCE;
+            platformModule.life.add( noAuthSecurityProvider );
+            this.securityProvider = noAuthSecurityProvider;
         }
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory.module;
+package org.neo4j.graphdb.factory.module.edition;
 
 import java.io.File;
 import java.time.Clock;
@@ -29,6 +29,9 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.context.DefaultEditionModuleDatabaseContext;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -36,9 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -76,43 +78,25 @@ import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTempo
  */
 public abstract class EditionModule
 {
-    protected IdContextFactory idContextFactory;
-
-    protected Function<String, TokenHolders> tokenHoldersProvider;
-
-    protected Supplier<Locks> locksSupplier;
-
-    protected Function<Locks, StatementLocksFactory> statementLocksFactoryProvider;
-
-    protected CommitProcessFactory commitProcessFactory;
-
-    protected long transactionStartTimeout;
-
-    protected TransactionHeaderInformationFactory headerInformationFactory;
-
-    public SchemaWriteGuard schemaWriteGuard;
-
-    protected ConstraintSemantics constraintSemantics;
-
-    protected AccessCapability accessCapability;
-
-    public IOLimiter ioLimiter;
-
-    protected Function<File, FileSystemWatcherService> watcherServiceFactory;
-
-    public AuthManager authManager;
-
-    public UserManagerSupplier userManagerSupplier;
-
-    public NetworkConnectionTracker connectionTracker;
-
-    public ThreadToStatementContextBridge threadToTransactionBridge;
-
     private final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
-
+    protected NetworkConnectionTracker connectionTracker;
+    protected ThreadToStatementContextBridge threadToTransactionBridge;
+    protected IdContextFactory idContextFactory;
+    protected Function<String, TokenHolders> tokenHoldersProvider;
+    protected Supplier<Locks> locksSupplier;
+    protected Function<Locks, StatementLocksFactory> statementLocksFactoryProvider;
+    protected CommitProcessFactory commitProcessFactory;
+    protected long transactionStartTimeout;
+    protected TransactionHeaderInformationFactory headerInformationFactory;
+    protected SchemaWriteGuard schemaWriteGuard;
+    protected ConstraintSemantics constraintSemantics;
+    protected AccessCapability accessCapability;
+    protected IOLimiter ioLimiter;
+    protected Function<File, FileSystemWatcherService> watcherServiceFactory;
     protected AvailabilityGuard globalAvailabilityGuard;
+    protected SecurityProvider securityProvider;
 
-    EditionDatabaseContext createDatabaseContext( String databaseName )
+    public EditionDatabaseContext createDatabaseContext( String databaseName )
     {
         return new DefaultEditionModuleDatabaseContext( this, databaseName );
     }
@@ -176,50 +160,15 @@ public abstract class EditionModule
     protected static SecurityModule setupSecurityModule( PlatformModule platformModule, Log log, Procedures procedures,
             String key )
     {
-        for ( SecurityModule candidate : Service.load( SecurityModule.class ) )
+        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependenciesDependencies( platformModule, procedures );
+        Iterable<SecurityModule> candidates = Service.load( SecurityModule.class );
+        for ( SecurityModule candidate : candidates )
         {
             if ( candidate.matches( key ) )
             {
                 try
                 {
-                    candidate.setup( new SecurityModule.Dependencies()
-                    {
-                        @Override
-                        public LogService logService()
-                        {
-                            return platformModule.logging;
-                        }
-
-                        @Override
-                        public Config config()
-                        {
-                            return platformModule.config;
-                        }
-
-                        @Override
-                        public Procedures procedures()
-                        {
-                            return procedures;
-                        }
-
-                        @Override
-                        public JobScheduler scheduler()
-                        {
-                            return platformModule.jobScheduler;
-                        }
-
-                        @Override
-                        public FileSystemAbstraction fileSystem()
-                        {
-                            return platformModule.fileSystem;
-                        }
-
-                        @Override
-                        public DependencySatisfier dependencySatisfier()
-                        {
-                            return platformModule.dependencies;
-                        }
-                    } );
+                    candidate.setup( securityModuleDependencies );
                     return candidate;
                 }
                 catch ( Exception e )
@@ -273,5 +222,128 @@ public abstract class EditionModule
     public long getTransactionStartTimeout()
     {
         return transactionStartTimeout;
+    }
+
+    public SchemaWriteGuard getSchemaWriteGuard()
+    {
+        return schemaWriteGuard;
+    }
+
+    public TransactionHeaderInformationFactory getHeaderInformationFactory()
+    {
+        return headerInformationFactory;
+    }
+
+    public CommitProcessFactory getCommitProcessFactory()
+    {
+        return commitProcessFactory;
+    }
+
+    public ConstraintSemantics getConstraintSemantics()
+    {
+        return constraintSemantics;
+    }
+
+    public IOLimiter getIoLimiter()
+    {
+        return ioLimiter;
+    }
+
+    public AccessCapability getAccessCapability()
+    {
+        return accessCapability;
+    }
+
+    public Function<File,FileSystemWatcherService> getWatcherServiceFactory()
+    {
+        return watcherServiceFactory;
+    }
+
+    public IdContextFactory getIdContextFactory()
+    {
+        return idContextFactory;
+    }
+
+    public Function<String,TokenHolders> getTokenHoldersProvider()
+    {
+        return tokenHoldersProvider;
+    }
+
+    public Supplier<Locks> getLocksSupplier()
+    {
+        return locksSupplier;
+    }
+
+    public Function<Locks,StatementLocksFactory> getStatementLocksFactoryProvider()
+    {
+        return statementLocksFactoryProvider;
+    }
+
+    public ThreadToStatementContextBridge getThreadToTransactionBridge()
+    {
+        return threadToTransactionBridge;
+    }
+
+    public NetworkConnectionTracker getConnectionTracker()
+    {
+        return connectionTracker;
+    }
+
+    public SecurityProvider getSecurityProvider()
+    {
+        return securityProvider;
+    }
+
+    public void setSecurityProvider( SecurityProvider securityProvider )
+    {
+        this.securityProvider = securityProvider;
+    }
+
+    private static class SecurityModuleDependenciesDependencies implements SecurityModule.Dependencies
+    {
+        private final PlatformModule platformModule;
+        private final Procedures procedures;
+
+        SecurityModuleDependenciesDependencies( PlatformModule platformModule, Procedures procedures )
+        {
+            this.platformModule = platformModule;
+            this.procedures = procedures;
+        }
+
+        @Override
+        public LogService logService()
+        {
+            return platformModule.logging;
+        }
+
+        @Override
+        public Config config()
+        {
+            return platformModule.config;
+        }
+
+        @Override
+        public Procedures procedures()
+        {
+            return procedures;
+        }
+
+        @Override
+        public JobScheduler scheduler()
+        {
+            return platformModule.jobScheduler;
+        }
+
+        @Override
+        public FileSystemAbstraction fileSystem()
+        {
+            return platformModule.fileSystem;
+        }
+
+        @Override
+        public DependencySatisfier dependencySatisfier()
+        {
+            return platformModule.dependencies;
+        }
     }
 }

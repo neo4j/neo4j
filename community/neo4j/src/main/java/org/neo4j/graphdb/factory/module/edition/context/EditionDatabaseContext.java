@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory.module;
+package org.neo4j.graphdb.factory.module.edition.context;
 
 import java.io.File;
 import java.util.function.Function;
@@ -41,7 +41,7 @@ import org.neo4j.time.SystemNanoClock;
 
 public interface EditionDatabaseContext
 {
-    DatabaseIdContext createIdContext();
+    DatabaseIdContext getIdContext();
 
     TokenHolders createTokenHolders();
 

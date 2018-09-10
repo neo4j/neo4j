@@ -17,23 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory.module;
+package org.neo4j.kernel.api.security.provider;
 
-import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import org.neo4j.logging.Log;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-
-class EditionModuleTest
+public class NoAuthSecurityProvider extends LifecycleAdapter implements SecurityProvider
 {
-    @Test
-    void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
+    public static final NoAuthSecurityProvider INSTANCE = new NoAuthSecurityProvider();
+
+    private NoAuthSecurityProvider()
     {
-        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class,
-                () -> EditionModule.setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" ) );
-        assertEquals( "Failed to load security module with key 'non-existent-security-module'.", argumentException.getMessage() );
+    }
+
+    @Override
+    public AuthManager authManager()
+    {
+        return AuthManager.NO_AUTH;
+    }
+
+    @Override
+    public UserManagerSupplier userManagerSupplier()
+    {
+        return UserManagerSupplier.NO_AUTH;
     }
 }

@@ -26,18 +26,17 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
+import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -127,16 +126,14 @@ public class EnterpriseEditionModule extends CommunityEditionModule
             SecurityModule securityModule = setupSecurityModule( platformModule,
                     platformModule.logging.getUserLog( EnterpriseEditionModule.class ),
                     procedures, platformModule.config.get( EnterpriseEditionSettings.security_module ) );
-            editionModule.authManager = securityModule.authManager();
-            editionModule.userManagerSupplier = securityModule.userManagerSupplier();
             platformModule.life.add( securityModule );
+            editionModule.setSecurityProvider( securityModule );
         }
         else
         {
-            editionModule.authManager = EnterpriseAuthManager.NO_AUTH;
-            editionModule.userManagerSupplier = UserManagerSupplier.NO_AUTH;
-            platformModule.life.add( platformModule.dependencies.satisfyDependency( editionModule.authManager ) );
-            platformModule.life.add( platformModule.dependencies.satisfyDependency( editionModule.userManagerSupplier ) );
+            NoAuthSecurityProvider securityProvider = NoAuthSecurityProvider.INSTANCE;
+            platformModule.life.add( securityProvider );
+            editionModule.setSecurityProvider( securityProvider );
         }
     }
 }

@@ -23,7 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.Clock;
 
-import org.neo4j.graphdb.factory.module.CommunityEditionModule;
+import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.DynamicLocksFactory;

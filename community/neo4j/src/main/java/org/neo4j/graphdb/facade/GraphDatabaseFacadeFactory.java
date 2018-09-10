@@ -31,8 +31,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
-import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
@@ -180,7 +180,7 @@ public class GraphDatabaseFacadeFactory
         platform.life.add(
                 new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config ),
                         edition.getTransactionStartTimeout() ) );
-        platform.dependencies.satisfyDependency( edition.schemaWriteGuard );
+        platform.dependencies.satisfyDependency( edition.getSchemaWriteGuard() );
         platform.life.setLast( platform.eventHandlers );
 
         edition.createDatabases( databaseManager, config );
@@ -286,7 +286,7 @@ public class GraphDatabaseFacadeFactory
     private static BoltServer createBoltServer( PlatformModule platform, EditionModule edition, DatabaseManager databaseManager )
     {
         return new BoltServer( databaseManager, platform.jobScheduler,
-                platform.connectorPortRegister, edition.connectionTracker, platform.usageData, platform.config, platform.clock, platform.monitors,
+                platform.connectorPortRegister, edition.getConnectionTracker(), platform.usageData, platform.config, platform.clock, platform.monitors,
                 platform.logging, platform.dependencies );
     }
 }

@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory.module;
+package org.neo4j.graphdb.factory.module.edition.context;
 
 import java.io.File;
 import java.util.function.Function;
 
+import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
-import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -42,8 +42,6 @@ import org.neo4j.time.SystemNanoClock;
 
 public class DefaultEditionModuleDatabaseContext implements EditionDatabaseContext
 {
-    private final IdContextFactory idContextFactory;
-    private final Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final String databaseName;
     private final AccessCapability accessCapability;
@@ -53,40 +51,42 @@ public class DefaultEditionModuleDatabaseContext implements EditionDatabaseConte
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final SchemaWriteGuard schemaWriteGuard;
     private final long transactionStartTimeout;
-    private final Function<String,TokenHolders> tokenHoldersProvider;
+    private final TokenHolders tokenHolders;
     private final Locks locks;
     private final DatabaseTransactionStats transactionMonitor;
     private final EditionModule editionModule;
+    private final DatabaseIdContext idContext;
+    private final StatementLocksFactory statementLocksFactory;
 
-    DefaultEditionModuleDatabaseContext( EditionModule editionModule, String databaseName )
+    public DefaultEditionModuleDatabaseContext( EditionModule editionModule, String databaseName )
     {
         this.databaseName = databaseName;
         this.transactionStartTimeout = editionModule.getTransactionStartTimeout();
-        this.schemaWriteGuard = editionModule.schemaWriteGuard;
-        this.headerInformationFactory = editionModule.headerInformationFactory;
-        this.commitProcessFactory = editionModule.commitProcessFactory;
-        this.constraintSemantics = editionModule.constraintSemantics;
-        this.ioLimiter = editionModule.ioLimiter;
-        this.accessCapability = editionModule.accessCapability;
-        this.watcherServiceFactory = editionModule.watcherServiceFactory;
-        this.idContextFactory = editionModule.idContextFactory;
-        this.tokenHoldersProvider = editionModule.tokenHoldersProvider;
-        this.locks = editionModule.locksSupplier.get();
-        this.statementLocksFactoryProvider = editionModule.statementLocksFactoryProvider;
+        this.schemaWriteGuard = editionModule.getSchemaWriteGuard();
+        this.headerInformationFactory = editionModule.getHeaderInformationFactory();
+        this.commitProcessFactory = editionModule.getCommitProcessFactory();
+        this.constraintSemantics = editionModule.getConstraintSemantics();
+        this.ioLimiter = editionModule.getIoLimiter();
+        this.accessCapability = editionModule.getAccessCapability();
+        this.watcherServiceFactory = editionModule.getWatcherServiceFactory();
+        this.idContext = editionModule.getIdContextFactory().createIdContext( databaseName );
+        this.tokenHolders = editionModule.getTokenHoldersProvider().apply( databaseName );
+        this.locks = editionModule.getLocksSupplier().get();
+        this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();
         this.editionModule = editionModule;
     }
 
     @Override
-    public DatabaseIdContext createIdContext()
+    public DatabaseIdContext getIdContext()
     {
-        return idContextFactory.createIdContext( databaseName );
+        return idContext;
     }
 
     @Override
     public TokenHolders createTokenHolders()
     {
-        return tokenHoldersProvider.apply( databaseName );
+        return tokenHolders;
     }
 
     @Override
@@ -146,7 +146,7 @@ public class DefaultEditionModuleDatabaseContext implements EditionDatabaseConte
     @Override
     public StatementLocksFactory createStatementLocksFactory()
     {
-        return statementLocksFactoryProvider.apply( locks );
+        return statementLocksFactory;
     }
 
     @Override
