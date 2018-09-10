@@ -29,7 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.configuration.Config;
@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -77,13 +78,14 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     protected List<Long> query( IndexQuery... predicates ) throws Exception
     {
-        try ( IndexReader reader = accessor.newReader();
-              PrimitiveLongResourceIterator unfilteredResults = reader.query( predicates ) )
+        try ( IndexReader reader = accessor.newReader(); )
         {
+            SimpleNodeValueClient nodeValueClient = new SimpleNodeValueClient();
+            reader.query( nodeValueClient, IndexOrder.NONE, false, predicates );
             List<Long> list = new LinkedList<>();
-            while ( unfilteredResults.hasNext() )
+            while ( nodeValueClient.next() )
             {
-                long entityId = unfilteredResults.next();
+                long entityId = nodeValueClient.reference;
                 if ( passesFilter( entityId, predicates ) )
                 {
                     list.add( entityId );
