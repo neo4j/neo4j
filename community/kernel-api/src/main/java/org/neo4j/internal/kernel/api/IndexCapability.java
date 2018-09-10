@@ -30,7 +30,7 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public interface IndexCapability
 {
-    IndexOrder[] ORDER_ASC = {IndexOrder.ASCENDING};
+    IndexOrder[] ORDER_BOTH = {IndexOrder.ASCENDING, IndexOrder.DESCENDING};
     IndexOrder[] ORDER_NONE = new IndexOrder[0];
     IndexLimitation[] LIMITIATION_NONE = new IndexLimitation[0];
 

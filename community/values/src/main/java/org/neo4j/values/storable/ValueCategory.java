@@ -25,6 +25,7 @@ public enum ValueCategory
     TEXT,
     GEOMETRY,
     TEMPORAL,
+    GEOMETRY_ARRAY,
     REST,
     UNKNOWN,
     NO_CATEGORY

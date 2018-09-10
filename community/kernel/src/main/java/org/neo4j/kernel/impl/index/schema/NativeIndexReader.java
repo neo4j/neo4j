@@ -130,7 +130,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter, indexOrder, needsValues );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, indexOrder, needFilter, needsValues );
     }
 
     void initializeFromToKeys( KEY treeKeyFrom, KEY treeKeyTo )
@@ -149,15 +149,10 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
      */
     abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client,
-                                       KEY treeKeyFrom,
-                                       KEY treeKeyTo,
-                                       IndexQuery[] query,
-                                       boolean needFilter,
-                                       IndexOrder indexOrder,
-                                       boolean needsValues )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query,
+            IndexOrder indexOrder, boolean needFilter, boolean needsValues )
     {
-        if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
+        if ( isEmptyRange( treeKeyFrom, treeKeyTo ) )
         {
             Preconditions.checkArgument( indexOrder != IndexOrder.ASCENDING,
                                          "Cannot use backwards seek [%s, %s) with ascending index order", treeKeyFrom, treeKeyTo );
@@ -166,9 +161,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
         try
         {
-            Preconditions.checkArgument( indexOrder != IndexOrder.DESCENDING,
-                                         "Cannot use forwards seek [%s, %s) with descending index order", treeKeyFrom, treeKeyTo );
-            RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+            RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
             client.initialize( descriptor, hitProgressor, query, indexOrder, needsValues );
         }
@@ -178,8 +171,14 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
     }
 
-    RawCursor<Hit<KEY,VALUE>,IOException> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo ) throws IOException
+    RawCursor<Hit<KEY,VALUE>,IOException> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo, IndexOrder indexOrder ) throws IOException
     {
+        if ( indexOrder == IndexOrder.DESCENDING )
+        {
+            KEY tmpKey = treeKeyFrom;
+            treeKeyFrom = treeKeyTo;
+            treeKeyTo = tmpKey;
+        }
         RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
         openSeekers.add( seeker );
         return seeker;
@@ -192,7 +191,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
                           : new NativeHitIndexProgressor<>( seeker, client, openSeekers );
     }
 
-    private boolean isBackwardsSeek( KEY treeKeyFrom, KEY treeKeyTo )
+    private boolean isEmptyRange( KEY treeKeyFrom, KEY treeKeyTo )
     {
         return layout.compare( treeKeyFrom, treeKeyTo ) > 0;
     }

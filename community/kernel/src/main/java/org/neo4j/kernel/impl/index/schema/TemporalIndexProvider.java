@@ -161,7 +161,7 @@ public class TemporalIndexProvider extends IndexProvider
         {
             if ( support( valueCategories ) )
             {
-                return ORDER_ASC;
+                return ORDER_BOTH;
             }
             return ORDER_NONE;
         }

@@ -36,7 +36,7 @@ import static org.neo4j.values.storable.ValueCategory.TEMPORAL;
 public enum ValueGroup
 {
     UNKNOWN(                ValueCategory.UNKNOWN ),
-    GEOMETRY_ARRAY(         REST ),
+    GEOMETRY_ARRAY(         ValueCategory.GEOMETRY_ARRAY ),
     ZONED_DATE_TIME_ARRAY(  REST ),
     LOCAL_DATE_TIME_ARRAY(  REST ),
     DATE_ARRAY(             REST ),

@@ -103,7 +103,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
         {
             if ( support( valueCategories ) )
             {
-                return ORDER_ASC;
+                return ORDER_BOTH;
             }
             return ORDER_NONE;
         }

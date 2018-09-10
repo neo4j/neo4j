@@ -31,6 +31,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -525,7 +526,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        IndexValueCapability capability = index.valueCapability( ValueCategory.REST );
+        IndexValueCapability capability = index.valueCapability( ValueGroup.BOOLEAN.category() );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -545,14 +546,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformArraySearch() throws KernelException
+    public void shouldPerformTextArraySearch() throws KernelException
     {
         // given
         boolean needsValues = false;
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        IndexValueCapability capability = index.valueCapability( ValueCategory.REST );
+        IndexValueCapability capability = index.valueCapability( ValueGroup.TEXT_ARRAY.category() );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();

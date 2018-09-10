@@ -20,9 +20,11 @@
 package org.neo4j.kernel.api.index;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,7 +41,13 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertThat;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -94,6 +102,68 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             Collections.sort( list );
             return list;
         }
+    }
+
+    protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, IndexQuery... predicates ) throws Exception
+    {
+        IndexReader reader = accessor.newReader();
+        reader.query( client, order, false, predicates );
+        return reader;
+    }
+
+    void assertLessThanOrEqualTo( Value[] o1, Value[] o2 )
+    {
+        if ( o1 == null || o2 == null )
+        {
+            return;
+        }
+        int length = Math.min( o1.length, o2.length );
+        for ( int i = 0; i < length; i++ )
+        {
+            int compare = Values.COMPARATOR.compare( o1[i], o2[i] );
+            assertThat( "expected less than or equal to but was " + Arrays.toString( o1 ) + " and " + Arrays.toString( o2 ),
+                    compare, lessThanOrEqualTo( 0 ) );
+            if ( compare != 0 )
+            {
+                return;
+            }
+        }
+    }
+
+    void assertOrder( SimpleNodeValueClient client, IndexOrder order, int expectedCount )
+    {
+        Value[] prevValues = null;
+        Value[] values;
+        int count = 0;
+        while ( client.next() )
+        {
+            count++;
+            values = client.values;
+            if ( order == IndexOrder.ASCENDING )
+            {
+                assertLessThanOrEqualTo( prevValues, values );
+            }
+            else if ( order == IndexOrder.DESCENDING )
+            {
+                assertLessThanOrEqualTo( values, prevValues );
+            }
+            else
+            {
+                Assert.fail( "Unexpected order " + order );
+            }
+            prevValues = values;
+        }
+        assertThat( "correct number of hits", count, equalTo( expectedCount ) );
+    }
+
+    IndexOrder[] orderCapability( IndexQuery... predicates )
+    {
+        ValueCategory[] categories = new ValueCategory[predicates.length];
+        for ( int i = 0; i < predicates.length; i++ )
+        {
+            categories[i] = predicates[i].valueGroup().category();
+        }
+        return indexProvider.getCapability().orderCapability( categories );
     }
 
     /**

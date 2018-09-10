@@ -107,22 +107,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     public static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
     public static final String KEY = SCHEMA_INDEX.providerName();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, SCHEMA_INDEX.providerVersion() );
-
-    // TODO implement
-    public static final IndexCapability CAPABILITY = new IndexCapability()
-    {
-        @Override
-        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
-        {
-            return new IndexOrder[0];
-        }
-
-        @Override
-        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-        {
-            return null;
-        }
-    };
+    public static final IndexCapability CAPABILITY = new GenericIndexCapability();
 
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
@@ -188,4 +173,26 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     {
         return CAPABILITY;
     }
+
+    // TODO implement valueCapability
+    // TODO implement orderCapability for arrays and composite
+    private static class GenericIndexCapability implements IndexCapability
+    {
+        @Override
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        {
+            if ( valueCategories.length != 1 || valueCategories[0] == ValueCategory.GEOMETRY || valueCategories[0] == ValueCategory.GEOMETRY_ARRAY )
+            {
+                // For now only ordering for single property index
+                return new IndexOrder[0];
+            }
+            return IndexCapability.ORDER_BOTH;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+        {
+            return null;
+        }
+    };
 }

@@ -104,7 +104,8 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
                     boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
 
-                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, needFiltering, indexOrder, needsValues );
+                    // TODO needsValues==true could be problematic, no?
+                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, indexOrder, needFiltering, needsValues );
                 }
             }
             catch ( IllegalArgumentException e )

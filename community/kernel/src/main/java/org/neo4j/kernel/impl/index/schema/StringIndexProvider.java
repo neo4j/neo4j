@@ -96,7 +96,7 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
         {
             if ( support( valueCategories ) )
             {
-                return ORDER_ASC;
+                return ORDER_BOTH;
             }
             return ORDER_NONE;
         }

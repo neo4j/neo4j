@@ -19,13 +19,21 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.hamcrest.Matchers;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,13 +41,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -372,6 +387,436 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             ids.add( (long) (i + 1) );
         }
         return ids;
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingNumber() throws Exception
+    {
+        Object o0 = 0;
+        Object o1 = 1;
+        Object o2 = 2;
+        Object o3 = 3;
+        Object o4 = 4;
+        Object o5 = 5;
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingNumber() throws Exception
+    {
+        Object o0 = 0;
+        Object o1 = 1;
+        Object o2 = 2;
+        Object o3 = 3;
+        Object o4 = 4;
+        Object o5 = 5;
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingString() throws Exception
+    {
+        Object o0 = "0";
+        Object o1 = "1";
+        Object o2 = "2";
+        Object o3 = "3";
+        Object o4 = "4";
+        Object o5 = "5";
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingString() throws Exception
+    {
+        Object o0 = "0";
+        Object o1 = "1";
+        Object o2 = "2";
+        Object o3 = "3";
+        Object o4 = "4";
+        Object o5 = "5";
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingDate() throws Exception
+    {
+        Object o0 = DateValue.epochDateRaw( 0 );
+        Object o1 = DateValue.epochDateRaw( 1 );
+        Object o2 = DateValue.epochDateRaw( 2 );
+        Object o3 = DateValue.epochDateRaw( 3 );
+        Object o4 = DateValue.epochDateRaw( 4 );
+        Object o5 = DateValue.epochDateRaw( 5 );
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingDate() throws Exception
+    {
+        Object o0 = DateValue.epochDateRaw( 0 );
+        Object o1 = DateValue.epochDateRaw( 1 );
+        Object o2 = DateValue.epochDateRaw( 2 );
+        Object o3 = DateValue.epochDateRaw( 3 );
+        Object o4 = DateValue.epochDateRaw( 4 );
+        Object o5 = DateValue.epochDateRaw( 5 );
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingLocalTime() throws Exception
+    {
+        Object o0 = LocalTimeValue.localTimeRaw( 0 );
+        Object o1 = LocalTimeValue.localTimeRaw( 1 );
+        Object o2 = LocalTimeValue.localTimeRaw( 2 );
+        Object o3 = LocalTimeValue.localTimeRaw( 3 );
+        Object o4 = LocalTimeValue.localTimeRaw( 4 );
+        Object o5 = LocalTimeValue.localTimeRaw( 5 );
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingLocalTime() throws Exception
+    {
+        Object o0 = LocalTimeValue.localTimeRaw( 0 );
+        Object o1 = LocalTimeValue.localTimeRaw( 1 );
+        Object o2 = LocalTimeValue.localTimeRaw( 2 );
+        Object o3 = LocalTimeValue.localTimeRaw( 3 );
+        Object o4 = LocalTimeValue.localTimeRaw( 4 );
+        Object o5 = LocalTimeValue.localTimeRaw( 5 );
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingTime() throws Exception
+    {
+        Object o0 = TimeValue.timeRaw( 0, ZoneOffset.ofHours( 0 ) );
+        Object o1 = TimeValue.timeRaw( 1, ZoneOffset.ofHours( 0 ) );
+        Object o2 = TimeValue.timeRaw( 2, ZoneOffset.ofHours( 0 ) );
+        Object o3 = TimeValue.timeRaw( 3, ZoneOffset.ofHours( 0 ) );
+        Object o4 = TimeValue.timeRaw( 4, ZoneOffset.ofHours( 0 ) );
+        Object o5 = TimeValue.timeRaw( 5, ZoneOffset.ofHours( 0 ) );
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingTime() throws Exception
+    {
+        Object o0 = TimeValue.timeRaw( 0, ZoneOffset.ofHours( 0 ) );
+        Object o1 = TimeValue.timeRaw( 1, ZoneOffset.ofHours( 0 ) );
+        Object o2 = TimeValue.timeRaw( 2, ZoneOffset.ofHours( 0 ) );
+        Object o3 = TimeValue.timeRaw( 3, ZoneOffset.ofHours( 0 ) );
+        Object o4 = TimeValue.timeRaw( 4, ZoneOffset.ofHours( 0 ) );
+        Object o5 = TimeValue.timeRaw( 5, ZoneOffset.ofHours( 0 ) );
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingLocalDateTime() throws Exception
+    {
+        Object o0 = LocalDateTimeValue.localDateTimeRaw( 10, 0 );
+        Object o1 = LocalDateTimeValue.localDateTimeRaw( 10, 1 );
+        Object o2 = LocalDateTimeValue.localDateTimeRaw( 10, 2 );
+        Object o3 = LocalDateTimeValue.localDateTimeRaw( 10, 3 );
+        Object o4 = LocalDateTimeValue.localDateTimeRaw( 10, 4 );
+        Object o5 = LocalDateTimeValue.localDateTimeRaw( 10, 5 );
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingLocalDateTime() throws Exception
+    {
+        Object o0 = LocalDateTimeValue.localDateTimeRaw( 10, 0 );
+        Object o1 = LocalDateTimeValue.localDateTimeRaw( 10, 1 );
+        Object o2 = LocalDateTimeValue.localDateTimeRaw( 10, 2 );
+        Object o3 = LocalDateTimeValue.localDateTimeRaw( 10, 3 );
+        Object o4 = LocalDateTimeValue.localDateTimeRaw( 10, 4 );
+        Object o5 = LocalDateTimeValue.localDateTimeRaw( 10, 5 );
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingDateTime() throws Exception
+    {
+        Object o0 = DateTimeValue.datetimeRaw( 1, 0, ZoneId.of( "UTC" ) );
+        Object o1 = DateTimeValue.datetimeRaw( 1, 1, ZoneId.of( "UTC" ) );
+        Object o2 = DateTimeValue.datetimeRaw( 1, 2, ZoneId.of( "UTC" ) );
+        Object o3 = DateTimeValue.datetimeRaw( 1, 3, ZoneId.of( "UTC" ) );
+        Object o4 = DateTimeValue.datetimeRaw( 1, 4, ZoneId.of( "UTC" ) );
+        Object o5 = DateTimeValue.datetimeRaw( 1, 5, ZoneId.of( "UTC" ) );
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingDateTime() throws Exception
+    {
+        Object o0 = DateTimeValue.datetimeRaw( 1, 0, ZoneId.of( "UTC" ) );
+        Object o1 = DateTimeValue.datetimeRaw( 1, 1, ZoneId.of( "UTC" ) );
+        Object o2 = DateTimeValue.datetimeRaw( 1, 2, ZoneId.of( "UTC" ) );
+        Object o3 = DateTimeValue.datetimeRaw( 1, 3, ZoneId.of( "UTC" ) );
+        Object o4 = DateTimeValue.datetimeRaw( 1, 4, ZoneId.of( "UTC" ) );
+        Object o5 = DateTimeValue.datetimeRaw( 1, 5, ZoneId.of( "UTC" ) );
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingDuration() throws Exception
+    {
+        Object o0 = Duration.ofMillis( 0 );
+        Object o1 = Duration.ofMillis( 1 );
+        Object o2 = Duration.ofMillis( 2 );
+        Object o3 = Duration.ofMillis( 3 );
+        Object o4 = Duration.ofMillis( 4 );
+        Object o5 = Duration.ofMillis( 5 );
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingDuration() throws Exception
+    {
+        Object o0 = Duration.ofMillis( 0 );
+        Object o1 = Duration.ofMillis( 1 );
+        Object o2 = Duration.ofMillis( 2 );
+        Object o3 = Duration.ofMillis( 3 );
+        Object o4 = Duration.ofMillis( 4 );
+        Object o5 = Duration.ofMillis( 5 );
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingNumberArray() throws Exception
+    {
+        Object o0 = new int[]{0};
+        Object o1 = new int[]{1};
+        Object o2 = new int[]{2};
+        Object o3 = new int[]{3};
+        Object o4 = new int[]{4};
+        Object o5 = new int[]{5};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingNumberArray() throws Exception
+    {
+        Object o0 = new int[]{0};
+        Object o1 = new int[]{1};
+        Object o2 = new int[]{2};
+        Object o3 = new int[]{3};
+        Object o4 = new int[]{4};
+        Object o5 = new int[]{5};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingStringArray() throws Exception
+    {
+        Object o0 = new String[]{"0"};
+        Object o1 = new String[]{"1"};
+        Object o2 = new String[]{"2"};
+        Object o3 = new String[]{"3"};
+        Object o4 = new String[]{"4"};
+        Object o5 = new String[]{"5"};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingStringArray() throws Exception
+    {
+        Object o0 = new String[]{"0"};
+        Object o1 = new String[]{"1"};
+        Object o2 = new String[]{"2"};
+        Object o3 = new String[]{"3"};
+        Object o4 = new String[]{"4"};
+        Object o5 = new String[]{"5"};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingBooleanArray() throws Exception
+    {
+        Object o0 = new boolean[]{false};
+        Object o1 = new boolean[]{false, false};
+        Object o2 = new boolean[]{false, true};
+        Object o3 = new boolean[]{true};
+        Object o4 = new boolean[]{true, false};
+        Object o5 = new boolean[]{true, true};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingBooleanArray() throws Exception
+    {
+        Object o0 = new boolean[]{false};
+        Object o1 = new boolean[]{false, false};
+        Object o2 = new boolean[]{false, true};
+        Object o3 = new boolean[]{true};
+        Object o4 = new boolean[]{true, false};
+        Object o5 = new boolean[]{true, true};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingDateTimeArray() throws Exception
+    {
+        Object o0 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 0, ZoneId.of( "UTC" ) )};
+        Object o1 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 1, ZoneId.of( "UTC" ) )};
+        Object o2 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 2, ZoneId.of( "UTC" ) )};
+        Object o3 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 3, ZoneId.of( "UTC" ) )};
+        Object o4 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 4, ZoneId.of( "UTC" ) )};
+        Object o5 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 5, ZoneId.of( "UTC" ) )};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingDateTimeArray() throws Exception
+    {
+        Object o0 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 0, ZoneId.of( "UTC" ) )};
+        Object o1 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 1, ZoneId.of( "UTC" ) )};
+        Object o2 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 2, ZoneId.of( "UTC" ) )};
+        Object o3 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 3, ZoneId.of( "UTC" ) )};
+        Object o4 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 4, ZoneId.of( "UTC" ) )};
+        Object o5 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 5, ZoneId.of( "UTC" ) )};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingLocalDateTimeArray() throws Exception
+    {
+        Object o0 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 0 )};
+        Object o1 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 1 )};
+        Object o2 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 2 )};
+        Object o3 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 3 )};
+        Object o4 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 4 )};
+        Object o5 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 5 )};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingLocalDateTimeArray() throws Exception
+    {
+        Object o0 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 0 )};
+        Object o1 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 1 )};
+        Object o2 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 2 )};
+        Object o3 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 3 )};
+        Object o4 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 4 )};
+        Object o5 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 5 )};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingTimeArray() throws Exception
+    {
+        Object o0 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 0, ZoneOffset.ofHours( 0 ) )};
+        Object o1 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 1, ZoneOffset.ofHours( 0 ) )};
+        Object o2 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 2, ZoneOffset.ofHours( 0 ) )};
+        Object o3 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 3, ZoneOffset.ofHours( 0 ) )};
+        Object o4 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 4, ZoneOffset.ofHours( 0 ) )};
+        Object o5 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 5, ZoneOffset.ofHours( 0 ) )};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingTimeArray() throws Exception
+    {
+        Object o0 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 0, ZoneOffset.ofHours( 0 ) )};
+        Object o1 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 1, ZoneOffset.ofHours( 0 ) )};
+        Object o2 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 2, ZoneOffset.ofHours( 0 ) )};
+        Object o3 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 3, ZoneOffset.ofHours( 0 ) )};
+        Object o4 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 4, ZoneOffset.ofHours( 0 ) )};
+        Object o5 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 5, ZoneOffset.ofHours( 0 ) )};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingDateArray() throws Exception
+    {
+        Object o0 = new LocalDate[]{LocalDate.of( 10, 10, 1 )};
+        Object o1 = new LocalDate[]{LocalDate.of( 10, 10, 2 )};
+        Object o2 = new LocalDate[]{LocalDate.of( 10, 10, 3 )};
+        Object o3 = new LocalDate[]{LocalDate.of( 10, 10, 4 )};
+        Object o4 = new LocalDate[]{LocalDate.of( 10, 10, 5 )};
+        Object o5 = new LocalDate[]{LocalDate.of( 10, 10, 6 )};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingDateArray() throws Exception
+    {
+        Object o0 = new LocalDate[]{LocalDate.of( 10, 10, 1 )};
+        Object o1 = new LocalDate[]{LocalDate.of( 10, 10, 2 )};
+        Object o2 = new LocalDate[]{LocalDate.of( 10, 10, 3 )};
+        Object o3 = new LocalDate[]{LocalDate.of( 10, 10, 4 )};
+        Object o4 = new LocalDate[]{LocalDate.of( 10, 10, 5 )};
+        Object o5 = new LocalDate[]{LocalDate.of( 10, 10, 6 )};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingLocalTimeArray() throws Exception
+    {
+        Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
+        Object o1 = new LocalTime[]{LocalTime.of( 10, 1  )};
+        Object o2 = new LocalTime[]{LocalTime.of( 10, 2 )};
+        Object o3 = new LocalTime[]{LocalTime.of( 10, 3 )};
+        Object o4 = new LocalTime[]{LocalTime.of( 10, 4 )};
+        Object o5 = new LocalTime[]{LocalTime.of( 10, 5 )};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingLocalTimeArray() throws Exception
+    {
+        Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
+        Object o1 = new LocalTime[]{LocalTime.of( 10, 1 )};
+        Object o2 = new LocalTime[]{LocalTime.of( 10, 2 )};
+        Object o3 = new LocalTime[]{LocalTime.of( 10, 3 )};
+        Object o4 = new LocalTime[]{LocalTime.of( 10, 4 )};
+        Object o5 = new LocalTime[]{LocalTime.of( 10, 5 )};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderAscendingDurationArray() throws Exception
+    {
+        Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
+        Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
+        Object o2 = new Duration[]{Duration.of( 2, ChronoUnit.SECONDS )};
+        Object o3 = new Duration[]{Duration.of( 3, ChronoUnit.SECONDS )};
+        Object o4 = new Duration[]{Duration.of( 4, ChronoUnit.SECONDS )};
+        Object o5 = new Duration[]{Duration.of( 5, ChronoUnit.SECONDS )};
+        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    @Test
+    public void shouldRangeSeekInOrderDescendingDurationArray() throws Exception
+    {
+        Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
+        Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
+        Object o2 = new Duration[]{Duration.of( 2, ChronoUnit.SECONDS )};
+        Object o3 = new Duration[]{Duration.of( 3, ChronoUnit.SECONDS )};
+        Object o4 = new Duration[]{Duration.of( 4, ChronoUnit.SECONDS )};
+        Object o5 = new Duration[]{Duration.of( 5, ChronoUnit.SECONDS )};
+        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
+    }
+
+    private void shouldRangeSeekInOrder( IndexOrder order, Object o0, Object o1, Object o2, Object o3, Object o4, Object o5 ) throws Exception
+    {
+        IndexQuery range = range( 100, Values.of( o0 ), true, Values.of( o5 ), true );
+        IndexOrder[] indexOrders = orderCapability( range );
+        Assume.assumeTrue( "Assume support for order " + order, ArrayUtils.contains( indexOrders, order ) );
+
+        updateAndCommit( asList(
+                add( 1, descriptor.schema(), o0 ),
+                add( 1, descriptor.schema(), o5 ),
+                add( 1, descriptor.schema(), o1 ),
+                add( 1, descriptor.schema(), o4 ),
+                add( 1, descriptor.schema(), o2 ),
+                add( 1, descriptor.schema(), o3 )
+        ) );
+
+        SimpleNodeValueClient client = new SimpleNodeValueClient();
+        try ( AutoCloseable ignored = query( client, order, range ) )
+        {
+            assertOrder( client, order, 6 );
+        }
     }
 
     // This behaviour is expected by General indexes
