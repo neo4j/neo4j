@@ -378,7 +378,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `stringLiteral`, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `stringLiteral`, _, _)) => ()
       }
     }
   }
@@ -394,7 +394,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `stringLiteral`, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `stringLiteral`, _, _)) => ()
       }
     }
   }
@@ -410,7 +410,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `stringLiteral`, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `stringLiteral`, _, _)) => ()
       }
     }
   }
@@ -426,7 +426,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `stringLiteral`, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `stringLiteral`, _, _)) => ()
       }
     }
   }
@@ -444,7 +444,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _, _)) => ()
       }
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).queryGraph) should beLike {
@@ -466,7 +466,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _, _)) => ()
       }
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).queryGraph) should beLike {
@@ -486,7 +486,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `stringLiteral`, _)) => ()
+        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `stringLiteral`, _, _)) => ()
       }
     }
   }
@@ -502,7 +502,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue), `stringLiteral`, _)) => ()
+        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue), `stringLiteral`, _, _)) => ()
       }
     }
   }

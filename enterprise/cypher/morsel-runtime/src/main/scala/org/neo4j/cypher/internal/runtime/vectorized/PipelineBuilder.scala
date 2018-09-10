@@ -67,7 +67,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           SlottedIndexedProperty(column, property, slots),
           argumentSize)
 
-      case NodeIndexContainsScan(column, labelToken, property, valueExpr, _) =>
+      case NodeIndexContainsScan(column, labelToken, property, valueExpr, _, indexOrder) =>
         new NodeIndexContainsScanOperator(
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,

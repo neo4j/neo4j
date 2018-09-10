@@ -84,7 +84,7 @@ class SimpleScheduler(executor: Executor, waitTimeout: Duration) extends Schedul
             case e: ExecutionException =>
               queryTracer.stopQuery()
               return Some(e.getCause)
-            case e =>
+            case e: Throwable =>
               queryTracer.stopQuery()
               return Some(e)
           }

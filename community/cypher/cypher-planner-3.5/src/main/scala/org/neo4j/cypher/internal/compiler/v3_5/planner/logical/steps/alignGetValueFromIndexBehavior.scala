@@ -87,11 +87,11 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
 
     case x: NodeIndexContainsScan =>
       val alignedProperty = withAlignedGetValueBehavior(x.idName, x.property)
-      NodeIndexContainsScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds)(attributes.copy(x.id))
+      NodeIndexContainsScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
 
     case x: NodeIndexEndsWithScan =>
       val alignedProperty = withAlignedGetValueBehavior(x.idName, x.property)
-      NodeIndexEndsWithScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds)(attributes.copy(x.id))
+      NodeIndexEndsWithScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
 
     case x: NodeIndexScan =>
       val alignedProperty = withAlignedGetValueBehavior(x.idName, x.property)

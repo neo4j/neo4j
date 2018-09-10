@@ -40,15 +40,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) =>
         val plans = produce(name, propertyKey.name, qg, requiredOrder, prop, CTString, predicate,
-          // We discard the provided order since `CONTAINS` can never provide order regardless of index capability
-          (name, label, prop, pred, hints, args, _) => lpp.planNodeIndexContainsScan(name, label, prop, pred, hints, expr, args, context), context)
+                            lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) =>
         val plans = produce(name, propertyKey.name, qg, requiredOrder, prop, CTString, predicate,
-          // We discard the provided order since `ENDS WITH` can never provide order regardless of index capability
-          (name, label, prop, pred, hints, args, _) => lpp.planNodeIndexEndsWithScan(name, label, prop, pred, hints, expr, args, context), context)
+                            lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n

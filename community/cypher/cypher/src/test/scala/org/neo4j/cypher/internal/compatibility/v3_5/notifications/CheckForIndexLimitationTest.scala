@@ -38,7 +38,7 @@ class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTes
   test("should notify for NodeIndexContainsScan backed by limited index") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set[IndexLimitation](SlowContains))))
-    val plan = NodeIndexContainsScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty)
+    val plan = NodeIndexContainsScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty, IndexOrderNone)
 
     checkForIndexLimitation(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("label", Seq("prop"))))
   }
@@ -46,7 +46,7 @@ class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTes
   test("should notify for NodeIndexEndsWithScan backed by limited index") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set[IndexLimitation](SlowContains))))
-    val plan = NodeIndexEndsWithScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty)
+    val plan = NodeIndexEndsWithScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty, IndexOrderNone)
 
     checkForIndexLimitation(planContext)(plan) should equal(Set(SuboptimalIndexForEndsWithQueryNotification("label", Seq("prop"))))
   }
@@ -54,7 +54,7 @@ class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTes
   test("should not notify for NodeIndexContainsScan backed by index with no limitations") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set.empty[IndexLimitation])))
-    val plan = NodeIndexContainsScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty)
+    val plan = NodeIndexContainsScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty, IndexOrderNone)
 
     checkForIndexLimitation(planContext)(plan) should be(empty)
   }
@@ -62,7 +62,7 @@ class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTes
   test("should not notify for NodeIndexEndsWithScan backed by index with no limitations") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set.empty[IndexLimitation])))
-    val plan = NodeIndexEndsWithScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty)
+    val plan = NodeIndexEndsWithScan("id", LabelToken("label", LabelId(1)), IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(1)), DoNotGetValue), True()(pos), Set.empty, IndexOrderNone)
 
     checkForIndexLimitation(planContext)(plan) should be(empty)
   }

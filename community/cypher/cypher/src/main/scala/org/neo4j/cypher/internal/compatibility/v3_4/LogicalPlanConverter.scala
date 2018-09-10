@@ -161,7 +161,8 @@ object LogicalPlanConverter {
             children(1).asInstanceOf[expressionsv3_5.LabelToken],
             IndexedProperty(children(2).asInstanceOf[expressionsv3_5.PropertyKeyToken], DoNotGetValue),
             children(3).asInstanceOf[Expressionv3_5],
-            children(4).asInstanceOf[Set[String]]
+            children(4).asInstanceOf[Set[String]],
+            IndexOrderNone
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.NodeIndexEndsWithScan, children: Seq[AnyRef]) =>
@@ -170,7 +171,8 @@ object LogicalPlanConverter {
             children(1).asInstanceOf[expressionsv3_5.LabelToken],
             IndexedProperty(children(2).asInstanceOf[expressionsv3_5.PropertyKeyToken], DoNotGetValue),
             children(3).asInstanceOf[Expressionv3_5],
-            children(4).asInstanceOf[Set[String]]
+            children(4).asInstanceOf[Set[String]],
+            IndexOrderNone
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.NodeIndexScan, children: Seq[AnyRef]) =>

@@ -92,10 +92,10 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case NodeIndexScan(ident, label, property, _, indexOrder) =>
         NodeIndexScanPipe(ident, label, property, indexOrder)(id = id)
 
-      case NodeIndexContainsScan(ident, label, property, valueExpr, _) =>
+      case NodeIndexContainsScan(ident, label, property, valueExpr, _, _) =>
         NodeIndexContainsScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
 
-      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _) =>
+      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, _) =>
         NodeIndexEndsWithScanPipe(ident, label,property, buildExpression(valueExpr))(id = id)
     }
   }

@@ -254,6 +254,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
+                                providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -261,7 +262,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexContainsScan(idName, label, property, valueExpr, argumentIds), solved, ProvidedOrder.empty, context)
+    annotate(NodeIndexContainsScan(idName, label, property, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planNodeIndexEndsWithScan(idName: String,
@@ -271,6 +272,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
+                                providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -278,7 +280,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexEndsWithScan(idName, label, property, valueExpr, argumentIds), solved, ProvidedOrder.empty, context)
+    annotate(NodeIndexEndsWithScan(idName, label, property, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {

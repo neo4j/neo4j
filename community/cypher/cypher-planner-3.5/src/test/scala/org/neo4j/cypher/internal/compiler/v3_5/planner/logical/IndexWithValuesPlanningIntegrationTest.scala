@@ -770,7 +770,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           LabelToken("Awesome", LabelId(0)),
           IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
           StringLiteral("foo")(pos),
-          Set.empty),
+          Set.empty,
+          IndexOrderNone),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -788,7 +789,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           LabelToken("Awesome", LabelId(0)),
           IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
           StringLiteral("foo")(pos),
-          Set.empty),
+          Set.empty,
+          IndexOrderNone),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -806,7 +808,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           LabelToken("Awesome", LabelId(0)),
           IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
           StringLiteral("foo")(pos),
-          Set.empty),
+          Set.empty,
+          IndexOrderNone),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -825,7 +828,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           LabelToken("Awesome", LabelId(0)),
           IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
           StringLiteral("foo")(pos),
-          Set.empty),
+          Set.empty,
+          IndexOrderNone),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -843,7 +847,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           LabelToken("Awesome", LabelId(0)),
           IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
           StringLiteral("foo")(pos),
-          Set.empty),
+          Set.empty,
+          IndexOrderNone),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -861,7 +866,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           LabelToken("Awesome", LabelId(0)),
           IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
           StringLiteral("foo")(pos),
-          Set.empty),
+          Set.empty,
+          IndexOrderNone),
         Map(propertyProj("n", "foo")))
     )
   }

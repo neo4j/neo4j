@@ -189,44 +189,44 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     )
   }
 
-  test("Order by index backed property should NOT plan with provided order (contains scan)") {
+  // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve contains
+  test("Order by index backed property should plan with provided order (contains scan)") {
     val plan = new given {
       indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop CONTAINS 'foo' RETURN n.prop ORDER BY n.prop"
 
     plan._2 should equal(
       Projection(
-        Sort(
-          Projection(
-            NodeIndexContainsScan(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-              StringLiteral("foo")(pos),
-              Set.empty),
+        Projection(
+          NodeIndexContainsScan(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+            StringLiteral("foo")(pos),
+            Set.empty,
+            IndexOrderAscending),
             Map("  FRESHID55" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
-          Seq(Ascending("  FRESHID55"))),
         Map("n.prop" -> Variable("  FRESHID55")(pos)))
     )
   }
 
-  test("Order by index backed property should NOT plan with provided order (ends with scan)") {
+  // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve ends with
+  test("Order by index backed property should plan with provided order (ends with scan)") {
     val plan = new given {
       indexOn("Awesome", "prop").providesOrder(AscIndexOrder)
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop ENDS WITH 'foo' RETURN n.prop ORDER BY n.prop"
 
     plan._2 should equal(
       Projection(
-        Sort(
-          Projection(
-            NodeIndexEndsWithScan(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-              StringLiteral("foo")(pos),
-              Set.empty),
-            Map("  FRESHID56" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
-          Seq(Ascending("  FRESHID56"))),
+        Projection(
+          NodeIndexEndsWithScan(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+            StringLiteral("foo")(pos),
+            Set.empty,
+            IndexOrderAscending),
+          Map("  FRESHID56" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("n.prop" -> Variable("  FRESHID56")(pos)))
     )
   }

@@ -59,7 +59,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         LabelToken("Person", LabelId(0)),
         IndexedProperty(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)), DoNotGetValue),
         StringLiteral("substring")_,
-        Set.empty)
+        Set.empty,
+        IndexOrderNone)
     )
   }
 

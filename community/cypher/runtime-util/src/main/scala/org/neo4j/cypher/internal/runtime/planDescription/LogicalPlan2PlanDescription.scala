@@ -91,11 +91,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val arguments = Seq(CountNodesExpression(variable, labelNames.map(l => l.map(_.name))))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
-      case NodeIndexContainsScan(_, label, property, valueExpr, _) =>
+      case NodeIndexContainsScan(_, label, property, valueExpr, _, _) =>
         val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, arguments, variables)
 
-      case NodeIndexEndsWithScan(_, label, property, valueExpr, _) =>
+      case NodeIndexEndsWithScan(_, label, property, valueExpr, _, _) =>
         val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
 
