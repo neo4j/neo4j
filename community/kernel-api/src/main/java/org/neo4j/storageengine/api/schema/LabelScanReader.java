@@ -27,6 +27,9 @@ import org.neo4j.graphdb.Resource;
  */
 public interface LabelScanReader extends Resource
 {
+    /**
+     * Used as a marker to ignore the "fromId" in calls to {@link #nodesWithAnyOfLabels(long, int[])}.
+     */
     long NO_ID = -1;
 
     /**

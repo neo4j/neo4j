@@ -23,5 +23,11 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 
 public interface EntityIdIterator extends PrimitiveLongResourceIterator
 {
+    /**
+     * An {@link EntityIdIterator} is allowed to cache some ids ahead of it for performance reasons. Although during certain
+     * points of execution there may be a need to bring this iterator fully up to date with concurrent changes.
+     * Calling this method will invalidate any ids that have been cached ahead of it, e.g. read from store, so that
+     * continued iteration after this call sees at least store updates from this point in time.
+     */
     void invalidateCache();
 }
