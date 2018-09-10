@@ -22,10 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.scalacheck.Gen
+import org.scalacheck.{Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
 
 class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
+
+  //we don't want scala check to shrink since it hides the actual error
+  implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)
 
   //the actual test
   List("<", "<=", "=", ">", ">=").foreach(testOperator)
