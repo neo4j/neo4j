@@ -156,8 +156,9 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     static final LocalDateTime DEFAULT_LOCAL_DATE_TIME =
-            LocalDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
-                    Field.minute.defaultValue );
+            LocalDateTime.of( TemporalFields.year.defaultValue, TemporalFields.month.defaultValue,
+                    TemporalFields.day.defaultValue, TemporalFields.hour.defaultValue,
+                    TemporalFields.minute.defaultValue );
 
     static DateTimeValue.DateTimeBuilder<LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
@@ -178,13 +179,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
             @Override
             public LocalDateTimeValue buildInternal()
             {
-                boolean selectingDate = fields.containsKey( Field.date );
-                boolean selectingTime = fields.containsKey( Field.time );
-                boolean selectingDateTime = fields.containsKey( Field.datetime );
+                boolean selectingDate = fields.containsKey( TemporalFields.date );
+                boolean selectingTime = fields.containsKey( TemporalFields.time );
+                boolean selectingDateTime = fields.containsKey( TemporalFields.datetime );
                 LocalDateTime result;
                 if ( selectingDateTime )
                 {
-                    AnyValue dtField = fields.get( Field.datetime );
+                    AnyValue dtField = fields.get( TemporalFields.datetime );
                     if ( !(dtField instanceof TemporalValue) )
                     {
                         throw new InvalidValuesArgumentException( String.format( "Cannot construct local date time from: %s", dtField ) );
@@ -197,7 +198,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     LocalTime time;
                     if ( selectingTime )
                     {
-                        AnyValue timeField = fields.get( Field.time );
+                        AnyValue timeField = fields.get( TemporalFields.time );
                         if ( !(timeField instanceof TemporalValue) )
                         {
                             throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
@@ -212,7 +213,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     LocalDate date;
                     if ( selectingDate )
                     {
-                        AnyValue dateField = fields.get( Field.date );
+                        AnyValue dateField = fields.get( TemporalFields.date );
                         if ( !(dateField instanceof TemporalValue) )
                         {
                             throw new InvalidValuesArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
@@ -232,12 +233,12 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     result = DEFAULT_LOCAL_DATE_TIME;
                 }
 
-                if ( fields.containsKey( Field.week ) && !selectingDate && !selectingDateTime )
+                if ( fields.containsKey( TemporalFields.week ) && !selectingDate && !selectingDateTime )
                 {
                     // Be sure to be in the start of the week based year (which can be later than 1st Jan)
                     result = result
-                            .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( Field.year.name(), fields.get( Field.year ),
-                                    Field.year.defaultValue ) )
+                            .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( TemporalFields.year.name(), fields.get( TemporalFields.year ),
+                                    TemporalFields.year.defaultValue ) )
                             .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
                             .with( ChronoField.DAY_OF_WEEK, 1 );
                 }

@@ -26,10 +26,20 @@ import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPha
 import org.opencypher.v9_0.frontend.phases.{BaseContext, VisitorPhase}
 import org.opencypher.v9_0.util.InternalNotification
 
+import org.neo4j.values.storable.TemporalValue.TemporalFields
+import org.neo4j.values.storable.{DurationFields, PointFields, TemporalValue}
+
+import scala.collection.JavaConverters._
+
 object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] {
 
+  private val specialPropertyKey: Set[String] =
+    (TemporalFields.allFields().asScala ++
+      DurationFields.values().map(_.propertyKey) ++
+      PointFields.values().map(_.propertyKey)).toSet
+
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
-    val table = value.semanticTable
+    val table = value.semanticTable()
     def isEmptyLabel(label: String) = !table.resolvedLabelNames.contains(label)
     def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
     def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
@@ -41,7 +51,7 @@ object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanSta
       case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
         (acc :+ MissingRelTypeNotification(rel.position, name), Some(identity))
 
-      case Property(_, prop@PropertyKeyName(name)) if isEmptyPropertyName(name) => acc =>
+      case Property(_, prop@PropertyKeyName(name)) if !specialPropertyKey(name) && isEmptyPropertyName(name) => acc =>
         (acc :+ MissingPropertyNameNotification(prop.position, name), Some(identity))
     }
 

@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_5.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
+import org.neo4j.values.storable.{DurationFields, PointFields}
+import org.neo4j.values.storable.TemporalValue.TemporalFields
 import org.opencypher.v9_0.ast.Query
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.phases.RecordingNotificationLogger
@@ -122,6 +124,49 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
     //then
     checkForTokens(ast, semanticTable) shouldBe empty
+  }
+
+  test("don't warn when using point properties") {
+    //given
+    val semanticTable = new SemanticTable
+    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+
+    PointFields.values().foreach { property =>
+      //when
+      val ast = parse(s"MATCH (a) WHERE point(a.prop).${property.propertyKey} = 42 RETURN a")
+
+      //then
+      checkForTokens(ast, semanticTable) shouldBe empty
+    }
+  }
+
+  test("don't warn when using temporal properties") {
+    //given
+    val semanticTable = new SemanticTable
+    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+
+    import scala.collection.JavaConverters._
+    TemporalFields.allFields().asScala.foreach { property =>
+      //when
+      val ast = parse(s"MATCH (a) WHERE date(a.prop).$property = 42 RETURN a")
+
+      //then
+      checkForTokens(ast, semanticTable) shouldBe empty
+    }
+  }
+
+  test("don't warn when using duration properties") {
+    //given
+    val semanticTable = new SemanticTable
+    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+
+    DurationFields.values().foreach { property =>
+      //when
+      val ast = parse(s"MATCH (a) WHERE duration(a.prop).${property.propertyKey} = 42 RETURN a")
+
+      //then
+      checkForTokens(ast, semanticTable) shouldBe empty
+    }
   }
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {

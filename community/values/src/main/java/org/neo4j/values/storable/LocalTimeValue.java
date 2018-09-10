@@ -132,7 +132,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         }
     }
 
-    static final LocalTime DEFAULT_LOCAL_TIME = LocalTime.of( Field.hour.defaultValue, Field.minute.defaultValue );
+    static final LocalTime DEFAULT_LOCAL_TIME = LocalTime.of( TemporalFields.hour.defaultValue, TemporalFields.minute.defaultValue );
 
     static TimeValue.TimeBuilder<LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
@@ -148,9 +148,9 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
             public LocalTimeValue buildInternal()
             {
                 LocalTime result;
-                if ( fields.containsKey( Field.time ) )
+                if ( fields.containsKey( TemporalFields.time ) )
                 {
-                    AnyValue time = fields.get( Field.time );
+                    AnyValue time = fields.get( TemporalFields.time );
                     if ( !(time instanceof TemporalValue) )
                     {
                         throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", time ) );

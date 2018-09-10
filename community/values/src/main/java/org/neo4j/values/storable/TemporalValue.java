@@ -42,6 +42,7 @@ import java.time.temporal.ValueRange;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -299,14 +300,14 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
     public final AnyValue get( String fieldName )
     {
-        Field field = Field.fields.get( fieldName.toLowerCase() );
-        if ( field == Field.epochSeconds || field == Field.epochMillis )
+        TemporalFields field = TemporalFields.fields.get( fieldName.toLowerCase() );
+        if ( field == TemporalFields.epochSeconds || field == TemporalFields.epochMillis )
         {
             T temp = temporal();
             if ( temp instanceof ChronoZonedDateTime )
             {
                 ChronoZonedDateTime zdt = (ChronoZonedDateTime) temp;
-                if ( field == Field.epochSeconds )
+                if ( field == TemporalFields.epochSeconds )
                 {
                     return Values.longValue( zdt.toInstant().toEpochMilli() / 1000 );
                 }
@@ -320,19 +321,19 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 throw new UnsupportedTemporalUnitException( "Epoch not supported." );
             }
         }
-        if ( field == Field.timezone )
+        if ( field == TemporalFields.timezone )
         {
             return Values.stringValue( getZoneId(this::getZoneOffset).toString() );
         }
-        if ( field == Field.offset )
+        if ( field == TemporalFields.offset )
         {
             return Values.stringValue( getZoneOffset().toString() );
         }
-        if ( field == Field.offsetMinutes )
+        if ( field == TemporalFields.offsetMinutes )
         {
             return Values.intValue( getZoneOffset().getTotalSeconds() / 60 );
         }
-        if ( field == Field.offsetSeconds )
+        if ( field == TemporalFields.offsetSeconds )
         {
             return Values.intValue( getZoneOffset().getTotalSeconds() );
         }
@@ -480,7 +481,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         private DateTimeBuilder state;
         protected AnyValue timezone;
 
-        protected Map<Field,AnyValue> fields = new EnumMap<>( Field.class );
+        protected Map<TemporalFields,AnyValue> fields = new EnumMap<>( TemporalFields.class );
 
         Builder( Supplier<ZoneId> defaultZone )
         {
@@ -508,26 +509,31 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         <Temp extends Temporal> Temp assignAllFields( Temp temp )
         {
             Temp result = temp;
-            for ( Map.Entry<Field,AnyValue> entry : fields.entrySet() )
+            for ( Map.Entry<TemporalFields,AnyValue> entry : fields.entrySet() )
             {
-                Field f = entry.getKey();
-                if ( f == Field.year && fields.containsKey( Field.week ) )
+                TemporalFields f = entry.getKey();
+                if ( f == TemporalFields.year && fields.containsKey( TemporalFields.week ) )
                 {
                     // Year can mean week-based year, if a week is specified.
-                    result = (Temp) result.with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
+                    result = (Temp) result.with( IsoFields.WEEK_BASED_YEAR,
+                            safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
                 }
-                else if ( !f.isGroupSelector() && f != Field.timezone && f != Field.millisecond && f != Field.microsecond && f != Field.nanosecond )
+                else if ( !f.isGroupSelector() && f != TemporalFields.timezone && f != TemporalFields.millisecond &&
+                          f != TemporalFields.microsecond && f != TemporalFields.nanosecond )
                 {
                     TemporalField temporalField = f.field;
-                    result = (Temp) result.with( temporalField, safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
+                    result = (Temp) result
+                            .with( temporalField, safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
                 }
             }
             // Assign all sub-second parts in one step
             if ( supportsTime() &&
-                    (fields.containsKey( Field.millisecond ) || fields.containsKey( Field.microsecond ) || fields.containsKey( Field.nanosecond )) )
+                 (fields.containsKey( TemporalFields.millisecond ) ||
+                  fields.containsKey( TemporalFields.microsecond ) || fields.containsKey( TemporalFields.nanosecond )) )
             {
-                result = (Temp) result.with( Field.nanosecond.field,
-                        validNano( fields.get( Field.millisecond ), fields.get( Field.microsecond ), fields.get( Field.nanosecond ) ) );
+                result = (Temp) result.with( TemporalFields.nanosecond.field,
+                        validNano( fields.get( TemporalFields.millisecond ), fields.get( TemporalFields.microsecond ),
+                                fields.get( TemporalFields.nanosecond ) ) );
             }
             return result;
         }
@@ -535,7 +541,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         @Override
         public final StructureBuilder<AnyValue,Result> add( String fieldName, AnyValue value )
         {
-            Field field = Field.fields.get( fieldName.toLowerCase() );
+            TemporalFields field = TemporalFields.fields.get( fieldName.toLowerCase() );
             if ( field == null )
             {
                 throw new InvalidValuesArgumentException( "No such field: " + fieldName );
@@ -597,7 +603,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
      * All fields that can be a asigned to or read from temporals.
      * Make sure that writable fields defined in "decreasing" order between year and nanosecond.
      */
-    protected enum Field
+    public enum TemporalFields
     {
         year( ChronoField.YEAR, 0 ),
         quarter( IsoFields.QUARTER_OF_YEAR, 1 ),
@@ -784,11 +790,11 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 return true;
             }
         };
-        private static final Map<String,Field> fields = new HashMap<>();
+        private static final Map<String,TemporalFields> fields = new HashMap<>();
 
         static
         {
-            for ( Field field : values() )
+            for ( TemporalFields field : values() )
             {
                 fields.put( field.name().toLowerCase(), field );
             }
@@ -800,13 +806,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         final TemporalField field;
         final int defaultValue;
 
-        Field( TemporalField field, int defaultValue )
+        TemporalFields( TemporalField field, int defaultValue )
         {
             this.field = field;
             this.defaultValue = defaultValue;
         }
 
-        Field()
+        TemporalFields()
         {
             this.field = null;
             this.defaultValue = -1;
@@ -829,6 +835,11 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 builder.state = new DateTimeBuilder();
             }
             builder.state = builder.state.assign( this, value );
+        }
+
+        public static Set<String> allFields()
+        {
+            return fields.keySet();
         }
     }
 
@@ -863,20 +874,20 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                     }
                     else
                     {
-                        throw new InvalidValuesArgumentException( Field.year.name() + " must be specified" );
+                        throw new InvalidValuesArgumentException( TemporalFields.year.name() + " must be specified" );
                     }
                 }
                 time.checkAssignments();
             }
         }
 
-        DateTimeBuilder assign( Field field, AnyValue value )
+        DateTimeBuilder assign( TemporalFields field, AnyValue value )
         {
-            if ( field == Field.datetime || field == Field.epochSeconds || field == Field.epochMillis )
+            if ( field == TemporalFields.datetime || field == TemporalFields.epochSeconds || field == TemporalFields.epochMillis )
             {
                 return new SelectDateTimeDTBuilder( date, time ).assign( field, value );
             }
-            else if ( field == Field.time || field == Field.date )
+            else if ( field == TemporalFields.time || field == TemporalFields.date )
             {
                 return new SelectDateOrTimeDTBuilder( date, time ).assign( field, value );
             }
@@ -886,9 +897,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
         }
 
-        DateTimeBuilder assignToSubBuilders( Field field, AnyValue value )
+        DateTimeBuilder assignToSubBuilders( TemporalFields field, AnyValue value )
         {
-            if ( field == Field.date || field.field != null && field.field.isDateBased() )
+            if ( field == TemporalFields.date || field.field != null && field.field.isDateBased() )
             {
                 if ( date == null )
                 {
@@ -896,7 +907,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 }
                 date = date.assign( field, value );
             }
-            else if ( field == Field.time || field.field != null && field.field.isTimeBased() )
+            else if ( field == TemporalFields.time || field.field != null && field.field.isTimeBased() )
             {
                 if ( time == null )
                 {
@@ -930,13 +941,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
 
         @Override
-        DateTimeBuilder assign( Field field, AnyValue value )
+        DateTimeBuilder assign( TemporalFields field, AnyValue value )
         {
-            if ( field == Field.date || field == Field.time )
+            if ( field == TemporalFields.date || field == TemporalFields.time )
             {
                 throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with datetime or epochSeconds or epochMillis." );
             }
-            else if ( field == Field.datetime )
+            else if ( field == TemporalFields.datetime )
             {
                 if ( epochSeconds != null )
                 {
@@ -946,9 +957,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 {
                     throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with epochMillis." );
                 }
-                datetime = assignment( Field.datetime, datetime, value );
+                datetime = assignment( TemporalFields.datetime, datetime, value );
             }
-            else if ( field == Field.epochSeconds )
+            else if ( field == TemporalFields.epochSeconds )
             {
                 if ( epochMillis != null )
                 {
@@ -958,9 +969,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 {
                     throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with datetime." );
                 }
-                epochSeconds = assignment( Field.epochSeconds, epochSeconds, value );
+                epochSeconds = assignment( TemporalFields.epochSeconds, epochSeconds, value );
             }
-            else if ( field == Field.epochMillis )
+            else if ( field == TemporalFields.epochMillis )
             {
                 if ( epochSeconds != null )
                 {
@@ -970,7 +981,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 {
                     throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with datetime." );
                 }
-                epochMillis = assignment( Field.epochMillis, epochMillis, value );
+                epochMillis = assignment( TemporalFields.epochMillis, epochMillis, value );
             }
             else
             {
@@ -988,9 +999,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
 
         @Override
-        DateTimeBuilder assign( Field field, AnyValue value )
+        DateTimeBuilder assign( TemporalFields field, AnyValue value )
         {
-            if ( field == Field.datetime || field == Field.epochSeconds || field == Field.epochMillis )
+            if ( field == TemporalFields.datetime || field == TemporalFields.epochSeconds || field == TemporalFields.epochMillis )
             {
                 throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with date or time." );
             }
@@ -1003,7 +1014,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
     private abstract static class DateBuilder
     {
-        abstract DateBuilder assign( Field field, AnyValue value );
+        abstract DateBuilder assign( TemporalFields field, AnyValue value );
 
         abstract void checkAssignments();
 
@@ -1024,7 +1035,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
         }
 
-        void assign( Field field, AnyValue value )
+        void assign( TemporalFields field, AnyValue value )
         {
             switch ( field )
             {
@@ -1080,7 +1091,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
 
         @Override
-        ConstructDate assign( Field field, AnyValue value )
+        ConstructDate assign( TemporalFields field, AnyValue value )
         {
             switch ( field )
             {
@@ -1118,7 +1129,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( date == null )
             {
-                throw new InvalidValuesArgumentException( Field.month.name() + " must be specified"  );
+                throw new InvalidValuesArgumentException( TemporalFields.month.name() + " must be specified"  );
             }
         }
     }
@@ -1135,7 +1146,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
 
         @Override
-        ConstructDate assign( Field field, AnyValue value )
+        ConstructDate assign( TemporalFields field, AnyValue value )
         {
             switch ( field )
             {
@@ -1188,7 +1199,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
 
         @Override
-        ConstructDate assign( Field field, AnyValue value )
+        ConstructDate assign( TemporalFields field, AnyValue value )
         {
             switch ( field )
             {
@@ -1241,7 +1252,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
 
         @Override
-        ConstructDate assign( Field field, AnyValue value )
+        ConstructDate assign( TemporalFields field, AnyValue value )
         {
             switch ( field )
             {
@@ -1293,7 +1304,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
 
         @Override
-        ConstructDate assign( Field field, AnyValue value )
+        ConstructDate assign( TemporalFields field, AnyValue value )
         {
             switch ( field )
             {
@@ -1322,7 +1333,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
     }
 
-    private static AnyValue assignment( Field field, AnyValue oldValue, AnyValue newValue )
+    private static AnyValue assignment( TemporalFields field, AnyValue oldValue, AnyValue newValue )
     {
         if ( oldValue != null )
         {
@@ -1385,9 +1396,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
     static int validNano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
     {
-        long ms = safeCastIntegral( "millisecond", millisecond, Field.millisecond.defaultValue );
-        long us = safeCastIntegral( "microsecond", microsecond, Field.microsecond.defaultValue );
-        long ns = safeCastIntegral( "nanosecond", nanosecond, Field.nanosecond.defaultValue );
+        long ms = safeCastIntegral( "millisecond", millisecond, TemporalFields.millisecond.defaultValue );
+        long us = safeCastIntegral( "microsecond", microsecond, TemporalFields.microsecond.defaultValue );
+        long ns = safeCastIntegral( "nanosecond", nanosecond, TemporalFields.nanosecond.defaultValue );
         if ( ms < 0 || ms >= 1000 )
         {
             throw new InvalidValuesArgumentException( "Invalid value for Millisecond: " + ms );

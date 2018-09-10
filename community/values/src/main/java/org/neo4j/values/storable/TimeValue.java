@@ -184,7 +184,8 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     static OffsetTime defaultTime( ZoneId zoneId )
     {
-        return OffsetTime.of( Field.hour.defaultValue, Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue,
+        return OffsetTime.of( TemporalFields.hour.defaultValue, TemporalFields.minute.defaultValue,
+                TemporalFields.second.defaultValue, TemporalFields.nanosecond.defaultValue,
                 assertValidZone( () -> ZoneOffset.of( zoneId.toString() ) ) );
     }
 
@@ -201,12 +202,12 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             @Override
             public TimeValue buildInternal()
             {
-                boolean selectingTime = fields.containsKey( Field.time );
+                boolean selectingTime = fields.containsKey( TemporalFields.time );
                 boolean selectingTimeZone;
                 OffsetTime result;
                 if ( selectingTime )
                 {
-                    AnyValue time = fields.get( Field.time );
+                    AnyValue time = fields.get( TemporalFields.time );
                     if ( !(time instanceof TemporalValue) )
                     {
                         throw new InvalidValuesArgumentException( String.format( "Cannot construct time from: %s", time ) );
