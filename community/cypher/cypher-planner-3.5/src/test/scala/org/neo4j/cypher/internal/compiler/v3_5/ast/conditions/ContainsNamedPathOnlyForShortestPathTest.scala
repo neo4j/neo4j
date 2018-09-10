@@ -24,7 +24,7 @@ import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstConstructionTestSupport {
-  private val condition: (Any => Seq[String]) = containsNamedPathOnlyForShortestPath
+  private val condition: Any => Seq[String] = containsNamedPathOnlyForShortestPath
 
   test("happy when we have no named paths") {
     val ast = Query(None, SingleQuery(Seq(
