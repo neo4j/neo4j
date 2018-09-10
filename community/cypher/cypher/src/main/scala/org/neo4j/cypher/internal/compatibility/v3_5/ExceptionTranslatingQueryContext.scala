@@ -252,15 +252,17 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
+                                                     indexOrder: IndexOrder,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] =
-    translateException(inner.indexSeekByContains(index, needsValues, resultCreator, value))
+    translateException(inner.indexSeekByContains(index, needsValues, indexOrder, resultCreator, value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
+                                                     indexOrder: IndexOrder,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] =
-    translateException(inner.indexSeekByEndsWith(index, needsValues, resultCreator, value))
+    translateException(inner.indexSeekByEndsWith(index, needsValues, indexOrder, resultCreator, value))
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,

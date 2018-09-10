@@ -209,4 +209,55 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
       Map("a.prop3" -> null), Map("a.prop3" -> null)
     ))
   }
+
+  // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve contains
+  test("Order by index backed property should plan with provided order (contains scan)") {
+    createStringyNodes()
+
+    val result = executeWith(Configs.Interpreted,
+                             "MATCH (n:Awesome) WHERE n.prop3 CONTAINS 'cat' RETURN n.prop3 ORDER BY n.prop3",
+                             executeBefore = createStringyNodes)
+
+    result.executionPlanDescription() should not(includeSomewhere.aPlan("Sort"))
+    result.toList should be(List(
+      Map("n.prop3" -> "bobcat"), Map("n.prop3" -> "bobcat"),
+      Map("n.prop3" -> "catastrophy"), Map("n.prop3" -> "catastrophy"),
+      Map("n.prop3" -> "poodlecatilicious"), Map("n.prop3" -> "poodlecatilicious"),
+      Map("n.prop3" -> "scat"), Map("n.prop3" -> "scat"),
+      Map("n.prop3" -> "tree-cat-bog"), Map("n.prop3" -> "tree-cat-bog"),
+      Map("n.prop3" -> "whinecathog"), Map("n.prop3" -> "whinecathog")
+    ))
+  }
+
+  // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve ends with
+  test("Order by index backed property should plan with provided order (ends with scan)") {
+    createStringyNodes()
+
+    val result = executeWith(Configs.Interpreted,
+                             "MATCH (n:Awesome) WHERE n.prop3 ENDS WITH 'og' RETURN n.prop3 ORDER BY n.prop3",
+                             executeBefore = createStringyNodes)
+
+    result.executionPlanDescription() should not(includeSomewhere.aPlan("Sort"))
+    result.toList should be(List(
+      Map("n.prop3" -> "dog"), Map("n.prop3" -> "dog"),
+      Map("n.prop3" -> "flog"), Map("n.prop3" -> "flog"),
+      Map("n.prop3" -> "tree-cat-bog"), Map("n.prop3" -> "tree-cat-bog"),
+      Map("n.prop3" -> "whinecathog"), Map("n.prop3" -> "whinecathog")
+    ))
+  }
+
+  // Some nodes which are suitable for CONTAINS and ENDS WITH testing
+  private def createStringyNodes() =
+    graph.execute(
+      """CREATE (:Awesome {prop3: 'scat'})
+        |CREATE (:Awesome {prop3: 'bobcat'})
+        |CREATE (:Awesome {prop3: 'poodlecatilicious'})
+        |CREATE (:Awesome {prop3: 'dog'})
+        |CREATE (:Awesome {prop3: 'flog'})
+        |CREATE (:Awesome {prop3: 'catastrophy'})
+        |CREATE (:Awesome {prop3: 'whinecathog'})
+        |CREATE (:Awesome {prop3: 'scratch'})
+        |CREATE (:Awesome {prop3: 'tree-cat-bog'})
+        |""".stripMargin)
+
 }

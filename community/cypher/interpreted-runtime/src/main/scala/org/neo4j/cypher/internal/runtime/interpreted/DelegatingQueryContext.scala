@@ -134,15 +134,17 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
+                                                     indexOrder: IndexOrder,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] =
-    manyDbHits(inner.indexSeekByContains(index, needsValues, resultCreator, value))
+    manyDbHits(inner.indexSeekByContains(index, needsValues, indexOrder, resultCreator, value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
+                                                     indexOrder: IndexOrder,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] =
-    manyDbHits(inner.indexSeekByEndsWith(index, needsValues, resultCreator, value))
+    manyDbHits(inner.indexSeekByEndsWith(index, needsValues, indexOrder, resultCreator, value))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = manyDbHits(inner.getNodesByLabel(id))
 

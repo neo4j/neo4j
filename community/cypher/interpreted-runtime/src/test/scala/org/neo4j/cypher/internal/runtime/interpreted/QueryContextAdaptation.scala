@@ -41,11 +41,13 @@ trait QueryContextAdaptation {
 
   override def indexSeekByContains[RESULT](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT],
                                            value: String): scala.Iterator[RESULT] = ???
 
   override def indexSeekByEndsWith[RESULT](index: IndexReference,
                                            needsValues: Boolean,
+                                           indexOrder: IndexOrder,
                                            resultCreator: ResultCreator[RESULT],
                                            value: String): Iterator[RESULT] = ???
 

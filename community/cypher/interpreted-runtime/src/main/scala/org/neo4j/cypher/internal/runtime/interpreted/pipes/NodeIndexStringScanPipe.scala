@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{QueryContext, ResultCreator}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, IndexedProperty}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, IndexOrder, IndexedProperty}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.expressions.LabelToken
@@ -73,7 +73,8 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 case class NodeIndexContainsScanPipe(ident: String,
                                      label: LabelToken,
                                      property: IndexedProperty,
-                                     valueExpr: Expression)
+                                     valueExpr: Expression,
+                                     indexOrder: IndexOrder)
                                     (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
 
@@ -81,13 +82,14 @@ case class NodeIndexContainsScanPipe(ident: String,
                                           indexReference: IndexReference,
                                           value: String,
                                           resultCreator: ResultCreator[ExecutionContext]): Iterator[ExecutionContext] =
-    state.query.indexSeekByContains(indexReference, needsValues, resultCreator, value)
+    state.query.indexSeekByContains(indexReference, needsValues, indexOrder, resultCreator, value)
 }
 
 case class NodeIndexEndsWithScanPipe(ident: String,
                                      label: LabelToken,
                                      property: IndexedProperty,
-                                     valueExpr: Expression)
+                                     valueExpr: Expression,
+                                     indexOrder: IndexOrder)
                                     (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
 
@@ -95,5 +97,5 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                           indexReference: IndexReference,
                                           value: String,
                                           resultCreator: ResultCreator[ExecutionContext]): Iterator[ExecutionContext] =
-    state.query.indexSeekByEndsWith(indexReference, needsValues, resultCreator, value)
+    state.query.indexSeekByEndsWith(indexReference, needsValues, indexOrder, resultCreator, value)
 }

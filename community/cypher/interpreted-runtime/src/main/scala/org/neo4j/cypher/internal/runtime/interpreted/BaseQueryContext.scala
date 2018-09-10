@@ -243,11 +243,15 @@ abstract class BaseQueryContext extends QueryContext {
                                            resultCreator: ResultCreator[RESULT],
                                            queries: Seq[IndexQuery]): Iterator[RESULT] = notSupported()
 
-  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean,
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     indexOrder: IndexOrder,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] = notSupported()
 
-  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean,
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+                                                     needsValues: Boolean,
+                                                     indexOrder: IndexOrder,
                                                      resultCreator: ResultCreator[RESULT],
                                                      value: String): Iterator[RESULT] = notSupported()
 

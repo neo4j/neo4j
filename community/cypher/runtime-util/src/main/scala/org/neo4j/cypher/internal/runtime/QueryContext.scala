@@ -106,9 +106,17 @@ trait QueryContext extends TokenContext with DbAccess {
                                   resultCreator: ResultCreator[RESULT],
                                   queries: Seq[IndexQuery]): Iterator[RESULT]
 
-  def indexSeekByContains[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], value: String): Iterator[RESULT]
+  def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+                                            needsValues: Boolean,
+                                            indexOrder: IndexOrder,
+                                            resultCreator: ResultCreator[RESULT],
+                                            value: String): Iterator[RESULT]
 
-  def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference, needsValues: Boolean, resultCreator: ResultCreator[RESULT], value: String): Iterator[RESULT]
+  def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+                                            needsValues: Boolean,
+                                            indexOrder: IndexOrder,
+                                            resultCreator: ResultCreator[RESULT],
+                                            value: String): Iterator[RESULT]
 
   def indexScan[RESULT <: AnyRef](index: IndexReference,
                                   needsValues: Boolean,

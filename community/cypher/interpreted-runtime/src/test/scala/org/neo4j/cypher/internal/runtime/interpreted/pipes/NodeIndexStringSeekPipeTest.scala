@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{GetValue, IndexedProperty}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{GetValue, IndexOrderNone, IndexedProperty}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
@@ -55,7 +55,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("hello"))()
+    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("hello"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then
@@ -75,7 +75,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("bye"))()
+    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("bye"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then

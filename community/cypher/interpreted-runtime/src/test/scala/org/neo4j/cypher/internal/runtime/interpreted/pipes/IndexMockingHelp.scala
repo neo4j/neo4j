@@ -59,8 +59,8 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
     values.foreach {
       case (searchTerm, resultIterable) =>
-        when(query.indexSeekByContains(any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenAnswer(PredefinedIterator(resultIterable, 2))
-        when(query.indexSeekByEndsWith(any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenAnswer(PredefinedIterator(resultIterable, 2))
+        when(query.indexSeekByContains(any(), any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenAnswer(PredefinedIterator(resultIterable, 3))
+        when(query.indexSeekByEndsWith(any(), any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenAnswer(PredefinedIterator(resultIterable, 3))
     }
 
     query
