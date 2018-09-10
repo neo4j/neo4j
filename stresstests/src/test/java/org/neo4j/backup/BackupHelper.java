@@ -31,6 +31,7 @@ import java.util.function.Predicate;
 import org.neo4j.backup.impl.BackupClient;
 import org.neo4j.backup.impl.BackupOutcome;
 import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.BackupProtocolServiceFactory;
 import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.function.Predicates;
 import org.neo4j.helper.IsChannelClosedException;
@@ -54,7 +55,7 @@ public class BackupHelper
     {
     }
 
-    public static BackupResult backup( String host, int port, Path targetDirectory )
+    public static BackupResult backup( String host, int port, Path targetDirectory ) throws Exception
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         boolean consistent = true;
@@ -62,11 +63,13 @@ public class BackupHelper
         boolean failure = false;
         try
         {
-            BackupProtocolService backupProtocolService = new BackupProtocolService( outputStream );
-            BackupOutcome backupOutcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, DatabaseLayout.of( targetDirectory.toFile() ),
-                    ConsistencyCheck.FULL, Config.defaults(), BackupClient.BIG_READ_TIMEOUT,
-                    false );
-            consistent = backupOutcome.isConsistent();
+            try ( BackupProtocolService backupProtocolService = BackupProtocolServiceFactory.backupProtocolService( outputStream ) )
+            {
+                BackupOutcome backupOutcome =
+                        backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, DatabaseLayout.of( targetDirectory.toFile() ),
+                                ConsistencyCheck.FULL, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
+                consistent = backupOutcome.isConsistent();
+            }
         }
         catch ( Throwable t )
         {

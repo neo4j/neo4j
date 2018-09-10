@@ -33,6 +33,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 
 import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.BackupProtocolServiceFactory;
 import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -72,6 +73,7 @@ public class BackupToolIT
     private BackupTool backupTool;
     private DatabaseLayout backupLayout;
     private JobScheduler jobScheduler;
+    private BackupProtocolService backupProtocolService;
 
     @Before
     public void setUp()
@@ -81,12 +83,14 @@ public class BackupToolIT
         fs = new DefaultFileSystemAbstraction();
         jobScheduler = new ThreadPoolJobScheduler();
         pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler );
-        backupTool = new BackupTool( new BackupProtocolService(), mock( PrintStream.class ) );
+        backupProtocolService = BackupProtocolServiceFactory.backupProtocolService();
+        backupTool = new BackupTool( backupProtocolService, mock( PrintStream.class ) );
     }
 
     @After
     public void tearDown() throws Exception
     {
+        backupProtocolService.close();
         pageCache.close();
         jobScheduler.close();
         fs.close();

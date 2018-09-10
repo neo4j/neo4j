@@ -101,7 +101,7 @@ public class BackupSupportingClassesFactory
     private BackupProtocolService haFromConfig( PageCache pageCache )
     {
         Supplier<FileSystemAbstraction> fileSystemSupplier = () -> fileSystemAbstraction;
-        return new BackupProtocolService( fileSystemSupplier, logProvider, logDestination, monitors, pageCache );
+        return BackupProtocolServiceFactory.backupProtocolService( fileSystemSupplier, logProvider, logDestination, monitors, pageCache );
     }
 
     private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )

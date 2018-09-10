@@ -130,9 +130,4 @@ public enum Group
     {
         return executorServiceFactory.build( this, factory );
     }
-
-    public ExecutorService buildExecutorService( SchedulerThreadFactory factory, int threadCount )
-    {
-        return executorServiceFactory.build( this, factory, threadCount );
-    }
 }

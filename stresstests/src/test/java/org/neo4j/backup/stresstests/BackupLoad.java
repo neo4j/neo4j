@@ -47,7 +47,7 @@ class BackupLoad extends Workload
     }
 
     @Override
-    protected void doWork()
+    protected void doWork() throws Exception
     {
         BackupResult backupResult = BackupHelper.backup( backupHostname, backupPort, backupDir );
         if ( !backupResult.isConsistent() )

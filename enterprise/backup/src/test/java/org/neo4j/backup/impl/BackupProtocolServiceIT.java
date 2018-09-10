@@ -124,6 +124,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.backup.impl.BackupProtocolServiceFactory.backupProtocolService;
 
 public class BackupProtocolServiceIT
 {
@@ -171,14 +172,14 @@ public class BackupProtocolServiceIT
 
     private BackupProtocolService backupService()
     {
-        return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
+        return backupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
                 FormattedLogProvider.toOutputStream( NULL_OUTPUT ), NULL_OUTPUT, new Monitors(), pageCacheRule.getPageCache( fileSystemRule.get() ) );
     }
 
     private BackupProtocolService backupService( LogProvider logProvider )
     {
-        return new BackupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ), logProvider, NULL_OUTPUT,
-                new Monitors(), pageCacheRule.getPageCache( fileSystemRule.get() ) );
+        return backupProtocolService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ), logProvider, NULL_OUTPUT, new Monitors(),
+                pageCacheRule.getPageCache( fileSystemRule.get() ) );
     }
 
     @Test

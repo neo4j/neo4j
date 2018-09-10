@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import org.neo4j.backup.IncrementalBackupNotPossibleException;
 import org.neo4j.com.RequestContext;
@@ -54,7 +53,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -74,7 +72,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -86,13 +83,11 @@ import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFA
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.rootCause;
-import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 /**
  * Client-side convenience service for doing backups from a running database instance.
  */
-public class BackupProtocolService
+public class BackupProtocolService implements AutoCloseable
 {
     static final String TOO_OLD_BACKUP = "It's been too long since this backup was last updated, and it has " +
             "fallen too far behind the database transaction stream for incremental backup to be possible. You need to" +
@@ -106,28 +101,17 @@ public class BackupProtocolService
     private final Log log;
     private final OutputStream logDestination;
     private final Monitors monitors;
-    private final PageCache pageCache;
-
-    public BackupProtocolService()
-    {
-        this( System.out );
-    }
-
-    public BackupProtocolService( OutputStream logDestination )
-    {
-        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination, new Monitors(),
-                createPageCache( new DefaultFileSystemAbstraction(), createInitialisedScheduler() ) );
-    }
+    private final BackupPageCacheContainer pageCacheContianer;
 
     BackupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, OutputStream logDestination, Monitors monitors,
-            @Nullable PageCache pageCache )
+            BackupPageCacheContainer pageCacheContainer )
     {
         this.fileSystemSupplier = fileSystemSupplier;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.logDestination = logDestination;
         this.monitors = monitors;
-        this.pageCache = pageCache;
+        this.pageCacheContianer = pageCacheContainer;
     }
 
     public BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, DatabaseLayout targetLayout,
@@ -159,7 +143,7 @@ public class BackupProtocolService
             long timestamp = System.currentTimeMillis();
             long lastCommittedTx = -1;
             StoreCopyClient storeCopier = new StoreCopyClient( targetLayout, tuningConfiguration,
-                    loadKernelExtensions(), logProvider, fileSystem, pageCache,
+                    loadKernelExtensions(), logProvider, fileSystem, pageCacheContianer.getPageCache(),
                     monitors.newMonitor( StoreCopyClientMonitor.class, getClass().getName() ), forensics );
             FullBackupStoreCopyRequester storeCopyRequester =
                     new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics, monitors );
@@ -171,7 +155,7 @@ public class BackupProtocolService
             tuningConfiguration.augment( logs_directory, targetLayout.databaseDirectory().toPath().toRealPath().toString() );
             File debugLogFile = tuningConfiguration.get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, timestamp );
-            boolean consistent = checkDbConsistency( fileSystem, targetLayout, consistencyCheck, tuningConfiguration, pageCache );
+            boolean consistent = checkDbConsistency( fileSystem, targetLayout, consistencyCheck, tuningConfiguration, pageCacheContianer.getPageCache() );
             clearIdFiles( fileSystem, targetLayout );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
@@ -215,7 +199,7 @@ public class BackupProtocolService
             config.augment( temporaryDbConfig );
 
             Map<String,String> configParams = config.getRaw();
-            GraphDatabaseAPI targetDb = startTemporaryDb( targetLayout.databaseDirectory(), pageCache, configParams );
+            GraphDatabaseAPI targetDb = startTemporaryDb( targetLayout.databaseDirectory(), pageCacheContianer.getPageCache(), configParams );
             long backupStartTime = System.currentTimeMillis();
             long lastCommittedTx;
             try
@@ -235,7 +219,7 @@ public class BackupProtocolService
             config.augment( logs_directory, targetLayout.databaseDirectory().getCanonicalPath() );
             File debugLogFile = config.get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, backupStartTime );
-            boolean consistent = checkDbConsistency( fileSystem, targetLayout, consistencyCheck, config, pageCache );
+            boolean consistent = checkDbConsistency( fileSystem, targetLayout, consistencyCheck, config, pageCacheContianer.getPageCache() );
             clearIdFiles( fileSystem, targetLayout );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
@@ -327,11 +311,10 @@ public class BackupProtocolService
         }
     }
 
-    public BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
-                                              long timeout ) throws IncrementalBackupNotPossibleException
+    public static BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb, long timeout )
+            throws IncrementalBackupNotPossibleException
     {
-        long lastCommittedTransaction = incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout,
-                slaveContextOf( targetDb ) );
+        long lastCommittedTransaction = incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout, slaveContextOf( targetDb ) );
         return new BackupOutcome( lastCommittedTransaction, true );
     }
 
@@ -373,8 +356,8 @@ public class BackupProtocolService
      * @param context The context, containing transaction id to start streaming transaction from
      * @return last committed transaction id
      */
-    private long incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
-            long timeout, RequestContext context ) throws IncrementalBackupNotPossibleException
+    private static long incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb, long timeout, RequestContext context )
+            throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
 
@@ -419,18 +402,18 @@ public class BackupProtocolService
         return handler.getLastSeenTransactionId();
     }
 
-    private static boolean bumpDebugDotLogFileVersion( final File debugLogFile, final long toTimestamp )
+    private static void bumpDebugDotLogFileVersion( final File debugLogFile, final long toTimestamp )
     {
         if ( !debugLogFile.exists() )
         {
-            return false;
+            return;
         }
         // Build to, from existing parent + new filename
         File to = new File( debugLogFile.getParentFile(), debugLogFile.getName() + "." + toTimestamp );
-        return debugLogFile.renameTo( to );
+        debugLogFile.renameTo( to );
     }
 
-    private List<KernelExtensionFactory<?>> loadKernelExtensions()
+    private static List<KernelExtensionFactory<?>> loadKernelExtensions()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
         for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
@@ -440,7 +423,7 @@ public class BackupProtocolService
         return kernelExtensions;
     }
 
-    private void clearIdFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
+    private static void clearIdFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
         for ( File file : fileSystem.listFiles( databaseLayout.databaseDirectory() ) )
         {
@@ -451,6 +434,12 @@ public class BackupProtocolService
                 IdGeneratorImpl.createGenerator( fileSystem, file, highId, true );
             }
         }
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        pageCacheContianer.close();
     }
 
     private static class ProgressTxHandler implements TxHandler
