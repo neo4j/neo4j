@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -69,6 +71,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.helpers.ArrayUtil.concat;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
@@ -77,12 +80,32 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
 {
     private static final String ZIP_FILE_3_2 = "3_2-db.zip";
     private static final String ZIP_FILE_3_3 = "3_3-db.zip";
+    private static final String ZIP_FILE_3_4 = "3_4-db.zip";
 
-    private static final Label LABEL_LUCENE_10 = Label.label( "Label1" );
-    private static final Label LABEL_FUSION_10 = Label.label( "Label2" );
-    private static final Label LABEL_FUSION_20 = Label.label( "Label3" );
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
+
+    private enum Provider
+    {
+        // in order of appearance
+        LUCENE_10( "Label1", GraphDatabaseSettings.SchemaIndex.LUCENE10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR ),
+        FUSION_10( "Label2", GraphDatabaseSettings.SchemaIndex.NATIVE10, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR ),
+        FUSION_20( "Label3", GraphDatabaseSettings.SchemaIndex.NATIVE20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR ),
+        BTREE_10( "Label4", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, GenericNativeIndexProvider.DESCRIPTOR );
+
+        private final Label label;
+        private final GraphDatabaseSettings.SchemaIndex setting;
+        private final IndexProviderDescriptor descriptor;
+
+        Provider( String labelName, GraphDatabaseSettings.SchemaIndex setting, IndexProviderDescriptor descriptor )
+        {
+            this.label = Label.label( labelName );
+            this.setting = setting;
+            this.descriptor = descriptor;
+        }
+    }
+
+    private static final Provider DEFAULT_PROVIDER = Provider.BTREE_10;
 
     @Inject
     private TestDirectory directory;
@@ -93,7 +116,8 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        createIndexDataAndShutdown( db, LABEL_LUCENE_10 );
+        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
+        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
     }
 
     @Disabled( "Here as reference for how 3.3 db was created" )
@@ -106,57 +130,100 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
 
         builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.FALSE );
         GraphDatabaseService db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, LABEL_LUCENE_10 );
+        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
 
         builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
         db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, LABEL_FUSION_10 );
+        createIndexDataAndShutdown( db, Provider.FUSION_10.label );
+        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
+    }
+
+    @Disabled( "Here as reference for how 3.4 db was created" )
+    @Test
+    void create3_4Database() throws Exception
+    {
+        File storeDir = tempStoreDirectory();
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerIdentifier() );
+        GraphDatabaseService db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
+
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerIdentifier() );
+        db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, Provider.FUSION_10.label );
+
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
+        db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, Provider.FUSION_20.label );
         System.out.println( "Db created in " + storeDir.getAbsolutePath() );
     }
 
     @Test
     void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
-        // given
-        unzip( getClass(), ZIP_FILE_3_2, directory.databaseDir() );
-        IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
+        shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_2, Provider.LUCENE_10 );
+    }
 
+    @Test
+    void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    {
+        shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_3, Provider.FUSION_10 );
+    }
+
+    @Test
+    void shouldOpen3_4DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    {
+        shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_4, Provider.FUSION_20 );
+    }
+
+    private void shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( String zippedDbName, Provider highestProviderInOldVersion ) throws Exception
+    {
+        // given
+        unzip( getClass(), zippedDbName, directory.databaseDir() );
+        IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when
         GraphDatabaseAPI db = setupDb( directory.databaseDir(), indexRecoveryTracker );
 
         // then
-        verifyInitialState( indexRecoveryTracker, 2, InternalIndexState.ONLINE );
+        Provider[] providers = providersUpToAndIncluding( highestProviderInOldVersion );
+        Provider[] providersIncludingSubject = concat( providers, DEFAULT_PROVIDER );
+        int expectedNumberOfIndexes = providers.length * 2;
         try
         {
+            verifyInitialState( indexRecoveryTracker, expectedNumberOfIndexes, InternalIndexState.ONLINE );
+
             // then
-            verifyIndexes( db, LABEL_LUCENE_10 );
+            for ( Provider provider : providers )
+            {
+                verifyIndexes( db, provider.label );
+            }
 
             // when
-            createIndexesAndData( db, LABEL_FUSION_20 );
+            createIndexesAndData( db, DEFAULT_PROVIDER.label );
 
             // then
-            verifyIndexes( db, LABEL_FUSION_20 );
+            verifyIndexes( db, DEFAULT_PROVIDER.label );
 
             // when
-            additionalUpdates( db, LABEL_LUCENE_10 );
+            for ( Provider provider : providersIncludingSubject )
+            {
+                additionalUpdates( db, provider.label );
 
-            // then
-            verifyAfterAdditionalUpdate( db, LABEL_LUCENE_10 );
-
-            // when
-            additionalUpdates( db, LABEL_FUSION_20 );
-
-            // then
-            verifyAfterAdditionalUpdate( db, LABEL_FUSION_20 );
+                // then
+                verifyAfterAdditionalUpdate( db, provider.label );
+            }
 
             // and finally
-            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
-            verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
+            for ( Provider provider : providersIncludingSubject )
+            {
+                verifyExpectedProvider( db, provider.label, provider.descriptor );
+            }
         }
         finally
         {
             db.shutdown();
-            indexRecoveryTracker.reset();
         }
 
         // when
@@ -164,7 +231,7 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         try
         {
             // then
-            verifyInitialState( indexRecoveryTracker, 4, InternalIndexState.ONLINE );
+            verifyInitialState( indexRecoveryTracker, expectedNumberOfIndexes + 2, InternalIndexState.ONLINE );
         }
         finally
         {
@@ -172,68 +239,9 @@ class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    @Test
-    void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    private Provider[] providersUpToAndIncluding( Provider provider )
     {
-        // given
-        unzip( getClass(), ZIP_FILE_3_3, directory.databaseDir() );
-        IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
-        // when
-        GraphDatabaseAPI db = setupDb( directory.databaseDir(), indexRecoveryTracker );
-
-        // then
-        verifyInitialState( indexRecoveryTracker, 4, InternalIndexState.ONLINE );
-        try
-        {
-            // then
-            verifyIndexes( db, LABEL_LUCENE_10 );
-            verifyIndexes( db, LABEL_FUSION_10 );
-
-            // when
-            createIndexesAndData( db, LABEL_FUSION_20 );
-
-            // then
-            verifyIndexes( db, LABEL_FUSION_20 );
-
-            // when
-            additionalUpdates( db, LABEL_LUCENE_10 );
-
-            // then
-            verifyAfterAdditionalUpdate( db, LABEL_LUCENE_10 );
-
-            // when
-            additionalUpdates( db, LABEL_FUSION_10 );
-
-            // then
-            verifyAfterAdditionalUpdate( db, LABEL_FUSION_10 );
-
-            // when
-            additionalUpdates( db, LABEL_FUSION_20 );
-
-            // then
-            verifyAfterAdditionalUpdate( db, LABEL_FUSION_20 );
-
-            // and finally
-            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
-            verifyExpectedProvider( db, LABEL_FUSION_10, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR );
-            verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-
-        // when
-        db = setupDb( directory.databaseDir(), indexRecoveryTracker );
-        try
-        {
-            // then
-            verifyInitialState( indexRecoveryTracker, 6, InternalIndexState.ONLINE );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        return Stream.of( Provider.values() ).filter( p -> p.ordinal() <= provider.ordinal() ).toArray( Provider[]::new );
     }
 
     private GraphDatabaseAPI setupDb( File storeDir, IndexRecoveryTracker indexRecoveryTracker )
