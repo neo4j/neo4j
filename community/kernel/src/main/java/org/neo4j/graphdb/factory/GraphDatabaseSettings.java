@@ -610,7 +610,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
-        NATIVE_BTREE10( 0, "native-btree", "1.0" ), // TODO: Zero because should not be default yet.
+        NATIVE_BTREE10( 4, "native-btree", "1.0" ), // <-- default
         NATIVE20( 3, "lucene+native", "2.0" ),
         NATIVE10( 2, "lucene+native", "1.0" ),
         LUCENE10( 1, "lucene", "1.0" );
