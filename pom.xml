@@ -366,6 +366,7 @@
           <configuration>
             <argLine>${test.runner.jvm.settings}</argLine>
             <forkCount>${forkCounts}</forkCount>
+            <trimStackTrace>false</trimStackTrace>
             <reuseForks>true</reuseForks>
             <runOrder>random</runOrder>
             <includes>
