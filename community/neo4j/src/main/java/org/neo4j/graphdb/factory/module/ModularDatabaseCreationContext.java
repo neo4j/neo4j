@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
+import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -121,7 +121,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseLayout databaseLayout;
     private final DatabaseAvailability databaseAvailability;
 
-    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionDatabaseContext editionContext,
+    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, DatabaseEditionContext editionContext,
             Procedures procedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;

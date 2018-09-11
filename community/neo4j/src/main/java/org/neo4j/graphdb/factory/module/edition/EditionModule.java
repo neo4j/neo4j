@@ -30,8 +30,8 @@ import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
 import org.neo4j.graphdb.factory.module.edition.context.DefaultEditionModuleDatabaseContext;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
@@ -96,7 +95,7 @@ public abstract class EditionModule
     protected AvailabilityGuard globalAvailabilityGuard;
     protected SecurityProvider securityProvider;
 
-    public EditionDatabaseContext createDatabaseContext( String databaseName )
+    public DatabaseEditionContext createDatabaseContext( String databaseName )
     {
         return new DefaultEditionModuleDatabaseContext( this, databaseName );
     }
@@ -297,53 +296,5 @@ public abstract class EditionModule
     public void setSecurityProvider( SecurityProvider securityProvider )
     {
         this.securityProvider = securityProvider;
-    }
-
-    private static class SecurityModuleDependenciesDependencies implements SecurityModule.Dependencies
-    {
-        private final PlatformModule platformModule;
-        private final Procedures procedures;
-
-        SecurityModuleDependenciesDependencies( PlatformModule platformModule, Procedures procedures )
-        {
-            this.platformModule = platformModule;
-            this.procedures = procedures;
-        }
-
-        @Override
-        public LogService logService()
-        {
-            return platformModule.logging;
-        }
-
-        @Override
-        public Config config()
-        {
-            return platformModule.config;
-        }
-
-        @Override
-        public Procedures procedures()
-        {
-            return procedures;
-        }
-
-        @Override
-        public JobScheduler scheduler()
-        {
-            return platformModule.jobScheduler;
-        }
-
-        @Override
-        public FileSystemAbstraction fileSystem()
-        {
-            return platformModule.fileSystem;
-        }
-
-        @Override
-        public DependencySatisfier dependencySatisfier()
-        {
-            return platformModule.dependencies;
-        }
     }
 }

@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public interface EditionDatabaseContext
+public interface DatabaseEditionContext
 {
     DatabaseIdContext getIdContext();
 

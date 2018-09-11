@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public class DefaultEditionModuleDatabaseContext implements EditionDatabaseContext
+public class DefaultEditionModuleDatabaseContext implements DatabaseEditionContext
 {
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final String databaseName;
