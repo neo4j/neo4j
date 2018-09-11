@@ -35,9 +35,9 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.provider.EnterpriseNoAuthSecurityProvider;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -133,7 +133,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         }
         else
         {
-            NoAuthSecurityProvider provider = NoAuthSecurityProvider.INSTANCE;
+            EnterpriseNoAuthSecurityProvider provider = EnterpriseNoAuthSecurityProvider.INSTANCE;
             platformModule.life.add( provider );
             securityProvider = provider;
         }
