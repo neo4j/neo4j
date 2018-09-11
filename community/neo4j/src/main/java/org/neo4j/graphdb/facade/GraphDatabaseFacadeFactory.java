@@ -39,6 +39,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
@@ -171,6 +172,9 @@ public class GraphDatabaseFacadeFactory
         platform.dependencies.satisfyDependency( databaseManager );
 
         edition.createSecurityModule( platform, procedures );
+        SecurityProvider securityProvider = edition.getSecurityProvider();
+        platform.dependencies.satisfyDependencies( securityProvider.authManager() );
+        platform.dependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
 
         platform.life.add( platform.globalKernelExtensions );
         platform.life.add( createBoltServer( platform, edition, databaseManager ) );

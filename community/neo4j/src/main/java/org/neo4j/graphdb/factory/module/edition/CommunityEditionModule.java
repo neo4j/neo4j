@@ -233,7 +233,7 @@ public class CommunityEditionModule extends EditionModule
                     platformModule.logging.getUserLog( getClass() ),
                     procedures, COMMUNITY_SECURITY_MODULE_ID );
             platformModule.life.add( securityModule );
-            securityProvider = securityModule;
+            this.securityProvider = securityModule;
         }
         else
         {

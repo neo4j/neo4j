@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
+import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
@@ -121,19 +122,21 @@ public class EnterpriseEditionModule extends CommunityEditionModule
 
     public static void createEnterpriseSecurityModule( EditionModule editionModule, PlatformModule platformModule, Procedures procedures )
     {
+        SecurityProvider securityProvider;
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
         {
             SecurityModule securityModule = setupSecurityModule( platformModule,
                     platformModule.logging.getUserLog( EnterpriseEditionModule.class ),
                     procedures, platformModule.config.get( EnterpriseEditionSettings.security_module ) );
             platformModule.life.add( securityModule );
-            editionModule.setSecurityProvider( securityModule );
+            securityProvider = securityModule;
         }
         else
         {
-            NoAuthSecurityProvider securityProvider = NoAuthSecurityProvider.INSTANCE;
-            platformModule.life.add( securityProvider );
-            editionModule.setSecurityProvider( securityProvider );
+            NoAuthSecurityProvider provider = NoAuthSecurityProvider.INSTANCE;
+            platformModule.life.add( provider );
+            securityProvider = provider;
         }
+        editionModule.setSecurityProvider( securityProvider );
     }
 }
