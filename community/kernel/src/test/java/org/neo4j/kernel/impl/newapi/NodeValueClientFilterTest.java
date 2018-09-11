@@ -138,18 +138,30 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldConsultProvidedFiltersForMixOfValuesAndNoValues()
+    public void shouldConsultProvidedAcceptingFiltersForMixOfValuesAndNoValues()
     {
-        shouldConsultProvidedFilters( Function.identity() );
+        shouldConsultProvidedFilters( Function.identity(), true );
     }
 
     @Test
-    public void shouldConsultProvidedFiltersForNullValues()
+    public void shouldConsultProvidedAcceptingFiltersForNullValues()
     {
-        shouldConsultProvidedFilters( v -> null );
+        shouldConsultProvidedFilters( v -> null, true );
     }
 
-    private void shouldConsultProvidedFilters( Function<Value[],Value[]> filterValues )
+    @Test
+    public void shouldConsultProvidedDenyingFiltersForMixOfValuesAndNoValues()
+    {
+        shouldConsultProvidedFilters( Function.identity(), false );
+    }
+
+    @Test
+    public void shouldConsultProvidedDenyingFiltersForNullValues()
+    {
+        shouldConsultProvidedFilters( v -> null, false );
+    }
+
+    private void shouldConsultProvidedFilters( Function<Value[],Value[]> filterValues, boolean filterAcceptsValue )
     {
         // given
         long nodeReference = 123;
@@ -167,7 +179,8 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
             propertyKeyIds[i] = propertyKeyId;
             if ( random.nextBoolean() )
             {
-                filters[i] = IndexQuery.exact( propertyKeyId, actualValues[i].asObjectCopy() );
+                Object filterValue = (filterAcceptsValue ? actualValues[i] : anyOtherValueThan( actualValues[i] )).asObjectCopy();
+                filters[i] = IndexQuery.exact( propertyKeyId, filterValue );
             }
             values[i] = random.nextBoolean() ? NO_VALUE : actualValues[i];
             properties.put( propertyKeyId, actualValues[i] );
@@ -180,7 +193,18 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
         boolean accepted = filter.acceptNode( nodeReference, filterValues.apply( values ) );
 
         // then
-        assertTrue( accepted );
+        assertEquals( filterAcceptsValue, accepted );
+    }
+
+    private Value anyOtherValueThan( Value valueToNotReturn )
+    {
+        Value candidate;
+        do
+        {
+            candidate = random.nextValue();
+        }
+        while ( candidate.eq( valueToNotReturn ) );
+        return candidate;
     }
 
     private NodeValueClientFilter initializeFilter( IndexQuery... filters )
