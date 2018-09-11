@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
+import org.opencypher.v9_0.expressions.PropertyKeyName
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -83,7 +85,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
       context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc("x.foo"))))
       // projection
-      val projections = Map("carrot" -> varFor("x.foo"))
+      val projections = Map("carrot" -> cachedProp("x", "foo"))
 
       //when
       val result = lpp.planRegularProjection(plan, projections, projections, context)
@@ -208,7 +210,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc("y.bar"), ProvidedOrder.Asc("x.foo"))))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
-      val groupings = Map("z" -> varFor("y.bar"))
+      val groupings = Map("z" -> cachedProp("y", "bar"))
 
       //when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
@@ -237,4 +239,6 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
+  private def cachedProp(node: String, prop: String) =
+    CachedNodeProperty(node, PropertyKeyName(prop)(pos))(pos)
 }
