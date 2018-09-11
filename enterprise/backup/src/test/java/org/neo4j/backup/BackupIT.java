@@ -58,6 +58,7 @@ import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
@@ -302,7 +303,7 @@ public class BackupIT
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause(), instanceOf( MismatchingStoreIdException.class ) );
+            assertThat( Exceptions.rootCause( e ), instanceOf( MismatchingStoreIdException.class ) );
         }
         shutdownServer( server );
         // Just make sure incremental backup can be received properly from
