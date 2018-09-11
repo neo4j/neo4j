@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions.{Property, PropertyKeyName, PropertyKeyToken, Variable}
+import org.opencypher.v9_0.expressions.Property
+import org.opencypher.v9_0.expressions.PropertyKeyName
+import org.opencypher.v9_0.expressions.PropertyKeyToken
+import org.opencypher.v9_0.expressions.Variable
 import org.opencypher.v9_0.util.InputPosition
 
 case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {
   def shouldGetValue: Boolean = getValueFromIndex == GetValue
 
   def asAvailablePropertyMap(entity: String): Map[Property, CachedNodeProperty] =
-    if (getValueFromIndex != DoNotGetValue)
+    if (getValueFromIndex == GetValue)
       Map((
         Property(
           Variable(entity)(InputPosition.NONE),

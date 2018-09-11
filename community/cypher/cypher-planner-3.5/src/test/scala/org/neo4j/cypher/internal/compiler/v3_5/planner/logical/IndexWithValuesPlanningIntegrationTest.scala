@@ -42,9 +42,9 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Distinct(
           Union(
             Selection(Ands(Set(GreaterThan(prop("n", "prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop1)")),
+              IndexSeek("n:Awesome(prop1)", CanGetValue)),
             Selection(Ands(Set(GreaterThan(prop("n", "prop2"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop2)", propIds = Map("prop2" -> 1)))
+              IndexSeek("n:Awesome(prop2)", CanGetValue, propIds = Map("prop2" -> 1)))
           ),
           Map("n" -> Variable("n")(pos))
         ),
@@ -55,18 +55,49 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("in an OR index plan should not get values for equality predicates") {
     val plan = new given {
-      indexOn("Awesome", "prop1")
-      indexOn("Awesome", "prop2")
+      indexOn("Awesome", "prop1").providesValues()
+      indexOn("Awesome", "prop2").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
 
     plan._2 should equal(
       Projection(
         Distinct(
           Union(
-            IndexSeek("n:Awesome(prop2 = 3)", propIds = Map("prop2" -> 1)),
-            IndexSeek("n:Awesome(prop1 = 42)", propIds = Map("prop1" -> 0))
+            IndexSeek("n:Awesome(prop2 = 3)", CanGetValue, propIds = Map("prop2" -> 1)),
+            IndexSeek("n:Awesome(prop1 = 42)", CanGetValue, propIds = Map("prop1" -> 0))
           ),
           Map("n" -> Variable("n")(pos))
+        ),
+        Map("n.prop1" -> Property(Variable("n")(pos), PropertyKeyName("prop1")(pos))(pos), "n.prop2" -> Property(Variable("n")(pos), PropertyKeyName("prop2")(pos))(pos))
+      )
+    )
+  }
+
+  test("in an OR index plan with 4 indexes should not get values for equality predicates ") {
+    val plan = new given {
+      indexOn("Awesome", "prop1").providesValues()
+      indexOn("Awesome", "prop2").providesValues()
+      indexOn("Awesome2", "prop1").providesValues()
+      indexOn("Awesome2", "prop2").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome:Awesome2) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
+
+    plan._2 should equal(
+      Projection(
+        Selection(
+          Seq(HasLabels(varFor("n"), Seq(LabelName("Awesome")(pos)))(pos), HasLabels(varFor("n"), Seq(LabelName("Awesome2")(pos)))(pos)),
+          Distinct(
+            Union(
+              Union(
+                Union(
+                  IndexSeek("n:Awesome(prop2 = 3)", CanGetValue, propIds = Map("prop2" -> 1)),
+                  IndexSeek("n:Awesome2(prop2 = 3)", CanGetValue, propIds = Map("prop2" -> 1), labelId = 1)
+                ),
+                IndexSeek("n:Awesome(prop1 = 42)", CanGetValue, propIds = Map("prop1" -> 0))
+              ),
+              IndexSeek("n:Awesome2(prop1 = 42)", CanGetValue, propIds = Map("prop1" -> 0), labelId = 1)
+            ),
+            Map("n" -> Variable("n")(pos))
+          )
         ),
         Map("n.prop1" -> Property(Variable("n")(pos), PropertyKeyName("prop1")(pos))(pos), "n.prop2" -> Property(Variable("n")(pos), PropertyKeyName("prop2")(pos))(pos))
       )
@@ -127,18 +158,32 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
-  // This can change to GetValue if alignGetValueFromIndexBehavior gets cleverer
-  test("should plan projection and index seek with DoNotGetValue when another predicate uses the property") {
+  test("should plan projection and index seek with GetValue when another predicate uses the property") {
     val plan = new given {
       indexOn("Awesome", "prop").providesValues()
-      indexOn("Awesome", "foo").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop <= 42 AND n.prop % 2 = 0 RETURN n.foo"
 
     plan._2 should equal(
       Projection(
-        Selection(Ands(Set(Equals(Modulo(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("2")(pos))(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)))(pos),
-          IndexSeek("n:Awesome(prop <= 42)", DoNotGetValue)),
+        Selection(Ands(Set(Equals(Modulo(cached("n.prop"), SignedDecimalIntegerLiteral("2")(pos))(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)))(pos),
+          IndexSeek("n:Awesome(prop <= 42)", GetValue)),
         Map(propertyProj("n", "foo")))
+    )
+  }
+
+  test("should plan projection and index seek with GetValue when another predicate uses the property 2") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome)-[r]->(m) WHERE n.prop <= 42 AND n.prop % m.foo = 0 RETURN n.foo"
+
+    plan._2 should equal(
+      Projection(
+        Selection(Ands(Set(Equals(Modulo(cached("n.prop"), prop("m", "foo"))(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)))(pos),
+          Expand(
+            IndexSeek("n:Awesome(prop <= 42)", GetValue),
+            "n", SemanticDirection.OUTGOING, Seq.empty, "m", "r")
+        ),
+        Map("n.foo" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos)))
     )
   }
 

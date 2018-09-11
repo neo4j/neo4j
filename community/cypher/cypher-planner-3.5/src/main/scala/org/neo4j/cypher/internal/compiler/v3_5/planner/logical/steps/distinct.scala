@@ -20,25 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
 import org.neo4j.cypher.internal.ir.v3_5.{DistinctQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object distinct {
   def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
 
-    // We want to leverage if we got the value from an index already
-    val (distinctWithRenames, newSemanticTable) = firstAs[DistinctQueryProjection](replacePropertyLookupsWithVariables(plan.availableCachedNodeProperties)(distinctQueryProjection, context.semanticTable))
-    val newContext = context.withUpdatedSemanticTable(newSemanticTable)
-
     val expressionSolver = PatternExpressionSolver()
-    val (rewrittenPlan, groupingKeys) = expressionSolver(plan, distinctWithRenames.groupingKeys, interestingOrder, newContext)
+    val (rewrittenPlan, groupingKeys) = expressionSolver(plan, distinctQueryProjection.groupingKeys, interestingOrder, context)
 
-    val finalPlan = newContext.logicalPlanProducer.planDistinct(
+    val finalPlan = context.logicalPlanProducer.planDistinct(
       rewrittenPlan,
       groupingKeys,
       distinctQueryProjection.groupingKeys,
-      newContext)
-    (finalPlan, newContext)
+      context)
+    (finalPlan, context)
   }
 }

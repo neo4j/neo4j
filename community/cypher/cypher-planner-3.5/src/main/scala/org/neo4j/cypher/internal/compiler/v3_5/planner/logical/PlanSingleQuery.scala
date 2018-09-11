@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{alignGetValueFromIndexBehavior, countStorePlanner, verifyBestPlan}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.alignGetValueFromIndexBehavior
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.countStorePlanner
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.util.attribution.IdGen
@@ -43,7 +45,8 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
 
           // context for this query, which aligns getValueFromIndexBehavior
           val attributes = context.planningAttributes.asAttributes(idGen)
-          val queryContext = context.withLeafPlanUpdater(alignGetValueFromIndexBehavior(in, context.logicalPlanProducer, attributes))
+          val queryContext = context.withLeafPlanUpdater(
+            alignGetValueFromIndexBehavior(in, context.logicalPlanProducer, context.planningAttributes.solveds, attributes))
 
           val partPlan = planPart(in, queryContext)
           val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, true /*first QG*/ , queryContext)

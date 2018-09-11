@@ -19,38 +19,103 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanConstructionTestSupport
+import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
+import org.neo4j.cypher.internal.v3_5.logical.plans.Projection
+import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
-import org.opencypher.v9_0.ast.{ASTAnnotationMap, AstConstructionTestSupport}
-import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.opencypher.v9_0.ast.ASTAnnotationMap
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.ast.semantics.ExpressionTypeInfo
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.frontend.phases.InitialState
 import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
-  // Have specific input positions to test semantic table
-  private val variable = Variable("n")(InputPosition(1,2,3))
-  private val property = Property(variable, PropertyKeyName("prop")(InputPosition(1,2,4)))(InputPosition(1,2,5))
+class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+  // Have specific input positions to test semantic table (not DummyPosition)
+  private val variable = Variable("n")(InputPosition.NONE)
+  private val propertyKeyName: PropertyKeyName = PropertyKeyName("prop")(InputPosition.NONE)
+  private val property = Property(variable, propertyKeyName)(InputPosition.NONE)
 
-  private val cachedNodeProperty = CachedNodeProperty("n", PropertyKeyName("prop")(pos))(property.position)
+  private val newCachedNodeProperty = CachedNodeProperty("n", propertyKeyName)(pos)
 
-  test("should rewrite n.prop to CachedNodeProperty(n,prop)") {
-    val rewriter = replacePropertyLookupsWithVariables(Map(property -> cachedNodeProperty))
+  test("should rewrite prop(n, prop) to CachedNodeProperty(n.prop)") {
     val initialTable = SemanticTable(types = ASTAnnotationMap[Expression, ExpressionTypeInfo]((property, ExpressionTypeInfo(CTInteger))))
+    val plan = Selection(
+      Seq(propEquality("n", "prop", 1)),
+      nodeIndexScan("n", "L", "prop")
+    )
 
-    val (newExpression, newTable) = firstAs[Expression](rewriter(property, initialTable))
-    newExpression should equal(cachedNodeProperty)
-    newTable.types(property) should equal(newTable.types(cachedNodeProperty))
+    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
+
+    val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
+
+    val newPlan = resultState.logicalPlan
+    val newTable = resultState.semanticTable()
+
+    newPlan should equal(
+      Selection(
+        Seq(Equals(newCachedNodeProperty, literalInt(1))(pos)),
+        nodeIndexScan("n", "L", "prop")
+      )
+    )
+    newTable.types(property) should equal(newTable.types(newCachedNodeProperty))
   }
 
-  test("should rewrite [n.prop] to [CachedNodeProperty(n,prop)]") {
-    val rewriter = replacePropertyLookupsWithVariables(Map(property -> cachedNodeProperty))
+  test("should rewrite [prop(n, prop)] to [CachedNodeProperty(n.prop)]") {
     val initialTable = SemanticTable(types = ASTAnnotationMap[Expression, ExpressionTypeInfo]((property, ExpressionTypeInfo(CTInteger))))
+    val plan = Selection(
+      Seq(Equals(listOf(prop("n", "prop")), listOf(literalInt(1)))(pos)),
+      nodeIndexScan("n", "L", "prop")
+    )
 
-    val (newExpression, newTable) = firstAs[Expression](rewriter(ListLiteral(Seq(property))(pos), initialTable))
-    newExpression should equal(ListLiteral(Seq(cachedNodeProperty))(pos))
-    newTable.types(property) should equal(newTable.types(cachedNodeProperty))
+    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
+
+    val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
+
+    val newPlan = resultState.logicalPlan
+    val newTable = resultState.semanticTable()
+
+    newPlan should equal(
+      Selection(
+        Seq(Equals(listOf(newCachedNodeProperty), listOf(literalInt(1)))(pos)),
+        nodeIndexScan("n", "L", "prop")
+      )
+    )
+    newTable.types(property) should equal(newTable.types(newCachedNodeProperty))
   }
+
+  test("should rewrite {foo: prop(n, prop)} to {foo: CachedNodeProperty(n.prop)}") {
+    val initialTable = SemanticTable(types = ASTAnnotationMap[Expression, ExpressionTypeInfo]((property, ExpressionTypeInfo(CTInteger))))
+    val plan = Selection(
+      Seq(Equals(mapOf("foo" -> prop("n", "prop")), mapOf("foo" -> literalInt(1)))(pos)),
+      nodeIndexScan("n", "L", "prop")
+    )
+
+    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
+
+    val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
+
+    val newPlan = resultState.logicalPlan
+    val newTable = resultState.semanticTable()
+
+    newPlan should equal(
+      Selection(
+        Seq(Equals(mapOf("foo" -> newCachedNodeProperty), mapOf("foo" -> literalInt(1)))(pos)),
+        nodeIndexScan("n", "L", "prop")
+      )
+    )
+    newTable.types(property) should equal(newTable.types(newCachedNodeProperty))
+  }
+
+  private def mapOf(keysAndValues: (String, Expression)*): MapExpression = MapExpression(keysAndValues.map {
+    case (k, v) => PropertyKeyName(k)(pos) -> v
+  })(pos)
+
 
 }

@@ -19,39 +19,67 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.Projection
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.Property
+import org.opencypher.v9_0.expressions.Variable
+import org.opencypher.v9_0.frontend.phases.Transformer
+import org.opencypher.v9_0.util.Rewriter
+import org.opencypher.v9_0.util.attribution.SameId
+import org.opencypher.v9_0.util.bottomUp
+import org.opencypher.v9_0.util.topDown
+import org.opencypher.v9_0.expressions.Property
 import org.opencypher.v9_0.util.{Rewriter, topDown}
 
-case class replacePropertyLookupsWithVariables(availablePropertyVariables: Map[Property, CachedNodeProperty])  {
+/**
+  * A logical plan rewriter that also changes the semantic table (thus a Transformer).
+  *
+  * It traverses the plan and uses cached node properties instead of property lookups where possible.
+  */
+case object replacePropertyLookupsWithVariables extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
   /**
     * Rewrites any object to replace property lookups with variables, if they are available.
     * Registers these new variables with the given semantic table and returns a copy
     * of that semantic table where the new variables are known.
     */
-  def apply(that: AnyRef, semanticTable: SemanticTable): (AnyRef, SemanticTable) = {
+  private def rewrite(inputPlan: LogicalPlan, semanticTable: SemanticTable): (LogicalPlan, SemanticTable) = {
     var currentTypes = semanticTable.types
 
-    val rewriter = topDown(Rewriter.lift {
-      case property:Property if availablePropertyVariables.contains(property) =>
-        val newVar = availablePropertyVariables(property)
-        // Register the new variables in the semantic table
-        currentTypes = currentTypes.updated(newVar, currentTypes(property))
-        newVar
+    def rewriteProperties(plan: LogicalPlan): LogicalPlan = {
+      val availableProperties = plan.availableCachedNodeProperties
+
+      val propertyRewriter = topDown(Rewriter.lift {
+        case property: Property if availableProperties.contains(property) =>
+          val newVar = availableProperties(property)
+          // Register the new variables in the semantic table
+          currentTypes = currentTypes.updated(newVar, currentTypes(property))
+          newVar
+      },
+        // Don't rewrite deeper than the next logical plan. It will have different availablePropertyVariables
+        thing => thing != plan && thing.isInstanceOf[LogicalPlan])
+
+      propertyRewriter(plan).asInstanceOf[LogicalPlan]
+    }
+
+
+    val planRewriter = bottomUp(Rewriter.lift {
+      case plan: LogicalPlan => rewriteProperties(plan)
     })
 
-    val rewritten = rewriter(that)
-    val newSemanticTable = if(currentTypes == semanticTable.types) semanticTable else semanticTable.copy(types = currentTypes)
-    (rewritten, newSemanticTable)
+    val rewritten = planRewriter(inputPlan)
+    val newSemanticTable = if (currentTypes == semanticTable.types) semanticTable else semanticTable.copy(types = currentTypes)
+    (rewritten.asInstanceOf[LogicalPlan], newSemanticTable)
   }
-}
 
-object replacePropertyLookupsWithVariables {
+  override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
+    val (plan, table) = rewrite(from.logicalPlan, from.semanticTable())
+    from.withMaybeLogicalPlan(Some(plan)).withSemanticTable(table)
+  }
 
-  /**
-    * Cast the first argument of the tuple to the desired type.
-    */
-  def firstAs[T <: AnyRef](arg: (AnyRef, SemanticTable)): (T, SemanticTable) = (arg._1.asInstanceOf[T], arg._2)
+  override def name: String = "replacePropertyLookupsWithVariables"
 }

@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.ir.v3_5.{RegularPlannerQuery, RegularQueryProjection}
+import org.neo4j.cypher.internal.ir.v3_5.Predicate
+import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_5.Selections
+import org.neo4j.cypher.internal.ir.v3_5.RegularPlannerQuery
+import org.neo4j.cypher.internal.ir.v3_5.RegularQueryProjection
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.attribution.Attributes
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.PropertyKeyId
 
 class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -53,75 +58,137 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     val operatorName = getValues.getClass.getSimpleName
 
     test(s"should set GetValue on $operatorName with usage of that property in horizon") {
-      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
-        // Given
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
-        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(getValues)
       }
     }
 
     test(s"should set GetValue on $operatorName with usage of that property nested in horizon") {
-      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
-        // Given
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("stuff" -> listOf(prop("n", "prop")))))
-        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(getValues)
       }
     }
 
     test(s"should keep DoNotGetValue on $operatorName with usage of that property in horizon") {
-      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(doNotGetValues.id, RegularPlannerQuery())
+
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
-        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(doNotGetValues) should equal(doNotGetValues)
       }
     }
 
-    test(s"should set DoNotGetValue on $operatorName without usage of that property in horizon") {
-      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
-        // Given
+    test(s"should set DoNotGetValue on $operatorName without usage of that property ") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "anotherProp"))))
-        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(doNotGetValues)
       }
     }
 
-    test(s"should set DoNotGetValue on $operatorName without usage of that property in horizon, if nested") {
-      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
-        // Given
+    test(s"should set DoNotGetValue on $operatorName without usage of that property, if nested") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        val plan = Distinct(canGetValues, Map.empty)
+        context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
+
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "anotherProp"))))
-        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
 
-        updater(Distinct(canGetValues, Map.empty)) should equal(Distinct(doNotGetValues, Map.empty))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+        updater(plan) should equal(Distinct(doNotGetValues, Map.empty))
       }
     }
 
-    test(s"should set DoNotGetValue on $operatorName if plan inside a union") {
-      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
-        // Given
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
-        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
+    test(s"should stop traversal (leave at CanGetValue) on $operatorName if plan inside a union") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        val plan = Union(canGetValues, canGetValues)
+        context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
 
-        updater(Union(canGetValues, canGetValues)) should equal(Union(doNotGetValues, doNotGetValues))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+        updater(plan) should equal(plan)
       }
     }
 
-    test(s"should set DoNotGetValue on $operatorName if plan inside a selection inside union") {
-      new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
-        // Given
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
-        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, Attributes(idGen))
-
+    test(s"should stop traversal (leave at CanGetValue) on $operatorName if plan inside a selection inside union") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
         val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
-        updater(Union(Selection(ands, canGetValues), Selection(ands, canGetValues))) should equal(
-          Union(Selection(ands, doNotGetValues), Selection(ands, doNotGetValues)))
+        val plan = Union(Selection(ands, canGetValues), Selection(ands, canGetValues))
+        context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+        updater(plan) should equal(plan)
       }
     }
-  }
 
+    test(s"should stop traversal (leave at CanGetValue) on $operatorName if plan inside union left deep tree") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
+        val plan = Union(Union(Selection(ands, canGetValues), canGetValues), Selection(ands, canGetValues))
+        context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+        updater(plan) should equal(plan)
+      }
+    }
+
+    test(s"should set GetValue on $operatorName with usage of that property in another predicate") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(
+          queryGraph = QueryGraph(selections = Selections(Set(Predicate(Set("n"), prop("n", "prop"))))),
+          horizon = RegularQueryProjection(Map("n" -> prop("n", "foo"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+
+        updater(canGetValues) should equal(getValues)
+      }
+    }
+
+    test(s"should set DoNotGetValue on $operatorName with only usage of that property in the solved predicate") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        val queryGraph = QueryGraph(selections = Selections(Set(Predicate(Set("n"), prop("n", "prop")))))
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery(queryGraph = queryGraph))
+
+        val query = RegularPlannerQuery(
+          queryGraph = queryGraph,
+          horizon = RegularQueryProjection(Map("n" -> prop("n", "foo"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+
+        updater(canGetValues) should equal(doNotGetValues)
+      }
+    }
+
+    test(s"should set GetValue on $operatorName with usage of that property in the solved predicate and in another predicate") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        val predicate = Predicate(Set("n"), prop("n", "prop"))
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery(queryGraph = QueryGraph(selections = Selections(Set(predicate)))))
+
+        val query = RegularPlannerQuery(
+          queryGraph = QueryGraph(selections = Selections(Set(predicate, Predicate(Set("n"), Equals(prop("n", "prop"), literalInt(1))(pos))))),
+          horizon = RegularQueryProjection(Map("n" -> prop("n", "foo"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+
+        updater(canGetValues) should equal(getValues)
+      }
+    }
+
+  }
 }

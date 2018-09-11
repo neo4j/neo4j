@@ -52,12 +52,13 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.time.Clocks
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.util.TaskCloser
 import org.opencypher.v9_0.util.attribution.Id
 import org.scalatest.mock.MockitoSugar
 
-trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport {
+trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 
   private val semanticTable = mock[SemanticTable]
 

@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.alignGetValueFromIndexBehavior
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
+import org.opencypher.v9_0.util.attribution.Attributes
+import org.opencypher.v9_0.util.attribution.IdGen
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
@@ -39,7 +40,8 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         val attributes = context.planningAttributes.asAttributes(idGen)
         val lhsContext = context.withUpdatedCardinalityInformation(lhs)
           // context for this query, which aligns getValueFromIndexBehavior
-          .withLeafPlanUpdater(alignGetValueFromIndexBehavior(plannerQuery, context.logicalPlanProducer, attributes))
+          .withLeafPlanUpdater(
+          alignGetValueFromIndexBehavior(plannerQuery, context.logicalPlanProducer, context.planningAttributes.solveds, attributes))
 
         val partPlan = planPart(plannerQuery, lhsContext)
         val firstPlannerQuery = false

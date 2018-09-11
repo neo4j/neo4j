@@ -21,40 +21,91 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlanUpdater
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_5.Predicate
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.Foldable.FoldableAny
 import org.opencypher.v9_0.util.attribution.Attributes
-import org.opencypher.v9_0.util.{InputPosition, Rewriter, topDown}
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.Rewriter
+import org.opencypher.v9_0.util.topDown
 
 /**
   * This updates index leaf plans such that they have the right GetValueFromIndexBehavior.
   * The index leaf planners will always set `GetValue`, if the index has the capability to provide values.
   * Here, we set this to `DoNotGetValue`, if the property is not used in the rest of the PlannerQuery, aside from the predicate.
   */
-case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanProducer, attributes: Attributes) extends LeafPlanUpdater {
+case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanProducer, solveds: Solveds, attributes: Attributes) extends LeafPlanUpdater {
 
-  // TODO we can be cleverer here and also find depending expressions in other predicates or other places in the query
   // TODO if we consider passthrough (n AS n) in projections, we can also include depending expressions in later horizons/query graphs
   val horizonDependingExpressions: Set[Expression] = query.horizon.dependingExpressions.toSet
 
-  val horizonDependingProperties: Set[Property] = horizonDependingExpressions.treeFold(Set.empty[Property]) {
-    case prop: Property =>
-      acc => (acc + prop, None)
-  }
+  val horizonDependingProperties: Set[Property] = collectProperties(horizonDependingExpressions)
 
   def apply(leafPlan: LogicalPlan): LogicalPlan = {
-    rewriter(leafPlan).asInstanceOf[LogicalPlan]
+    // We want to find property usages only in those predicates that are not already solved by the leaf-plan we are rewriting
+    val solvedPredicates = leafPlanSolvedPredicates(leafPlan, solveds)
+    val dependingProperties = horizonDependingProperties ++ predicateDependingProperties(solvedPredicates)
+    rewriter(dependingProperties)(leafPlan).asInstanceOf[LogicalPlan]
   }
+
+  def predicateDependingProperties(solvedPredicates: Set[Predicate]): Set[Property] = collectProperties((query.queryGraph.selections.predicates -- solvedPredicates).map(_.expr))
+
+  private def collectProperties(expression: FoldableAny): Set[Property] =
+    expression.treeFold(Set.empty[Property]) {
+      case prop: Property =>
+        acc => (acc + prop, None)
+    }
+
+  private def leafPlanSolvedPredicates(plan: LogicalPlan, solveds: Solveds): Set[Predicate] = {
+    val leaf = plan match {
+      case _: IndexLeafPlan => Some(plan)
+      case Selection(_, l: IndexLeafPlan) => Some(l)
+      case _ => None
+    }
+    leaf.fold(Set.empty[Predicate])(l => solveds(l.id).queryGraph.selections.predicates)
+  }
+
+  private def rewriter(dependingProperties: Set[Property]): Rewriter = topDown(Rewriter.lift {
+
+    case x: NodeIndexSeek =>
+      val alignedProperties = x.properties.map(withAlignedGetValueBehavior(x.idName, dependingProperties, _))
+      NodeIndexSeek(x.idName, x.label, alignedProperties, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+
+    case x: NodeUniqueIndexSeek =>
+      val alignedProperties = x.properties.map(withAlignedGetValueBehavior(x.idName, dependingProperties, _))
+      NodeUniqueIndexSeek(x.idName, x.label, alignedProperties, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+
+    case x: NodeIndexContainsScan =>
+      val alignedProperty = withAlignedGetValueBehavior(x.idName, dependingProperties, x.property)
+      NodeIndexContainsScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+
+    case x: NodeIndexEndsWithScan =>
+      val alignedProperty = withAlignedGetValueBehavior(x.idName, dependingProperties, x.property)
+      NodeIndexEndsWithScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+
+    case x: NodeIndexScan =>
+      val alignedProperty = withAlignedGetValueBehavior(x.idName, dependingProperties, x.property)
+      NodeIndexScan(x.idName, x.label, alignedProperty, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+  },
+    // We don't want to traverse down into union trees, even if that means we will leave the setting at CanGetValue, instead of DoNotGetValue
+    stopper = {
+      case _: Union => true
+      case _ => false
+    })
 
   /**
     * Returns a copy of the provided indexedProperty with the correct GetValueBehavior set.
     */
-  private def withAlignedGetValueBehavior(idName: String, indexedProperty: IndexedProperty): IndexedProperty = indexedProperty match {
-    case ip@IndexedProperty(PropertyKeyToken(propName, _), DoNotGetValue) => ip
-    case ip@IndexedProperty(PropertyKeyToken(propName, _), GetValue) => throw new IllegalStateException("Whether to get values from an index is not decided yet")
+  private def withAlignedGetValueBehavior(idName: String,
+                                          dependingProperties: Set[Property],
+                                          indexedProperty: IndexedProperty): IndexedProperty = indexedProperty match {
+    case ip@IndexedProperty(PropertyKeyToken(_, _), DoNotGetValue) => ip
+    case ip@IndexedProperty(PropertyKeyToken(_, _), GetValue) => throw new IllegalStateException("Whether to get values from an index is not decided yet")
     case ip@IndexedProperty(PropertyKeyToken(propName, _), CanGetValue) =>
       val propExpression = Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
-      if (horizonDependingProperties.contains(propExpression)) {
+      if (dependingProperties.contains(propExpression)) {
         // Get the value since we use it later
         ip.copy(getValueFromIndex = GetValue)
       } else {
@@ -62,39 +113,4 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
         ip.copy(getValueFromIndex = DoNotGetValue)
       }
   }
-
-  private val rewriter: Rewriter = topDown(Rewriter.lift {
-
-    // We can't get values in a union that is planned by OrLeafPlanner
-    case union@Union(l1:IndexLeafPlan, l2:IndexLeafPlan) =>
-      Union(l1.copyWithoutGettingValues, l2.copyWithoutGettingValues)(attributes.copy(union.id))
-
-    case union@Union(s1@Selection(pred1, l1:IndexLeafPlan), s2@Selection(pred2, l2:IndexLeafPlan)) =>
-      Union(
-        Selection(pred1, l1.copyWithoutGettingValues)(attributes.copy(s1.id)),
-        Selection(pred2, l2.copyWithoutGettingValues)(attributes.copy(s2.id))
-      )(attributes.copy(union.id))
-
-    // index seeks
-
-    case x: NodeIndexSeek =>
-      val alignedProperties = x.properties.map(withAlignedGetValueBehavior(x.idName, _))
-      NodeIndexSeek(x.idName, x.label, alignedProperties, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
-
-    case x: NodeUniqueIndexSeek =>
-      val alignedProperties = x.properties.map(withAlignedGetValueBehavior(x.idName, _))
-      NodeUniqueIndexSeek(x.idName, x.label, alignedProperties, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
-
-    case x: NodeIndexContainsScan =>
-      val alignedProperty = withAlignedGetValueBehavior(x.idName, x.property)
-      NodeIndexContainsScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
-
-    case x: NodeIndexEndsWithScan =>
-      val alignedProperty = withAlignedGetValueBehavior(x.idName, x.property)
-      NodeIndexEndsWithScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
-
-    case x: NodeIndexScan =>
-      val alignedProperty = withAlignedGetValueBehavior(x.idName, x.property)
-      NodeIndexScan(x.idName, x.label, alignedProperty, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
-  })
 }

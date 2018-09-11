@@ -22,10 +22,15 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, PlanMatchHelp}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, ColumnOrder, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.v3_5.logical.plans.Ascending
+import org.neo4j.cypher.internal.v3_5.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.Projection
 import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.opencypher.v9_0.ast.{ASTAnnotationMap, AscSortItem}
+import org.opencypher.v9_0.ast.semantics.ExpressionTypeInfo
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.ast.ASTAnnotationMap
+import org.opencypher.v9_0.ast.AscSortItem
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -102,41 +107,6 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
-  }
-
-  test("does add CachedNodeProperty projection when variable available from index") {
-    val n = Variable("n")(pos)
-    val prop = Property(n, PropertyKeyName("prop")(pos))(pos)
-    // given
-    val projections: Map[String, Expression] = Map("n.prop" -> prop)
-    val (context, startPlan) = queryGraphWith(
-      projectionsMap = Map("n" -> Variable("n")(pos)) ++ projections,
-      availablePropertiesFromIndexes = Map(prop -> "n.prop"))
-
-    // when
-    val result = projection(startPlan, projections, projections, InterestingOrder.empty, context)._1
-
-    // then
-    result should equal(Projection(startPlan, Map(cachedNodePropertyProj("n", "prop"))))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
-  }
-
-  test("adds renaming projection when variable available from index") {
-    val n = Variable("n")(pos)
-    val prop = Property(n, PropertyKeyName("prop")(pos))(pos)
-    // given
-    val projections: Map[String, Expression] = Map("foo" -> prop)
-    val (context, startPlan) = queryGraphWith(
-      projectionsMap = Map("n" -> Variable("n")(pos), "n.prop" -> prop),
-      availablePropertiesFromIndexes = Map(prop -> "n.prop"))
-
-    // when
-    val result = projection(startPlan, projections, projections, InterestingOrder.empty, context)._1
-
-    // then
-    val actualProjections = Map(cachedNodePropertyProj("foo", "n", "prop"))
-    result should equal(Projection(startPlan, actualProjections))
     context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 

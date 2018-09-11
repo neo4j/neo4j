@@ -26,12 +26,18 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.unnestApply
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, devNullListener}
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, _}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.devNullListener
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.{OrderCapability, ValueCapability}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.OrderCapability
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.ValueCapability
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.planner.v3_5.spi._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.helpers.collection.Visitable
@@ -44,11 +50,15 @@ import org.opencypher.v9_0.parser.CypherParser
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
 import org.opencypher.v9_0.rewriting.rewriters._
-import org.opencypher.v9_0.util.attribution.{Attribute, Attributes}
+import org.opencypher.v9_0.util.attribution.Attribute
+import org.opencypher.v9_0.util.attribution.Attributes
 import org.opencypher.v9_0.util.helpers.fixedPoint
-import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.opencypher.v9_0.util.{Cardinality, PropertyKeyId}
-import org.scalatest.matchers.{BeMatcher, MatchResult}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.PropertyKeyId
+import org.scalatest.matchers.BeMatcher
+import org.scalatest.matchers.MatchResult
 
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
@@ -164,6 +174,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       CreatePlannerQuery andThen
       OptionalMatchRemover andThen
       QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
+      replacePropertyLookupsWithVariables andThen
       Do[PlannerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.planningAttributes.solveds, Attributes(idGen, state.planningAttributes.cardinalities)))
 
 

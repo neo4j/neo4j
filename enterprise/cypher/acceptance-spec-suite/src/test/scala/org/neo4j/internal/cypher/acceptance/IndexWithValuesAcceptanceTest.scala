@@ -139,6 +139,19 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.toList should equal(List(Map("n.prop1 * 2" -> 84), Map("n.prop1 * 2" -> 84)))
   }
 
+  test("should plan projection and index seek with GetValue when the property is used in another predicate") {
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE n.prop1 <= 42 AND n.prop1 % 2 = 0 RETURN n.prop2", executeBefore = createSomeNodes)
+
+    result.executionPlanDescription() should includeSomewhere.aPlan("Filter")
+      .withDBHits(0)
+      .onTopOf(aPlan("NodeIndexSeekByRange")
+        .withExactVariables("n", "cached[n.prop1]"))
+    result.toList should equal(List(
+      Map("n.prop2" -> 5), Map("n.prop2" -> 5),
+      Map("n.prop2" -> 3), Map("n.prop2" -> 3)
+    ))
+  }
+
   test("should plan projection and index seek with GetValue when the property is used in ORDER BY") {
     val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE n.prop1 > 41 RETURN n.prop2 ORDER BY n.prop1", executeBefore = createSomeNodes)
 

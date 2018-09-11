@@ -99,26 +99,4 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
       Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
     )
   }
-
-  test("adds renaming aggregation when variable available from index") {
-    val prop = Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos)
-    val projection = AggregatingQueryProjection(
-      groupingExpressions = Map("x.prop" -> prop),
-      aggregationExpressions = aggregatingMap
-    )
-
-    val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext,
-      semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]])
-    )
-
-    val startPlan = newMockedLogicalPlan(idNames = Set("x", "x.prop"), availablePropertiesFromIndexes = Map(prop -> "x.prop"))
-
-    // When
-    val (result, _) = aggregation(startPlan, projection, InterestingOrder.empty, context)
-    // Then
-    result should equal(
-      Aggregation(startPlan, Map(cachedNodePropertyProj("x", "prop")), aggregatingMap)
-    )
-  }
 }

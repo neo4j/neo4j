@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ResolvedCall}
-import org.opencypher.v9_0.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.util.InternalException
 
 /*
@@ -60,15 +58,11 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, newContext)
 
       case UnwindProjection(variable, expression) =>
-        val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(expression, context.semanticTable))
-        val newContext = context.withUpdatedSemanticTable(newSemanticTable)
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), query.interestingOrder, context)
-        (newContext.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, newContext), newContext)
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), query.interestingOrder, context)
+        (context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context), context)
 
       case ProcedureCallProjection(call) =>
-        val (rewrittenCall, newSemanticTable) = firstAs[ResolvedCall](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(call, context.semanticTable))
-        val newContext = context.withUpdatedSemanticTable(newSemanticTable)
-        (newContext.logicalPlanProducer.planCallProcedure(plan, rewrittenCall, call, newContext), newContext)
+        (context.logicalPlanProducer.planCallProcedure(plan, call, call, context), context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
         (context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context), context)

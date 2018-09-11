@@ -19,17 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
-import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, ProvidedOrder}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.v3_5.logical.plans.GetValue
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.v3_5.logical.plans.NodeIndexScan
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.expressions.LabelToken
+import org.opencypher.v9_0.expressions.PropertyKeyName
+import org.opencypher.v9_0.expressions.PropertyKeyToken
 import org.opencypher.v9_0.parser.ParserFixture
 import org.opencypher.v9_0.util.Cardinality
-import org.opencypher.v9_0.util.attribution.{Id, SequentialIdGen}
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.PropertyKeyId
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
 import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 
 import scala.language.implicitConversions
 
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
+  self: AstConstructionTestSupport =>
+
   implicit val idGen = new SequentialIdGen()
 
   implicit protected def idSymbol(name: Symbol): String = name.name
@@ -62,6 +78,15 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def get(id: Id): ProvidedOrder = ProvidedOrder.empty
 
     override def copy(from: Id, to: Id): Unit = {}
+  }
+
+  def nodeIndexScan(node: String, label: String, property: String) =
+    NodeIndexScan(node, LabelToken(label, LabelId(1)), IndexedProperty(PropertyKeyToken(property, PropertyKeyId(1)), GetValue), Set.empty, IndexOrderNone)
+
+  def cached(varAndProp: String): CachedNodeProperty = {
+    val array = varAndProp.split("\\.", 2)
+    val (v, prop) = (array(0), array(1))
+    CachedNodeProperty(v, PropertyKeyName(prop)(pos))(pos)
   }
 
 }

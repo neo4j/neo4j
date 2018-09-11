@@ -21,12 +21,18 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, Strictness}
+import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_5.Strictness
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.Foldable._
 import org.opencypher.v9_0.util.Rewritable._
-import org.opencypher.v9_0.util.attribution.{Id, IdGen, SameId}
-import org.opencypher.v9_0.util.{Foldable, InputPosition, InternalException, Rewritable}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.attribution.IdGen
+import org.opencypher.v9_0.util.attribution.SameId
+import org.opencypher.v9_0.util.Foldable
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.Rewritable
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -237,7 +243,7 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
     properties.filter(_.shouldGetValue).map(_.asCachedNodeProperty(idName))
 
   override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] =
-    properties.filter(_.getValueFromIndex != DoNotGetValue).flatMap(_.asAvailablePropertyMap(idName)).toMap
+    properties.filter(_.getValueFromIndex == GetValue).flatMap(_.asAvailablePropertyMap(idName)).toMap
 }
 
 case object Flattener extends TreeBuilder[Seq[LogicalPlan]] {

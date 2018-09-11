@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
+import org.opencypher.v9_0.expressions.Property
 import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
@@ -30,4 +31,9 @@ case class Union(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) e
   val rhs = Some(right)
 
   override val availableSymbols: Set[String] = left.availableSymbols intersect right.availableSymbols
+
+  /**
+    * Union cannot guarantee available properties, even if the children can.
+    */
+  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = Map.empty
 }

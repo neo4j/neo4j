@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
 import org.neo4j.cypher.internal.ir.v3_5.{QueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
@@ -51,12 +50,8 @@ object projection {
             context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
 
-    // We want to leverage if we got the value from an index already
-    val (stillToSolveProjectionWithRenames, newSemanticTable) = firstAs[Map[String, Expression]](replacePropertyLookupsWithVariables(in.availableCachedNodeProperties)(stillToSolveProjection, context.semanticTable))
-    val newContext = context.withUpdatedSemanticTable(newSemanticTable)
-
-    val finalPlan = createPlan(in, stillToSolveProjectionWithRenames, projectionsToMarkSolved, interestingOrder, newContext)
-    (finalPlan, newContext)
+    val finalPlan = createPlan(in, stillToSolveProjection, projectionsToMarkSolved, interestingOrder, context)
+    (finalPlan, context)
   }
 
   /**
