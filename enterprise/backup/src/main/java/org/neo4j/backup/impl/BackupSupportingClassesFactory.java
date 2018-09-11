@@ -53,6 +53,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.backup.impl.BackupProtocolServiceFactory.backupProtocolService;
+
 /**
  * The dependencies for the backup strategies require a valid configuration for initialisation.
  * By having this factory we can wait until the configuration has been loaded and the provide all the classes required
@@ -101,7 +103,7 @@ public class BackupSupportingClassesFactory
     private BackupProtocolService haFromConfig( PageCache pageCache )
     {
         Supplier<FileSystemAbstraction> fileSystemSupplier = () -> fileSystemAbstraction;
-        return BackupProtocolServiceFactory.backupProtocolService( fileSystemSupplier, logProvider, logDestination, monitors, pageCache );
+        return backupProtocolService( fileSystemSupplier, logProvider, logDestination, monitors, pageCache );
     }
 
     private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )

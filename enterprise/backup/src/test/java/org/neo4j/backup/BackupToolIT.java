@@ -33,7 +33,6 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 
 import org.neo4j.backup.impl.BackupProtocolService;
-import org.neo4j.backup.impl.BackupProtocolServiceFactory;
 import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -56,6 +55,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Mockito.mock;
+import static org.neo4j.backup.impl.BackupProtocolServiceFactory.backupProtocolService;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 public class BackupToolIT
@@ -83,7 +83,7 @@ public class BackupToolIT
         fs = new DefaultFileSystemAbstraction();
         jobScheduler = new ThreadPoolJobScheduler();
         pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler );
-        backupProtocolService = BackupProtocolServiceFactory.backupProtocolService();
+        backupProtocolService = backupProtocolService();
         backupTool = new BackupTool( backupProtocolService, mock( PrintStream.class ) );
     }
 

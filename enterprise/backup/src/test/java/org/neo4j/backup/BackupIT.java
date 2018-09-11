@@ -58,7 +58,6 @@ import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
@@ -95,6 +94,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 @RunWith( Parameterized.class )
@@ -303,7 +303,7 @@ public class BackupIT
         }
         catch ( RuntimeException e )
         {
-            assertThat( Exceptions.rootCause( e ), instanceOf( MismatchingStoreIdException.class ) );
+            assertThat( rootCause( e ), instanceOf( MismatchingStoreIdException.class ) );
         }
         shutdownServer( server );
         // Just make sure incremental backup can be received properly from

@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 import org.neo4j.backup.impl.BackupClient;
 import org.neo4j.backup.impl.BackupOutcome;
 import org.neo4j.backup.impl.BackupProtocolService;
-import org.neo4j.backup.impl.BackupProtocolServiceFactory;
 import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.function.Predicates;
 import org.neo4j.helper.IsChannelClosedException;
@@ -41,6 +40,8 @@ import org.neo4j.helper.IsStoreClosed;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
+
+import static org.neo4j.backup.impl.BackupProtocolServiceFactory.backupProtocolService;
 
 public class BackupHelper
 {
@@ -63,7 +64,7 @@ public class BackupHelper
         boolean failure = false;
         try
         {
-            try ( BackupProtocolService backupProtocolService = BackupProtocolServiceFactory.backupProtocolService( outputStream ) )
+            try ( BackupProtocolService backupProtocolService = backupProtocolService( outputStream ) )
             {
                 BackupOutcome backupOutcome =
                         backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, DatabaseLayout.of( targetDirectory.toFile() ),

@@ -64,7 +64,7 @@ public final class BackupProtocolServiceFactory
         return backupProtocolService( fileSystemSupplier, logProvider, logDestination, monitors, of( pageCache ) );
     }
 
-    public static BackupProtocolService backupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider,
+    private static BackupProtocolService backupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider,
             OutputStream logDestination, Monitors monitors, BackupPageCacheContainer pageCacheContainer )
     {
         requireNonNull( fileSystemSupplier );
