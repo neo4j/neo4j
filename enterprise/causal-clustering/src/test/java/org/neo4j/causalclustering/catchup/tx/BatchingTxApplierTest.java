@@ -30,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
+import org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -48,6 +49,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
@@ -177,6 +179,8 @@ public class BatchingTxApplierTest
         LogEntryCommit commitEntry = mock( LogEntryCommit.class );
         when( commitEntry.getTxId() ).thenReturn( txId );
         TransactionRepresentation txRep = mock( TransactionRepresentation.class );
+        byte[] encodedRaftLogIndex = encodeLogIndexAsTxHeader( txId - 5 ); // just some arbitrary offset
+        when( txRep.additionalHeader() ).thenReturn( encodedRaftLogIndex );
         when( tx.getTransactionRepresentation() ).thenReturn( txRep );
         when( tx.getCommitEntry() ).thenReturn( commitEntry );
         return tx;
