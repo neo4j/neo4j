@@ -103,8 +103,8 @@ class TxStateIndexChangesTest
         AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index, IndexOrder.NONE );
 
         // THEN
-        assertContains( changes.added, 42L, 43L );
-        assertContains( changesWithValues.added, nodeWithPropertyValues( 42L, "foo" ), nodeWithPropertyValues( 43L, "bar" ) );
+        assertContains( changes.getAdded(), 42L, 43L );
+        assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 42L, "foo" ), nodeWithPropertyValues( 43L, "bar" ) );
     }
 
     @Test
@@ -164,7 +164,7 @@ class TxStateIndexChangesTest
         AddedAndRemoved changes = indexUpdatesForSeek( state, index, ValueTuple.of( "bar" ) );
 
         // THEN
-        assertContains( changes.added, 43L );
+        assertContains( changes.getAdded(), 43L );
     }
 
     @TestFactory
@@ -309,8 +309,8 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "eulav" ) );
 
             // THEN
-            assertTrue( changes.added.isEmpty() );
-            assertFalse( changesWithValues.added.iterator().hasNext() );
+            assertTrue( changes.getAdded().isEmpty() );
+            assertFalse( changesWithValues.getAdded().iterator().hasNext() );
         }
 
         @Test
@@ -335,8 +335,8 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringSuffix( index.schema().getPropertyId(), "ella" ) );
 
             // THEN
-            assertContains( changes.added, 46L, 47L );
-            assertContains( changesWithValues.added,
+            assertContains( changes.getAdded(), 46L, 47L );
+            assertContains( changesWithValues.getAdded(),
                             nodeWithPropertyValues( 46L, "Barbarella" ),
                             nodeWithPropertyValues( 47L, "Cinderella" ) );
         }
@@ -363,8 +363,8 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForSuffixOrContains( state, index, IndexQuery.stringContains( index.schema().getPropertyId(), "arbar" ) );
 
             // THEN
-            assertContains( changes.added, 45L, 46L );
-            assertContains( changesWithValues.added,
+            assertContains( changes.getAdded(), 45L, 46L );
+            assertContains( changesWithValues.getAdded(),
                             nodeWithPropertyValues( 45L, "Barbara" ),
                             nodeWithPropertyValues( 46L, "Barbarella" ) );
         }
@@ -388,8 +388,8 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForRangeSeekByPrefix( state, index, "eulav", IndexOrder.NONE );
 
             // THEN
-            assertTrue( changes.added.isEmpty() );
-            assertFalse( changesWithValues.added.iterator().hasNext() );
+            assertTrue( changes.getAdded().isEmpty() );
+            assertFalse( changesWithValues.getAdded().iterator().hasNext() );
         }
 
         @Test
@@ -449,7 +449,7 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, "bar", IndexOrder.NONE );
 
             // THEN
-            assertContainsInOrder( changes.added,   43L, 42L );
+            assertContainsInOrder( changes.getAdded(),   43L, 42L );
         }
     }
 
@@ -485,8 +485,8 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.added, 42L, 43L );
-            assertContains( changesWithValues.added,
+            assertContains( changes.getAdded(), 42L, 43L );
+            assertContains( changesWithValues.getAdded(),
                             nodeWithPropertyValues( 42L, "42value1", "42value2" ),
                             nodeWithPropertyValues( 43L, "43value1", "43value2" ) );
         }
@@ -504,7 +504,7 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
 
             // THEN
-            assertContains( changes.added, 43L );
+            assertContains( changes.getAdded(), 43L );
         }
 
         @Test
@@ -520,7 +520,7 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 43001.0, 43002.0 ) );
 
             // THEN
-            assertContains( changes.added, 43L );
+            assertContains( changes.getAdded(), 43L );
         }
 
         @Test
@@ -539,10 +539,10 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.added, 42L );
-            assertContains( changesWithValues.added, nodeWithPropertyValues( 42L, "42value1", "42value2" ) );
-            assertContains( changes.removed, 44L );
-            assertContains( changesWithValues.removed, 44L );
+            assertContains( changes.getAdded(), 42L );
+            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 42L, "42value1", "42value2" ) );
+            assertContains( changes.getRemoved(), 44L );
+            assertContains( changesWithValues.getRemoved(), 44L );
         }
 
         @Test
@@ -559,7 +559,7 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
 
             // THEN
-            assertContains( changes.added, 43L, 44L );
+            assertContains( changes.getAdded(), 43L, 44L );
         }
 
         @Test
@@ -575,11 +575,11 @@ class TxStateIndexChangesTest
                     .build();
 
             // THEN
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "hi", 3 ) ).added, 10L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 9L, 33L ) ).added, 11L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "sneaker", false ) ).added, 12L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( new int[]{10, 100}, "array-buddy" ) ).added, 13L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).added, 14L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "hi", 3 ) ).getAdded(), 10L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 9L, 33L ) ).getAdded(), 11L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "sneaker", false ) ).getAdded(), 12L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( new int[]{10, 100}, "array-buddy" ) ).getAdded(), 13L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).getAdded(), 14L );
         }
 
     }
@@ -598,13 +598,13 @@ class TxStateIndexChangesTest
 
         if ( indexOrder == IndexOrder.NONE )
         {
-            assertContains( changes.added, expectedNodeIds );
-            assertContains( changesWithValues.added, expected );
+            assertContains( changes.getAdded(), expectedNodeIds );
+            assertContains( changesWithValues.getAdded(), expected );
         }
         else
         {
-            assertContainsInOrder( changes.added, expectedNodeIds );
-            assertContainsInOrder( changesWithValues.added, expected );
+            assertContainsInOrder( changes.getAdded(), expectedNodeIds );
+            assertContainsInOrder( changesWithValues.getAdded(), expected );
         }
     }
 

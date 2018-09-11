@@ -332,14 +332,14 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( needsValues )
         {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
-            addedWithValues = changes.added.iterator();
-            removed = removed( txState, changes.removed );
+            addedWithValues = changes.getAdded().iterator();
+            removed = removed( txState, changes.getRemoved() );
         }
         else
         {
             AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( txState, descriptor, predicate.prefix(), indexOrder );
-            added = changes.added.longIterator();
-            removed = removed( txState, changes.removed );
+            added = changes.getAdded().longIterator();
+            removed = removed( txState, changes.getRemoved() );
         }
     }
 
@@ -350,14 +350,14 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( needsValues )
         {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeek( txState, descriptor, predicate, indexOrder );
-            addedWithValues = changes.added.iterator();
-            removed = removed( txState, changes.removed );
+            addedWithValues = changes.getAdded().iterator();
+            removed = removed( txState, changes.getRemoved() );
         }
         else
         {
             AddedAndRemoved changes = indexUpdatesForRangeSeek( txState, descriptor, predicate, indexOrder );
-            added = changes.added.longIterator();
-            removed = removed( txState, changes.removed );
+            added = changes.getAdded().longIterator();
+            removed = removed( txState, changes.getRemoved() );
         }
     }
 
@@ -368,14 +368,14 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( needsValues )
         {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
-            addedWithValues = changes.added.iterator();
-            removed = removed( txState, changes.removed );
+            addedWithValues = changes.getAdded().iterator();
+            removed = removed( txState, changes.getRemoved() );
         }
         else
         {
             AddedAndRemoved changes = indexUpdatesForScan( txState, descriptor, indexOrder );
-            added = changes.added.longIterator();
-            removed = removed( txState, changes.removed );
+            added = changes.getAdded().longIterator();
+            removed = removed( txState, changes.getRemoved() );
         }
     }
 
@@ -386,14 +386,14 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( needsValues )
         {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query );
-            addedWithValues = changes.added.iterator();
-            removed = removed( txState, changes.removed );
+            addedWithValues = changes.getAdded().iterator();
+            removed = removed( txState, changes.getRemoved() );
         }
         else
         {
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query );
-            added = changes.added.longIterator();
-            removed = removed( txState, changes.removed );
+            added = changes.getAdded().longIterator();
+            removed = removed( txState, changes.getRemoved() );
         }
     }
 
@@ -403,8 +403,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         TransactionState txState = read.txState();
 
         AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, IndexQuery.asValueTuple( exactPreds ) );
-        added = changes.added.longIterator();
-        removed = removed( txState, changes.removed );
+        added = changes.getAdded().longIterator();
+        removed = removed( txState, changes.getRemoved() );
     }
 
     private LongSet removed( TransactionState txState, LongSet removedFromIndex )

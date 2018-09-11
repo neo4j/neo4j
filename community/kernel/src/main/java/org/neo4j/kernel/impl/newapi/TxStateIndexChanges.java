@@ -390,8 +390,8 @@ class TxStateIndexChanges
 
     public static class AddedAndRemoved
     {
-        public final LongIterable added;
-        public final LongSet removed;
+        private final LongIterable added;
+        private final LongSet removed;
 
         AddedAndRemoved( LongIterable added, LongSet removed )
         {
@@ -403,12 +403,22 @@ class TxStateIndexChanges
         {
             return added.isEmpty() && removed.isEmpty();
         }
+
+        public LongIterable getAdded()
+        {
+            return added;
+        }
+
+        public LongSet getRemoved()
+        {
+            return removed;
+        }
     }
 
     public static class AddedWithValuesAndRemoved
     {
-        public final Iterable<NodeWithPropertyValues> added;
-        public final LongSet removed;
+        private final Iterable<NodeWithPropertyValues> added;
+        private final LongSet removed;
 
         AddedWithValuesAndRemoved( Iterable<NodeWithPropertyValues> added, LongSet removed )
         {
@@ -419,6 +429,16 @@ class TxStateIndexChanges
         public boolean isEmpty()
         {
             return !added.iterator().hasNext() && removed.isEmpty();
+        }
+
+        public Iterable<NodeWithPropertyValues> getAdded()
+        {
+            return added;
+        }
+
+        public LongSet getRemoved()
+        {
+            return removed;
         }
     }
 }
