@@ -20,10 +20,8 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   Caffeine cache
   ConcurrentLinkedHashMap
-  Data Mapper for Jackson
   Graphite Integration for Metrics
   hazelcast-all
-  Jackson
   jPowerShell
   jProcesses
   Lucene codecs

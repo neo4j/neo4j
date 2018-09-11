@@ -31,8 +31,6 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Caffeine cache
   ConcurrentLinkedHashMap
-  Data Mapper for Jackson
-  Jackson
   jPowerShell
   jProcesses
   Lucene codecs

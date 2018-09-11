@@ -11,9 +11,7 @@ Apache Software License, Version 2.0
   casbah-commons
   casbah-core
   casbah-query
-  Data Mapper for Jackson
   Gherkin Repackaged Dependencies
-  Jackson
   Joda convert
   Joda-Time
   jPowerShell

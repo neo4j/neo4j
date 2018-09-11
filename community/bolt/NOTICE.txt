@@ -30,8 +30,6 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Caffeine cache
   ConcurrentLinkedHashMap
-  Data Mapper for Jackson
-  Jackson
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
