@@ -22,11 +22,15 @@ package org.neo4j.values.storable;
 public enum ValueCategory
 {
     NUMBER,
+    NUMBER_ARRAY,
     TEXT,
+    TEXT_ARRAY,
     GEOMETRY,
-    TEMPORAL,
     GEOMETRY_ARRAY,
-    REST,
+    TEMPORAL,
+    TEMPORAL_ARRAY,
+    BOOLEAN,
+    BOOLEAN_ARRAY,
     UNKNOWN,
     NO_CATEGORY
 }

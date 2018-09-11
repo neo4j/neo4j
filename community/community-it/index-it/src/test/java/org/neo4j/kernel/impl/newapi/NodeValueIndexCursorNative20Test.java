@@ -44,12 +44,6 @@ public class NodeValueIndexCursorNative20Test extends AbstractNodeValueIndexCurs
     }
 
     @Override
-    protected boolean spatialRangeSupport()
-    {
-        return true;
-    }
-
-    @Override
     protected boolean indexProvidesStringValues()
     {
         return true;

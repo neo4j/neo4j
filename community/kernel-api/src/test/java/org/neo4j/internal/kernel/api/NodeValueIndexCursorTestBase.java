@@ -41,7 +41,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
@@ -133,7 +132,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     protected abstract void createCompositeIndex( GraphDatabaseService graphDb, String label, String... properties ) throws Exception;
     protected abstract String providerKey();
     protected abstract String providerVersion();
-    protected abstract boolean spatialRangeSupport();
     protected abstract boolean indexProvidesStringValues();
     protected abstract boolean indexProvidesNumericValues();
 
@@ -480,8 +478,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     @Test
     public void shouldPerformSpatialRangeSearch() throws KernelException
     {
-        assumeTrue( spatialRangeSupport() );
-
         // given
         boolean needsValues = indexProvidesSpatialValues();
         int label = token.nodeLabel( "Node" );
@@ -663,8 +659,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     @Test
     public void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
     {
-        assumeTrue( spatialRangeSupport() );
-
         // given
         boolean needsValues = indexProvidesSpatialValues();
         int label = token.nodeLabel( "Node" );
@@ -677,6 +671,30 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             {
                 // when
                 read.nodeIndexSeek( index, node, orderCapability, needsValues, IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+
+                // then
+                assertFoundNodesInOrder( node, orderCapability );
+            }
+        }
+    }
+
+    @Test
+    public void shouldRespectOrderCapabilitiesForStringArray() throws KernelException
+    {
+        // given
+        boolean needsValues = indexProvidesSpatialValues();
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        IndexReference index = schemaRead.index( label, prop );
+        IndexOrder[] orderCapabilities = index.orderCapability( ValueCategory.TEXT_ARRAY );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            for ( IndexOrder orderCapability : orderCapabilities )
+            {
+                // when
+                read.nodeIndexSeek( index, node, orderCapability, needsValues, IndexQuery.range( prop,
+                        Values.of( new String[]{"first", "second", "third"} ), true,
+                        Values.of( new String[]{"fourth", "fifth", "sixth", "seventh"} ), true ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );

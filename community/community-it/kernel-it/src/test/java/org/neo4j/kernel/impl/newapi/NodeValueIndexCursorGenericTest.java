@@ -19,30 +19,28 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class NodeValueIndexCursorInMemoryTest extends AbstractNodeValueIndexCursorTest
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+
+public class NodeValueIndexCursorGenericTest extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()
     {
-        return new ReadTestSupport();
+        ReadTestSupport readTestSupport = new ReadTestSupport();
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerIdentifier() );
+        return readTestSupport;
     }
 
     @Override
     protected String providerKey()
     {
-        return "lucene+native";
+        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName();
     }
 
     @Override
     protected String providerVersion()
     {
-        return "2.0";
-    }
-
-    @Override
-    protected boolean spatialRangeSupport()
-    {
-        return false;
+        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerVersion();
     }
 
     @Override

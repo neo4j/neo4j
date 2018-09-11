@@ -46,12 +46,6 @@ public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursor
     }
 
     @Override
-    protected boolean spatialRangeSupport()
-    {
-        return true;
-    }
-
-    @Override
     protected boolean indexProvidesStringValues()
     {
         return false;
