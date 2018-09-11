@@ -34,13 +34,13 @@ public class NodeValueIndexCursorGenericTest extends AbstractNodeValueIndexCurso
     @Override
     protected String providerKey()
     {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName();
+        return "native-btree";
     }
 
     @Override
     protected String providerVersion()
     {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerVersion();
+        return "1.0";
     }
 
     @Override
