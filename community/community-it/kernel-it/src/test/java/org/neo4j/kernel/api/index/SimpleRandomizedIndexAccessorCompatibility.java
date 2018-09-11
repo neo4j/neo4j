@@ -24,103 +24,63 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
+public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public SimpleRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    public SimpleRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, descriptor );
+        super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
     }
 
     @Test
-    public void testRandomValues() throws Exception
+    public void testExactMatchOnRandomValues() throws Exception
     {
-        Map<Value,List<IndexEntryUpdate<?>>> updates = createRandomUpdates( 10000 );
-        for ( Value value : updates.keySet() )
-        {
-            updateAndCommit( updates.get( value ) );
-        }
+        // given
+        List<RandomValues.Types> types = testSuite.supportedValueTypes();
+        Collections.shuffle( types, random.random() );
+        types = types.subList( 0, random.nextInt( 2, types.size() ) );
 
-        for ( Value value : updates.keySet() )
+        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        Set<Value> duplicateChecker = new HashSet<>();
+        for ( long id = 0; id < 30_000; id++ )
         {
-            List<Long> expectedEntityIds = updates.get( value ).stream()
-                    .map( IndexEntryUpdate::getEntityId )
-                    .collect( Collectors.toList() );
-            IndexQuery.ExactPredicate exact = IndexQuery.exact( 100, value );
-            List<Long> result = query( exact );
-            assertThat( "query: " + exact, result, equalTo( expectedEntityIds ) );
-        }
-    }
-
-    @SuppressWarnings( "SameParameterValue" )
-    private Map<Value,List<IndexEntryUpdate<?>>> createRandomUpdates( int numberOfUpdates )
-    {
-        // Generate what types to include
-        List<RandomValues.Types> validValueTypes = listOfRandomValidValueTypes();
-
-        Map<Value,List<IndexEntryUpdate<?>>> map = new HashMap<>();
-        for ( int i = 0; i < numberOfUpdates; i++ )
-        {
-            Value value;
+            IndexEntryUpdate<SchemaDescriptor> update;
             do
             {
-                value = randomValueFromValidTypes( validValueTypes );
+                update = add( id, descriptor.schema(), random.nextValue( random.among( types ) ) );
             }
-            while ( isGeometryValue( value ) && !testSuite.supportsSpatial() );
-            map.computeIfAbsent( value, v -> new ArrayList<>() )
-                    .add( IndexEntryUpdate.add( i, descriptor.schema(), value ) );
+            while ( !duplicateChecker.add( update.values()[0] ) );
+            updates.add( update );
         }
-        return map;
-    }
+        updateAndCommit( updates );
 
-    private List<RandomValues.Types> listOfRandomValidValueTypes()
-    {
-        List<RandomValues.Types> validValueTypes = testSuite.supportedValueTypes();
-        Collections.shuffle( validValueTypes, random.random() );
-        int numberOfGroupsToUse = random.nextInt( 1, validValueTypes.size() - 1 );
-        while ( validValueTypes.size() > numberOfGroupsToUse )
+        // when
+        for ( IndexEntryUpdate<?> update : updates )
         {
-            validValueTypes.remove( validValueTypes.size() - 1 );
-        }
-        return validValueTypes;
-    }
-
-    private Value randomValueFromValidTypes( List<RandomValues.Types> validValueTypes )
-    {
-        int targetValueType = random.nextInt( validValueTypes.size() );
-        return random.nextValue( validValueTypes.get( targetValueType ) );
-    }
-
-    private boolean isGeometryValue( Value value )
-    {
-        return Values.isGeometryValue( value ) || Values.isGeometryArray( value );
-    }
-
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class General extends SimpleRandomizedIndexAccessorCompatibility
-    {
-        public General( IndexProviderCompatibilityTestSuite testSuite )
-        {
-            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
+            // then
+            List<Long> hits = query( IndexQuery.exact( 0, update.values()[0] ) );
+            assertEquals( hits.toString(), 1, hits.size() );
+            assertThat( single( hits ), equalTo( update.getEntityId() ) );
         }
     }
 }

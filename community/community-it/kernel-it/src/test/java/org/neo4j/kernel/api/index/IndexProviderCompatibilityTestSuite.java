@@ -68,7 +68,7 @@ import org.neo4j.values.storable.Values;
         CompositeIndexAccessorCompatibility.General.class,
         CompositeIndexAccessorCompatibility.Unique.class,
         UniqueConstraintCompatibility.class,
-        SimpleRandomizedIndexAccessorCompatibility.General.class,
+        SimpleRandomizedIndexAccessorCompatibility.class,
         CompositeRandomizedIndexAccessorCompatibility.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite

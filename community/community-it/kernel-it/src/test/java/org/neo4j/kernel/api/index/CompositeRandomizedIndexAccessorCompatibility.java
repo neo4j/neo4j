@@ -23,6 +23,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,6 +58,8 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
     {
         // given
         List<RandomValues.Types> types = testSuite.supportedValueTypes();
+        Collections.shuffle( types, random.random() );
+        types = types.subList( 0, random.nextInt( 2, types.size() ) );
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
         Set<ValueTuple> duplicateChecker = new HashSet<>();
         for ( long id = 0; id < 30_000; id++ )

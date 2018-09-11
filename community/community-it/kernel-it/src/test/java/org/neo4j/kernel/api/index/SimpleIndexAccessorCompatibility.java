@@ -34,14 +34,12 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -51,9 +49,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQuery.exists;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
@@ -586,35 +582,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         {
             Value arrayValue = nextRandomValidArrayValue();
             doTestShouldHandleLargeAmountOfDuplicates( arrayValue );
-        }
-
-        @Test
-        public void testExactMatchOnRandomValues() throws Exception
-        {
-            // given
-            List<RandomValues.Types> types = testSuite.supportedValueTypes();
-            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-            Set<Value> duplicateChecker = new HashSet<>();
-            for ( long id = 0; id < 10_000; id++ )
-            {
-                IndexEntryUpdate<SchemaDescriptor> update;
-                do
-                {
-                    update = add( id, descriptor.schema(), random.nextValue( random.among( types ) ) );
-                }
-                while ( !duplicateChecker.add( update.values()[0] ) );
-                updates.add( update );
-            }
-            updateAndCommit( updates );
-
-            // when
-            for ( IndexEntryUpdate<?> update : updates )
-            {
-                // then
-                List<Long> hits = query( IndexQuery.exact( 0, update.values()[0] ) );
-                assertEquals( hits.toString(), 1, hits.size() );
-                assertThat( single( hits ), equalTo( update.getEntityId() ) );
-            }
         }
 
         private void doTestShouldHandleLargeAmountOfDuplicates( Object value ) throws Exception
