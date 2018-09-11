@@ -205,18 +205,21 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     int compareValueTo( GenericKeyState other )
     {
-        if ( type == null )
+        if ( type != other.type )
         {
-            return -1;
-        }
-        else if ( other.type == null )
-        {
-            return 1;
-        }
-        int typeComparison = Type.COMPARATOR.compare( type, other.type );
-        if ( typeComparison != 0 )
-        {
-            return typeComparison;
+            // These null checks guard for inconsistent reading where we're expecting a retry to occur
+            // Unfortunately it's the case that SeekCursor calls these methods inside a shouldRetry.
+            // Fortunately we only need to do these checks if the types aren't equal, and one of the two
+            // are guaranteed to be a "real" state, i.e. not inside a shouldRetry.
+            if ( type == null )
+            {
+                return -1;
+            }
+            if ( other.type == null )
+            {
+                return 1;
+            }
+            return Type.COMPARATOR.compare( type, other.type );
         }
 
         int valueComparison = type.compareValue( this, other );
@@ -266,10 +269,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return false;
         }
 
-        size -= TYPE_ID_SIZE;
         type = Types.BY_ID[typeId];
         inclusion = NEUTRAL;
-        return type.readValue( cursor, size, this );
+        return type.readValue( cursor, size - TYPE_ID_SIZE, this );
     }
 
     /* <write> (write to field state from Value or cursor) */
