@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.Exists
@@ -53,10 +53,10 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 
   import PatternExpressionSolver.{solvePatternComprehensions, solvePatternExpressions}
 
-  def apply(source: LogicalPlan, expressions: Seq[Expression], requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, Seq[Expression]) = {
+  def apply(source: LogicalPlan, expressions: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, Seq[Expression]) = {
     val expressionBuild = mutable.ListBuffer[Expression]()
-    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, requiredOrder, context, pathStepBuilder)
-    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, requiredOrder, context, pathStepBuilder)
+    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
+    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
 
     val finalPlan = expressions.foldLeft(source) {
       case (planAcc, expression: PatternExpression) =>
@@ -81,9 +81,9 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     (finalPlan, expressionBuild)
   }
 
-  def apply(source: LogicalPlan, expression: Expression, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, Expression) = {
-    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, requiredOrder, context, pathStepBuilder)
-    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, requiredOrder, context, pathStepBuilder)
+  def apply(source: LogicalPlan, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, Expression) = {
+    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
+    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
 
     expression match {
       case expression: PatternExpression =>
@@ -99,10 +99,10 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     }
   }
 
-  def apply(source: LogicalPlan, projectionsMap: Map[String, Expression], requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) = {
+  def apply(source: LogicalPlan, projectionsMap: Map[String, Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) = {
     val newProjections = Map.newBuilder[String, Expression]
-    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, requiredOrder, context, pathStepBuilder)
-    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, requiredOrder, context, pathStepBuilder)
+    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
+    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
 
     val plan = projectionsMap.foldLeft(source) {
 
@@ -137,7 +137,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 }
 
 object PatternExpressionSolver {
-  def solvePatternExpressions(availableSymbols: Set[String], requiredOrder: RequiredOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
+  def solvePatternExpressions(availableSymbols: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
       import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
@@ -169,11 +169,11 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createPathExpression,
-      requiredOrder = requiredOrder,
-      lastDitch = patternExpressionRewriter(availableSymbols, requiredOrder, context))
+      interestingOrder = interestingOrder,
+      lastDitch = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 
-  def solvePatternComprehensions(availableSymbols: Set[String], requiredOrder: RequiredOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
+  def solvePatternComprehensions(availableSymbols: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 
@@ -195,8 +195,8 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createProjectionToCollect,
-      requiredOrder = requiredOrder,
-      lastDitch = patternExpressionRewriter(availableSymbols, requiredOrder, context))
+      interestingOrder = interestingOrder,
+      lastDitch = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 }
 
@@ -205,7 +205,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
                                                          createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
                                                          projectionCreator: T => Expression,
                                                          lastDitch: Rewriter,
-                                                         requiredOrder: RequiredOrder,
+                                                         interestingOrder: InterestingOrder,
                                                          pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
 
   def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Expression) = {
@@ -245,11 +245,11 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
     val qg = extractQG(source, namedExpr)
     val innerContext = createPlannerContext(context, namedMap)
 
-    val innerPlan = innerContext.strategy.plan(qg, requiredOrder, innerContext)
+    val innerPlan = innerContext.strategy.plan(qg, interestingOrder, innerContext)
     val collectionName = FreshIdNameGenerator.name(expr.position)
     val projectedPath = projectionCreator(namedExpr)
     // We disable replacing property lookups with variables inside the pattern expression solver. Enabling this requires a rewrite of large parts of the planner
-    val projectedInner = projection.withoutPropertiesFromIndex(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), requiredOrder, innerContext)
+    val projectedInner = projection.withoutPropertiesFromIndex(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), interestingOrder, innerContext)
     PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
   }
 

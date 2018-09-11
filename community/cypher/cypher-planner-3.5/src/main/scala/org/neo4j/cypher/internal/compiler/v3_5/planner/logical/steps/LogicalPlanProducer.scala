@@ -433,7 +433,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
 
-    val providedOrder =  ProvidedOrder(columnsWithRenames)
+    val providedOrder = ProvidedOrder(columnsWithRenames)
 
     annotate(Projection(inner, expressions), solved, providedOrder, context)
   }
@@ -469,8 +469,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   /**
     * The only purpose of this method is to set the solved correctly for something that is already sorted.
     */
-  def updateSolvedForSortedItems(inner: LogicalPlan, items: Seq[ast.SortItem], requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))).withRequiredOrder(requiredOrder))
+  def updateSolvedForSortedItems(inner: LogicalPlan,
+                                 items: Seq[ast.SortItem],
+                                 interestingOrder: InterestingOrder,
+                                 context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))).withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id)
     annotate(inner.copyPlanWithIdGen(idGen), solved, providedOrder, context)
   }
@@ -485,13 +488,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: String, labels: List[Option[LabelName]], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularPlannerQuery(query.queryGraph, query.requiredOrder, query.horizon)
+    val solved = RegularPlannerQuery(query.queryGraph, query.interestingOrder, query.horizon)
     annotate(NodeCountFromCountStore(projectedColumn, labels, argumentIds), solved, ProvidedOrder.empty, context)
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: String, startLabel: Option[LabelName],
                                             typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
-    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.requiredOrder, query.horizon)
+    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.interestingOrder, query.horizon)
     annotate(RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds), solved, ProvidedOrder.empty, context)
   }
 
@@ -529,8 +532,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(LimitPlan(inner, count, ties), solved, providedOrders.get(inner.id), context)
   }
 
-  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], reportedSortItems: Seq[ast.SortItem], requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(reportedSortItems))).withRequiredOrder(requiredOrder))
+  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], reportedSortItems: Seq[ast.SortItem], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(reportedSortItems))).withInterestingOrder(interestingOrder))
     val providedOrder = ProvidedOrder(sortColumns.map(sortColumnToProvided))
     annotate(Sort(inner, sortColumns), solved, providedOrder, context)
   }

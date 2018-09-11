@@ -224,11 +224,11 @@ class CartesianProductsOrValueJoinsTest
         case _ => 100.0
       }
     }.withLogicalPlanningContext { (cfg, context) =>
-      val kit = context.config.toKit(RequiredOrder.empty, context)
+      val kit = context.config.toKit(InterestingOrder.empty, context)
 
       var plans: Set[PlannedComponent] = input(context.planningAttributes)
       while (plans.size > 1) {
-        plans = cartesianProductsOrValueJoins(plans, cfg.qg, RequiredOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+        plans = cartesianProductsOrValueJoins(plans, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
       }
 
       val result = plans.head.plan

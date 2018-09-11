@@ -24,7 +24,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanFromExpressions, LeafPlansForVariable}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder, Selections}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder, Selections}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Distinct, Union}
 import org.opencypher.v9_0.expressions.{Ors, Variable}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -51,7 +51,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq(expected))
+    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq(expected))
   }
 
   test("two predicates on different variables are not used") {
@@ -69,7 +69,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq.empty)
+    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq.empty)
   }
 
   test("two predicates, where one cannot be leaf-plan-solved, is not used") {
@@ -86,7 +86,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq.empty)
+    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq.empty)
   }
 
   test("two predicates that produce two plans each") {
@@ -124,7 +124,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       groupingExpressions = Map("x" -> Variable("x")(pos)))
 
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq(expected1, expected2, expected3, expected4))
+    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq(expected1, expected2, expected3, expected4))
   }
 
   test("two predicates that produce two plans each mk 2") {
@@ -155,6 +155,6 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       groupingExpressions = Map("x" -> Variable("x")(pos)))
 
 
-    orPlanner.apply(queryGraph, RequiredOrder.empty, context) should equal(Seq(expected1, expected3))
+    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq(expected1, expected3))
   }
 }

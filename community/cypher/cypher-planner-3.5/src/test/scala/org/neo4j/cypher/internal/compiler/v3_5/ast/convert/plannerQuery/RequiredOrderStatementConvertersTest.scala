@@ -33,7 +33,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.prop"),
       horizon = RegularQueryProjection(Map("  FRESHID19" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID19"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID19")),
@@ -49,7 +49,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.prop"),
       horizon = DistinctQueryProjection(Map("  FRESHID28" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID28"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID28")),
@@ -65,7 +65,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.prop"),
       horizon = AggregatingQueryProjection(Map("  FRESHID19" -> prop("n", "prop")), Map("  FRESHID25" -> CountStar()(pos)), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID19"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID19", "  FRESHID25")),
@@ -81,7 +81,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.prop"),
       horizon = RegularQueryProjection(Map("  FRESHID19" -> prop("n", "prop2")), QueryShuffle(Seq(AscSortItem(prop("n", "prop"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID19")),
@@ -97,7 +97,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop2", DescColumnOrder))),
+      interestingOrder = InterestingOrder.desc("n.prop2"),
       horizon = RegularQueryProjection(projections = Map("  FRESHID19" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)),
         shuffle = QueryShuffle(List(DescSortItem(Property(Variable("n")(pos), PropertyKeyName("prop2")(pos))(pos))(pos)), None, None)),
       tail = Some(RegularPlannerQuery(
@@ -112,7 +112,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", DescColumnOrder))),
+      interestingOrder = InterestingOrder.desc("n.prop"),
       horizon = RegularQueryProjection(Map("  FRESHID19" -> prop("n", "prop")), QueryShuffle(Seq(DescSortItem(varFor("  FRESHID19"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID19")),
@@ -128,7 +128,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("  n@7")),
-      requiredOrder = RequiredOrder(Seq(("  n@7.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("  n@7.prop"),
       horizon = RegularQueryProjection(Map("  FRESHID17" -> varFor("  n@7")), QueryShuffle(Seq(AscSortItem(prop("  FRESHID17", "prop"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID17")),
@@ -144,7 +144,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.foo", AscColumnOrder), ("n.prop", DescColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.foo").desc("n.prop"),
       horizon = RegularQueryProjection(Map("  FRESHID19" -> prop("n", "prop"), "  FRESHID27" -> prop("n", "foo")),
         QueryShuffle(Seq(AscSortItem(varFor("  FRESHID27"))(pos), DescSortItem(varFor("  FRESHID19"))(pos)))),
       tail = Some(RegularPlannerQuery(
@@ -161,7 +161,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("  n@7")),
-      requiredOrder = RequiredOrder(Seq(("  n@7.foo", AscColumnOrder), ("  n@7.prop", DescColumnOrder))),
+      interestingOrder = InterestingOrder.asc("  n@7.foo").desc("  n@7.prop"),
       horizon = RegularQueryProjection(Map("  FRESHID17" -> varFor("  n@7")),
         QueryShuffle(Seq(AscSortItem(prop("  FRESHID17", "foo"))(pos), DescSortItem(prop("  FRESHID17", "prop"))(pos)))),
       tail = Some(RegularPlannerQuery(
@@ -178,7 +178,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("  n@7")),
-      requiredOrder = RequiredOrder(Seq(("  n@7.foo", AscColumnOrder), ("  n@7.prop", DescColumnOrder))),
+      interestingOrder = InterestingOrder.asc("  n@7.foo").desc("  n@7.prop"),
       horizon = RegularQueryProjection(Map("  FRESHID17" -> varFor("  n@7"), "  FRESHID22" -> prop("  n@7", "prop")),
         QueryShuffle(Seq(AscSortItem(prop("  FRESHID17", "foo"))(pos), DescSortItem(varFor("  FRESHID22"))(pos)))),
       tail = Some(RegularPlannerQuery(
@@ -195,11 +195,11 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.prop"),
       horizon = RegularQueryProjection(Map("foo" -> varFor("n")), QueryShuffle(Seq(AscSortItem(prop("foo", "prop"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("foo")),
-        requiredOrder = RequiredOrder(Seq(("foo.bar", AscColumnOrder))),
+        interestingOrder = InterestingOrder.asc("foo.bar"),
         horizon = RegularQueryProjection(Map("  FRESHID51" -> prop("foo", "bar")), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID51"))(pos)))),
         tail = Some(RegularPlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set("  FRESHID51")),
@@ -216,11 +216,11 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.prop"),
       horizon = RegularQueryProjection(Map( "n" -> varFor("n"), "  foo@28" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(varFor("  foo@28"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  foo@28", "n")),
-        requiredOrder = RequiredOrder(Seq(("  foo@28", AscColumnOrder))),
+        interestingOrder = InterestingOrder.asc("  foo@28"),
         horizon = RegularQueryProjection(Map("  FRESHID57" -> prop("n", "bar"), "  FRESHID62" -> varFor("  foo@28")), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID62"))(pos)))),
         tail = Some(RegularPlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set("  FRESHID57", "  FRESHID62")),
@@ -237,11 +237,11 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder(Seq(("n.prop", AscColumnOrder))),
+      interestingOrder = InterestingOrder.asc("n.prop"),
       horizon = RegularQueryProjection(Map( "n" -> varFor("n"), "foo" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(varFor("foo"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("foo", "n")),
-        requiredOrder = RequiredOrder(Seq(("foo", AscColumnOrder))),
+        interestingOrder = InterestingOrder.asc("foo"),
         horizon = RegularQueryProjection(Map("  FRESHID57" -> prop("n", "bar")), QueryShuffle(Seq(AscSortItem(varFor("foo"))(pos)))),
         tail = Some(RegularPlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set("  FRESHID57")),
@@ -258,7 +258,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder.empty,
+      interestingOrder = InterestingOrder.empty,
       horizon = RegularQueryProjection(Map("  FRESHID19" -> prop("n", "prop")), QueryShuffle(Seq(AscSortItem(Multiply(varFor("  FRESHID19"), SignedDecimalIntegerLiteral("2")(pos))(pos))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID19")),
@@ -274,7 +274,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      requiredOrder = RequiredOrder.empty,
+      interestingOrder = InterestingOrder.empty,
       horizon = RegularQueryProjection(Map("  FRESHID24" -> Multiply(prop("n", "prop"), SignedDecimalIntegerLiteral("2")(pos))(pos)), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID24"))(pos)))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("  FRESHID24")),
@@ -290,7 +290,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("  n@7")),
-      requiredOrder = RequiredOrder.empty,
+      interestingOrder = InterestingOrder.empty,
       horizon = RegularQueryProjection(Map("  FRESHID17" -> varFor("  n@7"), "  FRESHID22" -> prop("  n@7", "prop")),
         QueryShuffle(Seq(AscSortItem(prop("  FRESHID17", "foo"))(pos), DescSortItem(Multiply(varFor("  FRESHID22"), SignedDecimalIntegerLiteral("2")(pos))(pos))(pos)))),
       tail = Some(RegularPlannerQuery(
@@ -310,7 +310,7 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
       horizon = RegularQueryProjection(Map("d" -> ResolvedFunctionInvocation(QualifiedName(Seq.empty, "date"), None, IndexedSeq.empty)(pos))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("d")),
-        requiredOrder = RequiredOrder(Seq(("d.year", AscColumnOrder))),
+        interestingOrder = InterestingOrder.asc("d.year"),
         horizon = RegularQueryProjection(Map("  FRESHID26" -> prop("d", "year")), QueryShuffle(Seq(AscSortItem(varFor("  FRESHID26"))(pos)))),
         tail = Some(RegularPlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set("  FRESHID26")),

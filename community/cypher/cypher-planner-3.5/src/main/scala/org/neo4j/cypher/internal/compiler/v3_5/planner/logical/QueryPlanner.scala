@@ -124,7 +124,7 @@ case object planPart extends PartPlanner {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph, query.requiredOrder, ctx)
+    ctx.strategy.plan(query.queryGraph, query.interestingOrder, ctx)
   }
 }
 

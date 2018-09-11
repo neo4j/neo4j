@@ -29,7 +29,7 @@ import org.opencypher.v9_0.util.symbols.CypherType
 object ResultOrdering {
 
   /**
-    * @param requiredOrder    the RequiredOrder from the query
+    * @param interestingOrder the InterestingOrder from the query
     * @param properties       a sequence of the properties of a (composite) index. The sequence is length one for non-composite indexes.
     *                         The tuple contains the property name together with the type that the index query compares against for that
     *                         property. So for `WHERE n.prop = 1 AND n.foo > 'bla'` this will be Seq( ('prop',CTInt), ('foo',CTString) )
@@ -38,27 +38,32 @@ object ResultOrdering {
     *                         In the future we also want to able to ask it for prefix sequences (e.g. just Seq(CTInt)).
     * @return the order that the index guarantees, if possible in accordance with the given required order.
     */
-  def withIndexOrderCapability(requiredOrder: RequiredOrder, properties: Seq[(String, CypherType)], capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
+  def withIndexOrderCapability(interestingOrder: InterestingOrder,
+                               properties: Seq[(String, CypherType)],
+                               capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
+
+    import InterestingOrder._
+
     val orderTypes: Seq[CypherType] = properties.map(_._2)
-    val firstRequiredOrder: Option[RequiredColumnOrder] = requiredOrder.columns.headOption.map(_._2)
+    val firstInterestingOrder: Option[InterestingOrder.ColumnOrder] = interestingOrder.headOption
     val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
-    firstRequiredOrder match {
-      case Some(DescColumnOrder) if indexOrderCapability.desc =>
-        toProvidedOrder(properties.map {case (name, _) => (name, DescColumnOrder)})
+    firstInterestingOrder match {
+      case Some(_:Desc) if indexOrderCapability.desc =>
+        toProvidedOrder(properties.map {case (name, _) => Desc(name)})
 
       case _ if indexOrderCapability.asc =>
-        toProvidedOrder(properties.map {case (name, _) => (name, AscColumnOrder)})
+        toProvidedOrder(properties.map {case (name, _) => Asc(name)})
 
       case _ if indexOrderCapability.desc =>
-        toProvidedOrder(properties.map {case (name, _) => (name, DescColumnOrder)})
+        toProvidedOrder(properties.map {case (name, _) => Desc(name)})
 
       case _ => ProvidedOrder.empty
     }
   }
 
-  private def toProvidedOrder(orderColumns: Seq[(String, RequiredColumnOrder)]): ProvidedOrder =
+  private def toProvidedOrder(orderColumns: Seq[InterestingOrder.ColumnOrder]): ProvidedOrder =
     ProvidedOrder(orderColumns.map {
-      case (name, AscColumnOrder) => ProvidedOrder.Asc(name)
-      case (name, DescColumnOrder) => ProvidedOrder.Desc(name)
+      case InterestingOrder.Asc(name) => ProvidedOrder.Asc(name)
+      case InterestingOrder.Desc(name) => ProvidedOrder.Desc(name)
     })
 }

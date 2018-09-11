@@ -57,7 +57,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context)
+    val resultPlans = labelScanLeafPlanner(qg, InterestingOrder.empty, context)
 
     // then
     resultPlans should equal(Seq(
@@ -87,7 +87,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg, RequiredOrder.empty, context)
+    val resultPlans = labelScanLeafPlanner(qg, InterestingOrder.empty, context)
 
     // then
     resultPlans should equal(

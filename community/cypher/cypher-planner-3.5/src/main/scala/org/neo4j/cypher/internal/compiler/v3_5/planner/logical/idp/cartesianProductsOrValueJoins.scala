@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions.{Equals, Expression}
 
 trait JoinDisconnectedQueryGraphComponents {
   def apply(componentPlans: Set[PlannedComponent],
             fullQG: QueryGraph,
-            requiredOrder: RequiredOrder,
+            interestingOrder: InterestingOrder,
             context: LogicalPlanningContext,
             kit: QueryPlannerKit,
             singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent]
@@ -48,7 +48,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
   def apply(plans: Set[PlannedComponent],
             qg: QueryGraph,
-            requiredOrder: RequiredOrder,
+            interestingOrder: InterestingOrder,
             context: LogicalPlanningContext,
             kit: QueryPlannerKit,
             singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
@@ -68,7 +68,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
      */
     val joins =
       produceHashJoins(plans, qg, context, kit, singleComponentPlanner) ++
-      produceNIJVariations(plans, qg, requiredOrder, context, kit, singleComponentPlanner)
+      produceNIJVariations(plans, qg, interestingOrder, context, kit, singleComponentPlanner)
 
     if (joins.nonEmpty) {
       pickTheBest(plans, kit, joins)
@@ -117,7 +117,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   // about 100x faster than the old one, please change functionality here with one eye on performance.
   private def produceNIJVariations(plans: Set[PlannedComponent],
                                    qg: QueryGraph,
-                                   requiredOrder: RequiredOrder,
+                                   interestingOrder: InterestingOrder,
                                    context: LogicalPlanningContext,
                                    kit: QueryPlannerKit,
                                    singleComponentPlanner: SingleComponentPlannerTrait):
@@ -139,8 +139,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         val qgB = planArray(b).queryGraph
 
         for (predicate <- this.predicatesDependendingOnBothSides(predicatesWithDependencies, allCoveredIds(a), allCoveredIds(b))) {
-          val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, requiredOrder, predicate, context, kit, singleComponentPlanner)
-          val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, requiredOrder, predicate, context, kit, singleComponentPlanner)
+          val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
+          val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
 
           nestedIndexJoinAB.foreach(x => result += ((x, planArray(a) -> planArray(b))))
           nestedIndexJoinBA.foreach(x => result += ((x, planArray(a) -> planArray(b))))
@@ -187,7 +187,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                       lhsQG: QueryGraph,
                       rhsQG: QueryGraph,
                       fullQG: QueryGraph,
-                      requiredOrder: RequiredOrder,
+                      interestingOrder: InterestingOrder,
                       predicate: Expression,
                       context: LogicalPlanningContext,
                       kit: QueryPlannerKit,
@@ -200,7 +200,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
       val rhsQGWithLHSArguments = context.planningAttributes.solveds.get(rhsInputPlan.id).lastQueryGraph.addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq).addPredicates(predicate)
-      val rhsPlan = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, context, kit, requiredOrder)
+      val rhsPlan = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, context, kit, interestingOrder)
       val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context), fullQG)
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all

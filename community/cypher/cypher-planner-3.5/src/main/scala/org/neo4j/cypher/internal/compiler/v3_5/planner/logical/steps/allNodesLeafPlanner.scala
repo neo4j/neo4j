@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanner, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object allNodesLeafPlanner extends LeafPlanner {
-  def apply(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
+  def apply(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
     queryGraph.patternNodes
     .filter(!queryGraph.argumentIds.contains(_))
     .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context)).toIndexedSeq

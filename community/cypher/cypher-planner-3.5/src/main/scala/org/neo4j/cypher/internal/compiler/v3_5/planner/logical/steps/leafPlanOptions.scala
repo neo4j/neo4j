@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanFinder, LogicalPlanningContext, QueryPlannerConfiguration}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object leafPlanOptions extends LeafPlanFinder {
 
   override def apply(config: QueryPlannerConfiguration,
                      queryGraph: QueryGraph,
-                     requiredOrder: RequiredOrder,
+                     interestingOrder: InterestingOrder,
                      context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val queryPlannerKit = config.toKit(requiredOrder, context)
+    val queryPlannerKit = config.toKit(interestingOrder, context)
     val pickBest = config.pickBestCandidate(context)
 
-    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, requiredOrder = requiredOrder, context = context)
+    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, interestingOrder = interestingOrder, context = context)
     val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
     val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
     bestLeafPlans.map(context.leafPlanUpdater.apply).toSet

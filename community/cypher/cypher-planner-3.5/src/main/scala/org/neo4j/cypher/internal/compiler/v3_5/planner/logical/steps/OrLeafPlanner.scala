@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder, Selections}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder, Selections}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions.PartialPredicate.PartialPredicateWrapper
@@ -29,17 +29,17 @@ import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
 
-  override def apply(qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     qg.selections.flatPredicates.flatMap {
       case orPredicate@Ors(exprs) =>
 
         // This is a Seq of possible solutions per expression
         val plansPerExpression: Seq[Seq[LeafPlansForVariable]] = exprs.toSeq.map {
           e: Expression =>
-            val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, requiredOrder, context))
+            val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, interestingOrder, context))
             val qgForExpression = qg.copy(selections = Selections.from(e))
             plansForVariables.map(p =>
-              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, requiredOrder, context))))
+              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, interestingOrder, context))))
         }
 
         val wasUnableToFindPlanForAtLeastOnePredicate = plansPerExpression.exists(_.isEmpty)

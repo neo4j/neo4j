@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.planShortestPaths
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 import scala.annotation.tailrec
@@ -53,13 +53,13 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
 
   private implicit val x = singleComponentSolver
 
-  override def plan(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan = {
-    val kit = kitWithShortestPathSupport(context.config.toKit(requiredOrder, context), context)
+  override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrder, context), context)
     val components = queryGraph.connectedComponents
-    val plans = if (components.isEmpty) planEmptyComponent(queryGraph, context, kit) else planComponents(components, requiredOrder, context, kit)
+    val plans = if (components.isEmpty) planEmptyComponent(queryGraph, context, kit) else planComponents(components, interestingOrder, context, kit)
 
     monitor.startConnectingComponents(queryGraph)
-    val result = connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph, requiredOrder, context, kit)
+    val result = connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph, interestingOrder, context, kit)
     monitor.endConnectingComponents(queryGraph, result)
     result
   }
@@ -75,9 +75,9 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
       case (plan, _) => plan
     }
 
-  private def planComponents(components: Seq[QueryGraph], requiredOrder: RequiredOrder, context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] =
+  private def planComponents(components: Seq[QueryGraph], interestingOrder: InterestingOrder, context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] =
     components.map { qg =>
-      PlannedComponent(qg, singleComponentSolver.planComponent(qg, context, kit, requiredOrder))
+      PlannedComponent(qg, singleComponentSolver.planComponent(qg, context, kit, interestingOrder))
     }
 
   private def planEmptyComponent(queryGraph: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] = {
@@ -87,7 +87,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     Seq(PlannedComponent(queryGraph, result))
   }
 
-  private def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent], qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
+  private def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent], qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
 
     @tailrec
     def recurse(plans: Set[PlannedComponent], optionalMatches: Seq[QueryGraph]): (Set[PlannedComponent], Seq[QueryGraph]) = {
@@ -98,17 +98,17 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
 
         applicablePlan match {
           case Some(t@PlannedComponent(solvedQg, p)) =>
-            val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p, requiredOrder, context))
+            val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p, interestingOrder, context))
             val best = kit.pickBest(candidates).get
             recurse(plans - t + PlannedComponent(solvedQg, best), optionalMatches.tail)
 
           case None =>
             // If we couldn't find any optional match we can take on, produce the best cartesian product possible
-            recurse(cartesianProductsOrValueJoins(plans, qg, requiredOrder, context, kit, singleComponentSolver), optionalMatches)
+            recurse(cartesianProductsOrValueJoins(plans, qg, interestingOrder, context, kit, singleComponentSolver), optionalMatches)
         }
       } else if (plans.size > 1) {
 
-        recurse(cartesianProductsOrValueJoins(plans, qg, requiredOrder, context, kit, singleComponentSolver), optionalMatches)
+        recurse(cartesianProductsOrValueJoins(plans, qg, interestingOrder, context, kit, singleComponentSolver), optionalMatches)
       } else (plans, optionalMatches)
     }
 

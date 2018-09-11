@@ -23,42 +23,54 @@ import org.opencypher.v9_0.expressions.{Property, PropertyKeyName, Variable}
 import org.opencypher.v9_0.util.DummyPosition
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class RequiredOrderTest extends CypherFunSuite {
+class InterestingOrderTest extends CypherFunSuite {
   protected val pos = DummyPosition(0)
 
   test("should rename property to variable") {
-    val ro = RequiredOrder(Seq(("x.foo", AscColumnOrder)))
+    val io = InterestingOrder.asc("x.foo")
     // projection
     val projections = Map("xfoo" -> Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos))
 
     //when
-    val result = ro.withRenamedColumns(projections)
+    val result = io.withRenamedColumns(projections)
 
     // then
-    result should be(RequiredOrder(Seq(("xfoo", AscColumnOrder))))
+    result should be(InterestingOrder.asc("xfoo"))
+  }
+
+  test("should rename property to variable (descending)") {
+    val io = InterestingOrder.desc("x.foo")
+    // projection
+    val projections = Map("xfoo" -> Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos))
+
+    //when
+    val result = io.withRenamedColumns(projections)
+
+    // then
+    result should be(InterestingOrder.desc("xfoo"))
   }
 
   test("should rename property to property") {
-    val ro = RequiredOrder(Seq(("x.foo", AscColumnOrder)))
+    val io = InterestingOrder.asc("x.foo")
     // projection
     val projections = Map("y" -> Variable("x")(pos))
 
     //when
-    val result = ro.withRenamedColumns(projections)
+    val result = io.withRenamedColumns(projections)
 
     // then
-    result should be(RequiredOrder(Seq(("y.foo", AscColumnOrder))))
+    result should be(InterestingOrder.asc("y.foo"))
   }
 
   test("should rename variable to variable") {
-    val ro = RequiredOrder(Seq(("x", AscColumnOrder)))
+    val io = InterestingOrder.asc("x")
     // projection
     val projections = Map("y" -> Variable("x")(pos))
 
     //when
-    val result = ro.withRenamedColumns(projections)
+    val result = io.withRenamedColumns(projections)
 
     // then
-    result should be(RequiredOrder(Seq(("y", AscColumnOrder))))
+    result should be(InterestingOrder.asc("y"))
   }
 }

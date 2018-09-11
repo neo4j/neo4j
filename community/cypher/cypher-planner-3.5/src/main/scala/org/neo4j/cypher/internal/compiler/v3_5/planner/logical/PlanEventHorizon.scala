@@ -35,34 +35,34 @@ aggregation and UNWIND.
 case object PlanEventHorizon extends EventHorizonPlanner {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
-    val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.requiredOrder, context)
+    val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.interestingOrder, context)
 
     val (projectedPlan, contextAfterHorizon) = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, query.requiredOrder, context)
+        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, context)
         // aggregation is the only case where sort happens after the projection. The provided order of the aggretion plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
-        val requiredOrderWithRenames = query.requiredOrder.withRenamedColumns(aggregatingProjection.groupingExpressions)
-        sortSkipAndLimit(aggregationPlan, query, requiredOrderWithRenames, newContext)
+        val interestingOrderWithRenames = query.interestingOrder.withRenamedColumns(aggregatingProjection.groupingExpressions)
+        sortSkipAndLimit(aggregationPlan, query, interestingOrderWithRenames, newContext)
 
       case regularProjection: RegularQueryProjection =>
-        val (sortedAndLimited, contextAfterSort) = sortSkipAndLimit(selectedPlan, query, query.requiredOrder, context)
+        val (sortedAndLimited, contextAfterSort) = sortSkipAndLimit(selectedPlan, query, query.interestingOrder, context)
         if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
           (contextAfterSort.logicalPlanProducer.planEmptyProjection(plan, contextAfterSort), contextAfterSort)
         } else {
-          val (newPlan, newContext) = projection(sortedAndLimited, regularProjection.projections, regularProjection.projections, query.requiredOrder, contextAfterSort)
+          val (newPlan, newContext) = projection(sortedAndLimited, regularProjection.projections, regularProjection.projections, query.interestingOrder, contextAfterSort)
           (newPlan, newContext)
         }
 
       case distinctProjection: DistinctQueryProjection =>
-        val (distinctPlan, newContext) = distinct(selectedPlan, distinctProjection, query.requiredOrder, context)
-        val requiredOrderWithRenames = query.requiredOrder.withRenamedColumns(distinctProjection.groupingKeys)
-        sortSkipAndLimit(distinctPlan, query, requiredOrderWithRenames, newContext)
+        val (distinctPlan, newContext) = distinct(selectedPlan, distinctProjection, query.interestingOrder, context)
+        val interestingOrderWithRenames = query.interestingOrder.withRenamedColumns(distinctProjection.groupingKeys)
+        sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, newContext)
 
       case UnwindProjection(variable, expression) =>
         val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(expression, context.semanticTable))
         val newContext = context.withUpdatedSemanticTable(newSemanticTable)
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), query.requiredOrder, context)
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), query.interestingOrder, context)
         (newContext.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, newContext), newContext)
 
       case ProcedureCallProjection(call) =>

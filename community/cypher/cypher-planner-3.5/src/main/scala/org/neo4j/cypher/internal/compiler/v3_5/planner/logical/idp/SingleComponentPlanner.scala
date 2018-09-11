@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.leafPlanOptions
-import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan}
 import org.opencypher.v9_0.ast.RelationshipHint
 import org.opencypher.v9_0.util.InternalException
@@ -42,8 +42,8 @@ import org.opencypher.v9_0.util.InternalException
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
-  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan = {
-    val leaves = leafPlanFinder(context.config, qg, requiredOrder, context)
+  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): LogicalPlan = {
+    val leaves = leafPlanFinder(context.config, qg, interestingOrder, context)
 
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
@@ -100,7 +100,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 }
 
 trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, requiredOrder: RequiredOrder): LogicalPlan
+  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): LogicalPlan
 }
 
 

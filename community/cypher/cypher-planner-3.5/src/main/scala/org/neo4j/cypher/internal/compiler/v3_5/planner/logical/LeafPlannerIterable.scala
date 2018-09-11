@@ -19,22 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 trait LeafPlannerIterable {
   def candidates(qg: QueryGraph,
                  f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
-                 requiredOrder: RequiredOrder,
+                 interestingOrder: InterestingOrder,
                  context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
-                          requiredOrder: RequiredOrder,
+                          interestingOrder: InterestingOrder,
                           context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val logicalPlans = leafPlanners.flatMap(_.apply(qg, requiredOrder, context)).map(f(_, qg))
+    val logicalPlans = leafPlanners.flatMap(_.apply(qg, interestingOrder, context)).map(f(_, qg))
     logicalPlans.groupBy(_.availableSymbols).values
   }
 }
@@ -43,10 +43,10 @@ case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: Leaf
 
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan,
-                          requiredOrder: RequiredOrder,
+                          interestingOrder: InterestingOrder,
                           context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val priorityPlans = priority.candidates(qg, f, requiredOrder, context)
+    val priorityPlans = priority.candidates(qg, f, interestingOrder, context)
     if (priorityPlans.nonEmpty) priorityPlans
-    else fallback.candidates(qg, f, requiredOrder, context)
+    else fallback.candidates(qg, f, interestingOrder, context)
   }
 }

@@ -36,7 +36,7 @@ case object PlanUpdates extends UpdatesPlanner {
     var updatePlan = plan
     val iterator = query.queryGraph.mutatingPatterns.iterator
     while(iterator.hasNext) {
-      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, query.requiredOrder, context)
+      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, query.interestingOrder, context)
     }
     (updatePlan, context)
   }
@@ -59,7 +59,7 @@ case object PlanUpdates extends UpdatesPlanner {
     (lp, context)
   }
 
-  private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean, requiredOrder: RequiredOrder, context: LogicalPlanningContext) = {
+  private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean, interestingOrder: InterestingOrder, context: LogicalPlanningContext) = {
 
     def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
       query.allPlannerQueries.foldLeft((plan, true, context)) {
@@ -72,7 +72,7 @@ case object PlanUpdates extends UpdatesPlanner {
     pattern match {
       //FOREACH
       case foreach: ForeachPattern =>
-        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, foreach.expression, requiredOrder, context)
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, foreach.expression, interestingOrder, context)
 
         val innerLeaf = context.logicalPlanProducer
           .planArgument(Set.empty, Set.empty, updatedSource.availableSymbols + foreach.variable, context)
@@ -86,42 +86,42 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //MERGE ()
       case p: MergeNodePattern =>
-        planMerge(source, p.matchGraph, Seq(p.createNode), Seq.empty, p.onCreate, p.onMatch, first, requiredOrder, context, p)
+        planMerge(source, p.matchGraph, Seq(p.createNode), Seq.empty, p.onCreate, p.onMatch, first, interestingOrder, context, p)
 
       //MERGE (a)-[:T]->(b)
       case p: MergeRelationshipPattern =>
-        planMerge(source, p.matchGraph, p.createNodes, p.createRelationships, p.onCreate, p.onMatch, first, requiredOrder, context, p)
+        planMerge(source, p.matchGraph, p.createNodes, p.createRelationships, p.onCreate, p.onMatch, first, interestingOrder, context, p)
 
       //SET n:Foo:Bar
       case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern, context)
 
       //SET n.prop = 42
       case pattern@SetNodePropertyPattern(_, _, expression) =>
-        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, requiredOrder, context)
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, interestingOrder, context)
         val updatedPattern = pattern.copy(expression = newExpression)
         context.logicalPlanProducer.planSetNodeProperty(updatedSource, updatedPattern, pattern, context)
 
       //SET r.prop = 42
       case pattern@SetRelationshipPropertyPattern(_, _ , expression) =>
-        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, requiredOrder, context)
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, interestingOrder, context)
         val updatedPattern = pattern.copy(expression = newExpression)
         context.logicalPlanProducer.planSetRelationshipProperty(updatedSource, updatedPattern, pattern, context)
 
       //SET x.prop = 42
       case pattern@SetPropertyPattern(_, _, expression) =>
-        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, requiredOrder, context)
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, interestingOrder, context)
         val updatedPattern = pattern.copy(expression = newExpression)
         context.logicalPlanProducer.planSetProperty(updatedSource, updatedPattern, pattern, context)
 
       //SET n += {p1: ..., p2: ...}
       case pattern@SetNodePropertiesFromMapPattern(_, expression, _) =>
-        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, requiredOrder, context)
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, interestingOrder, context)
         val updatedPattern = pattern.copy(expression = newExpression)
         context.logicalPlanProducer.planSetNodePropertiesFromMap(updatedSource, updatedPattern, pattern, context)
 
       //SET r += {p1: ..., p2: ...}
       case pattern@SetRelationshipPropertiesFromMapPattern(_, expression, _) =>
-        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, requiredOrder, context)
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, interestingOrder, context)
         val updatedPattern = pattern.copy(expression = newExpression)
         context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(updatedSource, updatedPattern, pattern, context)
 
@@ -187,7 +187,7 @@ case object PlanUpdates extends UpdatesPlanner {
                 onCreatePatterns: Seq[SetMutatingPattern],
                 onMatchPatterns: Seq[SetMutatingPattern],
                 first: Boolean,
-                requiredOrder: RequiredOrder,
+                interestingOrder: InterestingOrder,
                 context: LogicalPlanningContext,
                 solvedMutatingPattern: MutatingPattern): LogicalPlan = {
 
@@ -202,7 +202,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
     val ids: Seq[String] = createNodePatterns.map(_.idName) ++ createRelationshipPatterns.map(_.idName)
 
-    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, requiredOrder, innerContext, ids)
+    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, interestingOrder, innerContext, ids)
 
     //            condApply
     //             /   \
@@ -210,7 +210,7 @@ case object PlanUpdates extends UpdatesPlanner {
     val condApply = if (onMatchPatterns.nonEmpty) {
       val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
       val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgument(qgWithAllNeededArguments, context)) {
-        case (src, current) => planUpdate(src, current, first, requiredOrder, context)
+        case (src, current) => planUpdate(src, current, first, interestingOrder, context)
       }
       producer.planConditionalApply(mergeMatch, onMatch, ids, innerContext)
     } else mergeMatch
@@ -229,7 +229,7 @@ case object PlanUpdates extends UpdatesPlanner {
     }
 
     val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
-      case (src, current) => planUpdate(src, current, first, requiredOrder, context)
+      case (src, current) => planUpdate(src, current, first, interestingOrder, context)
     }
 
     val solved = context.planningAttributes.solveds.get(source.id).amendQueryGraph(u => u.addMutatingPatterns(solvedMutatingPattern))
@@ -243,10 +243,10 @@ case object PlanUpdates extends UpdatesPlanner {
                              producer: LogicalPlanProducer,
                              createNodePatterns: Seq[CreateNode],
                              createRelationshipPatterns: Seq[CreateRelationship],
-                             requiredOrder: RequiredOrder,
+                             interestingOrder: InterestingOrder,
                              context: LogicalPlanningContext, ids: Seq[String]) = {
     def mergeRead(ctx: LogicalPlanningContext) = {
-      val mergeReadPart = ctx.strategy.plan(matchGraph, requiredOrder, ctx)
+      val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrder, ctx)
       if (context.planningAttributes.solveds.get(mergeReadPart.id).queryGraph != matchGraph)
         throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).queryGraph}\n not equal to \n$matchGraph")
       val activeReadPart = producer.planActiveRead(mergeReadPart, ctx)

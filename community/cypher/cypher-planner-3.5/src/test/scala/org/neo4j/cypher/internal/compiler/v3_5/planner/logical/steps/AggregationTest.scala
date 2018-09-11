@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
 import org.opencypher.v9_0.ast.ASTAnnotationMap
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
@@ -49,7 +49,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
     )
     val startPlan = newMockedLogicalPlan()
 
-    val (result, _) = aggregation(startPlan, projection, RequiredOrder.empty, context)
+    val (result, _) = aggregation(startPlan, projection, InterestingOrder.empty, context)
     result should equal(
       Aggregation(startPlan, Map(), aggregatingMap)
     )
@@ -68,7 +68,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
 
     val startPlan = newMockedLogicalPlan()
 
-    val (result, _) = aggregation(startPlan, projectionPlan, RequiredOrder.empty, context)
+    val (result, _) = aggregation(startPlan, projectionPlan, InterestingOrder.empty, context)
     result should equal(
       Aggregation(
        startPlan, groupingMap, aggregatingMap2)
@@ -93,7 +93,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
     val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)
 
     // When
-    val (result, _) = aggregation(projectionPlan, projection, RequiredOrder.empty, context)
+    val (result, _) = aggregation(projectionPlan, projection, InterestingOrder.empty, context)
     // Then
     result should equal(
       Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
@@ -115,7 +115,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
     val startPlan = newMockedLogicalPlan(idNames = Set("x", "x.prop"), availablePropertiesFromIndexes = Map(prop -> "x.prop"))
 
     // When
-    val (result, _) = aggregation(startPlan, projection, RequiredOrder.empty, context)
+    val (result, _) = aggregation(startPlan, projection, InterestingOrder.empty, context)
     // Then
     result should equal(
       Aggregation(startPlan, Map(cachedNodePropertyProj("x", "prop")), aggregatingMap)

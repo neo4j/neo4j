@@ -28,6 +28,12 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  case class TestOrder(cypherToken: String,
+                       expectedOrder: Seq[Map[String, Any]] => Seq[Map[String, Any]],
+                       providedOrder: String => ProvidedOrder)
+  val ASCENDING = TestOrder("ASC", x => x, ProvidedOrder.asc)
+  val DESCENDING = TestOrder("DESC", x => x.reverse, ProvidedOrder.desc)
+
   override def beforeEach(): Unit = {
     super.beforeEach()
     createSomeNodes()
@@ -68,154 +74,159 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
       """.stripMargin)
   }
 
-  test("should use index order for range predicate when returning that property") {
-    val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop2 > 1 RETURN n.prop2 ORDER BY n.prop2", executeBefore = createSomeNodes)
+  for (TestOrder(cypherToken, expectedOrder, providedOrder) <- List(ASCENDING, DESCENDING)) {
 
-    result.executionPlanDescription() should not (includeSomewhere.aPlan("Sort"))
-    result.toList should equal(List(
-      Map("n.prop2" -> 2), Map("n.prop2" -> 2),
-      Map("n.prop2" -> 3), Map("n.prop2" -> 3),
-      Map("n.prop2" -> 3), Map("n.prop2" -> 3),
-      Map("n.prop2" -> 5), Map("n.prop2" -> 5),
-      Map("n.prop2" -> 7), Map("n.prop2" -> 7),
-      Map("n.prop2" -> 7), Map("n.prop2" -> 7),
-      Map("n.prop2" -> 8), Map("n.prop2" -> 8),
-      Map("n.prop2" -> 9), Map("n.prop2" -> 9)
-    ))
+    test(s"$cypherToken: should use index order for range predicate when returning that property") {
+      val result = executeWith(Configs.Interpreted, s"MATCH (n:Awesome) WHERE n.prop2 > 1 RETURN n.prop2 ORDER BY n.prop2 $cypherToken", executeBefore = createSomeNodes)
+
+      result.executionPlanDescription() should not (includeSomewhere.aPlan("Sort"))
+      result.toList should be(expectedOrder(List(
+        Map("n.prop2" -> 2), Map("n.prop2" -> 2),
+        Map("n.prop2" -> 3), Map("n.prop2" -> 3),
+        Map("n.prop2" -> 3), Map("n.prop2" -> 3),
+        Map("n.prop2" -> 5), Map("n.prop2" -> 5),
+        Map("n.prop2" -> 7), Map("n.prop2" -> 7),
+        Map("n.prop2" -> 7), Map("n.prop2" -> 7),
+        Map("n.prop2" -> 8), Map("n.prop2" -> 8),
+        Map("n.prop2" -> 9), Map("n.prop2" -> 9)
+      )))
+    }
+
+    test(s"$cypherToken: Order by index backed property renamed in an earlier WITH") {
+      val result = executeWith(Configs.Interpreted,
+        s"""MATCH (n:Awesome) WHERE n.prop3 STARTS WITH 'foo'
+           |WITH n AS nnn
+           |MATCH (m)<-[r]-(nnn)
+           |RETURN nnn.prop3 ORDER BY nnn.prop3 $cypherToken""".stripMargin, executeBefore = createSomeNodes)
+
+      println(result.executionPlanDescription())
+      result.executionPlanDescription() should (
+        not(includeSomewhere.aPlan("Sort")) and
+          includeSomewhere.aPlan("Projection")
+            .withOrder(providedOrder("nnn.prop3"))
+            .onTopOf(aPlan("NodeIndexSeekByRange")
+              .withOrder(providedOrder("n.prop3"))
+            )
+        )
+
+      result.toList should be(expectedOrder(List(
+        Map("nnn.prop3" -> "fooism"), Map("nnn.prop3" -> "fooism"),
+        Map("nnn.prop3" -> "footurama"), Map("nnn.prop3" -> "footurama")
+      )))
+    }
+
+    test(s"$cypherToken: Order by index backed property in a plan with an Apply") {
+      val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
+        s"MATCH (a:DateString), (b:DateDate) WHERE a.ds STARTS WITH '2018' AND b.d > date(a.ds) RETURN a.ds ORDER BY a.ds $cypherToken", executeBefore = createSomeNodes)
+
+      result.executionPlanDescription() should (
+        not(includeSomewhere.aPlan("Sort")) and
+          includeSomewhere.aPlan("Apply")
+            .withOrder(providedOrder("a.ds"))
+            .withLHS(
+              aPlan("NodeIndexSeekByRange")
+                .withOrder(providedOrder("a.ds"))
+            )
+            .withRHS(
+              aPlan("NodeIndexSeekByRange")
+                .withOrder(providedOrder("b.d"))
+            )
+        )
+
+      result.toList should be(expectedOrder(List(
+        Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+        Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+        Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+        Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+        Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01"),
+        Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01")
+      )))
+    }
+
+    test(s"$cypherToken: Order by index backed property in a plan with an aggregation and an expand") {
+      val result = executeWith(Configs.Interpreted,
+        s"MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN a.prop2, count(b) ORDER BY a.prop2 $cypherToken", executeBefore = createSomeNodes)
+
+      result.executionPlanDescription() should (
+        not(includeSomewhere.aPlan("Sort")) and
+          includeSomewhere.aPlan("EagerAggregation")
+            .onTopOf(
+              aPlan("Expand(All)")
+                .withOrder(providedOrder("a.prop2"))
+                .onTopOf(
+                  aPlan("NodeIndexSeekByRange")
+                    .withOrder(providedOrder("a.prop2"))))
+        )
+
+      result.toList should be(expectedOrder(List(
+        Map("a.prop2" -> 2, "count(b)" -> 2),
+        Map("a.prop2" -> 3, "count(b)" -> 4),
+        Map("a.prop2" -> 5, "count(b)" -> 2),
+        Map("a.prop2" -> 7, "count(b)" -> 4),
+        Map("a.prop2" -> 8, "count(b)" -> 2),
+        Map("a.prop2" -> 9, "count(b)" -> 2)
+      )))
+    }
+
+    test(s"$cypherToken: Order by index backed property in a plan with a distinct") {
+      val result = executeWith(Configs.Interpreted,
+        s"MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN DISTINCT a.prop2 ORDER BY a.prop2 $cypherToken", executeBefore = createSomeNodes)
+
+      result.executionPlanDescription() should (
+        not(includeSomewhere.aPlan("Sort")) and
+          includeSomewhere.aPlan("Distinct")
+            .onTopOf(
+              aPlan("Expand(All)")
+                .withOrder(providedOrder("a.prop2"))
+                .onTopOf(
+                  aPlan("NodeIndexSeekByRange")
+                    .withOrder(providedOrder("a.prop2"))))
+        )
+
+      result.toList should be(expectedOrder(List(
+        Map("a.prop2" -> 2),
+        Map("a.prop2" -> 3),
+        Map("a.prop2" -> 5),
+        Map("a.prop2" -> 7),
+        Map("a.prop2" -> 8),
+        Map("a.prop2" -> 9)
+      )))
+    }
   }
 
-  test("should use DESCENDING index order for range predicate when returning that property") {
-    graph.createIndex("Downwards", "prop")
-    def createData() =
-      graph.execute(
-        """CREATE (:Downwards {prop: 40})-[:R]->(:B)
-          |CREATE (:Downwards {prop: 43})-[:R]->(:B)
-          |CREATE (:Downwards {prop: 44})-[:R]->(:B)
-          |CREATE (:Downwards {prop: 43})-[:R]->(:B)
-          |CREATE (:Downwards {prop: 41})-[:R]->(:B)
-          |CREATE (:Downwards {prop: 41})-[:R]->(:B)
-          |CREATE (:Downwards {prop: 42})-[:R]->(:B)""".stripMargin)
-
+  test("D: Order by index backed property renamed in an earlier WITH") {
     val result = executeWith(Configs.Interpreted,
-                             "MATCH (n:Downwards) WHERE n.prop > 1 RETURN n.prop ORDER BY n.prop DESCENDING",
-                             executeBefore = createData)
+      s"""MATCH (n:Awesome) WHERE n.prop3 > 'foo'
+         |WITH n AS nnn
+         |MATCH (m)<-[r]-(nnn)
+         |RETURN nnn.prop3 ORDER BY nnn.prop3 DESC""".stripMargin, executeBefore = createSomeNodes)
 
-    result.executionPlanDescription() should not (includeSomewhere.aPlan("Sort"))
-    result.toList should be(List(
-      Map("n.prop" -> 44),
-      Map("n.prop" -> 43),
-      Map("n.prop" -> 43),
-      Map("n.prop" -> 42),
-      Map("n.prop" -> 41),
-      Map("n.prop" -> 41),
-      Map("n.prop" -> 40)
-    ))
-  }
-
-  test("Order by index backed property renamed in an earlier WITH") {
-    val result = executeWith(Configs.Interpreted,
-      """MATCH (n:Awesome) WHERE n.prop3 STARTS WITH 'foo'
-        |WITH n AS nnn
-        |MATCH (m)<-[r]-(nnn)
-        |RETURN nnn.prop3 ORDER BY nnn.prop3""".stripMargin, executeBefore = createSomeNodes)
-
+    println(result.executionPlanDescription())
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Sort")) and
         includeSomewhere.aPlan("Projection")
-          .withOrder(ProvidedOrder.asc("nnn.prop3"))
-            .onTopOf(aPlan("NodeIndexSeekByRange")
-              .withOrder(ProvidedOrder.asc("n.prop3"))
-            )
+          .withOrder(ProvidedOrder.desc("nnn.prop3"))
+          .onTopOf(aPlan("NodeIndexSeekByRange")
+            .withOrder(ProvidedOrder.desc("n.prop3"))
+          )
       )
 
-    result.toList should equal(List(
+    result.toList should be(List(
       Map("nnn.prop3" -> "fooism"), Map("nnn.prop3" -> "fooism"),
       Map("nnn.prop3" -> "footurama"), Map("nnn.prop3" -> "footurama")
-      ))
+    ).reverse)
   }
 
-  test("Order by index backed property in a plan with an Apply") {
-    val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
-      "MATCH (a:DateString), (b:DateDate) WHERE a.ds STARTS WITH '2018' AND b.d > date(a.ds) RETURN a.ds ORDER BY a.ds", executeBefore = createSomeNodes)
-
-    result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Sort")) and
-        includeSomewhere.aPlan("Apply")
-          .withOrder(ProvidedOrder.asc("a.ds"))
-          .withLHS(
-            aPlan("NodeIndexSeekByRange")
-            .withOrder(ProvidedOrder.asc("a.ds"))
-          )
-          .withRHS(
-            aPlan("NodeIndexSeekByRange")
-            .withOrder(ProvidedOrder.asc("b.d"))
-          )
-      )
-
-    result.toList should equal(List(
-      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
-      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
-      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
-      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
-      Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01"),
-      Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01")
-    ))
-  }
-
-  test("Order by index backed property in a plan with an aggregation and an expand") {
-    val result = executeWith(Configs.Interpreted,
-      "MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN a.prop2, count(b) ORDER BY a.prop2", executeBefore = createSomeNodes)
-
-    result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Sort")) and
-        includeSomewhere.aPlan("EagerAggregation")
-          .onTopOf(
-            aPlan("Expand(All)")
-              .withOrder(ProvidedOrder.asc("a.prop2"))
-              .onTopOf(
-                aPlan("NodeIndexSeekByRange")
-                  .withOrder(ProvidedOrder.asc("a.prop2"))))
-      )
-
-    result.toList should equal(List(
-      Map("a.prop2" -> 2, "count(b)" -> 2),
-      Map("a.prop2" -> 3, "count(b)" -> 4),
-      Map("a.prop2" -> 5, "count(b)" -> 2),
-      Map("a.prop2" -> 7, "count(b)" -> 4),
-      Map("a.prop2" -> 8, "count(b)" -> 2),
-      Map("a.prop2" -> 9, "count(b)" -> 2)
-    ))
-  }
-
-  test("Order by index backed property in a plan with a distinct") {
-    val result = executeWith(Configs.Interpreted,
-      "MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN DISTINCT a.prop2 ORDER BY a.prop2", executeBefore = createSomeNodes)
-
-    result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Sort")) and
-        includeSomewhere.aPlan("Distinct")
-          .onTopOf(
-            aPlan("Expand(All)")
-              .withOrder(ProvidedOrder.asc("a.prop2"))
-              .onTopOf(
-                aPlan("NodeIndexSeekByRange")
-                  .withOrder(ProvidedOrder.asc("a.prop2"))))
-      )
-
-    result.toList should equal(List(
-      Map("a.prop2" -> 2),
-      Map("a.prop2" -> 3),
-      Map("a.prop2" -> 5),
-      Map("a.prop2" -> 7),
-      Map("a.prop2" -> 8),
-      Map("a.prop2" -> 9)
-    ))
-  }
-
-  test("Order by index backed property in a plan with a outer join") {
+  // Only tested in ASC mode because it's hard to make compatibility check out otherwise
+  test("ASC: Order by index backed property in a plan with a outer join") {
     // Be careful with what is created in createSomeNodes. It underwent careful cardinality tuning to get exactly the plan we want here.
     val result =  executeWith(Configs.Interpreted - Configs.Cost3_1 - Configs.Cost2_3,
-      "MATCH (b:B {foo:1, bar:1}) OPTIONAL MATCH (a:Awesome)-[r]->(b) USING JOIN ON b WHERE a.prop3 > 'foo' RETURN a.prop3 ORDER BY a.prop3", executeBefore = createSomeNodes)
+      """MATCH (b:B {foo:1, bar:1})
+        |OPTIONAL MATCH (a:Awesome)-[r]->(b) USING JOIN ON b
+        |WHERE a.prop3 > 'foo'
+        |RETURN a.prop3 ORDER BY a.prop3
+        |""".stripMargin,
+      executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Sort")) and
@@ -229,7 +240,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
                   .withOrder(ProvidedOrder.asc("a.prop3"))))
       )
 
-    result.toList should equal(List(
+    result.toList should be(List(
       Map("a.prop3" -> "fooism"), Map("a.prop3" -> "fooism"),
       Map("a.prop3" -> "footurama"), Map("a.prop3" -> "footurama"),
       Map("a.prop3" -> null), Map("a.prop3" -> null)

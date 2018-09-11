@@ -425,14 +425,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildPlannerQuery("MATCH (a) WITH 1 AS b RETURN b")
     query.queryGraph.patternNodes should equal(Set("a"))
     query.horizon should equal(RegularQueryProjection(Map("b" -> SignedDecimalIntegerLiteral("1")_)))
-    query.tail should equal(Some(RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set("b")), RequiredOrder.empty, RegularQueryProjection(Map("b" -> Variable("b") _)))))
+    query.tail should equal(Some(RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set("b")), InterestingOrder.empty, RegularQueryProjection(Map("b" -> Variable("b") _)))))
   }
 
   test("WITH 1 AS b RETURN b") {
     val query = buildPlannerQuery("WITH 1 AS b RETURN b")
 
     query.horizon should equal(RegularQueryProjection(Map("b" -> SignedDecimalIntegerLiteral("1")_)))
-    query.tail should equal(Some(RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set("b")), RequiredOrder.empty, RegularQueryProjection(Map("b" -> Variable("b") _)))))
+    query.tail should equal(Some(RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set("b")), InterestingOrder.empty, RegularQueryProjection(Map("b" -> Variable("b") _)))))
   }
 
   test("MATCH (a) WITH a WHERE TRUE RETURN a") {

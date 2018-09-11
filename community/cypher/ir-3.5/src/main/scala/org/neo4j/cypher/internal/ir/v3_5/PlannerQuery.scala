@@ -37,7 +37,7 @@ trait PlannerQuery {
   /**
     * The required order of a query graph and its horizon. The required order emerges from an ORDER BY or aggregation or distinct.
     */
-  val requiredOrder: RequiredOrder
+  val interestingOrder: InterestingOrder
   /**
     * The WITH/RETURN part of a query
     */
@@ -72,7 +72,7 @@ trait PlannerQuery {
 
   def withQueryGraph(queryGraph: QueryGraph): PlannerQuery = copy(queryGraph = queryGraph)
 
-  def withRequiredOrder(requiredOrder: RequiredOrder): PlannerQuery = copy(requiredOrder = requiredOrder)
+  def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQuery = copy(interestingOrder = interestingOrder)
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
@@ -132,7 +132,7 @@ trait PlannerQuery {
 
   // This is here to stop usage of copy from the outside
   protected def copy(queryGraph: QueryGraph = queryGraph,
-                     requiredOrder: RequiredOrder = requiredOrder,
+                     interestingOrder: InterestingOrder = interestingOrder,
                      horizon: QueryHorizon = horizon,
                      tail: Option[PlannerQuery] = tail): PlannerQuery
 
@@ -196,15 +196,15 @@ object PlannerQuery {
 }
 
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                               requiredOrder: RequiredOrder = RequiredOrder.empty,
+                               interestingOrder: InterestingOrder = InterestingOrder.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
                                tail: Option[PlannerQuery] = None) extends PlannerQuery {
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
-                              requiredOrder: RequiredOrder = requiredOrder,
+                              interestingOrder: InterestingOrder = interestingOrder,
                               horizon: QueryHorizon = horizon,
                               tail: Option[PlannerQuery] = tail) =
-    RegularPlannerQuery(queryGraph, requiredOrder, horizon, tail)
+    RegularPlannerQuery(queryGraph, interestingOrder, horizon, tail)
 
   override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 }

@@ -21,19 +21,19 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.replacePropertyLookupsWithVariables.firstAs
-import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object aggregation {
-  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
 
     // We want to leverage if we got the value from an index already
     val (aggregationWithRenames, newSemanticTable) = firstAs[AggregatingQueryProjection](replacePropertyLookupsWithVariables(plan.availableCachedNodeProperties)(aggregation, context.semanticTable))
     val newContext = context.withUpdatedSemanticTable(newSemanticTable)
 
     val expressionSolver = PatternExpressionSolver()
-    val (step1, groupingExpressions) = expressionSolver(plan, aggregationWithRenames.groupingExpressions, requiredOrder, newContext)
-    val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregationWithRenames.aggregationExpressions, requiredOrder, newContext)
+    val (step1, groupingExpressions) = expressionSolver(plan, aggregationWithRenames.groupingExpressions, interestingOrder, newContext)
+    val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregationWithRenames.aggregationExpressions, interestingOrder, newContext)
 
     val finalPlan = newContext.logicalPlanProducer.planAggregation(
       rewrittenPlan,

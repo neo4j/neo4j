@@ -41,7 +41,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg, RequiredOrder.empty, context)
+    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(Seq(Selection(Seq(predicate), inner)))
@@ -59,7 +59,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg, RequiredOrder.empty, context)
+    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
 
     // Then
     result should be (empty)
@@ -78,7 +78,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg, RequiredOrder.empty, context)
+    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(Seq(Selection(Seq(predicate1, predicate2), inner)))
@@ -94,7 +94,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val inner = newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = Set("x"), solved = solved)
 
     // When
-    val result = selectCovered(inner, qg, RequiredOrder.empty, context)
+    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(Seq())
@@ -110,7 +110,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg, RequiredOrder.empty, context)
+    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(Seq())

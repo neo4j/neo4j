@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions.Expression
 
 // TODO: Return Iterator
 trait CandidateGenerator[T] extends {
-  def apply(in: T, queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Seq[T]
+  def apply(in: T, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[T]
 }
 
 trait PlanSelector {
-  def apply(input: LogicalPlan, queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): LogicalPlan
+  def apply(input: LogicalPlan, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan
 }
 
 trait PlanTransformer {
@@ -37,13 +37,13 @@ trait PlanTransformer {
 }
 
 trait PlanAndContextTransformer {
-  def apply(plan: LogicalPlan, query: PlannerQuery, requiredOrder: RequiredOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(plan: LogicalPlan, query: PlannerQuery, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
 }
 
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner {
-  def apply(queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Seq[LogicalPlan]
+  def apply(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan]
 }
 
 object LeafPlansForVariable {
@@ -56,19 +56,19 @@ case class LeafPlansForVariable(id: String, plans: Set[LogicalPlan]) {
 }
 
 trait LeafPlanFromExpressions {
-  def producePlanFor(predicates: Set[Expression], qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Set[LeafPlansForVariable]
+  def producePlanFor(predicates: Set[Expression], qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Set[LeafPlansForVariable]
 }
 
 trait LeafPlanFromExpression extends LeafPlanFromExpressions {
 
-  def producePlanFor(e: Expression, qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable]
+  def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable]
 
 
-  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
-    predicates.flatMap(p => producePlanFor(p, qg, requiredOrder, context))
+  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+    predicates.flatMap(p => producePlanFor(p, qg, interestingOrder, context))
   }
 }
 
 trait LeafPlanFinder {
-  def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph, requiredOrder: RequiredOrder, context: LogicalPlanningContext): Set[LogicalPlan]
+  def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Set[LogicalPlan]
 }

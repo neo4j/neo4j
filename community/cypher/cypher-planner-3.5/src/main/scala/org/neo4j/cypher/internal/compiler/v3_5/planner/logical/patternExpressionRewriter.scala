@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.ir.v3_5.RequiredOrder
+import org.neo4j.cypher.internal.ir.v3_5.InterestingOrder
 import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.rewriting.rewriters.projectNamedPaths
@@ -30,7 +30,7 @@ import org.opencypher.v9_0.util.{IdentityMap, Rewriter, topDown}
 Rewrite pattern expressions and pattern comprehensions to nested plan expressions by planning them using the given context.
 This is only done for expressions that have not already been unnested
  */
-case class patternExpressionRewriter(planArguments: Set[String], requiredOrder: RequiredOrder, context: LogicalPlanningContext) extends Rewriter {
+case class patternExpressionRewriter(planArguments: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = that match {
     case expression: Expression =>
@@ -65,7 +65,7 @@ case class patternExpressionRewriter(planArguments: Set[String], requiredOrder: 
             acc
           } else {
             val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr, requiredOrder, context)
+            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr, interestingOrder, context)
             val uniqueNamedExpr = namedExpr.copy()
             val path = EveryPath(namedExpr.pattern.element)
             val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
@@ -86,7 +86,7 @@ case class patternExpressionRewriter(planArguments: Set[String], requiredOrder: 
             acc
           } else {
             val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr, requiredOrder, context)
+            val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr, interestingOrder, context)
             val uniqueNamedExpr = namedExpr.copy()(expr.position)
 
             val rewrittenExpression = NestedPlanExpression(plan, projection)(uniqueNamedExpr.position)

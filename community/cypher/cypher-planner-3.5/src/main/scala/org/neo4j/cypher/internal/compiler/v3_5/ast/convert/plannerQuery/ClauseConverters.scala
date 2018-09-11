@@ -103,17 +103,17 @@ object ClauseConverters {
       val returns = items.collect {
         case AliasedReturnItem(_, variable) => variable.name
       }
-      val requiredOrder = findRequiredOrder(projection)
+      val interestingOrder = findInterestingOrder(projection)
 
       acc.
         withHorizon(projection).
         withReturns(returns).
-        withRequiredOrder(requiredOrder)
+        withInterestingOrder(interestingOrder)
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
   }
 
-  def findRequiredOrder(horizon: QueryHorizon): RequiredOrder = {
+  def findInterestingOrder(horizon: QueryHorizon): InterestingOrder = {
     val columns = horizon match {
       case RegularQueryProjection(projections, shuffle) =>
         extractColumnsFromHorizon(shuffle, projections)
@@ -123,38 +123,40 @@ object ClauseConverters {
         extractColumnsFromHorizon(shuffle, groupingExpressions)
       case _ => Seq.empty
     }
-    RequiredOrder(columns)
+    InterestingOrder(columns)
   }
 
-  private def extractColumnsFromHorizon(shuffle: QueryShuffle, projections: Map[String, Expression]): Seq[(String, RequiredColumnOrder)] = {
-    shuffle.sortItems.foldLeft((Seq.empty[(String, RequiredColumnOrder)], true))({
+  private def extractColumnsFromHorizon(shuffle: QueryShuffle, projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
 
+    import InterestingOrder._
+
+    shuffle.sortItems.foldLeft((Seq.empty[ColumnOrder], true))({
       case ((seq, true), AscSortItem(Property(LogicalVariable(varName), propName))) =>
         projections.get(varName) match {
-          case Some(LogicalVariable(originalVarName)) => (seq :+ ((s"$originalVarName.${propName.name}", AscColumnOrder)), true)
+          case Some(LogicalVariable(originalVarName)) => (seq :+ Asc(s"$originalVarName.${propName.name}"), true)
           case Some(_) => (Seq.empty, false)
-          case None => (seq :+ ((s"$varName.${propName.name}", AscColumnOrder)), true)
+          case None => (seq :+ Asc(s"$varName.${propName.name}"), true)
         }
       case ((seq, true), DescSortItem(Property(LogicalVariable(varName), propName))) =>
         projections.get(varName) match {
-          case Some(LogicalVariable(originalVarName)) => (seq :+ ((s"$originalVarName.${propName.name}", DescColumnOrder)), true)
+          case Some(LogicalVariable(originalVarName)) => (seq :+ Desc(s"$originalVarName.${propName.name}"), true)
           case Some(_) => (Seq.empty, false)
-          case None => (seq :+ ((s"$varName.${propName.name}", DescColumnOrder)), true)
+          case None => (seq :+ Desc(s"$varName.${propName.name}"), true)
         }
 
       case ((seq, true), AscSortItem(LogicalVariable(name))) =>
         projections.get(name) match {
-          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ ((s"$varName.${propName.name}", AscColumnOrder)), true)
-          case Some(Variable(oldName)) => (seq :+ ((oldName, AscColumnOrder)), true)
+          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ Asc(s"$varName.${propName.name}"), true)
+          case Some(Variable(oldName)) => (seq :+ Asc(oldName), true)
           case Some(_) => (Seq.empty, false)
-          case None => (seq :+ ((name, AscColumnOrder)), true)
+          case None => (seq :+ Asc(name), true)
         }
       case ((seq, true), DescSortItem(LogicalVariable(name))) =>
         projections.get(name) match {
-          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ ((s"$varName.${propName.name}", DescColumnOrder)), true)
-          case Some(Variable(oldName)) => (seq :+ ((oldName, DescColumnOrder)), true)
+          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ Desc(s"$varName.${propName.name}"), true)
+          case Some(Variable(oldName)) => (seq :+ Desc(oldName), true)
           case Some(_) => (Seq.empty, false)
-          case None => (seq :+ ((name, DescColumnOrder)), true)
+          case None => (seq :+ Desc(name), true)
         }
 
       case _ => (Seq.empty, false)
@@ -463,11 +465,11 @@ object ClauseConverters {
         asQueryProjection(distinct, returnItems).
           withShuffle(shuffle)
 
-      val requiredOrder = findRequiredOrder(queryProjection)
+      val interestingOrder = findInterestingOrder(queryProjection)
 
       builder.
         withHorizon(queryProjection).
-        withRequiredOrder(requiredOrder).
+        withInterestingOrder(interestingOrder).
         withTail(RegularPlannerQuery(QueryGraph(selections = selections)))
 
     case _ =>

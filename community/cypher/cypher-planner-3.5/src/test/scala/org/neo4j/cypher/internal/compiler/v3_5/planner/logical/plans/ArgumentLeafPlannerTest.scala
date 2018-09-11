@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.argumentLeafPlanner
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.Argument
 import org.opencypher.v9_0.expressions.PatternExpression
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -38,7 +38,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b")
     )
 
-    argumentLeafPlanner(qg, RequiredOrder.empty, context) shouldBe empty
+    argumentLeafPlanner(qg, InterestingOrder.empty, context) shouldBe empty
   }
 
   test("should return an empty candidate list pattern nodes is empty") {
@@ -49,7 +49,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set()
     )
 
-    argumentLeafPlanner(qg, RequiredOrder.empty, context) shouldBe empty
+    argumentLeafPlanner(qg, InterestingOrder.empty, context) shouldBe empty
   }
 
   test("should return a plan containing all the id in argument ids and in pattern nodes") {
@@ -60,7 +60,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b", "d")
     )
 
-    argumentLeafPlanner(qg, RequiredOrder.empty, context) should equal(
+    argumentLeafPlanner(qg, InterestingOrder.empty, context) should equal(
       Seq(Argument(Set("a", "b","c")))
     )
   }

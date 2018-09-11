@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4
 
-import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph, QueryHorizon, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph, QueryHorizon, InterestingOrder}
 import org.neo4j.cypher.internal.ir.{v3_4 => irV3_4, v3_5 => irv3_5}
 
 class PlannerQueryWrapper(pq: irV3_4.PlannerQuery) extends irv3_5.PlannerQuery {
   override val queryGraph = null
-  override val requiredOrder = null
+  override val interestingOrder = null
   override val horizon = null
   override val tail = null
   override def dependencies = ???
-  override protected def copy(queryGraph: QueryGraph, requiredOrder: RequiredOrder, horizon: QueryHorizon, tail: Option[PlannerQuery]) = ???
+  override protected def copy(queryGraph: QueryGraph, interestingOrder: InterestingOrder, horizon: QueryHorizon, tail: Option[PlannerQuery]) = ???
   override lazy val readOnly = pq.readOnly
 }

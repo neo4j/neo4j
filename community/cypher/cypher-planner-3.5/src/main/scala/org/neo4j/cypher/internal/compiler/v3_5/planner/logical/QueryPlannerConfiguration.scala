@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_5.{UpdateStrategy, defaultUpdateStrategy}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
@@ -84,9 +84,9 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      pickBestCandidate: CandidateSelectorFactory,
                                      updateStrategy: UpdateStrategy) {
 
-  def toKit(requiredOrder: RequiredOrder, context: LogicalPlanningContext) =
+  def toKit(interestingOrder: InterestingOrder, context: LogicalPlanningContext) =
     QueryPlannerKit(
-      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, requiredOrder, context),
+      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, interestingOrder, context),
       pickBest = pickBestCandidate(context)
     )
 

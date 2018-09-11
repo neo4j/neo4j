@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.ir.v3_5.{DistinctQueryProjection, RequiredOrder}
+import org.neo4j.cypher.internal.ir.v3_5.{DistinctQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.Distinct
 import org.opencypher.v9_0.ast.ASTAnnotationMap
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
@@ -42,7 +42,7 @@ class DistinctTest extends CypherFunSuite with LogicalPlanningTestSupport with P
     val startPlan = newMockedLogicalPlan(idNames = Set("x", "x.prop"), availablePropertiesFromIndexes = Map(prop -> "x.prop"))
 
     // When
-    val (result, _) = distinct(startPlan, projection, RequiredOrder.empty, context)
+    val (result, _) = distinct(startPlan, projection, InterestingOrder.empty, context)
     // Then
     result should equal(
       Distinct(startPlan, Map(cachedNodePropertyProj("x", "prop")))
