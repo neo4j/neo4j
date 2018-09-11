@@ -111,25 +111,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         return reader;
     }
 
-    void assertLessThanOrEqualTo( Value[] o1, Value[] o2 )
-    {
-        if ( o1 == null || o2 == null )
-        {
-            return;
-        }
-        int length = Math.min( o1.length, o2.length );
-        for ( int i = 0; i < length; i++ )
-        {
-            int compare = Values.COMPARATOR.compare( o1[i], o2[i] );
-            assertThat( "expected less than or equal to but was " + Arrays.toString( o1 ) + " and " + Arrays.toString( o2 ),
-                    compare, lessThanOrEqualTo( 0 ) );
-            if ( compare != 0 )
-            {
-                return;
-            }
-        }
-    }
-
     void assertOrder( SimpleNodeValueClient client, IndexOrder order, int expectedCount )
     {
         Value[] prevValues = null;
@@ -164,6 +145,25 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             categories[i] = predicates[i].valueGroup().category();
         }
         return indexProvider.getCapability().orderCapability( categories );
+    }
+
+    private void assertLessThanOrEqualTo( Value[] o1, Value[] o2 )
+    {
+        if ( o1 == null || o2 == null )
+        {
+            return;
+        }
+        int length = Math.min( o1.length, o2.length );
+        for ( int i = 0; i < length; i++ )
+        {
+            int compare = Values.COMPARATOR.compare( o1[i], o2[i] );
+            assertThat( "expected less than or equal to but was " + Arrays.toString( o1 ) + " and " + Arrays.toString( o2 ),
+                    compare, lessThanOrEqualTo( 0 ) );
+            if ( compare != 0 )
+            {
+                return;
+            }
+        }
     }
 
     /**

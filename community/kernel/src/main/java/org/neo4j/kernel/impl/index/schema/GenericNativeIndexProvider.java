@@ -175,24 +175,36 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     }
 
     // TODO implement valueCapability
-    // TODO implement orderCapability for arrays and composite
     private static class GenericIndexCapability implements IndexCapability
     {
         @Override
         public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            if ( valueCategories.length != 1 || valueCategories[0] == ValueCategory.GEOMETRY || valueCategories[0] == ValueCategory.GEOMETRY_ARRAY )
+            if ( supportOrdering( valueCategories ) )
             {
-                // For now only ordering for single property index
-                return new IndexOrder[0];
+                return IndexCapability.ORDER_BOTH;
             }
-            return IndexCapability.ORDER_BOTH;
+            return new IndexOrder[0];
         }
 
         @Override
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return null;
+        }
+
+        private boolean supportOrdering( ValueCategory[] valueCategories )
+        {
+            for ( ValueCategory valueCategory : valueCategories )
+            {
+                if ( valueCategory == ValueCategory.GEOMETRY ||
+                     valueCategory == ValueCategory.GEOMETRY_ARRAY ||
+                     valueCategory == ValueCategory.UNKNOWN )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     };
 }
