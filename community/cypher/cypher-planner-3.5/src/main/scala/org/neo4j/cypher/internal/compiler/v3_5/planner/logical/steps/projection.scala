@@ -27,55 +27,13 @@ import org.opencypher.v9_0.expressions._
 
 object projection {
 
-  /**
-    * This method can be used instead of apply, if we know that no properties lookups
-    * will be able to be replaced with variables. Or if we tolerate the fact that we
-    * miss these replacement opportunities.
-    *
-    * The advantage is that we do not need to update the semantic table.
-    */
-  def withoutPropertiesFromIndex(in: LogicalPlan,
-                                 projectionsToPlan: Map[String, Expression],
-                                 projectionsToMarkSolved: Map[String, Expression],
-                                 interestingOrder: InterestingOrder,
-                                 context: LogicalPlanningContext): LogicalPlan = {
-    val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
-    createPlan(in, stillToSolveProjection, projectionsToMarkSolved, interestingOrder, context)
-  }
-
   def apply(in: LogicalPlan,
             projectionsToPlan: Map[String, Expression],
             projectionsToMarkSolved: Map[String, Expression],
             interestingOrder: InterestingOrder,
-            context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+            context: LogicalPlanningContext): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
-
-    val finalPlan = createPlan(in, stillToSolveProjection, projectionsToMarkSolved, interestingOrder, context)
-    (finalPlan, context)
-  }
-
-  /**
-    * Computes the projections that are not yet marked as solved.
-    */
-  private def projectionsLeft(in: LogicalPlan, projectionsToPlan: Map[String, Expression], solveds: Solveds): Map[String, Expression] = {
-    // if we had a previous projection it might have projected something already
-    // we only want to project what's left from that previous projection
-    val alreadySolvedProjections = solveds.get(in.id).tailOrSelf.horizon match {
-      case solvedProjection: QueryProjection => solvedProjection.projections
-      case _ => Map.empty[String, Expression]
-    }
-    projectionsToPlan -- alreadySolvedProjections.keys
-  }
-
-  /**
-    * Solve pattern expressions, and plan a projection for everything that is not yet covered by coveredIds.
-    */
-  private def createPlan(in: LogicalPlan,
-                         projectionsToPlan: Map[String, Expression],
-                         projectionsToMarkSolved: Map[String, Expression],
-                         interestingOrder: InterestingOrder,
-                         context: LogicalPlanningContext) = {
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, projectionsToPlan, interestingOrder, context)
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjection, interestingOrder, context)
 
     val ids = plan.availableSymbols
 
@@ -94,5 +52,18 @@ object projection {
     } else {
       context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
     }
+  }
+
+  /**
+    * Computes the projections that are not yet marked as solved.
+    */
+  private def projectionsLeft(in: LogicalPlan, projectionsToPlan: Map[String, Expression], solveds: Solveds): Map[String, Expression] = {
+    // if we had a previous projection it might have projected something already
+    // we only want to project what's left from that previous projection
+    val alreadySolvedProjections = solveds.get(in.id).tailOrSelf.horizon match {
+      case solvedProjection: QueryProjection => solvedProjection.projections
+      case _ => Map.empty[String, Expression]
+    }
+    projectionsToPlan -- alreadySolvedProjections.keys
   }
 }

@@ -24,19 +24,18 @@ import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, Interestin
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object aggregation {
-  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
 
     val expressionSolver = PatternExpressionSolver()
     val (step1, groupingExpressions) = expressionSolver(plan, aggregation.groupingExpressions, interestingOrder, context)
     val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregation.aggregationExpressions, interestingOrder, context)
 
-    val finalPlan = context.logicalPlanProducer.planAggregation(
+    context.logicalPlanProducer.planAggregation(
       rewrittenPlan,
       groupingExpressions,
       aggregations,
       aggregation.groupingExpressions,
       aggregation.aggregationExpressions,
       context)
-    (finalPlan, context)
   }
 }

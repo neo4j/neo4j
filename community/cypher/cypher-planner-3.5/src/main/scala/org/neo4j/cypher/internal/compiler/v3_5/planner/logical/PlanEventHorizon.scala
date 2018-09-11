@@ -32,49 +32,48 @@ aggregation and UNWIND.
  */
 case object PlanEventHorizon extends EventHorizonPlanner {
 
-  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.interestingOrder, context)
 
-    val (projectedPlan, contextAfterHorizon) = query.horizon match {
+    val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, context)
+        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, context)
         // aggregation is the only case where sort happens after the projection. The provided order of the aggretion plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
         val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(aggregatingProjection.groupingExpressions)
-        sortSkipAndLimit(aggregationPlan, query, interestingOrderWithRenames, newContext)
+        sortSkipAndLimit(aggregationPlan, query, interestingOrderWithRenames, context)
 
       case regularProjection: RegularQueryProjection =>
-        val (sortedAndLimited, contextAfterSort) = sortSkipAndLimit(selectedPlan, query, query.interestingOrder, context)
+        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query, query.interestingOrder, context)
         if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
-          (contextAfterSort.logicalPlanProducer.planEmptyProjection(plan, contextAfterSort), contextAfterSort)
+          context.logicalPlanProducer.planEmptyProjection(plan, context)
         } else {
-          val (newPlan, newContext) = projection(sortedAndLimited, regularProjection.projections, regularProjection.projections, query.interestingOrder, contextAfterSort)
-          (newPlan, newContext)
+          projection(sortedAndLimited, regularProjection.projections, regularProjection.projections, query.interestingOrder, context)
         }
 
       case distinctProjection: DistinctQueryProjection =>
-        val (distinctPlan, newContext) = distinct(selectedPlan, distinctProjection, query.interestingOrder, context)
+        val distinctPlan = distinct(selectedPlan, distinctProjection, query.interestingOrder, context)
         val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(distinctProjection.groupingKeys)
-        sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, newContext)
+        sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, context)
 
       case UnwindProjection(variable, expression) =>
         val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), query.interestingOrder, context)
-        (context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context), context)
+        context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
 
       case ProcedureCallProjection(call) =>
-        (context.logicalPlanProducer.planCallProcedure(plan, call, call, context), context)
+        context.logicalPlanProducer.planCallProcedure(plan, call, call, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
-        (context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context), context)
+        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
 
       case PassthroughAllHorizon() =>
-        (context.logicalPlanProducer.planPassAll(plan, context), context)
+        context.logicalPlanProducer.planPassAll(plan, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")
     }
 
     // We need to check if reads introduced in the horizon conflicts with future writes
-    (Eagerness.horizonReadWriteEagerize(projectedPlan, query, contextAfterHorizon), contextAfterHorizon)
+    Eagerness.horizonReadWriteEagerize(projectedPlan, query, context)
   }
 }

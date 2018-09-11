@@ -27,8 +27,7 @@ import org.opencypher.v9_0.expressions.{functions, _}
 
 case object countStorePlanner {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext): Option[(LogicalPlan, LogicalPlanningContext)] = {
-    implicit val semanticTable = context.semanticTable
+  def apply(query: PlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] = {
     query.horizon match {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _)
         if groupingKeys.isEmpty && aggregatingExpressions.size == 1 =>
@@ -62,7 +61,7 @@ case object countStorePlanner {
       case // COUNT(n.prop)
         func@FunctionInvocation(_, _, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))))
         if func.function == functions.Count =>
-        val labelCheck: Option[LabelName] => (Option[LogicalPlan] => Option[LogicalPlan]) = {
+        val labelCheck: Option[LabelName] => Option[LogicalPlan] => Option[LogicalPlan] = {
             case None => _ => None
             case Some(LabelName(labelName)) => (plan: Option[LogicalPlan]) => plan.filter(_ => context.planContext.hasPropertyExistenceConstraint(labelName, propKeyName))
           }
@@ -77,7 +76,7 @@ case object countStorePlanner {
                                       context: LogicalPlanningContext,
                                       // This function is used when the aggregation needs a specific label to exist,
                                       // for constraint checking
-                                      labelCheck: Option[LabelName] => (Option[LogicalPlan] => Option[LogicalPlan]) = _ => identity): Option[LogicalPlan] = {
+                                      labelCheck: Option[LabelName] => Option[LogicalPlan] => Option[LogicalPlan] = _ => identity): Option[LogicalPlan] = {
     if (patternRelationships.isEmpty &&
       variableName.forall(patternNodes.contains) &&
       noWrongPredicates(patternNodes, selections)) { // MATCH (n), MATCH (n:A)

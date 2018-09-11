@@ -24,16 +24,15 @@ import org.neo4j.cypher.internal.ir.v3_5.{DistinctQueryProjection, InterestingOr
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object distinct {
-  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
 
     val expressionSolver = PatternExpressionSolver()
     val (rewrittenPlan, groupingKeys) = expressionSolver(plan, distinctQueryProjection.groupingKeys, interestingOrder, context)
 
-    val finalPlan = context.logicalPlanProducer.planDistinct(
+    context.logicalPlanProducer.planDistinct(
       rewrittenPlan,
       groupingKeys,
       distinctQueryProjection.groupingKeys,
       context)
-    (finalPlan, context)
   }
 }

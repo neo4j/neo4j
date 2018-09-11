@@ -39,8 +39,8 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
   override def apply(in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
     val (completePlan, ctx) =
       countStorePlanner(in, context) match {
-        case Some((plan, afterCountStoreContext)) =>
-          (plan, afterCountStoreContext.withUpdatedCardinalityInformation(plan))
+        case Some(plan) =>
+          (plan, context.withUpdatedCardinalityInformation(plan))
         case None =>
 
           // context for this query, which aligns getValueFromIndexBehavior
@@ -50,8 +50,8 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
 
           val partPlan = planPart(in, queryContext)
           val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, true /*first QG*/ , queryContext)
-          val (projectedPlan, contextAfterHorizon) = planEventHorizon(in, planWithUpdates, contextAfterUpdates)
-          val projectedContext = contextAfterHorizon.withUpdatedCardinalityInformation(projectedPlan)
+          val projectedPlan = planEventHorizon(in, planWithUpdates, contextAfterUpdates)
+          val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
           (projectedPlan, projectedContext)
       }
 
@@ -65,7 +65,7 @@ trait PartPlanner {
 }
 
 trait EventHorizonPlanner {
-  def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan
 }
 
 trait TailPlanner {

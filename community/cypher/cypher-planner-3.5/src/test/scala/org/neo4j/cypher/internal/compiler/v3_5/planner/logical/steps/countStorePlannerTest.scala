@@ -35,21 +35,21 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val pq = producePlannerQuery("MATCH (n)", "n")
 
-    countStoreP(pq.withTail(null), context) should beCountPlanFor("n")
+    countStorePlanner(pq.withTail(null), context) should beCountPlanFor("n")
   }
 
   test("should plan a count for node count no labels") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (n)", "n")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("n")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
   }
 
   test("should plan a count for cartesian node count no labels") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (n), (m)", "n")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("n")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
   }
 
   test("should not plan a count for node count when there is a predicate on the node") {
@@ -58,7 +58,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plannerQuery = producePlannerQuery("MATCH (n) WHERE n.prop", "n")
 
     // Then
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should not plan a count for node count when there is a predicate on something else") {
@@ -67,7 +67,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plannerQuery = producePlannerQuery("MATCH (n) WHERE 1 = 2", "n")
 
     // Then
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should not plan a count for relationship count when there is a predicate on the relationship") {
@@ -76,7 +76,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plannerQuery = producePlannerQuery("MATCH ()-[r]-() WHERE r.prop", "r")
 
     // Then
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should not plan a count for relationship count when there is a predicate on something else") {
@@ -84,83 +84,83 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()-[r]-() WHERE 1 = 2", "r")
     // Then
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should plan a count for node count with a label") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (n:Label)", "n")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("n")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
   }
 
   test("should not plan a count for node count with more than one label") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (n:Label1:Label2)", "n")
 
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should plan a count for rel count with no direction") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()-[r]-()", "r")
 
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should plan a count for rel count with no type") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()-[r]->()", "r")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
   }
 
   test("should plan a count for rel count with lhs label and no type") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (:Label1)-[r]->()", "r")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
   }
 
   test("should plan a count for node count with rhs label and no type") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()<-[r]-(:Label1)", "r")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
   }
 
   test("should not plan a count for rel count with both ended labels") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r]-(:Label2)", "r")
 
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should not plan a count for rel count with type but no direction") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()-[r:X]-()", "r")
 
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   test("should plan a count for rel count with rel type") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()-[r:X]->()", "r")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
   }
 
   test("should plan a count for rel count with lhs label and rel type") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (:Label1)-[r:X]->()", "r")
 
-    countStoreP(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
   }
 
   test("should plan a count for node count with rhs label and rel type") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()<-[r:X]-(:Label1)", "r")
-    countStoreP(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
   }
 
   test("should not plan a count for rel count with both ended labels and rel type") {
@@ -168,7 +168,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r:X]-(:Label2)", "r")
 
-    countStoreP(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
   private def producePlannerQuery(query: String, variable: String) = {
@@ -176,9 +176,6 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     pq.withHorizon(AggregatingQueryProjection(
       aggregationExpressions = Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
   }
-
-  private def countStoreP(query: PlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] =
-    countStorePlanner(query, context).map(_._1)
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {
 

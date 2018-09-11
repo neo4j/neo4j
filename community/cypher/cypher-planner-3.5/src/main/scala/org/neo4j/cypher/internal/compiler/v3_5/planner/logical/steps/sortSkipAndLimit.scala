@@ -26,19 +26,19 @@ import org.opencypher.v9_0.ast.{AscSortItem, DescSortItem, SortItem}
 import org.opencypher.v9_0.expressions.{Expression, Variable}
 import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
 
-object sortSkipAndLimit extends PlanAndContextTransformer {
+object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
 
   /**
     * @param query query.interestingOrder will be the one marked as solved.
     * @param interestingOrder this order can potentially be different from query.providedOrder. It can contain renames and
     *                      will be used to check if we need to sort.
     */
-  def apply(plan: LogicalPlan, query: PlannerQuery, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = query.horizon match {
+  def apply(plan: LogicalPlan, query: PlannerQuery, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
        (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
         case (Nil, skip, limit) =>
-          (addLimit(limit, addSkip(skip, plan, context), context), context)
+          addLimit(limit, addSkip(skip, plan, context), context)
 
         case (sortItems, skip, limit) =>
           /* Collect one map and two seq while examining the sort items:
@@ -95,29 +95,29 @@ object sortSkipAndLimit extends PlanAndContextTransformer {
           val newSortItems = aliasedSortItems ++ newUnaliasedSortItems
           val columnOrders = newSortItems.map(columnOrder)
 
-          val (sortedPlan, context2) =
+          val sortedPlan =
             // The !interestingOrder.isEmpty check is only here because we do not recognize more complex required orders
             // at the moment and do not want to abort sorting only because an empty required order is satisfied by anything.
             if (interestingOrder.required.nonEmpty && interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) {
               // We can't override solved, but right now we want to set it such that it solves ORDER BY
               // on a plan that has already assigned solved.
               // Use query.interestingOrder to mark the original required order as solved.
-              (context.logicalPlanProducer.updateSolvedForSortedItems(plan, sortItems, query.interestingOrder, context), context)
+              context.logicalPlanProducer.updateSolvedForSortedItems(plan, sortItems, query.interestingOrder, context)
             } else {
               // Project all variables needed for sort in two steps
               // First the ones that are part of projection list and may introduce variables that are needed for the second projection
-              val (preProjected1, context1) = projection(plan, projectItemsForAliases, projectItemsForAliases, interestingOrder, context)
+              val preProjected1 = projection(plan, projectItemsForAliases, projectItemsForAliases, interestingOrder, context)
               // And then all the ones from unaliased sort items that may refer to newly introduced variables
-              val (preProjected2, context2) = projection(preProjected1, projectItemsForUnaliasedSortItems.toMap, Map.empty, interestingOrder, context1)
+              val preProjected2 = projection(preProjected1, projectItemsForUnaliasedSortItems.toMap, Map.empty, interestingOrder, context)
 
               // Use query.interestingOrder to mark the original required order as solved.
-              (context2.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, query.interestingOrder, context2), context2)
+              context.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, query.interestingOrder, context)
             }
 
-          (addLimit(limit, addSkip(skip, sortedPlan, context2), context2), context2)
+          addLimit(limit, addSkip(skip, sortedPlan, context), context)
       }
 
-    case _ => (plan, context)
+    case _ => plan
   }
 
   private def columnOrder(in: SortItem): ColumnOrder = in match {
