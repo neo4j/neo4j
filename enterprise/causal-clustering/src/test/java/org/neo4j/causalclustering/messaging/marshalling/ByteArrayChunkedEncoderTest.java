@@ -26,8 +26,6 @@ import io.netty.buffer.ByteBuf;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.causalclustering.helpers.Buffers;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -38,45 +36,30 @@ public class ByteArrayChunkedEncoderTest
 {
     @Rule
     public final Buffers buffers = new Buffers();
+
     @Test
     public void shouldWriteToBufferInChunks()
     {
+        int chunkSize = 5;
         byte[] data = new byte[]{1, 2, 3, 4, 5, 6};
         byte[] readData = new byte[6];
-        ByteArrayChunkedEncoder byteArraySerializer = new ByteArrayChunkedEncoder( data, 5 );
+        ByteArrayChunkedEncoder byteArraySerializer = new ByteArrayChunkedEncoder( data, chunkSize );
 
         ByteBuf buffer = byteArraySerializer.readChunk( buffers );
-        assertEquals( 6, buffer.readInt() );
-        assertEquals( 1, buffer.readableBytes() );
-        buffer.readBytes( readData, 0, 1 );
+        buffer.readBytes( readData, 0, chunkSize );
+        assertEquals( 0, buffer.readableBytes() );
 
         buffer = byteArraySerializer.readChunk( buffers );
-        buffer.readBytes( readData, 1, buffer.readableBytes() );
+        buffer.readBytes( readData, chunkSize, 1 );
         assertArrayEquals( data, readData );
         assertEquals( 0, buffer.readableBytes() );
 
         assertNull( byteArraySerializer.readChunk( buffers ) );
     }
 
-    @Test
-    public void shouldHandleSmallByteBuf()
-    {
-        byte[] data = new byte[1];
-
-        ByteBuf byteBuf = new ByteArrayChunkedEncoder( data ).readChunk( buffers );
-        assertEquals( 1, byteBuf.readInt() );
-        assertEquals( 1, byteBuf.readableBytes() );
-    }
-
     @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowOnToSmallChunk()
+    public void shouldThrowOnTooSmallChunk()
     {
         new ByteArrayChunkedEncoder( new byte[1], 0 );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shoudThrowOnEmprtContent()
-    {
-        new ByteArrayChunkedEncoder( new byte[0] );
     }
 }

@@ -49,27 +49,6 @@ public class TransactionRepresentationReplicatedTransactionTest
     public final Buffers buffers = new Buffers();
 
     @Test
-    public void shouldDecodeAndUnmarshalSameBytes() throws IOException
-    {
-        PhysicalTransactionRepresentation expectedTx =
-                new PhysicalTransactionRepresentation( Collections.singleton( new Command.NodeCommand( new NodeRecord( 1 ), new NodeRecord( 2 ) ) ) );
-
-        expectedTx.setHeader( new byte[0], 1, 2, 3, 4, 5, 6 );
-
-        ByteBuf buffer = buffers.buffer();
-        TransactionRepresentationReplicatedTransaction replicatedTransaction = ReplicatedTransaction.from( expectedTx );
-        replicatedTransaction.marshal( new BoundedNetworkWritableChannel( buffer ) );
-
-        ReplicatedTransaction decoded = ReplicatedTransactionSerializer.decode( buffer );
-        buffer.readerIndex( 0 );
-        ReplicatedTransaction unmarshaled = ReplicatedTransactionSerializer.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
-
-        assertEquals( decoded, unmarshaled );
-
-        buffer.release();
-    }
-
-    @Test
     public void shouldMarshalToSameByteIfByteBufBackedOrNot() throws IOException
     {
         PhysicalTransactionRepresentation expectedTx =
