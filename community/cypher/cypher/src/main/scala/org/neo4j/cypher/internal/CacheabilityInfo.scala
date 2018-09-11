@@ -28,5 +28,5 @@ trait CacheabilityInfo {
     * (e.g. "EXPLAIN query with not enough given parameters" will be executable but useless in the cache ).
     * The reason for this is that we don't want to pollute the caches with entries that will never be used
     */
-  val shouldBeCached: Boolean
+  def shouldBeCached: Boolean
 }

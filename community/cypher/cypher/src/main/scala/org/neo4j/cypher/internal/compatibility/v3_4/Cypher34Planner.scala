@@ -195,7 +195,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
       checkForSchemaChanges(planContextv3_5)
 
       // If the query is not cached we do full planning + creating of executable plan
-      def createPlan(): CacheableLogicalPlan = {
+      def createPlan(): LogicalPlanWithCacheabilityInfo = {
         val logicalPlanStateV3_4 = compiler.planPreparedQuery(preparedQuery, contextV3_4)
         val logicalPlanStatev3_5 = helpers.as3_5(logicalPlanStateV3_4) // Here we switch from 3.4 to 3.5
         LogicalPlanNotifications
@@ -203,7 +203,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
           .foreach(notificationLoggerv3_5.log)
 
         val reusabilityState = createReusabilityState(logicalPlanStatev3_5, planContextv3_5)
-        CacheableLogicalPlan(logicalPlanStatev3_5, reusabilityState, true)
+        LogicalPlanWithCacheabilityInfo(logicalPlanStatev3_5, reusabilityState, true)
       }
 
       // 3.4 does not produce different plans for different parameter types.

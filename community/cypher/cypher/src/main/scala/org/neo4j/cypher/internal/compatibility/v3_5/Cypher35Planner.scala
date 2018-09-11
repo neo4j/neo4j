@@ -144,7 +144,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       checkForSchemaChanges(planContext)
 
       // If the query is not cached we want to do the full planning
-      def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
+      def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): LogicalPlanWithCacheabilityInfo = {
         val logicalPlanState = planner.planPreparedQuery(preparedQuery, context)
         notification.LogicalPlanNotifications
           .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
@@ -153,7 +153,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
         val reusabilityState = createReusabilityState(logicalPlanState, planContext)
-        CacheableLogicalPlan(logicalPlanState, reusabilityState, shouldBeCached)
+        LogicalPlanWithCacheabilityInfo(logicalPlanState, reusabilityState, shouldBeCached)
       }
 
       // Filter the parameters to retain only those that are actually used in the query (or a subset of them, if not enough
