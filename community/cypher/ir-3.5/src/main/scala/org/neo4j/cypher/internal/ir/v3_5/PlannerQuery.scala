@@ -72,7 +72,30 @@ trait PlannerQuery {
 
   def withQueryGraph(queryGraph: QueryGraph): PlannerQuery = copy(queryGraph = queryGraph)
 
-  def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQuery = copy(interestingOrder = interestingOrder)
+  def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQuery =
+    copy(interestingOrder = interestingOrder)
+
+  def withTailInterestingOrder(interestingOrder: InterestingOrder): PlannerQuery = {
+    def f(plannerQuery: PlannerQuery): (PlannerQuery, InterestingOrder) = {
+      plannerQuery.tail match {
+        case None => (plannerQuery.copy(interestingOrder = interestingOrder), interestingOrder.asInteresting)
+        case Some(q) =>
+          val (newTail, tailOrder) = f(q)
+          newTail.queryGraph.patternNodes
+          if (plannerQuery.interestingOrder.isEmpty) {
+            val reverseProjected =
+              plannerQuery.horizon match {
+                case qp: QueryProjection => tailOrder.withReverseProjectedColumns(qp.projections, newTail.queryGraph.argumentIds)
+                case _ => tailOrder
+              }
+            (plannerQuery.copy(interestingOrder = reverseProjected, tail = Some(newTail)), reverseProjected)
+          } else
+            (plannerQuery.copy(tail = Some(newTail)), InterestingOrder.empty)
+      }
+    }
+
+    f(this)._1
+  }
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
@@ -199,6 +222,7 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                                interestingOrder: InterestingOrder = InterestingOrder.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
                                tail: Option[PlannerQuery] = None) extends PlannerQuery {
+
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
                               interestingOrder: InterestingOrder = interestingOrder,
@@ -207,6 +231,23 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     RegularPlannerQuery(queryGraph, interestingOrder, horizon, tail)
 
   override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[RegularPlannerQuery]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: RegularPlannerQuery =>
+      (that canEqual this) &&
+        queryGraph == that.queryGraph &&
+        horizon == that.horizon &&
+        tail == that.tail &&
+        interestingOrder.required == that.interestingOrder.required
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(queryGraph, horizon, tail, interestingOrder.required)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
 }
 
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[String], periodicCommit: Option[PeriodicCommit]) {

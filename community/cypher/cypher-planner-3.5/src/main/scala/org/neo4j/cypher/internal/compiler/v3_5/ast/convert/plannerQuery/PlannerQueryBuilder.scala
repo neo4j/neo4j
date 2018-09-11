@@ -44,7 +44,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   }
 
   def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQueryBuilder =
-    copy(q = q.updateTailOrSelf(_.withInterestingOrder(interestingOrder)))
+    copy(q = q.withTailInterestingOrder(interestingOrder))
 
   private def currentlyExposedSymbols: Set[String] = {
     q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds)

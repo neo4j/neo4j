@@ -26,51 +26,109 @@ import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 class InterestingOrderTest extends CypherFunSuite {
   protected val pos = DummyPosition(0)
 
-  test("should rename property to variable") {
+  test("should project property to variable") {
     val io = InterestingOrder.asc("x.foo")
     // projection
     val projections = Map("xfoo" -> Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos))
 
     //when
-    val result = io.withRenamedColumns(projections)
+    val result = io.withProjectedColumns(projections)
 
     // then
     result should be(InterestingOrder.asc("xfoo"))
   }
 
-  test("should rename property to variable (descending)") {
+  test("should project property to variable (descending)") {
     val io = InterestingOrder.desc("x.foo")
     // projection
     val projections = Map("xfoo" -> Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos))
 
     //when
-    val result = io.withRenamedColumns(projections)
+    val result = io.withProjectedColumns(projections)
 
     // then
     result should be(InterestingOrder.desc("xfoo"))
   }
 
-  test("should rename property to property") {
+  test("should project property to property") {
     val io = InterestingOrder.asc("x.foo")
     // projection
     val projections = Map("y" -> Variable("x")(pos))
 
     //when
-    val result = io.withRenamedColumns(projections)
+    val result = io.withProjectedColumns(projections)
 
     // then
     result should be(InterestingOrder.asc("y.foo"))
   }
 
-  test("should rename variable to variable") {
+  test("should project variable to variable") {
     val io = InterestingOrder.asc("x")
     // projection
     val projections = Map("y" -> Variable("x")(pos))
 
     //when
-    val result = io.withRenamedColumns(projections)
+    val result = io.withProjectedColumns(projections)
 
     // then
+    result should be(InterestingOrder.asc("y"))
+  }
+
+  test("should reverse project property to variable") {
+    val io = InterestingOrder.asc("xfoo")
+    // projection
+    val projections = Map("xfoo" -> Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos))
+
+    //when
+    val result = io.withReverseProjectedColumns(projections, Set.empty)
+
+    // then
+    result should be(InterestingOrder.asc("x.foo"))
+  }
+
+  test("should reverse project property to variable (descending)") {
+    val io = InterestingOrder.desc("xfoo")
+    // projection
+    val projections = Map("xfoo" -> Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos))
+
+    //when
+    val result = io.withReverseProjectedColumns(projections, Set.empty)
+
+    // then
+    result should be(InterestingOrder.desc("x.foo"))
+  }
+
+  test("should reverse project property to property") {
+    val io = InterestingOrder.asc("y.foo")
+    // projection
+    val projections = Map("y" -> Variable("x")(pos))
+
+    //when
+    val result = io.withReverseProjectedColumns(projections, Set.empty)
+
+    // then
+    result should be(InterestingOrder.asc("x.foo"))
+  }
+
+  test("should reverse project variable to variable") {
+    val io = InterestingOrder.asc("y")
+    // projection
+    val projections = Map("y" -> Variable("x")(pos))
+
+    //when
+    val result = io.withReverseProjectedColumns(projections, Set.empty)
+
+    // then
+    result should be(InterestingOrder.asc("x"))
+  }
+
+  test("should not reverse project variable to variable if not argument") {
+    val result = InterestingOrder.asc("y").withReverseProjectedColumns(Map.empty, Set.empty)
+    result should be(InterestingOrder.empty)
+  }
+
+  test("should reverse project variable to variable if is argument") {
+    val result = InterestingOrder.asc("y").withReverseProjectedColumns(Map.empty, Set("y"))
     result should be(InterestingOrder.asc("y"))
   }
 }

@@ -99,7 +99,6 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
            |MATCH (m)<-[r]-(nnn)
            |RETURN nnn.prop3 ORDER BY nnn.prop3 $cypherToken""".stripMargin, executeBefore = createSomeNodes)
 
-      println(result.executionPlanDescription())
       result.executionPlanDescription() should (
         not(includeSomewhere.aPlan("Sort")) and
           includeSomewhere.aPlan("Projection")
@@ -192,29 +191,42 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
         Map("a.prop2" -> 9)
       )))
     }
-  }
 
-  test("D: Order by index backed property renamed in an earlier WITH") {
-    val result = executeWith(Configs.Interpreted,
-      s"""MATCH (n:Awesome) WHERE n.prop3 > 'foo'
-         |WITH n AS nnn
-         |MATCH (m)<-[r]-(nnn)
-         |RETURN nnn.prop3 ORDER BY nnn.prop3 DESC""".stripMargin, executeBefore = createSomeNodes)
+    // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve contains
+    test(s"$cypherToken: Order by index backed property should plan with provided order (contains scan)") {
+      createStringyNodes()
 
-    println(result.executionPlanDescription())
-    result.executionPlanDescription() should (
-      not(includeSomewhere.aPlan("Sort")) and
-        includeSomewhere.aPlan("Projection")
-          .withOrder(ProvidedOrder.desc("nnn.prop3"))
-          .onTopOf(aPlan("NodeIndexSeekByRange")
-            .withOrder(ProvidedOrder.desc("n.prop3"))
-          )
-      )
+      val result = executeWith(Configs.Interpreted,
+        s"MATCH (n:Awesome) WHERE n.prop3 CONTAINS 'cat' RETURN n.prop3 ORDER BY n.prop3 $cypherToken",
+        executeBefore = createStringyNodes)
 
-    result.toList should be(List(
-      Map("nnn.prop3" -> "fooism"), Map("nnn.prop3" -> "fooism"),
-      Map("nnn.prop3" -> "footurama"), Map("nnn.prop3" -> "footurama")
-    ).reverse)
+      result.executionPlanDescription() should not(includeSomewhere.aPlan("Sort"))
+      result.toList should be(expectedOrder(List(
+        Map("n.prop3" -> "bobcat"), Map("n.prop3" -> "bobcat"),
+        Map("n.prop3" -> "catastrophy"), Map("n.prop3" -> "catastrophy"),
+        Map("n.prop3" -> "poodlecatilicious"), Map("n.prop3" -> "poodlecatilicious"),
+        Map("n.prop3" -> "scat"), Map("n.prop3" -> "scat"),
+        Map("n.prop3" -> "tree-cat-bog"), Map("n.prop3" -> "tree-cat-bog"),
+        Map("n.prop3" -> "whinecathog"), Map("n.prop3" -> "whinecathog")
+      )))
+    }
+
+    // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve ends with
+    test(s"$cypherToken: Order by index backed property should plan with provided order (ends with scan)") {
+      createStringyNodes()
+
+      val result = executeWith(Configs.Interpreted,
+        s"MATCH (n:Awesome) WHERE n.prop3 ENDS WITH 'og' RETURN n.prop3 ORDER BY n.prop3 $cypherToken",
+        executeBefore = createStringyNodes)
+
+      result.executionPlanDescription() should not(includeSomewhere.aPlan("Sort"))
+      result.toList should be(expectedOrder(List(
+        Map("n.prop3" -> "dog"), Map("n.prop3" -> "dog"),
+        Map("n.prop3" -> "flog"), Map("n.prop3" -> "flog"),
+        Map("n.prop3" -> "tree-cat-bog"), Map("n.prop3" -> "tree-cat-bog"),
+        Map("n.prop3" -> "whinecathog"), Map("n.prop3" -> "whinecathog")
+      )))
+    }
   }
 
   // Only tested in ASC mode because it's hard to make compatibility check out otherwise
@@ -244,42 +256,6 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
       Map("a.prop3" -> "fooism"), Map("a.prop3" -> "fooism"),
       Map("a.prop3" -> "footurama"), Map("a.prop3" -> "footurama"),
       Map("a.prop3" -> null), Map("a.prop3" -> null)
-    ))
-  }
-
-  // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve contains
-  test("Order by index backed property should plan with provided order (contains scan)") {
-    createStringyNodes()
-
-    val result = executeWith(Configs.Interpreted,
-                             "MATCH (n:Awesome) WHERE n.prop3 CONTAINS 'cat' RETURN n.prop3 ORDER BY n.prop3",
-                             executeBefore = createStringyNodes)
-
-    result.executionPlanDescription() should not(includeSomewhere.aPlan("Sort"))
-    result.toList should be(List(
-      Map("n.prop3" -> "bobcat"), Map("n.prop3" -> "bobcat"),
-      Map("n.prop3" -> "catastrophy"), Map("n.prop3" -> "catastrophy"),
-      Map("n.prop3" -> "poodlecatilicious"), Map("n.prop3" -> "poodlecatilicious"),
-      Map("n.prop3" -> "scat"), Map("n.prop3" -> "scat"),
-      Map("n.prop3" -> "tree-cat-bog"), Map("n.prop3" -> "tree-cat-bog"),
-      Map("n.prop3" -> "whinecathog"), Map("n.prop3" -> "whinecathog")
-    ))
-  }
-
-  // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve ends with
-  test("Order by index backed property should plan with provided order (ends with scan)") {
-    createStringyNodes()
-
-    val result = executeWith(Configs.Interpreted,
-                             "MATCH (n:Awesome) WHERE n.prop3 ENDS WITH 'og' RETURN n.prop3 ORDER BY n.prop3",
-                             executeBefore = createStringyNodes)
-
-    result.executionPlanDescription() should not(includeSomewhere.aPlan("Sort"))
-    result.toList should be(List(
-      Map("n.prop3" -> "dog"), Map("n.prop3" -> "dog"),
-      Map("n.prop3" -> "flog"), Map("n.prop3" -> "flog"),
-      Map("n.prop3" -> "tree-cat-bog"), Map("n.prop3" -> "tree-cat-bog"),
-      Map("n.prop3" -> "whinecathog"), Map("n.prop3" -> "whinecathog")
     ))
   }
 

@@ -63,13 +63,15 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
   def ascInteresting(id: String): InterestingOrder = InterestingOrder(required, interesting :+ Asc(id))
   def descInteresting(id: String): InterestingOrder = InterestingOrder(required, interesting :+ Desc(id))
 
+  def asInteresting: InterestingOrder = InterestingOrder(Seq.empty, required ++ interesting)
+
   def headOption: Option[InterestingOrder.ColumnOrder] =
     required.headOption.orElse(interesting.headOption)
 
-  def withRenamedColumns(projectExpressions: Map[String, Expression]) : InterestingOrder = {
-    def rename(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
+  def withProjectedColumns(projectExpressions: Map[String, Expression]) : InterestingOrder = {
+    def project(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
       columns.map {
-        case column@StringPropertyLookup(varName, propName, order) =>
+        case column@StringPropertyLookup(varName, propName) =>
           projectExpressions.collectFirst {
             case (newId, Property(Variable(`varName`), PropertyKeyName(`propName`))) => column.withId(newId)
             case (newId, Variable(`varName`)) => column.withId(newId + "." + propName)
@@ -80,6 +82,29 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
           projectExpressions.collectFirst {
             case (newId, Variable(`varName`)) => column.withId(newId)
           }.getOrElse(column)
+      }
+    }
+
+    InterestingOrder(project(required), project(interesting))
+  }
+
+  def withReverseProjectedColumns(projectExpressions: Map[String, Expression], argumentIds: Set[String]) : InterestingOrder = {
+    def columnIfArgument(column: ColumnOrder): Option[ColumnOrder] =
+      if (argumentIds.contains(column.id)) Some(column) else None
+
+    def rename(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
+      columns.flatMap {
+        case column@StringPropertyLookup(varName, propName) =>
+          projectExpressions.collectFirst {
+            case (`varName`, Variable(newVarName)) => column.withId(newVarName + "." + propName)
+          }.orElse(columnIfArgument(column))
+
+        case column: ColumnOrder =>
+          val varName = column.id
+          projectExpressions.collectFirst {
+            case (`varName`, Property(Variable(prevVarName), PropertyKeyName(prevPropName))) => column.withId(prevVarName + "." + prevPropName)
+            case (`varName`, Variable(prevVarName)) => column.withId(prevVarName)
+          }.orElse(columnIfArgument(column))
       }
     }
 
@@ -106,9 +131,9 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
   */
 object StringPropertyLookup {
 
-  def unapply(arg: InterestingOrder.ColumnOrder): Option[(String, String, InterestingOrder.ColumnOrder)] = {
+  def unapply(arg: InterestingOrder.ColumnOrder): Option[(String, String)] = {
     arg.id.split("\\.", 2) match {
-      case Array(varName, propName) => Some((varName, propName, arg))
+      case Array(varName, propName) => Some((varName, propName))
       case _ => None
     }
   }

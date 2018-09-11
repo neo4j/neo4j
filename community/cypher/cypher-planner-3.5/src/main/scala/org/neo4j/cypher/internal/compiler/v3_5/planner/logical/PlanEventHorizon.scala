@@ -42,7 +42,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val (aggregationPlan, newContext) = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, context)
         // aggregation is the only case where sort happens after the projection. The provided order of the aggretion plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
-        val interestingOrderWithRenames = query.interestingOrder.withRenamedColumns(aggregatingProjection.groupingExpressions)
+        val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(aggregatingProjection.groupingExpressions)
         sortSkipAndLimit(aggregationPlan, query, interestingOrderWithRenames, newContext)
 
       case regularProjection: RegularQueryProjection =>
@@ -56,7 +56,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
 
       case distinctProjection: DistinctQueryProjection =>
         val (distinctPlan, newContext) = distinct(selectedPlan, distinctProjection, query.interestingOrder, context)
-        val interestingOrderWithRenames = query.interestingOrder.withRenamedColumns(distinctProjection.groupingKeys)
+        val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(distinctProjection.groupingKeys)
         sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, newContext)
 
       case UnwindProjection(variable, expression) =>

@@ -139,6 +139,54 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
     result should equal(expectation)
   }
 
+  test("Propagate interesting order to previous query graph") {
+    val result = buildPlannerQuery("MATCH (n) WITH n AS secretN MATCH (m) RETURN m, secretN ORDER BY secretN.prop")
+
+    interestingOrders(result).take(2) should be(List(
+      InterestingOrder.ascInteresting("n.prop"),
+      InterestingOrder.asc("  secretN@20.prop")
+    ))
+  }
+
+  test("Do not propagate unfulfillable order to previous query graph") {
+    val result = buildPlannerQuery("MATCH (n) WITH n AS secretN MATCH (m) RETURN m ORDER BY m.prop")
+
+    interestingOrders(result).take(2) should be(List(
+      InterestingOrder.empty,
+      InterestingOrder.asc("  m@35.prop")
+    ))
+  }
+
+  test("Do not propagate interesting order over required order") {
+    val result = buildPlannerQuery(
+      """MATCH (a) WITH a AS a2
+        |MATCH (b) WITH b AS b2, a2 ORDER BY a2.prop
+        |MATCH (c) WITH c AS c2, b2, a2
+        |MATCH (d) RETURN d, c2, b2, a2 ORDER BY c2.prop""".stripMargin)
+
+    interestingOrders(result).take(4) should be(List(
+      InterestingOrder.ascInteresting("a.prop"),
+      InterestingOrder.asc("  a2@20.prop"),
+      InterestingOrder.ascInteresting("c.prop"),
+      InterestingOrder.asc("  c2@87.prop")
+    ))
+  }
+
+  ignore("Propagate suffix of interesting order if the interesting prefix overlaps the required order") {
+    val result = buildPlannerQuery(
+      """MATCH (a) WITH a AS a2
+        |MATCH (b) WITH b AS b2, a2 ORDER BY a2.prop
+        |MATCH (c) WITH c AS c2, b2, a2
+        |MATCH (d) RETURN d, c2, b2, a2 ORDER BY a2.prop, b2.prop""".stripMargin)
+
+    interestingOrders(result).take(4) should be(List(
+      InterestingOrder.ascInteresting("a.prop"),
+      InterestingOrder.asc("  a2@20.prop").ascInteresting("  b2.prop"),
+      InterestingOrder.ascInteresting("  a2@20.prop").ascInteresting("  b2.prop"),
+      InterestingOrder.asc("  a2@20.prop").asc("  b2.prop")
+    ))
+  }
+
   test("Extracts required order from query returning multiple sort columns") {
     val result = buildPlannerQuery("MATCH (n) RETURN n.prop, n.foo ORDER BY n.foo, n.prop DESC")
 
@@ -320,5 +368,11 @@ class RequiredOrderStatementConvertersTest extends CypherFunSuite with LogicalPl
     )
 
     result should equal(expectation)
+  }
+
+  def interestingOrders(plannerQuery: PlannerQuery): List[InterestingOrder] =
+    plannerQuery.tail match {
+      case None => List(plannerQuery.interestingOrder)
+      case Some(tail) => plannerQuery.interestingOrder :: interestingOrders(tail)
   }
 }

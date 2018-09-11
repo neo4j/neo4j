@@ -27,13 +27,17 @@ import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 sealed trait IndexLimitation
 case object SlowContains extends IndexLimitation
 
-final case class IndexOrderCapability(asc: Boolean, desc: Boolean)
+sealed trait IndexOrderCapability {
+  def asc: Boolean
+  def desc: Boolean
+}
 
 object IndexOrderCapability {
-  val NONE: IndexOrderCapability = IndexOrderCapability(false, false)
-  val ASC: IndexOrderCapability = IndexOrderCapability(true, false)
-  val DESC: IndexOrderCapability = IndexOrderCapability(false, true)
-  val BOTH: IndexOrderCapability = IndexOrderCapability(true, true)
+  protected class BASE(override val asc: Boolean, override val desc: Boolean) extends IndexOrderCapability
+  case object NONE extends BASE(false, false)
+  case object ASC extends BASE(true, false)
+  case object DESC extends BASE(false, true)
+  case object BOTH extends BASE(true, true)
 }
 
 object IndexDescriptor {

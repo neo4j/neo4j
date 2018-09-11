@@ -103,18 +103,18 @@ object ClauseConverters {
       val returns = items.collect {
         case AliasedReturnItem(_, variable) => variable.name
       }
-      val interestingOrder = findInterestingOrder(projection)
+      val requiredOrder = findRequiredOrder(projection)
 
       acc.
         withHorizon(projection).
         withReturns(returns).
-        withInterestingOrder(interestingOrder)
+        withInterestingOrder(requiredOrder)
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
   }
 
-  def findInterestingOrder(horizon: QueryHorizon): InterestingOrder = {
-    val columns = horizon match {
+  def findRequiredOrder(horizon: QueryHorizon): InterestingOrder = {
+    val requiredOrderColumns = horizon match {
       case RegularQueryProjection(projections, shuffle) =>
         extractColumnsFromHorizon(shuffle, projections)
       case AggregatingQueryProjection(groupingExpressions, _, shuffle) =>
@@ -123,7 +123,7 @@ object ClauseConverters {
         extractColumnsFromHorizon(shuffle, groupingExpressions)
       case _ => Seq.empty
     }
-    InterestingOrder(columns)
+    InterestingOrder(requiredOrderColumns)
   }
 
   private def extractColumnsFromHorizon(shuffle: QueryShuffle, projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
@@ -465,11 +465,11 @@ object ClauseConverters {
         asQueryProjection(distinct, returnItems).
           withShuffle(shuffle)
 
-      val interestingOrder = findInterestingOrder(queryProjection)
+      val requiredOrder = findRequiredOrder(queryProjection)
 
       builder.
         withHorizon(queryProjection).
-        withInterestingOrder(interestingOrder).
+        withInterestingOrder(requiredOrder).
         withTail(RegularPlannerQuery(QueryGraph(selections = selections)))
 
     case _ =>
