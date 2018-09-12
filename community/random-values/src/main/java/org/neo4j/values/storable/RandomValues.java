@@ -1502,6 +1502,22 @@ public class RandomValues
         return shorts;
     }
 
+    public TextArray nextBasicMultilingualPlaneStringArray()
+    {
+        return Values.stringArray( nextBasicMultilingualPlaneStringArrayRaw() );
+    }
+
+    public String[] nextBasicMultilingualPlaneStringArrayRaw()
+    {
+        return nextBasicMultilingualPlaneStringArrayRaw( configuration.arrayMinLength(), configuration.arrayMaxLength(), configuration.stringMinLength(),
+                configuration.stringMaxLength() );
+    }
+
+    public String[] nextBasicMultilingualPlaneStringArrayRaw( int minLength, int maxLength, int minStringLength, int maxStringLength )
+    {
+        return nextStringArrayRaw( minLength, maxLength, () -> nextBasicMultilingualPlaneTextValue( minStringLength, maxStringLength ).stringValue() );
+    }
+
     /**
      * Returns the next pseudorandom alpha-numeric {@link TextArray}.
      * <p>
@@ -1534,13 +1550,7 @@ public class RandomValues
 
     public String[] nextAlphaNumericStringArrayRaw( int minLength, int maxLength, int minStringLength, int maxStringLength )
     {
-        int length = intBetween( minLength, maxLength );
-        String[] strings = new String[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            strings[i] = nextAlphaNumericTextValue( minStringLength, maxStringLength ).stringValue();
-        }
-        return strings;
+        return nextStringArrayRaw( minLength, maxLength, () -> nextAlphaNumericTextValue( minStringLength, maxStringLength ).stringValue() );
     }
 
     /**
@@ -1582,11 +1592,16 @@ public class RandomValues
 
     public String[] nextStringArrayRaw( int minLength, int maxLength, int minStringLength, int maxStringLength )
     {
+        return nextStringArrayRaw( minLength, maxLength, () -> nextTextValue( minStringLength, maxStringLength ).stringValue() );
+    }
+
+    private String[] nextStringArrayRaw( int minLength, int maxLength, StringCreator stringCreator )
+    {
         int length = intBetween( minLength, maxLength );
         String[] strings = new String[length];
         for ( int i = 0; i < length; i++ )
         {
-            strings[i] = nextTextValue( minStringLength, maxStringLength ).stringValue();
+            strings[i] = stringCreator.create();
         }
         return strings;
     }
@@ -1940,5 +1955,11 @@ public class RandomValues
     private static int nextPowerOf2( int i )
     {
         return 1 << (32 - Integer.numberOfLeadingZeros( i ));
+    }
+
+    @FunctionalInterface
+    private interface StringCreator
+    {
+        String create();
     }
 }

@@ -406,7 +406,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByTextArray() throws Exception
         {
-            testIndexRangeSeek( () -> random.randomValues().nextStringArray() );
+            testIndexRangeSeek( () -> random.randomValues().nextBasicMultilingualPlaneStringArray() );
         }
 
         @Test
