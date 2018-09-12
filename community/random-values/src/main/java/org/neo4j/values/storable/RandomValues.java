@@ -131,8 +131,8 @@ public class RandomValues
         }
     }
 
-    public static final int MAX_16_BIT_CODE_POINT = Character.MIN_SUPPLEMENTARY_CODE_POINT - 1;
-    public static Configuration DEFAULT_CONFIGURATION = new Default();
+    public static final int MAX_BASIC_MULTILINGUAL_PLANE_CODE_POINT = 0xFFFF;
+    public static final Configuration DEFAULT_CONFIGURATION = new Default();
     private static Types[] TYPES = Types.values();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
@@ -629,7 +629,7 @@ public class RandomValues
 
         for ( int i = 0; i < length; i++ )
         {
-            builder.addCodePoint( nextValidCodePoint( 0xFFFF ) );
+            builder.addCodePoint( nextValidCodePoint( MAX_BASIC_MULTILINGUAL_PLANE_CODE_POINT ) );
         }
         return builder.build();
     }

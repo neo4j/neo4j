@@ -56,21 +56,12 @@ class UTF8StringValueRandomTest
     }
 
     @Test
-    void shouldCompare16BitCodePointString()
+    void shouldCompareBasicMultilingualPlaneString()
     {
-        random.withConfiguration( new RandomValues.Default()
-        {
-            @Override
-            public int maxCodePoint()
-            {
-                return RandomValues.MAX_16_BIT_CODE_POINT;
-            }
-        } );
-        random.reset();
         for ( int i = 0; i < 100; i++ )
         {
-            String string1 = random.nextString();
-            String string2 = random.nextString();
+            String string1 = random.nextBasicMultilingualPlaneString();
+            String string2 = random.nextBasicMultilingualPlaneString();
             UTF8StringValueTest.assertCompareTo( string1, string2 );
         }
     }
