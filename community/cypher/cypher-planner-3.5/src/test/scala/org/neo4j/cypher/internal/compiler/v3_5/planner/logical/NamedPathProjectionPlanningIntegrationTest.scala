@@ -30,7 +30,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     planFor("MATCH p = (a:X)-[r]->(b) RETURN p")._2 should equal(
       Projection(
         Expand( NodeByLabelScan("a",  lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-        expressions = Map(
+        projectExpressions = Map(
           "p" -> PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
         )
       )

@@ -21,19 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v3_5.logical.plans.Projection
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.Property
-import org.opencypher.v9_0.expressions.Variable
 import org.opencypher.v9_0.frontend.phases.Transformer
-import org.opencypher.v9_0.util.Rewriter
-import org.opencypher.v9_0.util.attribution.SameId
 import org.opencypher.v9_0.util.bottomUp
+import org.opencypher.v9_0.util.Rewriter
 import org.opencypher.v9_0.util.topDown
-import org.opencypher.v9_0.expressions.Property
-import org.opencypher.v9_0.util.{Rewriter, topDown}
 
 /**
   * A logical plan rewriter that also changes the semantic table (thus a Transformer).
@@ -51,7 +46,10 @@ case object replacePropertyLookupsWithVariables extends Transformer[PlannerConte
     var currentTypes = semanticTable.types
 
     def rewriteProperties(plan: LogicalPlan): LogicalPlan = {
-      val availableProperties = plan.availableCachedNodeProperties
+      // We have to use the incoming available properties. Not the outgoing.
+      val availableProperties =
+        plan.lhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties) ++
+          plan.rhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties)
 
       val propertyRewriter = topDown(Rewriter.lift {
         case property: Property if availableProperties.contains(property) =>

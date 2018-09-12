@@ -112,9 +112,9 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities) = {
       val projectionOpName = context.registerOperator(projection)
-      val columns = immutableMapValues(projection.expressions,
+      val columns = immutableMapValues(projection.projectExpressions,
         (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
-      context.retainProjectedVariables(projection.expressions.keySet)
+      context.retainProjectedVariables(projection.projectExpressions.keySet)
       val vars = columns.collect {
         case (name, expr) if !context.hasVariable(name) =>
           val variable = Variable(context.namer.newVarName(), expr.codeGenType(context), expr.nullable(context))

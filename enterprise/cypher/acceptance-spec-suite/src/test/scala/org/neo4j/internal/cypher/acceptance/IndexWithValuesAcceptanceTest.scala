@@ -283,6 +283,19 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 42)))
   }
 
+  test("should plan index seek with GetValue when the property is projected after a renaming projection") {
+    val result = executeWith(Configs.All, "PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 WITH n as m MATCH (m)-[r]-(o) RETURN m.prop1", executeBefore = createSomeNodes)
+
+    result.executionPlanDescription() should includeSomewhere
+      .aPlan("Projection")
+        .containingArgument("{m.prop1 : `n.prop1`}")
+        .withDBHits(0)
+        .withLHS(includeSomewhere
+        .aPlan("NodeIndexSeek")
+        .withExactVariables("n", "n.prop1"))
+    result.toList should equal(List(Map("m.prop1" -> 42), Map("m.prop1" -> 42)))
+  }
+
   test("should not get confused by variable named as index-backed property I") {
 
     val query =

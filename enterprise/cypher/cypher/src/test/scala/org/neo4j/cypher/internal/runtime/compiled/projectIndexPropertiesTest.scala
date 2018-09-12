@@ -62,7 +62,7 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
       val (newPlan, newTable) = updater(getValues, emptyTable)
       newPlan should equal(Projection(doNotGetValues, expectedProjections)(idGen))
       // We have to use the exact var in the plan so that the input position is the same
-      val varInNewPlan = newPlan.asInstanceOf[Projection].expressions("n.prop").asInstanceOf[Property].map.asInstanceOf[Variable]
+      val varInNewPlan = newPlan.asInstanceOf[Projection].projectExpressions("n.prop").asInstanceOf[Property].map.asInstanceOf[Variable]
       newTable.isNode(varInNewPlan) should be(true)
     }
 

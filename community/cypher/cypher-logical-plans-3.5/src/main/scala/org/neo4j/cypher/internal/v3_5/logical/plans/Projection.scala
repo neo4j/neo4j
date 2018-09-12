@@ -27,10 +27,8 @@ import org.opencypher.v9_0.util.attribution.IdGen
   * 'expressions', the produced row get an extra variable name as the key, with the value of
   * the expression.
   */
-case class Projection(source: LogicalPlan, expressions: Map[String, Expression])
-                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
-  val lhs = Some(source)
-  val rhs = None
+case class Projection(source: LogicalPlan, projectExpressions: Map[String, Expression])
+                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan with ProjectingPlan {
 
-  val availableSymbols: Set[String] = source.availableSymbols ++ expressions.keySet
+  val availableSymbols: Set[String] = source.availableSymbols ++ projectExpressions.keySet
 }

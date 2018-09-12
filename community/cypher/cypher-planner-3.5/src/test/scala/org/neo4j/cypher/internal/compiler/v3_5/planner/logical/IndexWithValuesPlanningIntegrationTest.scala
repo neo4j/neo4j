@@ -193,17 +193,19 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n as m MATCH (m)-[r]-(o) RETURN m.prop"
 
     plan._2 should equal(
-      Expand(
-        Projection(
-          NodeIndexSeek(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-            SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-            Set.empty,
-            IndexOrderNone),
-          Map("m" -> varFor("n"))),
-        "m", SemanticDirection.BOTH, Seq.empty, "o", "r")
+      Projection(
+        Expand(
+          Projection(
+            NodeIndexSeek(
+              "n",
+              LabelToken("Awesome", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+              SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
+              Set.empty,
+              IndexOrderNone),
+            Map("m" -> varFor("n"))),
+          "m", SemanticDirection.BOTH, Seq.empty, "o", "r"),
+        Map("m.prop" -> varFor("n.prop")))
     )
   }
 

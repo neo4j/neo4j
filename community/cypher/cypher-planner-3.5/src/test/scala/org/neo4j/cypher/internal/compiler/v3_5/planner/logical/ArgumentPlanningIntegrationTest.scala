@@ -28,7 +28,7 @@ class ArgumentPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("should build plans containing single row") {
     planFor("RETURN 42")._2 should equal(
       Projection(
-        Argument(), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
+        Argument(), projectExpressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
       )
     )
   }

@@ -67,7 +67,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case (column, expression) => column -> expression.endoRewrite(rewriter)
         }
 
-        val newPlan = oldPlan.copy(expressions = newExpressions)(SameId(oldPlan.id))
+        val newPlan = oldPlan.copy(projectExpressions = newExpressions)(SameId(oldPlan.id))
 
         newPlan
 

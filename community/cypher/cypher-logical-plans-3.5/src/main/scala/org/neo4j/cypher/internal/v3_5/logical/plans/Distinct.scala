@@ -29,10 +29,8 @@ import org.opencypher.v9_0.util.attribution.IdGen
   */
 case class Distinct(source: LogicalPlan,
                     groupingExpressions: Map[String, Expression])
-                   (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
-  override def lhs = Some(source)
+                   (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with ProjectingPlan {
 
-  override def rhs: Option[LogicalPlan] = None
-
+  override val projectExpressions: Map[String, Expression] = groupingExpressions
   override val availableSymbols: Set[String] = groupingExpressions.keySet
 }

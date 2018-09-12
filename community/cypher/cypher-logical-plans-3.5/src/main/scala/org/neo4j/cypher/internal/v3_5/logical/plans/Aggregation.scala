@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.Property
 import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
@@ -43,4 +44,10 @@ case class Aggregation(source: LogicalPlan,
   val groupingKeys: Set[String] = groupingExpressions.keySet
 
   val availableSymbols: Set[String] = groupingKeys ++ aggregationExpression.keySet
+
+  /**
+    * Aggregations delete columns which are not explicitly listed in groupingExpressions or aggregationExpression.
+    * It will therefore simply remove any cached node properties.
+    */
+  override final def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = Map.empty
 }
