@@ -27,15 +27,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class ServerTestUtils
 {
@@ -202,6 +212,40 @@ public class ServerTestUtils
         finally
         {
             file.delete();
+        }
+    }
+
+    public static void verifyConnector( GraphDatabaseService db, String name, int defaultPort, boolean enabled )
+    {
+        HostnamePort address = connectorAddress( db, name );
+        if ( enabled )
+        {
+            assertNotNull( address );
+            assertTrue( canConnectToSocket( address.getHost(), address.getPort() ) );
+        }
+        else
+        {
+            assertNull( address );
+            assertFalse( canConnectToSocket( "localhost", defaultPort ) );
+        }
+    }
+
+    private static HostnamePort connectorAddress( GraphDatabaseService db, String name )
+    {
+        ConnectorPortRegister portRegister = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+        return portRegister.getLocalAddress( name );
+    }
+
+    private static boolean canConnectToSocket( String host, int port )
+    {
+        try
+        {
+            new Socket( host, port ).close();
+            return true;
+        }
+        catch ( Throwable ignore )
+        {
+            return false;
         }
     }
 }

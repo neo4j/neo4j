@@ -20,13 +20,14 @@
 package org.neo4j.harness.internal;
 
 import java.io.File;
-import java.util.Map;
 
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.database.CommunityGraphFactory;
+import org.neo4j.server.database.GraphFactory;
 
 public class InProcessServerBuilder extends AbstractInProcessServerBuilder
 {
@@ -41,9 +42,14 @@ public class InProcessServerBuilder extends AbstractInProcessServerBuilder
     }
 
     @Override
-    protected AbstractNeoServer createNeoServer( Map<String,String> config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
+    protected GraphFactory createGraphFactory( Config config )
     {
-        return new CommunityNeoServer( Config.defaults( config ), dependencies, userLogProvider );
+        return new CommunityGraphFactory();
+    }
+
+    @Override
+    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies, LogProvider userLogProvider )
+    {
+        return new CommunityNeoServer( config, graphFactory, dependencies, userLogProvider );
     }
 }

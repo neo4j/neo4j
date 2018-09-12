@@ -35,13 +35,13 @@ import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
@@ -52,11 +52,16 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.server.AbstractNeoServer;
+import org.neo4j.server.DisabledNeoServer;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
+import org.neo4j.server.database.GraphFactory;
 
+import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
@@ -148,14 +153,21 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( extensions.toList() ) );
             config.put( GraphDatabaseSettings.store_internal_log_path.name(), internalLogFile.getAbsolutePath() );
 
-            FormattedLogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( logOutputStream );
+            LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( logOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
             Iterable<KernelExtensionFactory<?>> kernelExtensions =
                     append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() );
             dependencies = dependencies.kernelExtensions( kernelExtensions ).userLogProvider( userLogProvider );
 
-            AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
-            InProcessServerControls controls = new InProcessServerControls( serverFolder, userLogFile, internalLogFile, neoServer, logOutputStream );
+            Config dbConfig = Config.defaults( config );
+            GraphFactory graphFactory = createGraphFactory( dbConfig );
+            boolean httpAndHttpsDisabled = dbConfig.enabledHttpConnectors().isEmpty();
+
+            NeoServer server = httpAndHttpsDisabled
+                               ? new DisabledNeoServer( graphFactory, dependencies, dbConfig, userLogProvider )
+                               : createNeoServer( graphFactory, dbConfig, dependencies, userLogProvider );
+
+            InProcessServerControls controls = new InProcessServerControls( serverFolder, userLogFile, internalLogFile, server, logOutputStream );
             controls.start();
 
             try
@@ -175,8 +187,9 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         }
     }
 
-    protected abstract AbstractNeoServer createNeoServer( Map<String,String> config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider );
+    protected abstract GraphFactory createGraphFactory( Config config );
+
+    protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies, LogProvider userLogProvider );
 
     @Override
     public TestServerBuilder withConfig( Setting<?> key, String value )

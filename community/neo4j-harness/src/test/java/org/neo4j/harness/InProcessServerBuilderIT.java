@@ -40,6 +40,7 @@ import javax.net.ssl.X509TrustManager;
 
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
@@ -66,8 +67,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
+import static org.neo4j.helpers.collection.Iterators.single;
+import static org.neo4j.server.ServerTestUtils.verifyConnector;
 
-public class InProcessBuilderTestIT
+public class InProcessServerBuilderIT
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -265,6 +268,92 @@ public class InProcessBuilderTestIT
             assertTrue( cause.getMessage().contains( "exists but is not a directory" ) );
         }
 
+    }
+
+    @Test
+    public void shouldStartServerWithHttpHttpsAndBoltDisabled()
+    {
+        testStartupWithConnectors( false, false, false );
+    }
+
+    @Test
+    public void shouldStartServerWithHttpEnabledAndHttpsBoltDisabled()
+    {
+        testStartupWithConnectors( true, false, false );
+    }
+
+    @Test
+    public void shouldStartServerWithHttpsEnabledAndHttpBoltDisabled()
+    {
+        testStartupWithConnectors( false, true, false );
+    }
+
+    @Test
+    public void shouldStartServerWithBoltEnabledAndHttpHttpsDisabled()
+    {
+        testStartupWithConnectors( false, false, true );
+    }
+
+    @Test
+    public void shouldStartServerWithHttpHttpsEnabledAndBoltDisabled()
+    {
+        testStartupWithConnectors( true, true, false );
+    }
+
+    @Test
+    public void shouldStartServerWithHttpBoltEnabledAndHttpsDisabled()
+    {
+        testStartupWithConnectors( true, false, true );
+    }
+
+    @Test
+    public void shouldStartServerWithHttpsBoltEnabledAndHttpDisabled()
+    {
+        testStartupWithConnectors( false, true, true );
+    }
+
+    private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
+    {
+        int httpPort = httpEnabled ? 0 : 7474;
+        int httpsPort = httpsEnabled ? 0 : 7473;
+        int boltPort = boltEnabled ? 0 : 7687;
+
+        TestServerBuilder serverBuilder = newInProcessBuilder( testDir.directory() )
+                .withConfig( "dbms.connector.http.enabled", Boolean.toString( httpEnabled ) )
+                .withConfig( "dbms.connector.http.listen_address", ":" + httpPort )
+                .withConfig( "dbms.connector.https.enabled", Boolean.toString( httpsEnabled ) )
+                .withConfig( "dbms.connector.https.listen_address", ":" + httpsPort )
+                .withConfig( "dbms.connector.bolt.enabled", Boolean.toString( boltEnabled ) )
+                .withConfig( "dbms.connector.bolt.listen_address", ":" + boltPort );
+
+        try ( ServerControls server = serverBuilder.newServer() )
+        {
+            GraphDatabaseService db = server.graph();
+
+            assertDbAccessible( db );
+            verifyConnector( db, "http", 7474, httpEnabled );
+            verifyConnector( db, "https", 7473, httpsEnabled );
+            verifyConnector( db, "bolt", 7687, boltEnabled );
+        }
+    }
+
+    private static void assertDbAccessible( GraphDatabaseService db )
+    {
+        Label label = () -> "Person";
+        String propertyKey = "name";
+        String propertyValue = "Thor Odinson";
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( label ).setProperty( propertyKey, propertyValue );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = single( db.findNodes( label ) );
+            assertEquals( propertyValue, node.getProperty( propertyKey ) );
+            tx.success();
+        }
     }
 
     private void assertDBConfig( ServerControls server, String expected, String key ) throws JsonParseException

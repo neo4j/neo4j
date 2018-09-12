@@ -38,7 +38,7 @@ import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
-class DisabledNeoServer implements NeoServer
+public class DisabledNeoServer implements NeoServer
 {
     private final GraphFactory graphFactory;
     private final Dependencies dependencies;
@@ -47,7 +47,7 @@ class DisabledNeoServer implements NeoServer
     private Database db;
     private final LifeSupport life = new LifeSupport();
 
-    DisabledNeoServer( GraphFactory graphFactory, Dependencies dependencies, Config config, LogProvider logProvider )
+    public DisabledNeoServer( GraphFactory graphFactory, Dependencies dependencies, Config config, LogProvider logProvider )
     {
         this.graphFactory = graphFactory;
         this.dependencies = dependencies;

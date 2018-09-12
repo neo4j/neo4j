@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -34,11 +33,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -46,11 +42,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
@@ -58,6 +50,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.ServerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
@@ -224,9 +217,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
         assertDbAccessibleAsEmbedded();
 
-        verifyConnector( "http", 7474, httpEnabled );
-        verifyConnector( "https", 7473, httpsEnabled );
-        verifyConnector( "bolt", 7687, boltEnabled );
+        verifyConnector( db(), "http", 7474, httpEnabled );
+        verifyConnector( db(), "https", 7473, httpsEnabled );
+        verifyConnector( db(), "bolt", 7687, boltEnabled );
     }
 
     protected String configOption( Setting<?> setting, String value )
@@ -255,43 +248,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
         }
     }
 
-    private void verifyConnector( String name, int defaultPort, boolean enabled )
-    {
-        HostnamePort address = connectorAddress( name );
-        if ( enabled )
-        {
-            assertNotNull( address );
-            assertTrue( canConnectToSocket( address.getHost(), address.getPort() ) );
-        }
-        else
-        {
-            assertNull( address );
-            assertFalse( canConnectToSocket( "localhost", defaultPort ) );
-        }
-    }
-
-    private HostnamePort connectorAddress( String name )
-    {
-        ConnectorPortRegister portRegister = db().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
-        return portRegister.getLocalAddress( name );
-
-    }
-
-    private GraphDatabaseFacade db()
+    private GraphDatabaseAPI db()
     {
         return bootstrapper.getServer().getDatabase().getGraph();
-    }
-
-    private static boolean canConnectToSocket( String host, int port )
-    {
-        try
-        {
-            new Socket( host, port ).close();
-            return true;
-        }
-        catch ( Throwable ignore )
-        {
-            return false;
-        }
     }
 }

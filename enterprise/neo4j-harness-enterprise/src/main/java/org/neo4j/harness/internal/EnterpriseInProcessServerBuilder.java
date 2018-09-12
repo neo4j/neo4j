@@ -23,14 +23,15 @@
 package org.neo4j.harness.internal;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactorySelector;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.AbstractNeoServer;
+import org.neo4j.server.database.EnterpriseGraphFactory;
+import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 
 public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBuilder
@@ -53,12 +54,16 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
     }
 
     @Override
-    protected AbstractNeoServer createNeoServer( Map<String,String> configMap,
-            GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
+    protected GraphFactory createGraphFactory( Config config )
     {
-        Config config = Config.defaults( configMap );
         config.augment( CausalClusteringSettings.discovery_implementation, discoveryServiceFactory.name() );
-        return new OpenEnterpriseNeoServer( config, dependencies, userLogProvider );
+        return new EnterpriseGraphFactory();
+    }
+
+    @Override
+    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies, LogProvider userLogProvider )
+    {
+        return new OpenEnterpriseNeoServer( config, graphFactory, dependencies, userLogProvider );
     }
 
     /**
