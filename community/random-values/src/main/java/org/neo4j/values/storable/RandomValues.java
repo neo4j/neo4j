@@ -48,6 +48,25 @@ import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.RandomValues.Types.BOOLEAN_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.BYTE_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.CARTESIAN_POINT_3D_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.CARTESIAN_POINT_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.DATE_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.DATE_TIME_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.DOUBLE_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.DURATION_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.FLOAT_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.GEOGRAPHIC_POINT_3D_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.GEOGRAPHIC_POINT_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.INT_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.LOCAL_DATE_TIME_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.LOCAL_TIME_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.LONG_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.PERIOD_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.SHORT_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.STRING_ARRAY;
+import static org.neo4j.values.storable.RandomValues.Types.TIME_ARRAY;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -63,26 +82,51 @@ public class RandomValues
 {
     public enum Types
     {
-        BOOLEAN,
-        BYTE,
-        SHORT,
-        STRING,
-        INT,
-        LONG,
-        FLOAT,
-        DOUBLE,
-        LOCAL_DATE_TIME,
-        DATE,
-        LOCAL_TIME,
-        PERIOD,
-        DURATION,
-        TIME,
-        DATE_TIME,
-        CARTESIAN_POINT,
-        CARTESIAN_POINT_3D,
-        GEOGRAPHIC_POINT,
-        GEOGRAPHIC_POINT_3D,
-        ARRAY
+        BOOLEAN( ValueGroup.NUMBER ),
+        BYTE( ValueGroup.NUMBER ),
+        SHORT( ValueGroup.NUMBER ),
+        INT( ValueGroup.NUMBER ),
+        LONG( ValueGroup.NUMBER ),
+        FLOAT( ValueGroup.NUMBER ),
+        DOUBLE( ValueGroup.NUMBER ),
+        STRING( ValueGroup.TEXT ),
+        LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME ),
+        DATE( ValueGroup.DATE ),
+        LOCAL_TIME( ValueGroup.LOCAL_TIME ),
+        PERIOD( ValueGroup.DURATION ),
+        DURATION( ValueGroup.DURATION ),
+        TIME( ValueGroup.ZONED_TIME ),
+        DATE_TIME( ValueGroup.ZONED_DATE_TIME ),
+        CARTESIAN_POINT( ValueGroup.GEOMETRY ),
+        CARTESIAN_POINT_3D( ValueGroup.GEOMETRY ),
+        GEOGRAPHIC_POINT( ValueGroup.GEOMETRY ),
+        GEOGRAPHIC_POINT_3D( ValueGroup.GEOMETRY ),
+        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY ),
+        BYTE_ARRAY( ValueGroup.NUMBER_ARRAY ),
+        SHORT_ARRAY( ValueGroup.NUMBER_ARRAY ),
+        INT_ARRAY( ValueGroup.NUMBER_ARRAY ),
+        LONG_ARRAY( ValueGroup.NUMBER_ARRAY ),
+        FLOAT_ARRAY( ValueGroup.NUMBER_ARRAY ),
+        DOUBLE_ARRAY( ValueGroup.NUMBER_ARRAY ),
+        STRING_ARRAY( ValueGroup.TEXT_ARRAY ),
+        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY ),
+        DATE_ARRAY( ValueGroup.DATE_ARRAY ),
+        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY ),
+        PERIOD_ARRAY( ValueGroup.DURATION_ARRAY ),
+        DURATION_ARRAY( ValueGroup.DURATION_ARRAY ),
+        TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY ),
+        DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY ),
+        CARTESIAN_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY ),
+        CARTESIAN_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY ),
+        GEOGRAPHIC_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY ),
+        GEOGRAPHIC_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY );
+
+        public final ValueGroup valueGroup;
+
+        Types( ValueGroup valueGroup )
+        {
+            this.valueGroup = valueGroup;
+        }
     }
 
     public interface Configuration
@@ -134,6 +178,25 @@ public class RandomValues
     public static final int MAX_BASIC_MULTILINGUAL_PLANE_CODE_POINT = 0xFFFF;
     public static final Configuration DEFAULT_CONFIGURATION = new Default();
     private static final Types[] TYPES = Types.values();
+    private static final Types[] ARRAY_TYPES = new Types[]{BOOLEAN_ARRAY,
+            BYTE_ARRAY,
+            SHORT_ARRAY,
+            INT_ARRAY,
+            LONG_ARRAY,
+            FLOAT_ARRAY,
+            DOUBLE_ARRAY,
+            STRING_ARRAY,
+            LOCAL_DATE_TIME_ARRAY,
+            DATE_ARRAY,
+            LOCAL_TIME_ARRAY,
+            PERIOD_ARRAY,
+            DURATION_ARRAY,
+            TIME_ARRAY,
+            DATE_TIME_ARRAY,
+            CARTESIAN_POINT_ARRAY,
+            CARTESIAN_POINT_3D_ARRAY,
+            GEOGRAPHIC_POINT_ARRAY,
+            GEOGRAPHIC_POINT_3D_ARRAY};
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Generator generator;
@@ -663,9 +726,44 @@ public class RandomValues
             return nextGeographicPoint();
         case GEOGRAPHIC_POINT_3D:
             return nextGeographic3DPoint();
-        case ARRAY:
-            return nextArray();
-
+        case BOOLEAN_ARRAY:
+            return nextBooleanArray();
+        case BYTE_ARRAY:
+            return nextByteArray();
+        case SHORT_ARRAY:
+            return nextShortArray();
+        case INT_ARRAY:
+            return nextIntArray();
+        case LONG_ARRAY:
+            return nextLongArray();
+        case FLOAT_ARRAY:
+            return nextFloatArray();
+        case DOUBLE_ARRAY:
+            return nextDoubleArray();
+        case STRING_ARRAY:
+            return nextStringArray();
+        case LOCAL_DATE_TIME_ARRAY:
+            return nextLocalDateTimeArray();
+        case DATE_ARRAY:
+            return nextDateArray();
+        case LOCAL_TIME_ARRAY:
+            return nextLocalTimeArray();
+        case PERIOD_ARRAY:
+            return nextPeriodArray();
+        case DURATION_ARRAY:
+            return nextDurationArray();
+        case TIME_ARRAY:
+            return nextTimeArray();
+        case DATE_TIME_ARRAY:
+            return nextDateTimeArray();
+        case CARTESIAN_POINT_ARRAY:
+            return nextCartesianPointArray();
+        case CARTESIAN_POINT_3D_ARRAY:
+            return nextCartesian3DPointArray();
+        case GEOGRAPHIC_POINT_ARRAY:
+            return nextGeographicPointArray();
+        case GEOGRAPHIC_POINT_3D_ARRAY:
+            return nextGeographic3DPointArray();
         default:
             throw new IllegalArgumentException( "Unknown value type: " + type );
         }
@@ -692,56 +790,51 @@ public class RandomValues
      * @param maxLength the maximum length of the array
      * @return the next pseudorandom {@link ArrayValue}
      */
-    public ArrayValue nextArray( int minLength, int maxLength )
+    private ArrayValue nextArray( int minLength, int maxLength )
     {
-        while ( true )
+        Types type = nextType( ARRAY_TYPES );
+        switch ( type )
         {
-            Types type = nextType();
-            switch ( type )
-            {
-            case BOOLEAN:
-                return nextBooleanArray( minLength, maxLength );
-            case BYTE:
-                return nextByteArray( minLength, maxLength );
-            case SHORT:
-                return nextShortArray( minLength, maxLength );
-            case STRING:
-                return nextStringArray( minLength, maxLength );
-            case INT:
-                return nextIntArray( minLength, maxLength );
-            case LONG:
-                return nextLongArray( minLength, maxLength );
-            case FLOAT:
-                return nextFloatArray( minLength, maxLength );
-            case DOUBLE:
-                return nextDoubleArray( minLength, maxLength );
-            case LOCAL_DATE_TIME:
-                return nextLocalDateTimeArray( minLength, maxLength );
-            case DATE:
-                return nextDateArray( minLength, maxLength );
-            case LOCAL_TIME:
-                return nextLocalTimeArray( minLength, maxLength );
-            case PERIOD:
-                return nextPeriodArray( minLength, maxLength );
-            case DURATION:
-                return nextDurationArray( minLength, maxLength );
-            case TIME:
-                return nextTimeArray( minLength, maxLength );
-            case DATE_TIME:
-                return nextDateTimeArray( minLength, maxLength );
-            case CARTESIAN_POINT:
-                return nextCartesianPointArray( minLength, maxLength );
-            case CARTESIAN_POINT_3D:
-                return nextCartesian3DPointArray( minLength, maxLength );
-            case GEOGRAPHIC_POINT:
-                return nextGeographicPointArray( minLength, maxLength );
-            case GEOGRAPHIC_POINT_3D:
-                return nextGeographic3DPointArray( minLength, maxLength );
-            case ARRAY://we don't want nested arrays
-                continue;
-            default:
-                throw new IllegalArgumentException( "Unknown value type: " + type );
-            }
+        case BOOLEAN_ARRAY:
+            return nextBooleanArray( minLength, maxLength );
+        case BYTE_ARRAY:
+            return nextByteArray( minLength, maxLength );
+        case SHORT_ARRAY:
+            return nextShortArray( minLength, maxLength );
+        case STRING_ARRAY:
+            return nextStringArray( minLength, maxLength );
+        case INT_ARRAY:
+            return nextIntArray( minLength, maxLength );
+        case LONG_ARRAY:
+            return nextLongArray( minLength, maxLength );
+        case FLOAT_ARRAY:
+            return nextFloatArray( minLength, maxLength );
+        case DOUBLE_ARRAY:
+            return nextDoubleArray( minLength, maxLength );
+        case LOCAL_DATE_TIME_ARRAY:
+            return nextLocalDateTimeArray( minLength, maxLength );
+        case DATE_ARRAY:
+            return nextDateArray( minLength, maxLength );
+        case LOCAL_TIME_ARRAY:
+            return nextLocalTimeArray( minLength, maxLength );
+        case PERIOD_ARRAY:
+            return nextPeriodArray( minLength, maxLength );
+        case DURATION_ARRAY:
+            return nextDurationArray( minLength, maxLength );
+        case TIME_ARRAY:
+            return nextTimeArray( minLength, maxLength );
+        case DATE_TIME_ARRAY:
+            return nextDateTimeArray( minLength, maxLength );
+        case CARTESIAN_POINT_ARRAY:
+            return nextCartesianPointArray( minLength, maxLength );
+        case CARTESIAN_POINT_3D_ARRAY:
+            return nextCartesian3DPointArray( minLength, maxLength );
+        case GEOGRAPHIC_POINT_ARRAY:
+            return nextGeographicPointArray( minLength, maxLength );
+        case GEOGRAPHIC_POINT_3D_ARRAY:
+            return nextGeographic3DPointArray( minLength, maxLength );
+        default:
+            throw new IllegalArgumentException( "Not array type: " + type );
         }
     }
 
@@ -1846,7 +1939,12 @@ public class RandomValues
 
     private Types nextType()
     {
-        return TYPES[generator.nextInt( TYPES.length )];
+        return nextType( TYPES );
+    }
+
+    private Types nextType( Types[] types )
+    {
+        return among( types );
     }
 
     private static int nextPowerOf2( int i )
