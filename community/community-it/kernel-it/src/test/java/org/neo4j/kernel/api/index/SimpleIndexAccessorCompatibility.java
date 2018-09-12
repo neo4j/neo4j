@@ -45,9 +45,8 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
-import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -357,6 +356,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         {
             updates.add( add( i + 1, descriptor.schema(), values.get( i ) ) );
         }
+        Collections.shuffle( updates ); // <- Don't rely on insert order
 
         updateAndCommit( updates );
 
