@@ -1061,7 +1061,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = buildSetting(
             "unsupported.dbms.tx_state.memory_allocation",
             options( TransactionStateMemoryAllocation.class, true ),
-            TransactionStateMemoryAllocation.ON_HEAP.name() ).build();
+            TransactionStateMemoryAllocation.OFF_HEAP.name() ).build();
 
     @Internal
     @Description( "[Experimental] The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
