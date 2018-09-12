@@ -1,4 +1,1 @@
-Feature "OptionalMatchAcceptance": Scenario "optional match with distinct"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
-Feature "ReturnAcceptance": Scenario "RETURN true AND list"
-Feature "ReturnAcceptance": Scenario "RETURN false OR list"

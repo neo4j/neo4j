@@ -371,9 +371,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.Interpreted, "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 2),
-        expectPlansToFail = Configs.OldAndRule),
-      //TODO: Remove when 3.3.7 is released
-      expectedDifferentResults = Configs.Version3_3)
+        expectPlansToFail = Configs.OldAndRule))
 
     // Then
     result.toList should be (empty)
@@ -410,9 +408,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.Interpreted, "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 4),
-        expectPlansToFail = Configs.OldAndRule),
-      //TODO: Remove when 3.3.7 is released
-      expectedDifferentResults = Configs.Version3_3)
+        expectPlansToFail = Configs.OldAndRule))
 
     // Then
     result.toList should be (empty)

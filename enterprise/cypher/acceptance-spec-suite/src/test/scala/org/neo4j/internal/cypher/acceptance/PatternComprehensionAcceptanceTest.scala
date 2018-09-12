@@ -511,8 +511,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     graph.execute(setup)
 
     val res = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query,
-      // TODO remove this for 3.3 after depending on 3.3.7
-      expectedDifferentResults = Configs.Version3_3 + Configs.Version3_1)
+      expectedDifferentResults = Configs.Version3_1)
     // If the (b)-->(:C) does not get correctly evaluated, this will be two instead
     res.toList should equal(List(Map("arraySize" -> 1)))
   }
