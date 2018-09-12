@@ -29,10 +29,9 @@ import org.junit.Test;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,7 +43,6 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -52,6 +50,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
+import static org.neo4j.graphdb.schema.ConstraintType.NODE_KEY;
+import static org.neo4j.graphdb.schema.ConstraintType.UNIQUENESS;
 
 public class ClusterIndexProcedureIT
 {
@@ -73,72 +74,45 @@ public class ClusterIndexProcedureIT
     @Test
     public void createIndexProcedureMustPropagate() throws Exception
     {
-        // given
+        // create an index
         cluster.coreTx( ( db, tx ) ->
+        {
+            db.execute( "CALL db.createIndex( \":Person(name)\", \"lucene+native-1.0\")" ).close();
+            tx.success();
+        } );
+
+        // node created just to be able to use dataMatchesEventually as a barrier
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
         {
             Node person = db.createNode( Label.label( "Person" ) );
             person.setProperty( "name", "Bo Burnham" );
             tx.success();
         } );
 
-        // when
-        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
-        {
-            db.execute( "CALL db.createIndex( \":Person(name)\", \"lucene+native-1.0\")" ).close();
-            tx.success();
-        } );
-        awaitIndexOnline( leader );
+        // node creation is guaranteed to happen after index creation
+        dataMatchesEventually( leader, cluster.coreMembers() );
+        dataMatchesEventually( leader, cluster.readReplicas() );
 
-        // then
-        Cluster.dataMatchesEventually( leader, cluster.coreMembers() );
-        Cluster.dataMatchesEventually( leader, cluster.readReplicas() );
-        for ( CoreClusterMember core : cluster.coreMembers() )
-        {
-            verifyIndexes( core.database() );
-        }
-        for ( ReadReplica readReplica : cluster.readReplicas() )
-        {
-            verifyIndexes( readReplica.database() );
-        }
+        // now the indexes must exist, so we wait for them to come online
+        cluster.coreMembers().forEach( this::awaitIndexOnline );
+        cluster.readReplicas().forEach( this::awaitIndexOnline );
+
+        // verify indexes
+        cluster.coreMembers().forEach( core -> verifyIndexes( core.database() ) );
+        cluster.readReplicas().forEach( rr -> verifyIndexes( rr.database() ) );
     }
 
     @Test
     public void createUniquePropertyConstraintMustPropagate() throws Exception
     {
-        // given
-        cluster.coreTx( ( db, tx ) ->
-        {
-            Node person = db.createNode( Label.label( "Person" ) );
-            person.setProperty( "name", "Bo Burnham" );
-            tx.success();
-        } );
-
-        // when
+        // create a constraint
         CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
         {
             db.execute( "CALL db.createUniquePropertyConstraint( \":Person(name)\", \"lucene+native-1.0\")" ).close();
             tx.success();
         } );
 
-        // then
-        Cluster.dataMatchesEventually( leader, cluster.coreMembers() );
-        Cluster.dataMatchesEventually( leader, cluster.readReplicas() );
-        for ( CoreClusterMember core : cluster.coreMembers() )
-        {
-            verifyIndexes( core.database() );
-            verifyConstraints( core.database(), ConstraintType.UNIQUENESS );
-        }
-        for ( ReadReplica readReplica : cluster.readReplicas() )
-        {
-            verifyIndexes( readReplica.database() );
-            verifyConstraints( readReplica.database(), ConstraintType.UNIQUENESS );
-        }
-    }
-
-    @Test
-    public void createNodeKeyConstraintMustPropagate() throws Exception
-    {
-        // given
+        // node created just to be able to use dataMatchesEventually as a barrier
         cluster.coreTx( ( db, tx ) ->
         {
             Node person = db.createNode( Label.label( "Person" ) );
@@ -146,31 +120,53 @@ public class ClusterIndexProcedureIT
             tx.success();
         } );
 
-        // when
+        // node creation is guaranteed to happen after constraint creation
+        dataMatchesEventually( leader, cluster.coreMembers() );
+        dataMatchesEventually( leader, cluster.readReplicas() );
+
+        // verify indexes
+        cluster.coreMembers().forEach( core -> verifyIndexes( core.database() ) );
+        cluster.readReplicas().forEach( rr -> verifyIndexes( rr.database() ) );
+
+        // verify constraints
+        cluster.coreMembers().forEach( core -> verifyConstraints( core.database(), UNIQUENESS ) );
+        cluster.readReplicas().forEach( rr -> verifyConstraints( rr.database(), UNIQUENESS ) );
+    }
+
+    @Test
+    public void createNodeKeyConstraintMustPropagate() throws Exception
+    {
+        // create a node key
         CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
         {
             db.execute( "CALL db.createNodeKey( \":Person(name)\", \"lucene+native-1.0\")" ).close();
             tx.success();
         } );
 
-        // then
-        Cluster.dataMatchesEventually( leader, cluster.coreMembers() );
-        Cluster.dataMatchesEventually( leader, cluster.readReplicas() );
-        for ( CoreClusterMember core : cluster.coreMembers() )
+        // node created just to be able to use dataMatchesEventually as a barrier
+        cluster.coreTx( ( db, tx ) ->
         {
-            verifyIndexes( core.database() );
-            verifyConstraints( core.database(), ConstraintType.NODE_KEY );
-        }
-        for ( ReadReplica readReplica : cluster.readReplicas() )
-        {
-            verifyIndexes( readReplica.database() );
-            verifyConstraints( readReplica.database(), ConstraintType.NODE_KEY );
-        }
+            Node person = db.createNode( Label.label( "Person" ) );
+            person.setProperty( "name", "Bo Burnham" );
+            tx.success();
+        } );
+
+        // node creation is guaranteed to happen after constraint creation
+        dataMatchesEventually( leader, cluster.coreMembers() );
+        dataMatchesEventually( leader, cluster.readReplicas() );
+
+        // verify indexes
+        cluster.coreMembers().forEach( core -> verifyIndexes( core.database() ) );
+        cluster.readReplicas().forEach( rr -> verifyIndexes( rr.database() ) );
+
+        // verify node keys
+        cluster.coreMembers().forEach( core -> verifyConstraints( core.database(), NODE_KEY ) );
+        cluster.readReplicas().forEach( rr -> verifyConstraints( rr.database(), NODE_KEY ) );
     }
 
-    private void awaitIndexOnline( CoreClusterMember member )
+    private void awaitIndexOnline( ClusterMember member )
     {
-        CoreGraphDatabase db = member.database();
+        GraphDatabaseAPI db = member.database();
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
@@ -178,12 +174,12 @@ public class ClusterIndexProcedureIT
         }
     }
 
-    private void verifyIndexes( GraphDatabaseFacade database )
+    private void verifyIndexes( GraphDatabaseAPI db )
     {
-        try ( Transaction tx = database.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             // only one index
-            Iterator<IndexDefinition> indexes = database.schema().getIndexes().iterator();
+            Iterator<IndexDefinition> indexes = db.schema().getIndexes().iterator();
             assertTrue( "has one index", indexes.hasNext() );
             IndexDefinition indexDefinition = indexes.next();
             assertFalse( "not more than one index", indexes.hasNext() );
@@ -194,18 +190,18 @@ public class ClusterIndexProcedureIT
             // with correct pattern and provider
             assertEquals( "correct label", "Person", label.name() );
             assertEquals( "correct property", "name", property );
-            assertCorrectProvider( database, label, property );
+            assertCorrectProvider( db, label, property );
 
             tx.success();
         }
     }
 
-    private void verifyConstraints( GraphDatabaseFacade database, ConstraintType expectedConstraintType )
+    private void verifyConstraints( GraphDatabaseAPI db, ConstraintType expectedConstraintType )
     {
-        try ( Transaction tx = database.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             // only one index
-            Iterator<ConstraintDefinition> constraints = database.schema().getConstraints().iterator();
+            Iterator<ConstraintDefinition> constraints = db.schema().getConstraints().iterator();
             assertTrue( "has one index", constraints.hasNext() );
             ConstraintDefinition constraint = constraints.next();
             assertFalse( "not more than one index", constraints.hasNext() );
