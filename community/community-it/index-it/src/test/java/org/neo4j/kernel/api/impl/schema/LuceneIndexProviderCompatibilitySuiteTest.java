@@ -51,4 +51,9 @@ public class LuceneIndexProviderCompatibilitySuiteTest extends IndexProviderComp
         return true;
     }
 
+    @Override
+    public boolean supportFullValuePrecisionForNumbers()
+    {
+        return false;
+    }
 }

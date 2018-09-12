@@ -93,6 +93,11 @@ public abstract class IndexProviderCompatibilityTestSuite
         return false;
     };
 
+    public boolean supportFullValuePrecisionForNumbers()
+    {
+        return true;
+    }
+
     public List<RandomValues.Types> supportedValueTypes()
     {
         List<RandomValues.Types> types = new ArrayList<>( Arrays.asList( RandomValues.Types.values() ) );

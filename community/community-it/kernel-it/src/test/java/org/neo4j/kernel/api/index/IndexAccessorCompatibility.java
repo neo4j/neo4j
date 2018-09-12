@@ -108,7 +108,8 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         for ( int i = 0; i < values.length; i++ )
         {
             IndexQuery predicate = predicates[i];
-            if ( predicate.valueGroup() == ValueGroup.GEOMETRY || predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY )
+            if ( predicate.valueGroup() == ValueGroup.GEOMETRY || predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY ||
+                    (predicate.valueGroup() == ValueGroup.NUMBER && !testSuite.supportFullValuePrecisionForNumbers()) )
             {
                 if ( !predicates[i].acceptsValue( values[i] ) )
                 {
