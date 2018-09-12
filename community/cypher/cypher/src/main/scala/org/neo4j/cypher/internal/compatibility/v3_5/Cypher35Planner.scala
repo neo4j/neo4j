@@ -156,13 +156,14 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         LogicalPlanWithCacheabilityInfo(logicalPlanState, reusabilityState, shouldBeCached)
       }
 
+      val autoExtractParams = ValueConversion.asValues(preparedQuery.extractedParams()) // only extracted ones
       // Filter the parameters to retain only those that are actually used in the query (or a subset of them, if not enough
       // parameters where given in the first place)
-      val filteredParams = params.filter(new BiFunction[String, AnyValue, java.lang.Boolean] {
+      val filteredParams: MapValue = params.updatedWith(autoExtractParams).filter(new BiFunction[String, AnyValue, java.lang.Boolean] {
         override def apply(name: String, value: AnyValue): java.lang.Boolean = queryParamNames.contains(name)
       })
 
-      val enoughParametersSupplied = (queryParamNames.nonEmpty && (queryParamNames.size == filteredParams.size)) // this is only relevant if the query has parameters
+      val enoughParametersSupplied = queryParamNames.nonEmpty && (queryParamNames.size == filteredParams.size) // this is relevant if the query has parameters
 
       val cacheableLogicalPlan =
         // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
@@ -180,7 +181,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
-        ValueConversion.asValues(preparedQuery.extractedParams()),
+        autoExtractParams,
         cacheableLogicalPlan.reusability,
         context,
         cacheableLogicalPlan.shouldBeCached)
