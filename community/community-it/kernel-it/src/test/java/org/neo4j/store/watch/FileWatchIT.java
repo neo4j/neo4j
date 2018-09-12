@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -249,10 +248,10 @@ public class FileWatchIT
         while ( !modificationListener.awaitModificationNotification() );
         fileWatcher.removeFileWatchEventListener( modificationListener );
 
-        String storeDirectoryName = DatabaseManager.DEFAULT_DATABASE_NAME;
+        String storeDirectoryName = testDirectory.databaseLayout().databaseDirectory().getName();
         DeletionLatchEventListener eventListener = new DeletionLatchEventListener( storeDirectoryName );
         fileWatcher.addFileWatchEventListener( eventListener );
-        FileUtils.deleteRecursively( storeDir );
+        FileUtils.deleteRecursively( testDirectory.databaseLayout().databaseDirectory() );
 
         eventListener.awaitDeletionNotification();
 
@@ -387,7 +386,7 @@ public class FileWatchIT
 
     private static class AccumulativeDeletionEventListener implements FileWatchEventListener
     {
-        private List<String> deletedFiles = new ArrayList<>();
+        private final List<String> deletedFiles = new ArrayList<>();
 
         @Override
         public void fileDeleted( String fileName )
