@@ -98,7 +98,11 @@ public class MetricsSettings implements LoadableConfig
     public static final Setting<Boolean> neoLogRotationEnabled = buildSetting(
             "metrics.neo4j.logrotation.enabled", BOOLEAN ).inherits( neoEnabled ).build();
 
+    /**
+     * @deprecated high availability database/edition is deprecated in favour of causal clustering. It will be removed in next major release.
+     */
     @Description( "Enable reporting metrics about HA cluster info." )
+    @Deprecated
     public static final Setting<Boolean> neoClusterEnabled = buildSetting(
             "metrics.neo4j.cluster.enabled", BOOLEAN ).inherits( neoEnabled ).build();
 

@@ -38,7 +38,9 @@ import static java.util.Arrays.asList;
  * Factory for Neo4j database instances with Enterprise Edition and High-Availability features.
  *
  * @see org.neo4j.graphdb.factory.GraphDatabaseFactory
+ * @deprecated high availability database/edition is deprecated in favour of causal clustering. It will be removed in next major release.
  */
+@Deprecated
 public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {
     public HighlyAvailableGraphDatabaseFactory()
