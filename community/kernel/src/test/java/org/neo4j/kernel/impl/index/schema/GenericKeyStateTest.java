@@ -507,7 +507,7 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextPeriod(),
                 () -> random.randomValues().nextDuration(),
                 () -> random.randomValues().nextTextValue(),
-                () -> random.randomValues().nextAlphaNumericTextValue(),
+                () -> random.randomValues().nextAsciiTextValue(),
                 () -> random.randomValues().nextBooleanValue(),
                 () -> random.randomValues().nextNumberValue(),
                 // array

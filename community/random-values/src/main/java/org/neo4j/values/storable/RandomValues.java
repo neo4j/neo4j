@@ -133,7 +133,7 @@ public class RandomValues
 
     public static final int MAX_BASIC_MULTILINGUAL_PLANE_CODE_POINT = 0xFFFF;
     public static final Configuration DEFAULT_CONFIGURATION = new Default();
-    private static Types[] TYPES = Types.values();
+    private static final Types[] TYPES = Types.values();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Generator generator;
@@ -420,77 +420,6 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link TextValue} consisting only of digits.
-     * <p>
-     * The length of the text will be between {@link Configuration#stringMinLength()} and
-     * {@link Configuration#stringMaxLength()}
-     *
-     * @return a {@link TextValue} consisting only of digits.
-     */
-    public TextValue nextDigitString()
-    {
-        return nextDigitString( configuration.stringMinLength(), configuration.stringMaxLength() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link TextValue} consisting only of digits with a length between the given values.
-     *
-     * @param minLength the minimum length of the string
-     * @param maxLength the maximum length of the string
-     * @return a {@link TextValue} consisting only of digits with a length between the given values.
-     */
-    public TextValue nextDigitString( int minLength, int maxLength )
-    {
-        int length = intBetween( minLength, maxLength );
-        byte[] bytes = new byte[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            bytes[i] = (byte) intBetween( '0', '9' );
-        }
-
-        return Values.utf8Value( bytes );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link TextValue} consisting only of ascii alphabetic characters.
-     * <p>
-     * The length of the text will be between {@link Configuration#stringMinLength()} and
-     * {@link Configuration#stringMaxLength()}
-     *
-     * @return a {@link TextValue} consisting only of ascii alphabetic characters.
-     */
-    public TextValue nextAlphaTextValue()
-    {
-        return nextAlphaTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link TextValue} consisting only of ascii alphabetic characters.
-     *
-     * @param minLength the minimum length of the string
-     * @param maxLength the maximum length of the string
-     * @return a {@link TextValue} consisting only of ascii alphabetic characters.
-     */
-    public TextValue nextAlphaTextValue( int minLength, int maxLength )
-    {
-        int length = intBetween( minLength, maxLength );
-        byte[] bytes = new byte[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            if ( generator.nextBoolean() )
-            {
-                bytes[i] = (byte) intBetween( 'A', 'Z' );
-            }
-            else
-            {
-                bytes[i] = (byte) intBetween( 'a', 'z' );
-            }
-        }
-
-        return Values.utf8Value( bytes );
-    }
-
-    /**
      * Returns the next pseudorandom {@link TextValue} consisting only of ascii alphabetic and numerical characters.
      * <p>
      * The length of the text will be between {@link Configuration#stringMinLength()} and
@@ -565,38 +494,6 @@ public class RandomValues
         for ( int i = 0; i < length; i++ )
         {
             bytes[i] = (byte) intBetween( 0, 127 );
-
-        }
-        return Values.utf8Value( bytes );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link TextValue} consisting only of printable ascii characters.
-     * <p>
-     * The length of the text will be between {@link Configuration#stringMinLength()} and
-     * {@link Configuration#stringMaxLength()}
-     *
-     * @return a {@link TextValue} consisting only of printable ascii characters.
-     */
-    public TextValue nextPrintableAsciiTextValue()
-    {
-        return nextPrintableAsciiTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link TextValue} consisting only of printable ascii characters.
-     *
-     * @param minLength the minimum length of the string
-     * @param maxLength the maximum length of the string
-     * @return a {@link TextValue} consisting only of printable ascii characters.
-     */
-    public TextValue nextPrintableAsciiTextValue( int minLength, int maxLength )
-    {
-        int length = intBetween( minLength, maxLength );
-        byte[] bytes = new byte[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            bytes[i] = (byte) intBetween( 32, 126 );
 
         }
         return Values.utf8Value( bytes );

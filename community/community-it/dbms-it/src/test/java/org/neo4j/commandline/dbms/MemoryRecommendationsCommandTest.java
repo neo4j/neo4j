@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
@@ -262,7 +261,7 @@ public class MemoryRecommendationsCommandTest
                     RandomValues randomValues = RandomValues.create();
                     for ( int i = 0; i < 10_000; i++ )
                     {
-                        db.createNode( labelOne ).setProperty( key, randomIndexValue( i, randomValues ).asObject());
+                        db.createNode( labelOne ).setProperty( key, randomValues.nextValue().asObject() );
                     }
                     tx.success();
                 }
@@ -271,37 +270,6 @@ public class MemoryRecommendationsCommandTest
             {
                 db.shutdown();
             }
-        }
-    }
-
-    private static Value randomIndexValue( int i, RandomValues randomValues )
-    {
-        switch ( i % 11 )
-        {
-        case 0:
-            return randomValues.nextIntValue();
-        case 1:
-            return randomValues.nextDigitString();
-        case 2:
-            return randomValues.nextDateValue();
-        case 3:
-            return randomValues.nextDateTimeValue();
-        case 4:
-            return randomValues.nextLocalDateTimeValue();
-        case 5:
-            return randomValues.nextDuration();
-        case 6:
-            return randomValues.nextTimeValue();
-        case 7:
-            return randomValues.nextLocalTimeValue();
-        case 8:
-            return randomValues.nextCartesianPoint();
-        case 9:
-            return randomValues.nextCartesian3DPoint();
-        case 10:
-            return randomValues.nextLongArray(  );
-        default:
-            throw new UnsupportedOperationException( "Unexpected" );
         }
     }
 

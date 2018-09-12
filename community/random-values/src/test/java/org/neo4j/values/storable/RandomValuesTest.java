@@ -199,43 +199,6 @@ public class RandomValuesTest
     }
 
     @Test
-    public void nextDigitString()
-    {
-        Set<Integer> seenDigits = "0123456789".chars().boxed().collect( Collectors.toSet() );
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            TextValue textValue = randomValues.nextDigitString( 5, 10 );
-            String asString = textValue.stringValue();
-            for ( int j = 0; j < asString.length(); j++ )
-            {
-                int ch = asString.charAt( j );
-                assertTrue( Character.isDigit( ch ) );
-                seenDigits.remove( ch );
-            }
-        }
-        assertThat( seenDigits, empty() );
-    }
-
-    @Test
-    public void nextAlphaString()
-    {
-        Set<Integer> seenDigits = "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz".chars().boxed()
-                .collect( Collectors.toSet() );
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            TextValue textValue = randomValues.nextAlphaTextValue( 5, 10 );
-            String asString = textValue.stringValue();
-            for ( int j = 0; j < asString.length(); j++ )
-            {
-                int ch = asString.charAt( j );
-                assertTrue( "Not a character: " + ch, Character.isAlphabetic( ch ) );
-                seenDigits.remove( ch );
-            }
-        }
-        assertThat( seenDigits, empty() );
-    }
-
-    @Test
     public void nextAlphaNumericString()
     {
         Set<Integer> seenDigits = "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789".chars().boxed()
@@ -261,19 +224,6 @@ public class RandomValuesTest
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             TextValue textValue = randomValues.nextAsciiTextValue( 10, 20 );
-            String asString = textValue.stringValue();
-            int length = asString.length();
-            assertThat( length, greaterThanOrEqualTo( 10 ) );
-            assertThat( length, lessThanOrEqualTo( 20 ) );
-        }
-    }
-
-    @Test
-    public void nextPrintableAsciiString()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            TextValue textValue = randomValues.nextPrintableAsciiTextValue( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.length();
             assertThat( length, greaterThanOrEqualTo( 10 ) );
