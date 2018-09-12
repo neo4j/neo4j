@@ -23,7 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
@@ -53,7 +53,7 @@ public class SecurityContextDescriptionTest
         manager.init();
         manager.start();
         manager.newUser( "johan", "bar", false );
-        context = manager.login( authToken( "johan", "bar" ) ).authorize( s -> -1, DatabaseManager.DEFAULT_DATABASE_NAME );
+        context = manager.login( authToken( "johan", "bar" ) ).authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
     @After

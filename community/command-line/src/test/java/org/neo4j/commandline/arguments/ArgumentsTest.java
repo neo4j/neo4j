@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -141,7 +141,7 @@ class ArgumentsTest
     void withDatabaseDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
-                        "  --database=<name>   Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]" ),
+                        "  --database=<name>   Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]" ),
                 builder.withDatabase().description( "How to use" ) );
     }
 
@@ -156,7 +156,7 @@ class ArgumentsTest
     void withDatabaseToDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
-                        "  --database=<name>         Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" +
+                        "  --database=<name>         Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
                         "  --to=<destination-path>   Destination file." ),
                 builder.withDatabase().withTo( "Destination file." ).description( "How to use" ) );
     }
@@ -165,7 +165,7 @@ class ArgumentsTest
     void withDatabaseToMultilineDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
-                        "  --database=<name>         Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" +
+                        "  --database=<name>         Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
                         "  --to=<destination-path>   This is a long string which should wrap on right%n" +
                         "                            col." ),
                 builder.withDatabase()
@@ -178,7 +178,7 @@ class ArgumentsTest
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>%n" +
-                        "      Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" +
+                        "      Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
                         "  --to=<destination-path>%n" +
                         "      This is a long string which should not wrap on right col.%n" +
                         "  --loooooooooooooong-variable-name=<loooooooooooooong-variable-value>%n" +

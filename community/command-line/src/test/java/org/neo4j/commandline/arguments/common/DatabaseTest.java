@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +37,7 @@ class DatabaseTest
     @Test
     void parseDatabaseShouldThrowOnPath()
     {
-        Path path = Paths.get( "data", "databases", DatabaseManager.DEFAULT_DATABASE_NAME );
+        Path path = Paths.get( "data", "databases", GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> arg.parse( Args.parse( "--database=" + path ) ) );
         assertEquals( "'database' should be a name but you seem to have specified a path: " + path, exception.getMessage() );
     }

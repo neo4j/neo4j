@@ -36,7 +36,6 @@ import org.neo4j.causalclustering.core.consensus.log.segmented.FileNames;
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -144,7 +143,7 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         databasesDirectory = new File( dataDir, "databases" );
-        defaultDatabaseDirectory = new File( databasesDirectory, DatabaseManager.DEFAULT_DATABASE_NAME );
+        defaultDatabaseDirectory = new File( databasesDirectory, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         memberConfig = Config.defaults( config );
 
         this.dbName = memberConfig.get( CausalClusteringSettings.database );

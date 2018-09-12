@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -43,8 +43,8 @@ public class SchemaIndexMigratorTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
-    private final DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "store" ), DatabaseManager.DEFAULT_DATABASE_NAME );
-    private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( "migrationDir" ), DatabaseManager.DEFAULT_DATABASE_NAME );
+    private final DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "store" ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( "migrationDir" ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
 
     private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, indexProvider );
 

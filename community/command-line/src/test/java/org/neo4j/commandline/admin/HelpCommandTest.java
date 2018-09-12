@@ -32,7 +32,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -155,7 +155,7 @@ class HelpCommandTest
                             "This is a description of the foobar command.%n" +
                             "%n" +
                             "options:%n" +
-                            "  --database=<name>   Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" ),
+                            "  --database=<name>   Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" ),
                     baos.toString() );
         }
     }

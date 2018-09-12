@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
@@ -62,14 +63,14 @@ class DefaultDatabaseManagerIT
     void createDatabase()
     {
         DatabaseManager databaseManager = getDatabaseManager();
-        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
     }
 
     @Test
     void lookupExistingDatabase()
     {
         DatabaseManager databaseManager = getDatabaseManager();
-        Optional<GraphDatabaseFacade> database = databaseManager.getDatabaseFacade( DatabaseManager.DEFAULT_DATABASE_NAME );
+        Optional<GraphDatabaseFacade> database = databaseManager.getDatabaseFacade( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         assertTrue( database.isPresent() );
     }
 

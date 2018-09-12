@@ -25,12 +25,11 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -290,7 +289,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         try
         {
             dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
-                    dependencyResolver, AnonymousContext.none().authorize( s -> -1, DatabaseManager.DEFAULT_DATABASE_NAME ), resourceTracker );
+                    dependencyResolver, AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker );
             fail( "This should never get here" );
         }
         catch ( Exception e )

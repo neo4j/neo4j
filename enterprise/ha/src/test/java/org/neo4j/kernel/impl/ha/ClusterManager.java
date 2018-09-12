@@ -55,7 +55,6 @@ import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.consistency.store.StoreAssertions;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -1160,7 +1159,7 @@ public class ClusterManager
             int clusterPort = clusterUri.getPort();
             int haPort = PortAuthority.allocatePort();
             StoreLayout storeLayout = StoreLayout.of( new File( parent, "server" + serverId ) );
-            DatabaseLayout databaseLayout = storeLayout.databaseLayout( DatabaseManager.DEFAULT_DATABASE_NAME );
+            DatabaseLayout databaseLayout = storeLayout.databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
             if ( storeDirInitializer != null )
             {
                 storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), databaseLayout.databaseDirectory() );

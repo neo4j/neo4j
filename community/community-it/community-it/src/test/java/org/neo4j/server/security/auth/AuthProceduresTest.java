@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -56,7 +55,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         dbmsOperations()
                 .procedureCallDbms( procedureName( "dbms", "changePassword" ),
                                     inputArray, dependencyResolver,
-                                    AnonymousContext.none().authorize( s -> -1, DatabaseManager.DEFAULT_DATABASE_NAME ),
+                                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
                                     resourceTracker );
     }
 
@@ -74,7 +73,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         // When
         dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ),
                                             inputArray, dependencyResolver,
-                                            AnonymousContext.none().authorize( s -> -1, DatabaseManager.DEFAULT_DATABASE_NAME ),
+                                            AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
                                             resourceTracker );
     }
 

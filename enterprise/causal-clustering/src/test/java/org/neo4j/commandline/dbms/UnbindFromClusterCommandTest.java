@@ -27,7 +27,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -44,7 +43,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -125,7 +124,7 @@ public class UnbindFromClusterCommandTest
         try
         {
             // when
-            command.execute( databaseNameParameter( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+            command.execute( databaseNameParameter( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
             fail();
         }
         catch ( CommandFailed e )
@@ -160,7 +159,7 @@ public class UnbindFromClusterCommandTest
         // given
         createUnlockedFakeDbDir( homeDir );
         UnbindFromClusterCommand command = new UnbindFromClusterCommand( homeDir, confDir, outsideWorld );
-        command.execute( databaseNameParameter( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+        command.execute( databaseNameParameter( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
         verify( outsideWorld ).stdErrLine( "This instance was not bound. No work performed." );
     }
 

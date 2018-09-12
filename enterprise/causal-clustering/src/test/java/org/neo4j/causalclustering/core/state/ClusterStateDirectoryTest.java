@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -59,7 +59,7 @@ public class ClusterStateDirectoryTest
     public void shouldMigrateClusterStateFromStoreDir() throws Exception
     {
         // given
-        File storeDir = new File( new File( dataDir, "databases" ), DatabaseManager.DEFAULT_DATABASE_NAME );
+        File storeDir = new File( new File( dataDir, "databases" ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
 
         String fileName = "file";
 

@@ -38,7 +38,7 @@ import org.neo4j.commandline.admin.NullOutsideWorld;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
@@ -247,7 +247,7 @@ class ImportCommandTest
                             "%n" +
                             "options:%n" +
                             "  --database=<name>%n" +
-                            "      Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" +
+                            "      Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --additional-config=<config-file-path>%n" +
                             "      Configuration file to supply additional configuration in. [default:]%n" +
                             "  --mode=<database|csv>%n" +

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -502,6 +503,21 @@ public class Settings
         }
     };
 
+    public static final Function<String, String> RESTRICTED_STRING = new Function<String, String>()
+    {
+        @Override
+        public String apply( String value )
+        {
+            return value.trim();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a string";
+        }
+    };
+
     public static final Function<String,List<String>> STRING_LIST = list( SEPARATOR, STRING );
 
     public static final Function<String,HostnamePort> HOSTNAME_PORT = new Function<String, HostnamePort>()
@@ -942,6 +958,21 @@ public class Settings
             {
                 return format( MATCHES_PATTERN_MESSAGE, regex );
             }
+        };
+    }
+
+    public static BiFunction<String,Function<String,String>,String> except( String... forbiddenValues )
+    {
+        return ( value, stringStringFunction ) ->
+        {
+            if ( StringUtils.isNotBlank( value ) )
+            {
+                if ( ArrayUtils.contains( forbiddenValues, value ) )
+                {
+                    throw new IllegalArgumentException( format( "not allowed value is: %s", value ) );
+                }
+            }
+            return value;
         };
     }
 

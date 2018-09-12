@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Supplier;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -76,7 +76,7 @@ class OnlineBackupExtensionFactoryTest
     void createExtensionForDefaultDatabase()
     {
         SimpleKernelContext kernelContext = new SimpleKernelContext( testDirectory.databaseDir(), DatabaseInfo.ENTERPRISE, dependencies );
-        Lifecycle instance = extensionFactory.newInstance( kernelContext, new TestBackDependencies( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+        Lifecycle instance = extensionFactory.newInstance( kernelContext, new TestBackDependencies( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
         assertThat( instance, instanceOf( OnlineBackupKernelExtension.class ) );
     }
 

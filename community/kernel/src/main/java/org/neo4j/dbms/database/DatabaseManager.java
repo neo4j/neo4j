@@ -26,7 +26,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface DatabaseManager extends Lifecycle
 {
-    String DEFAULT_DATABASE_NAME = "graph.db";
 
     Optional<GraphDatabaseFacade> getDatabaseFacade( String name );
 

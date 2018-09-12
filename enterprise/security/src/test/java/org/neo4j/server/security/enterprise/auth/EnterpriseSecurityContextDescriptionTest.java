@@ -29,7 +29,7 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.function.Function;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
@@ -129,6 +129,6 @@ public class EnterpriseSecurityContextDescriptionTest
     private EnterpriseSecurityContext context() throws InvalidAuthTokenException
     {
         return authManagerRule.getManager().login( authToken( "mats", "foo" ) )
-                .authorize( token, DatabaseManager.DEFAULT_DATABASE_NAME );
+                .authorize( token, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 }

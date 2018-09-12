@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
@@ -37,6 +36,6 @@ class DatabaseManagementSystemSettingsTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.data_directory, "the-data-directory" );
         assertThat( config.get( GraphDatabaseSettings.database_path ),
-                equalTo( new File( "the-data-directory/databases/" + DatabaseManager.DEFAULT_DATABASE_NAME ) ) );
+                equalTo( new File( "the-data-directory/databases/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) ) );
     }
 }

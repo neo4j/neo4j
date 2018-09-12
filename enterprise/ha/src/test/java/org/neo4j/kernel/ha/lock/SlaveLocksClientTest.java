@@ -70,7 +70,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.ResourceReleaser.NO_OP;
-import static org.neo4j.dbms.database.DatabaseManager.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.logging.NullLog.getInstance;

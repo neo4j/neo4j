@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
@@ -54,7 +54,7 @@ public class ExplicitIndexMigratorTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
     private final ProgressReporter progressMonitor = mock( ProgressReporter.class );
-    private final DatabaseLayout storeLayout = DatabaseLayout.of( new File( DatabaseManager.DEFAULT_DATABASE_NAME ) );
+    private final DatabaseLayout storeLayout = DatabaseLayout.of( new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
     private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( StoreUpgrader.MIGRATION_DIRECTORY ) );
     private final File originalIndexStore = mock( File.class );
     private final File migratedIndexStore = new File( "." );

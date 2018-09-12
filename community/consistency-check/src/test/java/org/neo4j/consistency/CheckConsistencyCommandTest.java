@@ -36,7 +36,6 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -340,7 +339,7 @@ class CheckConsistencyCommandTest
                             "good idea. See 'neo4j-admin help' for details.%n" +
                             "%n" +
                             "options:%n" +
-                            "  --database=<name>                        Name of database. [default:" + DatabaseManager.DEFAULT_DATABASE_NAME + "]%n" +
+                            "  --database=<name>                        Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --backup=</path/to/backup>               Path to backup to check consistency%n" +
                             "                                           of. Cannot be used together with%n" +
                             "                                           --database. [default:]%n" +
