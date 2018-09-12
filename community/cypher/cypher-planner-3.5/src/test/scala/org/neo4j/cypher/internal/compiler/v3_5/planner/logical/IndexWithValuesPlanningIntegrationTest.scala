@@ -187,6 +187,26 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
+  test("should plan index seek with GetValue when the property is projected after a renaming projection") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n as m MATCH (m)-[r]-(o) RETURN m.prop"
+
+    plan._2 should equal(
+      Expand(
+        Projection(
+          NodeIndexSeek(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+            SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
+            Set.empty,
+            IndexOrderNone),
+          Map("m" -> varFor("n"))),
+        "m", SemanticDirection.BOTH, Seq.empty, "o", "r")
+    )
+  }
+
   test("should plan index seek with GetValue when the property is projected and renamed in a RETURN") {
     val plan = new given {
       indexOn("Awesome", "prop").providesValues()

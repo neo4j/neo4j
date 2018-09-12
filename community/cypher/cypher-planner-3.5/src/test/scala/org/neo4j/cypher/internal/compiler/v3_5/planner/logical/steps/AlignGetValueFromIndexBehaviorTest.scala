@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v3_5.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.v3_5.Predicate
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.ir.v3_5.Selections
@@ -61,7 +62,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
       new given().withLogicalPlanningContext { (cfg, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(getValues)
@@ -83,7 +84,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
       new given().withLogicalPlanningContext { (cfg, context) =>
         context.planningAttributes.solveds.set(doNotGetValues.id, RegularPlannerQuery())
 
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(doNotGetValues) should equal(doNotGetValues)
@@ -94,7 +95,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
       new given().withLogicalPlanningContext { (cfg, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "anotherProp"))))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "anotherProp"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(doNotGetValues)
@@ -106,7 +107,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
         val plan = Distinct(canGetValues, Map.empty)
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
 
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "anotherProp"))))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "anotherProp"))))
 
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
         updater(plan) should equal(Distinct(doNotGetValues, Map.empty))
@@ -118,7 +119,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
         val plan = Union(canGetValues, canGetValues)
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
 
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
 
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
         updater(plan) should equal(plan)
@@ -131,7 +132,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
         val plan = Union(Selection(ands, canGetValues), Selection(ands, canGetValues))
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
 
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
         updater(plan) should equal(plan)
       }
@@ -143,7 +144,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
         val plan = Union(Union(Selection(ands, canGetValues), canGetValues), Selection(ands, canGetValues))
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
 
-        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("n" -> prop("n", "prop"))))
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
         updater(plan) should equal(plan)
       }
@@ -155,7 +156,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
 
         val query = RegularPlannerQuery(
           queryGraph = QueryGraph(selections = Selections(Set(Predicate(Set("n"), prop("n", "prop"))))),
-          horizon = RegularQueryProjection(Map("n" -> prop("n", "foo"))))
+          horizon = RegularQueryProjection(Map("foo" -> prop("n", "foo"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(getValues)
@@ -169,7 +170,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
 
         val query = RegularPlannerQuery(
           queryGraph = queryGraph,
-          horizon = RegularQueryProjection(Map("n" -> prop("n", "foo"))))
+          horizon = RegularQueryProjection(Map("foo" -> prop("n", "foo"))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(doNotGetValues)
@@ -183,7 +184,65 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
 
         val query = RegularPlannerQuery(
           queryGraph = QueryGraph(selections = Selections(Set(predicate, Predicate(Set("n"), Equals(prop("n", "prop"), literalInt(1))(pos))))),
-          horizon = RegularQueryProjection(Map("n" -> prop("n", "foo"))))
+          horizon = RegularQueryProjection(Map("foo" -> prop("n", "foo"))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+
+        updater(canGetValues) should equal(getValues)
+      }
+    }
+
+    test(s"should set GetValue on $operatorName with usage of that property in the next query part (PassthroughAllHorizon)") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(
+          horizon = PassthroughAllHorizon(),
+          tail = Some(RegularPlannerQuery(
+            horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+
+        updater(canGetValues) should equal(getValues)
+      }
+    }
+
+    test(s"should set GetValue on $operatorName with usage of that property in the next query part (Projection: n AS n)") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(
+          horizon = RegularQueryProjection(Map("n" -> varFor("n"))),
+          tail = Some(RegularPlannerQuery(
+            horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+
+        updater(canGetValues) should equal(getValues)
+      }
+    }
+
+    test(s"should set GetValue on $operatorName with usage of that property in the next query part (Projection: n AS m)") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(
+          horizon = RegularQueryProjection(Map("m" -> varFor("n"))),
+          tail = Some(RegularPlannerQuery(
+            horizon = RegularQueryProjection(Map("foo" -> prop("m", "prop"))))))
+        val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
+
+        updater(canGetValues) should equal(getValues)
+      }
+    }
+
+    test(s"should set GetValue on $operatorName with usage of that property in the second next query part (Projection: n AS m, Projection: m AS o)") {
+      new given().withLogicalPlanningContext { (cfg, context) =>
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(
+          horizon = RegularQueryProjection(Map("m" -> varFor("n"))),
+          tail = Some(RegularPlannerQuery(
+            horizon = RegularQueryProjection(Map("o" -> varFor("m"))),
+            tail = Some(RegularPlannerQuery(
+              horizon = RegularQueryProjection(Map("foo" -> prop("o", "prop"))))))))
         val updater = alignGetValueFromIndexBehavior(query, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen))
 
         updater(canGetValues) should equal(getValues)
