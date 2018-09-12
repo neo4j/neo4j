@@ -141,7 +141,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
                 RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
-                IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
+                IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
                 multiProgressor.initialize( descriptor, hitProgressor, query, false );
             }
         }
@@ -171,7 +171,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         try
         {
             RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
-            IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
+            IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
             client.initialize( descriptor, hitProgressor, query, false );
         }
         catch ( IOException e )

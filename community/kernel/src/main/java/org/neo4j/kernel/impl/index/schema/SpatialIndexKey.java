@@ -23,13 +23,13 @@ import java.util.Arrays;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values).
@@ -52,13 +52,9 @@ class SpatialIndexKey extends NativeIndexSingleValueKey<SpatialIndexKey>
     }
 
     @Override
-    public NumberValue asValue()
+    public Value asValue()
     {
-        // This is used in the index sampler to estimate value diversity. Since the spatial index does not store values
-        // the uniqueness of the space filling curve number is the best estimate. This can become a bad estimate for
-        // indexes with badly defined Envelopes for the space filling curves, such that many points exist within the
-        // same tile.
-        return (NumberValue) Values.of( rawValueBits );
+        return NO_VALUE;
     }
 
     @Override
@@ -79,7 +75,7 @@ class SpatialIndexKey extends NativeIndexSingleValueKey<SpatialIndexKey>
         writePoint( crs, limit );
     }
 
-    public void fromDerivedValue( long entityId, long derivedValue )
+    void fromDerivedValue( long entityId, long derivedValue )
     {
         rawValueBits = derivedValue;
         initialize( entityId );
