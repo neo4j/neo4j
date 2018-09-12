@@ -13,3 +13,6 @@ Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of
 
 // To classify
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+
+//Bug in TCK keys should not mandate order
+Feature "KeysAcceptance": Scenario "Using `keys()` on a literal map"
