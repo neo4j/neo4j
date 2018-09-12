@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.mem;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.ByteUnit;
@@ -39,9 +40,12 @@ class MemoryAllocatorTest
     private static final String ONE_PAGE = PageCache.PAGE_SIZE + "";
     private static final String EIGHT_PAGES = (8 * PageCache.PAGE_SIZE) + "";
 
-    private MemoryAllocator createAllocator( String expectedMaxMemory )
+    private MemoryAllocator allocator;
+
+    @AfterEach
+    void tearDown()
     {
-        return MemoryAllocator.createAllocator( expectedMaxMemory, new LocalMemoryTracker() );
+        closeAllocator();
     }
 
     @Test
@@ -169,5 +173,20 @@ class MemoryAllocatorTest
 
         allocator.close();
         assertEquals( 0, memoryTracker.usedDirectMemory() );
+    }
+
+    private void closeAllocator()
+    {
+        if ( allocator != null )
+        {
+            allocator.close();
+        }
+    }
+
+    private MemoryAllocator createAllocator( String expectedMaxMemory )
+    {
+        closeAllocator();
+        allocator = MemoryAllocator.createAllocator( expectedMaxMemory, new LocalMemoryTracker() );
+        return allocator;
     }
 }

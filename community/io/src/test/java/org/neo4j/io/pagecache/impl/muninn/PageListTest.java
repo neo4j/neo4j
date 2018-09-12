@@ -95,6 +95,7 @@ public class PageListTest
     @AfterClass
     public static void tearDownStatics()
     {
+        mman.close();
         mman = null;
         executor.shutdown();
         executor = null;

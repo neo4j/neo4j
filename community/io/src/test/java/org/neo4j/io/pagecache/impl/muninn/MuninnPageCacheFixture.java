@@ -33,13 +33,14 @@ import org.neo4j.scheduler.JobScheduler;
 public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache>
 {
     CountDownLatch backgroundFlushLatch;
+    private MemoryAllocator allocator;
 
     @Override
     public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
             PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier, JobScheduler jobScheduler )
     {
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
-        MemoryAllocator allocator = MemoryAllocator.createAllocator( String.valueOf( memory ), new LocalMemoryTracker() );
+        allocator = MemoryAllocator.createAllocator( String.valueOf( memory ), new LocalMemoryTracker() );
         return new MuninnPageCache( swapperFactory, allocator, tracer, cursorTracerSupplier, contextSupplier, jobScheduler );
     }
 
@@ -52,5 +53,6 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
             backgroundFlushLatch = null;
         }
         pageCache.close();
+        allocator.close();
     }
 }
