@@ -30,10 +30,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -632,7 +632,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void testExactMatchOnRandomCompositeValues() throws Exception
     {
         // given
-        List<RandomValues.Type> types = testSuite.supportedValueTypes();
+        RandomValues.Type[] types = randomSetOfSupportedTypes();
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
         Set<ValueTuple> duplicateChecker = new HashSet<>();
         for ( long id = 0; id < 10_000; id++ )
@@ -641,8 +641,8 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
             do
             {
                 update = add( id, descriptor.schema(),
-                        random.nextValue( random.among( types ) ),
-                        random.nextValue( random.among( types ) ) );
+                        random.randomValues().nextValueOfTypes( types ),
+                        random.randomValues().nextValueOfTypes( types ) );
             }
             while ( !duplicateChecker.add( ValueTuple.of( update.values() ) ) );
             updates.add( update );

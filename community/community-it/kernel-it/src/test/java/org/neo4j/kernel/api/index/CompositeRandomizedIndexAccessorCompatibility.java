@@ -19,19 +19,25 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -47,48 +53,147 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public CompositeRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    public CompositeRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
-        // composite index of 4 properties
-        super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 101, 102, 103 ) );
+        super( testSuite, descriptor );
     }
 
-    @Test
-    public void testExactMatchOnRandomCompositeValues() throws Exception
+    @Ignore( "Not a test. This is a compatibility suite" )
+    public static class Exact extends CompositeRandomizedIndexAccessorCompatibility
     {
-        // given
-        List<RandomValues.Type> types = testSuite.supportedValueTypes();
-        Collections.shuffle( types, random.random() );
-        types = types.subList( 0, random.nextInt( 2, types.size() ) );
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-        Set<ValueTuple> duplicateChecker = new HashSet<>();
-        for ( long id = 0; id < 30_000; id++ )
+        public Exact( IndexProviderCompatibilityTestSuite testSuite )
         {
-            IndexEntryUpdate<SchemaDescriptor> update;
-            do
-            {
-                update = add( id, descriptor.schema(),
-                        random.nextValue( random.among( types ) ),
-                        random.nextValue( random.among( types ) ),
-                        random.nextValue( random.among( types ) ),
-                        random.nextValue( random.among( types ) ) );
-            }
-            while ( !duplicateChecker.add( ValueTuple.of( update.values() ) ) );
-            updates.add( update );
+            // composite index of 4 properties
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 101, 102, 103 ) );
         }
-        updateAndCommit( updates );
 
-        // when
-        for ( IndexEntryUpdate<?> update : updates )
+        @Test
+        public void testExactMatchOnRandomCompositeValues() throws Exception
         {
-            // then
-            List<Long> hits = query(
-                    exact( 100, update.values()[0] ),
-                    exact( 101, update.values()[1] ),
-                    exact( 102, update.values()[2] ),
-                    exact( 103, update.values()[3] ) );
-            assertEquals( update + " " + hits.toString(), 1, hits.size() );
-            assertThat( single( hits ), equalTo( update.getEntityId() ) );
+            // given
+            RandomValues.Type[] types = randomSetOfSupportedTypes();
+            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            Set<ValueTuple> duplicateChecker = new HashSet<>();
+            for ( long id = 0; id < 30_000; id++ )
+            {
+                IndexEntryUpdate<SchemaDescriptor> update;
+                do
+                {
+                    update = add( id, descriptor.schema(),
+                            random.randomValues().nextValueOfTypes( types ),
+                            random.randomValues().nextValueOfTypes( types ),
+                            random.randomValues().nextValueOfTypes( types ),
+                            random.randomValues().nextValueOfTypes( types ) );
+                }
+                while ( !duplicateChecker.add( ValueTuple.of( update.values() ) ) );
+                updates.add( update );
+            }
+            updateAndCommit( updates );
+
+            // when
+            for ( IndexEntryUpdate<?> update : updates )
+            {
+                // then
+                List<Long> hits = query(
+                        exact( 100, update.values()[0] ),
+                        exact( 101, update.values()[1] ),
+                        exact( 102, update.values()[2] ),
+                        exact( 103, update.values()[3] ) );
+                assertEquals( update + " " + hits.toString(), 1, hits.size() );
+                assertThat( single( hits ), equalTo( update.getEntityId() ) );
+            }
+        }
+    }
+
+    @Ignore( "Not a test. This is a compatibility suite" )
+    public static class Range extends CompositeRandomizedIndexAccessorCompatibility
+    {
+        public Range( IndexProviderCompatibilityTestSuite testSuite )
+        {
+            // composite index of 2 properties
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 101 ) );
+        }
+
+        /**
+         * All entries in composite index look like (booleanValue, randomValue ).
+         * Range queries in composite only work if all predicates before it is exact.
+         * We use boolean values for exact part so that we get some real ranges to work
+         * on in second composite slot where the random values are.
+         */
+        @Test
+        public void testRangeMatchOnRandomValues() throws Exception
+        {
+            Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+            // given
+            RandomValues.Type[] types = randomSetOfSupportedAndSortableTypes();
+            List<ValueTuple> values = generateValuesFromType( types );
+            List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values );
+            updateAndCommit( updates );
+            TreeSet<IndexEntryUpdate> sortedValues = new TreeSet<>( ( u1, u2 ) -> ValueTuple.COMPARATOR.compare(
+                    ValueTuple.of( u1.values()[0], u1.values()[1] ),
+                    ValueTuple.of( u2.values()[0], u2.values()[1] ) ) );
+            sortedValues.addAll( updates );
+
+            for ( int i = 0; i < 100; i++ )
+            {
+                Value booleanValue = random.randomValues().nextBooleanValue();
+                RandomValues.Type type = random.among( types );
+                Value from = random.randomValues().nextValueOfType( type );
+                Value to = random.randomValues().nextValueOfType( type );
+                if ( Values.COMPARATOR.compare( from, to ) > 0 )
+                {
+                    Value tmp = from;
+                    from = to;
+                    to = tmp;
+                }
+                boolean fromInclusive = random.nextBoolean();
+                boolean toInclusive = random.nextBoolean();
+
+                // when
+                List<Long> expectedIds = sortedValues.subSet(
+                        add( 0, descriptor.schema(), booleanValue, from ), fromInclusive,
+                        add( 0, descriptor.schema(), booleanValue, to ), toInclusive )
+                        .stream()
+                        .map( IndexEntryUpdate::getEntityId )
+                        .collect( Collectors.toList() );
+                List<Long> actualIds = query( IndexQuery.exact( 100, booleanValue ), IndexQuery.range( 101, from, fromInclusive, to, toInclusive ) );
+                expectedIds.sort( Long::compare );
+                actualIds.sort( Long::compare );
+
+                // then
+                assertThat( actualIds, equalTo( expectedIds ) );
+            }
+        }
+
+        private List<ValueTuple> generateValuesFromType( RandomValues.Type[] types )
+        {
+            List<ValueTuple> values = new ArrayList<>();
+            Set<ValueTuple> duplicateChecker = new HashSet<>();
+            for ( long i = 0; i < 30_000; i++ )
+            {
+                ValueTuple value;
+                do
+                {
+                    value = ValueTuple.of(
+                            // Use boolean for first slot in composite because we will use exact match on this part.x
+                            random.randomValues().nextBooleanValue(),
+                            random.randomValues().nextValueOfTypes( types ) );
+                }
+                while ( !duplicateChecker.add( value ) );
+                values.add( value );
+            }
+            return values;
+        }
+
+        private List<IndexEntryUpdate<?>> generateUpdatesFromValues( List<ValueTuple> values )
+        {
+            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            int id = 0;
+            for ( ValueTuple value : values )
+            {
+                updates.add( add( id++, descriptor.schema(), (Object[]) value.getValues() ) );
+            }
+            return updates;
         }
     }
 }

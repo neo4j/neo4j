@@ -23,8 +23,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
-import java.util.Collection;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
@@ -82,6 +83,27 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             accessor.drop();
             accessor.close();
         }
+    }
+
+    RandomValues.Type[] randomSetOfSupportedTypes()
+    {
+        RandomValues.Type[] supportedTypes = testSuite.supportedValueTypes();
+        return random.randomValues().selection( supportedTypes, 2, supportedTypes.length, false );
+    }
+
+    RandomValues.Type[] randomSetOfSupportedAndSortableTypes()
+    {
+        RandomValues.Type[] types = randomSetOfSupportedTypes();
+        types = removeSpatialTypes( types ); // <- don't use spatial values
+        types = RandomValues.excluding( types, RandomValues.Type.STRING, RandomValues.Type.STRING_ARRAY ); // <- don't use strings outside of BMP
+        return types;
+    }
+
+    private RandomValues.Type[] removeSpatialTypes( RandomValues.Type[] types )
+    {
+        return Arrays.stream( types )
+                .filter( t -> !t.name().contains( "POINT" ) )
+                .toArray( RandomValues.Type[]::new );
     }
 
     protected List<Long> query( IndexQuery... predicates ) throws Exception

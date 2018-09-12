@@ -69,7 +69,8 @@ import org.neo4j.values.storable.Values;
         CompositeIndexAccessorCompatibility.Unique.class,
         UniqueConstraintCompatibility.class,
         SimpleRandomizedIndexAccessorCompatibility.class,
-        CompositeRandomizedIndexAccessorCompatibility.class
+        CompositeRandomizedIndexAccessorCompatibility.Exact.class,
+        CompositeRandomizedIndexAccessorCompatibility.Range.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
@@ -98,17 +99,21 @@ public abstract class IndexProviderCompatibilityTestSuite
         return true;
     }
 
-    public List<RandomValues.Type> supportedValueTypes()
+    public RandomValues.Type[] supportedValueTypes()
     {
-        List<RandomValues.Type> types = new ArrayList<>( Arrays.asList( RandomValues.Type.values() ) );
         if ( !supportsSpatial() )
         {
-            types.remove( RandomValues.Type.CARTESIAN_POINT );
-            types.remove( RandomValues.Type.CARTESIAN_POINT_3D );
-            types.remove( RandomValues.Type.GEOGRAPHIC_POINT );
-            types.remove( RandomValues.Type.GEOGRAPHIC_POINT_3D );
+            return RandomValues.excluding(
+                    RandomValues.Type.CARTESIAN_POINT,
+                    RandomValues.Type.CARTESIAN_POINT_ARRAY,
+                    RandomValues.Type.CARTESIAN_POINT_3D,
+                    RandomValues.Type.CARTESIAN_POINT_3D_ARRAY,
+                    RandomValues.Type.GEOGRAPHIC_POINT,
+                    RandomValues.Type.GEOGRAPHIC_POINT_ARRAY,
+                    RandomValues.Type.GEOGRAPHIC_POINT_3D,
+                    RandomValues.Type.GEOGRAPHIC_POINT_3D_ARRAY );
         }
-        return types;
+        return RandomValues.Type.values();
     }
 
     public void consistencyCheck( IndexAccessor accessor )

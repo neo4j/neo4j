@@ -294,10 +294,15 @@ public class RandomValues
     /**
      * Create an array containing all value types, excluding provided types.
      */
-    public Type[] excluding( Type... types )
+    public static Type[] excluding( Type... exclude )
     {
-        return Arrays.stream( ALL_TYPES )
-                .filter( t -> !ArrayUtils.contains( types, t ) )
+        return excluding( Type.values(), exclude );
+    }
+
+    public static Type[] excluding( Type[] among, Type... exclude )
+    {
+        return Arrays.stream( among )
+                .filter( t -> !ArrayUtils.contains( exclude, t ) )
                 .toArray( Type[]::new );
     }
 
