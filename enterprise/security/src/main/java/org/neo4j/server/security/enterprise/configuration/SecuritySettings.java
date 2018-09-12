@@ -271,7 +271,10 @@ public class SecuritySettings implements LoadableConfig
                   "         \"cn=Neo4j Read-Write,cn=users,dc=example,dc=com\"     = publisher; \\\n" +
                   "         \"cn=Neo4j Schema Manager,cn=users,dc=example,dc=com\" = architect; \\\n" +
                   "         \"cn=Neo4j Administrator,cn=users,dc=example,dc=com\"  = admin\n" +
-                  "----" )
+                  "----\n" +
+                  "\n" +
+                  "Deprecated: This will be replaced by dynamic configuration in the system graph in 4.0, " +
+                  "including a migration step for the existing setting value. +\n" )
     @Deprecated
     public static final Setting<String> ldap_authorization_group_to_role_mapping =
             setting( "dbms.security.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
@@ -337,7 +340,10 @@ public class SecuritySettings implements LoadableConfig
     @Description( "The default role that can execute all procedures and user-defined functions that are not covered " +
                   "by the `" + PROC_ALLOWED_SETTING_ROLES + "` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME +
                   "` setting is the empty string (default), procedures will be executed according to the same security " +
-                  "rules as normal Cypher statements." )
+                  "rules as normal Cypher statements.\n" +
+                  "\n" +
+                  "Deprecated: This will be replaced by dynamic configuration in the system graph in 4.0, " +
+                  "including a migration step for the existing setting value." )
     @Deprecated
     public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
 
@@ -347,7 +353,10 @@ public class SecuritySettings implements LoadableConfig
                   "`reader` to execute all procedures in the `apoc.convert` namespace, the role `writer` to execute " +
                   "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
                   "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
-                  "patterns will be subject to the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting." )
+                  "patterns will be subject to the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting." +
+                  "\n" +
+                  "Deprecated: This will be replaced by dynamic configuration in the system graph in 4.0, " +
+                  "including a migration step for the existing setting value." )
     @Deprecated
     public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
 
@@ -382,7 +391,10 @@ public class SecuritySettings implements LoadableConfig
             "You could also use whitespaces and quotes around group names to make this mapping more readable, " +
             "for example: dbms.security.property_level.blacklist=\\\n" +
             "         \"role1\"      = ssn;    \\\n" +
-            "         \"role2\"      = ssn,income; \\\n" )
+            "         \"role2\"      = ssn,income; \\\n" +
+            "\n" +
+            "Deprecated: This will be replaced by dynamic configuration in the system graph in 4.0, " +
+            "including a migration step for the existing setting value." )
     @Deprecated
     public static final Setting<String> property_level_authorization_permissions =
             setting( "dbms.security.property_level.blacklist", STRING, NO_DEFAULT );

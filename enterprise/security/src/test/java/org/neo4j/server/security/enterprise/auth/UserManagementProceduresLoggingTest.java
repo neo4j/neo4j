@@ -54,7 +54,7 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class UserManagementProceduresLoggingTest
 {
     protected TestUserManagementProcedures authProcedures;
-    protected AssertableLogProvider log;
+    private AssertableLogProvider log;
     private EnterpriseSecurityContext matsContext;
     private EnterpriseUserManager generalUserManager;
 

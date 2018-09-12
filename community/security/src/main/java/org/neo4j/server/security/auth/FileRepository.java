@@ -26,9 +26,13 @@ import org.neo4j.logging.Log;
 
 public interface FileRepository
 {
+    /**
+     * This is used by different flavors of file repositories to agree on a naming convention
+     * for repository files that are renamed after migration to prevent accidental reuse.
+     */
     static File getMigratedFile( File file )
     {
-        return new File( file.getParent(), file.getName() + "migrated" );
+        return new File( file.getParent(), file.getName() + ".migrated" );
     }
 
     static void assertNotMigrated( File file, FileSystemAbstraction fileSystem, Log log )

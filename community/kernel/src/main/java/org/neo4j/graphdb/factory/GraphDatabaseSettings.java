@@ -933,7 +933,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, FALSE );
 
     @Internal
-        public static final Setting<File> auth_store =
+    public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
     @Description( "The maximum number of unsuccessful authentication attempts before imposing a user lock for the configured amount of time." +
