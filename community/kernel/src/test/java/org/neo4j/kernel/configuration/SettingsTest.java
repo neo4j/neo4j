@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.URI;
@@ -37,14 +35,15 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
@@ -54,6 +53,7 @@ import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
+import static org.neo4j.kernel.configuration.Settings.except;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
@@ -62,13 +62,10 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-public class SettingsTest
+class SettingsTest
 {
-    @Rule
-    public ExpectedException expect = ExpectedException.none();
-
     @Test
-    public void parsesAbsolutePaths()
+    void parsesAbsolutePaths()
     {
         File absolutePath = new File( "some/path" ).getAbsoluteFile();
         File thePath = Settings.PATH.apply( absolutePath.toString() );
@@ -77,16 +74,15 @@ public class SettingsTest
     }
 
     @Test
-    public void doesntAllowRelativePaths()
+    void doesntAllowRelativePaths()
     {
         File relativePath = new File( "some/path" );
 
-        expect.expect( IllegalArgumentException.class );
-        Settings.PATH.apply( relativePath.toString() );
+        assertThrows( IllegalArgumentException.class, () -> Settings.PATH.apply( relativePath.toString() ) );
     }
 
     @Test
-    public void pathSettingsProvideDefaultValues()
+    void pathSettingsProvideDefaultValues()
     {
         File theDefault = new File( "/some/path" ).getAbsoluteFile();
         Setting<File> setting = pathSetting( "some.setting", theDefault.getAbsolutePath() );
@@ -94,20 +90,20 @@ public class SettingsTest
     }
 
     @Test
-    public void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
+    void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
     {
         Setting<File> setting = pathSetting( "some.setting", NO_DEFAULT );
         assertThat( Config.defaults().get( setting ), is( nullValue() ) );
     }
 
     @Test
-    public void shouldHaveAUsefulToStringWhichIsUsedAsTheValidValuesInDocumentation()
+    void shouldHaveAUsefulToStringWhichIsUsedAsTheValidValuesInDocumentation()
     {
-        assertThat( pathSetting( "", NO_DEFAULT ).toString(), containsString( "A filesystem path" ) );
+        assertThat( pathSetting( EMPTY, NO_DEFAULT ).toString(), containsString( "A filesystem path" ) );
     }
 
     @Test
-    public void testInteger()
+    void testInteger()
     {
         Setting<Integer> setting = setting( "foo", INTEGER, "3" );
 
@@ -115,12 +111,11 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        expect.expect( InvalidSettingException.class );
-        setting.apply( map( stringMap( "foo", "bar" ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo", "bar" ) ) ) );
     }
 
     @Test
-    public void testList()
+    void testList()
     {
         Setting<List<Integer>> setting = setting( "foo", list( ",", INTEGER ), "1,2,3,4" );
         assertThat( setting.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
@@ -139,7 +134,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testStringList()
+    void testStringList()
     {
         Setting<List<String>> setting1 = setting( "apa", STRING_LIST, "foo,bar,baz" );
         assertEquals( Arrays.asList( "foo", "bar", "baz" ), setting1.apply( map( stringMap() ) ) );
@@ -152,7 +147,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testMin()
+    void testMin()
     {
         Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
@@ -160,12 +155,24 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        expect.expect( InvalidSettingException.class );
-        setting.apply( map( stringMap( "foo", "1" ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo", "1" ) ) ) );
     }
 
     @Test
-    public void testMax()
+    void exceptDoesNoAllowForbiddenValues()
+    {
+        Setting<String> restrictedSetting = buildSetting( "foo", STRING, "test" ).constraint( except( "a", "b", "c" ) ).build();
+        assertEquals( "test", restrictedSetting.apply( map( stringMap() ) ) );
+        assertEquals( "d", restrictedSetting.apply( map( stringMap( "foo", "d" ) ) ) );
+        assertThrows( InvalidSettingException.class, () -> restrictedSetting.apply( map( stringMap( "foo", "a" ) ) ) );
+        assertThrows( InvalidSettingException.class, () -> restrictedSetting.apply( map( stringMap( "foo", "b" ) ) ) );
+        InvalidSettingException exception =
+                assertThrows( InvalidSettingException.class, () -> restrictedSetting.apply( map( stringMap( "foo", "c" ) ) ) );
+        assertThat( exception.getMessage(), containsString( "not allowed value is: c" ) );
+    }
+
+    @Test
+    void testMax()
     {
         Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( max( 5 ) ).build();
 
@@ -173,12 +180,11 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        expect.expect( InvalidSettingException.class );
-        setting.apply( map( stringMap( "foo", "7" ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo", "7" ) ) ) );
     }
 
     @Test
-    public void testRange()
+    void testRange()
     {
         Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( range( 2, 5 ) ).build();
 
@@ -186,29 +192,12 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "1" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
-
-        try
-        {
-            setting.apply( map( stringMap( "foo", "6" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo", "1" ) ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo", "6" ) ) ) );
     }
 
     @Test
-    public void testMatches()
+    void testMatches()
     {
         Setting<String> setting = buildSetting( "foo", STRING, "abc" ).constraint(  matches( "a*b*c*" ) ).build();
 
@@ -216,54 +205,50 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "aaabbbccc" ) ) ), equalTo( "aaabbbccc" ) );
 
         // Bad
-        expect.expect( InvalidSettingException.class );
-        setting.apply( map( stringMap( "foo", "cba" ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo", "cba" ) ) ) );
     }
 
     @Test
-    public void testDurationWithBrokenDefault()
+    void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "1s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
-        expect.expect( InvalidSettingException.class );
-        setting.apply( map( stringMap() ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap() ) ) );
     }
 
     @Test
-    public void testDurationWithValueNotWithinConstraint()
+    void testDurationWithValueNotWithinConstraint()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
-        expect.expect( InvalidSettingException.class );
-        setting.apply( map( stringMap( "foo.bar", "2s" ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo.bar", "2s" ) ) ) );
     }
 
     @Test
-    public void testDuration()
+    void testDuration()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s").constraint( min( DURATION.apply( "3s" ) ) ).build();
         assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( Duration.ofSeconds( 4 ) ) );
     }
 
     @Test
-    public void badDurationMissingNumber()
+    void badDurationMissingNumber()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
-        expect.expect( InvalidSettingException.class );
-        expect.expectMessage( "Missing numeric value" );
-        setting.apply( map( stringMap( "foo.bar", "ms" ) ) );
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo.bar", "ms" ) ) ) );
+        assertThat( exception.getMessage(), containsString( "Missing numeric value" ) );
     }
 
     @Test
-    public void badDurationInvalidUnit()
+    void badDurationInvalidUnit()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
-        expect.expect( InvalidSettingException.class );
-        expect.expectMessage( "Unrecognized unit 'gigaseconds'" );
-        setting.apply( map( stringMap( "foo.bar", "2gigaseconds" ) ) );
+        InvalidSettingException exception =
+                assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo.bar", "2gigaseconds" ) ) ) );
+        assertThat( exception.getMessage(), containsString( "Unrecognized unit 'gigaseconds'" ) );
     }
 
     @Test
-    public void testDefault()
+    void testDefault()
     {
         Setting<Integer> setting = setting( "foo", INTEGER, "3" );
 
@@ -272,7 +257,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testPaths()
+    void testPaths()
     {
         File directory = new File( "myDirectory" );
         Setting<File> config = buildSetting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath() ).constraint(
@@ -282,7 +267,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testInheritOneLevel()
+    void testInheritOneLevel()
     {
         Setting<Integer> root = setting( "root", INTEGER, "4" );
         Setting<Integer> setting = buildSetting( "foo", INTEGER ).inherits( root ).build();
@@ -293,7 +278,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testInheritHierarchy()
+    void testInheritHierarchy()
     {
         // Test hierarchies
         Setting<String> a = setting( "A", STRING, "A" ); // A defaults to A
@@ -312,7 +297,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testLogicalLogRotationThreshold()
+    void testLogicalLogRotationThreshold()
     {
         // WHEN
         Setting<Long> setting = GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -327,7 +312,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testNormalizedRelativeURI()
+    void testNormalizedRelativeURI()
     {
         // Given
         Setting<URI> uri = setting( "mySetting", NORMALIZED_RELATIVE_URI, "http://localhost:7474///db///data///" );
@@ -337,15 +322,14 @@ public class SettingsTest
     }
 
     @Test
-    public void onlySingleInheritanceShouldBeAllowed()
+    void onlySingleInheritanceShouldBeAllowed()
     {
         Setting<String> a = setting( "A", STRING, "A" );
         Setting<String> b = setting( "B", STRING, "B" );
-        expect.expect( AssertionError.class );
-        Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build();
+        assertThrows( AssertionError.class, () -> buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build() );
     }
 
-    public static <From, To> Function<From,To> map( final Map<From,To> map )
+    private static <From, To> Function<From,To> map( final Map<From,To> map )
     {
         return map::get;
     }
