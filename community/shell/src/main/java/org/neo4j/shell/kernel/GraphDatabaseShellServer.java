@@ -31,6 +31,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.Output;
@@ -217,14 +218,14 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     private static GraphDatabaseAPI instantiateGraphDb( GraphDatabaseFactory factory, File path, boolean readOnly,
             String configFileOrNull )
     {
-        GraphDatabaseBuilder builder = factory.
-                newEmbeddedDatabaseBuilder( path ).
-                setConfig( GraphDatabaseSettings.disconnected, Boolean.toString( true ) ).
-                setConfig( GraphDatabaseSettings.read_only, Boolean.toString( readOnly ) );
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( path )
+                .setConfig( GraphDatabaseSettings.read_only, Boolean.toString( readOnly ) );
+
         if ( configFileOrNull != null )
         {
             builder.loadPropertiesFromFile( configFileOrNull );
         }
+        builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
         return (GraphDatabaseAPI) builder.newGraphDatabase();
     }
 

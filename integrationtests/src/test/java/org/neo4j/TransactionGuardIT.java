@@ -82,7 +82,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.database.LifecycleManagingDatabase;
+import org.neo4j.server.database.SimpleGraphFactory;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.web.HttpHeaderUtils;
@@ -665,7 +665,6 @@ public class TransactionGuardIT
     private class GuardingServerBuilder extends EnterpriseServerBuilder
     {
         private GraphDatabaseFacade graphDatabaseFacade;
-        final LifecycleManagingDatabase.GraphFactory PRECREATED_FACADE_FACTORY = ( config, dependencies ) -> graphDatabaseFacade;
 
         GuardingServerBuilder( GraphDatabaseFacade graphDatabaseAPI )
         {
@@ -684,8 +683,7 @@ public class TransactionGuardIT
         {
             GuardTestServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
             {
-                super( config, LifecycleManagingDatabase.lifecycleManagingDatabase( PRECREATED_FACADE_FACTORY ),
-                        dependencies, logProvider );
+                super( config, new SimpleGraphFactory( graphDatabaseFacade ), dependencies, logProvider );
             }
         }
     }

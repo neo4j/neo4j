@@ -37,16 +37,6 @@ public class LifecycleManagingDatabase implements Database
     static final String CYPHER_WARMUP_QUERY =
             "MATCH (a:` This query is just used to load the cypher compiler during warmup. Please ignore `) RETURN a LIMIT 0";
 
-    public interface GraphFactory
-    {
-        GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
-    }
-
-    public static Database.Factory lifecycleManagingDatabase( final GraphFactory graphDbFactory )
-    {
-        return ( config, dependencies ) -> new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
-    }
-
     private final Config config;
     private final GraphFactory dbFactory;
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;

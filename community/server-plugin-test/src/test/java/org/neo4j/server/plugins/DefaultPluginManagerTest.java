@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.plugins;
 
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class PluginManagerTest
+public class DefaultPluginManagerTest
 {
     private static PluginManager manager;
     private static GraphDatabaseAPI graphDb;
@@ -46,7 +46,7 @@ public class PluginManagerTest
     public static void loadExtensionManager()
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        manager = new PluginManager( null, NullLogProvider.getInstance() );
+        manager = new DefaultPluginManager( NullLogProvider.getInstance() );
     }
 
     @AfterClass

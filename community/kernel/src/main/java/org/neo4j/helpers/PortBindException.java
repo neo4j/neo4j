@@ -30,13 +30,28 @@ public class PortBindException extends BindException
 {
     public PortBindException( ListenSocketAddress address, Throwable original )
     {
-        super( String.format("Address %s is already in use, cannot bind to it.", address) );
+        this( address, null, original );
+    }
+
+    public PortBindException( ListenSocketAddress address1, ListenSocketAddress address2, Throwable original )
+    {
+        super( createMessage( address1, address2 ) );
         setStackTrace( original.getStackTrace() );
     }
 
-    public PortBindException( ListenSocketAddress address, ListenSocketAddress other, Throwable original )
+    private static String createMessage( ListenSocketAddress address1, ListenSocketAddress address2 )
     {
-        super( String.format("At least one of the addresses %s or %s is already in use, cannot bind to it.", address, other) );
-        setStackTrace( original.getStackTrace() );
+        if ( address1 == null && address2 == null )
+        {
+            throw new IllegalArgumentException( "At least one address should not be null" );
+        }
+        else if ( address1 != null && address2 != null )
+        {
+            return String.format( "At least one of the addresses %s or %s is already in use, cannot bind to it.", address1, address2 );
+        }
+        else
+        {
+            return String.format( "Address %s is already in use, cannot bind to it.", address1 != null ? address1 : address2 );
+        }
     }
 }

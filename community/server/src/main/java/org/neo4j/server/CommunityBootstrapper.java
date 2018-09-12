@@ -19,29 +19,23 @@
  */
 package org.neo4j.server;
 
-import java.util.Collection;
-import java.util.Collections;
-import javax.annotation.Nonnull;
-
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationValidator;
-import org.neo4j.kernel.configuration.ServerConfigurationValidator;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.database.CommunityGraphFactory;
+import org.neo4j.server.database.GraphFactory;
 
 public class CommunityBootstrapper extends ServerBootstrapper
 {
     @Override
-    protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
-                                         LogProvider logProvider )
+    protected GraphFactory createGraphFactory( Config config )
     {
-        return new CommunityNeoServer( config, dependencies, logProvider );
+        return new CommunityGraphFactory();
     }
 
     @Override
-    @Nonnull
-    protected Collection<ConfigurationValidator> configurationValidators()
+    protected NeoServer createNeoServer( GraphFactory graphFactory, Config config, GraphDatabaseDependencies dependencies, LogProvider userLogProvider )
     {
-        return Collections.singletonList( new ServerConfigurationValidator() );
+        return new CommunityNeoServer( config, graphFactory, dependencies, userLogProvider );
     }
 }

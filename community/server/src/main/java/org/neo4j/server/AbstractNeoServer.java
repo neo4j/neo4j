@@ -32,12 +32,12 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -61,7 +61,9 @@ import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
+import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.ConfigAdapter;
@@ -112,7 +114,7 @@ public abstract class AbstractNeoServer implements NeoServer
     };
     public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
-    private final Database.Factory dbFactory;
+    private final GraphFactory graphFactory;
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     protected final LogProvider logProvider;
     protected final Log log;
@@ -122,9 +124,9 @@ public abstract class AbstractNeoServer implements NeoServer
     private final Config config;
     private final LifeSupport life = new LifeSupport();
     private final ListenSocketAddress httpListenAddress;
-    private final Optional<ListenSocketAddress> httpsListenAddress;
+    private final ListenSocketAddress httpsListenAddress;
     private AdvertisedSocketAddress httpAdvertisedAddress;
-    private Optional<AdvertisedSocketAddress> httpsAdvertisedAddress;
+    private AdvertisedSocketAddress httpsAdvertisedAddress;
 
     protected Database database;
     private DependencyResolver dependencyResolver;
@@ -137,63 +139,44 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionFacade transactionFacade;
 
     private TransactionHandleRegistry transactionRegistry;
-    private boolean initialized;
     private ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
-    private Optional<HttpConnector> httpsConnector;
+    private HttpConnector httpsConnector;
     private AsyncRequestLog requestLog;
 
     protected abstract Iterable<ServerModule> createServerModules();
 
     protected abstract WebServer createWebServer();
 
-    public AbstractNeoServer( Config config, Database.Factory dbFactory,
+    public AbstractNeoServer( Config config, GraphFactory graphFactory,
             GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
     {
         this.config = config;
-        this.dbFactory = dbFactory;
+        this.graphFactory = graphFactory;
         this.dependencies = dependencies;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         log.info( NEO4J_IS_STARTING_MESSAGE );
 
-        List<HttpConnector> httpConnectors = config.enabledHttpConnectors();
+        verifyConnectorsConfiguration( config );
 
-        httpConnector = httpConnectors.stream()
-                .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
-                .findFirst().orElseThrow( () ->
-                        new IllegalArgumentException( "An HTTP connector must be configured to run the server" ) );
+        httpConnector = findConnector( config, Encryption.NONE );
+        httpListenAddress = listenAddressFor( config, httpConnector );
+        httpAdvertisedAddress = advertisedAddressFor( config, httpConnector );
 
-        httpListenAddress = config.get( httpConnector.listen_address );
-        httpAdvertisedAddress = config.get( httpConnector.advertised_address );
-
-        httpsConnector = httpConnectors.stream()
-                .filter( c -> Encryption.TLS.equals( c.encryptionLevel() ) )
-                .findFirst();
-        httpsListenAddress = httpsConnector.map( connector -> config.get( connector.listen_address ) );
-        httpsAdvertisedAddress = httpsConnector.map( connector -> config.get( connector.advertised_address ) );
-    }
-
-    @Override
-    public void init()
-    {
-        if ( initialized )
-        {
-            return;
-        }
-
-        this.database = dbFactory.newDatabase( config, dependencies );
-        life.add( database );
-        life.add( new ServerDependenciesLifeCycleAdapter() );
-        life.add( new ServerComponentsLifecycleAdapter() );
-
-        this.initialized = true;
+        httpsConnector = findConnector( config, Encryption.TLS );
+        httpsListenAddress = listenAddressFor( config, httpsConnector );
+        httpsAdvertisedAddress = advertisedAddressFor( config, httpsConnector );
     }
 
     @Override
     public void start() throws ServerStartupException
     {
-        init();
+        database = new LifecycleManagingDatabase( config, graphFactory, dependencies );
+        life.add( database );
+        life.add( new ServerDependenciesLifeCycleAdapter() );
+        life.add( new ServerComponentsLifecycleAdapter() );
+
         try
         {
             life.start();
@@ -288,7 +271,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void configureWebServer()
     {
-        webServer.setAddress( httpListenAddress );
+        webServer.setHttpAddress( httpListenAddress );
         webServer.setHttpsAddress( httpsListenAddress );
         webServer.setMaxThreads( config.get( ServerSettings.webserver_max_threads ) );
         webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
@@ -308,39 +291,41 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             setUpHttpLogging();
             webServer.start();
-            InetSocketAddress localHttpAddress = webServer.getLocalHttpAddress();
-            connectorPortRegister.register( httpConnector.key(), localHttpAddress );
-            httpsConnector.ifPresent( connector -> connectorPortRegister.register( connector.key(), webServer
-                    .getLocalHttpsAddress() ) );
-            checkHttpAdvertisedAddress( localHttpAddress );
-            checkHttpsAdvertisedAddress();
+            registerHttpAddressAfterStartup();
+            registerHttpsAddressAfterStartup();
             log.info( "Remote interface available at %s", baseUri() );
         }
         catch ( Exception e )
         {
-            log.error( "Failed to start Neo4j on %s: %s", getAddress(), e.getMessage() );
+            ListenSocketAddress address = httpListenAddress != null ? httpListenAddress : httpsListenAddress;
+            log.error( "Failed to start Neo4j on %s: %s", address, e.getMessage() );
             throw e;
         }
     }
 
-    private void checkHttpsAdvertisedAddress()
+    private void registerHttpAddressAfterStartup()
     {
-        httpsAdvertisedAddress.ifPresent( address ->
+        if ( httpConnector != null )
         {
-            if ( address.getPort() == 0 )
+            InetSocketAddress localHttpAddress = webServer.getLocalHttpAddress();
+            connectorPortRegister.register( httpConnector.key(), localHttpAddress );
+            if ( httpAdvertisedAddress.getPort() == 0 )
             {
-                InetSocketAddress localHttpsAddress = webServer.getLocalHttpsAddress();
-                httpsAdvertisedAddress = Optional
-                        .of( new AdvertisedSocketAddress( localHttpsAddress.getHostString(), localHttpsAddress.getPort() ) );
+                httpAdvertisedAddress = new AdvertisedSocketAddress( localHttpAddress.getHostString(), localHttpAddress.getPort() );
             }
-        } );
+        }
     }
 
-    private void checkHttpAdvertisedAddress( InetSocketAddress localHttpAddress )
+    private void registerHttpsAddressAfterStartup()
     {
-        if ( httpAdvertisedAddress.getPort() == 0 )
+        if ( httpsConnector != null )
         {
-            httpAdvertisedAddress = new AdvertisedSocketAddress( localHttpAddress.getHostString(), localHttpAddress.getPort() );
+            InetSocketAddress localHttpsAddress = webServer.getLocalHttpsAddress();
+            connectorPortRegister.register( httpsConnector.key(), localHttpsAddress );
+            if ( httpsAdvertisedAddress.getPort() == 0 )
+            {
+                httpsAdvertisedAddress = new AdvertisedSocketAddress( localHttpsAddress.getHostString(), localHttpsAddress.getPort() );
+            }
         }
     }
 
@@ -360,16 +345,6 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setRequestLog( requestLog );
     }
 
-    public ListenSocketAddress getAddress()
-    {
-        return httpListenAddress;
-    }
-
-    protected boolean httpsIsEnabled()
-    {
-        return httpsListenAddress.isPresent();
-    }
-
     protected Pattern[] getUriWhitelist()
     {
         return DEFAULT_URI_WHITELIST;
@@ -378,7 +353,11 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
+        // Stop and clear the nested life.
+        // It needs to be cleared because server can be restarted, for example using a JMX bean.
+        // See `ServerManagementMBean` and its implementation.
         life.stop();
+        life.clear();
     }
 
     private void stopWebServer() throws Exception
@@ -408,12 +387,15 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public URI baseUri()
     {
-        return uriBuilder.buildURI( httpAdvertisedAddress, false );
+        return httpAdvertisedAddress != null
+               ? uriBuilder.buildURI( httpAdvertisedAddress, false )
+               : uriBuilder.buildURI( httpsAdvertisedAddress, true );
     }
 
     public Optional<URI> httpsUri()
     {
-        return httpsAdvertisedAddress.map( address -> uriBuilder.buildURI( address, true ) );
+        return Optional.ofNullable( httpsAdvertisedAddress )
+                .map( address -> uriBuilder.buildURI( address, true ) );
     }
 
     public WebServer getWebServer()
@@ -483,6 +465,36 @@ public abstract class AbstractNeoServer implements NeoServer
     protected <T> T resolveDependency( Class<T> type )
     {
         return dependencyResolver.resolveDependency( type );
+    }
+
+    private static void verifyConnectorsConfiguration( Config config )
+    {
+        HttpConnector httpConnector = findConnector( config, Encryption.NONE );
+        HttpConnector httpsConnector = findConnector( config, Encryption.TLS );
+
+        if ( httpConnector == null && httpsConnector == null )
+        {
+            throw new IllegalArgumentException( "Either HTTP or HTTPS connector must be configured to run the server" );
+        }
+    }
+
+    private static HttpConnector findConnector( Config config, Encryption encryption )
+    {
+        return config.enabledHttpConnectors()
+                .stream()
+                .filter( connector -> connector.encryptionLevel() == encryption )
+                .findFirst()
+                .orElse( null );
+    }
+
+    private static ListenSocketAddress listenAddressFor( Config config, HttpConnector connector )
+    {
+        return connector == null ? null : config.get( connector.listen_address );
+    }
+
+    private static AdvertisedSocketAddress advertisedAddressFor( Config config, HttpConnector connector )
+    {
+        return connector == null ? null : config.get( connector.advertised_address );
     }
 
     private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter

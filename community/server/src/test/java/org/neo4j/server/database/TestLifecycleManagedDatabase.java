@@ -57,7 +57,7 @@ public class TestLifecycleManagedDatabase
     private File dataDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
-    private LifecycleManagingDatabase.GraphFactory dbFactory;
+    private GraphFactory dbFactory;
     private Config dbConfig;
 
     @Before
@@ -65,7 +65,7 @@ public class TestLifecycleManagedDatabase
     {
         dataDirectory = createTempDir();
 
-        dbFactory = createGraphFactory();
+        dbFactory = new SimpleGraphFactory( (GraphDatabaseFacade) dbRule.getGraphDatabaseAPI() );
         dbConfig = Config.defaults( GraphDatabaseSettings.data_directory, dataDirectory.getAbsolutePath() );
         theDatabase = newDatabase();
     }
@@ -143,10 +143,5 @@ public class TestLifecycleManagedDatabase
         theDatabase.start();
         assertThat( theDatabase.getLocation().getAbsolutePath(),
                 is( dbConfig.get( GraphDatabaseSettings.database_path ).getAbsolutePath() ) );
-    }
-
-    private LifecycleManagingDatabase.GraphFactory createGraphFactory()
-    {
-        return ( config, dependencies ) -> (GraphDatabaseFacade) dbRule.getGraphDatabaseAPI();
     }
 }

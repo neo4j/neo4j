@@ -17,31 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.database;
 
-import java.net.URI;
-
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.transactional.TransactionRegistry;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
-public interface NeoServer
+public class SimpleGraphFactory implements GraphFactory
 {
-    void start();
+    private final GraphDatabaseFacade db;
 
-    void stop();
+    public SimpleGraphFactory( GraphDatabaseFacade db )
+    {
+        this.db = db;
+    }
 
-    Config getConfig();
-
-    Database getDatabase();
-
-    TransactionRegistry getTransactionRegistry();
-
-    PluginManager getExtensionManager();
-
-    URI baseUri();
-
-    Iterable<AdvertisableService> getServices();
+    @Override
+    public GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        return db;
+    }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.exception;
 
-import java.util.function.Function;
-
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.server.ServerStartupException;
@@ -37,35 +35,13 @@ public class ServerStartupErrors
     {
     }
 
-    /**
-     * Each function in this array handles translating one case. If it doesn't know how to translate a given
-     * throwable, it simply returns null.
-     */
-    private static final Function<Throwable, ServerStartupException>[] translators = new Function[] {
-        // Handle upgrade errors
-            (Function<Throwable,ServerStartupException>) o ->
-            {
-                Throwable rootCause = Exceptions.rootCause( o );
-                if ( rootCause instanceof UpgradeNotAllowedException )
-                {
-                    return new UpgradeDisallowedStartupException( (UpgradeNotAllowedException)rootCause );
-                }
-                return null;
-            }
-    };
-
     public static ServerStartupException translateToServerStartupError( Throwable cause )
     {
-        for ( Function<Throwable,ServerStartupException> translator : translators )
+        Throwable rootCause = Exceptions.rootCause( cause );
+        if ( rootCause instanceof UpgradeNotAllowedException )
         {
-            ServerStartupException r = translator.apply( cause );
-            if ( r != null )
-            {
-                return r;
-            }
+            return new UpgradeDisallowedStartupException( (UpgradeNotAllowedException) rootCause );
         }
-
         return new ServerStartupException( format( "Starting Neo4j failed: %s", cause.getMessage() ), cause );
     }
-
 }

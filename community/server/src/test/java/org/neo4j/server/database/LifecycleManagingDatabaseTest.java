@@ -42,7 +42,7 @@ public class LifecycleManagingDatabaseTest
         Config config = Config.defaults();
         GraphDatabaseFacadeFactory.Dependencies deps =
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
-        LifecycleManagingDatabase.GraphFactory factory = ( conf, dependencies ) -> mockDb;
+        GraphFactory factory = new SimpleGraphFactory( mockDb );
         LifecycleManagingDatabase db = new LifecycleManagingDatabase( config, factory, deps )
         {
             @Override

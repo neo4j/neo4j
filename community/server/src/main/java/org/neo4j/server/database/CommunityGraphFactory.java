@@ -21,14 +21,22 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface Database extends Lifecycle
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
+
+public class CommunityGraphFactory implements GraphFactory
 {
-    File getLocation();
-
-    GraphDatabaseFacade getGraph();
-
-    boolean isRunning();
+    @Override
+    public GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies )
+    {
+        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
+        GraphDatabaseFacadeFactory facadeFactory = new GraphDatabaseFacadeFactory( COMMUNITY, CommunityEditionModule::new );
+        return facadeFactory.newFacade( storeDir, config, dependencies );
+    }
 }

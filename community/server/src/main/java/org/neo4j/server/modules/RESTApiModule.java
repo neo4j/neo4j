@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.plugins.DefaultPluginManager;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
@@ -96,7 +97,6 @@ public class RESTApiModule implements ServerModule
     public void stop()
     {
         webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
-        unloadPlugins();
     }
 
     private URI restApiUri()
@@ -106,12 +106,7 @@ public class RESTApiModule implements ServerModule
 
     private void loadPlugins()
     {
-        plugins = new PluginManager( config, logProvider );
-    }
-
-    private void unloadPlugins()
-    {
-        // TODO
+        plugins = new DefaultPluginManager( logProvider );
     }
 
     public PluginManager getPlugins()

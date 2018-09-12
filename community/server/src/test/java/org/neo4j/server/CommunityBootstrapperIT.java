@@ -19,29 +19,12 @@
  */
 package org.neo4j.server;
 
-import java.net.URI;
-
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.transactional.TransactionRegistry;
-
-public interface NeoServer
+public class CommunityBootstrapperIT extends BaseBootstrapperIT
 {
-    void start();
+    @Override
+    protected ServerBootstrapper newBootstrapper()
+    {
+        return new CommunityBootstrapper();
+    }
 
-    void stop();
-
-    Config getConfig();
-
-    Database getDatabase();
-
-    TransactionRegistry getTransactionRegistry();
-
-    PluginManager getExtensionManager();
-
-    URI baseUri();
-
-    Iterable<AdvertisableService> getServices();
 }

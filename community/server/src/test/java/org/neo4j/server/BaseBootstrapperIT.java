@@ -26,28 +26,41 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
+public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 {
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
@@ -101,7 +114,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
         // Given
         File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME );
 
-        Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
+        Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
@@ -123,9 +136,9 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME);
+        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME );
 
-        Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
+        Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
@@ -144,8 +157,141 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
     }
 
+    @Test
+    public void shouldStartWithHttpHttpsAndBoltDisabled() throws Exception
+    {
+        testStartupWithConnectors( false, false, false );
+    }
+
+    @Test
+    public void shouldStartWithHttpEnabledAndHttpsBoltDisabled() throws Exception
+    {
+        testStartupWithConnectors( true, false, false );
+    }
+
+    @Test
+    public void shouldStartWithHttpsEnabledAndHttpBoltDisabled() throws Exception
+    {
+        testStartupWithConnectors( false, true, false );
+    }
+
+    @Test
+    public void shouldStartWithBoltEnabledAndHttpHttpsDisabled() throws Exception
+    {
+        testStartupWithConnectors( false, false, true );
+    }
+
+    @Test
+    public void shouldStartWithHttpHttpsEnabledAndBoltDisabled() throws Exception
+    {
+        testStartupWithConnectors( true, true, false );
+    }
+
+    @Test
+    public void shouldStartWithHttpBoltEnabledAndHttpsDisabled() throws Exception
+    {
+        testStartupWithConnectors( true, false, true );
+    }
+
+    @Test
+    public void shouldStartWithHttpsBoltEnabledAndHttpDisabled() throws Exception
+    {
+        testStartupWithConnectors( false, true, true );
+    }
+
+    private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
+    {
+        int httpPort = httpEnabled ? 0 : 7474;
+        int httpsPort = httpsEnabled ? 0 : 7473;
+        int boltPort = boltEnabled ? 0 : 7687;
+
+        int resultCode = ServerBootstrapper.start( bootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
+                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
+
+                "-c", "dbms.connector.http.enabled=" + httpEnabled,
+                "-c", "dbms.connector.http.listen_address=:" + httpPort,
+
+                "-c", "dbms.connector.https.enabled=" + httpsEnabled,
+                "-c", "dbms.connector.https.listen_address=:" + httpsPort,
+
+                "-c", "dbms.connector.bolt.enabled=" + boltEnabled,
+                "-c", "dbms.connector.bolt.listen_address=:" + boltPort
+        );
+
+        assertEquals( ServerBootstrapper.OK, resultCode );
+        assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
+        assertDbAccessibleAsEmbedded();
+
+        verifyConnector( "http", 7474, httpEnabled );
+        verifyConnector( "https", 7473, httpsEnabled );
+        verifyConnector( "bolt", 7687, boltEnabled );
+    }
+
     protected String configOption( Setting<?> setting, String value )
     {
         return setting.name() + "=" + value;
+    }
+
+    private void assertDbAccessibleAsEmbedded()
+    {
+        GraphDatabaseAPI db = db();
+
+        Label label = () -> "Node";
+        String propertyKey = "key";
+        String propertyValue = "value";
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( label ).setProperty( propertyKey, propertyValue );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = single( db.findNodes( label ) );
+            assertEquals( propertyValue, node.getProperty( propertyKey ) );
+            tx.success();
+        }
+    }
+
+    private void verifyConnector( String name, int defaultPort, boolean enabled )
+    {
+        HostnamePort address = connectorAddress( name );
+        if ( enabled )
+        {
+            assertNotNull( address );
+            assertTrue( canConnectToSocket( address.getHost(), address.getPort() ) );
+        }
+        else
+        {
+            assertNull( address );
+            assertFalse( canConnectToSocket( "localhost", defaultPort ) );
+        }
+    }
+
+    private HostnamePort connectorAddress( String name )
+    {
+        ConnectorPortRegister portRegister = db().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+        return portRegister.getLocalAddress( name );
+
+    }
+
+    private GraphDatabaseFacade db()
+    {
+        return bootstrapper.getServer().getDatabase().getGraph();
+    }
+
+    private static boolean canConnectToSocket( String host, int port )
+    {
+        try
+        {
+            new Socket( host, port ).close();
+            return true;
+        }
+        catch ( Throwable ignore )
+        {
+            return false;
+        }
     }
 }

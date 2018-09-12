@@ -50,7 +50,7 @@ public class JettyThreadLimitIT
         int selectorThreads = 1; // ... and 1 thread will become a selector...
         int jobThreads = configuredMaxThreads - acceptorThreads - selectorThreads; // ... and the rest are job threads
         server.setMaxThreads( numCores );
-        server.setAddress( new ListenSocketAddress( "localhost", PortAuthority.allocatePort() ) );
+        server.setHttpAddress( new ListenSocketAddress( "localhost", PortAuthority.allocatePort() ) );
         try
         {
             server.start();

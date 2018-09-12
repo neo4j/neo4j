@@ -44,8 +44,6 @@ import javax.annotation.Nullable;
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.internal.diagnostics.DiagnosticsPhase;
-import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -53,6 +51,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.diagnostics.DiagnosticsPhase;
+import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.logging.BufferingLog;
@@ -207,9 +207,6 @@ public class Config implements DiagnosticsProvider, Configuration
             overriddenDefaults.put( http.enabled.name(), TRUE );
             overriddenDefaults.put( https.enabled.name(), TRUE );
             overriddenDefaults.put( bolt.enabled.name(), TRUE );
-
-            // Add server validator
-            validators.add( new ServerConfigurationValidator() );
 
             return this;
         }

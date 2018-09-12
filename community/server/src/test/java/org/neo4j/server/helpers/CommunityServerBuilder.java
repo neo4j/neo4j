@@ -31,7 +31,6 @@ import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
@@ -43,15 +42,14 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.LifecycleManagingDatabase;
+import org.neo4j.server.database.InMemoryGraphFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
-import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
 {
@@ -73,19 +71,11 @@ public class CommunityServerBuilder
         System.setProperty( "sun.net.http.allowRestrictedHeaders", "true" );
     }
 
-    private static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = ( config, dependencies ) ->
-    {
-        File storeDir = config.get( GraphDatabaseSettings.database_path );
-        config.augment( stringMap( GraphDatabaseSettings.ephemeral.name(), "true",
-                new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
-        return new ImpermanentGraphDatabase( storeDir, config,
-                GraphDatabaseDependencies.newDependencies( dependencies ) );
-    };
-
     private String[] autoIndexedNodeKeys;
     private final String[] autoIndexedRelationshipKeys = null;
     private String[] securityRuleClassNames;
     private boolean persistent;
+    private boolean httpEnabled = true;
     private boolean httpsEnabled;
 
     public static CommunityServerBuilder server( LogProvider logProvider )
@@ -181,7 +171,7 @@ public class CommunityServerBuilder
         HttpConnector httpsConnector = new HttpConnector( "https", Encryption.TLS );
 
         properties.put( httpConnector.type.name(), "HTTP" );
-        properties.put( httpConnector.enabled.name(), "true" );
+        properties.put( httpConnector.enabled.name(), String.valueOf( httpEnabled ) );
         properties.put( httpConnector.address.name(), address.toString() );
         properties.put( httpConnector.encryption.name(), "NONE" );
 
@@ -319,6 +309,12 @@ public class CommunityServerBuilder
         return this;
     }
 
+    public CommunityServerBuilder withHttpDisabled()
+    {
+        httpEnabled = false;
+        return this;
+    }
+
     public CommunityServerBuilder withProperty( String key, String value )
     {
         arbitraryProperties.put( key, value );
@@ -352,11 +348,9 @@ public class CommunityServerBuilder
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory
-                .Dependencies dependencies, LogProvider logProvider )
+        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
-            super( config, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies,
-                    logProvider );
+            super( config, persistent ? new CommunityGraphFactory() : new InMemoryGraphFactory(), dependencies, logProvider );
             this.configFile = configFile;
         }
 

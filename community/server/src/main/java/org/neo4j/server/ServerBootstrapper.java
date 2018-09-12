@@ -23,11 +23,11 @@ import sun.misc.Signal;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
@@ -164,11 +165,30 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return server;
     }
 
-    protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
-                                                  LogProvider userLogProvider );
+    private NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies, LogProvider userLogProvider )
+    {
+        GraphFactory graphFactory = createGraphFactory( config );
 
-    @Nonnull
-    protected abstract Collection<ConfigurationValidator> configurationValidators();
+        boolean httpAndHttpsDisabled = config.enabledHttpConnectors().isEmpty();
+        if ( httpAndHttpsDisabled )
+        {
+            return new DisabledNeoServer( graphFactory, dependencies, config, userLogProvider );
+        }
+        return createNeoServer( graphFactory, config, dependencies, userLogProvider );
+    }
+
+    protected abstract GraphFactory createGraphFactory( Config config );
+
+    /**
+     * Create a new server component. This method is invoked only when at least one HTTP connector is enabled.
+     */
+    protected abstract NeoServer createNeoServer( GraphFactory graphFactory, Config config, GraphDatabaseDependencies dependencies,
+            LogProvider userLogProvider );
+
+    protected Collection<ConfigurationValidator> configurationValidators()
+    {
+        return Collections.emptyList();
+    }
 
     private static LogProvider setupLogging( Config config )
     {

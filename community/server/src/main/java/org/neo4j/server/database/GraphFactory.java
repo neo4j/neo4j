@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.database;
 
-public class CommunityBootstrapperTestIT extends BaseBootstrapperTestIT
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+
+import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
+
+@FunctionalInterface
+public interface GraphFactory
 {
-    @Override
-    protected ServerBootstrapper newBootstrapper()
-    {
-        return new CommunityBootstrapper();
-    }
-
+    GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies );
 }
