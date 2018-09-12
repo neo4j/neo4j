@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointValue;
@@ -77,64 +77,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     // This behaviour is shared by General and Unique indexes
-
-    @Test
-    public void testIndexSeekByNumber() throws Exception
-    {
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), -5 ),
-                add( 2L, descriptor.schema(), 0 ),
-                add( 3L, descriptor.schema(), 5.5 ),
-                add( 4L, descriptor.schema(), 10.0 ),
-                add( 5L, descriptor.schema(), 100.0 ) ) );
-
-        assertThat( query( range( 1, 0, true, 10, true ) ), equalTo( asList( 2L, 3L, 4L ) ) );
-        assertThat( query( range( 1, 10, true, null, true ) ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( query( range( 1, 100, true, 0, true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( range( 1, null, true, 5.5, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( range( 1, (Number)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( range( 1, -5, true, 0, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( range( 1, -5, true, 5.5, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-    }
-
-    @Test
-    public void testIndexSeekByString() throws Exception
-    {
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "Anabelle" ),
-                add( 2L, descriptor.schema(), "Anna" ),
-                add( 3L, descriptor.schema(), "Bob" ),
-                add( 4L, descriptor.schema(), "Harriet" ),
-                add( 5L, descriptor.schema(), "William" ) ) );
-
-        assertThat( query( range( 1, "Anna", true, "Harriet", false ) ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( query( range( 1, "Harriet", true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( query( range( 1, "Harriet", false, null, true ) ), equalTo( singletonList( 5L ) ) );
-        assertThat( query( range( 1, "William", false, "Anna", true ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( range( 1, null, false, "Bob", false ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( range( 1, null, true, "Bob", true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( query( range( 1, (String)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( range( 1, "Anabelle", false, "Anna", true ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( range( 1, "Anabelle", false, "Bob", false ) ), equalTo( singletonList( 2L ) ) );
-    }
-
-    @Test
-    public void testIndexSeekByBoolean() throws Exception
-    {
-        Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
-
-        updateAndCommit( asList(
-                add( 1L, descriptor.schema(), false ),
-                add( 2L, descriptor.schema(), true ) ) );
-
-        assertThat( query( range( 1, BooleanValue.FALSE, true, BooleanValue.TRUE, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( range( 1, BooleanValue.FALSE, false, BooleanValue.TRUE, true ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( range( 1, BooleanValue.FALSE, true, BooleanValue.TRUE, false ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( range( 1, BooleanValue.FALSE, false, BooleanValue.TRUE, false ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( range( 1, null, true, BooleanValue.TRUE, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( range( 1, BooleanValue.FALSE, true, null, true ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( range( 1, BooleanValue.TRUE, true, BooleanValue.FALSE, true ) ), equalTo( EMPTY_LIST ) );
-    }
 
     @Test
     public void testIndexSeekByPrefix() throws Exception
@@ -233,93 +175,154 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
+    public void testIndexRangeSeekByNumber() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextNumberValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByText() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextTextValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByDateTime() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextDateTimeValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByLocalDateTime() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextLocalDateTimeValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByDate() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextDateValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByTime() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextTimeValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByLocalTime() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextLocalTimeValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByDuration() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextDuration() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByPeriod() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextPeriod() );
+    }
+
+    // testIndexRangeSeekGeometry not present because geometry is not orderable
+    // testIndexRangeSeekBoolean not present because test needs more than two possible values
+
+    @Test
     public void testIndexRangeSeekByZonedDateTimeArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextDateTimeArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextDateTimeArray() );
     }
 
     @Test
     public void testIndexRangeSeekByLocalDateTimeArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextLocalDateTimeArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextLocalDateTimeArray() );
     }
 
     @Test
     public void testIndexRangeSeekByDateArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextDateArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextDateArray() );
     }
 
     @Test
     public void testIndexRangeSeekByZonedTimeArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextTimeArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextTimeArray() );
     }
 
     @Test
     public void testIndexRangeSeekByLocalTimeArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextLocalTimeArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextLocalTimeArray() );
     }
 
     @Test
     public void testIndexRangeSeekByDurationArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextDurationArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextDurationArray() );
     }
 
     @Test
     public void testIndexRangeSeekByTextArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextBasicMultilingualPlaneStringArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextBasicMultilingualPlaneStringArray() );
     }
 
     @Test
     public void testIndexRangeSeekByBooleanArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextBooleanArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextBooleanArray() );
     }
 
     @Test
     public void testIndexRangeSeekByByteArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextByteArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextByteArray() );
     }
 
     @Test
     public void testIndexRangeSeekByShortArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextShortArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextShortArray() );
     }
 
     @Test
     public void testIndexRangeSeekByIntArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextIntArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextIntArray() );
     }
 
     @Test
     public void testIndexRangeSeekByLongArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextLongArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextLongArray() );
     }
 
     @Test
     public void testIndexRangeSeekByFloatArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextFloatArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextFloatArray() );
     }
 
     @Test
     public void testIndexRangeSeekByDoubleArray() throws Exception
     {
-        testIndexRangeSeek( () -> random.randomValues().nextDoubleArray() );
+        testIndexRangeSeekArray( () -> random.randomValues().nextDoubleArray() );
     }
 
-    private void testIndexRangeSeek( Supplier<Value> generator ) throws Exception
+    private void testIndexRangeSeekArray( Supplier<ArrayValue> generator ) throws Exception
     {
         Assume.assumeTrue( testSuite.supportsGranularCompositeQueries() );
+        testIndexRangeSeek( generator );
+    }
 
+    private void testIndexRangeSeek( Supplier<? extends Value> generator ) throws Exception
+    {
         int count = random.nextInt( 5, 10 );
         List<Value> values = new ArrayList<>();
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
