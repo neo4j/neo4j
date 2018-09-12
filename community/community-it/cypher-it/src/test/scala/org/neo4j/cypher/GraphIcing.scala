@@ -93,8 +93,16 @@ trait GraphIcing {
       }
     }
 
-    def createIndex(label: String, properties: String*) = {
+    def createIndex(label: String, properties: String*): Unit = {
       graph.execute(s"CREATE INDEX ON :$label(${properties.mkString(",")})")
+
+      inTx {
+        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      }
+    }
+
+    def createUniqueIndex(label: String, property: String): Unit = {
+      graph.execute(s"CREATE CONSTRAINT ON (p:$label) ASSERT p.$property IS UNIQUE")
 
       inTx {
         graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)

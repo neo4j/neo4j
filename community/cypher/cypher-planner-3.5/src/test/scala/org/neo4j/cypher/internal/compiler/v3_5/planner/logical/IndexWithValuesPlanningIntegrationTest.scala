@@ -497,57 +497,61 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
-  // RANGE seek on merge unique index
+  // seek on merge unique index
 
-  ignore("should plan seek with GetValue when the property is projected (merge unique index)") {
+  test("should plan seek with GetValue when the property is projected (merge unique index), but need a projection because of the Optional") {
     val plan = new given {
       uniqueIndexOn("Awesome", "prop").providesValues()
     } getLogicalPlanFor "MERGE (n:Awesome {prop: 'foo'}) RETURN n.prop"
 
     plan._2 should equal(
-      AntiConditionalApply(
-        Optional(
-          ActiveRead(
-            NodeUniqueIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-              SingleQueryExpression(StringLiteral("foo")(pos)),
-              Set.empty,
-              IndexOrderNone)
-          )
-        ),
-        MergeCreateNode(
-          Argument(Set()),
-          "n", Seq(LabelName("Awesome")(pos)), Some(MapExpression(List((PropertyKeyName("prop")(pos), StringLiteral("foo")(pos))))(pos))
-        ),
-        Seq("n"))
+      Projection(
+        AntiConditionalApply(
+          Optional(
+            ActiveRead(
+              NodeUniqueIndexSeek(
+                "n",
+                LabelToken("Awesome", LabelId(0)),
+                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+                SingleQueryExpression(StringLiteral("foo")(pos)),
+                Set.empty,
+                IndexOrderNone)
+            )
+          ),
+          MergeCreateNode(
+            Argument(Set()),
+            "n", Seq(LabelName("Awesome")(pos)), Some(MapExpression(List((PropertyKeyName("prop")(pos), StringLiteral("foo")(pos))))(pos))
+          ),
+          Seq("n")),
+        Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
     )
   }
 
-  ignore("for exact seeks, should even plan index seek with GetValue when the index does not provide values (merge unique index)") {
+  test("for exact seeks, should even plan index seek with GetValue when the index does not provide values (merge unique index), but need a projection because of the Optional") {
     val plan = new given {
       uniqueIndexOn("Awesome", "prop")
     } getLogicalPlanFor "MERGE (n:Awesome {prop: 'foo'}) RETURN n.prop"
 
     plan._2 should equal(
-      AntiConditionalApply(
-        Optional(
-          ActiveRead(
-            NodeUniqueIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-              SingleQueryExpression(StringLiteral("foo")(pos)),
-              Set.empty,
-              IndexOrderNone)
-          )
-        ),
-        MergeCreateNode(
-          Argument(Set()),
-          "n", Seq(LabelName("Awesome")(pos)), Some(MapExpression(List((PropertyKeyName("prop")(pos), StringLiteral("foo")(pos))))(pos))
-        ),
-        Seq("n"))
+      Projection(
+        AntiConditionalApply(
+          Optional(
+            ActiveRead(
+              NodeUniqueIndexSeek(
+                "n",
+                LabelToken("Awesome", LabelId(0)),
+                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+                SingleQueryExpression(StringLiteral("foo")(pos)),
+                Set.empty,
+                IndexOrderNone)
+            )
+          ),
+          MergeCreateNode(
+            Argument(Set()),
+            "n", Seq(LabelName("Awesome")(pos)), Some(MapExpression(List((PropertyKeyName("prop")(pos), StringLiteral("foo")(pos))))(pos))
+          ),
+          Seq("n")),
+        Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
     )
   }
 

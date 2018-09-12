@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
+import org.opencypher.v9_0.expressions.Property
 import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
@@ -31,4 +32,9 @@ case class Optional(source: LogicalPlan, protectedSymbols: Set[String] = Set.emp
   val rhs = None
 
   override val availableSymbols: Set[String] = source.availableSymbols
+
+  /**
+    * Optional can produce a null row. That does not have any index properties.
+    */
+  override def availablePropertiesFromIndexes: Map[Property, String] = Map.empty
 }
