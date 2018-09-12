@@ -475,7 +475,6 @@ public class NeoStores implements AutoCloseable
 
     public void logVersions( Logger msgLog )
     {
-        msgLog.log( "Store versions:" );
         visitStore( store ->
         {
             store.logVersions( msgLog );
@@ -485,7 +484,6 @@ public class NeoStores implements AutoCloseable
 
     public void logIdUsage( Logger msgLog )
     {
-        msgLog.log( "Id usage:" );
         visitStore( store ->
         {
             store.logIdUsage( msgLog );
