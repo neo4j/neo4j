@@ -664,7 +664,7 @@ public class HighAvailabilityMemberStateMachineTest
 
     private static DataSourceManager neoStoreDataSourceSupplierMock()
     {
-        DataSourceManager dataSourceManager = new DataSourceManager();
+        DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
         dataSourceManager.register( mock( NeoStoreDataSource.class ) );
         return dataSourceManager;
     }
@@ -706,31 +706,31 @@ public class HighAvailabilityMemberStateMachineTest
         AvailabilityGuard guard = mock( DatabaseAvailabilityGuard.class );
         Election election = mock( Election.class );
 
-        public StateMachineBuilder withContext( HighAvailabilityMemberContext context )
+        StateMachineBuilder withContext( HighAvailabilityMemberContext context )
         {
             this.context = context;
             return this;
         }
 
-        public StateMachineBuilder withEvents( ClusterMemberEvents events )
+        StateMachineBuilder withEvents( ClusterMemberEvents events )
         {
             this.events = events;
             return this;
         }
 
-        public StateMachineBuilder withClusterMembers( ObservedClusterMembers clusterMember )
+        StateMachineBuilder withClusterMembers( ObservedClusterMembers clusterMember )
         {
             this.clusterMembers = clusterMember;
             return this;
         }
 
-        public StateMachineBuilder withGuard( AvailabilityGuard guard )
+        StateMachineBuilder withGuard( AvailabilityGuard guard )
         {
             this.guard = guard;
             return this;
         }
 
-        public StateMachineBuilder withElection( Election election )
+        StateMachineBuilder withElection( Election election )
         {
             this.election = election;
             return this;
@@ -844,7 +844,7 @@ public class HighAvailabilityMemberStateMachineTest
         {
         }
 
-        public void switchToSlave( InstanceId me )
+        void switchToSlave( InstanceId me )
         {
             InstanceId someOneElseThanMyself = new InstanceId( me.toIntegerIndex() + 1 );
             listener.memberIsAvailable( "master", someOneElseThanMyself, URI.create( "cluster://127.0.0.1:2390?serverId=2" ), null );

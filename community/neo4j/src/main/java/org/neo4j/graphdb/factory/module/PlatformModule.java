@@ -141,7 +141,7 @@ public class PlatformModule
             GraphDatabaseFacadeFactory.Dependencies externalDependencies )
     {
         this.databaseInfo = databaseInfo;
-        this.dataSourceManager = new DataSourceManager();
+        this.dataSourceManager = new DataSourceManager( config );
         dependencies = new Dependencies();
         dependencies.satisfyDependency( databaseInfo );
 

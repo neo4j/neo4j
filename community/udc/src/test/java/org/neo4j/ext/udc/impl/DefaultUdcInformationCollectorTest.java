@@ -70,10 +70,9 @@ public class DefaultUdcInformationCollectorTest
 
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
 
-    private final DataSourceManager dataSourceManager = new DataSourceManager();
+    private final DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
     private final NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-    private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
-            Config.defaults(), dataSourceManager, usageData );
+    private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
 
     @Before
     public void setUp()

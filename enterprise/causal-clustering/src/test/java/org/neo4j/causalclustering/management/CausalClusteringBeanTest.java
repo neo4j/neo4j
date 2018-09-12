@@ -64,7 +64,7 @@ public class CausalClusteringBeanTest
     @Before
     public void setUp()
     {
-        DataSourceManager dataSourceManager = new DataSourceManager();
+        DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         dataSourceManager.register( dataSource );
         KernelData kernelData = new KernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.defaults(), dataSourceManager );

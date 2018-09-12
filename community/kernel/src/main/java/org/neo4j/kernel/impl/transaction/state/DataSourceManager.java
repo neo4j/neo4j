@@ -23,10 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -39,6 +40,13 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
  */
 public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 {
+    private final Config config;
+
+    public DataSourceManager( Config config )
+    {
+        this.config = config;
+    }
+
     public interface Listener
     {
         void registered( NeoStoreDataSource dataSource );
@@ -84,7 +92,15 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     public NeoStoreDataSource getDataSource()
     {
-        return Iterables.last( dataSources );
+        String activeDatabase = config.get( GraphDatabaseSettings.active_database );
+        for ( NeoStoreDataSource dataSource : dataSources )
+        {
+            if ( activeDatabase.equals( dataSource.getDatabaseLayout().getDatabaseName() ) )
+            {
+                return dataSource;
+            }
+        }
+        throw new RuntimeException( "Default database not found" );
     }
 
     @Override

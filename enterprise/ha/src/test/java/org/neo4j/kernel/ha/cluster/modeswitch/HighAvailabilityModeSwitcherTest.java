@@ -45,6 +45,7 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.SwitchToMaster;
@@ -588,7 +589,7 @@ public class HighAvailabilityModeSwitcherTest
 
     private static DataSourceManager neoStoreDataSourceSupplierMock()
     {
-        DataSourceManager dataSourceManager = new DataSourceManager();
+        DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
         dataSourceManager.register( mock( NeoStoreDataSource.class ) );
         return dataSourceManager;
     }

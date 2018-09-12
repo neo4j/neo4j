@@ -90,7 +90,7 @@ public class HighAvailabilityBeanTest
     @Before
     public void setup() throws NotCompliantMBeanException
     {
-        DataSourceManager dataSourceManager = new DataSourceManager();
+        DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
         fileSystem = new DefaultFileSystemAbstraction();
         kernelData = new TestHighlyAvailableKernelData( dataSourceManager );
         ManagementData data = new ManagementData( bean, kernelData, ManagementSupport.load() );
