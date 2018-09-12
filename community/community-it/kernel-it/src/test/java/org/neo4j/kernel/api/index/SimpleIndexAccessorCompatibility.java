@@ -232,6 +232,145 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         assertThat( result, containsInAnyOrder( allNodes ) );
     }
 
+    @Test
+    public void testIndexRangeSeekByZonedDateTimeArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextDateTimeArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByLocalDateTimeArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextLocalDateTimeArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByDateArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextDateArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByZonedTimeArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextTimeArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByLocalTimeArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextLocalTimeArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByDurationArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextDurationArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByTextArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextBasicMultilingualPlaneStringArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByBooleanArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextBooleanArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByByteArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextByteArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByShortArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextShortArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByIntArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextIntArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByLongArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextLongArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByFloatArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextFloatArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByDoubleArray() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextDoubleArray() );
+    }
+
+    private void testIndexRangeSeek( Supplier<Value> generator ) throws Exception
+    {
+        Assume.assumeTrue( testSuite.supportsGranularCompositeQueries() );
+
+        int count = random.nextInt( 5, 10 );
+        List<Value> values = new ArrayList<>();
+        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        Set<Value> duplicateCheck = new HashSet<>();
+        for ( int i = 0; i < count; i++ )
+        {
+            Value value;
+            do
+            {
+                value = generator.get();
+            }
+            while ( !duplicateCheck.add( value ) );
+            values.add( value );
+        }
+        values.sort( Values.COMPARATOR );
+        for ( int i = 0; i < count; i++ )
+        {
+            updates.add( add( i + 1, descriptor.schema(), values.get( i ) ) );
+        }
+
+        updateAndCommit( updates );
+
+        for ( int f = 0; f < values.size(); f++ )
+        {
+            for ( int t = f; t < values.size(); t++ )
+            {
+                Value from = values.get( f );
+                Value to = values.get( t );
+                for ( boolean fromInclusive : new boolean[] {true, false} )
+                {
+                    for ( boolean toInclusive : new boolean[] {true, false} )
+                    {
+                        assertThat( query( range( 1, from, fromInclusive, to, toInclusive ) ), equalTo( ids( f, fromInclusive, t, toInclusive ) ) );
+                    }
+                }
+            }
+        }
+    }
+
+    private List<Long> ids( int fromIndex, boolean fromInclusive, int toIndex, boolean toInclusive )
+    {
+        List<Long> ids = new ArrayList<>();
+        int from = fromInclusive ? fromIndex : fromIndex + 1;
+        int to = toInclusive ? toIndex : toIndex - 1;
+        for ( int i = from; i <= to; i++ )
+        {
+            ids.add( (long) (i + 1) );
+        }
+        return ids;
+    }
+
     // This behaviour is expected by General indexes
 
     @Ignore( "Not a test. This is a compatibility suite" )
@@ -365,145 +504,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                                               duration( 1, 1, 1, 2 ),
                                               duration( 2, 1, 1, 1 ),
                                               duration( 3, 1, 1, 1 ) );
-        }
-
-        @Test
-        public void testIndexRangeSeekByZonedDateTimeArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextDateTimeArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByLocalDateTimeArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextLocalDateTimeArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByDateArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextDateArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByZonedTimeArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextTimeArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByLocalTimeArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextLocalTimeArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByDurationArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextDurationArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByTextArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextBasicMultilingualPlaneStringArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByBooleanArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextBooleanArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByByteArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextByteArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByShortArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextShortArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByIntArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextIntArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByLongArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextLongArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByFloatArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextFloatArray() );
-        }
-
-        @Test
-        public void testIndexRangeSeekByDoubleArray() throws Exception
-        {
-            testIndexRangeSeek( () -> random.randomValues().nextDoubleArray() );
-        }
-
-        private void testIndexRangeSeek( Supplier<Value> generator ) throws Exception
-        {
-            Assume.assumeTrue( testSuite.supportsGranularCompositeQueries() );
-
-            int count = random.nextInt( 5, 10 );
-            List<Value> values = new ArrayList<>();
-            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-            Set<Value> duplicateCheck = new HashSet<>();
-            for ( int i = 0; i < count; i++ )
-            {
-                Value value;
-                do
-                {
-                    value = generator.get();
-                }
-                while ( !duplicateCheck.add( value ) );
-                values.add( value );
-            }
-            values.sort( Values.COMPARATOR );
-            for ( int i = 0; i < count; i++ )
-            {
-                updates.add( add( i + 1, descriptor.schema(), values.get( i ) ) );
-            }
-
-            updateAndCommit( updates );
-
-            for ( int f = 0; f < values.size(); f++ )
-            {
-                for ( int t = f; t < values.size(); t++ )
-                {
-                    Value from = values.get( f );
-                    Value to = values.get( t );
-                    for ( boolean fromInclusive : new boolean[] {true, false} )
-                    {
-                        for ( boolean toInclusive : new boolean[] {true, false} )
-                        {
-                            assertThat( query( range( 1, from, fromInclusive, to, toInclusive ) ), equalTo( ids( f, fromInclusive, t, toInclusive ) ) );
-                        }
-                    }
-                }
-            }
-        }
-
-        private List<Long> ids( int fromIndex, boolean fromInclusive, int toIndex, boolean toInclusive )
-        {
-            List<Long> ids = new ArrayList<>();
-            int from = fromInclusive ? fromIndex : fromIndex + 1;
-            int to = toInclusive ? toIndex : toIndex - 1;
-            for ( int i = from; i <= to; i++ )
-            {
-                ids.add( (long) (i + 1) );
-            }
-            return ids;
         }
 
         /**
