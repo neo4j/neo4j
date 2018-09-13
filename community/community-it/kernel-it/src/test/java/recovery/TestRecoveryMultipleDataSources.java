@@ -29,7 +29,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -40,6 +39,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.exit;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.proc.ProcessUtil.getClassPath;
+import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 public class TestRecoveryMultipleDataSources
 {
@@ -61,8 +62,8 @@ public class TestRecoveryMultipleDataSources
         // Given (create transactions and kill process, leaving it needing for recovery)
         File storeDir = testDirectory.storeDir();
         assertEquals( 0, getRuntime().exec( new String[]{
-                ProcessUtil.getJavaExecutable().toString(), "-Djava.awt.headless=true", "-cp",
-                ProcessUtil.getClassPath(), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );
+                getJavaExecutable().toString(), "-Djava.awt.headless=true", "-cp",
+                getClassPath(), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );
 
         // When
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );

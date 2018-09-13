@@ -57,9 +57,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.test.ProcessStreamHandler;
 
-import static org.neo4j.io.proc.ProcessUtil.getClassPath;
-import static org.neo4j.io.proc.ProcessUtil.getClassPathList;
-import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
+import static org.neo4j.test.proc.ProcessUtil.getClassPath;
+import static org.neo4j.test.proc.ProcessUtil.getClassPathList;
+import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 public abstract class SubProcess<T, P> implements Serializable
 {

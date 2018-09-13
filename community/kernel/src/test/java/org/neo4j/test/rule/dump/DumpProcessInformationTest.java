@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -46,6 +45,8 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.proc.ProcessUtil.getClassPath;
+import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 public class DumpProcessInformationTest
 {
@@ -78,8 +79,8 @@ public class DumpProcessInformationTest
         // GIVEN
         File directory = testDirectory.directory( "dump" );
         // a process spawned from this test which pauses at a specific point of execution
-        String java = ProcessUtil.getJavaExecutable().toString();
-        Process process = getRuntime().exec( new String[] {java, "-cp", ProcessUtil.getClassPath(),
+        String java = getJavaExecutable().toString();
+        Process process = getRuntime().exec( new String[] {java, "-cp", getClassPath(),
                 DumpableProcess.class.getName(), SIGNAL } );
         awaitSignal( process );
 
@@ -101,7 +102,7 @@ public class DumpProcessInformationTest
         assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
     }
 
-    private boolean fileContains( File file, String... expectedStrings ) throws IOException
+    private static boolean fileContains( File file, String... expectedStrings ) throws IOException
     {
         Set<String> expectedStringSet = asSet( expectedStrings );
         try ( Stream<String> lines = Files.lines( file.toPath() ) )
@@ -111,7 +112,7 @@ public class DumpProcessInformationTest
         return expectedStringSet.isEmpty();
     }
 
-    private void awaitSignal( Process process ) throws IOException
+    private static void awaitSignal( Process process ) throws IOException
     {
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) ) )
         {

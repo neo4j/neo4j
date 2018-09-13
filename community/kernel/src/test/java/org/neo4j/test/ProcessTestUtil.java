@@ -31,8 +31,8 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.helpers.FutureAdapter;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.io.proc.ProcessUtil.getClassPath;
-import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
+import static org.neo4j.test.proc.ProcessUtil.getClassPath;
+import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 public class ProcessTestUtil
 {

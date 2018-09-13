@@ -29,17 +29,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.commandline.admin.AdminTool;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.io.proc.ProcessUtil;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.StreamConsumer;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.configuration.Settings.listenAddress;
+import static org.neo4j.test.proc.ProcessUtil.getClassPath;
+import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 public class TestHelpers
 {
@@ -52,7 +46,7 @@ public class TestHelpers
             boolean debug, String... args ) throws Exception
     {
         List<String> allArgs =
-                new ArrayList<>( Arrays.asList( ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(), AdminTool.class.getName() ) );
+                new ArrayList<>( Arrays.asList( getJavaExecutable().toString(), "-cp", getClassPath(), AdminTool.class.getName() ) );
         allArgs.add( "backup" );
         allArgs.addAll( Arrays.asList( args ) );
 

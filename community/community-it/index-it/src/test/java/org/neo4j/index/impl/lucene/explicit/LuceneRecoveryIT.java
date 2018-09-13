@@ -32,14 +32,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.proc.ProcessUtil;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 public class LuceneRecoveryIT
 {
@@ -54,7 +55,7 @@ public class LuceneRecoveryIT
         String path = testDirectory.storeDir().getPath();
 
         Process process = Runtime.getRuntime().exec( new String[]{
-                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
+                getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
                 Inserter.class.getName(), path
         } );
 

@@ -52,7 +52,6 @@ import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
-import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,6 +62,8 @@ import static org.junit.Assume.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.proc.ProcessUtil.getClassPath;
+import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
 {
@@ -301,8 +302,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         fileSystem.create( file ).close();
 
         ProcessBuilder pb = new ProcessBuilder(
-                ProcessUtil.getJavaExecutable().toString(),
-                "-cp", ProcessUtil.getClassPath(),
+                getJavaExecutable().toString(),
+                "-cp", getClassPath(),
                 LockThisFileProgram.class.getCanonicalName(), file.getAbsolutePath() );
         File wd = new File( "target/test-classes" ).getAbsoluteFile();
         pb.directory( wd );
