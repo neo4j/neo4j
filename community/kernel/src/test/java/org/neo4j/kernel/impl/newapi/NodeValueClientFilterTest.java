@@ -172,15 +172,18 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
         Value[] values = new Value[slots];
         Map<Integer,Value> properties = new HashMap<>();
         int[] propertyKeyIds = new int[slots];
+        int filterCount = 0;
         for ( int i = 0; i < slots; i++ )
         {
             actualValues[i] = random.nextValue();
             int propertyKeyId = i;
             propertyKeyIds[i] = propertyKeyId;
-            if ( random.nextBoolean() )
+            //    we want at least one filter         ,  randomly add filter or not
+            if ( (filterCount == 0 && i == slots - 1) || random.nextBoolean() )
             {
                 Object filterValue = (filterAcceptsValue ? actualValues[i] : anyOtherValueThan( actualValues[i] )).asObjectCopy();
                 filters[i] = IndexQuery.exact( propertyKeyId, filterValue );
+                filterCount++;
             }
             values[i] = random.nextBoolean() ? NO_VALUE : actualValues[i];
             properties.put( propertyKeyId, actualValues[i] );
