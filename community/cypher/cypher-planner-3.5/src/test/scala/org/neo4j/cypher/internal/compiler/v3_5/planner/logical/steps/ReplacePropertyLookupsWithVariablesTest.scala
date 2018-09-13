@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
-import org.neo4j.cypher.internal.v3_5.logical.plans.Projection
-import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
 import org.opencypher.v9_0.ast.ASTAnnotationMap
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.ast.semantics.ExpressionTypeInfo
@@ -50,13 +50,7 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
       Seq(propEquality("n", "prop", 1)),
       nodeIndexScan("n", "L", "prop")
     )
-
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
-
-    val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
-
-    val newPlan = resultState.logicalPlan
-    val newTable = resultState.semanticTable()
+    val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
@@ -73,13 +67,7 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
       Seq(Equals(listOf(prop("n", "prop")), listOf(literalInt(1)))(pos)),
       nodeIndexScan("n", "L", "prop")
     )
-
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
-
-    val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
-
-    val newPlan = resultState.logicalPlan
-    val newTable = resultState.semanticTable()
+    val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
@@ -96,13 +84,7 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
       Seq(Equals(mapOf("foo" -> prop("n", "prop")), mapOf("foo" -> literalInt(1)))(pos)),
       nodeIndexScan("n", "L", "prop")
     )
-
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
-
-    val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
-
-    val newPlan = resultState.logicalPlan
-    val newTable = resultState.semanticTable()
+    val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
@@ -113,6 +95,13 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
     newTable.types(property) should equal(newTable.types(newCachedNodeProperty))
   }
 
+  private def replace(plan: LogicalPlan, initialTable: SemanticTable): (LogicalPlan, SemanticTable) = {
+    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
+    val resultState = replacePropertyLookupsWithVariables.transform(state, mock[PlannerContext])
+    (resultState.logicalPlan, resultState.semanticTable())
+  }
+
+  // TODO remove after depending on frontend 9.0.8
   private def mapOf(keysAndValues: (String, Expression)*): MapExpression = MapExpression(keysAndValues.map {
     case (k, v) => PropertyKeyName(k)(pos) -> v
   })(pos)

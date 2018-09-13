@@ -33,7 +33,7 @@ import org.opencypher.v9_0.util.topDown
 /**
   * A logical plan rewriter that also changes the semantic table (thus a Transformer).
   *
-  * It traverses the plan and uses cached node properties instead of property lookups where possible.
+  * It traverses the plan and swaps property lookups for cached node properties where possible.
   */
 case object replacePropertyLookupsWithVariables extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
@@ -59,7 +59,7 @@ case object replacePropertyLookupsWithVariables extends Transformer[PlannerConte
           newVar
       },
         // Don't rewrite deeper than the next logical plan. It will have different availablePropertyVariables
-        thing => thing != plan && thing.isInstanceOf[LogicalPlan])
+        stopAtNextLogicalPlan(plan))
 
       propertyRewriter(plan).asInstanceOf[LogicalPlan]
     }
@@ -73,6 +73,9 @@ case object replacePropertyLookupsWithVariables extends Transformer[PlannerConte
     val newSemanticTable = if (currentTypes == semanticTable.types) semanticTable else semanticTable.copy(types = currentTypes)
     (rewritten.asInstanceOf[LogicalPlan], newSemanticTable)
   }
+
+  private def stopAtNextLogicalPlan(currentPlan: LogicalPlan)(item: AnyRef): Boolean =
+    item != currentPlan && item.isInstanceOf[LogicalPlan]
 
   override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val (plan, table) = rewrite(from.logicalPlan, from.semanticTable())

@@ -36,5 +36,5 @@ case class Optional(source: LogicalPlan, protectedSymbols: Set[String] = Set.emp
   /**
     * Optional can produce a null row. That does not have any index properties.
     */
-  override def availablePropertiesFromIndexes: Map[Property, String] = Map.empty
+  override final def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = Map.empty
 }

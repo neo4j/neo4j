@@ -248,7 +248,6 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
     val innerPlan = innerContext.strategy.plan(qg, interestingOrder, innerContext)
     val collectionName = FreshIdNameGenerator.name(expr.position)
     val projectedPath = projectionCreator(namedExpr)
-    // We disable replacing property lookups with variables inside the pattern expression solver. Enabling this requires a rewrite of large parts of the planner
     val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), interestingOrder, innerContext)
     PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
   }

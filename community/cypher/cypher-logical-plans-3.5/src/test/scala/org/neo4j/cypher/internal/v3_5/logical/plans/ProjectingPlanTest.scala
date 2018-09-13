@@ -76,7 +76,7 @@ class ProjectingPlanTest extends CypherFunSuite {
       val x = Variable("x")(pos)
       val xDotFoo = Property(x, PropertyKeyName("foo")(pos))(pos)
       val yDotFoo = Property(Variable("y")(pos), PropertyKeyName("foo")(pos))(pos)
-      val projections = Map("y" -> Variable("x")(pos))
+      val projections = Map("y" -> x)
 
       val input = FakePlan(Map(xDotFoo -> cached("z.foo")))
       val output = projector(input, projections)

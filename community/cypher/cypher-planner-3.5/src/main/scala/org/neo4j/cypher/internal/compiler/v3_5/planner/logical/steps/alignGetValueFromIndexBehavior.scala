@@ -34,19 +34,19 @@ import org.opencypher.v9_0.util.topDown
 
 /**
   * This updates index leaf plans such that they have the right GetValueFromIndexBehavior.
-  * The index leaf planners will always set `GetValue`, if the index has the capability to provide values.
-  * Here, we set this to `DoNotGetValue`, if the property is not used in the rest of the PlannerQuery, aside from the predicate.
+  * The index leaf planners will always set `CanGetValue`, if the index has the capability to provide values.
+  * Here, we set this to `GetValue` or `DoNotGetValue`, depending on if the property is used in the rest of the PlannerQuery, aside from the predicate.
   */
 case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanProducer, solveds: Solveds, attributes: Attributes) extends LeafPlanUpdater {
 
   def apply(leafPlan: LogicalPlan): LogicalPlan = {
     // We want to find property usages only in those predicates that are not already solved by the leaf-plan we are rewriting
     val solvedPredicates = leafPlanSolvedPredicates(leafPlan, solveds)
-    val usedExps = usedExpresssions(query, solvedPredicates)
+    val usedExps = usedExpressions(query, solvedPredicates)
     rewriter(usedExps)(leafPlan).asInstanceOf[LogicalPlan]
   }
 
-  private def usedExpresssions(queryPart: PlannerQuery, leafPlanSolvedPredicates: Set[Predicate]): Set[Expression] = {
+  private def usedExpressions(queryPart: PlannerQuery, leafPlanSolvedPredicates: Set[Predicate]): Set[Expression] = {
     val horizonDependingExpressions = queryPart.horizon.dependingExpressions.toSet
     val usedExpressionsInHorizon = collectPropertiesAndVariables(horizonDependingExpressions)
     val usedExpressionsInPredicates = collectPropertiesAndVariables((queryPart.queryGraph.selections.predicates -- leafPlanSolvedPredicates).map(_.expr))
@@ -59,7 +59,7 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
     val nextUsedExpressions = for {
       nextPart <- queryPart.tail.toSet[PlannerQuery]
       // Pass Set.empty in the recursive call since the leaf plan can only solve predicates of the first query part
-      expressions <- usedExpresssions(nextPart, Set.empty)
+      expressions <- usedExpressions(nextPart, Set.empty)
       // If the horizon does not rename, keep the expressions as they are. Otherwise rename them for this query part
       renamedExpressions <- maybeHorizonProjections.fold(Option(expressions))(projections => renameExpressionsFromNextQueryPart(expressions, projections))
     } yield {
