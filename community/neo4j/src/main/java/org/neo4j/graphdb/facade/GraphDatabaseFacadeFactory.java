@@ -77,11 +77,6 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
  * ({@link PlatformModule}, {@link AbstractEditionModule}, and {@link DataSourceModule}),
  * which create all the specific services needed to run a graph database.
  * <p>
- * It is abstract in order for subclasses to specify their own {@link AbstractEditionModule}
- * implementations. Subclasses also have to set the edition name in overridden version of
- * {@link #initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
- * which is used for logging and similar.
- * <p>
  * To create test versions of databases, override an edition factory (e.g. {@link org.neo4j.kernel.impl.factory
  * .CommunityFacadeFactory}), and replace modules
  * with custom versions that instantiate alternative services.
