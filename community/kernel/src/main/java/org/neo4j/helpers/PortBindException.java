@@ -43,7 +43,7 @@ public class PortBindException extends BindException
     {
         if ( address1 == null && address2 == null )
         {
-            throw new IllegalArgumentException( "At least one address should not be null" );
+            return "Address is already in use, cannot bind to it.";
         }
         else if ( address1 != null && address2 != null )
         {
