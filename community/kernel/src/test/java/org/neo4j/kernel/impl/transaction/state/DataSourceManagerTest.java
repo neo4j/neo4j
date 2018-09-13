@@ -29,6 +29,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -120,6 +121,13 @@ class DataSourceManagerTest
         manager.register( dataSource2 );
 
         assertEquals(dataSource1, manager.getDataSource() );
+    }
+
+    @Test
+    void illegalStateWhenActiveDatabaseNotFound()
+    {
+        DataSourceManager manager = createDataSourceManager();
+        assertThrows( IllegalStateException.class, manager::getDataSource );
     }
 
     private static DataSourceManager createDataSourceManager()

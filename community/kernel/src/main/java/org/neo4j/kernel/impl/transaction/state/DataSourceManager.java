@@ -100,7 +100,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
                 return dataSource;
             }
         }
-        throw new RuntimeException( "Default database not found" );
+        throw new IllegalStateException( "Default database not found" );
     }
 
     @Override
