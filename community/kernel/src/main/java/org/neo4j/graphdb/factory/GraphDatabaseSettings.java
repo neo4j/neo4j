@@ -100,7 +100,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     // default unspecified transaction timeout
     public static final long UNSPECIFIED_TIMEOUT = 0L;
 
-    public static final String SYSTEM_DB_NAME = "system.db";
+    public static final String SYSTEM_DATABASE_NAME = "system.db";
     public static final String DEFAULT_DATABASE_NAME = "graph.db";
 
     @SuppressWarnings( "unused" ) // accessed by reflection
@@ -115,7 +115,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Name of the database to load" )
     public static final Setting<String> active_database =
-            buildSetting( "dbms.active_database", STRING, DEFAULT_DATABASE_NAME ).constraint( except( SYSTEM_DB_NAME ) ).build();
+            buildSetting( "dbms.active_database", STRING, DEFAULT_DATABASE_NAME ).constraint( except( SYSTEM_DATABASE_NAME ) ).build();
 
     @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory." )
