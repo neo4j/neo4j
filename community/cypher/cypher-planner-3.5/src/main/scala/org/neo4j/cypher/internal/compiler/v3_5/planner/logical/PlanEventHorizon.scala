@@ -58,13 +58,13 @@ case object PlanEventHorizon
         sortSkipAndLimit(distinctPlan, query, newContext, solveds, cardinalities)
 
       case UnwindProjection(variable, expression) =>
-        val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(expression, context.semanticTable))
+        val (rewrittenExpression, newSemanticTable) = firstAs[Expression](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(expression, context.semanticTable))
         val newContext = context.withUpdatedSemanticTable(newSemanticTable)
         val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(rewrittenExpression), context, solveds, cardinalities)
         (newContext.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, newContext), newContext)
 
       case ProcedureCallProjection(call) =>
-        val (rewrittenCall, newSemanticTable) = firstAs[ResolvedCall](replacePropertyLookupsWithVariables(selectedPlan.availablePropertiesFromIndexes)(call, context.semanticTable))
+        val (rewrittenCall, newSemanticTable) = firstAs[ResolvedCall](replacePropertyLookupsWithVariables(selectedPlan.availableCachedNodeProperties)(call, context.semanticTable))
         val newContext = context.withUpdatedSemanticTable(newSemanticTable)
         (newContext.logicalPlanProducer.planCallProcedure(plan, rewrittenCall, call, newContext), newContext)
 

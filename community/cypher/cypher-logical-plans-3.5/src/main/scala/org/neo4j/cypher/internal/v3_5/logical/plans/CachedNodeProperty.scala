@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.opencypher.v9_0.expressions.{LogicalVariable, PropertyKeyName, Expression => ASTExpression}
-import org.opencypher.v9_0.util.{InputPosition, InternalException}
+import org.opencypher.v9_0.expressions.{Expression => ASTExpression, PropertyKeyName}
+import org.opencypher.v9_0.util.InputPosition
 
 /**
   * A node property value that is cached in the execution context. Such a value can be
@@ -30,25 +30,14 @@ import org.opencypher.v9_0.util.{InputPosition, InternalException}
   *
   * @param nodeVariableName the node variable
   * @param propertyKey the property key
-  * @param position
   */
 case class CachedNodeProperty(nodeVariableName: String,
                               propertyKey: PropertyKeyName
-                            )(val position: InputPosition) extends LogicalVariable with SemanticCheckableExpression {
+                            )(val position: InputPosition) extends ASTExpression with SemanticCheckableExpression {
 
-  def asString = s"$nodeVariableName.${propertyKey.name}"
+  def cacheKey: String = s"$nodeVariableName.${propertyKey.name}"
 
-  override def name: String = s"$nodeVariableName.${propertyKey.name}"
-
-  override def asCanonicalStringVal: String = s"`$name`"
+  override def asCanonicalStringVal: String = s"cached[$cacheKey]"
 
   override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success
-
-  override def copyId = fail()
-
-  override def renameId(newName: String) = fail()
-
-  override def bumpId = fail()
-
-  private def fail(): Nothing = throw new InternalException("Tried using a CachedNodeProperty as Variable")
 }

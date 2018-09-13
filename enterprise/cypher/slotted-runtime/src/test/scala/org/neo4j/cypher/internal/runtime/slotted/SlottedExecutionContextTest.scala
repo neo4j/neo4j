@@ -24,7 +24,7 @@ import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringValue
 
-class PrimitiveExecutionContextTest extends CypherFunSuite {
+class SlottedExecutionContextTest extends CypherFunSuite {
 
   private def slots(longs: Int, refs: Int) = SlotConfiguration(Map.empty, longs, refs)
 

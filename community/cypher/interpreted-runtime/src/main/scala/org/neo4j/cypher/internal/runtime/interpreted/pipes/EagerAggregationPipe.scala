@@ -95,7 +95,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
     val mapSize = keyNamesSize + aggregationNames.size
 
     def createEmptyResult(params: MapValue): Iterator[ExecutionContext] = {
-      val newMap = MutableMaps.empty
+      val newMap = MutableMaps.empty[String, AnyValue]
       val values = aggregations.map(_._2.createAggregationFunction.result(state))
       val aggregationNamesAndFunctions: IndexedSeq[(String, AnyValue)] = aggregationNames zip values
 
@@ -109,7 +109,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
     // code runs really fast.
     // If you feel like cleaning it up - please make sure to not regress in performance. This is a hot spot.
     def createResults(groupingKey: AnyValue, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
-      val newMap = MutableMaps.create(mapSize)
+      val newMap = MutableMaps.create[String, AnyValue](mapSize)
       createResultFunction(newMap, groupingKey)
       (aggregationNames zip aggregator.map(_.result(state))).foreach(newMap += _)
       ExecutionContext(newMap)

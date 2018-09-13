@@ -35,7 +35,7 @@ case class NodeUniqueIndexSeek(idName: String,
                                argumentIds: Set[String])
                               (implicit idGen: IdGen) extends IndexSeekLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds + idName ++ propertyNamesWithValues
+  override val availableSymbols: Set[String] = argumentIds + idName
 
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
     NodeUniqueIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds)(SameId(this.id))

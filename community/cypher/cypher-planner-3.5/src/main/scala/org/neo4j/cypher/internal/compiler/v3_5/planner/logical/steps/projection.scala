@@ -54,7 +54,7 @@ object projection {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, solveds)
 
     // We want to leverage if we got the value from an index already
-    val (stillToSolveProjectionWithRenames, newSemanticTable) = firstAs[Map[String, Expression]](replacePropertyLookupsWithVariables(in.availablePropertiesFromIndexes)(stillToSolveProjection, context.semanticTable))
+    val (stillToSolveProjectionWithRenames, newSemanticTable) = firstAs[Map[String, Expression]](replacePropertyLookupsWithVariables(in.availableCachedNodeProperties)(stillToSolveProjection, context.semanticTable))
     val newContext = context.withUpdatedSemanticTable(newSemanticTable)
 
     val finalPlan = createPlan(in, stillToSolveProjectionWithRenames, projectionsToMarkSolved, newContext, solveds, cardinalities)

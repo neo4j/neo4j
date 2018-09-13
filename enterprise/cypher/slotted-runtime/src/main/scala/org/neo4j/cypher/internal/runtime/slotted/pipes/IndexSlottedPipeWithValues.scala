@@ -33,9 +33,9 @@ trait IndexSlottedPipeWithValues extends Pipe {
   // Offset of the long slot of node variable
   val offset: Int
   // the indices of the index properties where we will get values
-  val propertyIndicesWithValues: Array[Int]
-  // the offsets of the ref slots of properties where we will set values
-  val propertyOffsets: Array[Int]
+  val indexPropertyIndices: Array[Int]
+  // the offsets of the cached node property slots where we will set values
+  val indexPropertySlotOffsets: Array[Int]
   // Number of longs and refs
   val argumentSize: SlotConfiguration.Size
 
@@ -45,9 +45,9 @@ trait IndexSlottedPipeWithValues extends Pipe {
       state.copyArgumentStateTo(slottedContext, argumentSize.nLongs, argumentSize.nReferences)
       slottedContext.setLongAt(offset, nodeValueHit.nodeId)
       var i = 0
-      while (i < propertyIndicesWithValues.length) {
-        val value = nodeValueHit.propertyValue(propertyIndicesWithValues(i))
-        slottedContext.setRefAt(propertyOffsets(i), value)
+      while (i < indexPropertyIndices.length) {
+        val value = nodeValueHit.propertyValue(indexPropertyIndices(i))
+        slottedContext.setCachedPropertyAt(indexPropertySlotOffsets(i), value)
         i += 1
       }
       slottedContext

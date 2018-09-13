@@ -172,8 +172,8 @@ class SlottedRewriter(tokenContext: TokenContext) {
         slotConfiguration(nodeVariableName) match {
           case LongSlot(offset, _, CTNode) =>
             tokenContext.getOptPropertyKeyId(propKey) match {
-              case Some(propId) => ast.CachedNodeProperty(offset, propId, slotConfiguration(prop.name).offset)(prop)
-              case None => ast.CachedNodePropertyLate(offset, propKey, slotConfiguration(prop.name).offset)(prop)
+              case Some(propId) => ast.CachedNodeProperty(offset, propId, slotConfiguration.getCachedNodePropertyOffsetFor(prop))(prop)
+              case None => ast.CachedNodePropertyLate(offset, propKey, slotConfiguration.getCachedNodePropertyOffsetFor(prop))(prop)
             }
 
           case slot: Slot =>

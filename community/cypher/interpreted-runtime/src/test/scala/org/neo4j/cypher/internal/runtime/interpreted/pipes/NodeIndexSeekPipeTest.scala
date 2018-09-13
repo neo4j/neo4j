@@ -290,13 +290,13 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
       Literal("hello"),
       Literal("bye")
     )))()
-    val result = pipe.createResults(queryState)
+    val result = pipe.createResults(queryState).toList
 
     // then
-    result.toList should equal(List(
-      Map("n" -> node, "n." + propertyKey(0).name -> Values.stringValue("hello")),
-      Map("n" -> node2, "n." + propertyKey(0).name -> Values.stringValue("bye"))
-    ))
+    result.map(_("n")) should be(List(node, node2))
+    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey.head))) should be(
+      List(Values.stringValue("hello"), Values.stringValue("bye"))
+    )
   }
 
   test("should use composite index provided values when available") {
@@ -319,13 +319,14 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
           Literal("world"), Literal("cruel")
         ))
       )))()
-    val result = pipe.createResults(queryState)
+    val result = pipe.createResults(queryState).toList
 
     // then
-    result.toList should equal(List(
-      Map("n" -> node, "n." + propertyKeys(0).name -> Values.stringValue("hello"), "n." + propertyKeys(1).name -> Values.stringValue("world")),
-      Map("n" -> node2, "n." + propertyKeys(0).name -> Values.stringValue("bye"), "n." + propertyKeys(1).name -> Values.stringValue("cruel"))
-    ))
+    result.map(_("n")) should be(List(node, node2))
+    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKeys(0)))) should be(
+      List(Values.stringValue("hello"), Values.stringValue("bye")))
+    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKeys(1)))) should be(
+      List(Values.stringValue("world"), Values.stringValue("cruel")))
   }
 
   test("should use locking unique index provided values when available") {
@@ -340,12 +341,12 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     // when
     val properties = propertyKey.map(IndexedProperty(_, GetValue)).toArray
     val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek)()
-    val result = pipe.createResults(queryState)
+    val result = pipe.createResults(queryState).toList
 
     // then
-    result.toList should equal(List(
-      Map("n" -> node, "n." + propertyKey(0).name -> Values.stringValue("hello")),
-      Map("n" -> node2, "n." + propertyKey(0).name -> Values.stringValue("bye"))
-    ))
+    result.map(_("n")) should be(List(node, node2))
+    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey.head))) should be(
+      List(Values.stringValue("hello"), Values.stringValue("bye"))
+    )
   }
 }

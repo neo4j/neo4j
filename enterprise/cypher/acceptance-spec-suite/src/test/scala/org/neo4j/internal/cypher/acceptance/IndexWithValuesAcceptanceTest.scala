@@ -37,6 +37,8 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     graph.createIndex("Awesome", "prop1", "prop2")
     graph.createIndex("Awesome", "prop3")
     graph.createIndex("Awesome", "prop4")
+    graph.createIndex("DateString", "ds")
+    graph.createIndex("DateDate", "d")
   }
 
   // Invoked once before the Tx and once in the same Tx
@@ -51,6 +53,14 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       CREATE (:Awesome {prop3: 'footurama', prop4:'bar'})-[:R]->()
       CREATE (:Awesome {prop3: 'fooism', prop4:'rab'})-[:R]->()
       CREATE (:Awesome {prop3: 'ismfama', prop4:'rab'})-[:R]->()
+
+      CREATE (:DateString {ds: '2018-01-01'})
+      CREATE (:DateString {ds: '2018-02-01'})
+      CREATE (:DateString {ds: '2018-04-01'})
+      CREATE (:DateString {ds: '2017-03-01'})
+
+      CREATE (:DateDate {d: date('2018-02-10')})
+      CREATE (:DateDate {d: date('2018-01-10')})
       """)
   }
 
@@ -60,7 +70,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeek")
-          .withExactVariables("n", "n.prop1"))
+          .withExactVariables("n", "cached[n.prop1]"))
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 42)))
   }
 
@@ -68,11 +78,11 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.All, "PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1, n.prop2", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
-      .containingArgument("{n.prop1 : `n.prop1`, n.prop2 : n.prop2}")
+      .containingArgument("{n.prop1 : cached[n.prop1], n.prop2 : n.prop2}")
       // just for n.prop2, not for n.prop1
       .withDBHits(2)
       .onTopOf(aPlan("NodeIndexSeek")
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
     result.toList should equal(List(Map("n.prop1" -> 42, "n.prop2" -> 3), Map("n.prop1" -> 42, "n.prop2" -> 3)))
   }
 
@@ -80,10 +90,10 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.All, "PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1 AS foo", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
-      .containingArgument("{foo : `n.prop1`}")
+      .containingArgument("{foo : cached[n.prop1]}")
       .withDBHits(0)
       .onTopOf(aPlan("NodeIndexSeek")
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
     result.toList should equal(List(Map("foo" -> 42), Map("foo" -> 42)))
   }
 
@@ -91,11 +101,11 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = innerExecuteDeprecated("CYPHER runtime=compiled PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1 AS foo")
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
-      .containingArgument("{foo : `n.prop1`}")
+      .containingArgument("{foo : cached[n.prop1]}")
       .withDBHits(0)
       .onTopOf(aPlan("NodeIndexSeek")
         .withDBHits(3)
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
 
     result.toList should equal(List(Map("foo" -> 42)))
   }
@@ -107,7 +117,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("Expand(All)")
           .onTopOf(aPlan("NodeIndexSeek")
-            .withExactVariables("n", "n.prop1")))
+            .withExactVariables("n", "cached[n.prop1]")))
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 42)))
   }
 
@@ -115,10 +125,10 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     val result = executeWith(Configs.All, "PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1 * 2", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
-      .containingArgument("{n.prop1 * 2 : `n.prop1` * $`  AUTOINT1`}")
+      .containingArgument("{n.prop1 * 2 : cached[n.prop1] * $`  AUTOINT1`}")
       .withDBHits(0)
       .onTopOf(aPlan("NodeIndexSeek")
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
     result.toList should equal(List(Map("n.prop1 * 2" -> 84), Map("n.prop1 * 2" -> 84)))
   }
 
@@ -129,14 +139,34 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       .containingArgument("{n.prop2 : `anon[46]`}")
       .onTopOf(includeSomewhere.aPlan("Sort")
         .onTopOf(aPlan("Projection")
-          .containingArgument("{ : `n.prop1`}")
+          .containingArgument("{ : cached[n.prop1]}")
           .withDBHits(0)
           .onTopOf(aPlan("NodeIndexSeekByRange")
-            .withExactVariables("n", "n.prop1"))))
+            .withExactVariables("n", "cached[n.prop1]"))))
     result.toList should equal(List(
       Map("n.prop2" -> 3), Map("n.prop2" -> 3),
       Map("n.prop2" -> 1), Map("n.prop2" -> 1),
       Map("n.prop2" -> 3), Map("n.prop2" -> 3)))
+  }
+
+  test("should correctly project cached node property through ORDER BY") {
+    val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
+      "MATCH (a:DateString), (b:DateDate) WHERE a.ds STARTS WITH '2018' AND b.d > date(a.ds) RETURN a.ds ORDER BY a.ds",
+      executeBefore = createSomeNodes)
+
+    result.executionPlanDescription() should
+      includeSomewhere.aPlan("Apply")
+        .withLHS(aPlan("NodeIndexSeekByRange"))
+        .withRHS(aPlan("NodeIndexSeekByRange"))
+
+    result.toList should equal(List(
+      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+      Map("a.ds" -> "2018-01-01"), Map("a.ds" -> "2018-01-01"),
+      Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01"),
+      Map("a.ds" -> "2018-02-01"), Map("a.ds" -> "2018-02-01")
+    ))
   }
 
   test("should plan index seek with GetValue when the property is part of an aggregating column") {
@@ -146,7 +176,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       // just for n.prop2, not for n.prop1
       .withDBHits(6)
       .onTopOf(aPlan("NodeIndexSeekByRange")
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
     result.toList.toSet should equal(Set(
       Map("sum(n.prop1)" -> 43 * 2, "nums" -> 1), Map("sum(n.prop1)" -> (42 * 2 + 44 * 2), "nums" -> 3)))
   }
@@ -158,7 +188,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       // just for n.prop2, not for n.prop1
       .withDBHits(6)
       .onTopOf(aPlan("NodeIndexSeekByRange")
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
     result.toList.toSet should equal(Set(
       Map("sum(n.prop2)" -> 3 * 2, "nums" -> 42), Map("sum(n.prop2)" -> 1 * 2, "nums" -> 43), Map("sum(n.prop2)" -> 3 * 2, "nums" -> 44)))
   }
@@ -169,47 +199,47 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.executionPlanDescription() should includeSomewhere.aPlan("Distinct")
       .withDBHits(0)
       .onTopOf(aPlan("NodeIndexSeekByRange")
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 43)))
   }
 
   test("should plan starts with seek with GetValue when the property is projected") {
-    val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop3 STARTS WITH 'foo' RETURN n.prop3", executeBefore = createSomeNodes)
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE n.prop3 STARTS WITH 'foo' RETURN n.prop3", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeekByRange")
-          .withExactVariables("n", "n.prop3"))
+          .withExactVariables("n", "cached[n.prop3]"))
     result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "footurama"), Map("n.prop3" -> "fooism"), Map("n.prop3" -> "fooism")))
   }
 
   test("should plan ends with seek with GetValue when the property is projected") {
-    val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop3 ENDS WITH 'ama' RETURN n.prop3", executeBefore = createSomeNodes)
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE n.prop3 ENDS WITH 'ama' RETURN n.prop3", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexEndsWithScan")
-          .withExactVariables("n", "n.prop3"))
+          .withExactVariables("n", "cached[n.prop3]"))
     result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "footurama"), Map("n.prop3" -> "ismfama"), Map("n.prop3" -> "ismfama")))
   }
 
   test("should plan contains seek with GetValue when the property is projected") {
-    val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop3 CONTAINS 'ism' RETURN n.prop3", executeBefore = createSomeNodes)
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE n.prop3 CONTAINS 'ism' RETURN n.prop3", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexContainsScan")
-          .withExactVariables("n", "n.prop3"))
+          .withExactVariables("n", "cached[n.prop3]"))
     result.toList.toSet should equal(Set(Map("n.prop3" -> "fooism"), Map("n.prop3" -> "fooism"), Map("n.prop3" -> "ismfama"), Map("n.prop3" -> "ismfama")))
   }
 
   test("should plan index seek with GetValue when the property is projected (composite index)") {
-    val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 3 RETURN n.prop1, n.prop2", executeBefore = createSomeNodes)
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 3 RETURN n.prop1, n.prop2", executeBefore = createSomeNodes)
 
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeek")
-          .withExactVariables("n", "n.prop1", "n.prop2"))
+          .withExactVariables("n", "cached[n.prop1]", "cached[n.prop2]"))
     result.toList should equal(List(Map("n.prop1" -> 42, "n.prop2" -> 3), Map("n.prop1" -> 42, "n.prop2" -> 3)))
   }
 
@@ -219,7 +249,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.executionPlanDescription() should (
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeek")
-          .withExactVariables("n", "n.prop1"))
+          .withExactVariables("n", "cached[n.prop1]"))
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 42)))
   }
 
@@ -300,7 +330,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
   private def assertIndexSeekWithValues(result: RewindableExecutionResult) = {
     result.executionPlanDescription() should
       includeSomewhere.aPlan("NodeIndexSeek")
-        .containingVariables("n", "n.prop1")
+        .containingVariables("n", "cached[n.prop1]")
   }
 
   private def registerTestProcedures(): Unit = {

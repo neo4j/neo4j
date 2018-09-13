@@ -24,7 +24,9 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
 import org.opencypher.v9_0.util.InternalException
 
 object MorselExecutionContext {
@@ -103,13 +105,9 @@ class MorselExecutionContext(private val morsel: Morsel, private val longsPerRow
 
   override def getLongAt(offset: Int): Long = morsel.longs(currentRow * longsPerRow + offset)
 
-  override def longs(): Array[Long] = ???
-
   override def setRefAt(offset: Int, value: AnyValue): Unit = morsel.refs(currentRow * refsPerRow + offset) = value
 
   override def getRefAt(offset: Int): AnyValue = morsel.refs(currentRow * refsPerRow + offset)
-
-  override def refs(): Array[AnyValue] = ???
 
   override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = ???
 
@@ -142,6 +140,14 @@ class MorselExecutionContext(private val morsel: Morsel, private val longsPerRow
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = ???
 
   override def isNull(key: String): Boolean = ???
+
+  override def setCachedProperty(key: CachedNodeProperty, value: Value): Unit = fail()
+
+  override def setCachedPropertyAt(offset: Int, value: Value): Unit = setRefAt(offset, value)
+
+  override def getCachedProperty(key: CachedNodeProperty): Value = fail()
+
+  override def getCachedPropertyAt(offset: Int): Value = getRefAt(offset).asInstanceOf[Value]
 
   private def longsAtCurrentRow: Int = currentRow * longsPerRow
 

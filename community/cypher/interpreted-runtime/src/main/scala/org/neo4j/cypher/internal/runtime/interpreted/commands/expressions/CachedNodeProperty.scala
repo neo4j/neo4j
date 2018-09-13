@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -61,12 +62,12 @@ abstract class CachedNodePropertyLogic extends Expression {
   override def arguments: Seq[Expression] = Seq()
 }
 
-case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, cachedName: String)
-  extends CachedNodePropertyLogic with Product with Serializable
+case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plans.CachedNodeProperty)
+  extends CachedNodePropertyLogic
 {
-  def symbolTableDependencies = Set(nodeName, cachedName)
+  def symbolTableDependencies = Set(nodeName, key.cacheKey)
 
-  override def toString: String = cachedName
+  override def toString: String = key.cacheKey
 
   override def getNodeId(ctx: ExecutionContext): Long =
     ctx(nodeName) match {
@@ -75,7 +76,7 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, cachedNam
       case other => throw new CypherTypeException(s"Type mismatch: expected a node but was $other")
     }
 
-  override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx(cachedName)
+  override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx.getCachedProperty(key)
 
   override def getPropertyKey(tokenContext: TokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
 }

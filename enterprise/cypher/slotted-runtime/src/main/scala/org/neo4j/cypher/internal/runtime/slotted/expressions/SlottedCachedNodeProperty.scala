@@ -31,7 +31,7 @@ case class SlottedCachedNodeProperty(nodeOffset: Int,
 
   override def getNodeId(ctx: ExecutionContext): Long = ctx.getLongAt(nodeOffset)
 
-  override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx.getRefAt(cachedPropertyOffset)
+  override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx.getCachedPropertyAt(cachedPropertyOffset)
 
   override def getPropertyKey(tokenContext: TokenContext): Int = propertyKey
 }
@@ -42,7 +42,7 @@ case class SlottedCachedNodePropertyLate(nodeOffset: Int,
 
   override def getNodeId(ctx: ExecutionContext): Long = ctx.getLongAt(nodeOffset)
 
-  override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx.getRefAt(cachedPropertyOffset)
+  override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx.getCachedPropertyAt(cachedPropertyOffset)
 
   override def getPropertyKey(tokenContext: TokenContext): Int =
     tokenContext.getOptPropertyKeyId(propertyKey).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)

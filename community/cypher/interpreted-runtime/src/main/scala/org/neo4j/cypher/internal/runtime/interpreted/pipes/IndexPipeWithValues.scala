@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, ResultCreator}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 
 /**
   * Provides a helper method for index pipes that get nodes together with actual property values.
@@ -30,9 +31,9 @@ trait IndexPipeWithValues extends Pipe {
   // Name of the node variable
   val ident: String
   // all indices where the index can provide values
-  val propertyIndicesWithValues: Array[Int]
-  // the names of the properties where we will get values
-  val propertyNamesWithValues: Array[String]
+  val indexPropertyIndices: Array[Int]
+  // the cached node properties where we will get values
+  val indexCachedNodeProperties: Array[CachedNodeProperty]
 
   case class CtxResultCreator(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
     override def createResult(nodeValueHit: NodeValueHit): ExecutionContext =
@@ -41,9 +42,11 @@ trait IndexPipeWithValues extends Pipe {
 
   case class CtxResultCreatorWithValues(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
     override def createResult(nodeValueHit: NodeValueHit): ExecutionContext = {
-      val valueEntries = propertyIndicesWithValues.indices.map(i => propertyNamesWithValues(i) -> nodeValueHit.propertyValue(propertyIndicesWithValues(i)))
-      val newEntries = (ident -> nodeValueHit.node) +: valueEntries
-      executionContextFactory.copyWith(baseContext, newEntries)
+      var newContext = executionContextFactory.copyWith(baseContext, ident, nodeValueHit.node)
+      for (i <- indexPropertyIndices.indices) {
+        newContext.setCachedProperty(indexCachedNodeProperties(i), nodeValueHit.propertyValue(indexPropertyIndices(i)))
+      }
+      newContext
     }
   }
 }

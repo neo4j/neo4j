@@ -17,19 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-object MutableMaps {
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexedProperty
 
-  def create[KEY, VALUE](size: Int) : collection.mutable.Map[KEY, VALUE] =
-    new collection.mutable.OpenHashMap[KEY, VALUE](if (size < 16) 16 else size)
-
-  def empty[KEY, VALUE]: collection.mutable.Map[KEY, VALUE] = create(16)
-
-  def create[KEY, VALUE](input: scala.collection.Map[KEY, VALUE]) : collection.mutable.Map[KEY, VALUE] =
-    create(input.size) ++= input
-
-  def create[KEY, VALUE](input: (KEY, VALUE)*) : collection.mutable.Map[KEY, VALUE] = {
-    create(input.size) ++= input
+object SlottedIndexedProperty {
+  def apply(node: String, property: IndexedProperty, slots: SlotConfiguration): SlottedIndexedProperty = {
+    val maybeOffset =
+      if (property.shouldGetValue) {
+        Some(slots.getCachedNodePropertyOffsetFor(property.asCachedNodeProperty(node)))
+      } else {
+        None
+      }
+    SlottedIndexedProperty(property.propertyKeyToken.nameId.id, maybeOffset)
   }
+}
+
+case class SlottedIndexedProperty(propertyKeyId: Int, maybeCachedNodePropertySlot: Option[Int]) {
+  def getValueFromIndex: Boolean = maybeCachedNodePropertySlot.isDefined
 }

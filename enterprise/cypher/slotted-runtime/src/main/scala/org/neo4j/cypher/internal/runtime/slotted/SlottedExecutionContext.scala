@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.opencypher.v9_0.util.AssertionUtils._
 import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.symbols.{CTNode, CTRelationship}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual._
 
 import scala.collection.mutable
@@ -42,14 +43,14 @@ object SlottedExecutionContext {
   */
 case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionContext {
 
-  override val longs = new Array[Long](slots.numberOfLongs)
+  private val longs = new Array[Long](slots.numberOfLongs)
   //java.util.Arrays.fill(longs, -2L) // When debugging long slot issues you can uncomment this to check for uninitialized long slots (also in getLongAt below)
-  override val refs = new Array[AnyValue](slots.numberOfReferences)
+  private val refs = new Array[AnyValue](slots.numberOfReferences)
 
   override def toString(): String = {
     val iter = this.iterator
     val s: StringBuilder = StringBuilder.newBuilder
-    s ++= s"\nPrimitiveExecutionContext {\n    $slots"
+    s ++= s"\nSlottedExecutionContext {\n    $slots"
     while(iter.hasNext) {
       val slotValue = iter.next
       s ++= f"\n    ${slotValue._1}%-40s = ${slotValue._2}"
@@ -111,18 +112,32 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     // Please do not use in production code.
     val longSlots = slots.getLongSlots
     val refSlots = slots.getRefSlots
-    val longSlotValues = for { i <- 0 until longs.length }
+    val longSlotValues = for { i <- longs.indices }
       yield (longSlots(i).toString, Values.longValue(longs(i)))
-    val refSlotValues = for { i <- 0 until refs.length }
+    val refSlotValues = for { i <- refs.indices }
       yield (refSlots(i).toString, refs(i))
-    (longSlotValues ++ refSlotValues).iterator
+    val cachedPropertySlotValues =
+      slots.getCachedPropertySlots.iterator.map {
+        case (cnp, refSlot) => cnp.cacheKey -> refs(refSlot.offset)
+      }
+    (longSlotValues ++ refSlotValues ++ cachedPropertySlotValues).iterator
   }
 
-  private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
+  override def setCachedPropertyAt(offset: Int, value: Value): Unit = refs(offset) = value
+
+  override def setCachedProperty(key: CachedNodeProperty, value: Value): Unit =
+    setCachedPropertyAt(slots.getCachedNodePropertyOffsetFor(key), value)
+
+  override def getCachedPropertyAt(offset: Int): Value = refs(offset).asInstanceOf[Value]
+
+  override def getCachedProperty(key: CachedNodeProperty): Value = fail()
+
+  private def fail(): Nothing = throw new InternalException("Tried using a slotted context as a map")
 
   //-----------------------------------------------------------------------------------------------------------
   // Compatibility implementations of the old ExecutionContext API used by Community interpreted runtime pipes
   //-----------------------------------------------------------------------------------------------------------
+
   override def get(key: String): Option[AnyValue] = {
     slots.maybeGetter(key).map(g => g(this))
   }

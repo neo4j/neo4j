@@ -29,7 +29,7 @@ object distinct {
   def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
 
     // We want to leverage if we got the value from an index already
-    val (distinctWithRenames, newSemanticTable) = firstAs[DistinctQueryProjection](replacePropertyLookupsWithVariables(plan.availablePropertiesFromIndexes)(distinctQueryProjection, context.semanticTable))
+    val (distinctWithRenames, newSemanticTable) = firstAs[DistinctQueryProjection](replacePropertyLookupsWithVariables(plan.availableCachedNodeProperties)(distinctQueryProjection, context.semanticTable))
     val newContext = context.withUpdatedSemanticTable(newSemanticTable)
 
     val expressionSolver = PatternExpressionSolver()

@@ -56,12 +56,13 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
 
     // when
     val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("hello"))()
-    val result = pipe.createResults(queryState)
+    val result = pipe.createResults(queryState).toList
 
     // then
-    result.toList should equal(List(
-      Map("n" -> node, "n." + propertyKey.name -> Values.stringValue("hello"))
-    ))
+    result.map(_("n")) should be(List(node))
+    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey))) should be(
+      List(Values.stringValue("hello"))
+    )
   }
 
   test("should use index provided values when available for contains with") {
@@ -75,11 +76,12 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
 
     // when
     val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("bye"))()
-    val result = pipe.createResults(queryState)
+    val result = pipe.createResults(queryState).toList
 
     // then
-    result.toList should equal(List(
-      Map("n" -> node2, "n." + propertyKey.name -> Values.stringValue("bye"))
-    ))
+    result.map(_("n")) should be(List(node2))
+    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey))) should be(
+      List(Values.stringValue("bye"))
+    )
   }
 }

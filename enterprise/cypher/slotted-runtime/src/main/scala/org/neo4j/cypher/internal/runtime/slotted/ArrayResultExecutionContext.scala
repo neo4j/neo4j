@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.opencypher.v9_0.util.InternalException
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
 
 import scala.collection.mutable
 
@@ -120,13 +122,9 @@ case class ArrayResultExecutionContext(resultArray: Array[AnyValue],
 
   override def getLongAt(offset: Int): Long = fail()
 
-  override def longs(): Array[Long] = fail()
-
   override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
 
   override def getRefAt(offset: Int): AnyValue = fail()
-
-  override def refs(): Array[AnyValue] = fail()
 
   override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
 
@@ -155,4 +153,12 @@ case class ArrayResultExecutionContext(resultArray: Array[AnyValue],
   override def +=(kv: (String, AnyValue)): ArrayResultExecutionContext.this.type = fail()
 
   override def -=(key: String): ArrayResultExecutionContext.this.type = fail()
+
+  override def setCachedProperty(key: CachedNodeProperty, value: Value): Unit = fail()
+
+  override def setCachedPropertyAt(offset: Int, value: Value): Unit = fail()
+
+  override def getCachedProperty(key: CachedNodeProperty): Value = fail()
+
+  override def getCachedPropertyAt(offset: Int): Value = fail()
 }

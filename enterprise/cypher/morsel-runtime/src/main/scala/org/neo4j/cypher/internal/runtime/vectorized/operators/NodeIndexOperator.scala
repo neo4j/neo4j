@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.{NodeIndexCursor, NodeValueIndexCursor}
 
-abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends StreamingOperator {
+abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](nodeOffset: Int) extends StreamingOperator {
 
   protected def iterate(currentRow: MorselExecutionContext, cursor: CURSOR, argumentSize: SlotConfiguration.Size): Boolean = {
     var cursorHasMore = true
     while (currentRow.hasMoreRows && cursorHasMore) {
       cursorHasMore = cursor.next()
       if (cursorHasMore) {
-        currentRow.setLongAt(offset, cursor.nodeReference())
+        currentRow.setLongAt(nodeOffset, cursor.nodeReference())
         extensionForEachRow(cursor, currentRow)
         currentRow.moveToNextRow()
       }
@@ -59,17 +59,18 @@ abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends
 /**
   * Provides helper methods for index operators that get nodes together with actual property values.
   */
-abstract class NodeIndexOperatorWithValues[CURSOR <: NodeValueIndexCursor](offset: Int, maybeValueFromIndexOffset: Option[Int])
-  extends NodeIndexOperator[CURSOR](offset) {
+abstract class NodeIndexOperatorWithValues[CURSOR <: NodeValueIndexCursor](nodeOffset: Int, maybeValueFromIndexOffset: Option[Int])
+  extends NodeIndexOperator[CURSOR](nodeOffset) {
 
   override protected def extensionForEachRow(cursor: CURSOR, currentRow: MorselExecutionContext): Unit = {
-    maybeValueFromIndexOffset.foreach { offset =>
+    maybeValueFromIndexOffset.foreach { valueOffset =>
       if (!cursor.hasValue) {
         // We were promised at plan time that we can get values everywhere, so this should never happen
         throw new IllegalStateException("NodeCursor unexpectedly had no values during index scan.")
       }
-      val value = cursor.propertyValue(offset)
-      currentRow.setRefAt(offset, value)
+      val indexPropertyIndex = 0 // Because we only allow scan / contains with on single prop indexes
+      val value = cursor.propertyValue(indexPropertyIndex)
+      currentRow.setRefAt(valueOffset, value)
     }
   }
 }

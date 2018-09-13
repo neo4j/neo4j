@@ -82,6 +82,6 @@ class LockNodesPipeTest extends CypherFunSuite {
   }
 
   private def rowWithValue(value: AnyValue) = {
-    MapExecutionContext(mutable.Map("x" -> value))
+    MapExecutionContext(mutable.Map("x" -> value), mutable.Map.empty)
   }
 }

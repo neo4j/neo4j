@@ -83,7 +83,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case e: ast.CountStar => commandexpressions.CountStar()
       case e: ast.Property => toCommandProperty(id, e, self)
-      case e: CachedNodeProperty => commandexpressions.CachedNodeProperty(e.nodeVariableName, getPropertyKey(e.propertyKey), e.name)
+      case e: CachedNodeProperty => commandexpressions.CachedNodeProperty(e.nodeVariableName, getPropertyKey(e.propertyKey), e)
       case e: ast.Parameter => toCommandParameter(e)
       case e: ast.CaseExpression => caseExpression(id, e, self)
       case e: ast.PatternExpression =>

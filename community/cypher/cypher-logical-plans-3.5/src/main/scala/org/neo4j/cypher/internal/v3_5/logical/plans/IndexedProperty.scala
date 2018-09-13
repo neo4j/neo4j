@@ -32,13 +32,16 @@ case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex
           Variable(entity)(InputPosition.NONE),
           PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE)
         )(InputPosition.NONE),
-        CachedNodeProperty(entity, PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
+        asCachedNodeProperty(entity)
       ))
     else Map.empty
 
-  def asGetValueOption(entity: String): Option[String] =
+  def asCachedNodeProperty(node: String): CachedNodeProperty =
+    CachedNodeProperty(node, PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
+
+  def maybeCachedNodeProperty(entity: String): Option[CachedNodeProperty] =
     if (shouldGetValue)
-      Some(entity + "." + propertyKeyToken.name)
+      Some(asCachedNodeProperty(entity))
     else None
 }
 

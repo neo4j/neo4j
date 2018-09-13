@@ -54,12 +54,11 @@ abstract class LogicalPlan(idGen: IdGen)
   def availableSymbols: Set[String]
 
   /**
-    * Indexes can provide property values. This is the map of the property name (e.g. "a.prop")
-    * to the property expression for all properties that leaves of this plan get from indexes.
+    * Node properties that will be cached in the execution context.
     */
-  def availablePropertiesFromIndexes: Map[Property, CachedNodeProperty] = {
-    lhs.fold(Map.empty[Property, CachedNodeProperty])(_.availablePropertiesFromIndexes) ++
-      rhs.fold(Map.empty[Property, CachedNodeProperty])(_.availablePropertiesFromIndexes)
+  def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {
+    lhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties) ++
+      rhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties)
   }
 
   val id: Id = idGen.id()
@@ -215,9 +214,9 @@ abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) 
 
 abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
   /**
-    * The property names with values from the index
+    * Indexed node properties that will be retrieved from the index and cached in the row.
     */
-  def propertyNamesWithValues: Traversable[String]
+  def cachedNodeProperties: Traversable[CachedNodeProperty]
 
   /**
     * Get a copy of this index plan where getting values is disabled
@@ -230,21 +229,14 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
   def valueExpr: QueryExpression[Expression]
 
   /**
-    * The indexed properties that this plan targets.
+    * The indexed node properties that this plan targets.
     */
   def properties: Seq[IndexedProperty]
 
-  /**
-    * Names of a the subset of properties where the property values will be read from the index.
-    */
-  override val propertyNamesWithValues: Seq[String] = properties.collect {
-    case IndexedProperty(PropertyKeyToken(propName, _), GetValue) => idName + "." + propName
-  }
+  override val cachedNodeProperties: Seq[CachedNodeProperty] =
+    properties.filter(_.shouldGetValue).map(_.asCachedNodeProperty(idName))
 
-  /**
-    * Map of a the subset of properties where the property values will be read from the index.
-    */
-  override def availablePropertiesFromIndexes: Map[Property, CachedNodeProperty] =
+  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] =
     properties.filter(_.getValueFromIndex != DoNotGetValue).flatMap(_.asAvailablePropertyMap(idName)).toMap
 }
 

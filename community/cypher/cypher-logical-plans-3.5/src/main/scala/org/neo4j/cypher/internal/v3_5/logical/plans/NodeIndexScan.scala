@@ -32,13 +32,11 @@ case class NodeIndexScan(idName: String,
                         (implicit idGen: IdGen)
   extends IndexLeafPlan(idGen) {
 
-  private val maybePropertyNameWithValues: Option[String] = property.asGetValueOption(idName)
+  override def cachedNodeProperties: Traversable[CachedNodeProperty] = property.maybeCachedNodeProperty(idName)
 
-  override def propertyNamesWithValues: Traversable[String] = maybePropertyNameWithValues
+  override val availableSymbols: Set[String] = argumentIds + idName ++ property.maybeCachedNodeProperty(idName).map(_.asCanonicalStringVal)
 
-  override val availableSymbols: Set[String] = argumentIds + idName ++ maybePropertyNameWithValues
-
-  override def availablePropertiesFromIndexes: Map[Property, CachedNodeProperty] = property.asAvailablePropertyMap(idName)
+  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = property.asAvailablePropertyMap(idName)
 
   override def copyWithoutGettingValues: NodeIndexScan =
     NodeIndexScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), argumentIds)(SameId(this.id))

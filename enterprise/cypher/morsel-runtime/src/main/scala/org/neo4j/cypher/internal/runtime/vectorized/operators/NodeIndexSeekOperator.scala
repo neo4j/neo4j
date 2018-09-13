@@ -22,10 +22,9 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, SlottedIndexedProperty}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeekMode, NodeIndexSeeker, QueryState => OldQueryState}
-import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext, ResultCreator}
 import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
@@ -41,9 +40,9 @@ class NodeIndexSeekOperator(offset: Int,
                             override val indexMode: IndexSeekMode = IndexSeek)
   extends StreamingOperator with NodeIndexSeeker {
 
-  private val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  private val propertyOffsets: Array[Int] = properties.map(_.maybePropertyValueSlot).collect{ case Some(o) => o }
-  private val needsValues: Boolean = propertyIndicesWithValues.nonEmpty
+  private val indexPropertyIndices: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  private val indexPropertySlotOffsets: Array[Int] = properties.flatMap(_.maybeCachedNodePropertySlot)
+  private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
   override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
     val queryState = new OldQueryState(context, resources = null, params = state.params)
@@ -72,8 +71,8 @@ class NodeIndexSeekOperator(offset: Int,
         val nodeWithValues = tupleIterator.next()
         currentRow.setLongAt(offset, nodeWithValues.nodeId)
         var i = 0
-        while (i < propertyIndicesWithValues.length) {
-          currentRow.setRefAt(propertyOffsets(i), nodeWithValues.values(propertyIndicesWithValues(i)))
+        while (i < indexPropertyIndices.length) {
+          currentRow.setCachedPropertyAt(indexPropertySlotOffsets(i), nodeWithValues.values(indexPropertyIndices(i)))
           i += 1
         }
         currentRow.moveToNextRow()

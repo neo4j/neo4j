@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.opencypher.v9_0.util.InternalException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual._
 
 import scala.collection.mutable.{Map => MutableMap}
@@ -32,7 +33,7 @@ object ExecutionContext {
 
   def from(x: (String, AnyValue)*): ExecutionContext = apply().set(x)
 
-  def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty) = MapExecutionContext(m)
+  def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty) = MapExecutionContext(m, MutableMaps.empty)
 }
 
 trait ExecutionContext extends MutableMap[String, AnyValue] {
@@ -40,11 +41,9 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
   def setLongAt(offset: Int, value: Long): Unit
   def getLongAt(offset: Int): Long
-  def longs(): Array[Long]
 
   def setRefAt(offset: Int, value: AnyValue): Unit
   def getRefAt(offset: Int): AnyValue
-  def refs(): Array[AnyValue]
 
   def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext
   def set(key: String, value: AnyValue): ExecutionContext
@@ -52,6 +51,11 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
   def mergeWith(other: ExecutionContext): ExecutionContext
   def createClone(): ExecutionContext
+
+  def setCachedProperty(key: CachedNodeProperty, value: Value): Unit
+  def setCachedPropertyAt(offset: Int, value: Value): Unit
+  def getCachedProperty(key: CachedNodeProperty): Value
+  def getCachedPropertyAt(offset: Int): Value
 
   def copyWith(key: String, value: AnyValue): ExecutionContext
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
@@ -65,7 +69,7 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def isNull(key: String): Boolean
 }
 
-case class MapExecutionContext(m: MutableMap[String, AnyValue])
+case class MapExecutionContext(m: MutableMap[String, AnyValue], cachedProperties: MutableMap[CachedNodeProperty, Value])
   extends ExecutionContext {
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = fail()
@@ -74,13 +78,11 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
 
   override def setLongAt(offset: Int, value: Long): Unit = fail()
   override def getLongAt(offset: Int): Long = fail()
-  override def longs(): Array[Long] = fail()
 
   override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
   override def getRefAt(offset: Int): AnyValue = fail()
-  override def refs(): Array[AnyValue] = fail()
 
-  private def fail(): Nothing = throw new InternalException("Tried using a map context as a primitive context")
+  private def fail(): Nothing = throw new InternalException("Tried using a map context as a slotted context")
 
   override def get(key: String): Option[AnyValue] = m.get(key)
 
@@ -89,7 +91,7 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
   override def size: Int = m.size
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
-    case MapExecutionContext(otherMap) => copy(m = m ++ otherMap)
+    case MapExecutionContext(otherMap, otherCached) => MapExecutionContext(m ++ otherMap, cachedProperties ++ otherCached)
     case _ => fail()
   }
 
@@ -146,9 +148,8 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
 
   override def createClone(): ExecutionContext = createWithNewMap(m.clone())
 
-  protected def createWithNewMap(newMap: MutableMap[String, AnyValue]): this.type = {
-    copy(m = newMap).asInstanceOf[this.type]
-  }
+  protected def createWithNewMap(newMap: MutableMap[String, AnyValue]): this.type =
+    MapExecutionContext(newMap, cachedProperties.clone()).asInstanceOf[this.type]
 
   override def -=(key: String): this.type = {
     m.remove(key)
@@ -172,4 +173,12 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
       case Some(Values.NO_VALUE) => true
       case _ => false
     }
+
+  override def setCachedProperty(key: CachedNodeProperty, value: Value): Unit = cachedProperties.put(key, value)
+
+  override def setCachedPropertyAt(offset: Int, value: Value): Unit = fail()
+
+  override def getCachedProperty(key: CachedNodeProperty): Value = cachedProperties(key)
+
+  override def getCachedPropertyAt(offset: Int): Value = fail()
 }

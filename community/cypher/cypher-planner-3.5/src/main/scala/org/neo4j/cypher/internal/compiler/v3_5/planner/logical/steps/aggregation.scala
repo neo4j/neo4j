@@ -29,7 +29,7 @@ object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
 
     // We want to leverage if we got the value from an index already
-    val (aggregationWithRenames, newSemanticTable) = firstAs[AggregatingQueryProjection](replacePropertyLookupsWithVariables(plan.availablePropertiesFromIndexes)(aggregation, context.semanticTable))
+    val (aggregationWithRenames, newSemanticTable) = firstAs[AggregatingQueryProjection](replacePropertyLookupsWithVariables(plan.availableCachedNodeProperties)(aggregation, context.semanticTable))
     val newContext = context.withUpdatedSemanticTable(newSemanticTable)
 
     val expressionSolver = PatternExpressionSolver()

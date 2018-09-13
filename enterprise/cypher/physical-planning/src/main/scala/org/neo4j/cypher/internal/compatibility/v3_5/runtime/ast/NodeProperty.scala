@@ -34,17 +34,13 @@ case class NodePropertyLate(offset: Int, propKey: String, name: String)(prop: Pr
 case class CachedNodeProperty(offset: Int,
                               propToken: Int,
                               cachedPropertyOffset: Int
-                             )(prop: plans.CachedNodeProperty) extends RuntimeVariable(prop.name) {
-  override def asCanonicalStringVal: String = name
-}
+                             )(prop: plans.CachedNodeProperty) extends RuntimeExpression
 
 // Token did not exist at plan time, so we'll need to look it up at runtime
 case class CachedNodePropertyLate(offset: Int,
                                   propKey: String,
                                   cachedPropertyOffset: Int
-                                 )(prop: plans.CachedNodeProperty) extends RuntimeVariable(prop.name) {
-  override def asCanonicalStringVal: String = name
-}
+                                 )(prop: plans.CachedNodeProperty) extends RuntimeExpression
 
 case class NodePropertyExists(offset: Int, propToken: Int, name: String)(prop: Property) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name

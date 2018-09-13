@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, LogicalPlan}
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.util.symbols.CypherType
+import org.opencypher.v9_0.util.symbols.{CypherType, CTAny}
 
 import scala.collection.{immutable, mutable}
 
 object SlotConfiguration {
-  def empty = new SlotConfiguration(mutable.Map.empty, 0, 0)
+  def empty = new SlotConfiguration(mutable.Map.empty, mutable.Map.empty, 0, 0)
 
   def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int): SlotConfiguration = {
     val stringToSlot = mutable.Map(slots.toSeq: _*)
-    new SlotConfiguration(stringToSlot, numberOfLongs, numberOfReferences)
+    new SlotConfiguration(stringToSlot, mutable.Map.empty, numberOfLongs, numberOfReferences)
   }
 
   def toString(startFrom: LogicalPlan, m: Map[LogicalPlan, SlotConfiguration]): String = {
@@ -152,6 +152,7 @@ object SlotConfiguration {
   * @param numberOfReferences the number of ref slots.
   */
 class SlotConfiguration(private val slots: mutable.Map[String, Slot],
+                        private val cachedProperties: mutable.Map[CachedNodeProperty, RefSlot],
                         var numberOfLongs: Int,
                         var numberOfReferences: Int) {
 
@@ -195,7 +196,10 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   }
 
   def copy(): SlotConfiguration = {
-    val newPipeline = new SlotConfiguration(this.slots.clone(), numberOfLongs, numberOfReferences)
+    val newPipeline = new SlotConfiguration(this.slots.clone(),
+                                            this.cachedProperties.clone(),
+                                            numberOfLongs,
+                                            numberOfReferences)
     newPipeline.aliases ++= aliases
     newPipeline.slotAliases ++= slotAliases
     newPipeline
@@ -269,6 +273,18 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     this
   }
 
+  def newCachedProperty(key: CachedNodeProperty): SlotConfiguration = {
+    cachedProperties.get(key) match {
+      case Some(existingSlot) =>
+        throw new InternalException(s"Tried overwriting already taken cached node property $key!")
+
+      case None =>
+        cachedProperties.put(key, RefSlot(numberOfReferences, nullable = false, CTAny))
+        numberOfReferences = numberOfReferences + 1
+    }
+    this
+  }
+
   def getReferenceOffsetFor(name: String): Int = slots.get(name) match {
     case Some(s: RefSlot) => s.offset
     case Some(s) => throw new InternalException(s"Uh oh... There was no reference slot for `$name`. It was a $s")
@@ -280,6 +296,8 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     case Some(s) => throw new InternalException(s"Uh oh... There was no long slot for `$name`. It was a $s")
     case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
+
+  def getCachedNodePropertyOffsetFor(key: CachedNodeProperty): Int = cachedProperties(key).offset
 
   def updateAccessorFunctions(key: String, getter: ExecutionContext => AnyValue, setter: (ExecutionContext, AnyValue) => Unit,
                               primitiveNodeSetter: Option[(ExecutionContext, Long) => Unit],
@@ -365,6 +383,12 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     slotAliases.toIndexedSeq.collect {
       case (slot: RefSlot, aliases) => RefSlotWithAliases(slot, aliases.toSet)
     }.sorted(SlotWithAliasesOrdering)
+
+  /**
+    * NOTE: Only use for debugging
+    */
+  def getCachedPropertySlots: immutable.IndexedSeq[(CachedNodeProperty, RefSlot)] =
+    cachedProperties.toIndexedSeq
 
   object SlotWithAliasesOrdering extends Ordering[SlotWithAliases] {
     def compare(x: SlotWithAliases, y: SlotWithAliases): Int = (x, y) match {

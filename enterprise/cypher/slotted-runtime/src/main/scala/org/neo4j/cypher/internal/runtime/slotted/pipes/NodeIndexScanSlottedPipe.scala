@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, SlottedIndexedProperty}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
@@ -37,9 +37,9 @@ case class NodeIndexScanSlottedPipe(ident: String,
 
   override val offset: Int = slots.getLongOffsetFor(ident)
 
-  override val propertyOffsets: Array[Int] = property.maybePropertyValueSlot.toArray
-  override val propertyIndicesWithValues: Array[Int] = propertyOffsets.map(_ => 0)
-  private val needsValues: Boolean = propertyIndicesWithValues.nonEmpty
+  override val indexPropertySlotOffsets: Array[Int] = property.maybeCachedNodePropertySlot.toArray
+  override val indexPropertyIndices: Array[Int] = indexPropertySlotOffsets.map(_ => 0)
+  private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 

@@ -67,15 +67,15 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         AllNodesScanSlottedPipe(column, slots, argumentSize)(id)
 
       case NodeIndexScan(column, label, property, _) =>
-        NodeIndexScanSlottedPipe(column, label, getIndexedProperty(column, property, slots), slots, argumentSize)(id)
+        NodeIndexScanSlottedPipe(column, label, SlottedIndexedProperty(column, property, slots), slots, argumentSize)(id)
 
       case NodeIndexSeek(column, label, properties, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekSlottedPipe(column, label, properties.map(getIndexedProperty(column, _, slots)).toArray, valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
+        NodeIndexSeekSlottedPipe(column, label, properties.map(SlottedIndexedProperty(column, _, slots)).toArray, valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
 
       case NodeUniqueIndexSeek(column, label, properties, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekSlottedPipe(column, label, properties.map(getIndexedProperty(column, _, slots)).toArray,
+        NodeIndexSeekSlottedPipe(column, label, properties.map(SlottedIndexedProperty(column, _, slots)).toArray,
           valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id = id)
 
       case NodeByLabelScan(column, label, _) =>
@@ -89,17 +89,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
-  }
-
-  private def getIndexedProperty(column: String, property: IndexedProperty, slots: SlotConfiguration): SlottedIndexedProperty = {
-    val maybeOffset =
-      if (property.shouldGetValue) {
-      val name = column + "." + property.propertyKeyToken.name
-      Some(slots.getReferenceOffsetFor(name))
-    } else {
-      None
-    }
-    SlottedIndexedProperty(property.propertyKeyToken.nameId.id, maybeOffset)
   }
 
   private def generateSlotAccessorFunctions(slots: SlotConfiguration): Unit = {

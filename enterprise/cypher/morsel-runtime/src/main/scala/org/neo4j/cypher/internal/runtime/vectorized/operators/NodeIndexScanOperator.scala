@@ -22,18 +22,17 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, SlottedIndexedProperty}
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.{IndexOrder, IndexReference, NodeValueIndexCursor}
 
 
-class NodeIndexScanOperator(offset: Int,
+class NodeIndexScanOperator(nodeOffset: Int,
                             label: Int,
                             property: SlottedIndexedProperty,
                             argumentSize: SlotConfiguration.Size)
-  extends NodeIndexOperatorWithValues[NodeValueIndexCursor](offset, property.maybePropertyValueSlot) {
+  extends NodeIndexOperatorWithValues[NodeValueIndexCursor](nodeOffset, property.maybeCachedNodePropertySlot) {
 
   override def init(context: QueryContext, state: QueryState, inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
     val valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
@@ -51,7 +50,7 @@ class NodeIndexScanOperator(offset: Int,
       val read = context.transactionalContext.dataRead
 
       if (!hasMore) {
-        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE, property.maybePropertyValueSlot.isDefined)
+        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE, property.maybeCachedNodePropertySlot.isDefined)
       }
 
       hasMore = iterate(currentRow, valueIndexCursor, argumentSize)

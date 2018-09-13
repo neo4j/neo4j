@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, SlottedIndexedProperty}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -42,9 +42,9 @@ case class NodeIndexSeekSlottedPipe(ident: String,
 
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyId)
 
-  override val propertyIndicesWithValues: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
-  override val propertyOffsets: Array[Int] = properties.map(_.maybePropertyValueSlot).collect{ case Some(o) => o }
-  private val needsValues: Boolean = propertyIndicesWithValues.nonEmpty
+  override val indexPropertyIndices: Array[Int] = properties.zipWithIndex.filter(_._1.getValueFromIndex).map(_._2)
+  override val indexPropertySlotOffsets: Array[Int] = properties.map(_.maybeCachedNodePropertySlot).collect{ case Some(o) => o }
+  private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 
@@ -85,6 +85,3 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   }
 }
 
-case class SlottedIndexedProperty(propertyKeyId: Int, maybePropertyValueSlot: Option[Int]) {
-  def getValueFromIndex: Boolean = maybePropertyValueSlot.isDefined
-}

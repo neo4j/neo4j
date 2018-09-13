@@ -30,8 +30,6 @@ import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.values.storable.{DateValue, DurationValue}
 
-import scala.util.matching.Regex
-
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   private val failConf1 = Configs.Interpreted + Configs.Procs - Configs.Before3_3AndRule
@@ -163,7 +161,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     val result = executeWith(localConfig,
                              "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{timeSpan : `?o.timeSpan`?\\}".r)
+                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
@@ -175,7 +173,6 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       LocalDate.of(2018, 4, 1)
     ))
   }
-
   test("should handle temporal array of size 1 as indexed property with list parameter") {
     // Given
     graph.createIndex("Occasion", "timeSpan")
@@ -189,7 +186,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     val result = executeWith(localConfig,
                              "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{timeSpan : `?o.timeSpan`?\\}".r)
+                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
@@ -215,7 +212,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     val result = executeWith(localConfig,
                              "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{timeSpan : `?o.timeSpan`?\\}".r)
+                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
@@ -242,7 +239,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     val result = executeWith(localConfig,
                              "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{timeSpan : `?o.timeSpan`?\\}".r)
+                               plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
@@ -989,4 +986,6 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     graph.execute(query).next() should not be null
   }
 
+  //noinspection ScalaUnnecessaryParentheses
+  private def cached(key: String, value: String) = (s"\\{$key : (cached\\[)?$value\\]?\\}").r
 }

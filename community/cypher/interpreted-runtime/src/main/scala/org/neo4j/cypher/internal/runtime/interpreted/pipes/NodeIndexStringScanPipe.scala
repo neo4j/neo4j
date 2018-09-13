@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{QueryContext, ResultCreator}
-import org.neo4j.cypher.internal.v3_5.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, IndexedProperty}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.expressions.LabelToken
@@ -34,9 +34,9 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                property: IndexedProperty,
                                                valueExpr: Expression) extends Pipe with IndexPipeWithValues {
 
-  override val propertyIndicesWithValues: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
-  override val propertyNamesWithValues: Array[String] = Array(ident + "." + property.propertyKeyToken.name)
-  protected val needsValues = propertyIndicesWithValues.nonEmpty
+  override val indexPropertyIndices: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
+  override val indexCachedNodeProperties: Array[CachedNodeProperty] = Array(property.asCachedNodeProperty(ident))
+  protected val needsValues = indexPropertyIndices.nonEmpty
 
   private var reference: IndexReference = IndexReference.NO_INDEX
 

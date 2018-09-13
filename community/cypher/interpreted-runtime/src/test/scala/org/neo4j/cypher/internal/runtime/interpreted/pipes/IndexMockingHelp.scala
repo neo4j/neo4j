@@ -26,10 +26,11 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext, ResultCreator}
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{VirtualNodeValue, VirtualValues}
-import org.opencypher.v9_0.expressions.PropertyKeyToken
+import org.opencypher.v9_0.expressions.{PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
@@ -93,4 +94,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
       nodeValueHits.headOption.map(resultCreator.createResult)
     }
   }
+
+  protected def cachedNodeProperty(node: String, property: PropertyKeyToken): CachedNodeProperty =
+    CachedNodeProperty("n", PropertyKeyName(property.name)(pos))(pos)
 }

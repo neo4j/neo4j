@@ -31,7 +31,7 @@ import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
-  private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
+  private val propertyKey = PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(10))
   override val propertyKeys = Seq(propertyKey)
   private val node = nodeValue(11)
 
@@ -55,7 +55,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should use index provided values when available") {
+  test("should use cache node properties when asked for") {
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = scanFor(List(nodeValueHit(node, "hello")))
@@ -63,11 +63,10 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val pipe = NodeIndexScanPipe("n", label, IndexedProperty(propertyKey, GetValue))()
-    val result = pipe.createResults(queryState)
+    val result = pipe.createResults(queryState).toList
 
     // then
-    result.toList should equal(List(
-      Map("n" -> node, "n." + propertyKey.name -> Values.stringValue("hello"))
-    ))
+    result.map(_("n")) should be(List(node))
+    result.head.getCachedProperty(cachedNodeProperty("n", propertyKey)) should be(Values.stringValue("hello"))
   }
 }

@@ -264,9 +264,7 @@ object SlotAllocation {
       case leaf: IndexLeafPlan =>
         val result = argument
         result.newLong(leaf.idName, nullable, CTNode)
-        leaf.propertyNamesWithValues.foreach { name =>
-          result.newReference(name, nullable = false, typ = CTAny)
-        }
+        leaf.cachedNodeProperties.foreach(result.newCachedProperty)
         result
 
       case leaf: NodeLogicalLeafPlan =>
