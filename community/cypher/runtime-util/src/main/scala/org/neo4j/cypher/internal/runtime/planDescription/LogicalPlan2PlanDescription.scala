@@ -50,7 +50,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     assert(plan.isLeaf)
 
     val id = plan.id
-    val variables = plan.availableSymbols
+    val variables = plan.availableSymbols ++ plan.availableCachedNodeProperties.values.map(_.asCanonicalStringVal)
 
     val result: InternalPlanDescription = plan match {
       case _: AllNodesScan =>
