@@ -205,7 +205,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               IndexOrderNone),
             Map("m" -> varFor("n"))),
           "m", SemanticDirection.BOTH, Seq.empty, "o", "r"),
-        Map("m.prop" -> varFor("n.prop")))
+        Map("m.prop" -> cached("n.prop")))
     )
   }
 

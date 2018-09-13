@@ -42,30 +42,44 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
   def apply(leafPlan: LogicalPlan): LogicalPlan = {
     // We want to find property usages only in those predicates that are not already solved by the leaf-plan we are rewriting
     val solvedPredicates = leafPlanSolvedPredicates(leafPlan, solveds)
-    val usedExps = usedExpressions(query, solvedPredicates)
+    val usedExps = usedExpressionsInFirstPartWithIgnoredPredicates(query, solvedPredicates) ++ usedExpressionsInLaterParts
     rewriter(usedExps)(leafPlan).asInstanceOf[LogicalPlan]
   }
 
-  private def usedExpressions(queryPart: PlannerQuery, leafPlanSolvedPredicates: Set[Predicate]): Set[Expression] = {
+  private def usedExpressionsInFirstPartWithIgnoredPredicates(queryPart: PlannerQuery, predicatesToIgnore: Set[Predicate]): Set[Expression] = {
     val horizonDependingExpressions = queryPart.horizon.dependingExpressions.toSet
     val usedExpressionsInHorizon = collectPropertiesAndVariables(horizonDependingExpressions)
-    val usedExpressionsInPredicates = collectPropertiesAndVariables((queryPart.queryGraph.selections.predicates -- leafPlanSolvedPredicates).map(_.expr))
+    val usedExpressionsInPredicates = collectPropertiesAndVariables((queryPart.queryGraph.selections.predicates -- predicatesToIgnore).map(_.expr))
+    usedExpressionsInHorizon ++ usedExpressionsInPredicates
+  }
 
+  // We can cache the expressions used in later parts, they don't have any dependency on the leafPlan we're aligning
+  private val usedExpressionsInLaterParts = usedExpressionsInLaterPartsRecursive(query, firstPart = true)
+
+  private def usedExpressionsInLaterPartsRecursive(queryPart: PlannerQuery, firstPart: Boolean): Set[Expression] = {
     val maybeHorizonProjections = queryPart.horizon match {
-      case proj:QueryProjection => Some(proj.projections)
+      case projection: QueryProjection => Some(projection.projections)
       case _ => None
     }
 
+    val usedExpressionsInThisPart =
+      if (firstPart) {
+        // The expressions used in the first part are not relevant here
+        Set.empty
+      } else {
+        // Pass Set.empty since the leaf plan can only solve predicates of the first query part
+        usedExpressionsInFirstPartWithIgnoredPredicates(queryPart, Set.empty)
+      }
+
     val nextUsedExpressions = for {
       nextPart <- queryPart.tail.toSet[PlannerQuery]
-      // Pass Set.empty in the recursive call since the leaf plan can only solve predicates of the first query part
-      expressions <- usedExpressions(nextPart, Set.empty)
+      expressions <- usedExpressionsInLaterPartsRecursive(nextPart, firstPart = false)
       // If the horizon does not rename, keep the expressions as they are. Otherwise rename them for this query part
       renamedExpressions <- maybeHorizonProjections.fold(Option(expressions))(projections => renameExpressionsFromNextQueryPart(expressions, projections))
     } yield {
       renamedExpressions
     }
-    usedExpressionsInHorizon ++ usedExpressionsInPredicates ++ nextUsedExpressions
+    usedExpressionsInThisPart ++ nextUsedExpressions
   }
 
   private def collectPropertiesAndVariables(expression: FoldableAny): Set[Expression] =

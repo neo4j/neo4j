@@ -288,11 +288,11 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Projection")
-        .containingArgument("{m.prop1 : `n.prop1`}")
+        .containingArgument("{m.prop1 : cached[n.prop1]}")
         .withDBHits(0)
         .withLHS(includeSomewhere
         .aPlan("NodeIndexSeek")
-        .withExactVariables("n", "n.prop1"))
+        .withExactVariables("n", "cached[n.prop1]"))
     result.toList should equal(List(Map("m.prop1" -> 42), Map("m.prop1" -> 42)))
   }
 
