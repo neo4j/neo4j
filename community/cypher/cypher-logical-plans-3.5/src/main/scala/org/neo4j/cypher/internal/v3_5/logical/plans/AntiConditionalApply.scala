@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
+import org.opencypher.v9_0.expressions.Property
 import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
@@ -42,4 +43,14 @@ case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Se
   override val rhs = Some(right)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols ++ items
+
+  /**
+    * Note: This is not the completely right thing to do.
+    * AntiConditionalApply is only planned for MERGE. And in that case the LHS (Optional --> NodeUniqueIndexSeek) will produce
+    * a null row when the node was not found. The RHS (MergeCreateNode) does not provide the property, but is supposed to
+    * override all the null columns from the LHS.
+    *
+    * Not making cached node properties available is the same thing to do, as long as this is only planned in such a way.
+    */
+  override final def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = Map.empty
 }
