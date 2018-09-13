@@ -37,22 +37,22 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.net.ssl.SSLEngine;
 
-public class OnConnectSslHandler extends ChannelDuplexHandler
+public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler
 {
     private final ChannelPipeline pipeline;
     private final SslContext sslContext;
     private final Collection<Function<SSLEngine,SSLEngine>> engineModifications;
 
-    OnConnectSslHandler( Channel channel, SslContext sslContext, boolean isClient, boolean verifyHostname, String[] tlsVersions )
+    ClientSideOnConnectSslHandler( Channel channel, SslContext sslContext, boolean verifyHostname, String[] tlsVersions )
     {
         this.pipeline = channel.pipeline();
         this.sslContext = sslContext;
 
         this.engineModifications = new ArrayList<>();
-        engineModifications.add( new EssentialEngineModifications( tlsVersions, isClient ) );
+        engineModifications.add( new EssentialEngineModifications( tlsVersions, true ) );
         if ( verifyHostname )
         {
-            engineModifications.add( new HostnameVerificationEngineModification() );
+            engineModifications.add( new ClientSideHostnameVerificationEngineModification() );
         }
     }
 

@@ -27,6 +27,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -49,7 +50,6 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class SecureClient
 {
     private Bootstrap bootstrap;
-    private ClientInitializer clientInitializer;
     private NioEventLoopGroup eventLoopGroup;
     private Channel channel;
     private Bucket bucket = new Bucket();
@@ -62,10 +62,9 @@ public class SecureClient
     public SecureClient( SslPolicy sslPolicy ) throws SSLException
     {
         eventLoopGroup = new NioEventLoopGroup();
-        clientInitializer = new ClientInitializer( sslPolicy, bucket );
         bootstrap = new Bootstrap().group( eventLoopGroup )
                 .channel( NioSocketChannel.class )
-                .handler( clientInitializer );
+                .handler( new ClientInitializer( sslPolicy, bucket ) );
     }
 
     public Future<Channel> sslHandshakeFuture()
@@ -132,13 +131,13 @@ public class SecureClient
         }
 
         @Override
-        protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg ) throws Exception
+        protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg )
         {
             collectedData.writeBytes( msg );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
         {
         }
     }
@@ -157,13 +156,13 @@ public class SecureClient
         }
 
         @Override
-        protected void initChannel( SocketChannel channel ) throws Exception
+        protected void initChannel( SocketChannel channel )
         {
             ChannelPipeline pipeline = channel.pipeline();
 
-            OnConnectSslHandler onConnectSslHandler = (OnConnectSslHandler) sslPolicy.nettyClientHandler( channel, sslContext );
+            ChannelHandler clientOnConnectSslHandler = sslPolicy.nettyClientHandler( channel, sslContext );
 
-            pipeline.addLast( onConnectSslHandler );
+            pipeline.addLast( clientOnConnectSslHandler );
             pipeline.addLast( new ChannelInboundHandlerAdapter()
                 {
                     @Override
