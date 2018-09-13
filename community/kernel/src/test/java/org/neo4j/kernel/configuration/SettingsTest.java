@@ -159,7 +159,7 @@ class SettingsTest
     }
 
     @Test
-    void exceptDoesNoAllowForbiddenValues()
+    void exceptDoesNotAllowForbiddenValues()
     {
         Setting<String> restrictedSetting = buildSetting( "foo", STRING, "test" ).constraint( except( "a", "b", "c" ) ).build();
         assertEquals( "test", restrictedSetting.apply( map( stringMap() ) ) );
