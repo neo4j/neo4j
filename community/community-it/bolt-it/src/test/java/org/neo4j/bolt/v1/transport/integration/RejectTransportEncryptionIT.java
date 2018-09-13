@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,6 +38,8 @@ import org.neo4j.function.Factory;
 import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.JavaVersion.JAVA_9;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtLeast;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.DISABLED;
 
@@ -74,7 +75,8 @@ public class RejectTransportEncryptionIT
                 },
                 new Object[]{
                         (Factory<TransportConnection>) SecureSocketConnection::new, new IOException(
-                        SystemUtils.IS_JAVA_1_8 ? "Remote host closed connection during handshake" : "Remote host terminated the handshake" )
+                        isJavaVersionAtLeast( JAVA_9 ) ? "Remote host terminated the handshake"
+                                                       : "Remote host closed connection during handshake" )
 
                 } );
     }
