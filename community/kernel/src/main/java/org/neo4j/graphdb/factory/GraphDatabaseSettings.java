@@ -146,6 +146,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> editionName = setting( "unsupported.dbms.edition", STRING, Edition.unknown.toString() );
 
+    /**
+     * @deprecated This setting is deprecated and will be removed in 4.0.
+     * Please use connector configuration {@link org.neo4j.kernel.configuration.Connector#enabled} instead.
+     */
+    @Title( "Disconnected" )
+    @Internal
+    @Description( "Disable all Bolt protocol connectors. This setting is deprecated and will be removed in 4.0. Please use connector configuration instead." )
+    @Deprecated
+    @ReplacedBy( "dbms.connector.X.enabled" )
+    public static final Setting<Boolean> disconnected = setting( "unsupported.dbms.disconnected", BOOLEAN, FALSE );
+
     @Description( "Print out the effective Neo4j configuration after startup." )
     @Internal
     public static final Setting<Boolean> dump_configuration = setting( "unsupported.dbms.report_configuration",

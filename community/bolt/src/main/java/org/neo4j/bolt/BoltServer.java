@@ -119,7 +119,7 @@ public class BoltServer extends LifecycleAdapter
 
         BoltProtocolFactory boltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, boltStateMachineFactory );
 
-        if ( !config.enabledBoltConnectors().isEmpty() )
+        if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
             NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                     createConnectors( boltProtocolFactory, throttleGroup, log ), connectorPortRegister, userLog );
