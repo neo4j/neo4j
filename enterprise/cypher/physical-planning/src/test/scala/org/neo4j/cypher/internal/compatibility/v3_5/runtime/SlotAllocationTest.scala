@@ -56,9 +56,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("index seek without values") {
     // given
-    val label = LabelToken("label2", LabelId(0))
-    val seekExpression = SingleQueryExpression(literalInt(42))
-    val plan = logicalPlans.NodeIndexSeek(x, label, Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), seekExpression, Set.empty)
+    val plan = nodeIndexSeek("label2", 42, getValue = false)
 
     // when
     val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
@@ -69,12 +67,9 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       SlotConfiguration(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
   }
 
-
   test("index seek with values") {
     // given
-    val label = LabelToken("label2", LabelId(0))
-    val seekExpression = SingleQueryExpression(literalInt(42))
-    val plan = logicalPlans.NodeIndexSeek(x, label, Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), GetValue)), seekExpression, Set.empty)
+    val plan = nodeIndexSeek("label2", 42, getValue = true)
 
     // when
     val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
@@ -82,9 +77,10 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // then
     allocations should have size 1
     allocations(plan.id) should equal(
-      SlotConfiguration(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode),
-        "x.prop" -> RefSlot(0, nullable = false, CTAny)), 1, 1))
+      SlotConfiguration.empty
+        .newLong("x", nullable = false, CTNode)
+        .newCachedProperty(cachedNodeProperty("x", "prop"))
+    )
   }
 
   test("limit should not introduce slots") {
@@ -571,6 +567,65 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     )))
   }
 
+  test("joins should remember cached node properties from both sides") {
+    // given
+    val lhs = nodeIndexSeek("L", 42, getValue = true, prop = "lhsProp")
+    val rhs = nodeIndexSeek("B", 42, getValue = true, prop = "rhsProp")
+
+    val joins =
+      List(
+        CartesianProduct(lhs, rhs),
+        NodeHashJoin(Set(x), lhs, rhs),
+        LeftOuterHashJoin(Set(x), lhs, rhs),
+        RightOuterHashJoin(Set(x), lhs, rhs),
+        logicalPlans.ValueHashJoin(lhs, rhs, Equals(varFor("x"), varFor("x"))(pos))
+      )
+
+    for (join <- joins) {
+      // when
+      val joinAllocations = SlotAllocation.allocateSlots(join, semanticTable).slotConfigurations
+
+      // then
+      joinAllocations(join.id) should be(
+        SlotConfiguration.empty
+          .newLong("x", false, CTNode)
+          .newCachedProperty(cachedNodeProperty("x", "lhsProp"))
+          .newCachedProperty(cachedNodeProperty("x", "rhsProp"))
+      )
+    }
+  }
+
+  test("joins should correctly handle cached node property argument") {
+    // given
+    val lhs = nodeIndexSeek("L", 42, getValue = true, prop = "lhsProp")
+    val rhs = nodeIndexSeek("B", 42, getValue = true, prop = "rhsProp")
+    val arg = nodeIndexSeek("A", 42, getValue = true, prop = "argProp")
+
+    val joins =
+      List(
+        CartesianProduct(lhs, rhs),
+        NodeHashJoin(Set(x), lhs, rhs),
+        LeftOuterHashJoin(Set(x), lhs, rhs),
+        RightOuterHashJoin(Set(x), lhs, rhs),
+        logicalPlans.ValueHashJoin(lhs, rhs, Equals(varFor("x"), varFor("x"))(pos))
+      )
+
+    for (join <- joins) {
+      // when
+      val plan = Apply(arg, join)
+      val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
+
+      // then
+      allocations(plan.id) should be(
+        SlotConfiguration.empty
+          .newLong("x", false, CTNode)
+          .newCachedProperty(cachedNodeProperty("x", "argProp"))
+          .newCachedProperty(cachedNodeProperty("x", "lhsProp"))
+          .newCachedProperty(cachedNodeProperty("x", "rhsProp"))
+      )
+    }
+  }
+
   test("that argument does not apply here") {
     // given MATCH (x) MATCH (x)<-[r]-(y)
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)
@@ -943,4 +998,17 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       SlotAllocation.allocateSlots(filter, SemanticTable())
     }
   }
+
+  private def nodeIndexSeek(label: String, target: Int, getValue: Boolean, prop: String = "prop"): NodeIndexSeek = {
+    val labelToken = LabelToken(label, LabelId(0))
+    val seekExpression = SingleQueryExpression(literalInt(target))
+    logicalPlans.NodeIndexSeek(x,
+      labelToken,
+      Seq(IndexedProperty(PropertyKeyToken(prop, PropertyKeyId(0)), if (getValue) GetValue else DoNotGetValue)),
+      seekExpression,
+      Set.empty)
+  }
+
+  private def cachedNodeProperty(node: String, prop: String): CachedNodeProperty =
+    CachedNodeProperty(node, PropertyKeyName(prop)(pos))(pos)
 }

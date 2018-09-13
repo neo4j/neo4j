@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import java.util
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap
-import org.eclipse.collections.api.multimap.list.MutableListMultimap
-import org.eclipse.collections.impl.factory.Multimaps
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps
 import org.eclipse.collections.impl.list.mutable.FastList
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
@@ -39,7 +37,8 @@ case class NodeHashJoinSlottedPrimitivePipe(lhsOffset: Int,
                                             right: Pipe,
                                             slots: SlotConfiguration,
                                             longsToCopy: Array[(Int, Int)],
-                                            refsToCopy: Array[(Int, Int)])
+                                            refsToCopy: Array[(Int, Int)],
+                                            cachedPropertiesToCopy: Array[(Int, Int)])
                                            (val id: Id = Id.INVALID_ID) extends PipeWithSource(left) {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -114,6 +113,9 @@ case class NodeHashJoinSlottedPrimitivePipe(lhsOffset: Int,
     }
     refsToCopy foreach {
       case (from, to) => newRow.setRefAt(to, rhs.getRefAt(from))
+    }
+    cachedPropertiesToCopy foreach {
+      case (from, to) => newRow.setCachedPropertyAt(to, rhs.getCachedPropertyAt(from))
     }
   }
 }

@@ -285,6 +285,16 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     this
   }
 
+  def newCachedPropertyIfUnseen(key: CachedNodeProperty): SlotConfiguration = {
+    cachedProperties.get(key) match {
+      case Some(existingSlot) => // do nothing
+      case None =>
+        cachedProperties.put(key, RefSlot(numberOfReferences, nullable = false, CTAny))
+        numberOfReferences = numberOfReferences + 1
+    }
+    this
+  }
+
   def getReferenceOffsetFor(name: String): Int = slots.get(name) match {
     case Some(s: RefSlot) => s.offset
     case Some(s) => throw new InternalException(s"Uh oh... There was no reference slot for `$name`. It was a $s")
@@ -333,12 +343,29 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   }
 
   // NOTE: This will give duplicate slots when we have aliases
-  def foreachSlot[U](f: ((String,Slot)) => U): Unit =
+  def foreachSlot[U](f: ((String, Slot)) => U): Unit =
     slots.foreach(f)
 
   // NOTE: This will give duplicate slots when we have aliases
-  def foreachSlotOrdered[U](f: ((String, Slot)) => U): Unit =
-    slots.toSeq.sortBy(_._2)(SlotOrdering).foreach(f)
+  def foreachSlotOrdered(onVariable: (String, Slot) => Unit,
+                         onCachedNodeProperty: CachedNodeProperty => Unit
+                        ): Unit = {
+    val (longs, refs) = slots.toSeq.partition(_._2.isLongSlot)
+    for ((variable, slot) <- longs.sortBy(_._2.offset)) onVariable(variable, slot)
+
+    var sortedRefs = refs.sortBy(_._2.offset)
+    var sortedCached = cachedProperties.toSeq.sortBy(_._2.offset)
+    for (i <- 0 until numberOfReferences) {
+      if (sortedRefs.nonEmpty && sortedRefs.head._2.offset == i) {
+        val (variable, slot) = sortedRefs.head
+        onVariable(variable, slot)
+        sortedRefs = sortedRefs.tail
+      } else {
+        onCachedNodeProperty(sortedCached.head._1)
+        sortedCached = sortedCached.tail
+      }
+    }
+  }
 
   // NOTE: This will give duplicate slots when we have aliases
   def mapSlot[U](f: ((String,Slot)) => U): Iterable[U] = slots.map(f)
@@ -366,7 +393,7 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
-  override def toString = s"SlotConfiguration(longs=$numberOfLongs, refs=$numberOfReferences, slots=$slots)"
+  override def toString = s"SlotConfiguration(longs=$numberOfLongs, refs=$numberOfReferences, slots=$slots, cachedProperties=$cachedProperties)"
 
   /**
     * NOTE: Only use for debugging

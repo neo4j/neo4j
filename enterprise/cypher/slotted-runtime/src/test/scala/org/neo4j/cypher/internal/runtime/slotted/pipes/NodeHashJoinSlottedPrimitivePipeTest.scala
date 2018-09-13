@@ -45,7 +45,7 @@ class NodeHashJoinSlottedPrimitivePipeTest extends CypherFunSuite {
     val right = mockPipeFor(slots, RowL(node2), RowL(node3))
 
     // when
-    val result = NodeHashJoinSlottedPrimitivePipe(0, 0, left, right, slots, Array(), Array())().createResults(queryState)
+    val result = NodeHashJoinSlottedPrimitivePipe(0, 0, left, right, slots, Array(), Array(), Array())().createResults(queryState)
 
     // then
     val list: Iterator[ExecutionContext] = result
@@ -65,7 +65,7 @@ class NodeHashJoinSlottedPrimitivePipeTest extends CypherFunSuite {
     val right = mock[Pipe]
 
     // when
-    val result = NodeHashJoinSlottedPrimitivePipe(0, 0, left, right, slots, Array(), Array())().
+    val result = NodeHashJoinSlottedPrimitivePipe(0, 0, left, right, slots, Array(), Array(), Array())().
       createResults(queryState)
 
     // then
@@ -84,7 +84,7 @@ class NodeHashJoinSlottedPrimitivePipeTest extends CypherFunSuite {
     val right = mockPipeFor(slots, RowL(node0))
 
     // when
-    val result = NodeHashJoinSlottedPrimitivePipe(0, 0, left, right, slots, Array(), Array())().
+    val result = NodeHashJoinSlottedPrimitivePipe(0, 0, left, right, slots, Array(), Array(), Array())().
       createResults(queryState)
 
     // then
@@ -118,7 +118,8 @@ class NodeHashJoinSlottedPrimitivePipeTest extends CypherFunSuite {
       right = rhsPipe,
       slotConfig,
       longsToCopy = Array(),
-      refsToCopy = Array())().
+      refsToCopy = Array(),
+      cachedPropertiesToCopy = Array())().
       createResults(QueryStateHelper.empty)
 
     // If we got here it means we did not throw a stack overflow exception. ooo-eeh!

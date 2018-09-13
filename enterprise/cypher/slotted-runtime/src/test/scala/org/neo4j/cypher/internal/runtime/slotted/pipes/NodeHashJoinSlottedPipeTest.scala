@@ -45,7 +45,7 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     val right = mockPipeFor(slots, RowL(node2), RowL(node3))
 
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0), Array(0), left, right, slots, Array(), Array())().createResults(queryState)
+    val result = NodeHashJoinSlottedPipe(Array(0), Array(0), left, right, slots, Array(), Array(), Array())().createResults(queryState)
 
     // then
     val list: Iterator[ExecutionContext] = result
@@ -86,7 +86,7 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, hashSlots, Array((2, 3)), Array())().
+    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, hashSlots, Array((2, 3)), Array(), Array())().
       createResults(queryState)
 
     // then
@@ -110,7 +110,7 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     val right = mock[Pipe]
 
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array())().
+    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array(), Array())().
       createResults(queryState)
 
     // then
@@ -129,7 +129,7 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     val right = mockPipeFor(slots, RowL(node0))
 
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array())().
+    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array(), Array())().
       createResults(queryState)
 
     // then
@@ -173,7 +173,8 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
       right = rhsPipe,
       slots = output,
       longsToCopy = Array((1, 2)),
-      refsToCopy = Array())().
+      refsToCopy = Array(),
+      cachedPropertiesToCopy = Array())().
       createResults(QueryStateHelper.empty)
 
     // If we got here it means we did not throw a stack overflow exception. ooo-eeh!

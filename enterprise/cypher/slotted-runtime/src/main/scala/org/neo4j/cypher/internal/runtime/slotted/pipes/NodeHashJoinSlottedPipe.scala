@@ -36,7 +36,8 @@ case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
                                    right: Pipe,
                                    slots: SlotConfiguration,
                                    longsToCopy: Array[(Int, Int)],
-                                   refsToCopy: Array[(Int, Int)])
+                                   refsToCopy: Array[(Int, Int)],
+                                   cachedPropertiesToCopy: Array[(Int, Int)])
                                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(left) {
   private val width: Int = lhsOffsets.length
 
@@ -131,6 +132,9 @@ case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
     }
     refsToCopy foreach {
       case (from, to) => newRow.setRefAt(to, rhs.getRefAt(from))
+    }
+    cachedPropertiesToCopy foreach {
+      case (from, to) => newRow.setCachedPropertyAt(to, rhs.getCachedPropertyAt(from))
     }
   }
 }

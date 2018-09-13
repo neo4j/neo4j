@@ -564,46 +564,47 @@ object SlotAllocation {
         val result = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
-        rhs.foreachSlotOrdered {
-          case (k, slot) =>
-            result.add(k, slot)
-        }
+        rhs.foreachSlotOrdered(result.add, result.newCachedPropertyIfUnseen)
+
         result
 
       case RightOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val result = rhs.copy()
-        lhs.foreachSlotOrdered {
-          case (k, slot) if !nodes(k) =>
-            result.add(k, slot.asNullable)
 
-          case _ => // If the column is one of the join columns there is no need to add it again
-        }
+        // If the column is one of the join columns there is no need to add it again
+        def onVariableSlot(key: String, slot: Slot): Unit =
+          if (!nodes(key))
+            result.add(key, slot.asNullable)
+
+        lhs.foreachSlotOrdered(onVariableSlot, result.newCachedPropertyIfUnseen)
         result
 
       case LeftOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val result = lhs.copy()
-        rhs.foreachSlotOrdered {
-          case (k, slot) if !nodes(k) =>
-            result.add(k, slot.asNullable)
 
-          case _ => // If the column is one of the join columns there is no need to add it again
-        }
+        // If the column is one of the join columns there is no need to add it again
+        def onVariableSlot(key: String, slot: Slot): Unit =
+          if (!nodes(key))
+            result.add(key, slot.asNullable)
+
+        rhs.foreachSlotOrdered(onVariableSlot, result.newCachedPropertyIfUnseen)
         result
 
       case NodeHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val result = lhs.copy()
-        rhs.foreachSlotOrdered {
-          case (k, slot) if !nodes(k) =>
-            result.add(k, slot)
 
-          case _ => // If the column is one of the join columns there is no need to add it again
-        }
+        // If the column is one of the join columns there is no need to add it again
+        def onVariableSlot(key: String, slot: Slot): Unit =
+          if (!nodes(key))
+            result.add(key, slot)
+
+        rhs.foreachSlotOrdered(onVariableSlot, result.newCachedPropertyIfUnseen)
         result
 
       case _: ValueHashJoin =>
@@ -612,10 +613,7 @@ object SlotAllocation {
         val slotConfig: SlotConfiguration = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
-        rhs.foreachSlotOrdered {
-          case (k, slot) =>
-            slotConfig.add(k, slot)
-        }
+        rhs.foreachSlotOrdered(slotConfig.add, slotConfig.newCachedPropertyIfUnseen)
         slotConfig
 
       case RollUpApply(_, _, collectionName, _, _) =>
