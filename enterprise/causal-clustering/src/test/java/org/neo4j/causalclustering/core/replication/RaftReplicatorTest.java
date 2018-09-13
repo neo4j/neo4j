@@ -250,9 +250,10 @@ public class RaftReplicatorTest
     @Test
     public void shouldListenToLeaderUpdates() throws ReplicationFailureException
     {
-        CompleteProgressTracker completeProgressTracker = new CompleteProgressTracker();
+        OneProgressTracker oneProgressTracker = new OneProgressTracker();
+        oneProgressTracker.last.setReplicated();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
-        RaftReplicator replicator = getReplicator( outbound, completeProgressTracker, new Monitors() );
+        RaftReplicator replicator = getReplicator( outbound, oneProgressTracker, new Monitors() );
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
 
         LeaderInfo lastLeader = leaderInfo;
@@ -267,11 +268,30 @@ public class RaftReplicatorTest
         replicator.onLeaderSwitch( lastLeader );
         replicator.replicate( content, false );
         assertEquals( outbound.lastTo, lastLeader.memberId() );
+    }
 
-        // update with invalid null leader, still send to previous leader
+    @Test
+    public void shouldSuccefulltSendIfLeaderIsLostAndFound() throws InterruptedException
+    {
+        OneProgressTracker capturedProgress = new OneProgressTracker();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
+
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
+        replicator.onLeaderSwitch( leaderInfo );
+
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
+        ReplicatingThread replicatingThread = replicatingThread( replicator, content, false );
+
+        // when
+        replicatingThread.start();
+
+        // then
+        assertEventually( "send count", () -> outbound.count, greaterThan( 1 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
         replicator.onLeaderSwitch( new LeaderInfo( null, 1 ) );
-        replicator.replicate( content, false );
-        assertEquals( outbound.lastTo, lastLeader.memberId() );
+        capturedProgress.last.setReplicated();
+        replicator.onLeaderSwitch( leaderInfo );
+
+        replicatingThread.join( DEFAULT_TIMEOUT_MS );
     }
 
     private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, ProgressTracker progressTracker, Monitors monitors )
@@ -331,12 +351,11 @@ public class RaftReplicatorTest
         }
     }
 
-    private class CompleteProgressTracker extends ProgressTrackerAdaptor
+    private class OneProgressTracker extends ProgressTrackerAdaptor
     {
-        CompleteProgressTracker()
+        OneProgressTracker()
         {
             last = new Progress();
-            last.setReplicated();
         }
 
         @Override

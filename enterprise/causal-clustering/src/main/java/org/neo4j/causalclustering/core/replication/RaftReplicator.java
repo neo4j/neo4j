@@ -55,7 +55,7 @@ public class RaftReplicator implements Replicator, LeaderListener
     private final Log log;
     private final ReplicationMonitor replicationMonitor;
     private final long availabilityTimeoutMillis;
-    private volatile MemberId lastKnownLeader;
+    private final LeaderProvider leaderProvider;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, long availabilityTimeoutMillis, AvailabilityGuard availabilityGuard,
@@ -70,20 +70,22 @@ public class RaftReplicator implements Replicator, LeaderListener
         this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog( getClass() );
         this.replicationMonitor = monitors.newMonitor( ReplicationMonitor.class );
+        this.leaderProvider = new LeaderProvider();
         leaderLocator.registerListener( this );
     }
 
     @Override
     public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws ReplicationFailureException
     {
-        if ( lastKnownLeader == null )
+        MemberId currentLeader = leaderProvider.currentLeader();
+        if ( currentLeader == null )
         {
             throw new ReplicationFailureException( "Replication aborted since no leader was available" );
         }
-        return replicate0( command, trackResult );
+        return replicate0( command, trackResult, currentLeader );
     }
 
-    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult ) throws ReplicationFailureException
+    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult, MemberId leader ) throws ReplicationFailureException
     {
         replicationMonitor.startReplication();
         try
@@ -107,13 +109,14 @@ public class RaftReplicator implements Replicator, LeaderListener
                     replicationMonitor.replicationAttempt();
                     assertDatabaseAvailable();
                     // blocking at least until the send has succeeded or failed before retrying
-                    outbound.send( lastKnownLeader, new RaftMessages.NewEntry.Request( me, operation ), true );
+                    outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ), true );
                     progress.awaitReplication( progressTimeout.getMillis() );
                     if ( progress.isReplicated() )
                     {
                         break;
                     }
                     progressTimeout.increment();
+                    leader = leaderProvider.awaitLeader();
                 }
             }
             catch ( InterruptedException e )
@@ -147,10 +150,17 @@ public class RaftReplicator implements Replicator, LeaderListener
     public void onLeaderSwitch( LeaderInfo leaderInfo )
     {
         progressTracker.triggerReplicationEvent();
-        if ( leaderInfo.memberId() != null )
+        MemberId newLeader = leaderInfo.memberId();
+        MemberId oldLeader = leaderProvider.currentLeader();
+        if ( newLeader == null && oldLeader != null )
         {
-            lastKnownLeader = leaderInfo.memberId();
+            log.info( "Lost previous leader '%s'. Currently no available leader", oldLeader );
         }
+        else if ( newLeader != null && oldLeader == null )
+        {
+            log.info( "A new leader has been detected: '%s'", newLeader );
+        }
+        leaderProvider.setLeader( newLeader );
     }
 
     private void assertDatabaseAvailable() throws ReplicationFailureException
