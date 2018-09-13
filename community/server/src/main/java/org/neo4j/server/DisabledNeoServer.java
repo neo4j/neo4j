@@ -40,27 +40,23 @@ import static org.neo4j.server.exception.ServerStartupErrors.translateToServerSt
 
 public class DisabledNeoServer implements NeoServer
 {
-    private final GraphFactory graphFactory;
-    private final Dependencies dependencies;
+    private final Database db;
     private final Config config;
 
-    private Database db;
     private final LifeSupport life = new LifeSupport();
 
     public DisabledNeoServer( GraphFactory graphFactory, Dependencies dependencies, Config config, LogProvider logProvider )
     {
-        this.graphFactory = graphFactory;
-        this.dependencies = dependencies;
+        this.db = new LifecycleManagingDatabase( config, graphFactory, dependencies );
         this.config = config;
+
+        life.add( db );
         logProvider.getLog( getClass() ).info( NEO4J_IS_STARTING_MESSAGE );
     }
 
     @Override
     public void start()
     {
-        db = new LifecycleManagingDatabase( config, graphFactory, dependencies );
-        life.add( db );
-
         try
         {
             life.start();

@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
@@ -114,8 +114,6 @@ public abstract class AbstractNeoServer implements NeoServer
     };
     public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
-    private final GraphFactory graphFactory;
-    private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     protected final LogProvider logProvider;
     protected final Log log;
 
@@ -128,7 +126,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private AdvertisedSocketAddress httpAdvertisedAddress;
     private AdvertisedSocketAddress httpsAdvertisedAddress;
 
-    protected Database database;
+    protected final Database database;
     private DependencyResolver dependencyResolver;
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
@@ -148,12 +146,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract WebServer createWebServer();
 
-    public AbstractNeoServer( Config config, GraphFactory graphFactory,
-            GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+    public AbstractNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies, LogProvider logProvider )
     {
         this.config = config;
-        this.graphFactory = graphFactory;
-        this.dependencies = dependencies;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         log.info( NEO4J_IS_STARTING_MESSAGE );
@@ -167,16 +162,16 @@ public abstract class AbstractNeoServer implements NeoServer
         httpsConnector = findConnector( config, Encryption.TLS );
         httpsListenAddress = listenAddressFor( config, httpsConnector );
         httpsAdvertisedAddress = advertisedAddressFor( config, httpsConnector );
+
+        database = new LifecycleManagingDatabase( config, graphFactory, dependencies );
+        life.add( database );
+        life.add( new ServerDependenciesLifeCycleAdapter() );
+        life.add( new ServerComponentsLifecycleAdapter() );
     }
 
     @Override
     public void start() throws ServerStartupException
     {
-        database = new LifecycleManagingDatabase( config, graphFactory, dependencies );
-        life.add( database );
-        life.add( new ServerDependenciesLifeCycleAdapter() );
-        life.add( new ServerComponentsLifecycleAdapter() );
-
         try
         {
             life.start();
@@ -353,11 +348,7 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
-        // Stop and clear the nested life.
-        // It needs to be cleared because server can be restarted, for example using a JMX bean.
-        // See `ServerManagementMBean` and its implementation.
         life.stop();
-        life.clear();
     }
 
     private void stopWebServer() throws Exception
