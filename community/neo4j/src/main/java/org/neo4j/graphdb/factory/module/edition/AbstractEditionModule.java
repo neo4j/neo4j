@@ -23,7 +23,6 @@ import java.io.File;
 import java.time.Clock;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
@@ -31,8 +30,6 @@ import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
-import org.neo4j.graphdb.factory.module.edition.context.DefaultEditionModuleDatabaseContext;
-import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,16 +41,12 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -75,16 +68,11 @@ import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTempo
  * Edition module for {@link GraphDatabaseFacadeFactory}. Implementations of this class
  * need to create all the services that would be specific for a particular edition of the database.
  */
-public abstract class EditionModule
+public abstract class AbstractEditionModule
 {
     private final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
     protected NetworkConnectionTracker connectionTracker;
     protected ThreadToStatementContextBridge threadToTransactionBridge;
-    protected IdContextFactory idContextFactory;
-    protected Function<String, TokenHolders> tokenHoldersProvider;
-    protected Supplier<Locks> locksSupplier;
-    protected Function<Locks, StatementLocksFactory> statementLocksFactoryProvider;
-    protected CommitProcessFactory commitProcessFactory;
     protected long transactionStartTimeout;
     protected TransactionHeaderInformationFactory headerInformationFactory;
     protected SchemaWriteGuard schemaWriteGuard;
@@ -95,10 +83,7 @@ public abstract class EditionModule
     protected AvailabilityGuard globalAvailabilityGuard;
     protected SecurityProvider securityProvider;
 
-    public DatabaseEditionContext createDatabaseContext( String databaseName )
-    {
-        return new DefaultEditionModuleDatabaseContext( this, databaseName );
-    }
+    public abstract DatabaseEditionContext createDatabaseContext( String databaseName );
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
             LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )
@@ -148,7 +133,7 @@ public abstract class EditionModule
         config.augment( GraphDatabaseSettings.editionName, databaseInfo.edition.toString() );
     }
 
-    public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, PlatformModule platform, EditionModule edition,
+    public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, PlatformModule platform, AbstractEditionModule edition,
             Procedures procedures, Logger msgLog )
     {
         return new DefaultDatabaseManager( platform, edition, procedures, msgLog, graphDatabaseFacade );
@@ -232,11 +217,6 @@ public abstract class EditionModule
         return headerInformationFactory;
     }
 
-    public CommitProcessFactory getCommitProcessFactory()
-    {
-        return commitProcessFactory;
-    }
-
     public ConstraintSemantics getConstraintSemantics()
     {
         return constraintSemantics;
@@ -255,26 +235,6 @@ public abstract class EditionModule
     public Function<File,FileSystemWatcherService> getWatcherServiceFactory()
     {
         return watcherServiceFactory;
-    }
-
-    public IdContextFactory getIdContextFactory()
-    {
-        return idContextFactory;
-    }
-
-    public Function<String,TokenHolders> getTokenHoldersProvider()
-    {
-        return tokenHoldersProvider;
-    }
-
-    public Supplier<Locks> getLocksSupplier()
-    {
-        return locksSupplier;
-    }
-
-    public Function<Locks,StatementLocksFactory> getStatementLocksFactoryProvider()
-    {
-        return statementLocksFactoryProvider;
     }
 
     public ThreadToStatementContextBridge getThreadToTransactionBridge()

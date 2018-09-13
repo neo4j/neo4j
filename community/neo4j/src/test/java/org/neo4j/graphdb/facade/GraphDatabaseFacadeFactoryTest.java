@@ -27,8 +27,8 @@ import java.io.File;
 import java.util.Collections;
 
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -98,7 +98,7 @@ class GraphDatabaseFacadeFactoryTest
     private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
     {
         PlatformModule platformModule = new PlatformModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
-        EditionModule editionModule = new CommunityEditionModule( platformModule )
+        AbstractEditionModule editionModule = new CommunityEditionModule( platformModule )
         {
             @Override
             protected SchemaWriteGuard createSchemaWriteGuard()

@@ -55,8 +55,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -694,7 +694,7 @@ public class BackupIT
             protected GraphDatabaseService newDatabase( File storeDir, Config config,
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                Function<PlatformModule,EditionModule> factory =
+                Function<PlatformModule,AbstractEditionModule> factory =
                         platformModule -> new CommunityEditionModule( platformModule )
                         {
 

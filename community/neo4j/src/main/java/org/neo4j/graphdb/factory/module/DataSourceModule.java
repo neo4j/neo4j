@@ -22,7 +22,7 @@ package org.neo4j.graphdb.factory.module;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
@@ -41,7 +41,7 @@ public class DataSourceModule
 
     public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
-    public DataSourceModule( String databaseName, PlatformModule platformModule, EditionModule editionModule, Procedures procedures,
+    public DataSourceModule( String databaseName, PlatformModule platformModule, AbstractEditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
         platformModule.diagnosticsManager.prependProvider( platformModule.config );

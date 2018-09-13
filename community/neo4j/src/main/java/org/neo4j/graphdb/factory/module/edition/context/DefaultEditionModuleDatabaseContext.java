@@ -22,7 +22,8 @@ package org.neo4j.graphdb.factory.module.edition.context;
 import java.io.File;
 import java.util.function.Function;
 
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.DefaultEditionModule;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -54,11 +55,11 @@ public class DefaultEditionModuleDatabaseContext implements DatabaseEditionConte
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final DatabaseTransactionStats transactionMonitor;
-    private final EditionModule editionModule;
+    private final AbstractEditionModule editionModule;
     private final DatabaseIdContext idContext;
     private final StatementLocksFactory statementLocksFactory;
 
-    public DefaultEditionModuleDatabaseContext( EditionModule editionModule, String databaseName )
+    public DefaultEditionModuleDatabaseContext( DefaultEditionModule editionModule, String databaseName )
     {
         this.databaseName = databaseName;
         this.transactionStartTimeout = editionModule.getTransactionStartTimeout();

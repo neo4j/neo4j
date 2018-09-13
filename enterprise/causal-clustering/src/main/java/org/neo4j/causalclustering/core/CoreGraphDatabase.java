@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -46,7 +46,7 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
     public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        Function<PlatformModule,EditionModule> factory = platformModule ->
+        Function<PlatformModule,AbstractEditionModule> factory = platformModule ->
         {
             editionModule = new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
             return editionModule;

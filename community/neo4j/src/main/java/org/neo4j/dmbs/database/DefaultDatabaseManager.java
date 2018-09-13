@@ -25,7 +25,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -37,12 +37,12 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
 {
     private GraphDatabaseFacade database;
     private final PlatformModule platform;
-    private final EditionModule edition;
+    private final AbstractEditionModule edition;
     private final Procedures procedures;
     private final Logger log;
     private final GraphDatabaseFacade graphDatabaseFacade;
 
-    public DefaultDatabaseManager( PlatformModule platform, EditionModule edition, Procedures procedures,
+    public DefaultDatabaseManager( PlatformModule platform, AbstractEditionModule edition, Procedures procedures,
             Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.platform = platform;

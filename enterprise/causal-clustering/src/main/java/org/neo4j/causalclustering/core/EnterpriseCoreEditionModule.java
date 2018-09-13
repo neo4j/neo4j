@@ -96,7 +96,8 @@ import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.DefaultEditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
@@ -141,10 +142,10 @@ import static java.util.Arrays.asList;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
 
 /**
- * This implementation of {@link EditionModule} creates the implementations of services
+ * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
  */
-public class EnterpriseCoreEditionModule extends EditionModule
+public class EnterpriseCoreEditionModule extends DefaultEditionModule
 {
     private final ConsensusModule consensusModule;
     private final ReplicationModule replicationModule;

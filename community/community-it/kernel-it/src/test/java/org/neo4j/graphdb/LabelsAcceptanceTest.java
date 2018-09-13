@@ -37,8 +37,8 @@ import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -749,7 +749,7 @@ public class LabelsAcceptanceTest
                                     Config config,
                                     GraphDatabaseFacadeFactory.Dependencies dependencies )
                             {
-                                Function<PlatformModule,EditionModule> factory =
+                                Function<PlatformModule,AbstractEditionModule> factory =
                                         platformModule -> new CommunityEditionModuleWithCustomIdContextFactory( platformModule, idFactory );
                                 new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
                                 {

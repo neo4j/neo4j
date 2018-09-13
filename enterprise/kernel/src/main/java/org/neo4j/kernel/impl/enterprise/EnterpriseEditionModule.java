@@ -27,8 +27,8 @@ import java.util.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.logging.internal.LogService;
 
 /**
- * This implementation of {@link EditionModule} creates the implementations of services
+ * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Enterprise edition, without HA
  */
 public class EnterpriseEditionModule extends CommunityEditionModule
@@ -120,7 +120,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         EnterpriseEditionModule.createEnterpriseSecurityModule( this, platformModule, procedures );
     }
 
-    public static void createEnterpriseSecurityModule( EditionModule editionModule, PlatformModule platformModule, Procedures procedures )
+    public static void createEnterpriseSecurityModule( AbstractEditionModule editionModule, PlatformModule platformModule, Procedures procedures )
     {
         SecurityProvider securityProvider;
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )

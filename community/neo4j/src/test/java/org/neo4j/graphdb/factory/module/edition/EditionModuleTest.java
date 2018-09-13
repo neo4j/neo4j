@@ -33,7 +33,7 @@ class EditionModuleTest
     void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
     {
         IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class,
-                () -> EditionModule.setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" ) );
+                () -> AbstractEditionModule.setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" ) );
         assertEquals( "Failed to load security module with key 'non-existent-security-module'.", argumentException.getMessage() );
     }
 }

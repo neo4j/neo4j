@@ -90,7 +90,8 @@ import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.DefaultEditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -144,10 +145,10 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.transacti
 import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 
 /**
- * This implementation of {@link EditionModule} creates the implementations of services
+ * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Enterprise Read Replica edition.
  */
-public class EnterpriseReadReplicaEditionModule extends EditionModule
+public class EnterpriseReadReplicaEditionModule extends DefaultEditionModule
 {
     private final TopologyService topologyService;
     private final LogProvider logProvider;

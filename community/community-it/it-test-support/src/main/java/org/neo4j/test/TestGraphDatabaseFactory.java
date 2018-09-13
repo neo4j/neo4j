@@ -33,8 +33,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -254,7 +254,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         }
 
         protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
-                DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
+                DatabaseInfo databaseInfo, Function<PlatformModule,AbstractEditionModule> editionFactory )
         {
             super( databaseInfo, editionFactory );
             this.state = state;

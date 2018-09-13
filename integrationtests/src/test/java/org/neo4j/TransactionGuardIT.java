@@ -55,7 +55,7 @@ import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.collection.MapUtil;
@@ -739,10 +739,10 @@ public class TransactionGuardIT
         CustomClockEnterpriseFacadeFactory()
         {
             // XXX: This has to be a Function, JVM crashes with ClassFormatError if you pass a lambda here
-            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>() // Don't make a lambda
+            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,AbstractEditionModule>() // Don't make a lambda
             {
                 @Override
-                public EditionModule apply( PlatformModule platformModule )
+                public AbstractEditionModule apply( PlatformModule platformModule )
                 {
                     return new TransactionGuardTerminationEditionModule( platformModule );
                 }

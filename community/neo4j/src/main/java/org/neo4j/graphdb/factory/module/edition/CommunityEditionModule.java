@@ -71,10 +71,10 @@ import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 
 /**
- * This implementation of {@link EditionModule} creates the implementations of services
+ * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Community edition.
  */
-public class CommunityEditionModule extends EditionModule
+public class CommunityEditionModule extends DefaultEditionModule
 {
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 

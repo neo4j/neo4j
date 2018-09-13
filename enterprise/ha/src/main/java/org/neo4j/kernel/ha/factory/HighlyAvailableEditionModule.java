@@ -62,7 +62,8 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.EditionLocksFactories;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.DefaultEditionModule;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.HostnamePort;
@@ -198,10 +199,10 @@ import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
- * This implementation of {@link EditionModule} creates the implementations of services
+ * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Enterprise edition.
  */
-public class HighlyAvailableEditionModule extends EditionModule
+public class HighlyAvailableEditionModule extends DefaultEditionModule
 {
     public HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;

@@ -28,8 +28,8 @@ import java.util.function.Function;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Config;
@@ -77,7 +77,7 @@ public class KernelTest
         @Override
         protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            Function<PlatformModule,EditionModule> factory =
+            Function<PlatformModule,AbstractEditionModule> factory =
                     platformModule -> new CommunityEditionModule( platformModule )
                     {
                         @Override

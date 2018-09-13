@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
@@ -74,10 +74,10 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 /**
  * This is the main factory for creating database instances. It delegates creation to three different modules
- * ({@link PlatformModule}, {@link EditionModule}, and {@link DataSourceModule}),
+ * ({@link PlatformModule}, {@link AbstractEditionModule}, and {@link DataSourceModule}),
  * which create all the specific services needed to run a graph database.
  * <p>
- * It is abstract in order for subclasses to specify their own {@link EditionModule}
+ * It is abstract in order for subclasses to specify their own {@link AbstractEditionModule}
  * implementations. Subclasses also have to set the edition name in overridden version of
  * {@link #initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
  * which is used for logging and similar.
@@ -109,10 +109,10 @@ public class GraphDatabaseFacadeFactory
     }
 
     protected final DatabaseInfo databaseInfo;
-    private final Function<PlatformModule,EditionModule> editionFactory;
+    private final Function<PlatformModule,AbstractEditionModule> editionFactory;
 
     public GraphDatabaseFacadeFactory( DatabaseInfo databaseInfo,
-            Function<PlatformModule,EditionModule> editionFactory )
+            Function<PlatformModule,AbstractEditionModule> editionFactory )
     {
         this.databaseInfo = databaseInfo;
         this.editionFactory = editionFactory;
@@ -161,7 +161,7 @@ public class GraphDatabaseFacadeFactory
             final GraphDatabaseFacade graphDatabaseFacade )
     {
         PlatformModule platform = createPlatform( storeDir, config, dependencies );
-        EditionModule edition = editionFactory.apply( platform );
+        AbstractEditionModule edition = editionFactory.apply( platform );
 
         Procedures procedures = setupProcedures( platform, edition, graphDatabaseFacade );
         platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
@@ -235,7 +235,7 @@ public class GraphDatabaseFacadeFactory
         return new PlatformModule( storeDir, config, databaseInfo, dependencies );
     }
 
-    private static Procedures setupProcedures( PlatformModule platform, EditionModule editionModule, GraphDatabaseFacade facade )
+    private static Procedures setupProcedures( PlatformModule platform, AbstractEditionModule editionModule, GraphDatabaseFacade facade )
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
@@ -287,7 +287,7 @@ public class GraphDatabaseFacadeFactory
         return procedures;
     }
 
-    private static BoltServer createBoltServer( PlatformModule platform, EditionModule edition, DatabaseManager databaseManager )
+    private static BoltServer createBoltServer( PlatformModule platform, AbstractEditionModule edition, DatabaseManager databaseManager )
     {
         return new BoltServer( databaseManager, platform.jobScheduler,
                 platform.connectorPortRegister, edition.getConnectionTracker(), platform.usageData, platform.config, platform.clock, platform.monitors,

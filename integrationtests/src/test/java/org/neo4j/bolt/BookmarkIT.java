@@ -39,8 +39,8 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.EditionModule;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.configuration.Config;
@@ -121,7 +121,7 @@ public class BookmarkIT
         return createDb( platformModule -> new CustomCommunityEditionModule( platformModule, commitBlocker ) );
     }
 
-    private GraphDatabaseAPI createDb( Function<PlatformModule,EditionModule> editionModuleFactory )
+    private GraphDatabaseAPI createDb( Function<PlatformModule,AbstractEditionModule> editionModuleFactory )
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
         GraphDatabaseFacadeFactory facadeFactory = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, editionModuleFactory );
