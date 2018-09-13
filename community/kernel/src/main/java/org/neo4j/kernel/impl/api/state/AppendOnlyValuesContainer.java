@@ -66,6 +66,7 @@ import org.neo4j.values.storable.LocalTimeArray;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ShortArray;
@@ -577,6 +578,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 
     private enum ValueType
     {
+        NO_VALUE( NoValue.class, ( unused, unused2 ) -> NoValue.NO_VALUE ),
         BOOLEAN( BooleanValue.class, AppendOnlyValuesContainer::readBoolean ),
         BOOLEAN_ARRAY( BooleanArray.class, AppendOnlyValuesContainer::readBooleanArray ),
         BYTE( ByteValue.class, AppendOnlyValuesContainer::readByte ),
@@ -692,7 +694,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         @Override
         public void writeNull()
         {
-            throw new UnsupportedOperationException();
+            // nop
         }
 
         @Override
