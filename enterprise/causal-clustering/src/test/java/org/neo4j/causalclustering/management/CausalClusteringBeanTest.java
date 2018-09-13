@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.management;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.management.CausalClustering;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -61,11 +63,15 @@ public class CausalClusteringBeanTest
     private final RaftMachine raftMachine = mock( RaftMachine.class );
     private CausalClustering ccBean;
 
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+
     @Before
     public void setUp()
     {
         DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        when( dataSource.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );
         dataSourceManager.register( dataSource );
         KernelData kernelData = new KernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.defaults(), dataSourceManager );
 
