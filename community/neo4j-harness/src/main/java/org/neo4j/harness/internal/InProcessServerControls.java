@@ -26,6 +26,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Connector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -42,6 +44,8 @@ import static org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 public class InProcessServerControls implements ServerControls
 {
+    private static final String DEFAULT_BOLT_CONNECTOR_KEY = "bolt";
+
     private final File serverFolder;
     private final File userLogFile;
     private final File internalLogFile;
@@ -61,12 +65,35 @@ public class InProcessServerControls implements ServerControls
     @Override
     public URI boltURI()
     {
-        return server.getConfig()
-                .enabledBoltConnectors()
-                .stream()
-                .findFirst()
-                .map( connector -> connectorUri( "bolt", connector ) )
-                .orElseThrow( () -> new IllegalStateException( "Bolt connector is not configured" ) );
+        List<BoltConnector> connectors = server.getConfig().enabledBoltConnectors();
+
+        BoltConnector defaultConnector = null;
+        BoltConnector firstConnector = null;
+
+        for ( BoltConnector connector : connectors )
+        {
+            if ( DEFAULT_BOLT_CONNECTOR_KEY.equals( connector.key() ) )
+            {
+                defaultConnector = connector;
+            }
+            if ( firstConnector == null )
+            {
+                firstConnector = connector;
+            }
+        }
+
+        if ( defaultConnector != null )
+        {
+            // bolt connector with default key is configured, return its address
+            return connectorUri( "bolt", defaultConnector );
+        }
+        if ( firstConnector != null )
+        {
+            // some bolt connector is configured, return its address
+            return connectorUri( "bolt", firstConnector );
+        }
+
+        throw new IllegalStateException( "Bolt connector is not configured" );
     }
 
     @Override

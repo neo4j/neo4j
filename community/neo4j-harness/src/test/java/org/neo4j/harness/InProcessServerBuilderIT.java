@@ -64,10 +64,14 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.Iterators.single;
+import static org.neo4j.server.ServerTestUtils.connectorAddress;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
 
 public class InProcessServerBuilderIT
@@ -268,6 +272,56 @@ public class InProcessServerBuilderIT
             assertTrue( cause.getMessage().contains( "exists but is not a directory" ) );
         }
 
+    }
+
+    @Test
+    public void shouldReturnBoltUriWhenMultipleBoltConnectorsConfigured()
+    {
+        TestServerBuilder serverBuilder = newInProcessBuilder( testDir.directory() )
+                .withConfig( "dbms.connector.another_bolt.type", "BOLT" )
+                .withConfig( "dbms.connector.another_bolt.enabled", "true" )
+                .withConfig( "dbms.connector.another_bolt.listen_address", ":0" )
+                .withConfig( "dbms.connector.bolt.enabled", "true" )
+                .withConfig( "dbms.connector.bolt.listen_address", ":0" );
+
+        try ( ServerControls server = serverBuilder.newServer() )
+        {
+            HostnamePort boltHostPort = connectorAddress( server.graph(), "bolt" );
+            HostnamePort anotherBoltHostPort = connectorAddress( server.graph(), "another_bolt" );
+
+            assertNotNull( boltHostPort );
+            assertNotNull( anotherBoltHostPort );
+            assertNotEquals( boltHostPort, anotherBoltHostPort );
+
+            URI boltUri = server.boltURI();
+            assertEquals( "bolt", boltUri.getScheme() );
+            assertEquals( boltHostPort.getHost(), boltUri.getHost() );
+            assertEquals( boltHostPort.getPort(), boltUri.getPort() );
+        }
+    }
+
+    @Test
+    public void shouldReturnBoltUriWhenDefaultBoltConnectorOffAndOtherConnectorConfigured()
+    {
+        TestServerBuilder serverBuilder = newInProcessBuilder( testDir.directory() )
+                .withConfig( "dbms.connector.bolt.enabled", "false" )
+                .withConfig( "dbms.connector.another_bolt.type", "BOLT" )
+                .withConfig( "dbms.connector.another_bolt.enabled", "true" )
+                .withConfig( "dbms.connector.another_bolt.listen_address", ":0" );
+
+        try ( ServerControls server = serverBuilder.newServer() )
+        {
+            HostnamePort boltHostPort = connectorAddress( server.graph(), "bolt" );
+            HostnamePort anotherBoltHostPort = connectorAddress( server.graph(), "another_bolt" );
+
+            assertNull( boltHostPort );
+            assertNotNull( anotherBoltHostPort );
+
+            URI boltUri = server.boltURI();
+            assertEquals( "bolt", boltUri.getScheme() );
+            assertEquals( anotherBoltHostPort.getHost(), boltUri.getHost() );
+            assertEquals( anotherBoltHostPort.getPort(), boltUri.getPort() );
+        }
     }
 
     @Test

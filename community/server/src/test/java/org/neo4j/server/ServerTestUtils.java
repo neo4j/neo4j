@@ -228,7 +228,7 @@ public class ServerTestUtils
         }
     }
 
-    private static HostnamePort connectorAddress( GraphDatabaseService db, String name )
+    public static HostnamePort connectorAddress( GraphDatabaseService db, String name )
     {
         ConnectorPortRegister portRegister = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
         return portRegister.getLocalAddress( name );
