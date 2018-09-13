@@ -28,7 +28,6 @@ import java.util.function.BiConsumer;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.LeaderListener;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.monitoring.ReplicationMonitor;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
@@ -53,46 +52,38 @@ public class RaftReplicator implements Replicator, LeaderListener
     private final LocalSessionPool sessionPool;
     private final TimeoutStrategy progressTimeoutStrategy;
     private final AvailabilityGuard availabilityGuard;
-    private final LeaderLocator leaderLocator;
-    private final TimeoutStrategy leaderTimeoutStrategy;
     private final Log log;
     private final ReplicationMonitor replicationMonitor;
     private final long availabilityTimeoutMillis;
+    private volatile MemberId lastKnownLeader;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
-            ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy, long availabilityTimeoutMillis,
-            AvailabilityGuard availabilityGuard, LogProvider logProvider, Monitors monitors )
+            ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, long availabilityTimeoutMillis, AvailabilityGuard availabilityGuard,
+            LogProvider logProvider, Monitors monitors )
     {
         this.me = me;
         this.outbound = outbound;
         this.progressTracker = progressTracker;
         this.sessionPool = sessionPool;
         this.progressTimeoutStrategy = progressTimeoutStrategy;
-        this.leaderTimeoutStrategy = leaderTimeoutStrategy;
         this.availabilityTimeoutMillis = availabilityTimeoutMillis;
         this.availabilityGuard = availabilityGuard;
-        this.leaderLocator = leaderLocator;
-        leaderLocator.registerListener( this );
-        log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         this.replicationMonitor = monitors.newMonitor( ReplicationMonitor.class );
+        leaderLocator.registerListener( this );
     }
 
     @Override
     public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws ReplicationFailureException
     {
-        MemberId originalLeader;
-        try
+        if ( lastKnownLeader == null )
         {
-            originalLeader = leaderLocator.getLeader();
+            throw new ReplicationFailureException( "Replication aborted since no leader was available" );
         }
-        catch ( NoLeaderFoundException e )
-        {
-            throw new ReplicationFailureException( "Replication aborted since no leader was available", e );
-        }
-        return replicate0( command, trackResult, originalLeader );
+        return replicate0( command, trackResult );
     }
 
-    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult, MemberId leader ) throws ReplicationFailureException
+    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult ) throws ReplicationFailureException
     {
         replicationMonitor.startReplication();
         try
@@ -103,7 +94,6 @@ public class RaftReplicator implements Replicator, LeaderListener
             Progress progress = progressTracker.start( operation );
 
             TimeoutStrategy.Timeout progressTimeout = progressTimeoutStrategy.newTimeout();
-            TimeoutStrategy.Timeout leaderTimeout = leaderTimeoutStrategy.newTimeout();
             int attempts = 0;
             try
             {
@@ -116,24 +106,14 @@ public class RaftReplicator implements Replicator, LeaderListener
                     }
                     replicationMonitor.replicationAttempt();
                     assertDatabaseAvailable();
-                    try
+                    // blocking at least until the send has succeeded or failed before retrying
+                    outbound.send( lastKnownLeader, new RaftMessages.NewEntry.Request( me, operation ), true );
+                    progress.awaitReplication( progressTimeout.getMillis() );
+                    if ( progress.isReplicated() )
                     {
-                        // blocking at least until the send has succeeded or failed before retrying
-                        outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ), true );
-                        progress.awaitReplication( progressTimeout.getMillis() );
-                        if ( progress.isReplicated() )
-                        {
-                            break;
-                        }
-                        progressTimeout.increment();
-                        leader = leaderLocator.getLeader();
+                        break;
                     }
-                    catch ( NoLeaderFoundException e )
-                    {
-                        log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
-                        Thread.sleep( leaderTimeout.getMillis() );
-                        leaderTimeout.increment();
-                    }
+                    progressTimeout.increment();
                 }
             }
             catch ( InterruptedException e )
@@ -167,6 +147,10 @@ public class RaftReplicator implements Replicator, LeaderListener
     public void onLeaderSwitch( LeaderInfo leaderInfo )
     {
         progressTracker.triggerReplicationEvent();
+        if ( leaderInfo.memberId() != null )
+        {
+            lastKnownLeader = leaderInfo.memberId();
+        }
     }
 
     private void assertDatabaseAvailable() throws ReplicationFailureException

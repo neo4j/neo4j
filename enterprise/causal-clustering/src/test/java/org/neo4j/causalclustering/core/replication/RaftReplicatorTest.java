@@ -31,8 +31,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.replication.monitoring.ReplicationMonitor;
@@ -64,7 +64,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -74,12 +73,10 @@ public class RaftReplicatorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
-    private static final long REPLICATION_LIMIT = 1000;
 
     private LeaderLocator leaderLocator = mock( LeaderLocator.class );
     private MemberId myself = new MemberId( UUID.randomUUID() );
-    private MemberId leader = new MemberId( UUID.randomUUID() );
-    private MemberId anotherLeader = new MemberId( UUID.randomUUID() );
+    private LeaderInfo leaderInfo = new LeaderInfo( new MemberId( UUID.randomUUID() ), 1 );
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private TimeoutStrategy noWaitTimeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
@@ -93,11 +90,11 @@ public class RaftReplicatorTest
         Monitors monitors = new Monitors();
         ReplicationMonitor replicationMonitor = mock( ReplicationMonitor.class );
         monitors.addMonitorListener( replicationMonitor );
-        when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = getReplicator( outbound, capturedProgress, monitors );
+        replicator.onLeaderSwitch( leaderInfo );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -112,7 +109,7 @@ public class RaftReplicatorTest
 
         // then
         replicatingThread.join( DEFAULT_TIMEOUT_MS );
-        assertEquals( leader, outbound.lastTo );
+        assertEquals( leaderInfo.memberId(), outbound.lastTo );
 
         verify( replicationMonitor, times( 1 ) ).startReplication();
         verify( replicationMonitor, atLeast( 1 ) ).replicationAttempt();
@@ -127,11 +124,11 @@ public class RaftReplicatorTest
         Monitors monitors = new Monitors();
         ReplicationMonitor replicationMonitor = mock( ReplicationMonitor.class );
         monitors.addMonitorListener( replicationMonitor );
-        when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = getReplicator( outbound, capturedProgress, monitors );
+        replicator.onLeaderSwitch( leaderInfo );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -155,11 +152,11 @@ public class RaftReplicatorTest
     public void shouldReleaseSessionWhenFinished() throws Exception
     {
         // given
-        when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
+        replicator.onLeaderSwitch( leaderInfo );
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
 
@@ -181,17 +178,17 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void stopReplicationOnShutdown() throws NoLeaderFoundException, InterruptedException
+    public void stopReplicationOnShutdown() throws InterruptedException
     {
         // given
         Monitors monitors = new Monitors();
         ReplicationMonitor replicationMonitor = mock( ReplicationMonitor.class );
         monitors.addMonitorListener( replicationMonitor );
-        when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = getReplicator( outbound, capturedProgress, monitors );
+        replicator.onLeaderSwitch( leaderInfo );
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
 
@@ -209,13 +206,13 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void stopReplicationWhenUnavailable() throws NoLeaderFoundException, InterruptedException
+    public void stopReplicationWhenUnavailable() throws InterruptedException
     {
-        when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
+        replicator.onLeaderSwitch( leaderInfo );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
@@ -229,11 +226,9 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void shouldFailIfNoLeaderIsAvailable() throws NoLeaderFoundException
+    public void shouldFailIfNoLeaderIsAvailable()
     {
         // given
-        when( leaderLocator.getLeader() ).thenThrow( NoLeaderFoundException.class );
-
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
@@ -252,10 +247,37 @@ public class RaftReplicatorTest
         }
     }
 
-    private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, CapturingProgressTracker capturedProgress, Monitors monitors )
+    @Test
+    public void shouldListenToLeaderUpdates() throws ReplicationFailureException
     {
-        return new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                10, databaseAvailabilityGuard, NullLogProvider.getInstance(), monitors );
+        CompleteProgressTracker completeProgressTracker = new CompleteProgressTracker();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
+        RaftReplicator replicator = getReplicator( outbound, completeProgressTracker, new Monitors() );
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
+
+        LeaderInfo lastLeader = leaderInfo;
+
+        // set initial leader, sens to that leader
+        replicator.onLeaderSwitch( lastLeader );
+        replicator.replicate( content, false );
+        assertEquals( outbound.lastTo, lastLeader.memberId() );
+
+        // update with valid new leader, sends to new leader
+        lastLeader = new LeaderInfo( new MemberId( UUID.randomUUID() ), 1 );
+        replicator.onLeaderSwitch( lastLeader );
+        replicator.replicate( content, false );
+        assertEquals( outbound.lastTo, lastLeader.memberId() );
+
+        // update with invalid null leader, still send to previous leader
+        replicator.onLeaderSwitch( new LeaderInfo( null, 1 ) );
+        replicator.replicate( content, false );
+        assertEquals( outbound.lastTo, lastLeader.memberId() );
+    }
+
+    private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, ProgressTracker progressTracker, Monitors monitors )
+    {
+        return new RaftReplicator( leaderLocator, myself, outbound, sessionPool, progressTracker, noWaitTimeoutStrategy, 10, databaseAvailabilityGuard,
+                NullLogProvider.getInstance(), monitors );
     }
 
     private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
@@ -309,16 +331,34 @@ public class RaftReplicatorTest
         }
     }
 
-    private class CapturingProgressTracker implements ProgressTracker
+    private class CompleteProgressTracker extends ProgressTrackerAdaptor
     {
-        private Progress last;
+        CompleteProgressTracker()
+        {
+            last = new Progress();
+            last.setReplicated();
+        }
 
+        @Override
+        public Progress start( DistributedOperation operation )
+        {
+            return last;
+        }
+    }
+
+    private class CapturingProgressTracker extends ProgressTrackerAdaptor
+    {
         @Override
         public Progress start( DistributedOperation operation )
         {
             last = new Progress();
             return last;
         }
+    }
+
+    private abstract class ProgressTrackerAdaptor implements ProgressTracker
+    {
+        protected Progress last;
 
         @Override
         public void trackReplication( DistributedOperation operation )
@@ -341,7 +381,7 @@ public class RaftReplicatorTest
         @Override
         public void triggerReplicationEvent()
         {
-            throw new UnsupportedOperationException();
+            // do nothing
         }
 
         @Override

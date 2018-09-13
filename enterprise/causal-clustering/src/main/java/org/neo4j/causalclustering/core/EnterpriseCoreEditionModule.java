@@ -297,9 +297,8 @@ public class EnterpriseCoreEditionModule extends DefaultEditionModule
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 
-        replicationModule =
-                new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
-                loggingOutbound, clusterStateDirectory.get(), fileSystem, logProvider, globalGuard );
+        replicationModule = new ReplicationModule( consensusModule.raftMachine(), identityModule.myself(), platformModule, config, loggingOutbound,
+                clusterStateDirectory.get(), fileSystem, logProvider, globalGuard );
 
         coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),

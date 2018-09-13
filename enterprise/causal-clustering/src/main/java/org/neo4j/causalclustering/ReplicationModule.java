@@ -27,7 +27,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.consensus.ConsensusModule;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.ProgressTrackerImpl;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
@@ -35,7 +35,6 @@ import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
-import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -55,8 +54,8 @@ public class ReplicationModule
     private final ProgressTrackerImpl progressTracker;
     private final SessionTracker sessionTracker;
 
-    public ReplicationModule( MemberId myself, PlatformModule platformModule, Config config,
-            ConsensusModule consensusModule, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
+    public ReplicationModule( RaftMachine raftMachine, MemberId myself, PlatformModule platformModule, Config config,
+            Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             File clusterStateDirectory, FileSystemAbstraction fileSystem, LogProvider logProvider, AvailabilityGuard globalAvailabilityGuard )
     {
         LifeSupport life = platformModule.life;
@@ -74,20 +73,15 @@ public class ReplicationModule
 
         Duration initialBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_base );
         Duration upperBoundBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_limit );
-        Duration leaderBackoff = config.get( CausalClusteringSettings.replication_leader_retry_timeout );
 
         TimeoutStrategy progressRetryStrategy = new ExponentialBackoffStrategy( initialBackoff, upperBoundBackoff );
-        TimeoutStrategy leaderRetryStrategy = new ConstantTimeTimeoutStrategy( leaderBackoff );
         long availabilityTimeoutMillis = config.get( CausalClusteringSettings.replication_retry_timeout_base ).toMillis();
         replicator = new RaftReplicator(
-                consensusModule.raftMachine(),
+                raftMachine,
                 myself,
                 outbound,
                 sessionPool,
-                progressTracker,
-                progressRetryStrategy,
-                leaderRetryStrategy,
-                availabilityTimeoutMillis,
+                progressTracker, progressRetryStrategy, availabilityTimeoutMillis,
                 globalAvailabilityGuard, logProvider,
                 platformModule.monitors );
     }
