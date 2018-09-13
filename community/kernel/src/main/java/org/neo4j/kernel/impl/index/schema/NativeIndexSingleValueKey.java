@@ -66,12 +66,6 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
 
     abstract Value assertCorrectType( Value value );
 
-    @Override
-    protected String propertiesAsString()
-    {
-        return asValue().toString();
-    }
-
     abstract Value asValue();
 
     @Override

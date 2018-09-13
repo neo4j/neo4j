@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Arrays;
 import java.util.StringJoiner;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
@@ -67,12 +66,6 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         {
             state.clear();
         }
-    }
-
-    @Override
-    String propertiesAsString()
-    {
-        return Arrays.toString( asValues() );
     }
 
     @Override

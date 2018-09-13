@@ -91,8 +91,6 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
 
     abstract Value[] asValues();
 
-    abstract String propertiesAsString();
-
     abstract void initValueAsLowest( int stateSlot, ValueGroup valueGroup );
 
     abstract void initValueAsHighest( int stateSlot, ValueGroup valueGroup );
