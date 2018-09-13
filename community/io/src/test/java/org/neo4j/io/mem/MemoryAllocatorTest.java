@@ -180,6 +180,7 @@ class MemoryAllocatorTest
         if ( allocator != null )
         {
             allocator.close();
+            allocator = null;
         }
     }
 
