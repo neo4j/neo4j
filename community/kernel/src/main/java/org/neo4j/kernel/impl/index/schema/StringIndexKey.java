@@ -191,6 +191,14 @@ class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
         writeString( String.valueOf( value ) );
     }
 
+    @Override
+    public void writeUTF8( byte[] bytes, int offset, int length )
+    {
+        this.bytes = bytes;
+        bytesLength = length;
+        bytesDereferenced = true;
+    }
+
     void copyFrom( StringIndexKey key )
     {
         copyFrom( key, key.bytesLength );

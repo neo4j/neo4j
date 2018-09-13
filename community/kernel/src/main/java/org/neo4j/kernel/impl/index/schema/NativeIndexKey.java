@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.kernel.impl.store.TemporalValueWriterAdapter;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException>
+abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends GenericKeyState
 {
     static final int ENTITY_ID_SIZE = Long.BYTES;
 
@@ -39,6 +39,17 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
 
     private long entityId;
     private boolean compareId = DEFAULT_COMPARE_ID;
+
+    NativeIndexKey( IndexSpecificSpaceFillingCurveSettingsCache settings )
+    {
+        super( settings );
+    }
+
+    NativeIndexKey()
+    {
+        // TODO just kidding
+        super( null );
+    }
 
     /**
      * Marks that comparisons with this key requires also comparing entityId, this allows functionality

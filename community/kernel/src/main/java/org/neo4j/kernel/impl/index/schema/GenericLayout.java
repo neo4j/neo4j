@@ -22,7 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 
-class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
+import static java.lang.String.format;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.ENTITY_ID_SIZE;
+
+class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
 {
     private final int numberOfSlots;
     private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
@@ -35,13 +38,17 @@ class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
     }
 
     @Override
-    public CompositeGenericKey newKey()
+    public GenericKey newKey()
     {
-        return new CompositeGenericKey( numberOfSlots, spatialSettings );
+        return numberOfSlots == 1
+               // An optimized version which has the GenericKeyState built-in w/o indirection
+               ? new SingleGenericKey( spatialSettings )
+               // A version which has an indirection to GenericKeyState[]
+               : new CompositeGenericKey( numberOfSlots, spatialSettings );
     }
 
     @Override
-    public CompositeGenericKey copyKey( CompositeGenericKey key, CompositeGenericKey into )
+    public GenericKey copyKey( GenericKey key, GenericKey into )
     {
         into.setEntityId( key.getEntityId() );
         into.setCompareId( key.getCompareId() );
@@ -50,20 +57,28 @@ class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
     }
 
     @Override
-    public int keySize( CompositeGenericKey key )
+    public int keySize( GenericKey key )
     {
         return key.size();
     }
 
     @Override
-    public void writeKey( PageCursor cursor, CompositeGenericKey key )
+    public void writeKey( PageCursor cursor, GenericKey key )
     {
+        cursor.putLong( key.getEntityId() );
         key.write( cursor );
     }
 
     @Override
-    public void readKey( PageCursor cursor, CompositeGenericKey into, int keySize )
+    public void readKey( PageCursor cursor, GenericKey into, int keySize )
     {
+        if ( keySize < ENTITY_ID_SIZE )
+        {
+            into.initializeToDummyValue();
+            cursor.setCursorException( format( "Failed to read CompositeGenericKey due to keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
+        }
+
+        into.initialize( cursor.getLong() );
         into.read( cursor, keySize );
     }
 
@@ -74,9 +89,9 @@ class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
     }
 
     @Override
-    public void minimalSplitter( CompositeGenericKey left, CompositeGenericKey right, CompositeGenericKey into )
+    public void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
-        CompositeGenericKey.minimalSplitter( left, right, into );
+        left.minimalSplitter( left, right, into );
     }
 
     IndexSpecificSpaceFillingCurveSettingsCache getSpaceFillingCurveSettings()

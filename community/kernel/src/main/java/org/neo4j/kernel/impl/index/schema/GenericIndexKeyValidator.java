@@ -42,11 +42,11 @@ import static org.neo4j.kernel.impl.index.schema.GenericKeyState.BIGGEST_STATIC_
 class GenericIndexKeyValidator implements Validator<Value[]>
 {
     private final int maxLength;
-    private final Layout<CompositeGenericKey,NativeIndexValue> layout;
+    private final Layout<GenericKey,NativeIndexValue> layout;
     private final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings;
     private final int maxNumberOfCRSs;
 
-    GenericIndexKeyValidator( int maxLength, Layout<CompositeGenericKey,NativeIndexValue> layout,
+    GenericIndexKeyValidator( int maxLength, Layout<GenericKey,NativeIndexValue> layout,
             IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, int pageSize )
     {
         this.maxLength = maxLength;
@@ -143,7 +143,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
 
     private int actualLength( Value[] values )
     {
-        CompositeGenericKey key = layout.newKey();
+        GenericKey key = layout.newKey();
         key.initialize( 0 /*doesn't quite matter for size calculations, but an important method to call*/ );
         for ( int i = 0; i < values.length; i++ )
         {

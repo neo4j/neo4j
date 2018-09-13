@@ -62,7 +62,7 @@ public class GenericIndexKeyValidatorTest
     public void shouldNotBotherSerializingToRealBytesIfFarFromThreshold()
     {
         // given
-        Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
+        Layout<GenericKey,NativeIndexValue> layout = mock( Layout.class );
         doThrow( RuntimeException.class ).when( layout ).newKey();
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, layout, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ), PAGE_SIZE );
 
@@ -76,7 +76,7 @@ public class GenericIndexKeyValidatorTest
     public void shouldInvolveSerializingToRealBytesIfMayCrossThreshold()
     {
         // given
-        Layout<CompositeGenericKey,NativeIndexValue> layout = mock( Layout.class );
+        Layout<GenericKey,NativeIndexValue> layout = mock( Layout.class );
         when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3, spatialSettings() ) );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, layout, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ), PAGE_SIZE );
 
@@ -103,7 +103,7 @@ public class GenericIndexKeyValidatorTest
         GenericLayout layout = new GenericLayout( slots, spatialSettings() );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, layout, mock( IndexSpecificSpaceFillingCurveSettingsCache.class ),
                 PAGE_SIZE );
-        CompositeGenericKey key = layout.newKey();
+        GenericKey key = layout.newKey();
 
         int countOk = 0;
         int countNotOk = 0;
@@ -170,7 +170,7 @@ public class GenericIndexKeyValidatorTest
                 new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
     }
 
-    private static int actualSize( Value[] tuple, CompositeGenericKey key )
+    private static int actualSize( Value[] tuple, GenericKey key )
     {
         key.initialize( 0 );
         for ( int i = 0; i < tuple.length; i++ )

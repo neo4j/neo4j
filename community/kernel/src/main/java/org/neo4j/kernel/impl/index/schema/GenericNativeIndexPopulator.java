@@ -35,14 +35,14 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
-class GenericNativeIndexPopulator extends NativeIndexPopulator<CompositeGenericKey,NativeIndexValue>
+class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
     private final IndexDirectoryStructure directoryStructure;
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
 
-    GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
+    GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
     {

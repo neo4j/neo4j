@@ -147,9 +147,9 @@ class GenericKeyStateTest
 
         // Then
         GenericKeyState readState = newKeyState();
-        int size = writeState.size();
+        int size = writeState.stateSize();
         cursor.setOffset( offset );
-        assertTrue( readState.read( cursor, size ), "failed to read" );
+        assertTrue( readState.get( cursor, size ), "failed to read" );
         assertEquals( 0, readState.compareValueTo( writeState ), "key states are not equal" );
         Value readValue = readState.asValue();
         assertEquals( value, readValue, "deserialized values are not equal" );
@@ -262,7 +262,7 @@ class GenericKeyStateTest
         int offsetBefore = cursor.getOffset();
 
         // When
-        int reportedSize = state.size();
+        int reportedSize = state.stateSize();
         state.put( cursor );
         int offsetAfter = cursor.getOffset();
 
@@ -415,7 +415,7 @@ class GenericKeyStateTest
 
         // and we should not overwrite the second value when we read back the first value from page
         genericKeyState.clear();
-        genericKeyState.read( cursor, keySize );
+        genericKeyState.get( cursor, keySize );
         Value dereferencedValue3 = genericKeyState.asValue();
         assertEquals( srcValue, dereferencedValue3 );
         assertEquals( srcValue2, dereferencedValue2 );
@@ -453,7 +453,7 @@ class GenericKeyStateTest
 
         // when reading it back
         state.clear();
-        state.read( cursor, keySize );
+        state.get( cursor, keySize );
 
         // then it should also be retrieved as char value
         Value retrievedValueAfterReadFromCursor = state.asValue();

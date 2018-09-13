@@ -36,13 +36,13 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.Value;
 
-class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey,NativeIndexValue>
+class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
     private Validator<Value[]> validator;
 
-    GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
+    GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<GenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration ) throws IOException
     {
@@ -54,7 +54,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey
     }
 
     @Override
-    protected void afterTreeInstantiation( GBPTree<CompositeGenericKey,NativeIndexValue> tree )
+    protected void afterTreeInstantiation( GBPTree<GenericKey,NativeIndexValue> tree )
     {
         validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), layout, spaceFillingCurveSettings, pageCache.pageSize() );
     }

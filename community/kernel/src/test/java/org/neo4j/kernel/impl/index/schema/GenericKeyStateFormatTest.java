@@ -197,7 +197,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     private void putData( PageCursor c )
     {
         GenericLayout layout = getLayout();
-        CompositeGenericKey key = layout.newKey();
+        GenericKey key = layout.newKey();
         for ( Value value : values )
         {
             initializeFromValue( key, value );
@@ -206,7 +206,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         }
     }
 
-    private void initializeFromValue( CompositeGenericKey key, Value value )
+    private void initializeFromValue( GenericKey key, Value value )
     {
         key.initialize( ENTITY_ID );
         for ( int i = 0; i < NUMBER_OF_SLOTS; i++ )
@@ -218,8 +218,8 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     private void verifyData( PageCursor c )
     {
         GenericLayout layout = getLayout();
-        CompositeGenericKey readCompositeKey = layout.newKey();
-        CompositeGenericKey comparison = layout.newKey();
+        GenericKey readCompositeKey = layout.newKey();
+        GenericKey comparison = layout.newKey();
         for ( Value value : values )
         {
             int keySize = c.getInt();

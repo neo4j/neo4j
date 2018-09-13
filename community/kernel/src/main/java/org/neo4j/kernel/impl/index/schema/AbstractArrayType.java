@@ -212,6 +212,7 @@ abstract class AbstractArrayType<T> extends Type
         if ( state.arrayLength < 0 || state.arrayLength > BIGGEST_REASONABLE_ARRAY_LENGTH )
         {
             setCursorException( cursor, "non-valid array length, " + state.arrayLength );
+            state.arrayLength = 0;
             return false;
         }
         return true;

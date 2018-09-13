@@ -102,7 +102,7 @@ import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSetting
  * We COULD allow this query and do filter during scan instead and take the extra cost into account when planning queries.
  * As of writing this, there is no such filtering implementation.
  */
-public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue,GenericLayout>
+public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,NativeIndexValue,GenericLayout>
 {
     public static final String KEY = NATIVE_BTREE10.providerName();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );

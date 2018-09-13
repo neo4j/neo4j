@@ -31,14 +31,17 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static java.lang.String.format;
-
-class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
+/**
+ * {@link GenericKey} which has an array of {@link GenericKeyState} inside and can therefore hold composite key state.
+ * For single-keys please instead use the more efficient {@link SingleGenericKey}.
+ */
+class CompositeGenericKey extends GenericKey
 {
     private GenericKeyState[] states;
 
     CompositeGenericKey( int slots, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
     {
+        super( spatialSettings );
         states = new GenericKeyState[slots];
         for ( int i = 0; i < states.length; i++ )
         {
@@ -113,11 +116,11 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     }
 
     @Override
-    int compareValueTo( CompositeGenericKey other )
+    int compareValueTo( GenericKey other )
     {
         for ( int i = 0; i < states.length; i++ )
         {
-            int comparison = states[i].compareValueTo( other.states[i] );
+            int comparison = states[i].compareValueTo( other.stateSlot( i ) );
             if ( comparison != 0 )
             {
                 return comparison;
@@ -126,63 +129,60 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         return 0;
     }
 
-    void copyValuesFrom( CompositeGenericKey key )
+    @Override
+    void copyValuesFrom( GenericKey key )
     {
-        if ( key.states.length != states.length )
+        if ( key.numberOfStateSlots() != states.length )
         {
-            throw new IllegalArgumentException( "Different state lengths " + key.states.length + " vs " + states.length );
+            throw new IllegalArgumentException( "Different state lengths " + key.numberOfStateSlots() + " vs " + states.length );
         }
 
-        for ( int i = 0; i < key.states.length; i++ )
+        for ( int i = 0; i < states.length; i++ )
         {
-            states[i].copyFrom( key.states[i] );
+            states[i].copyFrom( key.stateSlot( i ) );
         }
     }
 
+    @Override
     int size()
     {
         int size = ENTITY_ID_SIZE;
         for ( GenericKeyState state : states )
         {
-            size += state.size();
+            size += state.stateSize();
         }
         return size;
     }
 
+    @Override
     void write( PageCursor cursor )
     {
-        cursor.putLong( getEntityId() );
         for ( GenericKeyState state : states )
         {
             state.put( cursor );
         }
     }
 
-    void read( PageCursor cursor, int keySize )
+    @Override
+    boolean read( PageCursor cursor, int keySize )
     {
-        if ( keySize < ENTITY_ID_SIZE )
-        {
-            initializeToDummyValue( cursor );
-            cursor.setCursorException( format( "Failed to read CompositeGenericKey due to keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
-            return;
-        }
-
-        initialize( cursor.getLong() );
         int offset = cursor.getOffset();
         for ( GenericKeyState state : states )
         {
-            if ( !state.read( cursor, keySize ) )
+            if ( !state.get( cursor, keySize ) )
             {
-                initializeToDummyValue( cursor );
-                return;
+                initializeToDummyValue();
+                return false;
             }
             int offsetAfterRead = cursor.getOffset();
             keySize -= offsetAfterRead - offset;
             offset = offsetAfterRead;
         }
+        return true;
     }
 
-    private void initializeToDummyValue( PageCursor cursor )
+    @Override
+    void initializeToDummyValue()
     {
         setEntityId( Long.MIN_VALUE );
         for ( GenericKeyState state : states )
@@ -208,27 +208,41 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         return joiner.toString();
     }
 
-    public static void minimalSplitter( CompositeGenericKey left, CompositeGenericKey right, CompositeGenericKey into )
+    @Override
+    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         int firstStateToDiffer = 0;
         int compare = 0;
-        while ( compare == 0 && firstStateToDiffer < right.states.length )
+        int stateCount = right.numberOfStateSlots();
+
+        // It's really quite assumed that all these keys have the same number of state slots.
+        // It's not a practical runtime concern, so merely an assertion here
+        assert right.numberOfStateSlots() == stateCount;
+        assert into.numberOfStateSlots() == stateCount;
+
+        while ( compare == 0 && firstStateToDiffer < stateCount )
         {
-            GenericKeyState leftState = left.states[firstStateToDiffer];
-            GenericKeyState rightState = right.states[firstStateToDiffer];
+            GenericKeyState leftState = left.stateSlot( firstStateToDiffer );
+            GenericKeyState rightState = right.stateSlot( firstStateToDiffer );
             firstStateToDiffer++;
             compare = leftState.compareValueTo( rightState );
         }
         firstStateToDiffer--; // Rewind last increment
         for ( int i = 0; i < firstStateToDiffer; i++ )
         {
-            into.states[i].copyFrom( right.states[i] );
+            into.stateSlot( i ).copyFrom( right.stateSlot( i ) );
         }
-        for ( int i = firstStateToDiffer; i < into.states.length; i++ )
+        for ( int i = firstStateToDiffer; i < stateCount; i++ )
         {
-            GenericKeyState.minimalSplitter( left.states[i], right.states[i], into.states[i] );
+            GenericKeyState.minimalSplitter( left.stateSlot( i ), right.stateSlot( i ), into.stateSlot( i ) );
         }
         into.setCompareId( right.getCompareId() );
         into.setEntityId( right.getEntityId() );
+    }
+
+    @Override
+    GenericKeyState stateSlot( int slot )
+    {
+        return states[slot];
     }
 }

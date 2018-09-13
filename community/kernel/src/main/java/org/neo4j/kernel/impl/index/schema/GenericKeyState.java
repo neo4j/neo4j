@@ -238,7 +238,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         right.type.minimalSplitter( left, right, into );
     }
 
-    int size()
+    int stateSize()
     {
         return type.valueSize( this ) + TYPE_ID_SIZE;
     }
@@ -254,7 +254,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         type.putValue( cursor, this );
     }
 
-    boolean read( PageCursor cursor, int size )
+    boolean get( PageCursor cursor, int size )
     {
         if ( size <= TYPE_ID_SIZE )
         {
