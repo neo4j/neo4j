@@ -62,7 +62,6 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
  */
 public class RaftMachine implements LeaderLocator, CoreMetaData
 {
-    private final LeaderNotFoundMonitor leaderNotFoundMonitor;
     private final RaftMessageTimerResetMonitor raftMessageTimerResetMonitor;
     private InFlightCache inFlightCache;
 
@@ -104,7 +103,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightCache,
                 logProvider, supportPreVoting, refuseToBecomeLeader );
 
-        leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
         raftMessageTimerResetMonitor = monitors.newMonitor( RaftMessageTimerResetMonitor.class );
     }
 
@@ -180,12 +178,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         {
             Thread.currentThread().interrupt();
 
-            leaderNotFoundMonitor.increment();
             throw new NoLeaderFoundException( e );
         }
         catch ( TimeoutException e )
         {
-            leaderNotFoundMonitor.increment();
             throw new NoLeaderFoundException( e );
         }
     }

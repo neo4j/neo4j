@@ -26,13 +26,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheMonitor;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
@@ -452,13 +451,8 @@ public class RaftMachineTest
         FakeClock fakeClock = Clocks.fakeClock();
         OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
 
-        Monitors monitors = new Monitors();
-        LeaderNotFoundMonitor leaderNotFoundMonitor = new StubLeaderNotFoundMonitor();
-        monitors.addMonitorListener( leaderNotFoundMonitor );
-
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timerService( timerService )
-                .monitors(monitors)
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
@@ -474,7 +468,6 @@ public class RaftMachineTest
         catch ( NoLeaderFoundException e )
         {
             // expected
-            assertEquals(1, leaderNotFoundMonitor.leaderNotFoundExceptions());
         }
     }
 
@@ -578,23 +571,6 @@ public class RaftMachineTest
         public void startExploding()
         {
             startExploding = true;
-        }
-    }
-
-    private class StubLeaderNotFoundMonitor implements LeaderNotFoundMonitor
-    {
-        long count;
-
-        @Override
-        public long leaderNotFoundExceptions()
-        {
-            return count;
-        }
-
-        @Override
-        public void increment()
-        {
-            count++;
         }
     }
 }

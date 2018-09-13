@@ -124,10 +124,6 @@ public class CoreEdgeMetricsIT
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.TERM ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        assertEventually( "leader not found eventually accurate",
-                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
-                greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
-
         assertEventually( "tx pull requests received eventually accurate", () ->
         {
             long total = 0;

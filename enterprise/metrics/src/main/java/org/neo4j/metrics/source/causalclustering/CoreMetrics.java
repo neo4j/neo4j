@@ -46,8 +46,6 @@ public class CoreMetrics extends LifecycleAdapter
     public static final String COMMIT_INDEX = name( CAUSAL_CLUSTERING_PREFIX, "commit_index" );
     @Documented( "RAFT Term of this server" )
     public static final String TERM = name( CAUSAL_CLUSTERING_PREFIX, "term" );
-    @Documented( "Leader was not found while attempting to commit a transaction" )
-    public static final String LEADER_NOT_FOUND = name( CAUSAL_CLUSTERING_PREFIX, "leader_not_found" );
     @Documented( "Transaction retries" )
     public static final String TX_RETRIES = name( CAUSAL_CLUSTERING_PREFIX, "tx_retries" );
     @Documented( "Is this server the leader?" )
@@ -84,7 +82,6 @@ public class CoreMetrics extends LifecycleAdapter
     private final RaftLogCommitIndexMetric raftLogCommitIndexMetric = new RaftLogCommitIndexMetric();
     private final RaftLogAppendIndexMetric raftLogAppendIndexMetric = new RaftLogAppendIndexMetric();
     private final RaftTermMetric raftTermMetric = new RaftTermMetric();
-    private final LeaderNotFoundMetric leaderNotFoundMetric = new LeaderNotFoundMetric();
     private final TxPullRequestsMetric txPullRequestsMetric = new TxPullRequestsMetric();
     private final TxRetryMetric txRetryMetric = new TxRetryMetric();
     private final InFlightCacheMetric inFlightCacheMetric = new InFlightCacheMetric();
@@ -104,7 +101,6 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.addMonitorListener( raftLogCommitIndexMetric );
         monitors.addMonitorListener( raftLogAppendIndexMetric );
         monitors.addMonitorListener( raftTermMetric );
-        monitors.addMonitorListener( leaderNotFoundMetric );
         monitors.addMonitorListener( txPullRequestsMetric );
         monitors.addMonitorListener( txRetryMetric );
         monitors.addMonitorListener( inFlightCacheMetric );
@@ -114,7 +110,6 @@ public class CoreMetrics extends LifecycleAdapter
         registry.register( COMMIT_INDEX, (Gauge<Long>) raftLogCommitIndexMetric::commitIndex );
         registry.register( APPEND_INDEX, (Gauge<Long>) raftLogAppendIndexMetric::appendIndex );
         registry.register( TERM, (Gauge<Long>) raftTermMetric::term );
-        registry.register( LEADER_NOT_FOUND, (Gauge<Long>) leaderNotFoundMetric::leaderNotFoundExceptions );
         registry.register( TX_RETRIES, (Gauge<Long>) txRetryMetric::transactionsRetries );
         registry.register( IS_LEADER, new LeaderGauge() );
         registry.register( TOTAL_BYTES, (Gauge<Long>) inFlightCacheMetric::getTotalBytes );
@@ -142,7 +137,6 @@ public class CoreMetrics extends LifecycleAdapter
         registry.remove( COMMIT_INDEX );
         registry.remove( APPEND_INDEX );
         registry.remove( TERM );
-        registry.remove( LEADER_NOT_FOUND );
         registry.remove( TX_RETRIES );
         registry.remove( IS_LEADER );
         registry.remove( TOTAL_BYTES );
@@ -166,7 +160,6 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.removeMonitorListener( raftLogCommitIndexMetric );
         monitors.removeMonitorListener( raftLogAppendIndexMetric );
         monitors.removeMonitorListener( raftTermMetric );
-        monitors.removeMonitorListener( leaderNotFoundMetric );
         monitors.removeMonitorListener( txPullRequestsMetric );
         monitors.removeMonitorListener( txRetryMetric );
         monitors.removeMonitorListener( inFlightCacheMetric );
