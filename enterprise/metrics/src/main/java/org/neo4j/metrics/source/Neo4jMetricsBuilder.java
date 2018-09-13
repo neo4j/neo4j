@@ -207,8 +207,8 @@ public class Neo4jMetricsBuilder
             }
         }
 
-        boolean httpAndHttpsDisabled = config.enabledHttpConnectors().isEmpty();
-        if ( !httpAndHttpsDisabled && config.get( MetricsSettings.neoServerEnabled ) )
+        boolean httpOrHttpsEnabled = !config.enabledHttpConnectors().isEmpty();
+        if ( httpOrHttpsEnabled && config.get( MetricsSettings.neoServerEnabled ) )
         {
             life.add( new ServerMetrics( registry, logService, kernelContext.dependencySatisfier() ) );
             result = true;
