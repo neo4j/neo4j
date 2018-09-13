@@ -26,12 +26,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwapperTest
 {
     @Override
-    protected boolean isRootAccessible()
-    {
-        return false;
-    }
-
-    @Override
     protected File getFile()
     {
         return testDir.file( super.getFile().getName() );

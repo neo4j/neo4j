@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import org.junit.AssumptionViolatedException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,20 +98,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         getFs().mkdirs( dir );
     }
 
-    @Override
-    protected File baseDirectory() throws IOException
-    {
-        File dir = getFile().getParentFile();
-        mkdirs( dir );
-        return dir;
-    }
-
-    @Override
-    protected boolean isRootAccessible()
-    {
-        return true;
-    }
-
     protected File getFile()
     {
         return file;
@@ -131,14 +116,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     FileSystemAbstraction getRealFileSystem()
     {
         return fileSystem;
-    }
-
-    protected void assumeFalse( String message, boolean test )
-    {
-        if ( test )
-        {
-            throw new AssumptionViolatedException( message );
-        }
     }
 
     private void putBytes( long page, byte[] data, int srcOffset, int tgtOffset, int length )

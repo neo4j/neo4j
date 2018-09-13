@@ -74,10 +74,6 @@ public abstract class PageSwapperTest
 
     protected abstract void mkdirs( File dir ) throws IOException;
 
-    protected abstract File baseDirectory() throws IOException;
-
-    protected abstract boolean isRootAccessible();
-
     @BeforeEach
     @AfterEach
     void clearStrayInterrupts()
