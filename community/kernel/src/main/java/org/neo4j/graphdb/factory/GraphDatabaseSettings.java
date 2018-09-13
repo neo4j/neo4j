@@ -1056,18 +1056,16 @@ public class GraphDatabaseSettings implements LoadableConfig
         OFF_HEAP
     }
 
-    @Internal
-    @Description( "[Experimental] Defines whether memory for transaction state should allocaten on- or off-heap." )
+    @Description( "Defines whether memory for transaction state should allocaten on- or off-heap." )
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = buildSetting(
-            "unsupported.dbms.tx_state.memory_allocation",
+            "dbms.tx_state.memory_allocation",
             options( TransactionStateMemoryAllocation.class, true ),
             TransactionStateMemoryAllocation.OFF_HEAP.name() ).build();
 
-    @Internal
-    @Description( "[Experimental] The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
-            "shared across all active transactions. Zero means 'unlimited'. Used when unsupported.dbms.tx_state.memory_allocation is set to 'OFF_HEAP'." )
+    @Description( "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
+            "shared across all active transactions. Zero means 'unlimited'. Used when dbms.tx_state.memory_allocation is set to 'OFF_HEAP'." )
     public static final Setting<Long> tx_state_max_off_heap_memory = buildSetting(
-            "unsupported.dbms.tx_state.max_off_heap_memory", BYTES, "2G" )
+            "dbms.tx_state.max_off_heap_memory", BYTES, "2G" )
             .constraint( min( 0L ) )
             .build();
 
