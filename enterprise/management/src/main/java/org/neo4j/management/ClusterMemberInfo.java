@@ -34,7 +34,10 @@ import org.neo4j.helpers.collection.Pair;
 /**
  * This class captures the least amount of information available for a cluster member to any
  * cluster participant.
+ *
+ * @deprecated high availability database/edition is deprecated in favour of causal clustering. It will be removed in next major release.
  */
+@Deprecated
 public class ClusterMemberInfo implements Serializable
 {
     private static final long serialVersionUID = -514433972115185753L;

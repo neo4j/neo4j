@@ -262,11 +262,19 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         return getBean( PageCache.class );
     }
 
+    /**
+     *  @deprecated high availability database/edition is deprecated in favour of causal clustering. It will be removed in next major release.
+     */
+    @Deprecated
     public HighAvailability getHighAvailabilityBean()
     {
         return getBean( HighAvailability.class );
     }
 
+    /**
+     *  @deprecated high availability database/edition is deprecated in favour of causal clustering. It will be removed in next major release.
+     */
+    @Deprecated
     public BranchedStore getBranchedStoreBean()
     {
         return getBean( BranchedStore.class );

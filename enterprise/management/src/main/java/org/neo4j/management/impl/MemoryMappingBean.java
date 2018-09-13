@@ -32,6 +32,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.management.MemoryMapping;
 import org.neo4j.management.WindowPoolInfo;
 
+@Deprecated
 @Service.Implementation( ManagementBeanProvider.class )
 public final class MemoryMappingBean extends ManagementBeanProvider
 {
@@ -73,12 +74,14 @@ public final class MemoryMappingBean extends ManagementBeanProvider
             this.datasource = neoDataSource( management );
         }
 
+        @Deprecated
         @Override
         public WindowPoolInfo[] getMemoryPools()
         {
             return getMemoryPoolsImpl( datasource );
         }
 
+        @Deprecated
         public static WindowPoolInfo[] getMemoryPoolsImpl( NeoStoreDataSource datasource )
         {
             return new WindowPoolInfo[0];

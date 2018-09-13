@@ -49,6 +49,7 @@ import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
  * Settings for High Availability mode
  */
 @Description( "High Availability configuration settings" )
+@Deprecated
 public class HaSettings implements LoadableConfig
 {
     @SuppressWarnings( "unused" ) // accessed by reflection
@@ -56,50 +57,63 @@ public class HaSettings implements LoadableConfig
     private static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
     @Description( "How long a slave will wait for response from master before giving up." )
+    @Deprecated
     public static final Setting<Duration> read_timeout = setting( "ha.slave_read_timeout", DURATION, "20s" );
 
     @Description( "Timeout for request threads waiting for instance to become master or slave." )
+    @Deprecated
     public static final Setting<Duration> state_switch_timeout = setting( "ha.role_switch_timeout", DURATION, "120s" );
 
     @Description( "Timeout for waiting for internal conditions during state switch, like for transactions "
             + "to complete, before switching to master or slave." )
+    @Deprecated
     public static final Setting<Duration> internal_state_switch_timeout =
             setting( "ha.internal_role_switch_timeout", DURATION, "10s" );
 
     @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.slave_read_timeout." )
+    @Deprecated
     public static final Setting<Duration> lock_read_timeout = buildSetting( "ha.slave_lock_timeout", DURATION ).inherits( read_timeout ).build();
 
     @Description( "Maximum number of connections a slave can have to the master." )
+    @Deprecated
     public static final Setting<Integer> max_concurrent_channels_per_slave =
             buildSetting( "ha.max_channels_per_slave", INTEGER, "20" ).constraint( min( 1 ) ).build();
 
     @Description( "Hostname and port to bind the HA server." )
+    @Deprecated
     public static final Setting<HostnamePort> ha_server = setting( "ha.host.data", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
 
     @Description( "Whether this instance should only participate as slave in cluster. "
             + "If set to `true`, it will never be elected as master." )
+    @Deprecated
     public static final Setting<Boolean> slave_only = setting( "ha.slave_only", BOOLEAN, Settings.FALSE );
 
     @Description( "Policy for how to handle branched data." )
+    @Deprecated
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
             options( BranchedDataPolicy.class ), "keep_all" );
 
     @Description( "Require authorization for access to the HA status endpoints." )
+    @Deprecated
     public static final Setting<Boolean> ha_status_auth_enabled =
             setting( "dbms.security.ha_status_auth_enabled", BOOLEAN, Settings.TRUE );
 
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
             "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases " +
             "tolerance for bandwidth variations." )
+    @Deprecated
     public static final Setting<Long> com_chunk_size = buildSetting( "ha.data_chunk_size", BYTES, "2M" ).constraint( min( 1024L ) ).build();
 
     @Description( "Interval of pulling updates from master." )
+    @Deprecated
     public static final Setting<Duration> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );
 
     @Description( "The amount of slaves the master will ask to replicate a committed transaction. " )
+    @Deprecated
     public static final Setting<Integer> tx_push_factor = buildSetting( "ha.tx_push_factor", INTEGER, "1" ).constraint( min( 0 ) ).build();
 
     @Description( "Push strategy of a transaction to a slave during commit." )
+    @Deprecated
     public static final Setting<TxPushStrategy> tx_push_strategy =
             setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
 
@@ -108,10 +122,12 @@ public class HaSettings implements LoadableConfig
             " handling strategies results in a safer branching strategy, as there is always a store present so store" +
             " failure to copy a store (for example, because of network failure) does not leave the instance without" +
             " a store." )
+    @Deprecated
     public static final Setting<BranchedDataCopyingStrategy> branched_data_copying_strategy =
             setting( "ha.branched_data_copying_strategy", options( BranchedDataCopyingStrategy.class ), branch_then_copy.name() );
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
+    @Deprecated
     public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_batch_size", INTEGER, "100" );
 
     @Description( "Duration for which master will buffer ids and not reuse them to allow slaves read " +
@@ -119,9 +135,11 @@ public class HaSettings implements LoadableConfig
                   "applying received transaction stream, to make sure they do not read potentially " +
                   "inconsistent/reused records." )
     @Internal
+    @Deprecated
     public static final Setting<Duration> id_reuse_safe_zone_time = setting( "unsupported.dbms.id_reuse_safe_zone",
             Settings.DURATION, "1h" );
 
+    @Deprecated
     public enum BranchedDataCopyingStrategy
     {
         @Description( "First handles the branched store, then copies down a new store from the master and " +
@@ -136,6 +154,7 @@ public class HaSettings implements LoadableConfig
         copy_then_branch
     }
 
+    @Deprecated
     public enum TxPushStrategy
     {
         @Description( "Round robin" )

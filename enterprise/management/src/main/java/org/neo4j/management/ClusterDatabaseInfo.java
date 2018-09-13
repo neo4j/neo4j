@@ -22,6 +22,10 @@
  */
 package org.neo4j.management;
 
+/**
+ * @deprecated high availability database/edition is deprecated in favour of causal clustering. It will be removed in next major release.
+ */
+@Deprecated
 public class ClusterDatabaseInfo extends ClusterMemberInfo
 {
     private long lastCommittedTxId;
