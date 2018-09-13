@@ -174,8 +174,8 @@ public class InProcessServerControls implements ServerControls
 
     private URI connectorUri( String scheme, Connector connector )
     {
-        HostnamePort boltHostNamePort = connectorPortRegister.getLocalAddress( connector.key() );
-        return URI.create( scheme + "://" + boltHostNamePort + "/" );
+        HostnamePort hostPort = connectorPortRegister.getLocalAddress( connector.key() );
+        return URI.create( scheme + "://" + hostPort + "/" );
     }
 
     private static ConnectorPortRegister connectorPortRegister( NeoServer server )
