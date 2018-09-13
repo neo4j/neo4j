@@ -72,8 +72,9 @@ public final class UnsafeUtil
             "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
 
     private static final ConcurrentSkipListMap<Long, Allocation> allocations = new ConcurrentSkipListMap<>();
+    private static final ThreadLocal<Allocation> lastUsedAllocation = new ThreadLocal<>();
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
-    private static final AtomicLong freeTraceCounter = new AtomicLong();
+    private static final AtomicLong freeCounter = new AtomicLong();
 
     public static final Class<?> directByteBufferClass;
     private static final Constructor<?> directByteBufferCtor;
@@ -462,7 +463,7 @@ public final class UnsafeUtil
     {
         if ( CHECK_NATIVE_ACCESS )
         {
-            allocations.put( pointer, new Allocation( pointer, sizeInBytes ) );
+            allocations.put( pointer, new Allocation( pointer, sizeInBytes, freeCounter.get() ) );
         }
     }
 
@@ -476,6 +477,7 @@ public final class UnsafeUtil
 
     private static void doCheckFree( long pointer )
     {
+        long count = freeCounter.getAndIncrement();
         Allocation allocation = allocations.remove( pointer );
         if ( allocation == null )
         {
@@ -483,7 +485,6 @@ public final class UnsafeUtil
             allocations.forEach( ( k, v ) -> sb.append( '\n' ).append( k ) );
             throw new AssertionError( sb.toString() );
         }
-        long count = freeTraceCounter.getAndIncrement();
         int idx = (int) (count & 4095);
         freeTraces[idx] = new FreeTrace( pointer, allocation, count );
     }
@@ -499,12 +500,25 @@ public final class UnsafeUtil
     private static void doCheckAccess( long pointer, int size )
     {
         long boundary = pointer + size;
+        Allocation allocation = lastUsedAllocation.get();
+        if ( allocation != null )
+        {
+            if ( allocation.pointer <= pointer &&
+                 allocation.boundary >= boundary &&
+                 allocation.freeCounter == freeCounter.get() )
+            {
+                return;
+            }
+        }
+
         Map.Entry<Long,Allocation> fentry = allocations.floorEntry( boundary );
         if ( fentry == null || fentry.getValue().boundary < boundary )
         {
             Map.Entry<Long,Allocation> centry = allocations.ceilingEntry( pointer );
             throwBadAccess( pointer, size, fentry, centry );
         }
+        //noinspection ConstantConditions
+        lastUsedAllocation.set( fentry.getValue() );
     }
 
     private static void throwBadAccess( long pointer, int size, Map.Entry<Long,Allocation> fentry,
@@ -530,7 +544,7 @@ public final class UnsafeUtil
                 "Bad access to address 0x%x with size %s, nearest valid allocation is " +
                 "0x%x (%s bytes, off by %s bytes). " +
                 "Recent relevant frees (of %s) are attached as suppressed exceptions.",
-                pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
+                pointer, size, naddr, nsize, noffset, freeCounter.get() ) );
         for ( FreeTrace recentFree : recentFrees )
         {
             recentFree.referenceTime = now;
@@ -1107,12 +1121,16 @@ public final class UnsafeUtil
 
     private static final class Allocation
     {
+        private final long pointer;
         private final long sizeInBytes;
         private final long boundary;
+        private final long freeCounter;
 
-        Allocation( long pointer, long sizeInBytes )
+        Allocation( long pointer, long sizeInBytes, long freeCounter )
         {
+            this.pointer = pointer;
             this.sizeInBytes = sizeInBytes;
+            this.freeCounter = freeCounter;
             this.boundary = pointer + sizeInBytes;
         }
     }
