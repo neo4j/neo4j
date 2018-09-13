@@ -55,10 +55,4 @@ public interface ValuesContainer extends Resource
      */
     @Nonnull
     Value remove( long ref );
-
-    /**
-     * Clears the container and releases all underlying resources.
-     * @throws IllegalStateException if container is closed
-     */
-    void clear();
 }

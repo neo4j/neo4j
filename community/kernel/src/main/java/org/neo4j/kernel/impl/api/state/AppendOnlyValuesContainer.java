@@ -191,16 +191,6 @@ public class AppendOnlyValuesContainer implements ValuesContainer
     }
 
     @Override
-    public void clear()
-    {
-        assertNotClosed();
-        allocated.forEach( Memory::free );
-        allocated.clear();
-        chunks.clear();
-        currentChunk = addNewChunk( chunkSize );
-    }
-
-    @Override
     public void close()
     {
         assertNotClosed();

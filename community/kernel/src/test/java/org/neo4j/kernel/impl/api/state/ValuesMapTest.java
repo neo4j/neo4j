@@ -26,10 +26,18 @@ import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction
 import org.eclipse.collections.api.block.procedure.Procedure;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,9 +53,13 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.values.storable.Values.intValue;
 
+@ExtendWith( RandomExtension.class )
 class ValuesMapTest
 {
-    private ValuesMap map = newMap();
+    @Inject
+    private RandomRule rnd;
+
+    private final ValuesMap map = newMap();
 
     @Test
     void putGet()
@@ -174,15 +186,15 @@ class ValuesMapTest
     {
         map.putAll( LongObjectHashMap.newWithKeysValues( 0, intValue( 10 ), 1, intValue( 11 ), 2, intValue( 12 ) ) );
 
-        assertEquals( intValue(10), map.get( 0 ) );
-        assertEquals( intValue(11), map.get( 1 ) );
-        assertEquals( intValue(12), map.get( 2 ) );
+        assertEquals( intValue( 10 ), map.get( 0 ) );
+        assertEquals( intValue( 11 ), map.get( 1 ) );
+        assertEquals( intValue( 12 ), map.get( 2 ) );
 
         map.putAll( LongObjectHashMap.newWithKeysValues( 0, intValue( 20 ), 1, intValue( 21 ), 2, intValue( 22 ) ) );
 
-        assertEquals( intValue(20), map.get( 0 ) );
-        assertEquals( intValue(21), map.get( 1 ) );
-        assertEquals( intValue(22), map.get( 2 ) );
+        assertEquals( intValue( 20 ), map.get( 0 ) );
+        assertEquals( intValue( 21 ), map.get( 1 ) );
+        assertEquals( intValue( 22 ), map.get( 2 ) );
     }
 
     @Test
@@ -214,13 +226,13 @@ class ValuesMapTest
         assertFalse( map.containsKey( 1 ) );
         assertFalse( map.containsKey( 2 ) );
 
-        map.put( 0, intValue(10) );
+        map.put( 0, intValue( 10 ) );
         assertTrue( map.containsKey( 0 ) );
 
-        map.put( 1, intValue(11) );
+        map.put( 1, intValue( 11 ) );
         assertTrue( map.containsKey( 1 ) );
 
-        map.put( 2, intValue(12) );
+        map.put( 2, intValue( 12 ) );
         assertTrue( map.containsKey( 2 ) );
     }
 
@@ -283,8 +295,70 @@ class ValuesMapTest
         assertEquals( 0, map.size() );
     }
 
+    @Test
+    void randomizedWithSharedValuesContainer()
+    {
+        final int MAPS = 13;
+        final int COUNT = 10000 + rnd.nextInt( 1000 );
+
+        final AppendOnlyValuesContainer valuesContainer = new AppendOnlyValuesContainer( new TestMemoryAllocator() );
+
+        final List<ValuesMap> actualMaps = new ArrayList<>();
+        final List<MutableLongObjectMap<Value>> expectedMaps = new ArrayList<>();
+
+        for ( int i = 0; i < MAPS; i++ )
+        {
+            actualMaps.add( newMap( valuesContainer ) );
+            expectedMaps.add( new LongObjectHashMap<>() );
+        }
+
+        for ( int i = 0; i < MAPS; i++ )
+        {
+            put( COUNT, actualMaps.get( i ), expectedMaps.get( i ) );
+        }
+
+        for ( int i = 0; i < MAPS; i++ )
+        {
+            remove( COUNT, actualMaps.get( i ), expectedMaps.get( i ) );
+        }
+
+        for ( int i = 0; i < MAPS; i++ )
+        {
+            final MutableLongObjectMap<Value> expected = expectedMaps.get( i );
+            final ValuesMap actual = actualMaps.get( i );
+            expected.forEachKeyValue( ( k, v ) -> assertEquals( v, actual.get( k ) ) );
+        }
+    }
+
+    private void remove( int count, ValuesMap actualMap, MutableLongObjectMap<Value> expectedMap )
+    {
+        for ( int i = 0; i < count / 2; i++ )
+        {
+            final long key = rnd.nextLong( count );
+            final Value value = rnd.randomValues().nextValue();
+            actualMap.put( key, value );
+            expectedMap.put( key, value );
+        }
+    }
+
+    private void put( int count, ValuesMap actualMap, MutableLongObjectMap<Value> expectedMap )
+    {
+        for ( int i = 0; i < count * 2; i++ )
+        {
+            final long key = rnd.nextLong( count );
+            final Value value = rnd.randomValues().nextValue();
+            actualMap.put( key, value );
+            expectedMap.put( key, value );
+        }
+    }
+
     private static ValuesMap newMap()
     {
-        return new ValuesMap( new LongLongHashMap(), new AppendOnlyValuesContainer( new TestMemoryAllocator() ) );
+        return newMap( new AppendOnlyValuesContainer( new TestMemoryAllocator() ) );
+    }
+
+    private static ValuesMap newMap( AppendOnlyValuesContainer valuesContainer )
+    {
+        return new ValuesMap( new LongLongHashMap(), valuesContainer );
     }
 }

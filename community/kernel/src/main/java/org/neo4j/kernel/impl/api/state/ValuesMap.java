@@ -373,7 +373,6 @@ public class ValuesMap implements MutableLongObjectMap<Value>
     @Override
     public void clear()
     {
-        valuesContainer.clear();
         refs.clear();
     }
 

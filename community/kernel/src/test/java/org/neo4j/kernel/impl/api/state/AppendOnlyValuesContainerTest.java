@@ -228,22 +228,6 @@ class AppendOnlyValuesContainerTest
     }
 
     @Test
-    void clear()
-    {
-        final Value value1 = stringValue( "foo" );
-        final Value value2 = stringValue( "bar" );
-        final long ref1 = container.add( value1 );
-        final long ref2 = container.add( value2 );
-        assertEquals( value1, container.get( ref1 ) );
-        assertEquals( value2, container.get( ref2 ) );
-
-        container.clear();
-
-        assertThrows( IllegalArgumentException.class, () -> container.get( ref1 ) );
-        assertThrows( IllegalArgumentException.class, () -> container.get( ref2 ) );
-    }
-
-    @Test
     void valueSizeExceedsChunkSize()
     {
         final AppendOnlyValuesContainer container2 = new AppendOnlyValuesContainer( 4, new TestMemoryAllocator() );
@@ -265,7 +249,6 @@ class AppendOnlyValuesContainerTest
         assertThrows( IllegalStateException.class, () -> container2.add( intValue( 1 ) ) );
         assertThrows( IllegalStateException.class, () -> container2.get( ref ) );
         assertThrows( IllegalStateException.class, () -> container2.remove( ref ) );
-        assertThrows( IllegalStateException.class, container2::clear );
         assertThrows( IllegalStateException.class, container2::close );
     }
 
