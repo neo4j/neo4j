@@ -586,8 +586,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
         AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
 
-        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
-                config );
+        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, config );
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
@@ -728,6 +727,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return databaseLayout;
     }
 
+    public Monitors getMonitors()
+    {
+        return monitors;
+    }
+
     public boolean isReadOnly()
     {
         return readOnly;
@@ -764,7 +768,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         manager.registerAll( DataSourceDiagnostics.class, this );
     }
 
-    public DependencyResolver getDependencyResolver()
+    public Dependencies getDependencyResolver()
     {
         return dataSourceDependencies;
     }

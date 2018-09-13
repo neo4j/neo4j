@@ -39,11 +39,11 @@ import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public interface DatabaseEditionContext
+public interface EditionDatabaseContext
 {
     DatabaseIdContext getIdContext();
 
-    TokenHolders createTokenHolders();
+    TokenHolders getTokenHolders();
 
     Function<File,FileSystemWatcherService> getWatcherServiceFactory();
 
@@ -61,11 +61,11 @@ public interface DatabaseEditionContext
 
     long getTransactionStartTimeout();
 
-    Locks createLocks();
+    Locks getLocks();
 
-    StatementLocksFactory createStatementLocksFactory();
+    StatementLocksFactory getStatementLocksFactory();
 
-    DatabaseTransactionStats createTransactionMonitor();
+    DatabaseTransactionStats getTransactionMonitor();
 
     DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( SystemNanoClock clock, LogService logService, Config config );
 }

@@ -57,6 +57,11 @@ public class RecoveryRequiredChecker
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
     {
+        return isRecoveryRequiredAt( databaseLayout, monitors );
+    }
+
+    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, Monitors databaseMonitors ) throws IOException
+    {
         // We need config to determine where the logical log files are
         if ( !NeoStores.isStorePresent( pageCache, databaseLayout ) )
         {
@@ -65,9 +70,9 @@ public class RecoveryRequiredChecker
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
-                                           .withConfig( config )
-                                           .withLogEntryReader( reader ).build();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, monitors );
+                .withConfig( config )
+                .withLogEntryReader( reader ).build();
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, databaseMonitors );
         return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
 }

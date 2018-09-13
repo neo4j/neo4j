@@ -134,7 +134,6 @@ public class Arguments
 
         wrappedText = String.join( NEWLINE + NEWLINE, wrappedText, "options:" );
 
-        //noinspection OptionalGetWithoutIsPresent handled by if-statement above
         final int alignLength = namedArgs.values().stream()
                 .map( a -> a.optionsListing().length() )
                 .reduce( 0, Integer::max );

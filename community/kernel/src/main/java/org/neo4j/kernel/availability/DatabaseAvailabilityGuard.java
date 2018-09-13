@@ -146,7 +146,7 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
 
         String description = (availability == Availability.UNAVAILABLE)
                 ? "Timeout waiting for database to become available and allow new transactions. Waited " +
-                Format.duration( millis ) + ". " + describeWhoIsBlocking()
+                Format.duration( millis ) + ". " + describe()
                 : "Database not available because it's shutting down";
         throw new UnavailableException( description );
     }
@@ -210,7 +210,7 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
     /**
      * @return a textual description of what components, if any, are blocking access
      */
-    public String describeWhoIsBlocking()
+    public String describe()
     {
         if ( blockingRequirements.size() > 0 || requirementCount.get() > 0 )
         {

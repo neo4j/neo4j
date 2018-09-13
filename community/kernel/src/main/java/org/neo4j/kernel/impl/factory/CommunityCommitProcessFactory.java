@@ -31,8 +31,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 public class CommunityCommitProcessFactory implements CommitProcessFactory
 {
     @Override
-    public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
-            Config config )
+    public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine, Config config )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {

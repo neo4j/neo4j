@@ -22,8 +22,8 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
-import org.neo4j.graphdb.factory.module.edition.context.DefaultEditionModuleDatabaseContext;
+import org.neo4j.graphdb.factory.module.edition.context.DefaultEditionDatabaseContext;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -39,9 +39,9 @@ public abstract class DefaultEditionModule extends AbstractEditionModule
     protected Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
 
     @Override
-    public DatabaseEditionContext createDatabaseContext( String databaseName )
+    public EditionDatabaseContext createDatabaseContext( String databaseName )
     {
-        return new DefaultEditionModuleDatabaseContext( this, databaseName );
+        return new DefaultEditionDatabaseContext( this, databaseName );
     }
 
     public CommitProcessFactory getCommitProcessFactory()

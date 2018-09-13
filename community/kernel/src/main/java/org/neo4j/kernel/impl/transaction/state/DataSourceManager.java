@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -31,6 +32,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 /**
  * Adds change listener features to a {@link NeoStoreDataSource}.
@@ -40,13 +45,6 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
  */
 public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 {
-    private final Config config;
-
-    public DataSourceManager( Config config )
-    {
-        this.config = config;
-    }
-
     public interface Listener
     {
         void registered( NeoStoreDataSource dataSource );
@@ -56,26 +54,40 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     private LifeSupport life = new LifeSupport();
     private final Listeners<Listener> dsRegistrationListeners = new Listeners<>();
-    private final List<NeoStoreDataSource> dataSources = new ArrayList<>();
+    private final Map<String,NeoStoreDataSource> dataSources = new HashMap<>();
+    private final Log log;
+    private final Config config;
+
+    public DataSourceManager( LogProvider logProvider, Config config )
+    {
+        this.log = logProvider.getLog( this.getClass() );
+        this.config = config;
+    }
+
+    private void registerListener( Listener listener )
+    {
+        try
+        {
+            dataSources.values().forEach( listener::registered );
+        }
+        catch ( Throwable cause )
+        {
+            log.error( format( "Error when registering listener %s to datasources", listener ), cause );
+        }
+    }
 
     public void addListener( Listener listener )
     {
         if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
         {
-            try
-            {
-                dataSources.forEach( listener::registered );
-            }
-            catch ( Throwable t )
-            {   // OK
-            }
+            registerListener( listener );
         }
         dsRegistrationListeners.add( listener );
     }
 
-    public void register( NeoStoreDataSource dataSource )
+    public void register( String name, NeoStoreDataSource dataSource )
     {
-        dataSources.add( dataSource );
+        dataSources.put( name, dataSource );
         if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
         {
             life.add( dataSource );
@@ -83,31 +95,29 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
         }
     }
 
-    public void unregister( NeoStoreDataSource dataSource )
+    public void unregister( String name )
     {
-        dataSources.remove( dataSource );
+        NeoStoreDataSource dataSource = dataSources.remove( name );
         dsRegistrationListeners.notify( listener -> listener.unregistered( dataSource ) );
         life.remove( dataSource );
     }
 
     public NeoStoreDataSource getDataSource()
     {
-        String activeDatabase = config.get( GraphDatabaseSettings.active_database );
-        for ( NeoStoreDataSource dataSource : dataSources )
-        {
-            if ( activeDatabase.equals( dataSource.getDatabaseLayout().getDatabaseName() ) )
-            {
-                return dataSource;
-            }
-        }
-        throw new IllegalStateException( "Default database not found" );
+        return Optional.ofNullable( dataSources.get( config.get( GraphDatabaseSettings.active_database ) ) )
+                .orElseThrow( () -> new IllegalStateException( "Default database not found" ) );
+    }
+
+    public Optional<NeoStoreDataSource> getDataSource( String name )
+    {
+        return Optional.ofNullable( dataSources.get( name ) );
     }
 
     @Override
     public void init()
     {
         life = new LifeSupport();
-        dataSources.forEach( life::add );
+        dataSources.values().forEach( life::add );
     }
 
     @Override
@@ -117,13 +127,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
         for ( Listener listener : dsRegistrationListeners )
         {
-            try
-            {
-                dataSources.forEach( listener::registered );
-            }
-            catch ( Throwable t )
-            {   // OK
-            }
+            registerListener( listener );
         }
     }
 

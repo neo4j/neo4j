@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -271,10 +270,10 @@ public class NeoStoreDataSourceTest
 
     private static NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( LogFiles files )
     {
-        DependencyResolver resolver = mock( DependencyResolver.class );
-        when( resolver.resolveDependency( LogFiles.class ) ).thenReturn( files );
+        Dependencies dependencies = mock( Dependencies.class );
+        when( dependencies.resolveDependency( LogFiles.class ) ).thenReturn( files );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        when( dataSource.getDependencyResolver() ).thenReturn( resolver );
+        when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
         return dataSource;
     }
 

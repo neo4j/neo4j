@@ -112,8 +112,19 @@ public class NeoStoreDataSourceRule extends ExternalResource
         return getDataSource( databaseLayout, fs, pageCache, new Dependencies() );
     }
 
+    public NeoStoreDataSource getDataSource( String databaseName, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
+    {
+        return getDataSource( databaseName, databaseLayout, fs, pageCache, new Dependencies() );
+    }
+
     public NeoStoreDataSource getDataSource( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             DependencyResolver otherCustomOverriddenDependencies )
+    {
+        return getDataSource( DEFAULT_DATABASE_NAME, databaseLayout, fs, pageCache, otherCustomOverriddenDependencies );
+    }
+
+    public NeoStoreDataSource getDataSource( String databaseName, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
+            PageCache pageCache, DependencyResolver otherCustomOverriddenDependencies )
     {
         shutdownAnyRunning();
 
@@ -144,13 +155,13 @@ public class NeoStoreDataSourceRule extends ExternalResource
         TransactionMonitor transactionMonitor = dependency( mutableDependencies, TransactionMonitor.class,
                 deps -> new DatabaseTransactionStats() );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = dependency( mutableDependencies, DatabaseAvailabilityGuard.class,
-                deps -> new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, deps.resolveDependency( SystemNanoClock.class ),
+                deps -> new DatabaseAvailabilityGuard( databaseName, deps.resolveDependency( SystemNanoClock.class ),
                         NullLog.getInstance() ) );
         dependency( mutableDependencies, DiagnosticsManager.class,
                 deps -> new DiagnosticsManager( NullLog.getInstance() ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
 
-        dataSource = new NeoStoreDataSource( new TestDatabaseCreationContext( DEFAULT_DATABASE_NAME, databaseLayout, config, idGeneratorFactory, logService,
+        dataSource = new NeoStoreDataSource( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs, transactionMonitor, databaseHealth,
                 mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),

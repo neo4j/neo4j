@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public class DefaultEditionModuleDatabaseContext implements DatabaseEditionContext
+public class DefaultEditionDatabaseContext implements EditionDatabaseContext
 {
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final String databaseName;
@@ -59,7 +59,7 @@ public class DefaultEditionModuleDatabaseContext implements DatabaseEditionConte
     private final DatabaseIdContext idContext;
     private final StatementLocksFactory statementLocksFactory;
 
-    public DefaultEditionModuleDatabaseContext( DefaultEditionModule editionModule, String databaseName )
+    public DefaultEditionDatabaseContext( DefaultEditionModule editionModule, String databaseName )
     {
         this.databaseName = databaseName;
         this.transactionStartTimeout = editionModule.getTransactionStartTimeout();
@@ -85,7 +85,7 @@ public class DefaultEditionModuleDatabaseContext implements DatabaseEditionConte
     }
 
     @Override
-    public TokenHolders createTokenHolders()
+    public TokenHolders getTokenHolders()
     {
         return tokenHolders;
     }
@@ -139,19 +139,19 @@ public class DefaultEditionModuleDatabaseContext implements DatabaseEditionConte
     }
 
     @Override
-    public Locks createLocks()
+    public Locks getLocks()
     {
         return locks;
     }
 
     @Override
-    public StatementLocksFactory createStatementLocksFactory()
+    public StatementLocksFactory getStatementLocksFactory()
     {
         return statementLocksFactory;
     }
 
     @Override
-    public DatabaseTransactionStats createTransactionMonitor()
+    public DatabaseTransactionStats getTransactionMonitor()
     {
         return transactionMonitor;
     }
