@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -278,6 +279,40 @@ public class RandomValuesTest
     }
 
     @Test
+    public void nextValueOfTypes()
+    {
+        RandomValues.Types[] allTypes = RandomValues.Types.values();
+        RandomValues.Types[] including = randomValues.among( RandomValues.Types.class, allTypes, randomValues.nextInt( allTypes.length ) + 1 );
+        HashSet<Class<? extends AnyValue>> seen = new HashSet<>();
+        for ( RandomValues.Types type : including )
+        {
+            seen.add( type.valueClass );
+        }
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            Value value = randomValues.nextValueOfTypes( including );
+            assertValueAmongTypes( including, value );
+            markSeen( value.getClass(), seen );
+        }
+        assertThat( seen, empty() );
+    }
+
+    @Test
+    public void excluding()
+    {
+        RandomValues.Types[] allTypes = RandomValues.Types.values();
+        RandomValues.Types[] excluding = randomValues.among( RandomValues.Types.class, allTypes, randomValues.nextInt( allTypes.length ) + 1 );
+        RandomValues.Types[] including = randomValues.excluding( excluding );
+        for ( RandomValues.Types excludedType : excluding )
+        {
+            if ( ArrayUtils.contains( including, excludedType ) )
+            {
+                fail( "Including array " + Arrays.toString( including ) + " contains excluded type " + excludedType );
+            }
+        }
+    }
+
+    @Test
     public void nextBasicMultilingualPlaneTextValue()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
@@ -287,6 +322,18 @@ public class RandomValuesTest
             //matches the number of code points.
             assertThat( value.length(), equalTo( value.stringValue().length() ) );
         }
+    }
+
+    private void assertValueAmongTypes( RandomValues.Types[] types, Value value )
+    {
+        for ( RandomValues.Types type : types )
+        {
+            if ( type.valueClass.isAssignableFrom( value.getClass() ) )
+            {
+                return;
+            }
+        }
+        fail( "Value " + value + " was not among types " + Arrays.toString( types ) );
     }
 
     private void assertKnownType( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> types )

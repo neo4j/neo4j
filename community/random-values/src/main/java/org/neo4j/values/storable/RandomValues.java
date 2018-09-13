@@ -19,6 +19,9 @@
  */
 package org.neo4j.values.storable;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.impl.factory.Lists;
+
 import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,6 +33,7 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -48,25 +52,6 @@ import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
-import static org.neo4j.values.storable.RandomValues.Types.BOOLEAN_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.BYTE_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.CARTESIAN_POINT_3D_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.CARTESIAN_POINT_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.DATE_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.DATE_TIME_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.DOUBLE_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.DURATION_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.FLOAT_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.GEOGRAPHIC_POINT_3D_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.GEOGRAPHIC_POINT_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.INT_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.LOCAL_DATE_TIME_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.LOCAL_TIME_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.LONG_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.PERIOD_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.SHORT_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.STRING_ARRAY;
-import static org.neo4j.values.storable.RandomValues.Types.TIME_ARRAY;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -77,55 +62,86 @@ import static org.neo4j.values.storable.Values.shortValue;
 
 /**
  * Helper class that generates generator values of all supported types.
+ * <p>
+ * Value are generated in a pseudorandom fashion.
+ * <p>
+ * The length of strings will be governed by {@link RandomValues.Configuration#stringMinLength()} and
+ * {@link RandomValues.Configuration#stringMaxLength()} and
+ * the length of arrays will be governed by {@link RandomValues.Configuration#arrayMinLength()} and
+ * {@link RandomValues.Configuration#arrayMaxLength()}
+ * unless method provide explicit arguments for those configurations in which case the provided argument will be used instead.
  */
 public class RandomValues
 {
     public enum Types
     {
-        BOOLEAN( ValueGroup.NUMBER ),
-        BYTE( ValueGroup.NUMBER ),
-        SHORT( ValueGroup.NUMBER ),
-        INT( ValueGroup.NUMBER ),
-        LONG( ValueGroup.NUMBER ),
-        FLOAT( ValueGroup.NUMBER ),
-        DOUBLE( ValueGroup.NUMBER ),
-        STRING( ValueGroup.TEXT ),
-        LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME ),
-        DATE( ValueGroup.DATE ),
-        LOCAL_TIME( ValueGroup.LOCAL_TIME ),
-        PERIOD( ValueGroup.DURATION ),
-        DURATION( ValueGroup.DURATION ),
-        TIME( ValueGroup.ZONED_TIME ),
-        DATE_TIME( ValueGroup.ZONED_DATE_TIME ),
-        CARTESIAN_POINT( ValueGroup.GEOMETRY ),
-        CARTESIAN_POINT_3D( ValueGroup.GEOMETRY ),
-        GEOGRAPHIC_POINT( ValueGroup.GEOMETRY ),
-        GEOGRAPHIC_POINT_3D( ValueGroup.GEOMETRY ),
-        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY ),
-        BYTE_ARRAY( ValueGroup.NUMBER_ARRAY ),
-        SHORT_ARRAY( ValueGroup.NUMBER_ARRAY ),
-        INT_ARRAY( ValueGroup.NUMBER_ARRAY ),
-        LONG_ARRAY( ValueGroup.NUMBER_ARRAY ),
-        FLOAT_ARRAY( ValueGroup.NUMBER_ARRAY ),
-        DOUBLE_ARRAY( ValueGroup.NUMBER_ARRAY ),
-        STRING_ARRAY( ValueGroup.TEXT_ARRAY ),
-        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY ),
-        DATE_ARRAY( ValueGroup.DATE_ARRAY ),
-        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY ),
-        PERIOD_ARRAY( ValueGroup.DURATION_ARRAY ),
-        DURATION_ARRAY( ValueGroup.DURATION_ARRAY ),
-        TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY ),
-        DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY ),
-        CARTESIAN_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY ),
-        CARTESIAN_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY ),
-        GEOGRAPHIC_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY ),
-        GEOGRAPHIC_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY );
+        BOOLEAN( ValueGroup.NUMBER, BooleanValue.class ),
+        BYTE( ValueGroup.NUMBER, ByteValue.class ),
+        SHORT( ValueGroup.NUMBER, ShortValue.class ),
+        INT( ValueGroup.NUMBER, IntValue.class ),
+        LONG( ValueGroup.NUMBER, LongValue.class ),
+        FLOAT( ValueGroup.NUMBER, FloatValue.class ),
+        DOUBLE( ValueGroup.NUMBER, DoubleValue.class ),
+        STRING( ValueGroup.TEXT, UTF8StringValue.class ),
+        LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME, LocalDateTimeValue.class ),
+        DATE( ValueGroup.DATE, DateValue.class ),
+        LOCAL_TIME( ValueGroup.LOCAL_TIME, LocalTimeValue.class ),
+        PERIOD( ValueGroup.DURATION, DurationValue.class ),
+        DURATION( ValueGroup.DURATION, DurationValue.class ),
+        TIME( ValueGroup.ZONED_TIME, TimeValue.class ),
+        DATE_TIME( ValueGroup.ZONED_DATE_TIME, DateTimeValue.class ),
+        CARTESIAN_POINT( ValueGroup.GEOMETRY, PointValue.class ),
+        CARTESIAN_POINT_3D( ValueGroup.GEOMETRY, PointValue.class ),
+        GEOGRAPHIC_POINT( ValueGroup.GEOMETRY, PointValue.class ),
+        GEOGRAPHIC_POINT_3D( ValueGroup.GEOMETRY, PointValue.class ),
+        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY, BooleanArray.class, true ),
+        BYTE_ARRAY( ValueGroup.NUMBER_ARRAY, ByteArray.class, true ),
+        SHORT_ARRAY( ValueGroup.NUMBER_ARRAY, ShortArray.class, true ),
+        INT_ARRAY( ValueGroup.NUMBER_ARRAY, IntArray.class, true ),
+        LONG_ARRAY( ValueGroup.NUMBER_ARRAY, LongArray.class, true ),
+        FLOAT_ARRAY( ValueGroup.NUMBER_ARRAY, FloatArray.class, true ),
+        DOUBLE_ARRAY( ValueGroup.NUMBER_ARRAY, DoubleArray.class, true ),
+        STRING_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
+        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, LocalDateTimeArray.class, true ),
+        DATE_ARRAY( ValueGroup.DATE_ARRAY, DateArray.class, true ),
+        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY, LocalTimeArray.class, true ),
+        PERIOD_ARRAY( ValueGroup.DURATION_ARRAY, DurationArray.class, true ),
+        DURATION_ARRAY( ValueGroup.DURATION_ARRAY, DurationArray.class, true ),
+        TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY, TimeArray.class, true ),
+        DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, DateTimeArray.class, true ),
+        CARTESIAN_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true ),
+        CARTESIAN_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true ),
+        GEOGRAPHIC_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true ),
+        GEOGRAPHIC_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true );
 
         public final ValueGroup valueGroup;
+        public final Class<? extends Value> valueClass;
+        public final boolean arrayType;
 
-        Types( ValueGroup valueGroup )
+        Types( ValueGroup valueGroup, Class<? extends Value> valueClass )
+        {
+            this( valueGroup, valueClass, false );
+        }
+
+        Types( ValueGroup valueGroup, Class<? extends Value> valueClass, boolean arrayType )
         {
             this.valueGroup = valueGroup;
+            this.valueClass = valueClass;
+            this.arrayType = arrayType;
+        }
+
+        static Types[] arrayTypes()
+        {
+            return Lists.mutable.of( Types.values() )
+                    .select( t -> t.arrayType )
+                    .toArray( new Types[0] );
+        }
+
+        static Types[] nonArrayTypes()
+        {
+            return Lists.mutable.of( Types.values() )
+                    .select( t -> !t.arrayType )
+                    .toArray( new Types[0] );
         }
     }
 
@@ -177,26 +193,9 @@ public class RandomValues
 
     public static final int MAX_BASIC_MULTILINGUAL_PLANE_CODE_POINT = 0xFFFF;
     public static final Configuration DEFAULT_CONFIGURATION = new Default();
-    private static final Types[] TYPES = Types.values();
-    private static final Types[] ARRAY_TYPES = new Types[]{BOOLEAN_ARRAY,
-            BYTE_ARRAY,
-            SHORT_ARRAY,
-            INT_ARRAY,
-            LONG_ARRAY,
-            FLOAT_ARRAY,
-            DOUBLE_ARRAY,
-            STRING_ARRAY,
-            LOCAL_DATE_TIME_ARRAY,
-            DATE_ARRAY,
-            LOCAL_TIME_ARRAY,
-            PERIOD_ARRAY,
-            DURATION_ARRAY,
-            TIME_ARRAY,
-            DATE_TIME_ARRAY,
-            CARTESIAN_POINT_ARRAY,
-            CARTESIAN_POINT_3D_ARRAY,
-            GEOGRAPHIC_POINT_ARRAY,
-            GEOGRAPHIC_POINT_3D_ARRAY};
+    private static final Types[] ALL_TYPES = Types.values();
+    private static final Types[] ARRAY_TYPES = Types.arrayTypes();
+    private static final Types[] NON_ARRAY_TYPES = Types.nonArrayTypes();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Generator generator;
@@ -285,20 +284,22 @@ public class RandomValues
      */
     public Value nextValue()
     {
-        return nextValue( nextType() );
+        return nextValueOfType( among( ALL_TYPES ) );
     }
 
-    /**
-     * Returns the next pseudorandom {@link Value} of given type
-     * <p>
-     * The length of strings will be governed by {@link Configuration#stringMinLength()} and
-     * {@link Configuration#stringMaxLength()} and
-     * the length of arrays will be governed by {@link Configuration#arrayMinLength()} and
-     * {@link Configuration#arrayMaxLength()}
-     *
-     * @return the next pseudorandom {@link Value} of given type
-     */
-    public Value nextValue( Types type )
+    public Value nextValueOfTypes( Types... types )
+    {
+        return nextValueOfType( among( types ) );
+    }
+
+    public Types[] excluding( Types... types )
+    {
+        return Lists.mutable.of( Types.values() )
+                .withoutAll( Arrays.asList( types ) )
+                .toArray( new Types[Types.values().length - types.length] );
+    }
+
+    public Value nextValueOfType( Types type )
     {
         switch ( type )
         {
@@ -393,63 +394,7 @@ public class RandomValues
      */
     public ArrayValue nextArray()
     {
-        return nextArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link ArrayValue}, distributed uniformly among the supported Value types where
-     * the length of the array is given by the provided values.
-     *
-     * @param minLength the minimum length of the array
-     * @param maxLength the maximum length of the array
-     * @return the next pseudorandom {@link ArrayValue}
-     */
-    private ArrayValue nextArray( int minLength, int maxLength )
-    {
-        Types type = nextType( ARRAY_TYPES );
-        switch ( type )
-        {
-        case BOOLEAN_ARRAY:
-            return nextBooleanArray( minLength, maxLength );
-        case BYTE_ARRAY:
-            return nextByteArray( minLength, maxLength );
-        case SHORT_ARRAY:
-            return nextShortArray( minLength, maxLength );
-        case STRING_ARRAY:
-            return nextStringArray( minLength, maxLength );
-        case INT_ARRAY:
-            return nextIntArray( minLength, maxLength );
-        case LONG_ARRAY:
-            return nextLongArray( minLength, maxLength );
-        case FLOAT_ARRAY:
-            return nextFloatArray( minLength, maxLength );
-        case DOUBLE_ARRAY:
-            return nextDoubleArray( minLength, maxLength );
-        case LOCAL_DATE_TIME_ARRAY:
-            return nextLocalDateTimeArray( minLength, maxLength );
-        case DATE_ARRAY:
-            return nextDateArray( minLength, maxLength );
-        case LOCAL_TIME_ARRAY:
-            return nextLocalTimeArray( minLength, maxLength );
-        case PERIOD_ARRAY:
-            return nextPeriodArray( minLength, maxLength );
-        case DURATION_ARRAY:
-            return nextDurationArray( minLength, maxLength );
-        case TIME_ARRAY:
-            return nextTimeArray( minLength, maxLength );
-        case DATE_TIME_ARRAY:
-            return nextDateTimeArray( minLength, maxLength );
-        case CARTESIAN_POINT_ARRAY:
-            return nextCartesianPointArray( minLength, maxLength );
-        case CARTESIAN_POINT_3D_ARRAY:
-            return nextCartesian3DPointArray( minLength, maxLength );
-        case GEOGRAPHIC_POINT_ARRAY:
-            return nextGeographicPointArray( minLength, maxLength );
-        case GEOGRAPHIC_POINT_3D_ARRAY:
-            return nextGeographic3DPointArray( minLength, maxLength );
-        default:
-            throw new IllegalArgumentException( "Not array type: " + type );
-        }
+        return (ArrayValue) nextValueOfType( among( ARRAY_TYPES ) );
     }
 
     /**
@@ -1852,6 +1797,18 @@ public class RandomValues
         return among[generator.nextInt( among.length )];
     }
 
+    public <T> T[] among( Class<T> clazz, T[] among, int numberOfElements )
+    {
+        if ( numberOfElements < 0 || numberOfElements > among.length )
+        {
+            throw new IllegalArgumentException( "Can select " + numberOfElements + " from array with " + among.length + " elements." );
+        }
+        ArrayUtils.shuffle( among );
+        T[] result = (T[]) Array.newInstance( clazz, numberOfElements );
+        System.arraycopy( among, 0, result, 0, numberOfElements );
+        return result;
+    }
+
     /**
      * Returns a random element of the provided list
      *
@@ -1920,16 +1877,6 @@ public class RandomValues
             }
         }
         return false;
-    }
-
-    private Types nextType()
-    {
-        return nextType( TYPES );
-    }
-
-    private Types nextType( Types[] types )
-    {
-        return among( types );
     }
 
     private static int nextPowerOf2( int i )
