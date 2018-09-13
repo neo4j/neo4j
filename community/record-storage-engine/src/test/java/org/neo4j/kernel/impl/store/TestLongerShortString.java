@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
@@ -34,6 +36,8 @@ import static org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat.D
 
 public class TestLongerShortString
 {
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     @Test
     public void testMasks()
@@ -136,12 +140,12 @@ public class TestLongerShortString
         assertCanEncodeAndDecodeToSame( "81fe144f-484b-4a34-8e36-17a021540318" );
     }
 
-    private static List<String> randomStrings( int count, TestStringCharset charset, int maxLen )
+    private List<String> randomStrings( int count, TestStringCharset charset, int maxLen )
     {
         List<String> result = new ArrayList<>( count );
         for ( int i = 0; i < count; i++ )
         {
-            result.add( charset.randomString( maxLen ) );
+            result.add( charset.randomString( maxLen, random.random() ) );
         }
         return result;
     }

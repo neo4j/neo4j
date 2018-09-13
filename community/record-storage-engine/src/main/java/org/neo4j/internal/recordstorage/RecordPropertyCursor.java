@@ -310,8 +310,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
 
     private TextValue readShortString()
     {
-        return LongerShortString
-                .decode( getBlocks(), block, LongerShortString.calculateNumberOfBlocksUsed( currentBlock() ) );
+        return LongerShortString.decode( getBlocks(), block );
     }
 
     private TextValue readChar()

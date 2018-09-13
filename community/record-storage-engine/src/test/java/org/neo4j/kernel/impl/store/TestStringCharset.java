@@ -26,7 +26,7 @@ public enum TestStringCharset
     UNIFORM_ASCII
             {
                 @Override
-                String randomString( int maxLen )
+                String randomString( int maxLen, Random random )
                 {
                     char[] chars = new char[random.nextInt( maxLen + 1 )];
                     for ( int i = 0; i < chars.length; i++ )
@@ -39,7 +39,7 @@ public enum TestStringCharset
     SYMBOLS
             {
                 @Override
-                String randomString( int maxLen )
+                String randomString( int maxLen, Random random )
                 {
                     char[] chars = new char[random.nextInt( maxLen + 1 )];
                     for ( int i = 0; i < chars.length; i++ )
@@ -52,7 +52,7 @@ public enum TestStringCharset
     UNIFORM_LATIN
             {
                 @Override
-                String randomString( int maxLen )
+                String randomString( int maxLen, Random random )
                 {
                     char[] chars = new char[random.nextInt( maxLen + 1 )];
                     for ( int i = 0; i < chars.length; i++ )
@@ -69,7 +69,7 @@ public enum TestStringCharset
     LONG
             {
                 @Override
-                String randomString( int maxLen )
+                String randomString( int maxLen, Random random )
                 {
                     return Long.toString( random.nextLong() % ((long) Math.pow( 10, maxLen )) );
                 }
@@ -77,7 +77,7 @@ public enum TestStringCharset
     INT
             {
                 @Override
-                String randomString( int maxLen )
+                String randomString( int maxLen, Random random )
                 {
                     return Long.toString( random.nextInt() );
                 }
@@ -85,7 +85,7 @@ public enum TestStringCharset
     UNICODE
             {
                 @Override
-                String randomString( int maxLen )
+                String randomString( int maxLen, Random random )
                 {
                     char[] chars = new char[random.nextInt( maxLen + 1 )];
                     for ( int i = 0; i < chars.length; i++ )
@@ -94,7 +94,7 @@ public enum TestStringCharset
                     }
                     return new String( chars );
                 }
-            },;
+            };
     static char[] SYMBOL_CHARS = new char[26 + 26 + 10 + 1];
 
     static
@@ -115,7 +115,5 @@ public enum TestStringCharset
         }
     }
 
-    private static Random random = new Random();
-
-    abstract String randomString( int maxLen );
+    abstract String randomString( int maxLen, Random random );
 }
