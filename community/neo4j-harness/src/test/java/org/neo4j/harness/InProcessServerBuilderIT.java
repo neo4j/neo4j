@@ -314,26 +314,22 @@ public class InProcessServerBuilderIT
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
-        int httpPort = httpEnabled ? 0 : 7474;
-        int httpsPort = httpsEnabled ? 0 : 7473;
-        int boltPort = boltEnabled ? 0 : 7687;
-
         TestServerBuilder serverBuilder = newInProcessBuilder( testDir.directory() )
                 .withConfig( "dbms.connector.http.enabled", Boolean.toString( httpEnabled ) )
-                .withConfig( "dbms.connector.http.listen_address", ":" + httpPort )
+                .withConfig( "dbms.connector.http.listen_address", ":0" )
                 .withConfig( "dbms.connector.https.enabled", Boolean.toString( httpsEnabled ) )
-                .withConfig( "dbms.connector.https.listen_address", ":" + httpsPort )
+                .withConfig( "dbms.connector.https.listen_address", ":0" )
                 .withConfig( "dbms.connector.bolt.enabled", Boolean.toString( boltEnabled ) )
-                .withConfig( "dbms.connector.bolt.listen_address", ":" + boltPort );
+                .withConfig( "dbms.connector.bolt.listen_address", ":0" );
 
         try ( ServerControls server = serverBuilder.newServer() )
         {
             GraphDatabaseService db = server.graph();
 
             assertDbAccessible( db );
-            verifyConnector( db, "http", 7474, httpEnabled );
-            verifyConnector( db, "https", 7473, httpsEnabled );
-            verifyConnector( db, "bolt", 7687, boltEnabled );
+            verifyConnector( db, "http", httpEnabled );
+            verifyConnector( db, "https", httpsEnabled );
+            verifyConnector( db, "bolt", boltEnabled );
         }
     }
 

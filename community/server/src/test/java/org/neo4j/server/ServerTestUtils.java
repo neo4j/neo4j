@@ -42,7 +42,6 @@ import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -215,7 +214,7 @@ public class ServerTestUtils
         }
     }
 
-    public static void verifyConnector( GraphDatabaseService db, String name, int defaultPort, boolean enabled )
+    public static void verifyConnector( GraphDatabaseService db, String name, boolean enabled )
     {
         HostnamePort address = connectorAddress( db, name );
         if ( enabled )
@@ -226,7 +225,6 @@ public class ServerTestUtils
         else
         {
             assertNull( address );
-            assertFalse( canConnectToSocket( "localhost", defaultPort ) );
         }
     }
 

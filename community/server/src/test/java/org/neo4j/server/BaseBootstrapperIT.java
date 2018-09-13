@@ -194,32 +194,28 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
     {
-        int httpPort = httpEnabled ? 0 : 7474;
-        int httpsPort = httpsEnabled ? 0 : 7473;
-        int boltPort = boltEnabled ? 0 : 7687;
-
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
 
                 "-c", "dbms.connector.http.enabled=" + httpEnabled,
-                "-c", "dbms.connector.http.listen_address=:" + httpPort,
+                "-c", "dbms.connector.http.listen_address=:0",
 
                 "-c", "dbms.connector.https.enabled=" + httpsEnabled,
-                "-c", "dbms.connector.https.listen_address=:" + httpsPort,
+                "-c", "dbms.connector.https.listen_address=:0",
 
                 "-c", "dbms.connector.bolt.enabled=" + boltEnabled,
-                "-c", "dbms.connector.bolt.listen_address=:" + boltPort
+                "-c", "dbms.connector.bolt.listen_address=:0"
         );
 
         assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
         assertDbAccessibleAsEmbedded();
 
-        verifyConnector( db(), "http", 7474, httpEnabled );
-        verifyConnector( db(), "https", 7473, httpsEnabled );
-        verifyConnector( db(), "bolt", 7687, boltEnabled );
+        verifyConnector( db(), "http", httpEnabled );
+        verifyConnector( db(), "https", httpsEnabled );
+        verifyConnector( db(), "bolt", boltEnabled );
     }
 
     protected String configOption( Setting<?> setting, String value )
