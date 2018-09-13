@@ -54,7 +54,7 @@ public class RandomValuesTest
 {
     private static final int ITERATIONS = 500;
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter()
     public RandomValues randomValues;
 
     @Parameterized.Parameter( 1 )

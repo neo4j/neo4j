@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.impl.factory.Lists;
 
 import java.lang.reflect.Array;
 import java.time.Duration;
@@ -82,7 +81,10 @@ public class RandomValues
         LONG( ValueGroup.NUMBER, LongValue.class ),
         FLOAT( ValueGroup.NUMBER, FloatValue.class ),
         DOUBLE( ValueGroup.NUMBER, DoubleValue.class ),
-        STRING( ValueGroup.TEXT, UTF8StringValue.class ),
+        STRING( ValueGroup.TEXT, TextValue.class ),
+        STRING_ALPHANUMERIC( ValueGroup.TEXT, TextValue.class ),
+        STRING_ASCII( ValueGroup.TEXT, TextValue.class ),
+        STRING_BMP( ValueGroup.TEXT, TextValue.class ),
         LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME, LocalDateTimeValue.class ),
         DATE( ValueGroup.DATE, DateValue.class ),
         LOCAL_TIME( ValueGroup.LOCAL_TIME, LocalTimeValue.class ),
@@ -102,6 +104,9 @@ public class RandomValues
         FLOAT_ARRAY( ValueGroup.NUMBER_ARRAY, FloatArray.class, true ),
         DOUBLE_ARRAY( ValueGroup.NUMBER_ARRAY, DoubleArray.class, true ),
         STRING_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
+        STRING_ALPHANUMERIC_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
+        STRING_ASCII_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
+        STRING_BMP_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
         LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, LocalDateTimeArray.class, true ),
         DATE_ARRAY( ValueGroup.DATE_ARRAY, DateArray.class, true ),
         LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY, LocalTimeArray.class, true ),
@@ -132,16 +137,16 @@ public class RandomValues
 
         static Types[] arrayTypes()
         {
-            return Lists.mutable.of( Types.values() )
-                    .select( t -> t.arrayType )
-                    .toArray( new Types[0] );
+            return Arrays.stream( Types.values() )
+                    .filter( t -> t.arrayType )
+                    .toArray( Types[]::new );
         }
 
         static Types[] nonArrayTypes()
         {
-            return Lists.mutable.of( Types.values() )
-                    .select( t -> !t.arrayType )
-                    .toArray( new Types[0] );
+            return Arrays.stream( Types.values() )
+                    .filter( t -> !t.arrayType )
+                    .toArray( Types[]::new );
         }
     }
 
@@ -294,9 +299,9 @@ public class RandomValues
 
     public Types[] excluding( Types... types )
     {
-        return Lists.mutable.of( Types.values() )
-                .withoutAll( Arrays.asList( types ) )
-                .toArray( new Types[Types.values().length - types.length] );
+        return Arrays.stream( Types.values() )
+                .filter( t -> !ArrayUtils.contains( types, t ) )
+                .toArray( Types[]::new );
     }
 
     public Value nextValueOfType( Types type )
@@ -319,6 +324,12 @@ public class RandomValues
             return nextFloatValue();
         case DOUBLE:
             return nextDoubleValue();
+        case STRING_ALPHANUMERIC:
+            return nextAlphaNumericTextValue();
+        case STRING_ASCII:
+            return nextAsciiTextValue();
+        case STRING_BMP:
+            return nextBasicMultilingualPlaneTextValue();
         case LOCAL_DATE_TIME:
             return nextLocalDateTimeValue();
         case DATE:
@@ -357,6 +368,12 @@ public class RandomValues
             return nextDoubleArray();
         case STRING_ARRAY:
             return nextStringArray();
+        case STRING_ALPHANUMERIC_ARRAY:
+            return nextAlphaNumericStringArray();
+        case STRING_ASCII_ARRAY:
+            return nextAsciiTextArray();
+        case STRING_BMP_ARRAY:
+            return nextBasicMultilingualPlaneTextArray();
         case LOCAL_DATE_TIME_ARRAY:
             return nextLocalDateTimeArray();
         case DATE_ARRAY:
@@ -1353,6 +1370,28 @@ public class RandomValues
             strings[i] = nextAlphaNumericTextValue( minStringLength, maxStringLength ).stringValue();
         }
         return strings;
+    }
+
+    private TextArray nextAsciiTextArray()
+    {
+        int length = intBetween( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+        String[] strings = new String[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            strings[i] = nextAsciiTextValue( configuration.stringMinLength(), configuration.stringMaxLength() ).stringValue();
+        }
+        return Values.stringArray( strings );
+    }
+
+    private TextArray nextBasicMultilingualPlaneTextArray()
+    {
+        int length = intBetween( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+        String[] strings = new String[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            strings[i] = nextBasicMultilingualPlaneTextValue( configuration.stringMinLength(), configuration.stringMaxLength() ).stringValue();
+        }
+        return Values.stringArray( strings );
     }
 
     /**
