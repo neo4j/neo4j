@@ -38,8 +38,8 @@ import org.neo4j.test.rule.TestDirectory;
 public class HostnameVerificationHelper
 {
     public static final String POLICY_NAME = "fakePolicy";
+    public static final SslPolicyConfig SSL_POLICY_CONFIG = new SslPolicyConfig( POLICY_NAME );
     private static final PkiUtils PKI_UTILS = new PkiUtils();
-    private static final SslPolicyConfig SSL_POLICY_CONFIG = new SslPolicyConfig( POLICY_NAME );
 
     public static Config aConfig( String hostname, TestDirectory testDirectory ) throws GeneralSecurityException, IOException, OperatorCreationException
     {
