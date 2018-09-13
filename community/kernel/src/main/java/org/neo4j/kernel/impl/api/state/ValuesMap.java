@@ -308,21 +308,21 @@ public class ValuesMap implements MutableLongObjectMap<Value>
     }
 
     @Override
-    public MutableLongObjectMap<Value> withKeyValue( long key, Value value )
+    public ValuesMap withKeyValue( long key, Value value )
     {
         put( key, value );
         return this;
     }
 
     @Override
-    public MutableLongObjectMap<Value> withoutKey( long key )
+    public ValuesMap withoutKey( long key )
     {
         removeKey( key );
         return this;
     }
 
     @Override
-    public MutableLongObjectMap<Value> withoutAllKeys( LongIterable keys )
+    public ValuesMap withoutAllKeys( LongIterable keys )
     {
         keys.forEach( this::removeKey );
         return this;
