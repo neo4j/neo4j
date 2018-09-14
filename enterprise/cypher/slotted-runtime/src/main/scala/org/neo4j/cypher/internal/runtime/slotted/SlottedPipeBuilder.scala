@@ -92,7 +92,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   }
 
   private def generateSlotAccessorFunctions(slots: SlotConfiguration): Unit = {
-    slots.foreachSlot {
+    slots.foreachSlot({
       case (key, slot) =>
         val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
         val setter = SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
@@ -108,7 +108,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             None
 
         slots.updateAccessorFunctions(key, getter, setter, primitiveNodeSetter, primitiveRelationshipSetter)
-    }
+    }, notDoingForCachedNodePropertiesYet => null)
   }
 
   override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {

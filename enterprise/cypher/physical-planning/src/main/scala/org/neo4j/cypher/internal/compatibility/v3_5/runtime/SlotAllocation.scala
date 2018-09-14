@@ -628,7 +628,7 @@ object SlotAllocation {
         // If both lhs and rhs has a long slot with the same type the result should
         // also use a long slot, otherwise we use a ref slot.
         val result = SlotConfiguration.empty
-        lhs.foreachSlot {
+        lhs.foreachSlot({
           case (key, lhsSlot: LongSlot) =>
             //find all shared variables and look for other long slots with same type
             rhs.get(key).foreach {
@@ -645,7 +645,7 @@ object SlotAllocation {
                 val newType = if (lhsSlot.typ == rhsSlot.typ) lhsSlot.typ else CTAny
                 result.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
             }
-        }
+        }, ignoreCachedNodeProperties => null)
         result
 
       case _: AssertSameNode =>

@@ -111,15 +111,17 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).
     // Please do not use in production code.
     val longSlots = slots.getLongSlots
+    val longSlotValues = for (x <- longSlots)
+      yield (x.toString, Values.longValue(longs(x.slot.offset)))
+
     val refSlots = slots.getRefSlots
-    val longSlotValues = for { i <- longs.indices }
-      yield (longSlots(i).toString, Values.longValue(longs(i)))
-    val refSlotValues = for { i <- refs.indices }
-      yield (refSlots(i).toString, refs(i))
-    val cachedPropertySlotValues =
-      slots.getCachedPropertySlots.iterator.map {
-        case (cnp, refSlot) => cnp.cacheKey -> refs(refSlot.offset)
-      }
+    val refSlotValues = for (x <- refSlots)
+      yield (x.toString, refs(x.slot.offset))
+
+    val cachedSlots = slots.getCachedPropertySlots
+    val cachedPropertySlotValues = for (x <- cachedSlots)
+      yield (x.toString, refs(x.slot.offset))
+
     (longSlotValues ++ refSlotValues ++ cachedPropertySlotValues).iterator
   }
 
@@ -210,7 +212,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
 
   private def setValue(key1: String, value1: AnyValue): Unit = {
     slots.maybeSetter(key1)
-      .getOrElse(throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}"))
+      .getOrElse(throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: $slots"))
       .apply(this, value1)
  }
 
@@ -223,7 +225,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
     case slottedOther: SlottedExecutionContext =>
-      slottedOther.slots.foreachSlot {
+      slottedOther.slots.foreachSlot({
         case (key, otherSlot @ LongSlot(offset, _, CTNode)) =>
           val thisSlotSetter = slots.maybePrimitiveNodeSetter(key).getOrElse(
             throw new InternalException(s"Tried to merge primitive node slot $otherSlot from $other but it is missing from $this." +
@@ -253,7 +255,10 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
 
           val otherValue = slottedOther.getRefAtWithoutCheckingInitialized(offset)
           thisSlotSetter.apply(this, otherValue)
-      }
+      }, {
+        case (cachedNodeProperty, refSlot) =>
+          setCachedProperty(cachedNodeProperty, other.getCachedPropertyAt(refSlot.offset))
+      })
       this
 
     case _ =>
@@ -271,7 +276,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   // This is also the only way that we could detect if a LongSlot was not initialized
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = {
     var entities = mutable.Map.empty[String, AnyValue]
-    slots.foreachSlot {
+    slots.foreachSlot({
       case (key, RefSlot(offset, _, _)) =>
         if (isRefInitialized(offset)) {
           val entity = getRefAtWithoutCheckingInitialized(offset)
@@ -298,7 +303,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
         if (entityId >= 0)
           entities += key -> materializeRelationship(getLongAt(offset))
       case _ => // Do nothing
-    }
+    }, ignoreCachedNodeProperties => null)
     entities.toMap
   }
 

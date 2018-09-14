@@ -29,10 +29,10 @@ trait SlottedPipeTestHelper extends CypherFunSuite {
     val list1 = list.toList
     list1 map { in =>
       val build = scala.collection.mutable.HashMap.empty[String, Any]
-      slots.foreachSlot {
+      slots.foreachSlot({
         case (column, LongSlot(offset, _, _)) => build.put(column, in.getLongAt(offset))
         case (column, RefSlot(offset, _, _)) => build.put(column, in.getRefAt(offset))
-      }
+      }, cachedNodeProp => null)
       build.toMap
     }
   }

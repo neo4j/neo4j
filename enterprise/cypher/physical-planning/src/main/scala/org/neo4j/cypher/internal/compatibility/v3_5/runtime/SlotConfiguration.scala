@@ -343,8 +343,12 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   }
 
   // NOTE: This will give duplicate slots when we have aliases
-  def foreachSlot[U](f: ((String, Slot)) => U): Unit =
-    slots.foreach(f)
+  def foreachSlot[U](onVariable: ((String, Slot)) => U,
+                     onCachedNodeProperty: ((CachedNodeProperty, RefSlot)) => Unit
+                    ): Unit = {
+    slots.foreach(onVariable)
+    cachedProperties.foreach(onCachedNodeProperty)
+  }
 
   // NOTE: This will give duplicate slots when we have aliases
   def foreachSlotOrdered(onVariable: (String, Slot) => Unit,
@@ -414,8 +418,10 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   /**
     * NOTE: Only use for debugging
     */
-  def getCachedPropertySlots: immutable.IndexedSeq[(CachedNodeProperty, RefSlot)] =
-    cachedProperties.toIndexedSeq
+  def getCachedPropertySlots: immutable.IndexedSeq[SlotWithAliases] =
+    cachedProperties.toIndexedSeq.map {
+      case (cachedNodeProperty, slot) => RefSlotWithAliases(slot, Set(cachedNodeProperty.asCanonicalStringVal))
+    }.sorted(SlotWithAliasesOrdering)
 
   object SlotWithAliasesOrdering extends Ordering[SlotWithAliases] {
     def compare(x: SlotWithAliases, y: SlotWithAliases): Int = (x, y) match {

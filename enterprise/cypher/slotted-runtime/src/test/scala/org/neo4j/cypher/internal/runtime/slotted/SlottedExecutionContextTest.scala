@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.opencypher.v9_0.util.InternalException
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
+import org.opencypher.v9_0.util.{InputPosition, InternalException}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringValue
+import org.opencypher.v9_0.expressions.PropertyKeyName
 
 class SlottedExecutionContextTest extends CypherFunSuite {
 
@@ -56,4 +58,47 @@ class SlottedExecutionContextTest extends CypherFunSuite {
 
     intercept[InternalException](result.copyFrom(input, 0, 4))
   }
+
+  test("mergeWith() includes cached node properties") {
+    // given
+    val resultSlots =
+      SlotConfiguration.empty
+        .newCachedProperty(prop("a", "name"))
+        .newCachedProperty(prop("b", "name"))
+        .newCachedProperty(prop("b", "age"))
+        .newCachedProperty(prop("c", "name"))
+        .newCachedProperty(prop("c", "age"))
+
+    val result = SlottedExecutionContext(resultSlots)
+    result.setCachedProperty(prop("a", "name"), stringValue("initial"))
+    result.setCachedProperty(prop("b", "name"), stringValue("initial"))
+    result.setCachedProperty(prop("b", "age"), stringValue("initial"))
+
+    val argSlots =
+      SlotConfiguration.empty
+        .newCachedProperty(prop("b", "name"))
+        .newCachedProperty(prop("c", "name"))
+        .newCachedProperty(prop("c", "age"))
+
+    val arg = SlottedExecutionContext(argSlots)
+    arg.setCachedProperty(prop("b", "name"), stringValue("arg"))
+    arg.setCachedProperty(prop("c", "name"), stringValue("arg"))
+    arg.setCachedProperty(prop("c", "age"), stringValue("arg"))
+
+    // when
+    result.mergeWith(arg)
+
+    // then
+    def cachedPropAt(key: CachedNodeProperty) =
+      result.getCachedPropertyAt(resultSlots.getCachedNodePropertyOffsetFor(key))
+
+    cachedPropAt(prop("a", "name")) should be(stringValue("initial"))
+    cachedPropAt(prop("b", "name")) should be(stringValue("arg"))
+    cachedPropAt(prop("b", "age")) should be(stringValue("initial"))
+    cachedPropAt(prop("c", "name")) should be(stringValue("arg"))
+    cachedPropAt(prop("c", "age")) should be(stringValue("arg"))
+  }
+
+  private def prop(node: String, prop: String) =
+    CachedNodeProperty(node, PropertyKeyName(prop)(InputPosition.NONE))(InputPosition.NONE)
 }
