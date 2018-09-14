@@ -351,7 +351,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( fieldsMatcher, hasKey( "result_available_after" ) ) ),
-                msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );
+                msgFailure( Status.Request.Invalid, "Point is not supported as a return type in Bolt" ) ) );
     }
 
     private byte[] bytes( int... ints )
