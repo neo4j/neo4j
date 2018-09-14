@@ -34,7 +34,6 @@ import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -56,7 +55,6 @@ public class CoreMonitor implements ClusterBinder.Monitor, HazelcastCoreTopology
 {
     private final Log debug;
     private final Log user;
-    private final Log dual;
 
     private final Consumer<Runnable> binderLimit = Limiters.rateLimiter( Duration.ofSeconds( 10 ) );
     private final Consumer<Runnable> waiterLimit = Limiters.rateLimiter( Duration.ofSeconds( 10 ) );
@@ -70,7 +68,6 @@ public class CoreMonitor implements ClusterBinder.Monitor, HazelcastCoreTopology
     {
         this.debug = debugLogProvider.getLog( getClass() );
         this.user = userLogProvider.getLog( getClass() );
-        this.dual = new DuplicatingLog( user, debug );
 
         monitors.addMonitorListener( this );
     }
@@ -80,14 +77,14 @@ public class CoreMonitor implements ClusterBinder.Monitor, HazelcastCoreTopology
     {
         binderLimit.accept( () -> {
             String message = "Waiting for a total of %d core members...";
-            dual.info( format( message, minimumCount ) );
+            user.info( format( message, minimumCount ) );
         } );
     }
 
     @Override
     public void waitingForBootstrap()
     {
-        binderLimit.accept( () -> dual.info( "Waiting for bootstrap by other instance..." ) );
+        binderLimit.accept( () -> user.info( "Waiting for bootstrap by other instance..." ) );
     }
 
     @Override
@@ -100,37 +97,37 @@ public class CoreMonitor implements ClusterBinder.Monitor, HazelcastCoreTopology
     @Override
     public void boundToCluster( ClusterId clusterId )
     {
-        dual.info( "Bound to cluster with id " + clusterId.uuid() );
+        user.info( "Bound to cluster with id " + clusterId.uuid() );
     }
 
     @Override
     public void discoveredMember( SocketAddress socketAddress )
     {
-        dual.info( "Discovered core member at " + socketAddress );
+        user.info( "Discovered core member at " + socketAddress );
     }
 
     @Override
     public void lostMember( SocketAddress socketAddress )
     {
-        dual.warn( "Lost core member at " + socketAddress );
+        user.warn( "Lost core member at " + socketAddress );
     }
 
     @Override
     public void startedDownloadingSnapshot()
     {
-        dual.info( "Started downloading snapshot..." );
+        user.info( "Started downloading snapshot..." );
     }
 
     @Override
     public void downloadSnapshotComplete()
     {
-        dual.info( "Download of snapshot complete." );
+        user.info( "Download of snapshot complete." );
     }
 
     @Override
     public void waitingToHearFromLeader()
     {
-        waiterLimit.accept( () -> dual.info( "Waiting to hear from leader..." ) );
+        waiterLimit.accept( () -> user.info( "Waiting to hear from leader..." ) );
     }
 
     @Override
@@ -138,7 +135,7 @@ public class CoreMonitor implements ClusterBinder.Monitor, HazelcastCoreTopology
     {
         waiterLimit.accept( () -> {
             long gap = leaderCommitIndex - localCommitIndex;
-            dual.info( "Waiting to catchup with leader... we are %d entries behind leader at %d.", gap,
+            user.info( "Waiting to catchup with leader... we are %d entries behind leader at %d.", gap,
                     leaderCommitIndex );
         } );
     }
@@ -146,6 +143,6 @@ public class CoreMonitor implements ClusterBinder.Monitor, HazelcastCoreTopology
     @Override
     public void joinedRaftGroup()
     {
-        dual.info( "Successfully joined the Raft group." );
+        user.info( "Successfully joined the Raft group." );
     }
 }
