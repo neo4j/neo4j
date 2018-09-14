@@ -449,8 +449,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val trimmed = providedOrders.get(left.id).columns.takeWhile {
       case ProvidedOrder.ColumnOfProperty((varName, propName)) =>
         grouping.values.exists {
-          // TODO change after having CachedNodeProperty
-          case Variable(name) if name == s"$varName.$propName" => true
+          case CachedNodeProperty(`varName`, PropertyKeyName(`propName`)) => true
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }
@@ -818,8 +817,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       case columnOrder@ProvidedOrder.ColumnOfProperty((varName, propName)) =>
         projectExpressions.collectFirst {
           case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`))) => ProvidedOrder.Column(newName, columnOrder.isAscending)
+          case (newName, CachedNodeProperty(`varName`, PropertyKeyName(`propName`))) => ProvidedOrder.Column(newName, columnOrder.isAscending)
           case (newName, Variable(`varName`)) => ProvidedOrder.Column(newName + "." + propName, columnOrder.isAscending)
-          case (newName, Variable(varAndPropName)) if varAndPropName == s"$varName.$propName" => ProvidedOrder.Column(newName, columnOrder.isAscending)
         }.getOrElse(columnOrder)
       case columnOrder@ProvidedOrder.Column(varName) =>
         projectExpressions.collectFirst {
