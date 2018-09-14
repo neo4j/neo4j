@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
@@ -221,7 +222,7 @@ public class TransactionStatusResultTest
             KernelTransactionImplementation transaction = new KernelTransactionImplementation( Config.defaults(),
                         mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
                         mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
-                        mock( TransactionCommitProcess.class ), new DatabaseTransactionStats(), () -> mock( ExplicitIndexTransactionState.class ),
+                        mock( TransactionCommitProcess.class ), new DatabaseTransactionStats(), mock( AuxiliaryTransactionStateManager.class ),
                         mock( Pool.class ), Clocks.fakeClock(),
                         new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                         TransactionTracer.NULL,

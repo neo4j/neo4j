@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.txstate;
+package org.neo4j.kernel.api.txstate.aux;
 
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordState;
 
-public interface TxStateHolder
+public interface AuxiliaryTransactionState extends RecordState, AutoCloseable
 {
-    TransactionState txState();
-    AuxiliaryTransactionState auxiliaryTxState( Object providerIdentityKey );
-    ExplicitIndexTransactionState explicitIndexTxState();
-    boolean hasTxStateWithChanges();
+
 }

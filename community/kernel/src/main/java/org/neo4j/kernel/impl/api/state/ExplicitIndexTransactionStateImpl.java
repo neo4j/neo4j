@@ -247,4 +247,10 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
         assertConfigMatches( provider, indexName, configuration, config );
         return true;
     }
+
+    @Override
+    public void close() throws Exception
+    {
+        // We have nothing to close.
+    }
 }

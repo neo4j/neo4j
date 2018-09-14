@@ -54,6 +54,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
+import org.neo4j.kernel.impl.api.ExplicitIndexTransactionStateProvider;
+import org.neo4j.kernel.impl.api.KernelAuxTransactionStateManager;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
@@ -597,13 +599,16 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 buildStatementOperations( cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
+        KernelAuxTransactionStateManager auxTxStateManager = new KernelAuxTransactionStateManager();
+        auxTxStateManager.registerProvider( new ExplicitIndexTransactionStateProvider( indexConfigStore, explicitIndexProvider ) );
+        dataSourceDependencies.satisfyDependency( auxTxStateManager );
 
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
-                        transactionHeaderInformationFactory, transactionCommitProcess, indexConfigStore, explicitIndexProvider, hooks, transactionMonitor,
-                        databaseAvailabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef, heapAllocationRef,
-                        accessCapability, autoIndexing, explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                        databaseSchemaState, indexingService, tokenHolders, getDatabaseName(), dataSourceDependencies ) );
+                        transactionHeaderInformationFactory, transactionCommitProcess, auxTxStateManager, hooks,
+                        transactionMonitor, databaseAvailabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef,
+                        heapAllocationRef, accessCapability, autoIndexing, explicitIndexStore, versionContextSupplier, collectionsFactorySupplier,
+                        constraintSemantics, databaseSchemaState, indexingService, tokenHolders, getDatabaseName(), dataSourceDependencies ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 

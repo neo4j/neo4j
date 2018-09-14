@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordState;
 
@@ -32,7 +33,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordState;
  * {@link TransactionState the transaction state} in order to be able to keep the implementation of
  * {@link org.neo4j.kernel.impl.api.state.TxState transaction state} simple with no dependencies.
  */
-public interface ExplicitIndexTransactionState extends RecordState
+public interface ExplicitIndexTransactionState extends AuxiliaryTransactionState
 {
     ExplicitIndex nodeChanges( String indexName ) throws ExplicitIndexNotFoundKernelException;
 

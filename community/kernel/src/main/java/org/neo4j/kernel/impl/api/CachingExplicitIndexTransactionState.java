@@ -100,4 +100,10 @@ public class CachingExplicitIndexTransactionState implements ExplicitIndexTransa
     {
         return txState.checkIndexExistence( entityType, indexName, config );
     }
+
+    @Override
+    public void close() throws Exception
+    {
+        txState.close();
+    }
 }

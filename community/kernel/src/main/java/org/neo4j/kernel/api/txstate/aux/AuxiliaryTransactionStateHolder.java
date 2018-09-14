@@ -17,14 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.txstate;
+package org.neo4j.kernel.api.txstate.aux;
 
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
+import java.util.Collection;
 
-public interface TxStateHolder
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.storageengine.api.StorageCommand;
+
+public interface AuxiliaryTransactionStateHolder extends AutoCloseable
 {
-    TransactionState txState();
-    AuxiliaryTransactionState auxiliaryTxState( Object providerIdentityKey );
-    ExplicitIndexTransactionState explicitIndexTxState();
-    boolean hasTxStateWithChanges();
+    AuxiliaryTransactionState getState( Object providerIdentityKey );
+
+    boolean hasChanges();
+
+    boolean hasChanges( String providerIdentityKey );
+
+    void extractCommands( Collection<StorageCommand> extractedCommands ) throws TransactionFailureException;
+
+    @Override
+    void close() throws AuxiliaryTransactionStateCloseException;
 }

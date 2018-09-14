@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -94,14 +95,13 @@ public class KernelTransactionTestBase
     protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     protected final StorageReader readLayer = mock( StorageReader.class );
     protected final TransactionHooks hooks = new TransactionHooks();
+    protected final AuxiliaryTransactionStateManager auxTxStateManager = new KernelAuxTransactionStateManager();
     protected final ExplicitIndexTransactionState explicitIndexState = mock( ExplicitIndexTransactionState.class );
-    protected final Supplier<ExplicitIndexTransactionState> explicitIndexStateSupplier = () -> explicitIndexState;
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
     protected final TransactionHeaderInformationFactory headerInformationFactory =  mock( TransactionHeaderInformationFactory.class );
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
-    protected final AvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
     protected final StatementOperationParts statementOperations = mock( StatementOperationParts.class );
@@ -167,7 +167,7 @@ public class KernelTransactionTestBase
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
         return new KernelTransactionImplementation( Config.defaults(), statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory,
-                commitProcess, transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                commitProcess, transactionMonitor, auxTxStateManager, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );

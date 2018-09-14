@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.txstate;
+package org.neo4j.kernel.api.txstate.aux;
 
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
-
-public interface TxStateHolder
+public interface AuxiliaryTransactionStateManager
 {
-    TransactionState txState();
-    AuxiliaryTransactionState auxiliaryTxState( Object providerIdentityKey );
-    ExplicitIndexTransactionState explicitIndexTxState();
-    boolean hasTxStateWithChanges();
+    void registerProvider( AuxiliaryTransactionStateProvider provider );
+
+    void unregisterProvider( AuxiliaryTransactionStateProvider provider );
+
+    AuxiliaryTransactionStateHolder openStateHolder();
 }

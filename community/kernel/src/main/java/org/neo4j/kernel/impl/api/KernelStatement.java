@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.LockTracer;
@@ -119,6 +120,12 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     public TransactionState txState()
     {
         return txStateHolder.txState();
+    }
+
+    @Override
+    public AuxiliaryTransactionState auxiliaryTxState( Object providerIdentityKey )
+    {
+        return txStateHolder.auxiliaryTxState( providerIdentityKey );
     }
 
     @Override
