@@ -186,13 +186,21 @@ class AppendOnlyValuesContainerTest
                 testInput( "DateTime", DateTimeValue::datetime,
                         ZonedDateTime.now(),
                         ZonedDateTime.parse( "1956-10-04T19:28:34.123+01:00[Europe/Paris]" ),
-                        ZonedDateTime.parse( "1956-10-04T19:28:34.123+01:15" )
+                        ZonedDateTime.parse( "1956-10-04T19:28:34.123+01:15" ),
+                        ZonedDateTime.parse( "2018-09-13T16:12:16.12345+14:00[Pacific/Kiritimati]" ),
+                        ZonedDateTime.parse( "2018-09-13T16:12:16.12345-12:00[Etc/GMT+12]" ),
+                        ZonedDateTime.parse( "2018-09-13T16:12:16.12345-18:00" ),
+                        ZonedDateTime.parse( "2018-09-13T16:12:16.12345+18:00" )
                 ),
                 testInput( "DateTimeArray", Values::dateTimeArray,
                         new ZonedDateTime[] {
-                                ZonedDateTime.now(),
+                                ZonedDateTime.parse( "1956-10-04T19:28:34.123+01:00[Europe/Paris]" ),
                                 ZonedDateTime.parse( "1956-10-04T19:28:34.123+01:15" ),
-                                ZonedDateTime.parse( "1956-10-04T19:28:34.123+01:00[Europe/Paris]" )},
+                                ZonedDateTime.parse( "2018-09-13T16:12:16.12345+14:00[Pacific/Kiritimati]" ),
+                                ZonedDateTime.parse( "2018-09-13T16:12:16.12345-12:00[Etc/GMT+12]" ),
+                                ZonedDateTime.parse( "2018-09-13T16:12:16.12345-18:00" ),
+                                ZonedDateTime.parse( "2018-09-13T16:12:16.12345+18:00" )
+                        },
                         new ZonedDateTime[0] )
 
         );
