@@ -24,6 +24,7 @@ package org.neo4j.kernel.ha.management;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -44,7 +45,6 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.LastUpdateTime;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
@@ -54,10 +54,10 @@ import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -75,7 +75,6 @@ import static org.neo4j.storageengine.api.StoreId.DEFAULT;
 
 public class HighAvailabilityBeanTest
 {
-    private final GraphDatabaseAPI db = mock( HighlyAvailableGraphDatabase.class );
     private final Dependencies dependencies = new Dependencies();
     private final ClusterMembers clusterMembers = mock( ClusterMembers.class );
     private final HighAvailabilityBean bean = new HighAvailabilityBean();
@@ -87,6 +86,9 @@ public class HighAvailabilityBeanTest
     private KernelData kernelData;
     private HighAvailability haBean;
 
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+
     @Before
     public void setup() throws NotCompliantMBeanException
     {
@@ -96,6 +98,7 @@ public class HighAvailabilityBeanTest
         ManagementData data = new ManagementData( bean, kernelData, ManagementSupport.load() );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        when( dataSource.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );
         dataSourceManager.register( dataSource );
         when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
         dependencies.satisfyDependency( DatabaseInfo.HA );
