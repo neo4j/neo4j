@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 
+import static java.lang.Long.compareUnsigned;
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
 
@@ -503,8 +504,8 @@ public final class UnsafeUtil
         Allocation allocation = lastUsedAllocation.get();
         if ( allocation != null )
         {
-            if ( allocation.pointer <= pointer &&
-                 allocation.boundary >= boundary &&
+            if ( compareUnsigned( allocation.pointer, pointer ) <= 0 &&
+                 compareUnsigned( allocation.boundary, boundary ) > 0 &&
                  allocation.freeCounter == freeCounter.get() )
             {
                 return;
@@ -512,7 +513,7 @@ public final class UnsafeUtil
         }
 
         Map.Entry<Long,Allocation> fentry = allocations.floorEntry( boundary );
-        if ( fentry == null || fentry.getValue().boundary < boundary )
+        if ( fentry == null || compareUnsigned( fentry.getValue().boundary, boundary ) < 0 )
         {
             Map.Entry<Long,Allocation> centry = allocations.ceilingEntry( pointer );
             throwBadAccess( pointer, size, fentry, centry );
