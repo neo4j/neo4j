@@ -31,7 +31,6 @@ import java.time.OffsetTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -550,9 +549,17 @@ public class RandomValues
         return abs( generator.nextLong() ) % bound;
     }
 
-    private long nextLong( long origin, long bound )
+    /**
+     * Returns a {@code long} between the given lower bound (inclusive) and the upper bound (inclusiv)
+     *
+     * @param min minimum value that can be chosen (inclusive)
+     * @param max maximum value that can be chosen (inclusive)
+     * @return a {@code long} in the given inclusive range.
+     * @see RandomValues
+     */
+    private long longBetween( long min, long max )
     {
-        return nextLong( (bound - origin) + 1L ) + origin;
+        return nextLong( (max - min) + 1L ) + min;
     }
 
     /**
@@ -1463,7 +1470,7 @@ public class RandomValues
 
     private LocalTime nextLocalTimeRaw()
     {
-        return ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) );
+        return ofNanoOfDay( longBetween( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) );
     }
 
     private LocalDateTime nextLocalDateTimeRaw()
@@ -1483,14 +1490,13 @@ public class RandomValues
 
     private LocalDate nextDateRaw()
     {
-        return ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) );
+        return ofEpochDay( longBetween( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) );
     }
 
     private Instant nextInstantRaw()
     {
         return Instant.ofEpochSecond(
-                nextLong( LocalDateTime.MIN.toEpochSecond( UTC ), LocalDateTime.MAX.toEpochSecond( UTC ) ),
-                nextLong( NANOS_PER_SECOND ) );
+                longBetween( LocalDateTime.MIN.toEpochSecond( UTC ), LocalDateTime.MAX.toEpochSecond( UTC ) ), nextLong( NANOS_PER_SECOND ) );
     }
 
     private Period nextPeriodRaw()
@@ -1500,8 +1506,7 @@ public class RandomValues
 
     private Duration nextDurationRaw()
     {
-        // todo fix duration to generate random nanos of second
-        return Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS );
+        return Duration.ofSeconds( nextLong( DAYS.getDuration().getSeconds() ), nextLong( NANOS_PER_SECOND ) );
     }
 
     /**
