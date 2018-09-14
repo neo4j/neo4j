@@ -1058,19 +1058,7 @@ public class RandomValues
      */
     public DoubleArray nextDoubleArray()
     {
-        return nextDoubleArray( minArray(), maxArray() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link DoubleArray}.
-     *
-     * @param minLength the minimum length of the array
-     * @param maxLength the maximum length of the array
-     * @return the next pseudorandom {@link DoubleArray}.
-     */
-    public DoubleArray nextDoubleArray( int minLength, int maxLength )
-    {
-        double[] array = nextDoubleArrayRaw( minLength, maxLength );
+        double[] array = nextDoubleArrayRaw( minArray(), maxArray() );
         return Values.doubleArray( array );
     }
 
@@ -1095,19 +1083,7 @@ public class RandomValues
      */
     public FloatArray nextFloatArray()
     {
-        return nextFloatArray( minArray(), maxArray() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link FloatArray}.
-     *
-     * @param minLength the minimum length of the array
-     * @param maxLength the maximum length of the array
-     * @return the next pseudorandom {@link FloatArray}.
-     */
-    public FloatArray nextFloatArray( int minLength, int maxLength )
-    {
-        float[] array = nextFloatArrayRaw( minLength, maxLength );
+        float[] array = nextFloatArrayRaw( minArray(), maxArray() );
         return Values.floatArray( array );
     }
 
@@ -1132,19 +1108,7 @@ public class RandomValues
      */
     public LongArray nextLongArray()
     {
-        return nextLongArray( minArray(), maxArray() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link LongArray}.
-     *
-     * @param minLength the minimum length of the array
-     * @param maxLength the maximum length of the array
-     * @return the next pseudorandom {@link LongArray}.
-     */
-    public LongArray nextLongArray( int minLength, int maxLength )
-    {
-        long[] array = nextLongArrayRaw( minLength, maxLength );
+        long[] array = nextLongArrayRaw( minArray(), maxArray() );
         return Values.longArray( array );
     }
 
@@ -1169,19 +1133,7 @@ public class RandomValues
      */
     public IntArray nextIntArray()
     {
-        return nextIntArray( minArray(), maxArray() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link IntArray}.
-     *
-     * @param minLength the minimum length of the array
-     * @param maxLength the maximum length of the array
-     * @return the next pseudorandom {@link IntArray}.
-     */
-    public IntArray nextIntArray( int minLength, int maxLength )
-    {
-        int[] array = nextIntArrayRaw( minLength, maxLength );
+        int[] array = nextIntArrayRaw( minArray(), maxArray() );
         return Values.intArray( array );
     }
 
@@ -1255,19 +1207,7 @@ public class RandomValues
      */
     public ShortArray nextShortArray()
     {
-        return nextShortArray( minArray(), maxArray() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link ShortArray}.
-     *
-     * @param minLength the minimum length of the array
-     * @param maxLength the maximum length of the array
-     * @return the next pseudorandom {@link ShortArray}.
-     */
-    public ShortArray nextShortArray( int minLength, int maxLength )
-    {
-        short[] array = nextShortArrayRaw( minLength, maxLength );
+        short[] array = nextShortArrayRaw( minArray(), maxArray() );
         return Values.shortArray( array );
     }
 
@@ -1292,19 +1232,7 @@ public class RandomValues
      */
     public BooleanArray nextBooleanArray()
     {
-        return nextBooleanArray( minArray(), maxArray() );
-    }
-
-    /**
-     * Returns the next pseudorandom {@link BooleanArray}.
-     *
-     * @param minLength the minimum length of the array
-     * @param maxLength the maximum length of the array
-     * @return the next pseudorandom {@link BooleanArray}.
-     */
-    public BooleanArray nextBooleanArray( int minLength, int maxLength )
-    {
-        boolean[] array = nextBooleanArrayRaw( minLength, maxLength );
+        boolean[] array = nextBooleanArrayRaw( minArray(), maxArray() );
         return Values.booleanArray( array );
     }
 
