@@ -382,10 +382,14 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         NodeHashJoinPipe(nodes, lhs, rhs)(id = id)
 
       case LeftOuterHashJoin(nodes, l, r) =>
-        NodeLeftOuterHashJoinPipe(nodes, lhs, rhs, r.availableSymbols -- l.availableSymbols)(id = id)
+        val nullableVariables = r.availableSymbols -- l.availableSymbols
+        val nullableCachedProperties = r.availableCachedNodeProperties.values.toSet -- l.availableCachedNodeProperties.values
+        NodeLeftOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables, nullableCachedProperties)(id = id)
 
       case RightOuterHashJoin(nodes, l, r) =>
-        NodeRightOuterHashJoinPipe(nodes, lhs, rhs, l.availableSymbols -- r.availableSymbols)(id = id)
+        val nullableVariables = l.availableSymbols -- r.availableSymbols
+        val nullableCachedProperties = l.availableCachedNodeProperties.values.toSet -- r.availableCachedNodeProperties.values
+        NodeRightOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables, nullableCachedProperties)(id = id)
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 

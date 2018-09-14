@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -27,10 +28,14 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, MutableList}
 
-abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs: Pipe, nullableVariables: Set[String]) extends PipeWithSource(lhs) {
+abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
+                                     lhs: Pipe,
+                                     rhs: Pipe,
+                                     nullableVariables: Set[String],
+                                     nullableCachedProperties: Set[CachedNodeProperty]) extends PipeWithSource(lhs) {
 
   private val myVariables = nodeVariables.toIndexedSeq
-  private val nullColumns: Seq[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toSeq
+  private val nullVariables: Array[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toArray
 
   protected def computeKey(context: ExecutionContext): Option[IndexedSeq[Long]] = {
     val key = new Array[Long](myVariables.length)
@@ -44,7 +49,12 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs:
     Some(key.toIndexedSeq)
   }
 
-  protected def addNulls(in: ExecutionContext): ExecutionContext = executionContextFactory.copyWith(in).set(nullColumns)
+  protected def addNulls(in: ExecutionContext): ExecutionContext = {
+    val withNulls = executionContextFactory.copyWith(in).set(nullVariables)
+    for (x <- nullableCachedProperties)
+      withNulls.setCachedProperty(x, Values.NO_VALUE)
+    withNulls
+  }
 
   protected def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext], withNulls: Boolean): ProbeTable = {
     val probeTable = new ProbeTable()

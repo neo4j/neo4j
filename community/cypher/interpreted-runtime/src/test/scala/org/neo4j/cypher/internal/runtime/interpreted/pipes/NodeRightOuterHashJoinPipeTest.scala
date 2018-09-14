@@ -22,18 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper, TestableIterator}
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TestableIterator}
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
-
-  val node1 = newMockedNode(1)
-  val node2 = newMockedNode(2)
-  val node3 = newMockedNode(3)
+class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPipeTestSupport {
 
   test("should support simple hash join over nodes") {
     // given
@@ -48,13 +42,39 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> fromNodeProxy(node3), "a" -> intValue(3)))
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("a"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("a"), Set.empty)().createResults(queryState)
 
     // then
     result.toList should equal(List(
       Map("b" -> fromNodeProxy(node1), "a" -> NO_VALUE),
       Map("b" -> fromNodeProxy(node2), "a" -> intValue(2))
     ))
+  }
+
+  test("should support cached node properties") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val bPropLeft = prop("b", "prop1")
+    val left = newMockedPipe(
+      rowWith("b" -> fromNodeProxy(node1)).cached(bPropLeft -> intValue(-1)),
+      rowWith("b" -> fromNodeProxy(node2)).cached(bPropLeft -> intValue(-2)))
+
+    val bPropRight = prop("b", "prop2")
+    val right = newMockedPipe(
+      rowWith("b" -> fromNodeProxy(node2)).cached(bPropRight -> intValue(12)),
+      rowWith("b" -> fromNodeProxy(node3)).cached(bPropRight -> intValue(13)))
+
+    // when
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set.empty, Set(bPropLeft))().createResults(queryState).toSeq
+
+    // then
+    result should equal(Seq(
+      Map("b" -> fromNodeProxy(node2)),
+      Map("b" -> fromNodeProxy(node3))
+    ))
+    result.map(_.getCachedProperty(bPropLeft)) should be(Seq(intValue(-2), NO_VALUE))
+    result.map(_.getCachedProperty(bPropRight)) should be(Seq(intValue(12), intValue(13)))
   }
 
   test("should work when the inner pipe produces multiple rows with the same join key") {
@@ -70,7 +90,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> fromNodeProxy(node2), "c" -> intValue(40)))
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"), Set.empty)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -91,7 +111,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     when(left.createResults(any())).thenReturn(lhsIterator)
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"), Set.empty)().createResults(queryState)
 
     // then
     result.toList shouldBe 'empty
@@ -110,7 +130,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
     val left = newMockedPipe()
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"), Set.empty)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -135,7 +155,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> fromNodeProxy(node3), "c" -> intValue(30)))
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"), Set.empty)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -160,7 +180,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> fromNodeProxy(node3), "c" -> intValue(30)))
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"), Set.empty)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -181,7 +201,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> NO_VALUE,  "c" -> intValue(20)))
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"), Set.empty)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -208,7 +228,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
       row("a" -> NO_VALUE, "b" -> fromNodeProxy(node3),  "d" -> intValue(4)))
 
     // when
-    val result = NodeRightOuterHashJoinPipe(Set("a","b"), left, right, Set("d"))().createResults(queryState)
+    val result = NodeRightOuterHashJoinPipe(Set("a","b"), left, right, Set("d"), Set.empty)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -218,21 +238,5 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite {
       Map("a" -> fromNodeProxy(node2), "b" -> fromNodeProxy(node3), "c" -> intValue(4), "d" -> NO_VALUE),
       Map("a" -> fromNodeProxy(node1), "b" -> NO_VALUE, "c" -> intValue(5), "d" -> NO_VALUE)
     ))
-  }
-
-  private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
-
-  private def newMockedNode(id: Int) = {
-    val node = mock[Node]
-    when(node.getId).thenReturn(id)
-    when(node.toString).thenReturn(s"MockedNode($id)")
-    node
-  }
-
-  private def newMockedPipe(rows: ExecutionContext*): Pipe = {
-    val pipe = mock[Pipe]
-    when(pipe.createResults(any())).thenReturn(rows.iterator)
-
-    pipe
   }
 }
