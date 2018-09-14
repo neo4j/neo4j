@@ -1370,14 +1370,14 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link ArrayValue} of local-time elements.
+     * Returns the next pseudorandom {@link LocalTimeArray} of local-time elements.
      * <p>
      * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
      * {@link Configuration#arrayMaxLength()}
      *
-     * @return the next pseudorandom {@link ArrayValue} of local-time elements.
+     * @return the next pseudorandom {@link LocalTimeArray} of local-time elements.
      */
-    public ArrayValue nextLocalTimeArray()
+    public LocalTimeArray nextLocalTimeArray()
     {
         LocalTime[] array = nextLocalTimeArrayRaw( minArray(), maxArray() );
         return Values.localTimeArray( array );
@@ -1389,14 +1389,14 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link ArrayValue} of time elements.
+     * Returns the next pseudorandom {@link TimeArray} of time elements.
      * <p>
      * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
      * {@link Configuration#arrayMaxLength()}
      *
-     * @return the next pseudorandom {@link ArrayValue} of time elements.
+     * @return the next pseudorandom {@link TimeArray} of time elements.
      */
-    public ArrayValue nextTimeArray()
+    public TimeArray nextTimeArray()
     {
         OffsetTime[] array = nextTimeArrayRaw( minArray(), maxArray() );
         return Values.timeArray( array );
@@ -1408,14 +1408,14 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link ArrayValue} of local date-time elements.
+     * Returns the next pseudorandom {@link DateTimeArray} of local date-time elements.
      * <p>
      * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
      * {@link Configuration#arrayMaxLength()}
      *
-     * @return the next pseudorandom {@link ArrayValue} of local date-time elements.
+     * @return the next pseudorandom {@link DateTimeArray} of local date-time elements.
      */
-    public ArrayValue nextDateTimeArray()
+    public DateTimeArray nextDateTimeArray()
     {
         ZonedDateTime[] array = nextDateTimeArrayRaw( minArray(), maxArray() );
         return Values.dateTimeArray( array );
@@ -1427,14 +1427,14 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link ArrayValue} of local-date-time elements.
+     * Returns the next pseudorandom {@link LocalDateTimeArray} of local-date-time elements.
      * <p>
      * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
      * {@link Configuration#arrayMaxLength()}
      *
-     * @return the next pseudorandom {@link ArrayValue} of local-date-time elements.
+     * @return the next pseudorandom {@link LocalDateTimeArray} of local-date-time elements.
      */
-    public ArrayValue nextLocalDateTimeArray()
+    public LocalDateTimeArray nextLocalDateTimeArray()
     {
         return Values.localDateTimeArray( nextLocalDateTimeArrayRaw( minArray(), maxArray() ) );
     }
@@ -1445,14 +1445,14 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link ArrayValue} of date elements.
+     * Returns the next pseudorandom {@link DateArray} of date elements.
      * <p>
      * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
      * {@link Configuration#arrayMaxLength()}
      *
-     * @return the next pseudorandom {@link ArrayValue} of date elements.
+     * @return the next pseudorandom {@link DateArray} of date elements.
      */
-    public ArrayValue nextDateArray()
+    public DateArray nextDateArray()
     {
         return Values.dateArray( nextDateArrayRaw( minArray(), maxArray() ) );
     }
@@ -1463,14 +1463,14 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link ArrayValue} of period elements.
+     * Returns the next pseudorandom {@link DurationArray} of period elements.
      * <p>
      * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
      * {@link Configuration#arrayMaxLength()}
      *
-     * @return the next pseudorandom {@link ArrayValue} of period elements.
+     * @return the next pseudorandom {@link DurationArray} of period elements.
      */
-    private ArrayValue nextPeriodArray()
+    private DurationArray nextPeriodArray()
     {
         return Values.durationArray( nextPeriodArrayRaw( minArray(), maxArray() ) );
     }
@@ -1481,14 +1481,14 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom {@link ArrayValue} of duration elements.
+     * Returns the next pseudorandom {@link DurationArray} of duration elements.
      * <p>
      * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
      * {@link Configuration#arrayMaxLength()}
      *
-     * @return the next pseudorandom {@link ArrayValue} of duration elements.
+     * @return the next pseudorandom {@link DurationArray} of duration elements.
      */
-    public ArrayValue nextDurationArray()
+    public DurationArray nextDurationArray()
     {
         return Values.durationArray( nextDurationArrayRaw( minArray(), maxArray() ) );
     }

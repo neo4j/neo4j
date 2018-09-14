@@ -452,37 +452,37 @@ public final class Values
         return duration;
     }
 
-    public static ArrayValue dateTimeArray( ZonedDateTime[] values )
+    public static DateTimeArray dateTimeArray( ZonedDateTime[] values )
     {
         return new DateTimeArray( values );
     }
 
-    public static ArrayValue localDateTimeArray( LocalDateTime[] values )
+    public static LocalDateTimeArray localDateTimeArray( LocalDateTime[] values )
     {
         return new LocalDateTimeArray( values );
     }
 
-    public static ArrayValue localTimeArray( LocalTime[] values )
+    public static LocalTimeArray localTimeArray( LocalTime[] values )
     {
         return new LocalTimeArray( values );
     }
 
-    public static ArrayValue timeArray( OffsetTime[] values )
+    public static TimeArray timeArray( OffsetTime[] values )
     {
         return new TimeArray( values );
     }
 
-    public static ArrayValue dateArray( LocalDate[] values )
+    public static DateArray dateArray( LocalDate[] values )
     {
         return new DateArray( values );
     }
 
-    public static ArrayValue durationArray( DurationValue[] values )
+    public static DurationArray durationArray( DurationValue[] values )
     {
         return new DurationArray( values );
     }
 
-    public static ArrayValue durationArray( TemporalAmount[] values )
+    public static DurationArray durationArray( TemporalAmount[] values )
     {
         DurationValue[] durations = new DurationValue[values.length];
         for ( int i = 0; i < values.length; i++ )
