@@ -282,7 +282,7 @@ public class RandomValuesTest
     public void nextValueOfTypes()
     {
         RandomValues.Types[] allTypes = RandomValues.Types.values();
-        RandomValues.Types[] including = randomValues.among( RandomValues.Types.class, allTypes, randomValues.nextInt( allTypes.length ) + 1 );
+        RandomValues.Types[] including = randomValues.selection( allTypes, 1, allTypes.length, false );
         HashSet<Class<? extends AnyValue>> seen = new HashSet<>();
         for ( RandomValues.Types type : including )
         {
@@ -301,7 +301,7 @@ public class RandomValuesTest
     public void excluding()
     {
         RandomValues.Types[] allTypes = RandomValues.Types.values();
-        RandomValues.Types[] excluding = randomValues.among( RandomValues.Types.class, allTypes, randomValues.nextInt( allTypes.length ) + 1 );
+        RandomValues.Types[] excluding = randomValues.selection( allTypes, 1, allTypes.length, false );
         RandomValues.Types[] including = randomValues.excluding( excluding );
         for ( RandomValues.Types excludedType : excluding )
         {

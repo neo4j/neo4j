@@ -120,7 +120,7 @@ class GenericKeyStateTest
             @Override
             public int maxCodePoint()
             {
-                return RandomValues.MAX_BASIC_MULTILINGUAL_PLANE_CODE_POINT;
+                return RandomValues.MAX_BMP_CODE_POINT;
             }
         } );
         random.reset();
