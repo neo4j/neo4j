@@ -81,7 +81,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         // DURATION_ARRAY
         values.add( rnd.nextDurationArray() );
         // TEXT_ARRAY
-        values.add( rnd.nextStringArray() );
+        values.add( rnd.nextTextArray() );
         // BOOLEAN_ARRAY
         values.add( rnd.nextBooleanArray() );
         // NUMBER_ARRAY (byte, short, int, long, float, double)

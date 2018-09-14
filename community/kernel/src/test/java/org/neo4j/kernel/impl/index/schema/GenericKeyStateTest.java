@@ -403,7 +403,7 @@ class GenericKeyStateTest
     {
         for ( int i = 0; i < 1000; i++ )
         {
-            assertHighest( random.randomValues().nextStringArray() );
+            assertHighest( random.randomValues().nextTextArray() );
         }
     }
 
@@ -518,8 +518,8 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextLocalTimeArray(),
                 () -> random.randomValues().nextDurationArray(),
                 () -> random.randomValues().nextDurationArray(),
-                () -> random.randomValues().nextStringArray(),
-                () -> random.randomValues().nextAlphaNumericStringArray(),
+                () -> random.randomValues().nextTextArray(),
+                () -> random.randomValues().nextAlphaNumericTextArray(),
                 () -> random.randomValues().nextBooleanArray(),
                 () -> random.randomValues().nextByteArray(),
                 () -> random.randomValues().nextShortArray(),

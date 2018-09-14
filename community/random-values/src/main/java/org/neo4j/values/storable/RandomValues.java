@@ -368,9 +368,9 @@ public class RandomValues
         case DOUBLE_ARRAY:
             return nextDoubleArray();
         case STRING_ARRAY:
-            return nextStringArray();
+            return nextTextArray();
         case STRING_ALPHANUMERIC_ARRAY:
-            return nextAlphaNumericStringArray();
+            return nextAlphaNumericTextArray();
         case STRING_ASCII_ARRAY:
             return nextAsciiTextArray();
         case STRING_BMP_ARRAY:
@@ -1255,7 +1255,7 @@ public class RandomValues
      *
      * @return the next pseudorandom {@link TextArray}.
      */
-    public TextArray nextAlphaNumericStringArray()
+    public TextArray nextAlphaNumericTextArray()
     {
         String[] array = nextAlphaNumericStringArrayRaw( minArray(), maxArray(), minString(), maxString() );
         return Values.stringArray( array );
@@ -1286,7 +1286,7 @@ public class RandomValues
      *
      * @return the next pseudorandom {@link TextArray}.
      */
-    public TextArray nextStringArray()
+    public TextArray nextTextArray()
     {
         String[] array = nextStringArrayRaw( minArray(), maxArray(), minString(), maxString() );
         return Values.stringArray( array );
