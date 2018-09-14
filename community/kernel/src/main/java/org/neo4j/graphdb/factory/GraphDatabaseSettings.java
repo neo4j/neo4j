@@ -247,7 +247,8 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "By setting this to true compiled expressions will be disabled and only interpreted expressions will be used." )
     @Internal
-    public static final Setting<Boolean> cypher_disable_compiled_expressions = setting( "unsupported.cypher.disable_compiled_expressions", BOOLEAN, TRUE );
+    public static final Setting<String> cypher_expression_engine = setting(
+            "unsupported.cypher.expression_engine", optionsIgnoreCase( "INTERPRETED", "COMPILED" ), "INTERPRETED" );
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal

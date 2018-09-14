@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherVersion}
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.configuration.Config
 
@@ -48,7 +48,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.csv_legacy_quote_escaping),
       config.get(GraphDatabaseSettings.csv_buffer_size),
       config.get(GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates),
-      config.get(GraphDatabaseSettings.cypher_disable_compiled_expressions),
+      CypherExpressionEngineOption(config.get(GraphDatabaseSettings.cypher_expression_engine)),
       config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
       config.get(GraphDatabaseSettings.cypher_worker_count),
       config.get(GraphDatabaseSettings.cypher_morsel_size),
@@ -84,7 +84,7 @@ case class CypherConfiguration(version: CypherVersion,
                                legacyCsvQuoteEscaping: Boolean,
                                csvBufferSize: Int,
                                planWithMinimumCardinalityEstimates: Boolean,
-                               disableCompiledExpressions: Boolean,
+                               expressionEngineOption: CypherExpressionEngineOption,
                                lenientCreateRelationship: Boolean,
                                workers: Int,
                                morselSize: Int,
@@ -111,7 +111,7 @@ case class CypherConfiguration(version: CypherVersion,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
       planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
-      disableCompiledExpressions = disableCompiledExpressions,
+      useCompiledExpressons= expressionEngineOption == CypherExpressionEngineOption.compiled,
       lenientCreateRelationship = lenientCreateRelationship
     )
 }

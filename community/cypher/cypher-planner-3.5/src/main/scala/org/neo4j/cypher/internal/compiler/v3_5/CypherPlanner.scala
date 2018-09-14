@@ -107,5 +107,5 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
                                       planWithMinimumCardinalityEstimates: Boolean,
-                                      disableCompiledExpressions: Boolean,
+                                      useCompiledExpressons: Boolean,
                                       lenientCreateRelationship: Boolean)

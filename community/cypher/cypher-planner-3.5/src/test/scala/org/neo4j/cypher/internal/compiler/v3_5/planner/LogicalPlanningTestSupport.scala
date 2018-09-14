@@ -236,7 +236,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
     planWithMinimumCardinalityEstimates = true,
-    disableCompiledExpressions = false,
+    useCompiledExpressons = true,
     lenientCreateRelationship = false
   )
 
