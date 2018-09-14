@@ -1205,7 +1205,7 @@ public class RandomValues
      * @return the next {@link TextArray} containing strings with only characters in the Basic Multilingual Plane (BMP).
      * @see RandomValues
      */
-    private TextArray nextBasicMultilingualPlaneTextArray()
+    public TextArray nextBasicMultilingualPlaneTextArray()
     {
         String[] array = nextArray( String[]::new, () -> nextStringRaw( minString(), maxString(), this::bmpCodePoint ), minArray(), maxArray() );
         return Values.stringArray( array );
