@@ -779,6 +779,8 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
+            checkArgument( coordinate.length == crs.getDimension(),
+                    "Dimension for %s is %d, got %d", crs.getName(), crs.getDimension(), coordinate.length );
             buf.putInt( crs.getCode() );
             for ( int i = 0; i < crs.getDimension(); i++ )
             {
