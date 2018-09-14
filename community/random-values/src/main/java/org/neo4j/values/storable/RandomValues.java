@@ -143,13 +143,6 @@ public class RandomValues
                     .filter( t -> t.arrayType )
                     .toArray( Types[]::new );
         }
-
-        static Types[] nonArrayTypes()
-        {
-            return Arrays.stream( Types.values() )
-                    .filter( t -> !t.arrayType )
-                    .toArray( Types[]::new );
-        }
     }
 
     public interface Configuration
@@ -203,7 +196,6 @@ public class RandomValues
     public static final Configuration DEFAULT_CONFIGURATION = new Default();
     private static final Types[] ALL_TYPES = Types.values();
     private static final Types[] ARRAY_TYPES = Types.arrayTypes();
-    private static final Types[] NON_ARRAY_TYPES = Types.nonArrayTypes();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Generator generator;
@@ -517,7 +509,7 @@ public class RandomValues
     }
 
     /**
-     * Returns an {@code int} between the given lower bound (inclusive) and the upper bound (inclusiv)
+     * Returns an {@code int} between the given lower bound (inclusive) and the upper bound (inclusive)
      *
      * @param min minimum value that can be chosen (inclusive)
      * @param max maximum value that can be chosen (inclusive)
@@ -550,7 +542,7 @@ public class RandomValues
     }
 
     /**
-     * Returns a {@code long} between the given lower bound (inclusive) and the upper bound (inclusiv)
+     * Returns a {@code long} between the given lower bound (inclusive) and the upper bound (inclusive)
      *
      * @param min minimum value that can be chosen (inclusive)
      * @param max maximum value that can be chosen (inclusive)
@@ -1552,7 +1544,7 @@ public class RandomValues
      * @param among the array to pick elements from
      * @param min the minimum number of elements to choose
      * @param max the maximum number of elements to choose
-     * @param allowDuplicates if {@code true} the same element can be choosen multiple times
+     * @param allowDuplicates if {@code true} the same element can be chosen multiple times
      * @return a random selection of the provided array.
      */
     @SuppressWarnings( "unchecked" )
