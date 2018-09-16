@@ -23,8 +23,8 @@ import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
   * Variant of NodeHashJoin. Also builds a hash table using 'left' and produces merged left and right rows using this
-  * table. In addition, also produces left and right rows with missing key values, and right rows that do not match
-  * in the hash table. In these additional rows, variables from the opposing stream are set to NO_VALUE.
+  * table. In addition, also produces left rows with missing key values, and left rows that were not matched
+  * by any right row. In these additional rows, variables from the opposing stream are set to NO_VALUE.
   *
   * This is equivalent to a left outer join in relational algebra.
   */
