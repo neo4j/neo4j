@@ -55,14 +55,14 @@ object IndexSeek {
   /**
     * Construct a node index seek/scan operator by parsing a string.
     */
-  def apply(indexSeekString: String)(implicit idGen: IdGen): IndexLeafPlan = {
+  def apply(indexSeekString: String, getValue: GetValueFromIndexBehavior = DoNotGetValue)(implicit idGen: IdGen): IndexLeafPlan = {
 
     val INDEX_SEEK_PATTERN(node, labelStr, predicateStr) = indexSeekString.trim
     val label = LabelToken(labelStr, LabelId(0))
     val predicates = predicateStr.split(',').map(_.trim)
 
     def prop(prop: String) =
-      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(0)), DoNotGetValue)
+      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(0)), getValue)
 
     def value(value: String): Literal =
       value match {

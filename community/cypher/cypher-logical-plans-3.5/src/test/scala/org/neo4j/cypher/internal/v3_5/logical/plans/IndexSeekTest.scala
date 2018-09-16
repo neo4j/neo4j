@@ -29,27 +29,30 @@ class IndexSeekTest extends CypherFunSuite {
   implicit val idGen: IdGen = SameId(Id(42))
   private val pos = InputPosition.NONE
 
-  val testCases = List(
-    "a:X(prop = 1)" -> NodeIndexSeek("a", label("X"), Seq(prop("prop")), exactInt(1), Set.empty),
-    "b:X(prop = 1)" -> NodeIndexSeek("b", label("X"), Seq(prop("prop")), exactInt(1), Set.empty),
-    "b:Y(prop = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("prop")), exactInt(1), Set.empty),
-    "b:Y(dogs = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs")), exactInt(1), Set.empty),
-    "b:Y(dogs = 2)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs")), exactInt(2), Set.empty),
-    "b:Y(dogs = 2, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs"), prop("cats")), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), Set.empty),
-    "b:Y(name = 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name")), exactString("hi"), Set.empty),
-    "b:Y(name < 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name")), lt(string("hi")), Set.empty),
-    "b:Y(name <= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name")), lte(string("hi")), Set.empty),
-    "b:Y(name > 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name")), gt(string("hi")), Set.empty),
-    "b:Y(name >= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name")), gte(string("hi")), Set.empty),
-    "b:Y(name STARTS WITH 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name")), startsWith("hi"), Set.empty),
-    "b:Y(name ENDS WITH 'hi')" -> NodeIndexEndsWithScan("b", label("Y"), prop("name"), string("hi"), Set.empty),
-    "b:Y(name CONTAINS 'hi')" -> NodeIndexContainsScan("b", label("Y"), prop("name"), string("hi"), Set.empty),
-    "b:Y(name)" -> NodeIndexScan("b", label("Y"), prop("name"), Set.empty)
+  val testCaseCreators: List[GetValueFromIndexBehavior => (String, LogicalPlan)] = List(
+    x => "a:X(prop = 1)" -> NodeIndexSeek("a", label("X"), Seq(prop("prop", x)), exactInt(1), Set.empty),
+    x => "b:X(prop = 1)" -> NodeIndexSeek("b", label("X"), Seq(prop("prop", x)), exactInt(1), Set.empty),
+    x => "b:Y(prop = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("prop", x)), exactInt(1), Set.empty),
+    x => "b:Y(dogs = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", x)), exactInt(1), Set.empty),
+    x => "b:Y(dogs = 2)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", x)), exactInt(2), Set.empty),
+    x => "b:Y(dogs = 2, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", x), prop("cats", x)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), Set.empty),
+    x => "b:Y(name = 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), exactString("hi"), Set.empty),
+    x => "b:Y(name < 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), lt(string("hi")), Set.empty),
+    x => "b:Y(name <= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), lte(string("hi")), Set.empty),
+    x => "b:Y(name > 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), gt(string("hi")), Set.empty),
+    x => "b:Y(name >= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), gte(string("hi")), Set.empty),
+    x => "b:Y(name STARTS WITH 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), startsWith("hi"), Set.empty),
+    x => "b:Y(name ENDS WITH 'hi')" -> NodeIndexEndsWithScan("b", label("Y"), prop("name", x), string("hi"), Set.empty),
+    x => "b:Y(name CONTAINS 'hi')" -> NodeIndexContainsScan("b", label("Y"), prop("name", x), string("hi"), Set.empty),
+    x => "b:Y(name)" -> NodeIndexScan("b", label("Y"), prop("name", x), Set.empty)
   )
 
-  for ((str, expectedPlan) <- testCases) {
-    test(s"should parse `$str`") {
-      IndexSeek(str) should be(expectedPlan)
+  for {
+    getValue <- List(CanGetValue, GetValue, DoNotGetValue)
+    (str, expectedPlan) <- testCaseCreators.map(f => f(getValue))
+  } {
+    test(s"[$getValue] should parse `$str`") {
+      IndexSeek(str, getValue) should be(expectedPlan)
     }
   }
 
@@ -57,7 +60,8 @@ class IndexSeekTest extends CypherFunSuite {
 
   private def label(str:String) = LabelToken(str, LabelId(0))
 
-  private def prop(name: String) = IndexedProperty(PropertyKeyToken(name, PropertyKeyId(0)), DoNotGetValue)
+  private def prop(name: String, getValue: GetValueFromIndexBehavior) =
+    IndexedProperty(PropertyKeyToken(name, PropertyKeyId(0)), getValue)
 
   private def exactInt(int: Int) = SingleQueryExpression(SignedDecimalIntegerLiteral(int.toString)(pos))
 
