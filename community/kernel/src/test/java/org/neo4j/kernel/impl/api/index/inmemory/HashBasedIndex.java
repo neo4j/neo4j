@@ -33,6 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -267,6 +268,12 @@ class HashBasedIndex extends InMemoryIndexImplementation
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
+    }
+
+    @Override
+    public void distinctValues( IndexProgressor.NodeValueClient client )
+    {
+        throw new UnsupportedOperationException();
     }
 
     private interface StringFilter

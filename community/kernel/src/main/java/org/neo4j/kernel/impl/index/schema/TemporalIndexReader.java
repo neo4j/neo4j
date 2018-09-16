@@ -118,6 +118,18 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
         return true;
     }
 
+    @Override
+    public void distinctValues( IndexProgressor.NodeValueClient cursor )
+    {
+        loadAll();
+        BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
+        cursor.initialize( descriptor, multiProgressor, new IndexQuery[0] );
+        for ( NativeSchemaIndexReader<?,NativeSchemaValue> reader : this )
+        {
+            reader.distinctValues( multiProgressor );
+        }
+    }
+
     private boolean validPredicate( IndexQuery predicate )
     {
         return predicate instanceof IndexQuery.ExactPredicate || predicate instanceof IndexQuery.RangePredicate;

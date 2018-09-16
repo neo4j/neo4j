@@ -133,6 +133,18 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
         return false;
     }
 
+    @Override
+    public void distinctValues( IndexProgressor.NodeValueClient cursor )
+    {
+        loadAll();
+        BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
+        cursor.initialize( descriptor, multiProgressor, new IndexQuery[0] );
+        for ( NativeSchemaIndexReader<?,NativeSchemaValue> reader : this )
+        {
+            reader.distinctValues( multiProgressor );
+        }
+    }
+
     private boolean validPredicate( IndexQuery predicate )
     {
         return predicate instanceof IndexQuery.ExactPredicate || predicate instanceof IndexQuery.RangePredicate;
