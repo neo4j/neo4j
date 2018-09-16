@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
+import org.opencypher.v9_0.expressions.Property
 import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
@@ -37,4 +38,13 @@ case class RightOuterHashJoin(nodes: Set[String],
   val rhs = Some(right)
 
   val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+
+  /**
+    * Cached node properties from lhs cannot be used if they refer to a join key node. This is because outer
+    * rows will nullify the lhs columns even thought a join key node might still have the property.
+    */
+  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] =
+    left.availableCachedNodeProperties.filter {
+      case (_, cachedNodeProperty) => !nodes.contains(cachedNodeProperty.nodeVariableName)
+    } ++ right.availableCachedNodeProperties
 }

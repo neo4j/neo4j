@@ -25,16 +25,15 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluat
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, LeftOuterHashJoin, LogicalPlan}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, CachedNodeProperty, LeftOuterHashJoin, LogicalPlan}
 import org.opencypher.v9_0.ast.{Hint, UsingJoinHint}
-import org.opencypher.v9_0.expressions.{PatternExpression, SemanticDirection, Variable}
+import org.opencypher.v9_0.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
 import org.opencypher.v9_0.util.Cost
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
-
 
   val aNode = "a"
   val bNode = "b"
@@ -103,5 +102,24 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     context.planningAttributes.solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
   }
 
+  test("should not expose cached node properties from rhs where node is join key") {
+    def cachedProp(node: String, propertyKey: String) =
+      prop(node, propertyKey) -> CachedNodeProperty(node, PropertyKeyName(propertyKey)(pos))(pos)
 
+    // given
+    val lhs = mock[LogicalPlan]
+    when(lhs.availableSymbols).thenReturn(Set("a", "b"))
+    when(lhs.availableCachedNodeProperties).thenReturn(Map(cachedProp("a", "lhs"), cachedProp("b", "lhs")))
+    val rhs = mock[LogicalPlan]
+    when(rhs.availableSymbols).thenReturn(Set("b", "c"))
+    when(rhs.availableCachedNodeProperties).thenReturn(Map(cachedProp("b", "rhs"), cachedProp("c", "rhs")))
+    val join = LeftOuterHashJoin(Set("b"), lhs, rhs)
+
+    // then
+    join.availableCachedNodeProperties should be(Map(
+      cachedProp("a", "lhs"),
+      cachedProp("b", "lhs"),
+      cachedProp("c", "rhs")
+    ))
+  }
 }
