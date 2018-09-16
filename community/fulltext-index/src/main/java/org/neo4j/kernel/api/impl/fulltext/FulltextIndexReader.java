@@ -59,6 +59,12 @@ public abstract class FulltextIndexReader implements IndexReader
     }
 
     @Override
+    public void distinctValues( IndexProgressor.NodeValueClient client )
+    {
+        throw new UnsupportedOperationException( "Fulltext indexes does not support distinctValues queries" );
+    }
+
+    @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;

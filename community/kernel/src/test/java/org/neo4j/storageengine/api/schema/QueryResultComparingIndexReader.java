@@ -171,6 +171,12 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
+    public void distinctValues( IndexProgressor.NodeValueClient client )
+    {
+        actual.distinctValues( client );
+    }
+
+    @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return actual.hasFullValuePrecision( predicates );

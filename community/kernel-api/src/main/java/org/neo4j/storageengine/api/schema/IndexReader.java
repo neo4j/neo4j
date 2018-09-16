@@ -68,6 +68,19 @@ public interface IndexReader extends Resource
      */
     boolean hasFullValuePrecision( IndexQuery... predicates );
 
+    /**
+     * Initializes {@code client} to be able to progress through all distinct values in this index. {@link IndexProgressor.NodeValueClient}
+     * is used because it has a perfect method signature, even if the {@code reference} argument will instead be used
+     * as number of index entries for the specific indexed value.
+     *
+     * {@link IndexProgressor.NodeValueClient#needsValues()} decides whether or not values will be materialized and given to the client.
+     * The use-case for setting this to {@code false} is to have a more efficient counting of distinct values in an index,
+     * regardless of the actual values.
+     *
+     * @param client {@link IndexProgressor.NodeValueClient} to get initialized with this progression.
+     */
+    void distinctValues( IndexProgressor.NodeValueClient client );
+
     IndexReader EMPTY = new IndexReader()
     {
         // Used for checking index correctness
@@ -92,7 +105,7 @@ public interface IndexReader extends Resource
         @Override
         public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
         {
-            //do nothing
+            // do nothing
         }
 
         @Override
@@ -104,6 +117,12 @@ public interface IndexReader extends Resource
         public boolean hasFullValuePrecision( IndexQuery... predicates )
         {
             return true;
+        }
+
+        @Override
+        public void distinctValues( IndexProgressor.NodeValueClient client )
+        {
+            // do nothing
         }
     };
 }

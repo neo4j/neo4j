@@ -50,7 +50,6 @@ import org.neo4j.values.storable.Value;
  */
 public class PartitionedIndexReader extends AbstractIndexReader
 {
-
     private final List<SimpleIndexReader> indexReaders;
 
     public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers,
@@ -113,6 +112,14 @@ public class PartitionedIndexReader extends AbstractIndexReader
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
+    }
+
+    @Override
+    public void distinctValues( IndexProgressor.NodeValueClient client )
+    {
+        BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
+        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor ) );
+        client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, client.needsValues() );
     }
 
     private PrimitiveLongResourceIterator innerQuery( IndexReader reader, IndexQuery[] predicates )

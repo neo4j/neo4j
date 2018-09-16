@@ -74,6 +74,11 @@ class DefaultIndexReaderTest
             }
 
             @Override
+            public void distinctValues( IndexProgressor.NodeValueClient client )
+            {
+            }
+
+            @Override
             public void close()
             {
             }

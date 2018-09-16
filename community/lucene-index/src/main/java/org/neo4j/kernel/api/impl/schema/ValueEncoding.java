@@ -39,12 +39,12 @@ import static org.apache.lucene.document.Field.Store.NO;
  * Enumeration representing all possible property types with corresponding encodings and query structures for Lucene
  * schema indexes.
  */
-enum ValueEncoding
+public enum ValueEncoding
 {
     Number
             {
                 @Override
-                String key()
+                public String key()
                 {
                     return "number";
                 }
@@ -78,7 +78,7 @@ enum ValueEncoding
     Array
             {
                 @Override
-                String key()
+                public String key()
                 {
                     return "array";
                 }
@@ -111,7 +111,7 @@ enum ValueEncoding
     Bool
             {
                 @Override
-                String key()
+                public String key()
                 {
                     return "bool";
                 }
@@ -144,7 +144,7 @@ enum ValueEncoding
     Spatial
             {
                 @Override
-                String key()
+                public String key()
                 {
                     return "spatial";
                 }
@@ -180,7 +180,7 @@ enum ValueEncoding
     Temporal
             {
                 @Override
-                String key()
+                public String key()
                 {
                     return "temporal";
                 }
@@ -213,7 +213,7 @@ enum ValueEncoding
     String
             {
                 @Override
-                String key()
+                public String key()
                 {
                     return "string";
                 }
@@ -247,7 +247,7 @@ enum ValueEncoding
 
     private static final ValueEncoding[] AllEncodings = values();
 
-    abstract String key();
+    public  abstract String key();
 
     String key( int propertyNumber )
     {
