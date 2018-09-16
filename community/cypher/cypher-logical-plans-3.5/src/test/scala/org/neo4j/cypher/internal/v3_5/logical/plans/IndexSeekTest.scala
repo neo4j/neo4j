@@ -29,30 +29,31 @@ class IndexSeekTest extends CypherFunSuite {
   implicit val idGen: IdGen = SameId(Id(42))
   private val pos = InputPosition.NONE
 
-  val testCaseCreators: List[GetValueFromIndexBehavior => (String, LogicalPlan)] = List(
-    x => "a:X(prop = 1)" -> NodeIndexSeek("a", label("X"), Seq(prop("prop", x)), exactInt(1), Set.empty),
-    x => "b:X(prop = 1)" -> NodeIndexSeek("b", label("X"), Seq(prop("prop", x)), exactInt(1), Set.empty),
-    x => "b:Y(prop = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("prop", x)), exactInt(1), Set.empty),
-    x => "b:Y(dogs = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", x)), exactInt(1), Set.empty),
-    x => "b:Y(dogs = 2)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", x)), exactInt(2), Set.empty),
-    x => "b:Y(dogs = 2, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", x), prop("cats", x)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), Set.empty),
-    x => "b:Y(name = 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), exactString("hi"), Set.empty),
-    x => "b:Y(name < 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), lt(string("hi")), Set.empty),
-    x => "b:Y(name <= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), lte(string("hi")), Set.empty),
-    x => "b:Y(name > 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), gt(string("hi")), Set.empty),
-    x => "b:Y(name >= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), gte(string("hi")), Set.empty),
-    x => "b:Y(name STARTS WITH 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", x)), startsWith("hi"), Set.empty),
-    x => "b:Y(name ENDS WITH 'hi')" -> NodeIndexEndsWithScan("b", label("Y"), prop("name", x), string("hi"), Set.empty),
-    x => "b:Y(name CONTAINS 'hi')" -> NodeIndexContainsScan("b", label("Y"), prop("name", x), string("hi"), Set.empty),
-    x => "b:Y(name)" -> NodeIndexScan("b", label("Y"), prop("name", x), Set.empty)
+  val testCaseCreators: List[(GetValueFromIndexBehavior, Set[String]) => (String, LogicalPlan)] = List(
+    (getValue, args) => "a:X(prop = 1)" -> NodeIndexSeek("a", label("X"), Seq(prop("prop", getValue)), exactInt(1), args),
+    (getValue, args) => "b:X(prop = 1)" -> NodeIndexSeek("b", label("X"), Seq(prop("prop", getValue)), exactInt(1), args),
+    (getValue, args) => "b:Y(prop = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("prop", getValue)), exactInt(1), args),
+    (getValue, args) => "b:Y(dogs = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(1), args),
+    (getValue, args) => "b:Y(dogs = 2)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(2), args),
+    (getValue, args) => "b:Y(dogs = 2, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue), prop("cats", getValue)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), args),
+    (getValue, args) => "b:Y(name = 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), exactString("hi"), args),
+    (getValue, args) => "b:Y(name < 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lt(string("hi")), args),
+    (getValue, args) => "b:Y(name <= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lte(string("hi")), args),
+    (getValue, args) => "b:Y(name > 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gt(string("hi")), args),
+    (getValue, args) => "b:Y(name >= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gte(string("hi")), args),
+    (getValue, args) => "b:Y(name STARTS WITH 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), startsWith("hi"), args),
+    (getValue, args) => "b:Y(name ENDS WITH 'hi')" -> NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue), string("hi"), args),
+    (getValue, args) => "b:Y(name CONTAINS 'hi')" -> NodeIndexContainsScan("b", label("Y"), prop("name", getValue), string("hi"), args),
+    (getValue, args) => "b:Y(name)" -> NodeIndexScan("b", label("Y"), prop("name", getValue), args)
   )
 
   for {
     getValue <- List(CanGetValue, GetValue, DoNotGetValue)
-    (str, expectedPlan) <- testCaseCreators.map(f => f(getValue))
+    args <- List(Set.empty[String], Set("n", "m"))
+    (str, expectedPlan) <- testCaseCreators.map(f => f(getValue, args))
   } {
-    test(s"[$getValue] should parse `$str`") {
-      IndexSeek(str, getValue) should be(expectedPlan)
+    test(s"[$getValue, args=$args] should parse `$str`") {
+      IndexSeek(str, getValue, args) should be(expectedPlan)
     }
   }
 
