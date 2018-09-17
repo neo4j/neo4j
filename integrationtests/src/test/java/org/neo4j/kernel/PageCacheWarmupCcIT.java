@@ -37,7 +37,7 @@ import org.neo4j.causalclustering.upstream.strategies.LeaderOnlyStrategy;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.pagecache.PageCacheWarmerMonitor;
+import org.neo4j.kernel.impl.pagecache.monitor.PageCacheWarmerMonitorAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -109,18 +109,13 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
     {
         BinaryLatch warmupLatch = new BinaryLatch();
         Monitors monitors = member.monitors();
-        monitors.addMonitorListener( new PageCacheWarmerMonitor()
+        monitors.addMonitorListener( new PageCacheWarmerMonitorAdapter()
         {
             @Override
             public void warmupCompleted( long pagesLoaded )
             {
                 pagesLoadedInWarmup.set( pagesLoaded );
                 warmupLatch.release();
-            }
-
-            @Override
-            public void profileCompleted( long pagesInMemory )
-            {
             }
         } );
         return warmupLatch;

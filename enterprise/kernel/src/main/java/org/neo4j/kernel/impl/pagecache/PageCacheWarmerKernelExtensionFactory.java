@@ -30,6 +30,8 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.pagecache.monitor.PageCacheWarmerLoggingMonitor;
+import org.neo4j.kernel.impl.pagecache.monitor.PageCacheWarmerMonitor;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -75,7 +77,9 @@ public class PageCacheWarmerKernelExtensionFactory
         LogService logService = deps.logService();
         NeoStoreDataSource dataSourceManager = deps.getDataSource();
         Log log = logService.getInternalLog( PageCacheWarmer.class );
-        PageCacheWarmerMonitor monitor = deps.monitors().newMonitor( PageCacheWarmerMonitor.class );
+        Monitors monitors = deps.monitors();
+        PageCacheWarmerMonitor monitor = monitors.newMonitor( PageCacheWarmerMonitor.class );
+        monitors.addMonitorListener( new PageCacheWarmerLoggingMonitor( log ) );
         Config config = deps.config();
         return new PageCacheWarmerKernelExtension(
                 scheduler, databaseAvailabilityGuard, pageCache, fs, dataSourceManager, log, monitor, config );

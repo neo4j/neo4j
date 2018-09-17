@@ -20,10 +20,25 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.kernel.impl.pagecache;
+package org.neo4j.kernel.impl.pagecache.monitor;
 
-public interface PageCacheWarmerMonitor
+public class PageCacheWarmerMonitorAdapter implements PageCacheWarmerMonitor
 {
-    void warmupCompleted( long pagesLoaded );
-    void profileCompleted( long pagesInMemory );
+    @Override
+    public void warmupStarted()
+    {
+        //nothing
+    }
+
+    @Override
+    public void warmupCompleted( long pagesLoaded )
+    {
+        //nothing
+    }
+
+    @Override
+    public void profileCompleted( long pagesInMemory )
+    {
+        //nothing
+    }
 }

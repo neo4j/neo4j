@@ -34,12 +34,15 @@ import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -58,12 +61,22 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSupport
 {
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public final EnterpriseDatabaseRule db = new EnterpriseDatabaseRule( testDirectory ).startLazily();
+    public final EnterpriseDatabaseRule db = new EnterpriseDatabaseRule( testDirectory )
+    {
+        @Override
+        protected void configure( GraphDatabaseFactory databaseFactory )
+        {
+            super.configure( databaseFactory );
+            ((TestGraphDatabaseFactory) databaseFactory).setInternalLogProvider( logProvider );
+        }
+    }.startLazily();
 
     private static void verifyEventuallyWarmsUp( long pagesInMemory, File metricsDirectory ) throws Exception
     {
@@ -198,5 +211,29 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         db.ensureStarted();
 
         verifyEventuallyWarmsUp( pagesInMemory, metricsDirectory );
+    }
+
+    @Test
+    public void logPageCacheWarmupStartCompletionMessages() throws Exception
+    {
+        File metricsDirectory = testDirectory.directory( "metrics" );
+        db.withSetting( MetricsSettings.metricsEnabled, Settings.FALSE )
+                .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .withSetting( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
+        db.ensureStarted();
+
+        createTestData( db );
+        long pagesInMemory = waitForCacheProfile( db.getMonitors() );
+
+        db.restartDatabase(
+                MetricsSettings.neoPageCacheEnabled.name(), Settings.TRUE,
+                MetricsSettings.csvEnabled.name(), Settings.TRUE,
+                MetricsSettings.csvInterval.name(), "100ms",
+                MetricsSettings.csvPath.name(), metricsDirectory.getAbsolutePath() );
+
+        verifyEventuallyWarmsUp( pagesInMemory, metricsDirectory );
+
+        logProvider.assertContainsMessageContaining( "Page cache warmup started." );
+        logProvider.assertContainsMessageContaining( "Page cache warmup completed. %d pages loaded. Duration: %s." );
     }
 }

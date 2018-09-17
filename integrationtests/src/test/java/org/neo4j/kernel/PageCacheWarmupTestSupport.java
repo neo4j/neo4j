@@ -30,7 +30,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.pagecache.PageCacheWarmerMonitor;
+import org.neo4j.kernel.impl.pagecache.monitor.PageCacheWarmerMonitor;
+import org.neo4j.kernel.impl.pagecache.monitor.PageCacheWarmerMonitorAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -74,7 +75,7 @@ class PageCacheWarmupTestSupport
         return new PauseProfileMonitor( monitors );
     }
 
-    private static class AwaitProfileMonitor implements PageCacheWarmerMonitor
+    private static class AwaitProfileMonitor extends PageCacheWarmerMonitorAdapter
     {
         private final AtomicLong pageCount;
         private final BinaryLatch profileLatch;
@@ -83,11 +84,6 @@ class PageCacheWarmupTestSupport
         {
             this.pageCount = pageCount;
             this.profileLatch = profileLatch;
-        }
-
-        @Override
-        public void warmupCompleted( long pagesLoaded )
-        {
         }
 
         @Override
@@ -109,8 +105,15 @@ class PageCacheWarmupTestSupport
         }
 
         @Override
+        public void warmupStarted()
+        {
+            //nothing
+        }
+
+        @Override
         public void warmupCompleted( long pagesLoaded )
         {
+            //nothing
         }
 
         @Override
