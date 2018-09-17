@@ -63,8 +63,7 @@ import static org.neo4j.values.storable.Values.shortValue;
  * Generated values are always uniformly distributed in pseudorandom fashion.
  * <p>
  * Can generate both {@link Value} and "raw" instances. The "raw" type of a value type means
- * the corresponding java type if such type exists. For example, {@code String[]} is the raw type of {@link TextArray}.
- * One exception is {@link PointValue} which does not have a corresponding type in Java.
+ * the corresponding Core API type if such type exists. For example, {@code String[]} is the raw type of {@link TextArray}.
  * <p>
  * The length of strings will be governed by {@link RandomValues.Configuration#stringMinLength()} and
  * {@link RandomValues.Configuration#stringMaxLength()} and
