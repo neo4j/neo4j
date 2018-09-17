@@ -143,7 +143,7 @@ public class DbStructureCollector implements DbStructureVisitor
             }
 
             @Override
-            public double indexSelectivity( int labelId, int... propertyKeyIds )
+            public double indexUniqueValueSelectivity( int labelId, int... propertyKeyIds )
             {
                 SchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
@@ -157,7 +157,8 @@ public class DbStructureCollector implements DbStructureVisitor
                 SchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
-                return result2 == null ? Double.NaN : result2.size;
+                double indexSize = result2 == null ? Double.NaN : result2.size;
+                return indexSize / nodesWithLabelCardinality( labelId );
             }
 
             private Iterator<Pair<String,String[]>> idsToNames( Iterable<? extends LabelSchemaSupplier> nodeConstraints )

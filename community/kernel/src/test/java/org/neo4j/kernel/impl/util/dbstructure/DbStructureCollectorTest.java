@@ -79,8 +79,8 @@ public class DbStructureCollectorTest
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );
         assertEquals( 30, lookup.nodesWithLabelCardinality( 2 ) );
         assertEquals( 500, lookup.cardinalityByLabelsAndRelationshipType( 1, 2, -1 ) );
-        assertEquals( 1.0d, lookup.indexSelectivity( 1, 1 ), 0.01d );
-        assertEquals( 0.2d, lookup.indexSelectivity( 2, 2 ), 0.01d );
+        assertEquals( 1.0d, lookup.indexUniqueValueSelectivity( 1, 1 ), 0.01d );
+        assertEquals( 0.2d, lookup.indexUniqueValueSelectivity( 2, 2 ), 0.01d );
     }
 
     @Test
@@ -128,7 +128,7 @@ public class DbStructureCollectorTest
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );
         assertEquals( 30, lookup.nodesWithLabelCardinality( 2 ) );
         assertEquals( 500, lookup.cardinalityByLabelsAndRelationshipType( 1, 2, -1 ) );
-        assertEquals( 1.0d, lookup.indexSelectivity( 1, 1, 3 ), 0.01d );
-        assertEquals( 0.2d, lookup.indexSelectivity( 2, 2, 4 ), 0.01d );
+        assertEquals( 1.0d, lookup.indexUniqueValueSelectivity( 1, 1, 3 ), 0.01d );
+        assertEquals( 0.2d, lookup.indexUniqueValueSelectivity( 2, 2, 4 ), 0.01d );
     }
 }

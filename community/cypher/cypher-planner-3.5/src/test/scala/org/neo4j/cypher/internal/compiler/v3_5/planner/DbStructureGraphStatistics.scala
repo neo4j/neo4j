@@ -38,7 +38,7 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
     Cardinality(lookup.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel))
 
   override def uniqueValueSelectivity(index: IndexDescriptor ): Option[Selectivity] = {
-    val result = lookup.indexSelectivity( index.label.id, index.property.id )
+    val result = lookup.indexUniqueValueSelectivity( index.label.id, index.property.id )
     Selectivity.of(result)
   }
 
