@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.tuple.Pair;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -30,7 +31,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
+import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -114,26 +118,43 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         newTransaction();
         assertEquals( inUseBefore + 3, propertyRecordsInUse() );
 
-        for ( int i = PropertyType.getPayloadSizeLongs(); i < 2 * PropertyType.getPayloadSizeLongs(); i++ )
+        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord( 1 );
+        middleRecordProps.forEach( nameAndValue ->
         {
-            assertEquals( String.valueOf( i ), node.removeProperty( "shortString" + i ) );
-        }
+            final String name = nameAndValue.getOne();
+            final Object value = nameAndValue.getTwo();
+            assertEquals( value, node.removeProperty( name ) );
+        } );
 
         newTransaction();
 
         assertEquals( inUseBefore + 2, propertyRecordsInUse() );
-        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        middleRecordProps.forEach( nameAndValue -> assertFalse( node.hasProperty( nameAndValue.getOne() ) ) );
+        getPropertiesFromRecord( 0 ).forEach( nameAndValue ->
         {
-            assertEquals( String.valueOf( i ), node.removeProperty( "shortString" + i ) );
-        }
-        for ( int i = PropertyType.getPayloadSizeLongs(); i < 2 * PropertyType.getPayloadSizeLongs(); i++ )
+            final String name = nameAndValue.getOne();
+            final Object value = nameAndValue.getTwo();
+            assertEquals( value, node.removeProperty( name ) );
+        } );
+        getPropertiesFromRecord( 2 ).forEach( nameAndValue ->
         {
-            assertFalse( node.hasProperty( "shortString" + i ) );
-        }
-        for ( int i = 2 * PropertyType.getPayloadSizeLongs(); i < 3 * PropertyType.getPayloadSizeLongs(); i++ )
+            final String name = nameAndValue.getOne();
+            final Object value = nameAndValue.getTwo();
+            assertEquals( value, node.removeProperty( name ) );
+        } );
+    }
+
+    private List<Pair<String, Object>> getPropertiesFromRecord( long recordId )
+    {
+        final PropertyRecord record = propertyStore().getRecord( recordId, propertyStore().newRecord(), RecordLoad.FORCE );
+        final List<Pair<String, Object>> props = new ArrayList<>();
+        record.forEach( block ->
         {
-            assertEquals( String.valueOf( i ), node.removeProperty( "shortString" + i ) );
-        }
+            final Object value = propertyStore().getValue( block ).asObject();
+            final String name = propertyStore().getPropertyKeyTokenStore().getToken( block.getKeyIndexId() ).name();
+            props.add( pair( name, value ) );
+        } );
+        return props;
     }
 
     @Test
@@ -369,24 +390,19 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         newTransaction();
         assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
 
-        int secondBlockInSecondRecord = PropertyType.getPayloadSizeLongs() + 1;
-        int thirdBlockInSecondRecord = PropertyType.getPayloadSizeLongs() + 2;
+        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord( 1 );
+        final Pair<String, Object> secondBlockInMiddleRecord = middleRecordProps.get( 1 );
+        final Pair<String, Object> thirdBlockInMiddleRecord = middleRecordProps.get( 2 );
 
-        assertEquals( String.valueOf( secondBlockInSecondRecord ),
-                      node.removeProperty( "shortString" + secondBlockInSecondRecord ) );
-        assertEquals( String.valueOf( thirdBlockInSecondRecord ),
-                      node.removeProperty( "shortString" + thirdBlockInSecondRecord ) );
+        assertEquals( secondBlockInMiddleRecord.getTwo(), node.removeProperty( secondBlockInMiddleRecord.getOne() ) );
+        assertEquals( thirdBlockInMiddleRecord.getTwo(), node.removeProperty( thirdBlockInMiddleRecord.getOne() ) );
 
         newTransaction();
         assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
 
         for ( int i = 0; i < stuffedShortStrings; i++ )
         {
-            if ( i == secondBlockInSecondRecord )
-            {
-                assertFalse( node.hasProperty( "shortString" + i ) );
-            }
-            else if ( i == thirdBlockInSecondRecord )
+            if ( secondBlockInMiddleRecord.getTwo().equals( String.valueOf( i ) ) || thirdBlockInMiddleRecord.getTwo().equals( String.valueOf( i ) ) )
             {
                 assertFalse( node.hasProperty( "shortString" + i ) );
             }
@@ -397,31 +413,35 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
         // Start deleting stuff. First, all the middle property blocks
         int deletedProps = 0;
-        for ( int i = PropertyType.getPayloadSizeLongs(); i < PropertyType.getPayloadSizeLongs() * 2; i++ )
+
+        for ( Pair<String, Object> prop : middleRecordProps )
         {
-            if ( node.hasProperty( "shortString" + i ) )
+            final String name = prop.getOne();
+            if ( node.hasProperty( name ) )
             {
                 deletedProps++;
-                node.removeProperty( "shortString" + i );
+                node.removeProperty( name );
             }
         }
+
         assertEquals( PropertyType.getPayloadSizeLongs() - 2, deletedProps );
 
         newTransaction();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
-        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        middleRecordProps.forEach( nameAndValue -> assertFalse( node.hasProperty( nameAndValue.getOne() ) ) );
+        getPropertiesFromRecord( 0 ).forEach( nameAndValue ->
         {
-            assertEquals( String.valueOf( i ), node.removeProperty( "shortString" + i ) );
-        }
-        for ( int i = PropertyType.getPayloadSizeLongs(); i < PropertyType.getPayloadSizeLongs() * 2; i++ )
+            final String name = nameAndValue.getOne();
+            final Object value = nameAndValue.getTwo();
+            assertEquals( value, node.removeProperty( name ) );
+        } );
+        getPropertiesFromRecord( 2 ).forEach( nameAndValue ->
         {
-            assertFalse( node.hasProperty( "shortString" + i ) );
-        }
-        for ( int i = PropertyType.getPayloadSizeLongs() * 2; i < PropertyType.getPayloadSizeLongs() * 3; i++ )
-        {
-            assertEquals( String.valueOf( i ), node.removeProperty( "shortString" + i ) );
-        }
+            final String name = nameAndValue.getOne();
+            final Object value = nameAndValue.getTwo();
+            assertEquals( value, node.removeProperty( name ) );
+        } );
     }
 
     @Test
