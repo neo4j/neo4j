@@ -19,11 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_5.spi.StatisticsCompletingGraphStatistics
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
-import org.neo4j.internal.kernel.api.{Read, SchemaRead}
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.RelTypeId
+import org.opencypher.v9_0.util.Selectivity
 
 object TransactionBoundGraphStatistics {
   def apply(transactionalContext: TransactionalContext): StatisticsCompletingGraphStatistics =
@@ -34,15 +40,16 @@ object TransactionBoundGraphStatistics {
 
   private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead) extends GraphStatistics with IndexDescriptorCompatibility {
 
-    def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
+        val indexSize = schemaRead.indexSize(schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
 
-        // Probability of any node with the given label, to have a property with a given value
+        // Probability of any node in the index, to have a property with a given value
         val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(
           schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
-        val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
+
+        val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
 
         Selectivity.of(indexSelectivity)
       }
@@ -50,7 +57,7 @@ object TransactionBoundGraphStatistics {
         case _: IndexNotFoundKernelException => None
       }
 
-    def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
         val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
 
@@ -64,10 +71,10 @@ object TransactionBoundGraphStatistics {
         case e: IndexNotFoundKernelException => None
       }
 
-    def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
+    override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
       atLeastOne(read.countsForNodeWithoutTxState(labelId))
 
-    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
       atLeastOne(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
 
     /**

@@ -50,4 +50,45 @@ class SelectivityCombinerTest extends CypherFunSuite {
     assert( selectivity === 0.28 +- 0.000000000000000028 )
   }
 
+  test("OR: size 1") {
+    val a = 0.3
+    IndependenceCombiner.orTogetherSelectivities(Seq(a).map(Selectivity(_))).map(_.factor).get should be(a)
+  }
+
+  test("OR: size 2") {
+    val a = 0.3
+    val b = 0.85
+    IndependenceCombiner.orTogetherSelectivities(Seq(a, b).map(Selectivity(_))).map(_.factor).get should be(
+      a + b
+        - a * b
+        +- 0.001
+    )
+  }
+
+  test("OR: size 3") {
+    val a = 0.3
+    val b = 0.85
+    val c = 0.077
+    IndependenceCombiner.orTogetherSelectivities(Seq(a, b, c).map(Selectivity(_))).map(_.factor).get should be(
+      a + b + c
+        - a * b - a * c - b * c
+        + a * b * c
+        +- 0.001
+    )
+  }
+
+  test("OR: size 4") {
+    val a = 0.3
+    val b = 0.85
+    val c = 0.077
+    val d = 0.935489
+    IndependenceCombiner.orTogetherSelectivities(Seq(a, b, c, d).map(Selectivity(_))).map(_.factor).get should be(
+      a + b + c + d
+        - a * b - a * c - a * d - b * c - b * d - c * d
+        + a * b * c + a * b * d + a * c * d + b * c * d
+        - a * b * c * d
+        +- 0.001
+    )
+  }
+
 }

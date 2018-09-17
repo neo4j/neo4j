@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.RelTypeId
+import org.opencypher.v9_0.util.Selectivity
 
 class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatistics {
 
@@ -33,21 +37,11 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
   override def cardinalityByLabelsAndRelationshipType( fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId] ): Cardinality =
     Cardinality(lookup.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel))
 
-  /*
-      Probability of any node with the given label, to have a given property with a particular value
-
-      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = '*'|
-   */
-  override def indexSelectivity( index: IndexDescriptor ): Option[Selectivity] = {
+  override def uniqueValueSelectivity(index: IndexDescriptor ): Option[Selectivity] = {
     val result = lookup.indexSelectivity( index.label.id, index.property.id )
     Selectivity.of(result)
   }
 
-  /*
-      Probability of any node with the given label, to have a particular property
-
-      indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
-   */
   override def indexPropertyExistsSelectivity( index: IndexDescriptor ): Option[Selectivity] = {
     val result = lookup.indexPropertyExistsSelectivity( index.label.id, index.property.id )
     if (result.isNaN) None else Some(Selectivity.of(result).get)

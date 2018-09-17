@@ -23,13 +23,15 @@ import org.neo4j.cypher.internal.compiler.v3_5.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.Variable
 import org.opencypher.v9_0.util.Cardinality.NumericCardinality
 import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.mutable
 
@@ -146,7 +148,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
             ).getOrElse(nodesCardinality)
           })
 
-        def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+        def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
           val labelName: Option[String] = getLabelName(index.label)
           val propertyName: Option[String] = getPropertyName(index.property)
           //TODO: Refactor for composite indexes

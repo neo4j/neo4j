@@ -19,8 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.RelTypeId
+import org.opencypher.v9_0.util.Selectivity
 
 case object HardcodedGraphStatistics extends GraphStatistics {
   val NODES_CARDINALITY = Cardinality(10000)
@@ -30,7 +34,7 @@ case object HardcodedGraphStatistics extends GraphStatistics {
   val INDEX_SELECTIVITY = Selectivity.of(.02).get
   val INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(.5).get
 
-  def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
+  def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
     Some(INDEX_SELECTIVITY * Selectivity.of(index.properties.length).get)
 
   def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =

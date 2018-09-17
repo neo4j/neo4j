@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.RelTypeId
+import org.opencypher.v9_0.util.Selectivity
 
 object GraphStatistics {
   val DEFAULT_RANGE_SELECTIVITY          = Selectivity.of(0.3).get
@@ -27,7 +30,7 @@ object GraphStatistics {
   val DEFAULT_PROPERTY_SELECTIVITY       = Selectivity.of(0.5).get
   val DEFAULT_EQUALITY_SELECTIVITY       = Selectivity.of(0.1).get
   val DEFAULT_NUMBER_OF_ID_LOOKUPS       = Cardinality(25)
-  val DEFAULT_NUMBER_OF_INDEX_LOOKUPS    = Cardinality(25)
+  val DEFAULT_LIST_CARDINALITY           = Cardinality(25)
   val DEFAULT_LIMIT_CARDINALITY          = Cardinality(75)
   val DEFAULT_REL_UNIQUENESS_SELECTIVITY = Selectivity.of(1.0 - 1 / 100 /*rel-cardinality*/).get
   val DEFAULT_RANGE_SEEK_FACTOR          = 0.03
@@ -50,11 +53,11 @@ trait GraphStatistics {
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
 
   /*
-      Probability of any node with the given label, to have a given property with a particular value
+      Probability of any node in the index to have a given property with a particular value
 
-      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = '*'|
+      indexSelectivity(:X, prop) = s => |MATCH (a:X)  WHERE has(x.prop)| * s = |MATCH (a:X) WHERE x.prop = '*'|
    */
-  def indexSelectivity(index: IndexDescriptor): Option[Selectivity]
+  def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity]
 
   /*
       Probability of any node with the given label, to have a particular property
@@ -71,8 +74,8 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
   override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     delegate.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
 
-  override def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
-    delegate.indexSelectivity(index)
+  override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    delegate.uniqueValueSelectivity(index)
 
   override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
     delegate.indexPropertyExistsSelectivity(index)

@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
-import java.lang.Math.{abs, max}
+import java.lang.Math.abs
+import java.lang.Math.max
 
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.RelTypeId
+import org.opencypher.v9_0.util.Selectivity
 
 import scala.collection.mutable
 
@@ -49,7 +53,7 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
       case CardinalityByLabelsAndRelationshipType(lhs, relType, rhs) =>
         instrumented.cardinalityByLabelsAndRelationshipType(lhs, relType, rhs)
       case IndexSelectivity(index) =>
-        instrumented.indexSelectivity(index)
+        instrumented.uniqueValueSelectivity(index)
       case IndexPropertyExistsSelectivity(index) =>
         instrumented.indexPropertyExistsSelectivity(index)
     }
@@ -85,8 +89,8 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
       inner.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel).amount
     )
 
-  def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-    val selectivity = inner.indexSelectivity(index)
+  def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    val selectivity = inner.uniqueValueSelectivity(index)
     snapshot.map.getOrElseUpdate(IndexSelectivity(index), selectivity.fold(0.0)(_.factor))
     selectivity
   }
