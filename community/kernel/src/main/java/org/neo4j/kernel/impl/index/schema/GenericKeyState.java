@@ -52,6 +52,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     // TODO also put this in Type enum
     public static final int SIZE_GEOMETRY_HEADER = 3;              /* 2b tableId and 22b code */
     public static final int SIZE_GEOMETRY =        Long.BYTES;     /* rawValueBits */
+    static final int SIZE_GEOMETRY_COORDINATE =    Long.BYTES;     /* one coordinate */
     public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
                                                    Integer.BYTES + /* nanoOfSecond */
                                                    Integer.BYTES;  /* timeZone */
@@ -76,6 +77,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     public static final int SIZE_NUMBER_DOUBLE =   Long.BYTES;     /* raw value bits */
     public static final int SIZE_ARRAY_LENGTH =    Short.BYTES;
     static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / SIZE_NUMBER_BYTE;
+    private static final double[] EMPTY_COORDINATE_ARRAY = new double[0];
 
     static final long TRUE = 1;
     static final long FALSE = 0;
@@ -474,14 +476,14 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         if ( !isArray )
         {
-            updateCurve( crs.getTable().getTableId(), crs.getCode() );
-            setType( Types.GEOMETRY ).write( this, spaceFillingCurve.derivedValueFor( coordinate ) );
+            updateCurve( crs );
+            setType( Types.GEOMETRY ).write( this, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
         }
         else
         {
             if ( currentArrayOffset == 0 )
             {
-                updateCurve( crs.getTable().getTableId(), crs.getCode() );
+                updateCurve( crs );
             }
             else if ( this.long1 != crs.getTable().getTableId() || this.long2 != crs.getCode() )
             {
@@ -489,7 +491,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
                         "Tried to assign a geometry array containing different coordinate reference systems, first:%s, violating:%s at array position:%d",
                         CoordinateReferenceSystem.get( (int) long1, (int) long2 ), crs, currentArrayOffset ) );
             }
-            Types.GEOMETRY_ARRAY.write( this, currentArrayOffset++, spaceFillingCurve.derivedValueFor( coordinate ) );
+            Types.GEOMETRY_ARRAY.write( this, currentArrayOffset++, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
         }
     }
 
@@ -501,17 +503,20 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
                     "from a queried range and each sub-range written to separate keys. " +
                     "As such it's unexpected that this key state thinks that it's holds state for an array" );
         }
-        updateCurve( crs.getTable().getTableId(), crs.getCode() );
-        setType( Types.GEOMETRY ).write( this, derivedValue );
+        updateCurve( crs );
+        setType( Types.GEOMETRY ).write( this, derivedValue, EMPTY_COORDINATE_ARRAY );
         this.inclusion = inclusion;
     }
 
-    private void updateCurve( int tableId, int code )
+    private void updateCurve( CoordinateReferenceSystem crs )
     {
+        int tableId = crs.getTable().getTableId();
+        int code = crs.getCode();
         if ( this.long1 != tableId || this.long2 != code )
         {
             long1 = tableId;
             long2 = code;
+            long3 = crs.getDimension();
             spaceFillingCurve = settings.forCrs( tableId, code, true );
         }
     }

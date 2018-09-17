@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class GeometryType extends Type
 {
@@ -33,12 +35,18 @@ class GeometryType extends Type
     // long0 (rawValueBits)
     // long1 (coordinate reference system tableId)
     // long2 (coordinate reference system code)
+    // long3 (dimensions)
+    // long1Array (coordinates), use long1Array so that it doesn't clash mentally with long0Array in GeometryArrayType
 
     // code+table for points (geometry) is 3B in total
-    private static final int MASK_CODE = 0x3FFFFF; // 22b
-    private static final int SHIFT_TABLE = Integer.bitCount( MASK_CODE );
-    private static final int MASK_TABLE_READ = 0xC00000; // 2b
+    private static final int MASK_CODE =            0b00000011_11111111_11111111;
+    private static final int MASK_DIMENSIONS_READ = 0b00011100_00000000_00000000;
+    //                                                  ^ this bit is reserved for future expansion of number of dimensions
+    private static final int MASK_TABLE_READ =      0b11000000_00000000_00000000;
+    private static final int SHIFT_DIMENSIONS = Integer.bitCount( MASK_CODE );
+    private static final int SHIFT_TABLE = SHIFT_DIMENSIONS + 1/*the reserved dimension bit*/ + Integer.bitCount( MASK_DIMENSIONS_READ );
     private static final int MASK_TABLE_PUT = MASK_TABLE_READ >>> SHIFT_TABLE;
+    private static final int MASK_DIMENSIONS_PUT = MASK_DIMENSIONS_READ >>> SHIFT_DIMENSIONS;
 
     GeometryType( byte typeId )
     {
@@ -48,7 +56,13 @@ class GeometryType extends Type
     @Override
     int valueSize( GenericKeyState state )
     {
-        return GenericKeyState.SIZE_GEOMETRY_HEADER + GenericKeyState.SIZE_GEOMETRY;
+        int coordinatesSize = dimensions( state ) * GenericKeyState.SIZE_GEOMETRY_COORDINATE;
+        return GenericKeyState.SIZE_GEOMETRY_HEADER + GenericKeyState.SIZE_GEOMETRY + coordinatesSize;
+    }
+
+    static int dimensions( GenericKeyState state )
+    {
+        return toIntExact( state.long3 );
     }
 
     @Override
@@ -57,13 +71,29 @@ class GeometryType extends Type
         to.long0 = from.long0;
         to.long1 = from.long1;
         to.long2 = from.long2;
+        to.long3 = from.long3;
+        int dimensions = dimensions( from );
+        to.long1Array = ensureBigEnough( to.long1Array, dimensions );
+        System.arraycopy( from.long1Array, 0, to.long1Array, 0, dimensions );
         to.spaceFillingCurve = from.spaceFillingCurve;
     }
 
     @Override
     Value asValue( GenericKeyState state )
     {
-        return NO_VALUE;
+        assertHasCoordinates( state.long3, state.long1Array );
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
+        return asValue( state, crs, 0 );
+    }
+
+    static PointValue asValue( GenericKeyState state, CoordinateReferenceSystem crs, int offset )
+    {
+        double[] coordinates = new double[dimensions( state )];
+        for ( int i = 0; i < coordinates.length; i++ )
+        {
+            coordinates[i] = Double.longBitsToDouble( state.long1Array[offset + i] );
+        }
+        return Values.pointValue( crs, coordinates );
     }
 
     @Override
@@ -77,8 +107,8 @@ class GeometryType extends Type
     @Override
     void putValue( PageCursor cursor, GenericKeyState state )
     {
-        putCrs( cursor, state.long1, state.long2 );
-        put( cursor, state.long0 );
+        putCrs( cursor, state.long1, state.long2, state.long3 );
+        put( cursor, state.long0, state.long3, state.long1Array, 0 );
     }
 
     @Override
@@ -117,23 +147,49 @@ class GeometryType extends Type
         return Long.compare( this_long0, that_long0 );
     }
 
-    static void putCrs( PageCursor cursor, long long1, long long2 )
+    static void putCrs( PageCursor cursor, long long1, long long2, long long3 )
     {
-        if ( (long1 & ~MASK_TABLE_PUT) != 0 )
-        {
-            throw new IllegalArgumentException( "Table id must be 0 < tableId <= " + MASK_TABLE_PUT + ", but was " + long1 );
-        }
-        if ( (long2 & ~MASK_CODE) != 0 )
-        {
-            throw new IllegalArgumentException( "Code must be 0 < code <= " + MASK_CODE + ", but was " + long1 );
-        }
-        int tableAndCode = (int) ((long1 << SHIFT_TABLE) | long2);
-        put3BInt( cursor, tableAndCode );
+        assertValueWithin( long1, MASK_TABLE_PUT, "tableId" );
+        assertValueWithin( long2, MASK_CODE, "code" );
+        assertValueWithin( long3, MASK_DIMENSIONS_PUT, "dimensions" );
+        int header = (int) ((long1 << SHIFT_TABLE) | (long3 << SHIFT_DIMENSIONS) | long2);
+        put3BInt( cursor, header );
     }
 
-    static void put( PageCursor cursor, long long0 )
+    private static void assertValueWithin( long value, int maskAllowed, String name )
     {
+        if ( (value & ~maskAllowed) != 0 )
+        {
+            throw new IllegalArgumentException( "Expected 0 < " + name + " <= " + maskAllowed + ", but was " + value );
+        }
+    }
+
+    static void put( PageCursor cursor, long long0, long long3, long[] long1Array, int long1ArrayOffset )
+    {
+        assertHasCoordinates( long3, long1Array );
         cursor.putLong( long0 );
+        for ( int i = 0; i < long3; i++ )
+        {
+            cursor.putLong( long1Array[long1ArrayOffset + i] );
+        }
+    }
+
+    /**
+     * This check exists because of how range queries are performed, where one range gets broken down into multiple
+     * sub-ranges following a space filling curve. These sub-ranges doesn't have exact coordinates associated with them,
+     * only the derived 1D comparison value. The sub-range querying is only initialized into keys acting as from/to
+     * markers for a query and so should never be used for writing into the tree or generating values from,
+     * so practically it's not a problem, merely an inconvenience and slight inconsistency for this value type.
+     *
+     * @param long3 holds dimension count.
+     * @param long1Array holds the coordinates.
+     */
+    static void assertHasCoordinates( long long3, long[] long1Array )
+    {
+        if ( long3 == 0 || long1Array == null )
+        {
+            throw new IllegalStateException( "This geometry key doesn't have coordinates and can therefore neither be persisted nor generate point value." );
+        }
     }
 
     private static void put3BInt( PageCursor cursor, int value )
@@ -144,15 +200,23 @@ class GeometryType extends Type
 
     static boolean readCrs( PageCursor cursor, GenericKeyState into )
     {
-        int tableAndCode = read3BInt( cursor );
-        into.long1 = (tableAndCode & MASK_TABLE_READ) >>> SHIFT_TABLE;
-        into.long2 = tableAndCode & MASK_CODE;
+        int header = read3BInt( cursor );
+        into.long1 = (header & MASK_TABLE_READ) >>> SHIFT_TABLE;
+        into.long2 = header & MASK_CODE;
+        into.long3 = (header & MASK_DIMENSIONS_READ) >>> SHIFT_DIMENSIONS;
         return true;
     }
 
     static boolean read( PageCursor cursor, GenericKeyState into )
     {
         into.long0 = cursor.getLong();
+        // into.long3 have just been read by readCrs, before this method is called
+        int dimensions = dimensions( into );
+        into.long1Array = ensureBigEnough( into.long1Array, dimensions );
+        for ( int i = 0; i < dimensions; i++ )
+        {
+            into.long1Array[i] = cursor.getLong();
+        }
         return true;
     }
 
@@ -160,12 +224,17 @@ class GeometryType extends Type
     {
         int low = cursor.getShort() & 0xFFFF;
         int high = cursor.getByte() & 0xFF;
-        int i = high << Short.SIZE | low;
-        return i;
+        return high << Short.SIZE | low;
     }
 
-    void write( GenericKeyState state, long derivedSpaceFillingCurveValue )
+    void write( GenericKeyState state, long derivedSpaceFillingCurveValue, double[] coordinate )
     {
         state.long0 = derivedSpaceFillingCurveValue;
+        state.long1Array = ensureBigEnough( state.long1Array, coordinate.length );
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            state.long1Array[i] = Double.doubleToLongBits( coordinate[i] );
+        }
+        state.long3 = coordinate.length;
     }
 }
