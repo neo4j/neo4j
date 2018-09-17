@@ -297,7 +297,7 @@ public class RandomValues
      */
     public Type[] excluding( Type... types )
     {
-        return Arrays.stream( Type.values() )
+        return Arrays.stream( ALL_TYPES )
                 .filter( t -> !ArrayUtils.contains( types, t ) )
                 .toArray( Type[]::new );
     }
