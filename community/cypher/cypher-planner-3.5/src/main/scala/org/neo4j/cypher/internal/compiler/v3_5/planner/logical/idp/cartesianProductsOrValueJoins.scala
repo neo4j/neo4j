@@ -66,7 +66,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     So, when we have too many plans to combine, we fall back to the naive way of just building a left deep tree with
     all query parts cross joined together.
      */
-    val joins = produceHashJoins(plans, qg, context, kit, singleComponentPlanner) ++
+    val joins =
+      produceHashJoins(plans, qg, context, kit, singleComponentPlanner) ++
       produceNIJVariations(plans, qg, requiredOrder, context, kit, singleComponentPlanner)
 
     if (joins.nonEmpty) {
@@ -111,23 +112,45 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     }).toMap
   }
 
+  // Developers note: This method has been re-implemented in a very low-level imperative style, because
+  // this code path caused a big SOAK regression for queries with 50-60 plans. The current implementation is
+  // about 100x faster than the old one, please change functionality here with one eye on performance.
   private def produceNIJVariations(plans: Set[PlannedComponent],
                                    qg: QueryGraph,
                                    requiredOrder: RequiredOrder,
                                    context: LogicalPlanningContext,
                                    kit: QueryPlannerKit,
-                                   singleComponentPlanner: SingleComponentPlannerTrait): Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
-    (for {
-      t1@PlannedComponent(qgA, planA) <- plans
-      t2@PlannedComponent(qgB, planB) <- plans if planA != planB
-      predicate <- this.predicatesDependendingOnBothSides(qg.selections.flatPredicates, qgA, qgB)
-    } yield {
-      val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, requiredOrder, predicate, context, kit, singleComponentPlanner)
-      val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, requiredOrder, predicate, context, kit, singleComponentPlanner)
+                                   singleComponentPlanner: SingleComponentPlannerTrait):
+  Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
+    val predicatesWithDependencies = qg.selections.flatPredicates.toArray.map(pred => (pred, pred.dependencies.map(_.name).toArray))
+    val planArray = plans.toArray
+    val allCoveredIds = planArray.map(_.queryGraph.allCoveredIds)
 
-      nestedIndexJoinAB.map(x => (x, t1 -> t2)) ++ nestedIndexJoinBA.map(x => (x, t1 -> t2))
+    val result = Map.newBuilder[PlannedComponent, (PlannedComponent, PlannedComponent)]
 
-    }).flatten.toMap
+    var a = 0
+    while (a < planArray.length) {
+      var b = a + 1
+      while (b < planArray.length) {
+
+        val planA = planArray(a).plan
+        val planB = planArray(b).plan
+        val qgA = planArray(a).queryGraph
+        val qgB = planArray(b).queryGraph
+
+        for (predicate <- this.predicatesDependendingOnBothSides(predicatesWithDependencies, allCoveredIds(a), allCoveredIds(b))) {
+          val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, requiredOrder, predicate, context, kit, singleComponentPlanner)
+          val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, requiredOrder, predicate, context, kit, singleComponentPlanner)
+
+          nestedIndexJoinAB.foreach(x => result += ((x, planArray(a) -> planArray(b))))
+          nestedIndexJoinBA.foreach(x => result += ((x, planArray(a) -> planArray(b))))
+        }
+        b += 1
+      }
+      a += 1
+    }
+
+    result.result()
   }
 
   private def produceHashJoins(plans: Set[PlannedComponent],
@@ -199,16 +222,26 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         r.dependencies != l.dependencies => e
   }.toSet
 
-  def predicatesDependendingOnBothSides(flatPredicates: Seq[Expression], lhs: QueryGraph, rhs: QueryGraph): Seq[Expression] =
-    flatPredicates.filter { pred =>
-      val deps = pred.dependencies.map(_.name)
-      val idsFromLeft = lhs.allCoveredIds
-      val idsFromRight = rhs.allCoveredIds
-      val unfullfilledDepsLhs = deps -- idsFromLeft
-      val unfullfilledDepsRhs = deps -- idsFromRight
+  // Imperative implementation style for performance. See produceNIJVariations.
+  def predicatesDependendingOnBothSides(predicateDependencies: Array[(Expression, Array[String])], idsFromLeft: Set[String], idsFromRight: Set[String]): Seq[Expression] =
+    predicateDependencies.filter {
+      case (_, deps) =>
+        var i = 0
+        var unfulfilledLhsDep = false
+        var unfulfilledRhsDep = false
+        var forAllLhsOrRhs = true
 
-      unfullfilledDepsLhs.nonEmpty && // The left plan is not enough
-        unfullfilledDepsRhs.nonEmpty && // Neither is the right one
-        (unfullfilledDepsLhs -- idsFromRight).isEmpty // But together we're good
-    }
+        while (i < deps.length) {
+          val inLhs = idsFromLeft(deps(i))
+          val inRhs = idsFromRight(deps(i))
+          unfulfilledLhsDep = unfulfilledLhsDep || !inLhs
+          unfulfilledRhsDep = unfulfilledRhsDep || !inRhs
+          forAllLhsOrRhs = forAllLhsOrRhs && (inLhs || inRhs)
+          i += 1
+        }
+
+        unfulfilledLhsDep && // The left plan is not enough
+          unfulfilledRhsDep && // Neither is the right one
+          forAllLhsOrRhs // But together we're good
+    }.map(_._1)
 }

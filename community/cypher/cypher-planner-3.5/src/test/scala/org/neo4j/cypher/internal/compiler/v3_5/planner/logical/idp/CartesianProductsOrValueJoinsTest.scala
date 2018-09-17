@@ -201,17 +201,17 @@ class CartesianProductsOrValueJoinsTest
     val nProp = prop("n", "prop")
     val xProp = prop("x", "prop")
 
-    val predicate1 = Contains(nProp, xProp)(pos)
-    val predicate2 = propEquality("n", "prop", 42)
+    val predicate1 = Contains(nProp, xProp)(pos) -> Array("n", "x")
+    val predicate2 = propEquality("n", "prop", 42) -> Array("n")
 
-    val qg1 = QueryGraph.empty.withPatternNodes(Set("n"))
-    val qg2 = QueryGraph.empty.withPatternNodes(Set("x"))
+    val idsFromLeft = Set("n")
+    val idsFromRight = Set("x")
 
     // when
-    val result = cartesianProductsOrValueJoins.predicatesDependendingOnBothSides(Seq(predicate1, predicate2), qg1, qg2)
+    val result = cartesianProductsOrValueJoins.predicatesDependendingOnBothSides(Array(predicate1, predicate2), idsFromLeft, idsFromRight)
 
     // then
-    result should be(List(predicate1))
+    result should be(List(predicate1._1))
   }
 
   private def testThis(graph: QueryGraph, input: (PlanningAttributes) => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
