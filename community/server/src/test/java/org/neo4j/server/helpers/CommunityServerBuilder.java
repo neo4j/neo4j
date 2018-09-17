@@ -111,7 +111,7 @@ public class CommunityServerBuilder
     protected CommunityNeoServer build( File configFile, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return new TestCommunityNeoServer( config, configFile, dependencies, logProvider );
+        return new TestCommunityNeoServer( config, configFile, dependencies );
     }
 
     public File createConfigFiles() throws IOException
@@ -348,9 +348,9 @@ public class CommunityServerBuilder
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            super( config, persistent ? new CommunityGraphFactory() : new InMemoryGraphFactory(), dependencies, logProvider );
+            super( config, persistent ? new CommunityGraphFactory() : new InMemoryGraphFactory(), dependencies );
             this.configFile = configFile;
         }
 

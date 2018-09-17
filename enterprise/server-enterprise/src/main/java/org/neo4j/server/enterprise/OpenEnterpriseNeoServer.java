@@ -61,14 +61,14 @@ import static org.neo4j.server.configuration.ServerSettings.jmx_module_enabled;
 
 public class OpenEnterpriseNeoServer extends CommunityNeoServer
 {
-    public OpenEnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
+    public OpenEnterpriseNeoServer( Config config, Dependencies dependencies )
     {
-        super( config, new EnterpriseGraphFactory(), dependencies, logProvider );
+        super( config, new EnterpriseGraphFactory(), dependencies );
     }
 
-    public OpenEnterpriseNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies, LogProvider logProvider )
+    public OpenEnterpriseNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies )
     {
-        super( config, graphFactory, dependencies, logProvider );
+        super( config, graphFactory, dependencies );
     }
 
     @Override

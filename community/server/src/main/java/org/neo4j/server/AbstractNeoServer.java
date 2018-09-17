@@ -146,10 +146,10 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract WebServer createWebServer();
 
-    public AbstractNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies, LogProvider logProvider )
+    public AbstractNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies )
     {
         this.config = config;
-        this.logProvider = logProvider;
+        this.logProvider = dependencies.userLogProvider();
         this.log = logProvider.getLog( getClass() );
         log.info( NEO4J_IS_STARTING_MESSAGE );
 

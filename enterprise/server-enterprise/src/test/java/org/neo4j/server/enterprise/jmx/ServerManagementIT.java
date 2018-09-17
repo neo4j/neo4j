@@ -66,7 +66,7 @@ public class ServerManagementIT
                 .build();
 
         // When
-        NeoServer server = cleanup.add( new OpenEnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider.getInstance() ) );
+        NeoServer server = cleanup.add( new OpenEnterpriseNeoServer( config, graphDbDependencies() ) );
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );

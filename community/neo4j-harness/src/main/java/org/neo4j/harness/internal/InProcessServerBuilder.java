@@ -48,8 +48,8 @@ public class InProcessServerBuilder extends AbstractInProcessServerBuilder
     }
 
     @Override
-    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies, LogProvider userLogProvider )
+    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies )
     {
-        return new CommunityNeoServer( config, graphFactory, dependencies, userLogProvider );
+        return new CommunityNeoServer( config, graphFactory, dependencies );
     }
 }

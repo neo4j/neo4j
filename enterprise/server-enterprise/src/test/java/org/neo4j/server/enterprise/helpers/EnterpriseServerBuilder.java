@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -85,16 +86,17 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     protected CommunityNeoServer build( File configFile, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return new TestEnterpriseNeoServer( config, configFile, dependencies, logProvider );
+        return new TestEnterpriseNeoServer( config, configFile,
+                GraphDatabaseDependencies.newDependencies(dependencies).userLogProvider(logProvider) );
     }
 
     private class TestEnterpriseNeoServer extends OpenEnterpriseNeoServer
     {
         private final File configFile;
 
-        TestEnterpriseNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        TestEnterpriseNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            super( config, dependencies, logProvider );
+            super( config, dependencies );
             this.configFile = configFile;
         }
 

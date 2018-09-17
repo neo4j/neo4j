@@ -106,6 +106,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -676,14 +677,14 @@ public class TransactionGuardIT
         protected CommunityNeoServer build( File configFile, Config config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            return new GuardTestServer( config, dependencies, NullLogProvider.getInstance() );
+            return new GuardTestServer( config, newDependencies(dependencies).userLogProvider( NullLogProvider.getInstance() ) );
         }
 
         private class GuardTestServer extends OpenEnterpriseNeoServer
         {
-            GuardTestServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+            GuardTestServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                super( config, new SimpleGraphFactory( graphDatabaseFacade ), dependencies, logProvider );
+                super( config, new SimpleGraphFactory( graphDatabaseFacade ), dependencies );
             }
         }
     }
@@ -708,7 +709,7 @@ public class TransactionGuardIT
                 public GraphDatabaseService newDatabase( Config config )
                 {
                     return customFacadeFactory.newFacade( storeDir, config,
-                            GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                            newDependencies( state.databaseDependencies() ) );
                 }
             };
         }

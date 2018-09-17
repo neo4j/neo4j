@@ -56,8 +56,8 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
     }
 
     @Override
-    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies, LogProvider userLogProvider )
+    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies )
     {
-        return new OpenEnterpriseNeoServer( config, graphFactory, dependencies, userLogProvider );
+        return new OpenEnterpriseNeoServer( config, graphFactory, dependencies );
     }
 }

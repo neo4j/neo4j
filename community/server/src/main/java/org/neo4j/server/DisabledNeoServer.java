@@ -45,13 +45,13 @@ public class DisabledNeoServer implements NeoServer
 
     private final LifeSupport life = new LifeSupport();
 
-    public DisabledNeoServer( GraphFactory graphFactory, Dependencies dependencies, Config config, LogProvider logProvider )
+    public DisabledNeoServer( GraphFactory graphFactory, Dependencies dependencies, Config config )
     {
         this.db = new LifecycleManagingDatabase( config, graphFactory, dependencies );
         this.config = config;
 
         life.add( db );
-        logProvider.getLog( getClass() ).info( NEO4J_IS_STARTING_MESSAGE );
+        dependencies.userLogProvider().getLog( getClass() ).info( NEO4J_IS_STARTING_MESSAGE );
     }
 
     @Override

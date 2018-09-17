@@ -108,7 +108,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
             checkCompatibility();
 
-            server = createNeoServer( config, dependencies, userLogProvider );
+            server = createNeoServer( config, dependencies );
             server.start();
 
             return OK;
@@ -165,16 +165,16 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return server;
     }
 
-    private NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies, LogProvider userLogProvider )
+    private NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies )
     {
         GraphFactory graphFactory = createGraphFactory( config );
 
         boolean httpAndHttpsDisabled = config.enabledHttpConnectors().isEmpty();
         if ( httpAndHttpsDisabled )
         {
-            return new DisabledNeoServer( graphFactory, dependencies, config, userLogProvider );
+            return new DisabledNeoServer( graphFactory, dependencies, config );
         }
-        return createNeoServer( graphFactory, config, dependencies, userLogProvider );
+        return createNeoServer( graphFactory, config, dependencies );
     }
 
     protected abstract GraphFactory createGraphFactory( Config config );
@@ -182,8 +182,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     /**
      * Create a new server component. This method is invoked only when at least one HTTP connector is enabled.
      */
-    protected abstract NeoServer createNeoServer( GraphFactory graphFactory, Config config, GraphDatabaseDependencies dependencies,
-            LogProvider userLogProvider );
+    protected abstract NeoServer createNeoServer( GraphFactory graphFactory, Config config, GraphDatabaseDependencies dependencies );
 
     protected Collection<ConfigurationValidator> configurationValidators()
     {

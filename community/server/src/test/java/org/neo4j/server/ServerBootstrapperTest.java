@@ -62,8 +62,7 @@ public class ServerBootstrapperTest
             }
 
             @Override
-            protected NeoServer createNeoServer( GraphFactory graphFactory, Config config, GraphDatabaseDependencies dependencies,
-                    LogProvider userLogProvider )
+            protected NeoServer createNeoServer( GraphFactory graphFactory, Config config, GraphDatabaseDependencies dependencies )
             {
                 return mock( NeoServer.class );
             }

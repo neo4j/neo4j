@@ -154,18 +154,19 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             config.put( GraphDatabaseSettings.store_internal_log_path.name(), internalLogFile.getAbsolutePath() );
 
             LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( logOutputStream );
-            GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
+            GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies()
+                    .userLogProvider( userLogProvider );
             Iterable<KernelExtensionFactory<?>> kernelExtensions =
                     append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() );
-            dependencies = dependencies.kernelExtensions( kernelExtensions ).userLogProvider( userLogProvider );
+            dependencies = dependencies.kernelExtensions( kernelExtensions );
 
             Config dbConfig = Config.defaults( config );
             GraphFactory graphFactory = createGraphFactory( dbConfig );
             boolean httpAndHttpsDisabled = dbConfig.enabledHttpConnectors().isEmpty();
 
             NeoServer server = httpAndHttpsDisabled
-                               ? new DisabledNeoServer( graphFactory, dependencies, dbConfig, userLogProvider )
-                               : createNeoServer( graphFactory, dbConfig, dependencies, userLogProvider );
+                               ? new DisabledNeoServer( graphFactory, dependencies, dbConfig )
+                               : createNeoServer( graphFactory, dbConfig, dependencies );
 
             InProcessServerControls controls = new InProcessServerControls( serverFolder, userLogFile, internalLogFile, server, logOutputStream );
             controls.start();
@@ -189,7 +190,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
     protected abstract GraphFactory createGraphFactory( Config config );
 
-    protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies, LogProvider userLogProvider );
+    protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies );
 
     @Override
     public TestServerBuilder withConfig( Setting<?> key, String value )

@@ -52,14 +52,14 @@ import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communit
 
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public CommunityNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
+    public CommunityNeoServer( Config config, Dependencies dependencies )
     {
-        this( config, new CommunityGraphFactory(), dependencies, logProvider );
+        this( config, new CommunityGraphFactory(), dependencies );
     }
 
-    public CommunityNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies, LogProvider logProvider )
+    public CommunityNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies )
     {
-        super( config, graphFactory, dependencies, logProvider );
+        super( config, graphFactory, dependencies );
     }
 
     @Override

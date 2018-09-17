@@ -582,8 +582,8 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
                     new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true"
             ) ),
                     GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() )
-                            .monitors( new Monitors() ),
-                    NullLogProvider.getInstance() ) );
+                            .monitors( new Monitors() )
+            ) );
 
             EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), null, null );
             Response serviceDefinition = svc.getServiceDefinition( uriInfo, output );
