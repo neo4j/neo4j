@@ -164,6 +164,11 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     /* <initializers> */
     void clear()
     {
+        if ( type == Type.TEXT && long1 == TRUE )
+        {
+            // Clear byteArray if it has been dereferenced
+            byteArray = null;
+        }
         type = null;
         long0 = 0;
         long1 = 0;
@@ -667,7 +672,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return Values.of( populateValueArray( new DurationValue[arrayLength],
                     i -> durationAsValue( long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) ) );
         case TEXT_ARRAY:
-            // no need to set bytes dereferenced because byte[][] owned by this class will deserialized into String objects.
+            // no need to set bytes dereferenced because byte[][] owned by this class will be deserialized into String objects.
             return Values.of( populateValueArray( new String[arrayLength], i -> textAsValueRaw( byteArrayArray[i], long0Array[i] ) ) );
         case BOOLEAN_ARRAY:
             return booleanArrayAsValue();

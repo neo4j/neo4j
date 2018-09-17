@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -58,6 +59,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -397,6 +399,40 @@ class GenericKeyStateTest
         assertHighest( longArray( new long[]{Long.MAX_VALUE} ) );
         assertHighest( floatArray( new float[]{Float.POSITIVE_INFINITY} ) );
         assertHighest( doubleArray( new double[]{Double.POSITIVE_INFINITY} ) );
+    }
+
+    @Test
+    void shouldNeverDereferencedTextValues()
+    {
+        // Given a value that we dereference
+        Value srcValue = Values.utf8Value( "First string".getBytes( StandardCharsets.UTF_8 ) );
+        GenericKeyState genericKeyState = newKeyState();
+        genericKeyState.writeValue( srcValue, NEUTRAL );
+        Value dereferencedValue = genericKeyState.asValue();
+        assertEquals( srcValue, dereferencedValue );
+
+        // and write to page
+        PageCursor cursor = newPageCursor();
+        int offset = cursor.getOffset();
+        genericKeyState.put( cursor );
+        int keySize = cursor.getOffset() - offset;
+        cursor.setOffset( offset );
+
+        // we should not overwrite the first dereferenced value when initializing from a new value
+        genericKeyState.clear();
+        Value srcValue2 = Values.utf8Value( "Secondstring".getBytes( StandardCharsets.UTF_8 ) ); // <- Same length as first string
+        genericKeyState.writeValue( srcValue2, NEUTRAL );
+        Value dereferencedValue2 = genericKeyState.asValue();
+        assertEquals( srcValue2, dereferencedValue2 );
+        assertEquals( srcValue, dereferencedValue );
+
+        // and we should not overwrite the second value when we read back the first value from page
+        genericKeyState.clear();
+        genericKeyState.read( cursor, keySize );
+        Value dereferencedValue3 = genericKeyState.asValue();
+        assertEquals( srcValue, dereferencedValue3 );
+        assertEquals( srcValue2, dereferencedValue2 );
+        assertEquals( srcValue, dereferencedValue );
     }
 
     private void assertHighestStringArray()
