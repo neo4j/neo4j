@@ -63,8 +63,8 @@ class ParallelPageLoader implements AutoCloseable
             }
             finally
             {
-                processed.getAndIncrement();
                 pageCache.reportEvents();
+                processed.getAndIncrement();
             }
         } );
     }
