@@ -30,6 +30,7 @@ import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.LessThan
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.expressions.functions.Distance
 import org.opencypher.v9_0.expressions.functions.Exists
 import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.symbols._
@@ -442,6 +443,65 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       )
 
     ineqResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity +- 0.000001)
+  }
+
+  // POINT DISTANCE
+
+  private val fakePoint = True()(pos)
+
+  test("distance with no label") {
+    val n_prop: Property = Property(varFor("n"), PropertyKeyName("prop") _) _
+    val distance = Predicate(Set("n"), LessThan(FunctionInvocation(n_prop, FunctionName(Distance.name)(pos), fakePoint), SignedDecimalIntegerLiteral("3")(pos))(pos))
+
+    val calculator = setUpCalculator(distance, Seq.empty)
+    val distanceResult = calculator(distance.expr)
+    distanceResult should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY)
+  }
+
+  test("distance with one label") {
+    val n_is_Person = Predicate(Set("n"), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
+    val n_prop: Property = Property(varFor("n"), PropertyKeyName("prop") _) _
+    val distance = Predicate(Set("n"), LessThan(FunctionInvocation(n_prop, FunctionName(Distance.name)(pos), fakePoint), SignedDecimalIntegerLiteral("3")(pos))(pos))
+
+    val calculator = setUpCalculator(distance, Seq(n_is_Person))
+
+    val labelResult = calculator(n_is_Person.expr)
+    val distanceResult = calculator(distance.expr)
+
+    labelResult.factor should equal(0.1)
+    distanceResult.factor should equal(
+      0.2 // exists n.prop
+        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // point distance
+    )
+  }
+
+  test("distance with two labels, two indexes") {
+    val n_is_Person = Predicate(Set("n"), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
+    val n_is_Animal = Predicate(Set("n"), HasLabels(varFor("n"), Seq(LabelName("Animal") _)) _)
+    val n_prop: Property = Property(varFor("n"), PropertyKeyName("prop") _) _
+    val distance = Predicate(Set("n"), LessThan(FunctionInvocation(n_prop, FunctionName(Distance.name)(pos), fakePoint), SignedDecimalIntegerLiteral("3")(pos))(pos))
+
+    val calculator = setUpCalculator(distance, Seq(n_is_Person, n_is_Animal), mockStats(
+      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+
+    val labelResult1 = calculator(n_is_Person.expr)
+    val labelResult2 = calculator(n_is_Animal.expr)
+    val distanceResult = calculator(distance.expr)
+
+    labelResult1.factor should equal(0.1)
+    labelResult2.factor should equal(0.08)
+
+    val personIndexSelectivity = (
+      0.2 // Selectivity for .prop
+        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // point distance
+      )
+    val animalIndexSelectivity = (
+      0.5 // Selectivity for .prop
+        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // point distance
+      )
+
+    distanceResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity +- 0.001)
   }
 
   // EXISTS
