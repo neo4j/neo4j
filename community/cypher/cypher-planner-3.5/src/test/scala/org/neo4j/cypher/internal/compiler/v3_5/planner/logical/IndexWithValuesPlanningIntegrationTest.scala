@@ -42,19 +42,9 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Distinct(
           Union(
             Selection(Ands(Set(GreaterThan(prop("n", "prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
-              NodeIndexScan(
-                "n",
-                LabelToken("Awesome", LabelId(0)),
-                IndexedProperty(PropertyKeyToken(PropertyKeyName("prop1") _, PropertyKeyId(0)), DoNotGetValue),
-                Set.empty,
-                IndexOrderNone)),
+              IndexSeek("n:Awesome(prop1)")),
             Selection(Ands(Set(GreaterThan(prop("n", "prop2"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
-              NodeIndexScan(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-                IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), DoNotGetValue),
-                Set.empty,
-                IndexOrderNone))
+              IndexSeek("n:Awesome(prop2)", propIds = Map("prop2" -> 1)))
           ),
           Map("n" -> Variable("n")(pos))
         ),
@@ -73,20 +63,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Distinct(
           Union(
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1)), DoNotGetValue)),
-              SingleQueryExpression(SignedDecimalIntegerLiteral("3") _),
-              Set.empty,
-              IndexOrderNone),
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop1") _, PropertyKeyId(0)), DoNotGetValue)),
-              SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-              Set.empty,
-              IndexOrderNone)
+            IndexSeek("n:Awesome(prop2 = 3)", propIds = Map("prop2" -> 1)),
+            IndexSeek("n:Awesome(prop1 = 42)", propIds = Map("prop1" -> 0))
           ),
           Map("n" -> Variable("n")(pos))
         ),
@@ -104,13 +82,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -123,13 +95,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -143,13 +109,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42)", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -162,13 +122,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(propertyProj("n", "foo"), cachedNodePropertyProj("n", "prop")))
     )
   }
@@ -183,13 +137,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       Projection(
         Selection(Ands(Set(Equals(Modulo(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("2")(pos))(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)))(pos),
-          NodeIndexSeek(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(SignedDecimalIntegerLiteral("42")(pos)))))(pos)),
-            Set.empty,
-            IndexOrderNone)),
+          IndexSeek("n:Awesome(prop <= 42)", DoNotGetValue)),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -201,13 +149,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("foo", "n", "prop")))
     )
   }
@@ -220,13 +162,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       Projection(
         Projection(
-          NodeIndexSeek(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-            SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-            Set.empty,
-            IndexOrderNone),
+          IndexSeek("n:Awesome(prop = 42)", GetValue),
           Map(cachedNodePropertyProj("foo", "n", "prop"), "bar" -> True()(pos))),
         Map("baz" -> Variable("bar")(pos)))
     )
@@ -262,13 +198,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       Projection(
         Expand(
-          NodeIndexSeek(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-            SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-            Set.empty,
-            IndexOrderNone),
+          IndexSeek("n:Awesome(prop = 42)", GetValue),
           "n", SemanticDirection.BOTH, Seq.empty, "m", "r"),
         Map(cachedNodePropertyProj("n", "prop"))
       )
@@ -282,13 +212,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(StringLiteral("foo")(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 'foo')", GetValue),
         Map("toUpper(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("toUpper")(pos), distinct = false, IndexedSeq(cachedNodeProperty("n", "prop")))(pos)))
     )
   }
@@ -303,13 +227,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Projection(
           Sort(
             Projection(
-              NodeIndexSeek(
-                "n",
-                LabelToken("Awesome", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-                SingleQueryExpression(StringLiteral("foo")(pos)),
-                Set.empty,
-                IndexOrderNone),
+              IndexSeek("n:Awesome(prop = 'foo')", GetValue),
               Map("  FRESHID61" -> FunctionInvocation(Namespace(List())(pos), FunctionName("toUpper")(pos), distinct = false, IndexedSeq(cachedNodeProperty("n", "prop")))(pos))),
             Seq(Ascending("  FRESHID61"))),
           Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos))),
@@ -324,13 +242,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Aggregation(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42)", GetValue),
         Map("nums" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos)),
         Map("sum(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("sum")(pos), distinct = false, IndexedSeq(cachedNodeProperty("n", "prop")))(pos)))
     )
@@ -345,13 +257,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Sort(
           Aggregation(
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-              SingleQueryExpression(StringLiteral("foo")(pos)),
-              Set.empty,
-              IndexOrderNone),
+            IndexSeek("n:Awesome(prop = 'foo')", GetValue),
             Map(cachedNodePropertyProj("  FRESHID60", "n", "prop")),
             Map("  FRESHID46" -> FunctionInvocation(Namespace(List())(pos), FunctionName("sum")(pos), distinct = false, IndexedSeq(Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos)))(pos))),
           Seq(Ascending("  FRESHID60"))),
@@ -366,13 +272,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Distinct(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("n", "prop")))
     )
   }
@@ -384,13 +284,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       UnwindCollection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(StringLiteral("foo")(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 'foo')", GetValue),
         "foo", ListLiteral(List(cachedNodeProperty("n", "prop")))(pos))
     )
   }
@@ -409,13 +303,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       ProcedureCall(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          SingleQueryExpression(StringLiteral("foo")(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 'foo')", GetValue),
         ResolvedCall(signature,
           IndexedSeq(CoerceTo(cachedNodeProperty("n", "prop"), CTString)),
           IndexedSeq(ProcedureResultItem(None, Variable("value")(pos))(pos)))(pos))
@@ -431,13 +319,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("foo")(pos)))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop STARTS WITH 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -450,13 +332,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("foo")(pos)))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop STARTS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -469,13 +345,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("foo")(pos)))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop STARTS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -489,13 +359,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop > 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -508,13 +372,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-          RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -527,13 +385,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-          RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -547,13 +399,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-          RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop > 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -566,13 +412,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-          RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -585,13 +425,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-          RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -688,13 +522,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue), IndexedProperty(PropertyKeyToken(PropertyKeyName("foo") _, PropertyKeyId(1)), GetValue)),
-          CompositeQueryExpression(Seq(SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), SingleQueryExpression(SignedDecimalIntegerLiteral("21") _))),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42, foo = 21)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -707,13 +535,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue), IndexedProperty(PropertyKeyToken(PropertyKeyName("foo") _, PropertyKeyId(1)), GetValue)),
-          CompositeQueryExpression(Seq(SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), SingleQueryExpression(SignedDecimalIntegerLiteral("21") _))),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42, foo = 21)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -726,13 +548,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue), IndexedProperty(PropertyKeyToken(PropertyKeyName("foo") _, PropertyKeyId(1)), DoNotGetValue)),
-          CompositeQueryExpression(Seq(SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), SingleQueryExpression(SignedDecimalIntegerLiteral("21") _))),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop = 42, foo = 21)", DoNotGetValue),
         Map("n.bar" -> Property(Variable("n")(pos), PropertyKeyName("bar")(pos))(pos)))
     )
   }
@@ -765,13 +581,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexContainsScan(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
-          StringLiteral("foo")(pos),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop CONTAINS 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -784,13 +594,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexContainsScan(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-          StringLiteral("foo")(pos),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop CONTAINS 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -803,13 +607,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexContainsScan(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-          StringLiteral("foo")(pos),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop CONTAINS 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -823,13 +621,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexEndsWithScan(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
-          StringLiteral("foo")(pos),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop ENDS WITH 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -842,13 +634,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexEndsWithScan(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-          StringLiteral("foo")(pos),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop ENDS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -861,13 +647,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexEndsWithScan(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-          StringLiteral("foo")(pos),
-          Set.empty,
-          IndexOrderNone),
+        IndexSeek("n:Awesome(prop ENDS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }

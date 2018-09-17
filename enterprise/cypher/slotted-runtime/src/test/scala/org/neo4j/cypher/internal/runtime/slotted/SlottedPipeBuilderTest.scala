@@ -39,9 +39,9 @@ import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.LabelId
 import org.opencypher.v9_0.util.symbols.{CTAny, CTList, CTNode, CTRelationship}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 //noinspection NameBooleanParameters
 class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -528,8 +528,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val lhs = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)
     val label = LabelToken("label2", LabelId(0))
-    val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x), IndexOrderNone)
+    val rhs = plans.IndexSeek("z:label2(prop = 42)", argumentIds = Set(x))
     val apply = Apply(lhs, rhs)
 
     // when
@@ -538,7 +537,8 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     pipe should equal(ApplySlottedPipe(
       NodesByLabelScanSlottedPipe("x", LazyLabel("label"), X_NODE_SLOTS, Size.zero)(),
-      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek, IndexOrderNone,
+      NodeIndexSeekSlottedPipe("z", label, Vector(SlottedIndexedProperty(0,None)), SingleQueryExpression(commands.expressions.Literal(42)), org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeek,
+        IndexOrderNone,
         SlotConfiguration.empty
           .newLong("x", false, CTNode)
           .newLong("z", false, CTNode),
@@ -697,12 +697,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("NodeIndexScan should yield a NodeIndexScanSlottedPipe") {
     // given
-    val leaf = NodeIndexScan(
-      "n",
-      LabelToken("Awesome", LabelId(0)),
-      IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-      Set.empty,
-      IndexOrderNone)
+    val leaf = plans.IndexSeek("n:Awesome(prop)")
 
     // when
     val pipe = build(leaf)
@@ -729,7 +724,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     pipe should equal(
-      NodeIndexSeekSlottedPipe("z", label, Array.empty, SingleQueryExpression(commands.expressions.Literal(42)), UniqueIndexSeek, IndexOrderNone,
+      NodeIndexSeekSlottedPipe("z", label, IndexedSeq.empty, SingleQueryExpression(commands.expressions.Literal(42)), UniqueIndexSeek, IndexOrderNone,
         SlotConfiguration.empty.newLong("z", false, CTNode), Size.zero)()
     )
   }

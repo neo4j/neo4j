@@ -81,9 +81,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
                             Seq(EstimatedRows(333), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
                                 PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
 
-      , attach(NodeIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
-                             ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
-               23.0) ->
+      , attach(IndexSeek("x:Label(Prop = 'Andres')"), 23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
                             Seq(Index("Label", Seq("Prop")), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
                                 Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))

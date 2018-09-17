@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.attribution.{Id, IdGen, SameId}
-import org.opencypher.v9_0.util.{InputPosition, LabelId, NonEmptyList, PropertyKeyId}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{InputPosition, LabelId, NonEmptyList, PropertyKeyId}
 
 class IndexSeekTest extends CypherFunSuite {
 
@@ -30,21 +30,21 @@ class IndexSeekTest extends CypherFunSuite {
   private val pos = InputPosition.NONE
 
   val testCaseCreators: List[(GetValueFromIndexBehavior, Set[String]) => (String, LogicalPlan)] = List(
-    (getValue, args) => "a:X(prop = 1)" -> NodeIndexSeek("a", label("X"), Seq(prop("prop", getValue)), exactInt(1), args),
-    (getValue, args) => "b:X(prop = 1)" -> NodeIndexSeek("b", label("X"), Seq(prop("prop", getValue)), exactInt(1), args),
-    (getValue, args) => "b:Y(prop = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("prop", getValue)), exactInt(1), args),
-    (getValue, args) => "b:Y(dogs = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(1), args),
-    (getValue, args) => "b:Y(dogs = 2)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(2), args),
-    (getValue, args) => "b:Y(dogs = 2, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue), prop("cats", getValue)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), args),
-    (getValue, args) => "b:Y(name = 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), exactString("hi"), args),
-    (getValue, args) => "b:Y(name < 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lt(string("hi")), args),
-    (getValue, args) => "b:Y(name <= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lte(string("hi")), args),
-    (getValue, args) => "b:Y(name > 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gt(string("hi")), args),
-    (getValue, args) => "b:Y(name >= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gte(string("hi")), args),
-    (getValue, args) => "b:Y(name STARTS WITH 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), startsWith("hi"), args),
-    (getValue, args) => "b:Y(name ENDS WITH 'hi')" -> NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue), string("hi"), args),
-    (getValue, args) => "b:Y(name CONTAINS 'hi')" -> NodeIndexContainsScan("b", label("Y"), prop("name", getValue), string("hi"), args),
-    (getValue, args) => "b:Y(name)" -> NodeIndexScan("b", label("Y"), prop("name", getValue), args)
+    (getValue, args) => "a:X(prop = 1)" -> NodeIndexSeek("a", label("X"), Seq(prop("prop", getValue)), exactInt(1), args, IndexOrderNone),
+    (getValue, args) => "b:X(prop = 1)" -> NodeIndexSeek("b", label("X"), Seq(prop("prop", getValue)), exactInt(1), args, IndexOrderNone),
+    (getValue, args) => "b:Y(prop = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("prop", getValue)), exactInt(1), args, IndexOrderNone),
+    (getValue, args) => "b:Y(dogs = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(1), args, IndexOrderNone),
+    (getValue, args) => "b:Y(dogs = 2)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(2), args, IndexOrderNone),
+    (getValue, args) => "b:Y(dogs = 2, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name = 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), exactString("hi"), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name < 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lt(string("hi")), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name <= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lte(string("hi")), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name > 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gt(string("hi")), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name >= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gte(string("hi")), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name STARTS WITH 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), startsWith("hi"), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name ENDS WITH 'hi')" -> NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue), string("hi"), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name CONTAINS 'hi')" -> NodeIndexContainsScan("b", label("Y"), prop("name", getValue), string("hi"), args, IndexOrderNone),
+    (getValue, args) => "b:Y(name)" -> NodeIndexScan("b", label("Y"), prop("name", getValue), args, IndexOrderNone)
   )
 
   for {
@@ -61,8 +61,8 @@ class IndexSeekTest extends CypherFunSuite {
 
   private def label(str:String) = LabelToken(str, LabelId(0))
 
-  private def prop(name: String, getValue: GetValueFromIndexBehavior) =
-    IndexedProperty(PropertyKeyToken(name, PropertyKeyId(0)), getValue)
+  private def prop(name: String, getValue: GetValueFromIndexBehavior, propId: Int = 0) =
+    IndexedProperty(PropertyKeyToken(name, PropertyKeyId(propId)), getValue)
 
   private def exactInt(int: Int) = SingleQueryExpression(SignedDecimalIntegerLiteral(int.toString)(pos))
 

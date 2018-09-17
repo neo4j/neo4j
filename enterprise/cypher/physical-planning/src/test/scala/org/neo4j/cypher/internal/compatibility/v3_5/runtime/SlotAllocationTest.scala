@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.v3_5.logical.{plans => logicalPlans}
 import org.opencypher.v9_0.ast.ASTAnnotationMap
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.LabelId
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 //noinspection NameBooleanParameters
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -56,7 +56,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("index seek without values") {
     // given
-    val plan = nodeIndexSeek("label2", 42, getValue = false)
+    val plan = IndexSeek("x:label2(prop = 42)", DoNotGetValue)
 
     // when
     val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
@@ -69,7 +69,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("index seek with values") {
     // given
-    val plan = nodeIndexSeek("label2", 42, getValue = true)
+    val plan = IndexSeek("x:label2(prop = 42)", GetValue)
 
     // when
     val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
@@ -317,7 +317,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x), IndexOrderNone)
+    val rhs = IndexSeek("z:label2(prop = 42)", argumentIds = Set(x))
     val apply = Apply(lhs, rhs)
 
     // when
@@ -569,8 +569,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("joins should remember cached node properties from both sides") {
     // given
-    val lhs = nodeIndexSeek("L", 42, getValue = true, prop = "lhsProp")
-    val rhs = nodeIndexSeek("B", 42, getValue = true, prop = "rhsProp")
+    val lhs = IndexSeek("x:L(lhsProp = 42)", GetValue)
+    val rhs = IndexSeek("x:B(rhsProp = 42)", GetValue)
 
     val joins =
       List(
@@ -597,9 +597,9 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("joins should correctly handle cached node property argument") {
     // given
-    val lhs = nodeIndexSeek("L", 42, getValue = true, prop = "lhsProp")
-    val rhs = nodeIndexSeek("B", 42, getValue = true, prop = "rhsProp")
-    val arg = nodeIndexSeek("A", 42, getValue = true, prop = "argProp")
+    val lhs = IndexSeek("x:L(lhsProp = 42)", GetValue)
+    val rhs = IndexSeek("x:B(rhsProp = 42)", GetValue)
+    val arg = IndexSeek("x:A(argProp = 42)", GetValue)
 
     val joins =
       List(
@@ -997,17 +997,6 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       // when
       SlotAllocation.allocateSlots(filter, SemanticTable())
     }
-  }
-
-  private def nodeIndexSeek(label: String, target: Int, getValue: Boolean, prop: String = "prop"): NodeIndexSeek = {
-    val labelToken = LabelToken(label, LabelId(0))
-    val seekExpression = SingleQueryExpression(literalInt(target))
-    logicalPlans.NodeIndexSeek(x,
-      labelToken,
-      Seq(IndexedProperty(PropertyKeyToken(prop, PropertyKeyId(0)), if (getValue) GetValue else DoNotGetValue)),
-      seekExpression,
-      Set.empty,
-      IndexOrderNone)
   }
 
   private def cachedNodeProperty(node: String, prop: String): CachedNodeProperty =

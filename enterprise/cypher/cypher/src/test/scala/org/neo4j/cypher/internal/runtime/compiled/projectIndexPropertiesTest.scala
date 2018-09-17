@@ -33,13 +33,7 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
 
   type IndexOperator = GetValueFromIndexBehavior => IndexLeafPlan
 
-  val indexSeek: IndexOperator = getValue => NodeIndexSeek(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
-    SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
-    Set.empty,
-    IndexOrderNone)
+  val indexSeek: IndexOperator = getValue => IndexSeek("n:Awesome(prop = 42)", getValue)
   val uniqueIndexSeek: IndexOperator = getValue => NodeUniqueIndexSeek(
     "n",
     LabelToken("Awesome", LabelId(0)),
@@ -47,26 +41,9 @@ class projectIndexPropertiesTest extends CypherFunSuite with LogicalPlanningTest
     SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
     Set.empty,
     IndexOrderNone)
-  val indexContainsScan: IndexOperator = getValue => NodeIndexContainsScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
-    StringLiteral("foo")(pos),
-    Set.empty,
-    IndexOrderNone)
-  val indexEndsWithScan: IndexOperator = getValue => NodeIndexEndsWithScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
-    StringLiteral("foo")(pos),
-    Set.empty,
-    IndexOrderNone)
-  val indexScan: IndexOperator = getValue => NodeIndexScan(
-    "n",
-    LabelToken("Awesome", LabelId(0)),
-    IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue),
-    Set.empty,
-    IndexOrderNone)
+  val indexContainsScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop CONTAINS 'foo')", getValue)
+  val indexEndsWithScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValue)
+  val indexScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop)", getValue)
 
   val expectedProjections = Map("n.prop" -> prop("n", "prop"))
 

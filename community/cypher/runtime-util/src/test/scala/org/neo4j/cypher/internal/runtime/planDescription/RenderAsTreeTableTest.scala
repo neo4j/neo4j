@@ -24,6 +24,7 @@ import java.util.Locale
 import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.opencypher.v9_0.util.attribution.{Id, SequentialIdGen}
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.opencypher.v9_0.util.{DummyPosition, LabelId, NonEmptyList, PropertyKeyId}
@@ -476,16 +477,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("format index range seek properly") {
-    val rangeQuery = RangeQueryExpression(InequalitySeekRangeWrapper(
-      RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")(pos))))
-    )(pos))
-    val seekPlan = NodeIndexSeek(
-      "a",
-      LabelToken("Person", LabelId(0)),
-      Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0)), DoNotGetValue)),
-      rangeQuery,
-      Set.empty,
-      IndexOrderNone)(idGen)
+    val seekPlan = IndexSeek("a:Person(age < 12)")
     val cardinalities = new Cardinalities
     cardinalities.set(seekPlan.id, 1.0)
     cardinalities.set(argument.id, 1.0)
