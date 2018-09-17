@@ -76,7 +76,7 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
 @ExtendWith( TestDirectoryExtension.class )
-class StartOldDbOn3_4AndCreateFusionIndexIT
+class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 {
     private static final String ZIP_FILE_3_2 = "3_2-db.zip";
     private static final String ZIP_FILE_3_3 = "3_3-db.zip";
