@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -110,19 +109,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
             IndexOrder[] indexOrders = indexProvider.getCapability().orderCapability( predicate.valueGroup().category() );
             for ( IndexOrder order : indexOrders )
             {
-                List<Long> actualIds;
-                if ( order == IndexOrder.NONE )
-                {
-                    actualIds = query( predicate );
-                }
-                else
-                {
-                    SimpleNodeValueClient client = new SimpleNodeValueClient();
-                    try ( AutoCloseable ignore = query( client, order, predicate ) )
-                    {
-                        actualIds = assertOrder( client, order );
-                    }
-                }
+                List<Long> actualIds = assertInOrder( order, predicate );
                 actualIds.sort( Long::compare );
                 // then
                 assertThat( actualIds, equalTo( expectedIds ) );

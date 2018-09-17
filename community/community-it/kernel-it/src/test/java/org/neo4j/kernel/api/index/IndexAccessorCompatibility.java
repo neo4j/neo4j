@@ -133,7 +133,25 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         return reader;
     }
 
-    List<Long> assertOrder( SimpleNodeValueClient client, IndexOrder order )
+    List<Long> assertInOrder( IndexOrder order, IndexQuery... predicates ) throws Exception
+    {
+        List<Long> actualIds;
+        if ( order == IndexOrder.NONE )
+        {
+            actualIds = query( predicates );
+        }
+        else
+        {
+            SimpleNodeValueClient client = new SimpleNodeValueClient();
+            try ( AutoCloseable ignore = query( client, order, predicates ) )
+            {
+                actualIds = assertClientReturnValuesInOrder( client, order );
+            }
+        }
+        return actualIds;
+    }
+
+    List<Long> assertClientReturnValuesInOrder( SimpleNodeValueClient client, IndexOrder order )
     {
         List<Long> seenIds = new ArrayList<>();
         Value[] prevValues = null;

@@ -1121,7 +1121,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         SimpleNodeValueClient client = new SimpleNodeValueClient();
         try ( AutoCloseable ignored = query( client, order, exact, range ) )
         {
-            List<Long> seenIds = assertOrder( client, order );
+            List<Long> seenIds = assertClientReturnValuesInOrder( client, order );
             assertThat( seenIds.size(), equalTo( 6 ) );
         }
     }
