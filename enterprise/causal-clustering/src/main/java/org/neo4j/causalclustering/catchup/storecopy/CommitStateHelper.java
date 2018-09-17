@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -73,7 +74,7 @@ public class CommitStateHelper
 
     private Optional<Long> getLatestTransactionLogIndex( long startTxId, File storeDir ) throws IOException
     {
-        if ( !hasTxLogs( storeDir ) )
+        if ( !hasTxLogs() )
         {
             return Optional.empty();
         }
@@ -98,9 +99,10 @@ public class CommitStateHelper
         }
     }
 
-    public boolean hasTxLogs( File storeDir )
+    public boolean hasTxLogs()
     {
-        File[] files = fs.listFiles( storeDir, TransactionLogFiles.DEFAULT_FILENAME_FILTER );
+        File txLogsDir = config.get( GraphDatabaseSettings.logical_logs_location );
+        File[] files = fs.listFiles( txLogsDir, TransactionLogFiles.DEFAULT_FILENAME_FILTER );
         if ( files == null )
         {
             throw new RuntimeException( "Files was null. Incorrect directory or I/O error?" );
