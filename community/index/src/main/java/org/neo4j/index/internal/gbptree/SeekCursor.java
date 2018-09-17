@@ -558,7 +558,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                         continue;
                     }
 
-                    if ( (seekForward && pos >= keyCount) || (!seekForward && pos <= 0 && !insidePrevKey()) )
+                    if ( (seekForward && pos >= keyCount) || (!seekForward && pos <= 0 && !insidePrevKey( cachedIndex )) )
                     {
                         if ( goToNextSibling() )
                         {
@@ -647,7 +647,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( insideEndRange( exactMatch, cachedLength ) )
                 {
                     // This seems to be a result that should be part of our result set
-                    cachedLength++;
+                    if ( insidePrevKey( cachedLength ) )
+                    {
+                        cachedLength++;
+                    }
                 }
                 else
                 {
@@ -734,7 +737,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @return whether or not the read key ({@link #mutableKeys}) is "after" the start of the key range
      * ({@link #fromInclusive}) of this seek.
      */
-    private boolean insideStartRange()
+    private boolean insideStartRange( int cachedIndex )
     {
         return seekForward ? layout.compare( mutableKeys[cachedIndex], fromInclusive ) >= 0
                            : layout.compare( mutableKeys[cachedIndex], fromInclusive ) <= 0;
@@ -744,11 +747,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @return whether or not the read key ({@link #mutableKeys}) is "after" the last returned key of this seek
      * ({@link #prevKey}), or if no result has been returned the start of the key range ({@link #fromInclusive}).
      */
-    private boolean insidePrevKey()
+    private boolean insidePrevKey( int cachedIndex )
     {
         if ( first )
         {
-            return insideStartRange();
+            return insideStartRange( cachedIndex );
         }
         return seekForward ? layout.compare( mutableKeys[cachedIndex], prevKey ) > 0
                            : layout.compare( mutableKeys[cachedIndex], prevKey ) < 0;
@@ -1030,13 +1033,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean isResultKey()
     {
-        if ( !insideStartRange() )
+        if ( !insideStartRange( cachedIndex ) )
         {
             // Key is outside start range, possibly because page reuse
             concurrentWriteHappened = true;
             return false;
         }
-        else if ( !first && !insidePrevKey() )
+        else if ( !first && !insidePrevKey( cachedIndex ) )
         {
             // We've come across a bad read in the middle of a split
             // This is outlined in InternalTreeLogic, skip this value (it's fine)

@@ -205,6 +205,34 @@ public abstract class GBPTreeITBase<KEY,VALUE>
         }
     }
 
+    // Timeout because test verify no infinite loop
+    @Test( timeout = 10_000L )
+    public void shouldHandleDescendingWithEmptyRange() throws IOException
+    {
+        long[] seeds = new long[]{0, 1, 4};
+        try ( GBPTree<KEY,VALUE> index = createIndex() )
+        {
+            // Write
+            try ( Writer<KEY, VALUE> writer = index.writer() )
+            {
+                for ( long seed : seeds )
+                {
+                    KEY key = layout.key( seed );
+                    VALUE value = layout.value( 0 );
+                    writer.put( key, value );
+                }
+            }
+
+            KEY from = layout.key( 3 );
+            KEY to = layout.key( 1 );
+            try ( RawCursor<Hit<KEY,VALUE>, IOException> seek = index.seek( from, to ) )
+            {
+                assertFalse( seek.next() );
+            }
+            index.checkpoint( IOLimiter.UNLIMITED );
+        }
+    }
+
     private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability )
             throws IOException
     {

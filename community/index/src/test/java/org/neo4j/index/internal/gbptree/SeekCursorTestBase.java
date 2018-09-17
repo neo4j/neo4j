@@ -20,11 +20,13 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -327,6 +329,84 @@ abstract class SeekCursorTestBase<KEY, VALUE>
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
         }
         assertFalse( nextCalled.get(), "Cursor continued to next leaf even though end of range is within first leaf" );
+    }
+
+    @Test
+    void shouldHandleEmptyRange()
+    {
+        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
+            // GIVEN
+            insert( 0 );
+            insert( 2 );
+            long fromInclusive = 1;
+            long toExclusive = 2;
+
+            // WHEN
+            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+            {
+                // THEN
+                assertFalse( cursor.next() );
+            }
+        } );
+    }
+
+    @Test
+    void shouldHandleEmptyRangeBackwards()
+    {
+        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
+            // GIVEN
+            insert( 0 );
+            insert( 2 );
+            long fromInclusive = 1;
+            long toExclusive = 0;
+
+            // WHEN
+            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+            {
+                // THEN
+                assertFalse( cursor.next() );
+            }
+        } );
+    }
+
+    @Test
+    void shouldHandleBackwardsWithNoExactHitOnFromInclusive()
+    {
+        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
+            // GIVEN
+            insert( 0 );
+            insert( 2 );
+            long fromInclusive = 3;
+            long toExclusive = 0;
+
+            // WHEN
+            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+            {
+                // THEN
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
+        } );
+    }
+
+    @Test
+    void shouldHandleBackwardsWithExactHitOnFromInclusive()
+    {
+        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
+            // GIVEN
+            insert( 0 );
+            insert( 2 );
+            long fromInclusive = 2;
+            long toExclusive = 0;
+
+            // WHEN
+            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+            {
+                // THEN
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
+        } );
     }
 
     @Test
