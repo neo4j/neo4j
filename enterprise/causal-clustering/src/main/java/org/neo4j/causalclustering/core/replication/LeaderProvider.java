@@ -30,12 +30,9 @@ class LeaderProvider
 
     synchronized MemberId awaitLeader() throws InterruptedException
     {
-        if ( currentLeader == null )
+        while ( currentLeader == null )
         {
-            while ( currentLeader == null )
-            {
-                wait( );
-            }
+            wait();
         }
         return currentLeader;
     }

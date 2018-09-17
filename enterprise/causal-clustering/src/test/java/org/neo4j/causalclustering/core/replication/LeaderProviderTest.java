@@ -26,23 +26,21 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.util.concurrent.Futures;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LeaderProviderTest
 {
@@ -73,28 +71,31 @@ public class LeaderProviderTest
         assertNull( leaderProvider.currentLeader() );
 
         // when
-        List<Future<MemberId>> futures = new ArrayList<>();
+        CompletableFuture<ArrayList<MemberId>> futures = CompletableFuture.completedFuture( new ArrayList<>() );
         for ( int i = 0; i < threads; i++ )
         {
-            Future<MemberId> interrupted = executorService.submit( getCurrentLeader() );
-            futures.add( interrupted );
+            CompletableFuture<MemberId> future = CompletableFuture.supplyAsync( getCurrentLeader(), executorService );
+            futures = futures.thenCombine( future, ( completableFutures, memberId ) ->
+            {
+                completableFutures.add( memberId );
+                return completableFutures;
+            } );
         }
 
         // then
-        Future<List<MemberId>> combine = Futures.combine( futures );
         Thread.sleep( 100 );
-        assertFalse( combine.isDone() );
+        assertFalse( futures.isDone() );
 
         // when
         leaderProvider.setLeader( MEMBER_ID );
 
-        List<MemberId> memberIds = combine.get( 5, TimeUnit.SECONDS );
+        ArrayList<MemberId> memberIds = futures.get( 5, TimeUnit.SECONDS );
 
         // then
         assertTrue( memberIds.stream().allMatch( memberId -> memberId.equals( MEMBER_ID ) ) );
     }
 
-    private Callable<MemberId> getCurrentLeader()
+    private Supplier<MemberId> getCurrentLeader()
     {
         return () ->
         {
