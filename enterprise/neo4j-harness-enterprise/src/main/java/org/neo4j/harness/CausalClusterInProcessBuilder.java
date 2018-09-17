@@ -347,7 +347,7 @@ public class CausalClusterInProcessBuilder
 
                 config.forEach( builder::withConfig );
 
-                builder.withDiscoveryServiceFactory( discoveryServiceFactory );
+                builder.withConfig( CausalClusteringSettings.discovery_implementation, discoveryServiceFactory.toString() );
 
                 int finalCoreId = coreId;
                 Thread coreThread = new Thread( () ->
@@ -393,7 +393,7 @@ public class CausalClusterInProcessBuilder
 
                 builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
-                builder.withDiscoveryServiceFactory( discoveryServiceFactory );
+                builder.withConfig( CausalClusteringSettings.discovery_implementation, discoveryServiceFactory.toString() );
 
                 config.forEach( builder::withConfig );
 

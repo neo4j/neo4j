@@ -24,8 +24,6 @@ package org.neo4j.harness.internal;
 
 import java.io.File;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactorySelector;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -36,8 +34,6 @@ import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 
 public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBuilder
 {
-    private DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
-
     public EnterpriseInProcessServerBuilder()
     {
         this( new File( System.getProperty( "java.io.tmpdir" ) ) );
@@ -56,7 +52,6 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
     @Override
     protected GraphFactory createGraphFactory( Config config )
     {
-        config.augment( CausalClusteringSettings.discovery_implementation, discoveryServiceFactory.name() );
         return new EnterpriseGraphFactory();
     }
 
@@ -65,19 +60,4 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
     {
         return new OpenEnterpriseNeoServer( config, graphFactory, dependencies, userLogProvider );
     }
-
-    /**
-     * Configure the server to use the specified service to build cluster topologies and share associated metadata.
-     *
-     * Only relevant for causal clustering.
-     *
-     * @param discoveryService
-     * @return this builder instance
-     */
-    public EnterpriseInProcessServerBuilder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryImplementation discoveryService )
-    {
-        this.discoveryServiceFactory = discoveryService;
-        return this;
-    }
-
 }
