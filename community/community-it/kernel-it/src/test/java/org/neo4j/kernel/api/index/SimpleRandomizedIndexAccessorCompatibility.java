@@ -30,8 +30,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -74,7 +76,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
     }
 
     @Test
-    public void testRangeMatchOnRandomValues() throws Exception
+    public void testRangeMatchInOrderOnRandomValues() throws Exception
     {
         Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
         // given
@@ -87,6 +89,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
 
         for ( int i = 0; i < 100; i++ )
         {
+            // Construct a random range query of random value type
             RandomValues.Type type = random.among( types );
             Value from = random.randomValues().nextValueOfType( type );
             Value to = random.randomValues().nextValueOfType( type );
@@ -99,18 +102,41 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
             boolean fromInclusive = random.nextBoolean();
             boolean toInclusive = random.nextBoolean();
 
-            // when
-            List<Long> expectedIds = sortedValues.subSet( add( 0, descriptor.schema(), from ), fromInclusive, add( 0, descriptor.schema(), to ), toInclusive )
-                    .stream()
-                    .map( IndexEntryUpdate::getEntityId )
-                    .collect( Collectors.toList() );
-            List<Long> actualIds = query( IndexQuery.range( 0, from, fromInclusive, to, toInclusive ) );
-            expectedIds.sort( Long::compare );
-            actualIds.sort( Long::compare );
+            // Expected result based on query
+            IndexQuery.RangePredicate<?> predicate = IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
+            List<Long> expectedIds = expectedIds( sortedValues, from, to, fromInclusive, toInclusive );
 
-            // then
-            assertThat( actualIds, equalTo( expectedIds ) );
+            // Depending on order capabilities we verify ids or order and ids.
+            IndexOrder[] indexOrders = indexProvider.getCapability().orderCapability( predicate.valueGroup().category() );
+            for ( IndexOrder order : indexOrders )
+            {
+                List<Long> actualIds;
+                if ( order == IndexOrder.NONE )
+                {
+                    actualIds = query( predicate );
+                }
+                else
+                {
+                    SimpleNodeValueClient client = new SimpleNodeValueClient();
+                    try ( AutoCloseable ignore = query( client, order, predicate ) )
+                    {
+                        actualIds = assertOrder( client, order );
+                    }
+                }
+                actualIds.sort( Long::compare );
+                // then
+                assertThat( actualIds, equalTo( expectedIds ) );
+            }
         }
+    }
+
+    private List<Long> expectedIds( TreeSet<IndexEntryUpdate> sortedValues, Value from, Value to, boolean fromInclusive, boolean toInclusive )
+    {
+        return sortedValues.subSet( add( 0, descriptor.schema(), from ), fromInclusive, add( 0, descriptor.schema(), to ), toInclusive )
+                .stream()
+                .map( IndexEntryUpdate::getEntityId )
+                .sorted( Long::compare )
+                .collect( Collectors.toList() );
     }
 
     private List<Value> generateValuesFromType( RandomValues.Type[] types )

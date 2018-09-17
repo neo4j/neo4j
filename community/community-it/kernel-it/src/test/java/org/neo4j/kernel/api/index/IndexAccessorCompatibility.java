@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,7 +47,6 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
@@ -133,14 +133,16 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         return reader;
     }
 
-    void assertOrder( SimpleNodeValueClient client, IndexOrder order, int expectedCount )
+    List<Long> assertOrder( SimpleNodeValueClient client, IndexOrder order )
     {
+        List<Long> seenIds = new ArrayList<>();
         Value[] prevValues = null;
         Value[] values;
         int count = 0;
         while ( client.next() )
         {
             count++;
+            seenIds.add( client.reference );
             values = client.values;
             if ( order == IndexOrder.ASCENDING )
             {
@@ -156,7 +158,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             }
             prevValues = values;
         }
-        assertThat( "correct number of hits", count, equalTo( expectedCount ) );
+        return seenIds;
     }
 
     IndexOrder[] orderCapability( IndexQuery... predicates )
