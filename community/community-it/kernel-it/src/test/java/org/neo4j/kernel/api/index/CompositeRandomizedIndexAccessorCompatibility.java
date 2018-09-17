@@ -24,18 +24,22 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -150,19 +154,53 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                 boolean toInclusive = random.nextBoolean();
 
                 // when
-                List<Long> expectedIds = sortedValues.subSet(
-                        add( 0, descriptor.schema(), booleanValue, from ), fromInclusive,
-                        add( 0, descriptor.schema(), booleanValue, to ), toInclusive )
-                        .stream()
-                        .map( IndexEntryUpdate::getEntityId )
-                        .collect( Collectors.toList() );
-                List<Long> actualIds = query( IndexQuery.exact( 100, booleanValue ), IndexQuery.range( 101, from, fromInclusive, to, toInclusive ) );
-                expectedIds.sort( Long::compare );
-                actualIds.sort( Long::compare );
+                List<Long> expectedIds = expectedIds( sortedValues, booleanValue, from, to, fromInclusive, toInclusive );
 
-                // then
-                assertThat( actualIds, equalTo( expectedIds ) );
+                // Depending on order capabilities we verify ids or order and ids.
+                IndexQuery[] predicates = new IndexQuery[]{
+                        IndexQuery.exact( 100, booleanValue ),
+                        IndexQuery.range( 101, from, fromInclusive, to, toInclusive )};
+                ValueCategory[] valueCategories = getValueCategories( predicates );
+                IndexOrder[] indexOrders = indexProvider.getCapability().orderCapability( valueCategories );
+                for ( IndexOrder order : indexOrders )
+                {
+                    List<Long> actualIds;
+                    if ( order == IndexOrder.NONE )
+                    {
+                        actualIds = query( predicates );
+                    }
+                    else
+                    {
+                        SimpleNodeValueClient client = new SimpleNodeValueClient();
+                        try ( AutoCloseable ignore = query( client, order, predicates ) )
+                        {
+                            actualIds = assertOrder( client, order );
+                        }
+                    }
+                    actualIds.sort( Long::compare );
+                    // then
+                    assertThat( actualIds, equalTo( expectedIds ) );
+                }
             }
+        }
+
+        public ValueCategory[] getValueCategories( IndexQuery[] predicates )
+        {
+            return Arrays.stream( predicates )
+                                .map( iq -> iq.valueGroup().category() )
+                                .toArray( ValueCategory[]::new );
+        }
+
+        public List<Long> expectedIds( TreeSet<IndexEntryUpdate> sortedValues, Value booleanValue, Value from, Value to, boolean fromInclusive,
+                boolean toInclusive )
+        {
+            return sortedValues.subSet(
+                                add( 0, descriptor.schema(), booleanValue, from ), fromInclusive,
+                                add( 0, descriptor.schema(), booleanValue, to ), toInclusive )
+                                .stream()
+                                .map( IndexEntryUpdate::getEntityId )
+                                .sorted( Long::compare )
+                                .collect( Collectors.toList() );
         }
 
         private List<ValueTuple> generateValuesFromType( RandomValues.Type[] types )
