@@ -618,7 +618,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void testExactMatchOnRandomCompositeValues() throws Exception
     {
         // given
-        List<RandomValues.Types> types = testSuite.supportedValueTypes();
+        List<RandomValues.Type> types = testSuite.supportedValueTypes();
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
         Set<ValueTuple> duplicateChecker = new HashSet<>();
         for ( long id = 0; id < 10_000; id++ )

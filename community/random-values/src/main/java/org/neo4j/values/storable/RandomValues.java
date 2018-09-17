@@ -74,7 +74,7 @@ import static org.neo4j.values.storable.Values.shortValue;
  */
 public class RandomValues
 {
-    public enum Types
+    public enum Type
     {
         BOOLEAN( ValueGroup.NUMBER, BooleanValue.class ),
         BYTE( ValueGroup.NUMBER, ByteValue.class ),
@@ -125,23 +125,23 @@ public class RandomValues
         public final Class<? extends Value> valueClass;
         public final boolean arrayType;
 
-        Types( ValueGroup valueGroup, Class<? extends Value> valueClass )
+        Type( ValueGroup valueGroup, Class<? extends Value> valueClass )
         {
             this( valueGroup, valueClass, false );
         }
 
-        Types( ValueGroup valueGroup, Class<? extends Value> valueClass, boolean arrayType )
+        Type( ValueGroup valueGroup, Class<? extends Value> valueClass, boolean arrayType )
         {
             this.valueGroup = valueGroup;
             this.valueClass = valueClass;
             this.arrayType = arrayType;
         }
 
-        static Types[] arrayTypes()
+        static Type[] arrayTypes()
         {
-            return Arrays.stream( Types.values() )
+            return Arrays.stream( Type.values() )
                     .filter( t -> t.arrayType )
-                    .toArray( Types[]::new );
+                    .toArray( Type[]::new );
         }
     }
 
@@ -194,8 +194,8 @@ public class RandomValues
     private static final int MAX_ASCII_CODE_POINT = 0x7F;
     public static final int MAX_BMP_CODE_POINT = 0xFFFF;
     public static final Configuration DEFAULT_CONFIGURATION = new Default();
-    private static final Types[] ALL_TYPES = Types.values();
-    private static final Types[] ARRAY_TYPES = Types.arrayTypes();
+    private static final Type[] ALL_TYPES = Type.values();
+    private static final Type[] ARRAY_TYPES = Type.arrayTypes();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Generator generator;
@@ -287,7 +287,7 @@ public class RandomValues
      *
      * @see RandomValues
      */
-    public Value nextValueOfTypes( Types... types )
+    public Value nextValueOfTypes( Type... types )
     {
         return nextValueOfType( among( types ) );
     }
@@ -295,11 +295,11 @@ public class RandomValues
     /**
      * Create an array containing all value types, excluding provided types.
      */
-    public Types[] excluding( Types... types )
+    public Type[] excluding( Type... types )
     {
-        return Arrays.stream( Types.values() )
+        return Arrays.stream( Type.values() )
                 .filter( t -> !ArrayUtils.contains( types, t ) )
-                .toArray( Types[]::new );
+                .toArray( Type[]::new );
     }
 
     /**
@@ -307,7 +307,7 @@ public class RandomValues
      *
      * @see RandomValues
      */
-    public Value nextValueOfType( Types type )
+    public Value nextValueOfType( Type type )
     {
         switch ( type )
         {

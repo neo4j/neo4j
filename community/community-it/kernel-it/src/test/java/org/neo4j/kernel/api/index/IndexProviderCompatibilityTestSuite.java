@@ -98,15 +98,15 @@ public abstract class IndexProviderCompatibilityTestSuite
         return true;
     }
 
-    public List<RandomValues.Types> supportedValueTypes()
+    public List<RandomValues.Type> supportedValueTypes()
     {
-        List<RandomValues.Types> types = new ArrayList<>( Arrays.asList( RandomValues.Types.values() ) );
+        List<RandomValues.Type> types = new ArrayList<>( Arrays.asList( RandomValues.Type.values() ) );
         if ( !supportsSpatial() )
         {
-            types.remove( RandomValues.Types.CARTESIAN_POINT );
-            types.remove( RandomValues.Types.CARTESIAN_POINT_3D );
-            types.remove( RandomValues.Types.GEOGRAPHIC_POINT );
-            types.remove( RandomValues.Types.GEOGRAPHIC_POINT_3D );
+            types.remove( RandomValues.Type.CARTESIAN_POINT );
+            types.remove( RandomValues.Type.CARTESIAN_POINT_3D );
+            types.remove( RandomValues.Type.GEOGRAPHIC_POINT );
+            types.remove( RandomValues.Type.GEOGRAPHIC_POINT_3D );
         }
         return types;
     }

@@ -57,7 +57,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
     public void testExactMatchOnRandomCompositeValues() throws Exception
     {
         // given
-        List<RandomValues.Types> types = testSuite.supportedValueTypes();
+        List<RandomValues.Type> types = testSuite.supportedValueTypes();
         Collections.shuffle( types, random.random() );
         types = types.subList( 0, random.nextInt( 2, types.size() ) );
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();

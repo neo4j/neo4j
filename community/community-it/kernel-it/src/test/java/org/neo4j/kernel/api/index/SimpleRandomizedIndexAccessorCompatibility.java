@@ -56,7 +56,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
     public void testExactMatchOnRandomValues() throws Exception
     {
         // given
-        List<RandomValues.Types> types = testSuite.supportedValueTypes();
+        List<RandomValues.Type> types = testSuite.supportedValueTypes();
         Collections.shuffle( types, random.random() );
         types = types.subList( 0, random.nextInt( 2, types.size() ) );
 

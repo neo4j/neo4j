@@ -281,7 +281,7 @@ public class RandomRule implements TestRule
         return randoms.nextValue();
     }
 
-    public Value nextValue( RandomValues.Types type )
+    public Value nextValue( RandomValues.Type type )
     {
         return randoms.nextValueOfType( type );
     }

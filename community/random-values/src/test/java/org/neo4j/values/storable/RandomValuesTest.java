@@ -281,10 +281,10 @@ public class RandomValuesTest
     @Test
     public void nextValueOfTypes()
     {
-        RandomValues.Types[] allTypes = RandomValues.Types.values();
-        RandomValues.Types[] including = randomValues.selection( allTypes, 1, allTypes.length, false );
+        RandomValues.Type[] allTypes = RandomValues.Type.values();
+        RandomValues.Type[] including = randomValues.selection( allTypes, 1, allTypes.length, false );
         HashSet<Class<? extends AnyValue>> seen = new HashSet<>();
-        for ( RandomValues.Types type : including )
+        for ( RandomValues.Type type : including )
         {
             seen.add( type.valueClass );
         }
@@ -300,10 +300,10 @@ public class RandomValuesTest
     @Test
     public void excluding()
     {
-        RandomValues.Types[] allTypes = RandomValues.Types.values();
-        RandomValues.Types[] excluding = randomValues.selection( allTypes, 1, allTypes.length, false );
-        RandomValues.Types[] including = randomValues.excluding( excluding );
-        for ( RandomValues.Types excludedType : excluding )
+        RandomValues.Type[] allTypes = RandomValues.Type.values();
+        RandomValues.Type[] excluding = randomValues.selection( allTypes, 1, allTypes.length, false );
+        RandomValues.Type[] including = randomValues.excluding( excluding );
+        for ( RandomValues.Type excludedType : excluding )
         {
             if ( ArrayUtils.contains( including, excludedType ) )
             {
@@ -324,9 +324,9 @@ public class RandomValuesTest
         }
     }
 
-    private void assertValueAmongTypes( RandomValues.Types[] types, Value value )
+    private void assertValueAmongTypes( RandomValues.Type[] types, Value value )
     {
-        for ( RandomValues.Types type : types )
+        for ( RandomValues.Type type : types )
         {
             if ( type.valueClass.isAssignableFrom( value.getClass() ) )
             {
