@@ -216,16 +216,16 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     private void verifyData( PageCursor c )
     {
         GenericLayout layout = getLayout();
-        CompositeGenericKey into = layout.newKey();
+        CompositeGenericKey readCompositeKey = layout.newKey();
         CompositeGenericKey comparison = layout.newKey();
         for ( Value value : values )
         {
             int keySize = c.getInt();
-            layout.readKey( c, into, keySize );
-            for ( Value readValue : into.asValues() )
+            layout.readKey( c, readCompositeKey, keySize );
+            for ( Value readValue : readCompositeKey.asValues() )
             {
                 initializeFromValue( comparison, value );
-                assertEquals( 0, layout.compare( into, comparison ) );
+                assertEquals( 0, layout.compare( readCompositeKey, comparison ), "expected " + comparison + ", but was " + readCompositeKey );
                 if ( readValue != Values.NO_VALUE )
                 {
                     assertEquals( value, readValue, "expected read value to be " + value + ", but was " + readValue );
