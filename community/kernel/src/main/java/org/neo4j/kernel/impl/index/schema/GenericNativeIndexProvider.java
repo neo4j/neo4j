@@ -103,7 +103,7 @@ import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSetting
  */
 public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue,GenericLayout>
 {
-    public static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+    static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
     public static final String KEY = SCHEMA_INDEX.providerName();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, SCHEMA_INDEX.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
@@ -171,7 +171,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
         return CAPABILITY;
     }
 
-    // TODO implement valueCapability
     private static class GenericIndexCapability implements IndexCapability
     {
         @Override
@@ -187,7 +186,18 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
         @Override
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            return null;
+            for ( ValueCategory valueCategory : valueCategories )
+            {
+                if ( valueCategory == ValueCategory.GEOMETRY || valueCategory == ValueCategory.GEOMETRY_ARRAY )
+                {
+                    return IndexValueCapability.NO;
+                }
+                if ( valueCategory == ValueCategory.UNKNOWN )
+                {
+                    return IndexValueCapability.PARTIAL;
+                }
+            }
+            return IndexValueCapability.YES;
         }
 
         private boolean supportOrdering( ValueCategory[] valueCategories )
