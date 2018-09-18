@@ -169,17 +169,13 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     {
         private final IndexLayout<KEY,NativeIndexValue> layout;
         private final IndexDescriptor descriptor;
-        private final IndexSamplingConfig samplingConfig;
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-                IndexSamplingConfig samplingConfig ) throws IOException
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
-                    NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, NO_HEADER_WRITER );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
-            this.samplingConfig = samplingConfig;
             instantiateTree( recoveryCleanupWorkCollector, headerWriter );
         }
 
@@ -187,7 +183,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         public TemporalIndexPartReader<KEY> newReader()
         {
             assertOpen();
-            return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
+            return new TemporalIndexPartReader<>( tree, layout, descriptor );
         }
     }
 
@@ -256,12 +252,12 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             {
                 createEmptyIndex( fileLayout );
             }
-            return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
+            return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor );
         }
 
         private <KEY extends NativeIndexSingleValueKey<KEY>> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
-            IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
+            IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor );
             populator.create();
             populator.close( true );
         }

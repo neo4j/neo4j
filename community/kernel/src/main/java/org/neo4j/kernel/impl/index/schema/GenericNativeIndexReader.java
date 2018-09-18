@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -49,10 +48,10 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
     private final SpaceFillingCurveConfiguration configuration;
 
     GenericNativeIndexReader( GBPTree<CompositeGenericKey,NativeIndexValue> tree, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
-            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings,
+            IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings,
             SpaceFillingCurveConfiguration configuration )
     {
-        super( tree, layout, samplingConfig, descriptor );
+        super( tree, layout, descriptor );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
     }

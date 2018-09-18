@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -38,11 +37,11 @@ abstract class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialI
     private SpatialIndexFiles.SpatialFile spatialFile;
 
     @Override
-    NativeIndexAccessor<SpatialIndexKey,NativeIndexValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    NativeIndexAccessor<SpatialIndexKey,NativeIndexValue> makeAccessor() throws IOException
     {
         spatialFile = new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, super.getIndexFile() );
         return new SpatialIndexAccessor.PartAccessor( pageCache, fs, spatialFile.getLayoutForNewIndex(), immediate(), monitor, indexDescriptor,
-                samplingConfig, new StandardConfiguration() );
+                new StandardConfiguration() );
     }
 
     @Override

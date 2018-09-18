@@ -84,14 +84,14 @@ public class SpatialIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
         SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
-        return new SpatialIndexPopulator( descriptor, samplingConfig, files, pageCache, fs, monitor, configuration );
+        return new SpatialIndexPopulator( descriptor, files, pageCache, fs, monitor, configuration );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
-        return new SpatialIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
+        return new SpatialIndexAccessor( descriptor, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
     }
 
     @Override

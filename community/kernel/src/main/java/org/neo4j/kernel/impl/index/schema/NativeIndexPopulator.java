@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -72,7 +71,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final KEY treeKey;
     private final VALUE treeValue;
     private final UniqueIndexSampler uniqueSampler;
-    final IndexSamplingConfig samplingConfig;
     private final Consumer<PageCursor> additionalHeaderWriter;
 
     private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> additionsWorkSync;
@@ -83,12 +81,11 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, Consumer<PageCursor> additionalHeaderWriter )
+            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
-        this.samplingConfig = samplingConfig;
         this.additionalHeaderWriter = additionalHeaderWriter;
         switch ( descriptor.type() )
         {

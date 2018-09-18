@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -153,18 +152,16 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig )
+    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
     {
-        return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig,
+        return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor ) throws IOException
     {
-        return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
+        return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), configuration );
     }
 

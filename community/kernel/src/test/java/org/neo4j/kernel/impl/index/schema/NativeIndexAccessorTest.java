@@ -48,9 +48,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -93,11 +91,10 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValue
     @Before
     public void setupAccessor() throws IOException
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        accessor = makeAccessorWithSamplingConfig( samplingConfig );
+        accessor = makeAccessor();
     }
 
-    abstract NativeIndexAccessor<KEY,VALUE> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException;
+    abstract NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException;
 
     @After
     public void closeAccessor()

@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
@@ -47,16 +46,14 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
         implements IndexAccessor
 {
     private final NativeIndexUpdater<KEY,VALUE> singleUpdater;
-    final IndexSamplingConfig samplingConfig;
     final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, Consumer<PageCursor> additionalHeaderWriter ) throws IOException
+            Consumer<PageCursor> additionalHeaderWriter ) throws IOException
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
-        this.samplingConfig = samplingConfig;
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter );
     }
 

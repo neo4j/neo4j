@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -50,10 +49,10 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 
 class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
-    SpatialIndexPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpatialIndexFiles spatialIndexFiles, PageCache pageCache,
-                           FileSystemAbstraction fs, IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
+    SpatialIndexPopulator( StoreIndexDescriptor descriptor, SpatialIndexFiles spatialIndexFiles, PageCache pageCache,
+            FileSystemAbstraction fs, IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
     {
-        super( new PartFactory( pageCache, fs, spatialIndexFiles, descriptor, monitor, samplingConfig, configuration ) );
+        super( new PartFactory( pageCache, fs, spatialIndexFiles, descriptor, monitor, configuration ) );
     }
 
     @Override
@@ -148,9 +147,9 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         private final SpaceFillingCurveSettings settings;
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
-                       StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
+                StoreIndexDescriptor descriptor, SpaceFillingCurveConfiguration configuration )
         {
-            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, samplingConfig, NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
         }
@@ -158,7 +157,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         @Override
         IndexReader newReader()
         {
-            return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, configuration );
+            return new SpatialIndexPartReader<>( tree, layout, descriptor, configuration );
         }
 
         @Override
@@ -181,18 +180,16 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         private final SpatialIndexFiles spatialIndexFiles;
         private final StoreIndexDescriptor descriptor;
         private final IndexProvider.Monitor monitor;
-        private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration configuration;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, StoreIndexDescriptor descriptor,
-                IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
+                IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
         {
             this.pageCache = pageCache;
             this.fs = fs;
             this.spatialIndexFiles = spatialIndexFiles;
             this.descriptor = descriptor;
             this.monitor = monitor;
-            this.samplingConfig = samplingConfig;
             this.configuration = configuration;
         }
 
@@ -204,7 +201,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
 
         private PartPopulator create( SpatialIndexFiles.SpatialFileLayout fileLayout )
         {
-            PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig, configuration );
+            PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, configuration );
             populator.create();
             return populator;
         }

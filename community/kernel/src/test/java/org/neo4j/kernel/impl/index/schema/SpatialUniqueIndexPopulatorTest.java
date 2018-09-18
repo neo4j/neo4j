@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -36,10 +35,10 @@ public class SpatialUniqueIndexPopulatorTest extends NativeUniqueIndexPopulatorT
     private SpatialIndexFiles.SpatialFile spatialFile;
 
     @Override
-    NativeIndexPopulator<SpatialIndexKey,NativeIndexValue> createPopulator( IndexSamplingConfig samplingConfig )
+    NativeIndexPopulator<SpatialIndexKey,NativeIndexValue> createPopulator()
     {
         spatialFile = new SpatialIndexFiles.SpatialFile( crs, configuredSettings, super.getIndexFile() );
-        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, spatialFile.getLayoutForNewIndex(), monitor, indexDescriptor, samplingConfig,
+        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, spatialFile.getLayoutForNewIndex(), monitor, indexDescriptor,
                 new StandardConfiguration() );
     }
 

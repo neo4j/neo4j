@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -30,10 +29,10 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 public class DurationNonUniqueIndexAccessorTest extends NativeIndexAccessorTest<DurationIndexKey,NativeIndexValue>
 {
     @Override
-    NativeIndexAccessor<DurationIndexKey,NativeIndexValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    NativeIndexAccessor<DurationIndexKey,NativeIndexValue> makeAccessor() throws IOException
     {
         TemporalIndexFiles.FileLayout<DurationIndexKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor, samplingConfig );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor );
     }
 
     @Override

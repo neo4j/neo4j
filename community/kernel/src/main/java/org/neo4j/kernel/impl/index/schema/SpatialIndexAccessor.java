@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -54,20 +53,18 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     private final StoreIndexDescriptor descriptor;
 
     SpatialIndexAccessor( StoreIndexDescriptor descriptor,
-                           IndexSamplingConfig samplingConfig,
-                           PageCache pageCache,
-                           FileSystemAbstraction fs,
-                           RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                           IndexProvider.Monitor monitor,
-                           SpatialIndexFiles spatialIndexFiles,
-                           SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
+                          PageCache pageCache,
+                          FileSystemAbstraction fs,
+                          RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                          IndexProvider.Monitor monitor,
+                          SpatialIndexFiles spatialIndexFiles,
+                          SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
     {
         super( new PartFactory( pageCache,
                                 fs,
                                 recoveryCleanupWorkCollector,
                                 monitor,
                                 descriptor,
-                                samplingConfig,
                                 spatialIndexFiles,
                                 searchConfiguration ) );
         this.descriptor = descriptor;
@@ -182,18 +179,15 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     {
         private final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;
         private final StoreIndexDescriptor descriptor;
-        private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-                IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
+                SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
         {
-            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
-                    NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, NO_HEADER_WRITER );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
-            this.samplingConfig = samplingConfig;
             this.searchConfiguration = searchConfiguration;
             instantiateTree( recoveryCleanupWorkCollector, headerWriter );
         }
@@ -202,7 +196,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         public SpatialIndexPartReader<NativeIndexValue> newReader()
         {
             assertOpen();
-            return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, searchConfiguration );
+            return new SpatialIndexPartReader<>( tree, layout, descriptor, searchConfiguration );
         }
     }
 
@@ -213,7 +207,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IndexProvider.Monitor monitor;
         private final StoreIndexDescriptor descriptor;
-        private final IndexSamplingConfig samplingConfig;
         private final SpatialIndexFiles spatialIndexFiles;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
@@ -222,7 +215,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                      IndexProvider.Monitor monitor,
                      StoreIndexDescriptor descriptor,
-                     IndexSamplingConfig samplingConfig,
                      SpatialIndexFiles spatialIndexFiles,
                      SpaceFillingCurveConfiguration searchConfiguration )
         {
@@ -231,7 +223,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
             this.monitor = monitor;
             this.descriptor = descriptor;
-            this.samplingConfig = samplingConfig;
             this.spatialIndexFiles = spatialIndexFiles;
             this.searchConfiguration = searchConfiguration;
         }
@@ -260,7 +251,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                      recoveryCleanupWorkCollector,
                                      monitor,
                                      descriptor,
-                                     samplingConfig,
                                      searchConfiguration );
         }
 
@@ -271,7 +261,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                                                                 fileLayout,
                                                                                 monitor,
                                                                                 descriptor,
-                                                                                samplingConfig,
                                                                                 searchConfiguration );
             populator.create();
             populator.close( true );

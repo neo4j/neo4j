@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -30,11 +29,11 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 public class DateTimeUniqueIndexAccessorTest extends NativeIndexAccessorTest<ZonedDateTimeIndexKey,NativeIndexValue>
 {
     @Override
-    NativeIndexAccessor<ZonedDateTimeIndexKey,NativeIndexValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    NativeIndexAccessor<ZonedDateTimeIndexKey,NativeIndexValue> makeAccessor() throws IOException
     {
         TemporalIndexFiles.FileLayout<ZonedDateTimeIndexKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_DATE_TIME );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor, samplingConfig );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor );
     }
 
     @Override

@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-
 public class NumberNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<NumberIndexKey,NativeIndexValue>
 {
     @Override
-    NativeIndexPopulator<NumberIndexKey,NativeIndexValue> createPopulator( IndexSamplingConfig samplingConfig )
+    NativeIndexPopulator<NumberIndexKey,NativeIndexValue> createPopulator()
     {
-        return new NumberIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor, samplingConfig );
+        return new NumberIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor );
     }
 
     @Override

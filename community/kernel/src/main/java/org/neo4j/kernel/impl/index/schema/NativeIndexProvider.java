@@ -75,21 +75,19 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         }
 
         File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
-        return newIndexPopulator( storeFile, layout( descriptor, storeFile ), descriptor, samplingConfig );
+        return newIndexPopulator( storeFile, layout( descriptor, storeFile ), descriptor );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig );
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor );
 
     @Override
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
-        return newIndexAccessor( storeFile, layout( descriptor, storeFile ), descriptor, samplingConfig );
+        return newIndexAccessor( storeFile, layout( descriptor, storeFile ), descriptor );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor ) throws IOException;
 
     @Override
     public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException

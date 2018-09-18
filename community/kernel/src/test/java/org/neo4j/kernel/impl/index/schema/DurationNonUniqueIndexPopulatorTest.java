@@ -20,17 +20,15 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
 public class DurationNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<DurationIndexKey,NativeIndexValue>
 {
     @Override
-    NativeIndexPopulator<DurationIndexKey,NativeIndexValue> createPopulator( IndexSamplingConfig samplingConfig )
+    NativeIndexPopulator<DurationIndexKey,NativeIndexValue> createPopulator()
     {
-        TemporalIndexFiles.FileLayout<DurationIndexKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
+        TemporalIndexFiles.FileLayout<DurationIndexKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor );
     }
 
     @Override

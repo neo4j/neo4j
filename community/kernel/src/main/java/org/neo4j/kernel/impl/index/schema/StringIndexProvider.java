@@ -34,7 +34,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -61,17 +60,15 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig )
+    protected IndexPopulator newIndexPopulator( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor )
     {
-        return new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
+        return new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor ) throws IOException
     {
-        return new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
+        return new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     @Override

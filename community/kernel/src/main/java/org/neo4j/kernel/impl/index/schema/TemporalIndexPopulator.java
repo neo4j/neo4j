@@ -140,15 +140,15 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     static class PartPopulator<KEY extends NativeIndexSingleValueKey<KEY>> extends NativeIndexPopulator<KEY,NativeIndexValue>
     {
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout, IndexProvider.Monitor monitor,
-                       StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                StoreIndexDescriptor descriptor )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, samplingConfig, NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
         }
 
         @Override
         IndexReader newReader()
         {
-            return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
+            return new TemporalIndexPartReader<>( tree, layout, descriptor );
         }
     }
 
@@ -210,7 +210,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
 
         private <KEY extends NativeIndexSingleValueKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout )
         {
-            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
+            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor );
             populator.create();
             return populator;
         }

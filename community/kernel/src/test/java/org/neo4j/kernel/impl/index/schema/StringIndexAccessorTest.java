@@ -21,16 +21,14 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 public abstract class StringIndexAccessorTest extends NativeIndexAccessorTest<StringIndexKey,NativeIndexValue>
 {
     @Override
-    StringIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    StringIndexAccessor makeAccessor() throws IOException
     {
-        return new StringIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor, indexDescriptor, samplingConfig );
+        return new StringIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor, indexDescriptor );
     }
 
     // TODO test reader unsupported index order

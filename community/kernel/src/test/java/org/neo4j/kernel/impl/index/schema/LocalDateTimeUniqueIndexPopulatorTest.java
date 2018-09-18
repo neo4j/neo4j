@@ -20,17 +20,16 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
 public class LocalDateTimeUniqueIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<LocalDateTimeIndexKey,NativeIndexValue>
 {
     @Override
-    NativeIndexPopulator<LocalDateTimeIndexKey,NativeIndexValue> createPopulator( IndexSamplingConfig samplingConfig )
+    NativeIndexPopulator<LocalDateTimeIndexKey,NativeIndexValue> createPopulator()
     {
         TemporalIndexFiles.FileLayout<LocalDateTimeIndexKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.LOCAL_DATE_TIME );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor );
     }
 
     @Override

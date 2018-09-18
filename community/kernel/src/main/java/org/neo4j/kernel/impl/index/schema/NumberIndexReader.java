@@ -24,7 +24,6 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -32,10 +31,9 @@ import org.neo4j.values.storable.Values;
 
 class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReader<NumberIndexKey,VALUE>
 {
-    NumberIndexReader( GBPTree<NumberIndexKey,VALUE> tree, IndexLayout<NumberIndexKey,VALUE> layout,
-            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    NumberIndexReader( GBPTree<NumberIndexKey,VALUE> tree, IndexLayout<NumberIndexKey,VALUE> layout, IndexDescriptor descriptor )
     {
-        super( tree, layout, samplingConfig, descriptor );
+        super( tree, layout, descriptor );
     }
 
     @Override

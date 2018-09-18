@@ -28,7 +28,6 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
@@ -42,9 +41,9 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 public abstract class NumberIndexAccessorTest extends NativeIndexAccessorTest<NumberIndexKey,NativeIndexValue>
 {
     @Override
-    NumberIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    NumberIndexAccessor makeAccessor() throws IOException
     {
-        return new NumberIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor, indexDescriptor, samplingConfig );
+        return new NumberIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor, indexDescriptor );
     }
 
     @Test

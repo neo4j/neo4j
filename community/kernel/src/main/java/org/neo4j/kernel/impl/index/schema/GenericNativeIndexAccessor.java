@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.kernel.impl.util.Validator;
@@ -45,10 +44,9 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey
 
     GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<CompositeGenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings,
-            SpaceFillingCurveConfiguration configuration ) throws IOException
+            IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
+        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
@@ -64,7 +62,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey
     @Override
     public IndexReader newReader()
     {
-        return new GenericNativeIndexReader( tree, layout, samplingConfig, descriptor, spaceFillingCurveSettings, configuration );
+        return new GenericNativeIndexReader( tree, layout, descriptor, spaceFillingCurveSettings, configuration );
     }
 
     @Override
