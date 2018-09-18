@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality
 
-import java.math
-import java.math.RoundingMode
-
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
 import org.neo4j.cypher.internal.ir.v3_5.Selections
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
@@ -216,17 +213,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
             for {
               propertyExistsSelectivity <- stats.indexPropertyExistsSelectivity(descriptor)
               propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
-              val pExists = math.BigDecimal.valueOf(propertyExistsSelectivity.factor)
-              val pEq = math.BigDecimal.valueOf(propEqValueSelectivity.factor)
-              val pNeq = BigDecimalCombiner.negate(pEq)
-              val pNeqRange = pNeq
-                .multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR))
-                .divide(math.BigDecimal.valueOf(Math.min(seekable.expr.inequalities.size, 2)), 17, RoundingMode.HALF_UP)
+              val pNeq = propEqValueSelectivity.negate
+              val pNeqRange = pNeq.factor * DEFAULT_RANGE_SEEK_FACTOR / Math.min(seekable.expr.inequalities.size, 2)
 
-              val pRange = if (seekable.hasEquality) pEq.add(pNeqRange) else pNeqRange
-              val pRangeByLabel = pRange.multiply(pExists)
-              indexSelectivity <-Selectivity.of(pRangeByLabel.doubleValue())
-            } yield indexSelectivity
+              val pRange = Selectivity(if (seekable.hasEquality) propEqValueSelectivity.factor + pNeqRange else pNeqRange)
+            } yield pRange * propertyExistsSelectivity
 
           case _ =>
             Some(Selectivity.ZERO)
@@ -248,33 +239,30 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                        propertyKey: PropertyKeyName,
                                                        maybeString: Option[String])
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
-
-    val stringLength = math.BigDecimal.valueOf(maybeString match {
+    val stringLength = maybeString match {
       case Some(n) => n.length
       case None => DEFAULT_STRING_LENGTH
-    })
+    }
 
-    val default = if (stringLength == math.BigDecimal.ZERO) {
+    val default = if (stringLength == 0) {
       // This is equal to exists && isString
       DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY
     } else {
       // This is equal to range, but anti-proportional to the string length
-      val factor = math.BigDecimal.ONE.divide(stringLength, 17, RoundingMode.HALF_UP)
-      Selectivity(factor.multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SELECTIVITY.factor)).doubleValue())
+      val factor = 1.0 / stringLength
+      Selectivity(factor * DEFAULT_RANGE_SELECTIVITY.factor)
     }
 
     val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, selections, propertyKey)
     val indexSubstringSelectivities = indexPropertyExistsSelectivities.map { exists =>
-      if (stringLength == math.BigDecimal.ZERO) {
+      if (stringLength == 0) {
         // This is equal to exists && isString
         exists * DEFAULT_TYPE_SELECTIVITY
       } else {
         // This is equal to range, but anti-proportional to the string length
-        val factor = math.BigDecimal.ONE.divide(stringLength, 17, RoundingMode.HALF_UP)
-        val bd = math.BigDecimal.valueOf(exists.factor)
-        val bdRes = bd.multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR))
-          .multiply(factor)
-        Selectivity(bdRes.doubleValue())
+        val factor = 1.0 / stringLength
+        val res = exists.factor * DEFAULT_RANGE_SEEK_FACTOR * factor
+        Selectivity(res)
       }
     }
     combiner.orTogetherSelectivities(indexSubstringSelectivities).getOrElse(default)
