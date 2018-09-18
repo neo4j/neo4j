@@ -116,7 +116,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         procedures.registerComponent( EnterpriseSecurityContext.class,
                 ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ), true );
 
-        if ( securityConfig.internal_security_enabled )
+        if ( securityConfig.nativeAuthEnabled )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
                     ctx -> authManager.getUserManager( ctx.get( SECURITY_CONTEXT ).subject(), ctx.get( SECURITY_CONTEXT ).isAdmin() ), true );
@@ -388,7 +388,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         protected final boolean propertyAuthorization;
         private final String propertyAuthMapping;
         final Map<String,List<String>> propertyBlacklist = new HashMap<>();
-        protected boolean internal_security_enabled;
+        protected boolean nativeAuthEnabled;
 
         protected SecurityConfig( Config config )
         {
@@ -401,7 +401,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
             nativeAuthentication = config.get( SecuritySettings.native_authentication_enabled );
             nativeAuthorization = config.get( SecuritySettings.native_authorization_enabled );
-            internal_security_enabled = nativeAuthentication || nativeAuthorization;
+            nativeAuthEnabled = nativeAuthentication || nativeAuthorization;
             ldapAuthentication = config.get( SecuritySettings.ldap_authentication_enabled );
             ldapAuthorization = config.get( SecuritySettings.ldap_authorization_enabled );
             pluginAuthentication = config.get( SecuritySettings.plugin_authentication_enabled );

@@ -89,13 +89,13 @@ public class SecuritySettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> native_authentication_enabled =
             derivedSetting( "dbms.security.native.authentication_enabled", auth_providers,
-                    providers -> providers.contains( NATIVE_REALM_NAME ) , BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ) || providers.contains( SYSTEM_GRAPH_REALM_NAME ) , BOOLEAN );
 
     @Description( "Enable authorization via native authorization provider." )
     @Internal
     public static final Setting<Boolean> native_authorization_enabled =
             derivedSetting( "dbms.security.native.authorization_enabled", auth_providers,
-                    providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ) || providers.contains( SYSTEM_GRAPH_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via settings configurable LDAP authentication provider." )
     @Internal
