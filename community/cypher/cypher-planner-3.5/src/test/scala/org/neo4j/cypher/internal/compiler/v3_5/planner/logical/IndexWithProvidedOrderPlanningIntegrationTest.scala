@@ -38,13 +38,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     plan._2 should equal(
       Projection(
         Projection(
-          NodeIndexSeek(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-            Set.empty,
-            IndexOrderAscending),
+          IndexSeek("n:Awesome(prop > 'foo')", indexOrder = IndexOrderAscending),
           Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("n.prop" -> Variable("  FRESHID48")(pos)))
     )
@@ -59,13 +53,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       Projection(
         Sort(
           Projection(
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-              Set.empty,
-              IndexOrderNone),
+            IndexSeek("n:Awesome(prop > 'foo')", indexOrder = IndexOrderNone),
             Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
           Seq(Ascending("  FRESHID48"))),
         Map("n.prop" -> Variable("  FRESHID48")(pos)))
@@ -81,13 +69,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       Projection(
         Sort(
           Projection(
-            NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-              Set.empty,
-              IndexOrderAscending),
+            IndexSeek("n:Awesome(prop > 'foo')", indexOrder = IndexOrderAscending),
             Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
           Seq(Descending("  FRESHID48"))),
         Map("n.prop" -> Variable("  FRESHID48")(pos)))
@@ -108,13 +90,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Projection(
           Expand(
             Projection(
-              NodeIndexSeek(
-                "n",
-                LabelToken("Awesome", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-                Set.empty,
-                IndexOrderAscending),
+              IndexSeek("n:Awesome(prop > 'foo')", indexOrder = IndexOrderAscending),
               Map("nnn" -> Variable("n")(pos))),
             "nnn", SemanticDirection.INCOMING, Seq.empty, "m", "r"),
           Map("  FRESHID85" -> Property(Variable("nnn")(pos), PropertyKeyName("prop")(pos))(pos))),
@@ -132,13 +108,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     plan._2 should equal(
       Projection(
         Projection(
-          NodeIndexSeek(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-            Set.empty,
-            IndexOrderAscending),
+          IndexSeek("n:Awesome(prop > 'foo')", indexOrder = IndexOrderAscending),
           Map("  FRESHID46" -> Variable("n")(pos))),
         Map("m" -> Variable("  FRESHID46")(pos)))
     )
@@ -154,13 +124,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Sort(
           Projection(
             CartesianProduct(
-              NodeIndexSeek(
-                "n",
-                LabelToken("Awesome", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-                Set.empty,
-                IndexOrderAscending),
+              IndexSeek("n:Awesome(prop > 'foo')", indexOrder = IndexOrderAscending),
               NodeByLabelScan("m", LabelName("Awesome")(pos), Set.empty)),
             Map("  FRESHID61" -> Property(Variable("m")(pos), PropertyKeyName("prop")(pos))(pos))),
           Seq(Ascending("  FRESHID61"))),
@@ -177,13 +141,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
       Projection(
         Projection(
-          NodeIndexSeek(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-            RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("foo")(pos)))(pos)),
-            Set.empty,
-            IndexOrderAscending),
+          IndexSeek("n:Awesome(prop STARTS WITH 'foo')", indexOrder = IndexOrderAscending),
           Map("  FRESHID58" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("n.prop" -> Variable("  FRESHID58")(pos)))
     )
@@ -198,14 +156,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     plan._2 should equal(
       Projection(
         Projection(
-          NodeIndexContainsScan(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-            StringLiteral("foo")(pos),
-            Set.empty,
-            IndexOrderAscending),
-            Map("  FRESHID55" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+          IndexSeek("n:Awesome(prop CONTAINS 'foo')", indexOrder = IndexOrderAscending),
+          Map("  FRESHID55" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("n.prop" -> Variable("  FRESHID55")(pos)))
     )
   }
@@ -219,13 +171,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     plan._2 should equal(
       Projection(
         Projection(
-          NodeIndexEndsWithScan(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-            StringLiteral("foo")(pos),
-            Set.empty,
-            IndexOrderAscending),
+          IndexSeek("n:Awesome(prop ENDS WITH 'foo')", indexOrder = IndexOrderAscending),
           Map("  FRESHID56" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("n.prop" -> Variable("  FRESHID56")(pos)))
     )
@@ -240,12 +186,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
       Projection(
         Projection(
-          NodeIndexScan(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
-            Set.empty,
-            IndexOrderAscending),
+          IndexSeek("n:Awesome(prop)", indexOrder = IndexOrderAscending),
           Map("  FRESHID48" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("n.prop" -> Variable("  FRESHID48")(pos)))
     )
@@ -262,20 +203,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       Projection(
         Projection(
           Apply(
-            NodeIndexSeek(
-              "a",
-              LabelToken("A", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-              Set.empty,
-              IndexOrderAscending),
-            NodeIndexSeek(
-              "b",
-              LabelToken("B", LabelId(1)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              SingleQueryExpression(prop("a", "prop")),
-              Set("a"),
-              IndexOrderAscending)
+            IndexSeek("a:A(prop > 'foo')", indexOrder = IndexOrderAscending),
+            IndexSeek("b:B(prop = ???)",
+              indexOrder = IndexOrderAscending,
+              paramExpr = Some(prop("a", "prop")),
+              labelId = 1,
+              argumentIds = Set("a"))
           ),
           Map("  FRESHID69" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
         Map("a.prop" -> Variable("  FRESHID69")(pos)))
@@ -294,20 +227,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Sort(
           Projection(
             Apply(
-              NodeIndexSeek(
-                "a",
-                LabelToken("A", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-                RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("foo")(pos)))(pos)),
-                Set.empty,
-                IndexOrderAscending),
-              NodeIndexSeek(
-                "b",
-                LabelToken("B", LabelId(1)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(prop("a", "prop")))))(pos)),
-                Set("a"),
-                IndexOrderAscending)
+              IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = IndexOrderAscending),
+              IndexSeek("b:B(prop > ???)",
+                indexOrder = IndexOrderAscending,
+                paramExpr = Some(prop("a", "prop")),
+                labelId = 1,
+                argumentIds = Set("a"))
             ),
             Map("  FRESHID79" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "  FRESHID87" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
           Seq(Ascending("  FRESHID79"), Ascending("  FRESHID87"))),
@@ -325,13 +250,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       Projection(
         Projection(
           Projection(
-            NodeIndexSeek(
-              "a",
-              LabelToken("A", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-              Set.empty,
-              IndexOrderAscending),
+            IndexSeek("a:A(prop > 'foo')", indexOrder = IndexOrderAscending),
             Map("  theProp@48" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "x" -> SignedDecimalIntegerLiteral("1")(pos))),
           Map("  FRESHID71" -> varFor("  theProp@48"))),
         Map("theProp" -> Variable("  FRESHID71")(pos)))
@@ -353,13 +272,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       Projection(
         Aggregation(
           Expand(
-            NodeIndexSeek(
-              "a",
-              LabelToken("A", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-              Set.empty,
-              IndexOrderAscending),
+            IndexSeek("a:A(prop > 'foo')", indexOrder = IndexOrderAscending),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
           Map("  FRESHID51" -> prop("a", "prop")), Map("  FRESHID57" -> FunctionInvocation(Namespace(List())(pos),FunctionName("count")(pos), distinct = false,Vector(varFor("b")))(pos))),
         Map("a.prop" -> Variable("  FRESHID51")(pos), "count(b)" -> Variable("  FRESHID57")(pos)))
@@ -381,13 +294,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       Projection(
         Distinct(
           Expand(
-            NodeIndexSeek(
-              "a",
-              LabelToken("A", LabelId(0)),
-              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-              RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-              Set.empty,
-              IndexOrderAscending),
+            IndexSeek("a:A(prop > 'foo')", indexOrder = IndexOrderAscending),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
           Map("  FRESHID60" -> prop("a", "prop"))),
         Map("a.prop" -> Variable("  FRESHID60")(pos)))
@@ -411,13 +318,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           LeftOuterHashJoin(Set("b"),
             AllNodesScan("b", Set.empty),
             Expand(
-              NodeIndexSeek(
-                "a",
-                LabelToken("A", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-                Set.empty,
-                IndexOrderAscending),
+              IndexSeek("a:A(prop > 'foo')", indexOrder = IndexOrderAscending),
               "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")),
           Map("  FRESHID86" -> prop("a", "prop"))),
         Map("a.prop" -> Variable("  FRESHID86")(pos)))
@@ -437,13 +338,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Projection(
           Apply(
             SkipPlan(
-              NodeIndexSeek(
-                "a",
-                LabelToken("A", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-                RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(StringLiteral("foo")(pos)))))(pos)),
-                Set.empty,
-                IndexOrderAscending),
+              IndexSeek("a:A(prop > 'foo')", indexOrder = IndexOrderAscending),
               SignedDecimalIntegerLiteral("0")(pos)),
             AllNodesScan("  b@54", Set("a"))),
           Map("  FRESHID66" -> prop("a", "prop"), "  FRESHID72" -> varFor("  b@54"))),
