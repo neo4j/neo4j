@@ -204,7 +204,7 @@ public class PersistentSnapshotDownloaderTest
 
     private void awaitOneIteration( NoTimeout timeout ) throws TimeoutException
     {
-        Predicates.await( () -> timeout.currentCount() > 0, 1, TimeUnit.SECONDS );
+        Predicates.await( () -> timeout.currentCount() > 0, 2, TimeUnit.SECONDS );
     }
 
     private class EventuallySuccessfulDownloader extends CoreStateDownloader
