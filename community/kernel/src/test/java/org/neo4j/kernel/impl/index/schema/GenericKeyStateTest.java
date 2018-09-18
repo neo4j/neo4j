@@ -402,7 +402,7 @@ class GenericKeyStateTest
     }
 
     @Test
-    void shouldNeverDereferencedTextValues()
+    void shouldNeverOverwriteDereferencedTextValues()
     {
         // Given a value that we dereference
         Value srcValue = Values.utf8Value( "First string".getBytes( StandardCharsets.UTF_8 ) );
