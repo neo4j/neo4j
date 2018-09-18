@@ -22,10 +22,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekByRange
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.UniqueIndexSeekByRange
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekByRange
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UniqueIndexSeekByRange
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 /**
@@ -1272,7 +1272,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     executeWith(Configs.Interpreted, "MATCH (n:L) WHERE n.prop2 > 1 AND n.prop1 > 1 RETURN n.prop1",
                 planComparisonStrategy = ComparePlansWithAssertion(plan => {
                   //THEN
-                  plan should includeSomewhere.aPlan(IndexSeekByRange.name).containingVariables("n", "n.prop1")
+                  plan should includeSomewhere.aPlan(IndexSeekByRange.name).containingVariables("n", "cached[n.prop1]")
                 }, Configs.OldAndRule))
   }
 

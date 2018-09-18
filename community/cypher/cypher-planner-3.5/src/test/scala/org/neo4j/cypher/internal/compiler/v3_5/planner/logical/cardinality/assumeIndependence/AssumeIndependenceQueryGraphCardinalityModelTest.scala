@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.{ABCDCardinalityData, RandomizedCardinalityModelTestSuite}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.ABCDCardinalityData
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.RandomizedCardinalityModelTestSuite
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
@@ -68,10 +69,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         -> A * Aprop,
 
       "MATCH (a:A) WHERE a.prop STARTS WITH 'p'"
-        -> {
-        val equalitySelectivity = orTimes(DEFAULT_NUMBER_OF_INDEX_LOOKUPS, Aprop)
-        A * (equalitySelectivity + ((1d - equalitySelectivity) * DEFAULT_RANGE_SEEK_FACTOR))
-      },
+        -> A * DEFAULT_RANGE_SEEK_FACTOR,
 
       "MATCH (a:B) WHERE a.bar = 42"
         -> B * DEFAULT_EQUALITY_SELECTIVITY,
