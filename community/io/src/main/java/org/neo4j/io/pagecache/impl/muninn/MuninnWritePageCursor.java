@@ -28,14 +28,10 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
-    private final CursorPool.CursorSets cursorSets;
-    MuninnWritePageCursor nextCursor;
-
-    MuninnWritePageCursor( CursorPool.CursorSets cursorSets, long victimPage, PageCursorTracer pageCursorTracer,
+    MuninnWritePageCursor( long victimPage, PageCursorTracer pageCursorTracer,
             VersionContextSupplier versionContextSupplier )
     {
         super( victimPage, pageCursorTracer, versionContextSupplier );
-        this.cursorSets = cursorSets;
     }
 
     @Override
@@ -133,13 +129,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     protected void convertPageFaultLock( long pageRef )
     {
         pagedFile.unlockExclusiveAndTakeWriteLock( pageRef );
-    }
-
-    @Override
-    protected void releaseCursor()
-    {
-        nextCursor = cursorSets.writeCursors;
-        cursorSets.writeCursors = this;
     }
 
     @Override

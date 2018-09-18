@@ -91,15 +91,11 @@ abstract class MuninnPageCursor extends PageCursor
         this.versionContextSupplier = versionContextSupplier;
     }
 
-    final void initialiseFile( MuninnPagedFile pagedFile )
+    final void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
     {
         this.swapper = pagedFile.swapper;
         this.swapperId = pagedFile.swapperId;
         this.filePageSize = pagedFile.filePageSize;
-    }
-
-    final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )
-    {
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
@@ -177,10 +173,6 @@ abstract class MuninnPageCursor extends PageCursor
             return; // already closed
         }
         closeLinks( this );
-        if ( !isLinkedCursor )
-        {
-            releaseCursor();
-        }
     }
 
     private void closeLinks( MuninnPageCursor cursor )
@@ -215,7 +207,7 @@ abstract class MuninnPageCursor extends PageCursor
         }
         if ( linkedCursor != null )
         {
-            linkedCursor.initialiseFlags( pf, pageId, pf_flags );
+            linkedCursor.initialise( pf, pageId, pf_flags );
             linkedCursor.rewind();
         }
         else
@@ -443,8 +435,6 @@ abstract class MuninnPageCursor extends PageCursor
     protected abstract boolean tryLockPage( long pageRef );
 
     protected abstract void unlockPage( long pageRef );
-
-    protected abstract void releaseCursor();
 
     // --- IO methods:
 

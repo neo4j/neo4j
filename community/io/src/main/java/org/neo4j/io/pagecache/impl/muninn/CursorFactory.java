@@ -24,7 +24,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
-final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
+final class CursorFactory
 {
     private final MuninnPagedFile pagedFile;
     private final long victimPage;
@@ -33,14 +33,14 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
     private final VersionContextSupplier versionContextSupplier;
 
     /**
-     * Cursor pool construction
-     * @param pagedFile paged file for which pool is created
+     * Cursor factory construction
+     * @param pagedFile paged file for which cursor is created
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracers that will
      * provide thread local page cache statistics
      * @param pageCacheTracer global page cache tracer
      * @param versionContextSupplier version context supplier
      */
-    CursorPool( MuninnPagedFile pagedFile, PageCursorTracerSupplier pageCursorTracerSupplier,
+    CursorFactory( MuninnPagedFile pagedFile, PageCursorTracerSupplier pageCursorTracerSupplier,
             PageCacheTracer pageCacheTracer, VersionContextSupplier versionContextSupplier )
     {
         this.pagedFile = pagedFile;
@@ -50,55 +50,17 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
         this.versionContextSupplier = versionContextSupplier;
     }
 
-    @Override
-    protected CursorSets initialValue()
-    {
-        return new CursorSets();
-    }
-
     MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags )
     {
-        CursorSets cursorSets = get();
-        MuninnReadPageCursor cursor = cursorSets.readCursors;
-        if ( cursor != null )
-        {
-            cursorSets.readCursors = cursor.nextCursor;
-        }
-        else
-        {
-            cursor = createReadCursor( cursorSets );
-        }
-        cursor.initialiseFlags( pagedFile, pageId, pf_flags );
-        return cursor;
-    }
-
-    private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
-    {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage, getPageCursorTracer(), versionContextSupplier );
-        cursor.initialiseFile( pagedFile );
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( victimPage, getPageCursorTracer(), versionContextSupplier );
+        cursor.initialise( pagedFile, pageId, pf_flags );
         return cursor;
     }
 
     MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags )
     {
-        CursorSets cursorSets = get();
-        MuninnWritePageCursor cursor = cursorSets.writeCursors;
-        if ( cursor != null )
-        {
-            cursorSets.writeCursors = cursor.nextCursor;
-        }
-        else
-        {
-            cursor = createWriteCursor( cursorSets );
-        }
-        cursor.initialiseFlags( pagedFile, pageId, pf_flags );
-        return cursor;
-    }
-
-    private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
-    {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage, getPageCursorTracer(), versionContextSupplier );
-        cursor.initialiseFile( pagedFile );
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( victimPage, getPageCursorTracer(), versionContextSupplier );
+        cursor.initialise( pagedFile, pageId, pf_flags );
         return cursor;
     }
 
@@ -107,11 +69,5 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
         PageCursorTracer pageCursorTracer = pageCursorTracerSupplier.get();
         pageCursorTracer.init( pageCacheTracer );
         return pageCursorTracer;
-    }
-
-    static class CursorSets
-    {
-        MuninnReadPageCursor readCursors;
-        MuninnWritePageCursor writeCursors;
     }
 }
