@@ -370,11 +370,6 @@ public class SecuritySettings implements LoadableConfig
     public static final Setting<Boolean> ldap_authorization_connection_pooling =
             setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
 
-    @Internal
-    @Description( "Set to true to import auth data into the system graph. This should only be used by an admin command." )
-    public static final Setting<Boolean> native_import_auth =
-            setting( "unsupported.dbms.security.native.import_auth", BOOLEAN, "false" );
-
     //=========================================================================
     // Property level security settings
     //=========================================================================
