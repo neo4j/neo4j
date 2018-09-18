@@ -130,6 +130,6 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
 
     protected String internalSecurityName()
     {
-        return "native";
+        return SecuritySettings.NATIVE_REALM_NAME;
     }
 }
