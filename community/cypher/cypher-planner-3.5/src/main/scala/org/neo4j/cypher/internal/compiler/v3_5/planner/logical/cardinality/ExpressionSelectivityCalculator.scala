@@ -122,7 +122,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }
 
-  def areRelationships(semanticTable: SemanticTable, lhs: Variable, rhs: Variable): Boolean = {
+  private def areRelationships(semanticTable: SemanticTable, lhs: Variable, rhs: Variable): Boolean = {
     val l = semanticTable.isRelationship(lhs)
     val r = semanticTable.isRelationship(rhs)
     l && r
@@ -246,29 +246,37 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   private def calculateSelectivityForSubstringSargable(variable: String,
                                                        selections: Selections,
                                                        propertyKey: PropertyKeyName,
-                                                       prefix: Option[String])
+                                                       maybeString: Option[String])
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
-    /*
-     * c = DEFAULT_RANGE_SEEK_FACTOR
-     * p = prefix length
-     * f in (0,c) = (1 / p) * c
-     * e in [0,1] = selectivity for equality comparison
-     * x in [0,1] = selectivity for property existence
-     * s in (0,1) = (1 - e) * f
-     * return min(x, e + s in (0,1))
-     */
-    val equality = math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(variable, None, selections, propertyKey).factor)
-    val prefixLength = math.BigDecimal.valueOf(prefix match {
-      case Some(n) => n.length + 1
-      case None => DEFAULT_PREFIX_LENGTH
-    })
-    val factor = math.BigDecimal.ONE.divide(prefixLength, 17, RoundingMode.HALF_UP)
-      .multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
-    val slack = BigDecimalCombiner.negate(equality).multiply(factor)
-    val result = Selectivity.of(equality.add(slack).doubleValue()).get
 
-    //we know for sure we are no worse than a propertyExistence check
-    val existence = calculateSelectivityForPropertyExistence(variable, selections, propertyKey)
-    if (existence < result) existence else result
+    val stringLength = math.BigDecimal.valueOf(maybeString match {
+      case Some(n) => n.length
+      case None => DEFAULT_STRING_LENGTH
+    })
+
+    val default = if (stringLength == math.BigDecimal.ZERO) {
+      // This is equal to exists && isString
+      DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY
+    } else {
+      // This is equal to range, but anti-proportional to the string length
+      val factor = math.BigDecimal.ONE.divide(stringLength, 17, RoundingMode.HALF_UP)
+      Selectivity(factor.multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SELECTIVITY.factor)).doubleValue())
+    }
+
+    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, selections, propertyKey)
+    val indexSubstringSelectivities = indexPropertyExistsSelectivities.map { exists =>
+      if (stringLength == math.BigDecimal.ZERO) {
+        // This is equal to exists && isString
+        exists * DEFAULT_TYPE_SELECTIVITY
+      } else {
+        // This is equal to range, but anti-proportional to the string length
+        val factor = math.BigDecimal.ONE.divide(stringLength, 17, RoundingMode.HALF_UP)
+        val bd = math.BigDecimal.valueOf(exists.factor)
+        val bdRes = bd.multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR))
+          .multiply(factor)
+        Selectivity(bdRes.doubleValue())
+      }
+    }
+    combiner.orTogetherSelectivities(indexSubstringSelectivities).getOrElse(default)
   }
 }
