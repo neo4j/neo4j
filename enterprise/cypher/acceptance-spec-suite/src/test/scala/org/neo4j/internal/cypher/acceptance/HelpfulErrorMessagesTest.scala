@@ -249,4 +249,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
     failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst ^ n.str", List("Cannot raise `LongArray` to the power of `String`"))
   }
+
+  test("should provide sensible error message for using compiled expression with interpreted") {
+    intercept[Exception](graph.execute("CYPHER runtime=interpreted expressionEngine=compiled RETURN 1")).getMessage should be("Unsupported EXPRESSION ENGINE - RUNTIME combination: compiled - interpreted")
+  }
+
+  test("should provide sensible error message for using compiled expression with compiled runtime") {
+    intercept[Exception](graph.execute("CYPHER runtime=compiled expressionEngine=compiled RETURN 1")).getMessage should be("Unsupported EXPRESSION ENGINE - RUNTIME combination: compiled - compiled")
+  }
+
+  test("should be able to use compiled expression engine with slotted") {
+    graph.execute("CYPHER runtime=slotted expressionEngine=compiled RETURN 1").resultAsString() should not be null
+  }
 }

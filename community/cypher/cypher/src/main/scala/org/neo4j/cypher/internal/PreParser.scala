@@ -41,10 +41,13 @@ import org.neo4j.cypher.internal.compatibility.LFUCache
 class PreParser(configuredVersion: CypherVersion,
                 configuredPlanner: CypherPlannerOption,
                 configuredRuntime: CypherRuntimeOption,
+                configuredExpressionEngine: CypherExpressionEngineOption,
                 planCacheSize: Int) {
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlannerOption, CypherRuntimeOption)] = Set((CypherPlannerOption.rule, CypherRuntimeOption.compiled), (CypherPlannerOption.rule, CypherRuntimeOption.slotted))
   private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set((CypherPlannerOption.rule, CypherVersion.v3_4), (CypherPlannerOption.rule, CypherVersion.v3_5))
+  private final val ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
+    Set((CypherExpressionEngineOption.compiled, CypherRuntimeOption.compiled), (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
 
@@ -79,6 +82,7 @@ class PreParser(configuredVersion: CypherVersion,
     val version: PPOption[CypherVersion] = new PPOption(configuredVersion)
     val planner: PPOption[CypherPlannerOption] = new PPOption(configuredPlanner)
     val runtime: PPOption[CypherRuntimeOption] = new PPOption(configuredRuntime)
+    val expressionEngine: PPOption[CypherExpressionEngineOption] = new PPOption(configuredExpressionEngine)
     val updateStrategy: PPOption[CypherUpdateStrategy] = new PPOption(CypherUpdateStrategy.default)
     var debugOptions: Set[String] = Set()
 
@@ -99,6 +103,9 @@ class PreParser(configuredVersion: CypherVersion,
             updateStrategy.selectOrThrow( CypherUpdateStrategy(u.name), "Can't specify multiple conflicting update strategies")
           case DebugOption(debug) =>
             debugOptions = debugOptions + debug.toLowerCase()
+          case engine: ExpressionEnginePreParserOption =>
+            expressionEngine.selectOrThrow(CypherExpressionEngineOption(engine.name), "Can't specify multiple conflicting expression engines")
+
           case ConfigurationOptions(versionOpt, innerOptions) =>
             for (v <- versionOpt)
               version.selectOrThrow(CypherVersion(v.version), "Can't specify multiple conflicting Cypher versions")
@@ -114,6 +121,9 @@ class PreParser(configuredVersion: CypherVersion,
     // Only disallow using rule if incompatible version is explicitly requested
     if (version.isSelected && ILLEGAL_PLANNER_VERSION_COMBINATIONS((planner.pick, version.pick)))
       throw new InvalidArgumentException(s"Unsupported PLANNER - VERSION combination: ${planner.pick.name} - ${version.pick.name}")
+
+    if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS(expressionEngine.pick, runtime.pick))
+      throw new InvalidPreparserOption(s"Unsupported EXPRESSION ENGINE - RUNTIME combination: ${expressionEngine.pick.name} - ${runtime.pick.name}")
 
     val isPeriodicCommit = preParsedStatement.statement.trim.startsWith("USING PERIODIC COMMIT")
 

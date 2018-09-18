@@ -55,7 +55,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   // HELPER OBJECTS
 
-  private val preParser = new PreParser(config.version, config.planner, config.runtime, config.queryCacheSize)
+  private val preParser = new PreParser(config.version, config.planner, config.runtime, config.expressionEngineOption, config.queryCacheSize)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
   private def planReusabilitiy(executableQuery: ExecutableQuery,
                                transactionalContext: TransactionalContext): ReusabilityState =

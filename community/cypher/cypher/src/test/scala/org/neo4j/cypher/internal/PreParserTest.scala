@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherVersion, InvalidArgumentException}
+import org.neo4j.cypher._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class PreParserTest extends CypherFunSuite {
 
-  val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default, 0)
+  val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default,
+                                CypherExpressionEngineOption.default,  0)
 
   test("should not allow inconsistent planner options") {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER planner=cost planner=rule RETURN 42"))
