@@ -198,7 +198,7 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initValueAsLowest( stateSlot, ValueGroup.UNKNOWN );
+            treeKeyFrom.initValueAsLowest( stateSlot, rangePredicate.valueGroup() );
         }
         else
         {
@@ -212,7 +212,7 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
-            treeKeyTo.initValueAsHighest( stateSlot, ValueGroup.UNKNOWN );
+            treeKeyTo.initValueAsHighest( stateSlot, rangePredicate.valueGroup() );
         }
         else
         {
