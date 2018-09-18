@@ -169,7 +169,9 @@ public class CoreServerModule
 
         this.snapshotService = new CoreSnapshotService( commandApplicationProcess, coreState, consensusModule.raftLog(), consensusModule.raftMachine() );
 
-        CatchUpClient catchUpClient = createCatchupClient( clientPipelineBuilderFactory );
+        boolean useNativeTransport = config.get( CausalClusteringSettings.use_native_transport );
+
+        CatchUpClient catchUpClient = createCatchupClient( clientPipelineBuilderFactory, useNativeTransport );
         CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy, catchUpClient );
 
         this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader,
@@ -198,6 +200,7 @@ public class CoreServerModule
                 .debugLogProvider( logProvider )
                 .listenAddress( config.get( transaction_listen_address ) )
                 .serverName( "catchup-server" )
+                .useNativeTransport( useNativeTransport )
                 .build();
 
         TransactionBackupServiceProvider transactionBackupServiceProvider =
@@ -221,7 +224,7 @@ public class CoreServerModule
         backupServer.ifPresent( servicesToStopOnStoreCopy::add );
     }
 
-    private CatchUpClient createCatchupClient( NettyPipelineBuilderFactory clientPipelineBuilderFactory )
+    private CatchUpClient createCatchupClient( NettyPipelineBuilderFactory clientPipelineBuilderFactory, boolean useNativeTransport )
     {
         SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
         ApplicationSupportedProtocols supportedCatchupProtocols = supportedProtocolCreator.createSupportedCatchupProtocol();
@@ -229,7 +232,7 @@ public class CoreServerModule
         Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
 
         CatchUpClient catchUpClient = new CatchupClientBuilder( supportedCatchupProtocols, supportedModifierProtocols, clientPipelineBuilderFactory,
-                handshakeTimeout, logProvider, userLogProvider, systemClock() ).build();
+                handshakeTimeout, logProvider, userLogProvider, systemClock() ).useNativeTransport( useNativeTransport ).build();
         platformModule.life.add( catchUpClient );
         return catchUpClient;
     }

@@ -31,9 +31,10 @@ import java.util.stream.Stream;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 
+import org.neo4j.causalclustering.net.BootstrapConfiguration;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -44,9 +45,12 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static org.neo4j.causalclustering.net.BootstrapConfiguration.preferNativeClientConfig;
+import static org.neo4j.causalclustering.net.NioBootstrapConfig.nioClientConfig;
 
 public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
 {
+    private final BootstrapConfiguration<? extends SocketChannel> bootstrapConfiguration;
     private ReconnectingChannels channels;
 
     private final ChannelInitializer channelInitializer;
@@ -56,13 +60,14 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private JobHandle jobHandle;
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
-    private NioEventLoopGroup eventLoopGroup;
+    private EventLoopGroup eventLoopGroup;
 
-    public SenderService( ChannelInitializer channelInitializer, LogProvider logProvider )
+    public SenderService( ChannelInitializer channelInitializer, LogProvider logProvider, boolean useNativeTransport )
     {
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
         this.channels = new ReconnectingChannels();
+        this.bootstrapConfiguration = useNativeTransport ? preferNativeClientConfig() : nioClientConfig();
     }
 
     @Override
@@ -131,10 +136,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         serviceLock.writeLock().lock();
         try
         {
-            eventLoopGroup = new NioEventLoopGroup( 0, new NamedThreadFactory( "sender-service" ) );
+            eventLoopGroup = bootstrapConfiguration.eventLoopGroup( new NamedThreadFactory( "sender-service" ) );
             bootstrap = new Bootstrap()
                     .group( eventLoopGroup )
-                    .channel( NioSocketChannel.class )
+                    .channel( bootstrapConfiguration.channelClass() )
                     .handler( channelInitializer );
 
             senderServiceRunning = true;

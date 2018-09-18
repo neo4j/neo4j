@@ -134,8 +134,11 @@ class RaftServerModule
                 protocolInstallerRepository, pipelineBuilderFactory, logProvider );
 
         ListenSocketAddress raftListenAddress = platformModule.config.get( CausalClusteringSettings.raft_listen_address );
+
+        boolean useNativeTransport = platformModule.config.get( CausalClusteringSettings.use_native_transport );
+
         Server raftServer = new Server( handshakeServerInitializer, installedProtocolsHandler, logProvider, platformModule.logging.getUserLogProvider(),
-                raftListenAddress, "raft-server" );
+                raftListenAddress, "raft-server", useNativeTransport );
 
         LoggingInbound<ReceivedInstantClusterIdAwareMessage<?>> loggingRaftInbound =
                 new LoggingInbound<>( nettyHandler, messageLogger, identityModule.myself() );

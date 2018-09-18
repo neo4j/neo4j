@@ -155,7 +155,7 @@ public class SenderServiceIT
                 installer, pipelineFactory, logProvider );
 
         ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", port );
-        return new Server( channelInitializer, null, logProvider, logProvider, listenAddress, "raft-server" );
+        return new Server( channelInitializer, null, logProvider, logProvider, listenAddress, "raft-server", true );
     }
 
     private SenderService raftSender()
@@ -176,7 +176,7 @@ public class SenderServiceIT
                 logProvider,
                 logProvider );
 
-        return new SenderService( channelInitializer, logProvider );
+        return new SenderService( channelInitializer, logProvider, true );
     }
 
     private ApplicationProtocolRepository clientRepository()

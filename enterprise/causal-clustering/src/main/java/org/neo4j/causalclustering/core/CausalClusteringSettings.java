@@ -191,6 +191,9 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ),
                     NO_DEFAULT );
 
+    @Description( "Use native transport if available for Linux or MacOS. If false, always use Nio" )
+    public static final Setting<Boolean> use_native_transport = setting( "causal_clustering.use_native_transport", BOOLEAN, TRUE );
+
     @Description( "Type of in-flight cache." )
     public static final Setting<InFlightCacheFactory.Type> in_flight_cache_type =
             setting( "causal_clustering.in_flight_cache.type", options( InFlightCacheFactory.Type.class, true ),

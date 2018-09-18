@@ -27,8 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.ServerSocketChannel;
 
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +40,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.causalclustering.net.BootstrapConfiguration.preferNativeServerConfig;
+import static org.neo4j.causalclustering.net.NioBootstrapConfig.nioServerConfig;
 
 public class Server extends SuspendableLifeCycle
 {
@@ -49,6 +50,7 @@ public class Server extends SuspendableLifeCycle
     private final String serverName;
 
     private final NamedThreadFactory threadFactory;
+    private final boolean useNativeTransport;
     private final ChildInitializer childInitializer;
     private final ChannelInboundHandler parentHandler;
     private final ListenSocketAddress listenAddress;
@@ -59,11 +61,11 @@ public class Server extends SuspendableLifeCycle
     public Server( ChildInitializer childInitializer, LogProvider debugLogProvider, LogProvider userLogProvider, ListenSocketAddress listenAddress,
                    String serverName )
     {
-        this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName );
+        this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName, true );
     }
 
     public Server( ChildInitializer childInitializer, ChannelInboundHandler parentHandler, LogProvider debugLogProvider, LogProvider userLogProvider,
-                   ListenSocketAddress listenAddress, String serverName )
+            ListenSocketAddress listenAddress, String serverName, boolean useNativeTransport )
     {
         super( debugLogProvider.getLog( Server.class ) );
         this.childInitializer = childInitializer;
@@ -73,11 +75,12 @@ public class Server extends SuspendableLifeCycle
         this.userLog = userLogProvider.getLog( getClass() );
         this.serverName = serverName;
         this.threadFactory = new NamedThreadFactory( serverName );
+        this.useNativeTransport = useNativeTransport;
     }
 
     public Server( ChildInitializer childInitializer, ListenSocketAddress listenAddress, String serverName )
     {
-        this( childInitializer, null, NullLogProvider.getInstance(), NullLogProvider.getInstance(), listenAddress, serverName );
+        this( childInitializer, null, NullLogProvider.getInstance(), NullLogProvider.getInstance(), listenAddress, serverName, true );
     }
 
     @Override
@@ -93,12 +96,13 @@ public class Server extends SuspendableLifeCycle
         {
             return;
         }
+        BootstrapConfiguration<? extends ServerSocketChannel> bootstrapConfiguration = useNativeTransport ? preferNativeServerConfig() : nioServerConfig();
 
-        workerGroup = new NioEventLoopGroup( 0, threadFactory );
+        workerGroup = bootstrapConfiguration.eventLoopGroup( threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
                 .group( workerGroup )
-                .channel( NioServerSocketChannel.class )
+                .channel( bootstrapConfiguration.channelClass() )
                 .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )
                 .childHandler( childInitializer.asChannelInitializer() );
@@ -111,7 +115,7 @@ public class Server extends SuspendableLifeCycle
         try
         {
             channel = bootstrap.bind().syncUninterruptibly().channel();
-            debugLog.info( serverName + ": bound to " + listenAddress );
+            debugLog.info( "%s: bound to '%s' with transport '%s'", serverName, listenAddress, bootstrapConfiguration.channelClass() );
         }
         catch ( Exception e )
         {

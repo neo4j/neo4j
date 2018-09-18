@@ -279,9 +279,10 @@ public class EnterpriseCoreEditionModule extends DefaultEditionModule
                         ModifierProtocolInstaller.allClientInstallers );
 
         Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
+        boolean useNativeTransport = config.get( CausalClusteringSettings.use_native_transport );
         HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
                 protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider, platformModule.logging.getUserLogProvider() );
-        final SenderService raftSender = new SenderService( channelInitializer, logProvider );
+        final SenderService raftSender = new SenderService( channelInitializer, logProvider, useNativeTransport );
         life.add( raftSender );
         this.clientInstalledProtocols = raftSender::installedProtocols;
 
