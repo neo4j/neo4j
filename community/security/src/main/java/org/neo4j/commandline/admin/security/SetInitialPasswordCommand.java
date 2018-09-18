@@ -81,9 +81,13 @@ public class SetInitialPasswordCommand implements AdminCommand
     private void setPassword( String password ) throws Throwable
     {
         Config config = loadNeo4jConfig();
-        if ( realUsersExist( config ) )
+        File authFile = CommunitySecurityModule.getUserRepositoryFile( config );
+
+        if ( realUsersExist( authFile ) )
         {
-            throw new CommandFailed( "initial password was not set because live Neo4j-users were detected." );
+            throw new CommandFailed( "the provided initial password was not set because existing Neo4j users were detected at `" +
+                    authFile.getAbsolutePath() + "`. Please remove the existing `auth` and `roles` files if you want to reset your database " +
+                    "to only have a default user with the provided password." );
         }
         else
         {
@@ -107,9 +111,8 @@ public class SetInitialPasswordCommand implements AdminCommand
         }
     }
 
-    private boolean realUsersExist( Config config )
+    private boolean realUsersExist( File authFile )
     {
-        File authFile = CommunitySecurityModule.getUserRepositoryFile( config );
         return outsideWorld.fileSystem().fileExists( authFile );
     }
 

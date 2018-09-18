@@ -151,7 +151,9 @@ public class SetInitialPasswordCommandIT
         // Then
         assertNoAuthIniFile();
         verify( out, times( 1 ) )
-                .stdErrLine( "command failed: initial password was not set because live Neo4j-users were detected." );
+                .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
+                        "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` and `roles` files if you " +
+                        "want to reset your database to only have a default user with the provided password." );
         verify( out ).exit( 1 );
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
