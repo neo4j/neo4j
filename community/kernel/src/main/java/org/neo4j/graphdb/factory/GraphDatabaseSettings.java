@@ -435,6 +435,10 @@ public class GraphDatabaseSettings implements LoadableConfig
                  "procedures will be loaded if they are placed in this directory." )
     public static final Setting<File> plugin_dir = pathSetting( "dbms.directories.plugins", "plugins" );
 
+    @Description( "Threshold for rotation of the user log. If set to 0 log rotation is disabled." )
+    public static final Setting<Long> store_user_log_rotation_threshold =
+            buildSetting( "dbms.logs.user.rotation.size", BYTES, "0" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
+
     @Description( "Threshold for rotation of the debug log." )
     public static final Setting<Long> store_internal_log_rotation_threshold =
             buildSetting( "dbms.logs.debug.rotation.size", BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
@@ -468,9 +472,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Duration> counts_store_rotation_timeout =
             setting( "unsupported.dbms.counts_store_rotation_timeout", DURATION, "10m" );
 
+    @Description( "Minimum time interval after last rotation of the user log before it may be rotated again." )
+    public static final Setting<Duration> store_user_log_rotation_delay =
+            setting( "dbms.logs.user.rotation.delay", DURATION, "300s" );
+
     @Description( "Minimum time interval after last rotation of the debug log before it may be rotated again." )
     public static final Setting<Duration> store_internal_log_rotation_delay =
             setting( "dbms.logs.debug.rotation.delay", DURATION, "300s" );
+
+    @Description( "Maximum number of history files for the user log." )
+    public static final Setting<Integer> store_user_log_max_archives =
+            buildSetting( "dbms.logs.user.rotation.keep_number", INTEGER, "7" ).constraint( min( 1 ) ).build();
 
     @Description( "Maximum number of history files for the debug log." )
     public static final Setting<Integer> store_internal_log_max_archives =
@@ -808,6 +820,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> log_queries =
             setting( "dbms.logs.query.enabled", BOOLEAN, FALSE );
 
+    @Description( "Send user logs to the process stdout. " +
+            "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory. " +
+            "For location of the Logs directory, see <<file-locations>>." )
+    public static final Setting<Boolean> store_user_log_to_stdout = setting( "dbms.logs.user.stdout_enabled", BOOLEAN, TRUE );
+
     @Description( "Path of the logs directory." )
     public static final Setting<File> logs_directory = pathSetting( "dbms.directories.logs", "logs" );
 
@@ -816,6 +833,10 @@ public class GraphDatabaseSettings implements LoadableConfig
             logs_directory,
             logs -> new File( logs, "query.log" ),
             PATH );
+
+    @Description( "Path to the user log file." )
+    public static final Setting<File> store_user_log_path =
+            derivedSetting( "dbms.logs.user.path", logs_directory, logs -> new File( logs, "neo4j.log" ), PATH );
 
     @Description( "Path to the debug log file." )
     public static final Setting<File> store_internal_log_path = derivedSetting( "dbms.logs.debug.path",
