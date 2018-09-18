@@ -57,7 +57,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true,
-      useCompiledExpressons = true,
+      useCompiledExpressions = true,
       lenientCreateRelationship = false
     )
   }
