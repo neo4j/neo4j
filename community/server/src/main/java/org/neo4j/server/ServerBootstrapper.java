@@ -22,6 +22,7 @@ package org.neo4j.server;
 import sun.misc.Signal;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -32,20 +33,26 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
+import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.GraphFactory;
+import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.scheduler.Group;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.neo4jVersion;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 
 public abstract class ServerBootstrapper implements Bootstrapper
 {
@@ -189,12 +196,16 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return Collections.emptyList();
     }
 
-    private static LogProvider setupLogging( Config config )
+    private LogProvider setupLogging( Config config )
     {
-        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext()
-                            .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
-                            .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
-                            .toOutputStream( System.out );
+        FormattedLogProvider.Builder builder = FormattedLogProvider
+                .withoutRenderingContext()
+                .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
+                .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
+
+        LogProvider userLogProvider = config.get( GraphDatabaseSettings.store_user_log_to_stdout ) ? builder.toOutputStream( System.out )
+                                                                                                   : createFileSystemUserLogProvider( config, builder );
+
         JULBridge.resetJUL();
         Logger.getLogger( "" ).setLevel( Level.WARNING );
         JULBridge.forwardTo( userLogProvider );
@@ -243,6 +254,36 @@ public abstract class ServerBootstrapper implements Bootstrapper
             {
                 log.warn( "Unable to remove shutdown hook" );
             }
+        }
+    }
+
+    private LogProvider createFileSystemUserLogProvider( Config config, FormattedLogProvider.Builder builder )
+    {
+        BufferingExecutor deferredExecutor = new BufferingExecutor();
+        dependencies.withDeferredExecutor( deferredExecutor, Group.LOG_ROTATION  );
+
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File destination = config.get( GraphDatabaseSettings.store_user_log_path );
+        Long rotationThreshold = config.get( GraphDatabaseSettings.store_user_log_rotation_threshold );
+        try
+        {
+            if ( rotationThreshold == 0L )
+            {
+                return builder.toOutputStream( createOrOpenAsOutputStream( fs, destination, true ) );
+            }
+            return builder.toOutputStream(
+                    new RotatingFileOutputStreamSupplier(
+                            fs,
+                            destination,
+                            rotationThreshold,
+                            config.get( GraphDatabaseSettings.store_user_log_rotation_delay ).toMillis(),
+                            config.get( GraphDatabaseSettings.store_user_log_max_archives ),
+                            deferredExecutor )
+            );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 

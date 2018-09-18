@@ -29,7 +29,6 @@ import java.util.Optional;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.test.rule.SuppressOutput;

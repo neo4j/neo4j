@@ -26,6 +26,7 @@ import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
@@ -75,6 +76,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.scheduler.DeferredExecutor;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -161,6 +164,7 @@ public class PlatformModule
         dependencies.satisfyDependency( monitors );
 
         jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
+        startDeferredExecutors(jobScheduler, externalDependencies.deferredExecutors());
 
         // Cleanup after recovery, used by GBPTree, added to life in NeoStoreDataSource
         recoveryCleanupWorkCollector = new GroupingRecoveryCleanupWorkCollector( jobScheduler );
@@ -221,6 +225,16 @@ public class PlatformModule
         panicEventGenerator = new DatabasePanicEventGenerator( eventHandlers );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
+    }
+
+    private void startDeferredExecutors( JobScheduler jobScheduler, Iterable<Pair<DeferredExecutor,Group>> deferredExecutors )
+    {
+        for ( Pair<DeferredExecutor,Group> executorGroupPair : deferredExecutors )
+        {
+            DeferredExecutor executor = executorGroupPair.first();
+            Group group = executorGroupPair.other();
+            executor.satisfyWith( jobScheduler.executor( group ) );
+        }
     }
 
     protected VersionContextSupplier createCursorContextSupplier( Config config )

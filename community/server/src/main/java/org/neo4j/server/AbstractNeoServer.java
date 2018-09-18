@@ -114,8 +114,8 @@ public abstract class AbstractNeoServer implements NeoServer
     };
     public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
-    protected final LogProvider logProvider;
-    protected final Log log;
+    protected final LogProvider userLogProvider;
+    private final Log log;
 
     private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
@@ -149,8 +149,8 @@ public abstract class AbstractNeoServer implements NeoServer
     public AbstractNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies )
     {
         this.config = config;
-        this.logProvider = dependencies.userLogProvider();
-        this.log = logProvider.getLog( getClass() );
+        this.userLogProvider = dependencies.userLogProvider();
+        this.log = userLogProvider.getLog( getClass() );
         log.info( NEO4J_IS_STARTING_MESSAGE );
 
         verifyConnectorsConfiguration( config );
@@ -200,8 +200,7 @@ public abstract class AbstractNeoServer implements NeoServer
         final long timeoutMillis = getTransactionTimeoutMillis();
         final Clock clock = Clocks.systemClock();
 
-        transactionRegistry =
-                new TransactionHandleRegistry( clock, timeoutMillis, logProvider );
+        transactionRegistry = new TransactionHandleRegistry( clock, timeoutMillis, userLogProvider );
 
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
@@ -212,12 +211,12 @@ public abstract class AbstractNeoServer implements NeoServer
             transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
         }, runEvery, MILLISECONDS );
 
-        DependencyResolver dependencyResolver = database.getGraph().getDependencyResolver();
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
-                dependencyResolver.resolveDependency( QueryExecutionEngine.class ),
-                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ), transactionRegistry,
-                logProvider
+                resolveDependency( QueryExecutionEngine.class ),
+                resolveDependency( GraphDatabaseQueryService.class ),
+                transactionRegistry,
+                userLogProvider
         );
     }
 
@@ -432,8 +431,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerFromSupplier( authManagerSupplier, AuthManager.class ) );
         singletons.add( providerFromSupplier( userManagerSupplier, UserManagerSupplier.class ) );
         singletons.add( new TransactionFilter( database ) );
-        singletons.add( new LoggingProvider( logProvider ) );
-        singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
+        singletons.add( new LoggingProvider( userLogProvider ) );
+        singletons.add( providerForSingleton( userLogProvider.getLog( NeoServer.class ), Log.class ) );
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
@@ -520,7 +519,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             transactionFacade = createTransactionalActions();
 
-            cypherExecutor = new CypherExecutor( database, logProvider );
+            cypherExecutor = new CypherExecutor( database, userLogProvider );
 
             configureWebServer();
 

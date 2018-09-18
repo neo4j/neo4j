@@ -36,6 +36,7 @@ import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -61,6 +62,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.procedure.ProcedureTransaction;
+import org.neo4j.scheduler.DeferredExecutor;
+import org.neo4j.scheduler.Group;
 
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
@@ -101,6 +104,11 @@ public class GraphDatabaseFacadeFactory
         Map<String,URLAccessRule> urlAccessRules();
 
         Iterable<QueryEngineProvider> executionEngines();
+
+        /**
+         * Collection of command executors to start running once the db is started
+         */
+        Iterable<Pair<DeferredExecutor,Group>> deferredExecutors();
     }
 
     protected final DatabaseInfo databaseInfo;

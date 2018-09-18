@@ -67,27 +67,28 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         return Arrays.asList(
                 createDBMSModule(),
-                new RESTApiModule( webServer, getConfig(), getDependencyResolver().provideDependency( UsageData.class ), logProvider ),
+                new RESTApiModule( webServer, getConfig(), getDependencyResolver().provideDependency( UsageData.class ), userLogProvider ),
                 new ManagementApiModule( webServer, getConfig() ),
-                new ThirdPartyJAXRSModule( webServer, getConfig(), logProvider, this ),
+                new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
                 new ConsoleModule( webServer, getConfig() ),
                 new Neo4jBrowserModule( webServer ),
                 createAuthorizationModule(),
-                new SecurityRulesModule( webServer, getConfig(), logProvider ) );
+                // TODO: shouldn't SecurityRulesModule use the security log?
+                new SecurityRulesModule( webServer, getConfig(), userLogProvider ) );
     }
 
     @Override
     protected WebServer createWebServer()
     {
         NetworkConnectionTracker connectionTracker = getDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
-        return new Jetty9WebServer( logProvider, getConfig(), connectionTracker );
+        return new Jetty9WebServer( userLogProvider, getConfig(), connectionTracker );
     }
 
     @Override
     public Iterable<AdvertisableService> getServices()
     {
         List<AdvertisableService> toReturn = new ArrayList<>( 3 );
-        toReturn.add( new ConsoleService( null, null, logProvider, null ) );
+        toReturn.add( new ConsoleService( null, null, userLogProvider, null ) );
         toReturn.add( new JmxService( null, null ) );
 
         return toReturn;
@@ -103,6 +104,6 @@ public class CommunityNeoServer extends AbstractNeoServer
 
     protected AuthorizationModule createAuthorizationModule()
     {
-        return new AuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(), getUriWhitelist() );
+        return new AuthorizationModule( webServer, authManagerSupplier, userLogProvider, getConfig(), getUriWhitelist() );
     }
 }

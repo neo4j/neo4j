@@ -23,16 +23,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.DeferredExecutor;
+import org.neo4j.scheduler.Group;
 
 import static org.neo4j.helpers.collection.Iterables.addAll;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -71,6 +75,7 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     private final List<KernelExtensionFactory<?>> kernelExtensions;
     private final Map<String,URLAccessRule> urlAccessRules;
     private final List<QueryEngineProvider> queryEngineProviders;
+    private final List<Pair<DeferredExecutor, Group>> deferredExecutors = new LinkedList<>();
 
     private GraphDatabaseDependencies(
             Monitors monitors,
@@ -99,6 +104,15 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
                 urlAccessRules, queryEngineProviders );
+    }
+
+    public GraphDatabaseDependencies withDeferredExecutor( DeferredExecutor executor, Group group )
+    {
+        synchronized ( deferredExecutors )
+        {
+            deferredExecutors.add( Pair.of( executor, group ) );
+        }
+        return this;
     }
 
     public GraphDatabaseDependencies settingsClasses( List<Class<?>> settingsClasses )
@@ -170,5 +184,11 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public Iterable<QueryEngineProvider> executionEngines()
     {
         return queryEngineProviders;
+    }
+
+    @Override
+    public Iterable<Pair<DeferredExecutor,Group>> deferredExecutors()
+    {
+        return deferredExecutors;
     }
 }
