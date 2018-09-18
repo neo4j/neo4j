@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
-public class NodeValueIndexCursorGenericTest extends AbstractNodeValueIndexCursorTest
+public class NodeValueIndexCursorNativeBtree10Test extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()
@@ -57,6 +57,18 @@ public class NodeValueIndexCursorGenericTest extends AbstractNodeValueIndexCurso
 
     @Override
     protected boolean indexProvidesAllValues()
+    {
+        return true;
+    }
+
+    @Override
+    protected boolean indexProvidesArrayValues()
+    {
+        return true;
+    }
+
+    @Override
+    protected boolean indexProvidesBooleanValues()
     {
         return true;
     }

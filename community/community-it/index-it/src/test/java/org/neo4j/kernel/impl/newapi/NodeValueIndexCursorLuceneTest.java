@@ -44,16 +44,4 @@ public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursor
     {
         return "1.0";
     }
-
-    @Override
-    protected boolean indexProvidesStringValues()
-    {
-        return false;
-    }
-
-    @Override
-    protected boolean indexProvidesNumericValues()
-    {
-        return false;
-    }
 }

@@ -153,8 +153,26 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     protected abstract void createCompositeIndex( GraphDatabaseService graphDb, String label, String... properties ) throws Exception;
     protected abstract String providerKey();
     protected abstract String providerVersion();
-    protected abstract boolean indexProvidesStringValues();
-    protected abstract boolean indexProvidesNumericValues();
+
+    protected boolean indexProvidesStringValues()
+    {
+        return false;
+    }
+
+    protected boolean indexProvidesNumericValues()
+    {
+        return false;
+    }
+
+    protected boolean indexProvidesArrayValues()
+    {
+        return false;
+    }
+
+    protected boolean indexProvidesBooleanValues()
+    {
+        return false;
+    }
 
     protected boolean indexProvidesTemporalValues()
     {
@@ -544,7 +562,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformBooleanSearch() throws KernelException
     {
         // given
-        boolean needsValues = indexProvidesAllValues();
+        boolean needsValues = indexProvidesBooleanValues();
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
@@ -571,7 +589,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformTextArraySearch() throws KernelException
     {
         // given
-        boolean needsValues = indexProvidesAllValues();
+        boolean needsValues = indexProvidesArrayValues();
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
@@ -842,7 +860,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // Assert has value capability
             if ( IndexValueCapability.YES.equals( expectValue ) )
             {
-                assertTrue( "has value", node.hasValue() );
+                assertTrue( "Value capability said index would have value for " + expectValue + ", but didn't", node.hasValue() );
             }
 
             // Assert has correct value
