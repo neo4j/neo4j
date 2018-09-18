@@ -67,8 +67,8 @@ class ParallelPageLoader implements PageLoader
             }
             finally
             {
-                processed.getAndIncrement();
                 pageCache.reportEvents();
+                processed.getAndIncrement();
             }
         } );
     }
