@@ -24,7 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.graphdb.{Label, Node, Relationship}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
 
 import scala.collection.JavaConversions._
 
@@ -285,8 +285,8 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "progress" -> 100D,
         "type" -> "node_label_property",
         "provider" -> Map(
-          "version" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getVersion,
-          "key" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getKey))))
+          "version" -> GenericNativeIndexProvider.DESCRIPTOR.getVersion,
+          "key" -> GenericNativeIndexProvider.DESCRIPTOR.getKey))))
   }
 
   test("yield from void procedure should return correct error msg") {
