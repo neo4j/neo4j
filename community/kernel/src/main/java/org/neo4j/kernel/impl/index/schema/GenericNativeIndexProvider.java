@@ -31,6 +31,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
@@ -173,6 +174,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
 
     private static class GenericIndexCapability implements IndexCapability
     {
+        private final IndexLimitation[] limitations = {IndexLimitation.SLOW_CONTAINS};
+
         @Override
         public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
@@ -212,6 +215,12 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
                 }
             }
             return true;
+        }
+
+        @Override
+        public IndexLimitation[] limitations()
+        {
+            return limitations;
         }
     };
 }
