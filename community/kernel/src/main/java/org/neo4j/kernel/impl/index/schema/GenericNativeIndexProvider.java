@@ -181,7 +181,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
             {
                 return IndexCapability.ORDER_BOTH;
             }
-            return new IndexOrder[0];
+            return IndexCapability.ORDER_NONE;
         }
 
         @Override
