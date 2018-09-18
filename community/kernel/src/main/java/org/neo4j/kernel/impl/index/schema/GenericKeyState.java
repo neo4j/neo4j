@@ -164,7 +164,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     /* <initializers> */
     void clear()
     {
-        if ( type == Type.TEXT && long1 == TRUE )
+        if ( type == Type.TEXT && booleanOf( long1 ) )
         {
             // Clear byteArray if it has been dereferenced
             byteArray = null;
