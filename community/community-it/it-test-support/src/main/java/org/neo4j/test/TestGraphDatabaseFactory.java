@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -64,6 +66,8 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
+    public static final Predicate<KernelExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
+
     public TestGraphDatabaseFactory()
     {
         this( NullLogProvider.getInstance() );
@@ -196,6 +200,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public TestGraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         getCurrentState().setKernelExtensions( newKernelExtensions );
+        return this;
+    }
+
+    public TestGraphDatabaseFactory removeKernelExtensions( Predicate<KernelExtensionFactory<?>> filter )
+    {
+        getCurrentState().removeKernelExtensions( filter );
         return this;
     }
 

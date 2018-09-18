@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher
 
-import java.io.{File, FileOutputStream}
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
-import org.neo4j.kernel.api.impl.schema.{LuceneIndexProviderFactory, NativeLuceneFusionIndexProviderFactory20}
+import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory
+import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.test.rule.TestDirectory
 
@@ -102,28 +103,25 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     testDirectory.prepareDirectory(getClass, "createDbWithFailedIndex")
     val storeDir = testDirectory.databaseDir()
     graph.shutdown()
-    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
+    val dbFactory = new TestGraphDatabaseFactory()
+    // Build a properly failing index provider which is a wrapper around the default provider, but which throws exception
+    // in its populator when trying to add updates to it
+    val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
+    dbFactory.removeKernelExtensions(TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER)
+    dbFactory.addKernelExtension(providerFactory)
+    graph = new GraphDatabaseCypherService(dbFactory.newEmbeddedDatabase(storeDir))
     eengine = createEngine(graph)
-    execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
+    execute("CREATE INDEX ON :Person(name)")
     val tx = graph.getGraphDatabaseService.beginTx()
     try {
       graph.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
       tx.success()
+    } catch {
+      case e:IllegalStateException => assert(e.getMessage.contains("FAILED"), "Was expecting FAILED state")
     } finally {
       tx.close()
     }
-
-    val indexDirectory = NativeLuceneFusionIndexProviderFactory20.subProviderDirectoryStructure( testDirectory.databaseDir() )
-        .forProvider( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR ).directoryForIndex( 1 )
-    graph.shutdown()
-
-    val stream = new FileOutputStream( new File( indexDirectory, "failure-message" ) )
-    stream.write(65)
-    stream.close()
-
-    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
-    eengine = createEngine(graph)
     graph.getGraphDatabaseService
   }
 }

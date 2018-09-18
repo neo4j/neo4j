@@ -24,9 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,12 +32,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
@@ -51,12 +46,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.subProviderDirectoryStructure;
+import static org.neo4j.index.SabotageNativeIndex.nativeIndexDirectoryStructure;
 
 public class IndexFailureOnStartupTest
 {
     private static final Label PERSON = Label.label( "Person" );
+
+    @Rule
+    public final RandomRule random = new RandomRule();
     @Rule
     public final DatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
@@ -72,7 +69,7 @@ public class IndexFailureOnStartupTest
         awaitIndexesOnline( 5, SECONDS );
         createNamed( PERSON, "Johan" );
         // when - we restart the database in a state where the index is not operational
-        db.restartDatabase( new DeleteIndexFile( "_0.cfs" ) );
+        db.restartDatabase( new SabotageNativeIndex( random.random() ) );
         // then - the database should still be operational
         createNamed( PERSON, "Lars" );
         awaitIndexesOnline( 5, SECONDS );
@@ -91,7 +88,7 @@ public class IndexFailureOnStartupTest
         }
         createNamed( PERSON, "Lars" );
         // when - we restart the database in a state where the index is not operational
-        db.restartDatabase( new DeleteIndexFile( "_0.cfs" ) );
+        db.restartDatabase( new SabotageNativeIndex( random.random() ) );
         // then - we must not be able to violate the constraint
         createNamed( PERSON, "Johan" );
         Throwable failure = null;
@@ -134,26 +131,23 @@ public class IndexFailureOnStartupTest
         assertThat( archiveFile(), nullValue() );
 
         // when
-        db.restartDatabase( new DeleteIndexFile( "segments_" ) );
+        db.restartDatabase( new SabotageNativeIndex( random.random() ) );
 
         // then
         indexStateShouldBe( equalTo( ONLINE ) );
         assertThat( archiveFile(), notNullValue() );
     }
 
-    private File archiveFile() throws IOException
+    private File archiveFile()
     {
-        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
+        File indexDir = nativeIndexDirectoryStructure( db.databaseLayout() ).rootDirectory();
+        File[] files = indexDir.listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
+        if ( files == null || files.length == 0 )
         {
-            File indexDir = indexRootDirectory( db.databaseLayout().databaseDirectory() );
-            File[] files = indexDir.listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
-            if ( files == null || files.length == 0 )
-            {
-                return null;
-            }
-            assertEquals( 1, files.length );
-            return files[0];
+            return null;
         }
+        assertEquals( 1, files.length );
+        return files[0];
     }
 
     private void awaitIndexesOnline( int timeout, TimeUnit unit )
@@ -194,38 +188,5 @@ public class IndexFailureOnStartupTest
             db.createNode( label ).setProperty( "name", name );
             tx.success();
         }
-    }
-
-    private static class DeleteIndexFile implements DatabaseRule.RestartAction
-    {
-        private final String prefix;
-
-        DeleteIndexFile( String prefix )
-        {
-            this.prefix = prefix;
-        }
-
-        @Override
-        public void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
-        {
-            File indexRootDirectory = new File( soleIndexDir( databaseLayout.databaseDirectory() ), "1" /*the partition*/ );
-            File[] files = fs.listFiles( indexRootDirectory, ( dir, name ) -> name.startsWith( prefix ) );
-            Stream.of( files ).forEach( fs::deleteFile );
-        }
-    }
-
-    private static File indexRootDirectory( File base )
-    {
-        return providerDirectoryStructure( base ).rootDirectory();
-    }
-
-    private static File soleIndexDir( File base )
-    {
-        return providerDirectoryStructure( base ).directoryForIndex( 1 );
-    }
-
-    private static IndexDirectoryStructure providerDirectoryStructure( File base )
-    {
-        return subProviderDirectoryStructure( base ).forProvider( PROVIDER_DESCRIPTOR );
     }
 }
