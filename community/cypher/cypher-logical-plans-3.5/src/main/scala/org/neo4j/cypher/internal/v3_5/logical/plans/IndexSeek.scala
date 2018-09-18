@@ -32,9 +32,10 @@ object IndexSeek {
 
   // primitives
   private val ID = "([a-zA-Z][a-zA-Z0-9]*)"
-  private val VALUE = "([0-9'].*)"
+  private val VALUE = "([?0-9'].*)"
   private val INT = "([0-9]+)".r
   private val STRING = s"'(.*)'".r
+  private val PARAM = "???"
 
   // entry point
   private val INDEX_SEEK_PATTERN = s"$ID: ?$ID ?\\(([^\\)]+)\\)".r
@@ -57,6 +58,8 @@ object IndexSeek {
     */
   def apply(indexSeekString: String,
             getValue: GetValueFromIndexBehavior = DoNotGetValue,
+            indexOrder: IndexOrder = IndexOrderNone,
+            paramExpr: Option[Expression] = None,
             argumentIds: Set[String] = Set.empty,
             propIds: Map[String, Int] = Map.empty,
             labelId: Int = 0)(implicit idGen: IdGen): IndexLeafPlan = {
@@ -76,10 +79,11 @@ object IndexSeek {
       IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), id), getValue)
     }
 
-    def value(value: String): Literal =
+    def value(value: String): Expression =
       value match {
         case INT(int) => SignedDecimalIntegerLiteral(int)(pos)
         case STRING(str) => StringLiteral(str)(pos)
+        case PARAM  => paramExpr.getOrElse(throw new IllegalArgumentException("Cannot use parameter syntax '???' without providing parameter expression 'paramExpr' to IndexSeek()"))
         case _ => throw new IllegalArgumentException(s"Value `$value` is not supported")
       }
 
@@ -87,36 +91,36 @@ object IndexSeek {
       predicates.head match {
         case EXACT(propStr, valueStr) =>
           val valueExpr = SingleQueryExpression(value(valueStr))
-          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, IndexOrderNone)
+          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, indexOrder)
 
         case LESS_THAN(propStr, valueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
-          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, IndexOrderNone)
+          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, indexOrder)
 
         case LESS_THAN_OR_EQ(propStr, valueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
-          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, IndexOrderNone)
+          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, indexOrder)
 
         case GREATER_THAN(propStr, valueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
-          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, IndexOrderNone)
+          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, indexOrder)
 
         case GREATER_THAN_OR_EQ(propStr, valueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
-          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, IndexOrderNone)
+          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, indexOrder)
 
         case STARTS_WITH(propStr, string) =>
           val valueExpr = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral(string)(pos)))(pos))
-          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, IndexOrderNone)
+          NodeIndexSeek(node, label, List(prop(propStr)), valueExpr, argumentIds, indexOrder)
 
         case ENDS_WITH(propStr, string) =>
-          NodeIndexEndsWithScan(node, label, prop(propStr), StringLiteral(string)(pos), argumentIds, IndexOrderNone)
+          NodeIndexEndsWithScan(node, label, prop(propStr), StringLiteral(string)(pos), argumentIds, indexOrder)
 
         case CONTAINS(propStr, string) =>
-          NodeIndexContainsScan(node, label, prop(propStr), StringLiteral(string)(pos), argumentIds, IndexOrderNone)
+          NodeIndexContainsScan(node, label, prop(propStr), StringLiteral(string)(pos), argumentIds, indexOrder)
 
         case EXISTS(propStr) =>
-          NodeIndexScan(node, label, prop(propStr), argumentIds, IndexOrderNone)
+          NodeIndexScan(node, label, prop(propStr), argumentIds, indexOrder)
       }
     } else if (predicates.length > 1) {
 
@@ -131,7 +135,7 @@ object IndexSeek {
           case _ => throw new IllegalArgumentException("Only exact predicates are allowed in composite seeks.")
         }
 
-      NodeIndexSeek(node, label, properties, CompositeQueryExpression(valueExprs), argumentIds, IndexOrderNone)
+      NodeIndexSeek(node, label, properties, CompositeQueryExpression(valueExprs), argumentIds, indexOrder)
     } else
       throw new IllegalArgumentException("Cannot parse 'str' and index seek.")
   }
