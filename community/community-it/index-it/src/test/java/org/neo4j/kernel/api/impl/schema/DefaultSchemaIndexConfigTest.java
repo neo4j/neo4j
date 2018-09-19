@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
@@ -75,7 +76,7 @@ public class DefaultSchemaIndexConfigTest
             createIndex( db );
 
             // then
-            assertIndexProvider( db, provider == null ? NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.name() : provider.providerIdentifier() );
+            assertIndexProvider( db, provider == null ? GenericNativeIndexProvider.DESCRIPTOR.name() : provider.providerIdentifier() );
         }
         finally
         {

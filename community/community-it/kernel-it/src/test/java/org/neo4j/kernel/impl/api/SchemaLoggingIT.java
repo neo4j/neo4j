@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -59,9 +60,11 @@ public class SchemaLoggingIT
 
         // then
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        logProvider.assertAtLeastOnce( match.info( "Index population started: [%s]", ":User(name) [provider: {key=lucene+native, version=2.0}]" ) );
+        GraphDatabaseSettings.SchemaIndex expectedProvider = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+        logProvider.assertAtLeastOnce( match.info( "Index population started: [%s]", ":User(name) [provider: {key=" +
+                expectedProvider.providerName() + ", version=" + expectedProvider.providerVersion() + "}]" ) );
 
-        assertEventually( (ThrowingSupplier<Object,Exception>) () -> null, new LogMessageMatcher( match ), 1, TimeUnit.MINUTES );
+        assertEventually( (ThrowingSupplier<Object,Exception>) () -> null, new LogMessageMatcher( match, expectedProvider ), 1, TimeUnit.MINUTES );
     }
 
     private void createIndex( GraphDatabaseAPI db, String labelName, String property )
@@ -83,17 +86,19 @@ public class SchemaLoggingIT
     {
         private static final String CREATION_FINISHED = "Index creation finished. Index [%s] is %s.";
         private final LogMatcherBuilder match;
+        private final GraphDatabaseSettings.SchemaIndex expectedProvider;
 
-        LogMessageMatcher( LogMatcherBuilder match )
+        LogMessageMatcher( LogMatcherBuilder match, GraphDatabaseSettings.SchemaIndex expectedProvider )
         {
             this.match = match;
+            this.expectedProvider = expectedProvider;
         }
 
         @Override
         public boolean matches( Object item )
         {
-            return logProvider.containsMatchingLogCall(
-                    match.info( CREATION_FINISHED, ":User(name) [provider: {key=lucene+native, version=2.0}]", "ONLINE" ) );
+            return logProvider.containsMatchingLogCall( match.info( CREATION_FINISHED,
+                    ":User(name) [provider: {key=" + expectedProvider.providerName() + ", version=" + expectedProvider.providerVersion() + "}]", "ONLINE" ) );
         }
 
         @Override
