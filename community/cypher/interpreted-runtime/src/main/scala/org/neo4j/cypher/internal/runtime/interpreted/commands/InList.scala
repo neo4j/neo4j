@@ -50,9 +50,11 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
       val seq = makeTraversable(list)
       val innerContext = m.createClone()
 
-      seqMethod(seq)(item =>
+      seqMethod(seq) { item =>
         // Since we can override an existing id here we use a method that guarantees that we do not overwrite an existing variable
-        predicate.isMatch(innerContext.set(id, item), state))
+        innerContext.set(id, item)
+        predicate.isMatch(innerContext, state)
+      }
     }
   }
 

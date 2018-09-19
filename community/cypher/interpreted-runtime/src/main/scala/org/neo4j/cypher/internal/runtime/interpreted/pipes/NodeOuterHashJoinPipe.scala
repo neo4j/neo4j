@@ -50,7 +50,8 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
   }
 
   protected def addNulls(in: ExecutionContext): ExecutionContext = {
-    val withNulls = executionContextFactory.copyWith(in).set(nullVariables)
+    val withNulls = executionContextFactory.copyWith(in)
+    withNulls.set(nullVariables)
     for (x <- nullableCachedProperties)
       withNulls.setCachedProperty(x, Values.NO_VALUE)
     withNulls

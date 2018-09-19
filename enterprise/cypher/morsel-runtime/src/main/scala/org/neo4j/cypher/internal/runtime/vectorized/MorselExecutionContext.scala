@@ -109,13 +109,13 @@ class MorselExecutionContext(private val morsel: Morsel, private val longsPerRow
 
   override def getRefAt(offset: Int): AnyValue = morsel.refs(currentRow * refsPerRow + offset)
 
-  override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = ???
+  override def set(newEntries: Seq[(String, AnyValue)]): Unit = ???
 
-  override def set(key1: String, value1: AnyValue): ExecutionContext = ???
+  override def set(key1: String, value1: AnyValue): Unit = ???
 
-  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = ???
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): Unit = ???
 
-  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = ???
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit = ???
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = ???
 

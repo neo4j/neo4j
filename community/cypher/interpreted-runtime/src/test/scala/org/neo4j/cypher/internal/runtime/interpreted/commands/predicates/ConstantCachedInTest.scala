@@ -44,9 +44,12 @@ abstract class CachedInTest extends CypherFunSuite {
 
     val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.set("x", intValue(1))
-    val vNull = ExecutionContext.empty.set("x", NO_VALUE)
-    val v14 = ExecutionContext.empty.set("x", intValue(14))
+    val v1 = ExecutionContext.empty
+    v1.set("x", intValue(1))
+    val vNull = ExecutionContext.empty
+    vNull.set("x", NO_VALUE)
+    val v14 = ExecutionContext.empty
+    v14.set("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(Some(true))
@@ -64,9 +67,12 @@ abstract class CachedInTest extends CypherFunSuite {
     val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(null)))
 
     val state = QueryStateHelper.empty
-    val v1 = ExecutionContext.empty.set("x",intValue(1))
-    val vNull = ExecutionContext.empty.set("x",NO_VALUE)
-    val v14 = ExecutionContext.empty.set("x", intValue(14))
+    val v1 = ExecutionContext.empty
+    v1.set("x", intValue(1))
+    val vNull = ExecutionContext.empty
+    vNull.set("x", NO_VALUE)
+    val v14 = ExecutionContext.empty
+    v14.set("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(Some(true))
@@ -86,9 +92,12 @@ abstract class CachedInTest extends CypherFunSuite {
     val state = QueryStateHelper.empty
 
 
-    val v1 = ExecutionContext.empty.set("x", intValue(1))
-    val vNull = ExecutionContext.empty.set("x", NO_VALUE)
-    val v14 = ExecutionContext.empty.set("x", intValue(14))
+    val v1 = ExecutionContext.empty
+    v1.set("x", intValue(1))
+    val vNull = ExecutionContext.empty
+    vNull.set("x", NO_VALUE)
+    val v14 = ExecutionContext.empty
+    v14.set("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(None)
@@ -110,9 +119,12 @@ abstract class CachedInTest extends CypherFunSuite {
 
     val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.set("x", VirtualValues.list(intValue(1),intValue(2)))
-    val vNull = ExecutionContext.empty.set("x", NO_VALUE)
-    val v14 = ExecutionContext.empty.set("x", intValue(14))
+    val v1 = ExecutionContext.empty
+    v1.set("x", VirtualValues.list(intValue(1), intValue(2)))
+    val vNull = ExecutionContext.empty
+    vNull.set("x", NO_VALUE)
+    val v14 = ExecutionContext.empty
+    v14.set("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(Some(true))

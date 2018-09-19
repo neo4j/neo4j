@@ -62,8 +62,10 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
     }
   }
 
-  private def withNulls(row: ExecutionContext) =
+  private def withNulls(row: ExecutionContext) = {
     row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
+    row
+  }
 
   def getFromNode(row: ExecutionContext): AnyValue =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at '$fromName' but found nothing"))

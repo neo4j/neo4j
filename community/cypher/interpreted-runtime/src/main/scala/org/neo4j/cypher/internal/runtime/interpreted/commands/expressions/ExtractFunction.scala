@@ -37,7 +37,8 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
     var i = 0
     while (values.hasNext) {
       val value = values.next()
-      extracted(i) = expression(innerContext.set(id, value), state)
+      innerContext.set(id, value)
+      extracted(i) = expression(innerContext, state)
       i += 1
     }
     VirtualValues.list(extracted:_*)

@@ -107,10 +107,10 @@ case class VarLengthExpandPipe(source: Pipe,
 
           case Values.NO_VALUE =>
             if (nodeInScope)
-              Iterator(row.set(relName, Values.NO_VALUE))
+              row.set(relName, Values.NO_VALUE)
             else
-              Iterator(row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE))
-
+              row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
+            Iterator(row)
           case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }
       }

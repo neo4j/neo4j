@@ -156,30 +156,24 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
 
   // The newWith methods are called from Community pipes. We should already have allocated slots for the given keys,
   // so we just set the values in the existing slots instead of creating a new context like in the MapExecutionContext.
-  override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
+  override def set(newEntries: Seq[(String, AnyValue)]): Unit =
     newEntries.foreach {
       case (k, v) =>
         setValue(k, v)
     }
-    this
-  }
 
-  override def set(key1: String, value1: AnyValue): ExecutionContext = {
+  override def set(key1: String, value1: AnyValue): Unit =
     setValue(key1, value1)
-    this
-  }
 
-  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): Unit = {
     setValue(key1, value1)
     setValue(key2, value2)
-    this
   }
 
-  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = {
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit = {
     setValue(key1, value1)
     setValue(key2, value2)
     setValue(key3, value3)
-    this
   }
 
   override def copyWith(key1: String, value1: AnyValue): ExecutionContext = {

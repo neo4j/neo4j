@@ -126,13 +126,13 @@ case class ArrayResultExecutionContext(resultArray: Array[AnyValue],
 
   override def getRefAt(offset: Int): AnyValue = fail()
 
-  override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
+  override def set(newEntries: Seq[(String, AnyValue)]): Unit = fail()
 
-  override def set(key: String, value: AnyValue): ExecutionContext = fail()
+  override def set(key: String, value: AnyValue): Unit = fail()
 
-  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): Unit = fail()
 
-  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit = fail()
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
 
