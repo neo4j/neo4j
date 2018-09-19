@@ -143,7 +143,8 @@ case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogg
                                     clock: Clock,
                                     debugOptions: Set[String],
                                     config: CypherPlannerConfiguration,
-                                    runtimeEnvironment: RuntimeEnvironment) extends RuntimeContext
+                                    runtimeEnvironment: RuntimeEnvironment,
+                                    compileExpressions: Boolean) extends RuntimeContext
 
 /**
   * Creator of EnterpriseRuntimeContext
@@ -158,7 +159,8 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                       tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
-                      readOnly: Boolean): EnterpriseRuntimeContext =
+                      readOnly: Boolean,
+                      compileExpressions: Boolean): EnterpriseRuntimeContext =
     EnterpriseRuntimeContext(notificationLogger,
                              tokenContext,
                              readOnly,
@@ -167,5 +169,6 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                              clock,
                              debugOptions,
                              config,
-                             morselRuntimeState)
+                             morselRuntimeState,
+                             compileExpressions)
 }

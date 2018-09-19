@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
@@ -58,6 +58,7 @@ abstract class RuntimeContext {
   def tokenContext: TokenContext
   def readOnly: Boolean
   def config: CypherPlannerConfiguration
+  def compileExpressions: Boolean
 }
 
 /**
@@ -70,7 +71,8 @@ trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
              tokenContext: TokenContext,
              clock: Clock,
              debugOptions: Set[String],
-             readOnly: Boolean
+             readOnly: Boolean,
+             compileExpressions: Boolean
             ): CONTEXT
 }
 

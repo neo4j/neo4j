@@ -45,22 +45,32 @@ import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 
 object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
+
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
-      val (logicalPlan,physicalPlan) = rewritePlan(context, state.logicalPlan, state.semanticTable())
-    val converters: ExpressionConverters = new ExpressionConverters(
+    val (logicalPlan, physicalPlan) = rewritePlan(context, state.logicalPlan, state.semanticTable())
+
+    val converters: ExpressionConverters = if (context.compileExpressions) {
+      new ExpressionConverters(
         new CompiledExpressionConverter(context.log, physicalPlan, context.tokenContext),
         MorselExpressionConverters,
         SlottedExpressionConverters(physicalPlan),
         CommunityExpressionConverter(context.tokenContext))
-      val operatorBuilder = new PipelineBuilder(physicalPlan, converters, context.readOnly)
+    } else {
+      new ExpressionConverters(
+        MorselExpressionConverters,
+        SlottedExpressionConverters(physicalPlan),
+        CommunityExpressionConverter(context.tokenContext))
+    }
 
-      val operators = operatorBuilder.create(logicalPlan)
-      val dispatcher = context.runtimeEnvironment.getDispatcher(context.debugOptions)
-      val tracer = context.runtimeEnvironment.tracer
-      val fieldNames = state.statement().returnColumns.toArray
+    val operatorBuilder = new PipelineBuilder(physicalPlan, converters, context.readOnly)
 
-      context.notificationLogger.log(
-        ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
+    val operators = operatorBuilder.create(logicalPlan)
+    val dispatcher = context.runtimeEnvironment.getDispatcher(context.debugOptions)
+    val tracer = context.runtimeEnvironment.tracer
+    val fieldNames = state.statement().returnColumns.toArray
+
+    context.notificationLogger.log(
+      ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
                                         "not recommended to be run on production systems"))
 
     VectorizedExecutionPlan(operators,
@@ -71,7 +81,8 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                             tracer)
   }
 
-  private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
+  private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan,
+                          semanticTable: SemanticTable) = {
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, semanticTable)
     val slottedRewriter = new SlottedRewriter(context.tokenContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
@@ -133,4 +144,5 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
     override def queryProfile(): QueryProfile = QueryProfile.NONE
   }
+
 }

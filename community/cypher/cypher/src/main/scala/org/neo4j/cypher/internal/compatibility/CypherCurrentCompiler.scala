@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.cypher.{CypherException, CypherExecutionMode}
+import org.neo4j.cypher.{CypherException, CypherExecutionMode, CypherExpressionEngineOption}
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -91,7 +91,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                logicalPlanResult.plannerContext.planContext,
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
-                                               queryType == READ_ONLY)
+                                               queryType == READ_ONLY,
+                                               preParsedQuery.expressionEngine == CypherExpressionEngineOption.compiled)
 
     val executionPlan3_5 = runtime.compileToExecutable(planState, runtimeContext)
 

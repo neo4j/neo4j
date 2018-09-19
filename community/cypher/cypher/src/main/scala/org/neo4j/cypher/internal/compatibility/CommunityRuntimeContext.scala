@@ -31,14 +31,18 @@ import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 case class CommunityRuntimeContext(notificationLogger: InternalNotificationLogger,
                                    tokenContext: TokenContext,
                                    readOnly: Boolean,
-                                   config: CypherPlannerConfiguration) extends RuntimeContext
+                                   config: CypherPlannerConfiguration) extends RuntimeContext {
+
+  override def compileExpressions: Boolean = false
+}
 
 case class CommunityRuntimeContextCreator(config: CypherPlannerConfiguration) extends RuntimeContextCreator[RuntimeContext] {
   override def create(notificationLogger: InternalNotificationLogger,
                       tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
-                      readOnly: Boolean
+                      readOnly: Boolean,
+                      ignore: Boolean
                      ): RuntimeContext =
     CommunityRuntimeContext(notificationLogger, tokenContext, readOnly, config)
 }

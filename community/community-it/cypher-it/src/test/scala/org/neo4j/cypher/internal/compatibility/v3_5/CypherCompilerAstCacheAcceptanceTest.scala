@@ -146,6 +146,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         CypherPlannerOption.default,
         CypherRuntimeOption.default,
         CypherUpdateStrategy.default,
+        CypherExpressionEngineOption.default,
         debugOptions),
         noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
       context.close(true)

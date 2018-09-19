@@ -65,7 +65,7 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
         printRewrittenPlanInfo(logicalPlan)
       }
 
-      val converters = if (context.config.useCompiledExpressions) {
+      val converters = if (context.compileExpressions) {
         new ExpressionConverters(
           new CompiledExpressionConverter(context.log, physicalPlan, context.tokenContext),
           SlottedExpressionConverters(physicalPlan),

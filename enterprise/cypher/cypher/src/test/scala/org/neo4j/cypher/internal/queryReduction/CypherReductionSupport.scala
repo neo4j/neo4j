@@ -201,7 +201,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
      else
       CommunityRuntimeContextCreator(CypherReductionSupport.config)
 
-    val runtimeContext = runtimeContextCreator.create(devNullLogger, planContext, MasterCompiler.CLOCK, Set(), readOnly)
+    val runtimeContext = runtimeContextCreator.create(devNullLogger, planContext, MasterCompiler.CLOCK, Set(), readOnly, enterprise)
     val executionPlan = runtime.compileToExecutable(logicalPlanState, runtimeContext)
 
     val queryContext = new TransactionBoundQueryContext(txContextWrapper)(CypherReductionSupport.searchMonitor)
