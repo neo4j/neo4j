@@ -54,4 +54,10 @@ public class NodeValueIndexCursorGenericTest extends AbstractNodeValueIndexCurso
     {
         return true;
     }
+
+    @Override
+    protected boolean indexProvidesAllValues()
+    {
+        return true;
+    }
 }

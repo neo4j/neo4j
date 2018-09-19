@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -94,12 +95,31 @@ abstract class Read implements TxStateHolder,
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index, false );
         cursorImpl.setRead( this, null );
-        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursorImpl, query, reader );
-        reader.query( target, indexOrder, needsValues, query );
+        IndexProgressor.NodeValueClient withValues = injectValues( cursorImpl, needsValues, index, reader );
+        IndexProgressor.NodeValueClient withFullPrecision = injectFullValuePrecision( withValues, query, reader );
+        reader.query( withFullPrecision, indexOrder, needsValues, query );
     }
 
-    private IndexProgressor.NodeValueClient withFullValuePrecision( DefaultNodeValueIndexCursor cursor,
-            IndexQuery[] query, IndexReader reader )
+    private IndexProgressor.NodeValueClient injectValues( IndexProgressor.NodeValueClient cursor,
+                                                          boolean needsValues,
+                                                          IndexReference index, IndexReader reader )
+    {
+        if ( needsValues && GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName().equals( index.providerKey() ) )
+        {
+            return new NodeValueInjector( cursor,
+                                          cursors.allocateNodeCursor(),
+                                          cursors.allocatePropertyCursor(),
+                                          this,
+                                          index.properties() );
+        }
+        else
+        {
+            return cursor;
+        }
+    }
+
+    private IndexProgressor.NodeValueClient injectFullValuePrecision( IndexProgressor.NodeValueClient cursor,
+                                                                      IndexQuery[] query, IndexReader reader )
     {
         IndexProgressor.NodeValueClient target = cursor;
         if ( !reader.hasFullValuePrecision( query ) )
@@ -191,7 +211,7 @@ abstract class Read implements TxStateHolder,
     {
         IndexReader reader = indexReader( index, true );
         cursor.setRead( this, reader );
-        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursor, query, reader );
+        IndexProgressor.NodeValueClient target = injectFullValuePrecision( cursor, query, reader );
         // we never need values for exact predicates
         reader.query( target, IndexOrder.NONE, false, query );
     }

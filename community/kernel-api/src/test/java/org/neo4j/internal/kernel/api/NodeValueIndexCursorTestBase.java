@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
@@ -57,6 +59,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     private static long strOneNoLabel;
     private static long joeDalton, williamDalton, jackDalton, averellDalton;
     private static long date891, date892, date86;
+    private static long[] nodesOfAllPropertyTypes;
+    private static long whateverPoint;
 
     @Override
     void createTestGraph( GraphDatabaseService graphDb )
@@ -64,6 +68,11 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            tx.success();
+        }
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            graphDb.schema().indexFor( label( "What" ) ).on( "ever" ).create();
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -125,6 +134,17 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             nodeWithProp( graphDb, new String[]{"first", "second", "third"} );
             nodeWithProp( graphDb, new String[]{"fourth", "fifth", "sixth", "seventh"} );
 
+            MutableLongList listOfIds = LongLists.mutable.empty();
+            listOfIds.add(nodeWithWhatever( graphDb, "string" ));
+            listOfIds.add(nodeWithWhatever( graphDb, false ));
+            listOfIds.add(nodeWithWhatever( graphDb, 3 ));
+            listOfIds.add(nodeWithWhatever( graphDb, 13.0 ));
+            whateverPoint = nodeWithWhatever( graphDb, Values.pointValue( Cartesian, 1, 0 ) );
+            listOfIds.add( whateverPoint );
+            listOfIds.add(nodeWithWhatever( graphDb, DateValue.date( 1989, 3, 24 ) ));
+            listOfIds.add(nodeWithWhatever( graphDb, new String[]{"first", "second", "third"} ));
+
+            nodesOfAllPropertyTypes = listOfIds.toArray();
             tx.success();
         }
     }
@@ -141,6 +161,11 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     protected boolean indexProvidesSpatialValues()
+    {
+        return false;
+    }
+
+    protected boolean indexProvidesAllValues()
     {
         return false;
     }
@@ -721,6 +746,46 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
             }
+        }
+    }
+
+    @Test
+    public void shouldProvideValuesForPoints() throws Exception
+    {
+        // given
+        boolean needsValues = indexProvidesAllValues();
+        int label = token.nodeLabel( "What" );
+        int prop = token.propertyKey( "ever" );
+        IndexReference index = schemaRead.index( label, prop );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            MutableLongSet uniqueIds = new LongHashSet();
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, Cartesian ) );
+
+            // then
+            assertFoundNodesAndValue( node, uniqueIds, index.valueCapability( ValueCategory.GEOMETRY ),needsValues, whateverPoint );
+        }
+    }
+
+    @Test
+    public void shouldProvideValuesForAllTypes() throws Exception
+    {
+        // given
+        boolean needsValues = indexProvidesAllValues();
+        int label = token.nodeLabel( "What" );
+        int prop = token.propertyKey( "ever" );
+        IndexReference index = schemaRead.index( label, prop );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            MutableLongSet uniqueIds = new LongHashSet();
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exists( prop ) );
+
+            // then
+            assertFoundNodesAndValue( node, uniqueIds, index.valueCapability( ValueCategory.UNKNOWN ),needsValues, nodesOfAllPropertyTypes );
         }
     }
 
@@ -1337,6 +1402,13 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         Node node = graphDb.createNode( label( "Node" ) );
         node.setProperty( "prop", value );
+        return node.getId();
+    }
+
+    private long nodeWithWhatever( GraphDatabaseService graphDb, Object value )
+    {
+        Node node = graphDb.createNode( label( "What" ) );
+        node.setProperty( "ever", value );
         return node.getId();
     }
 
