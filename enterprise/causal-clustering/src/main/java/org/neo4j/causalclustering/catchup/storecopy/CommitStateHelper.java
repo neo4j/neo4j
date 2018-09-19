@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -74,7 +73,7 @@ public class CommitStateHelper
 
     private Optional<Long> getLatestTransactionLogIndex( long startTxId, File storeDir ) throws IOException
     {
-        if ( !hasTxLogs() )
+        if ( !hasTxLogs( storeDir ) )
         {
             return Optional.empty();
         }
@@ -99,14 +98,8 @@ public class CommitStateHelper
         }
     }
 
-    public boolean hasTxLogs()
+    public boolean hasTxLogs( File storeDir ) throws IOException
     {
-        File txLogsDir = config.get( GraphDatabaseSettings.logical_logs_location );
-        File[] files = fs.listFiles( txLogsDir, TransactionLogFiles.DEFAULT_FILENAME_FILTER );
-        if ( files == null )
-        {
-            throw new RuntimeException( "Files was null. Incorrect directory or I/O error?" );
-        }
-        return files.length > 0;
+        return LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withConfig( config ).build().logFiles().length > 0;
     }
 }

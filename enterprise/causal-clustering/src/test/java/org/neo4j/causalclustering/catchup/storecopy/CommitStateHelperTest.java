@@ -32,13 +32,12 @@ import java.io.IOException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class CommitStateHelperTest
 {
@@ -46,42 +45,38 @@ public class CommitStateHelperTest
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public final DefaultFileSystemRule fsr = new DefaultFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private Config config;
     private CommitStateHelper commitStateHelper;
+    private File storeDir;
 
     @Before
     public void setUp()
     {
         File txLogLocation = new File( testDirectory.directory(), "txLogLocation" );
         config = Config.builder().withSetting( GraphDatabaseSettings.logical_logs_location, txLogLocation.getAbsolutePath() ).build();
-        commitStateHelper = new CommitStateHelper( null, fsr, config );
+        storeDir = testDirectory.graphDbDir();
+        commitStateHelper = new CommitStateHelper( pageCacheRule.getPageCache( fsr ), fsr, config );
     }
 
     @Test
-    public void shouldThrowRuntimeExceptionIfDirectoryDoesNotExist()
+    public void shouldNotHaveTxLogsIfDirectoryDoesNotExist() throws IOException
     {
         File txDir = config.get( GraphDatabaseSettings.logical_logs_location );
         assertFalse( txDir.exists() );
 
-        try
-        {
-            commitStateHelper.hasTxLogs();
-            fail();
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( e.getMessage(), "Files was null. Incorrect directory or I/O error?" );
-        }
+        assertFalse( commitStateHelper.hasTxLogs( storeDir ) );
     }
 
     @Test
-    public void shouldNotHaveTxLogsIfDirectoryIsEmpty()
+    public void shouldNotHaveTxLogsIfDirectoryIsEmpty() throws IOException
     {
         File txDir = config.get( GraphDatabaseSettings.logical_logs_location );
         txDir.mkdir();
 
-        assertFalse( commitStateHelper.hasTxLogs() );
+        assertFalse( commitStateHelper.hasTxLogs( storeDir ) );
     }
 
     @Test
@@ -92,7 +87,7 @@ public class CommitStateHelperTest
 
         fsr.create( new File( txDir, "foo.bar" ) );
 
-        assertFalse( commitStateHelper.hasTxLogs() );
+        assertFalse( commitStateHelper.hasTxLogs( storeDir ) );
     }
 
     @Test
@@ -102,6 +97,6 @@ public class CommitStateHelperTest
         txDir.mkdir();
         fsr.create( new File( txDir, TransactionLogFiles.DEFAULT_NAME + ".0" ) );
 
-        assertTrue( commitStateHelper.hasTxLogs() );
+        assertTrue( commitStateHelper.hasTxLogs( storeDir ) );
     }
 }
