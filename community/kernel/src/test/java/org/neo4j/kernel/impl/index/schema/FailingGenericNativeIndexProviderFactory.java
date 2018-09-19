@@ -62,6 +62,8 @@ import static java.util.Arrays.copyOfRange;
  */
 public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
 {
+    public static final String POPULATION_FAILURE_OVERRIDE = "Was told to fail";
+
     public enum FailureType
     {
         POPULATION,
@@ -170,7 +172,7 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
             @Override
             public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
             {
-                return failureTypes.contains( FailureType.INITIAL_STATE ) ? "Was told to fail" : actualProvider.getPopulationFailure( descriptor );
+                return failureTypes.contains( FailureType.INITIAL_STATE ) ? POPULATION_FAILURE_OVERRIDE : actualProvider.getPopulationFailure( descriptor );
             }
 
             @Override

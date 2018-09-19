@@ -23,99 +23,75 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
-import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.subProviderDirectoryStructure;
+import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.INITIAL_STATE;
+import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_OVERRIDE;
+import static org.neo4j.test.TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER;
 
 public class ConstraintIndexFailureIT
 {
-    private static final String INJECTED_FAILURE = "Injected failure";
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     @Rule
-    public final TestDirectory storeDir = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
     public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
     {
-        // given
-        dbWithConstraint();
-        storeIndexFailure( INJECTED_FAILURE );
+        // given a perfectly normal constraint
+        File dir = directory.databaseDir();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
 
+        // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
+        FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
+        db = new TestGraphDatabaseFactory()
+                .removeKernelExtensions( INDEX_PROVIDERS_FILTER )
+                .addKernelExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )
+                .newEmbeddedDatabase( dir );
         // when
-        GraphDatabaseService db = startDatabase();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-
-                fail( "expected exception" );
-            }
-            // then
-            catch ( ConstraintViolationException e )
-            {
-                assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
-                assertThat( e.getCause().getCause().getMessage(), allOf(
-                        containsString( "The index is in a failed state:" ),
-                        containsString( INJECTED_FAILURE ) ) );
-            }
+            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( ConstraintViolationException e )
+        {
+            assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
+            assertThat( e.getCause().getCause().getMessage(), allOf(
+                    containsString( "The index is in a failed state:" ),
+                    containsString( POPULATION_FAILURE_OVERRIDE ) ) );
         }
         finally
         {
             db.shutdown();
         }
-    }
-
-    private GraphDatabaseService startDatabase()
-    {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.databaseDir() );
-    }
-
-    private void dbWithConstraint()
-    {
-        GraphDatabaseService db = startDatabase();
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
-
-                tx.success();
-            }
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    private void storeIndexFailure( String failure ) throws IOException
-    {
-        File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.databaseDir() )
-                .forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
-        PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
-                .withFileSystem( fileSystemRule.get() )
-                .withIndexFolder( luceneIndexDirectory )
-                .build();
-        indexStorage.storeIndexFailure( failure );
     }
 }
