@@ -166,7 +166,8 @@ public class SpatialIndexSettingsTest
 
     private SpatialLayoutTestUtil createLayoutTestUtil( long indexId, int labelId, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
     {
-        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( labelId, 666 ).withId( indexId ), configuredSettings.forCRS( crs ), crs );
+        StoreIndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( labelId, 666 ).withId( indexId );
+        return new SpatialLayoutTestUtil( descriptor, configuredSettings.forCRS( crs ), crs );
     }
 
     private SpatialIndexProvider newSpatialIndexProvider( Config config )

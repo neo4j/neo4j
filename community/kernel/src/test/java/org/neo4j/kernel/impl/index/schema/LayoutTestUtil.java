@@ -51,7 +51,7 @@ abstract class LayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE 
         this( indexDescriptor.withId( 0 ) );
     }
 
-    private LayoutTestUtil( StoreIndexDescriptor indexDescriptor )
+    LayoutTestUtil( StoreIndexDescriptor indexDescriptor )
     {
         this.indexDescriptor = indexDescriptor;
     }
