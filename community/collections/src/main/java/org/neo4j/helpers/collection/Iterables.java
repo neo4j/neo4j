@@ -612,6 +612,11 @@ public final class Iterables
         return ImmutableListFactoryImpl.INSTANCE.ofAll(iterator);
     }
 
+    public static <T> ImmutableList<T> asImmutableList( Iterator<T> iterator )
+    {
+        return asImmutableList(() -> iterator);
+    }
+
     public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
     {
         Map<T, U> map = new HashMap<>();

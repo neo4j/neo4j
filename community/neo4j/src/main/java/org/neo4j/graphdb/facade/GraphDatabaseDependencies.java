@@ -26,7 +26,7 @@ import org.eclipse.collections.impl.map.immutable.ImmutableMapFactoryImpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -41,8 +41,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
 
-import static org.neo4j.helpers.collection.Iterables.addAll;
-import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.asImmutableList;
 import static org.neo4j.helpers.collection.Iterables.asImmutableMap;
@@ -61,7 +59,8 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public static GraphDatabaseDependencies newDependencies()
     {
         ImmutableList<Class<?>> settingsClasses = ImmutableListFactoryImpl.INSTANCE.empty();
-        ImmutableList<KernelExtensionFactory<?>> kernelExtensions = asImmutableList( Service.load( KernelExtensionFactory.class ) );
+        ImmutableList<KernelExtensionFactory<?>> kernelExtensions = asImmutableList(
+                getKernelExtensions(Service.load( KernelExtensionFactory.class ).iterator()));
 
         ImmutableMap<String,URLAccessRule> urlAccessRules = ImmutableMapFactoryImpl.INSTANCE.of(
                 "http", URLAccessRules.alwaysPermitted(),
@@ -200,5 +199,25 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public Iterable<Pair<DeferredExecutor,Group>> deferredExecutors()
     {
         return deferredExecutors == null ? new ArrayList<>( 0 ) : deferredExecutors;
+    }
+
+    // This method is needed to convert the non generic KernelExtensionFactory type returned from Service.load
+    // to KernelExtensionFactory<?> generic types
+    private static Iterator<KernelExtensionFactory<?>> getKernelExtensions( Iterator<KernelExtensionFactory> parent )
+    {
+        return new Iterator<KernelExtensionFactory<?>>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return parent.hasNext();
+            }
+
+            @Override
+            public KernelExtensionFactory<?> next()
+            {
+                return parent.next();
+            }
+        };
     }
 }
