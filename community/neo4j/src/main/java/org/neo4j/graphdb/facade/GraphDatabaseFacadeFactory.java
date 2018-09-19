@@ -166,6 +166,8 @@ public class GraphDatabaseFacadeFactory
         PlatformModule platform = createPlatform( storeDir, config, dependencies );
         AbstractEditionModule edition = editionFactory.apply( platform );
 
+        platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
+
         Procedures procedures = setupProcedures( platform, edition, graphDatabaseFacade );
         platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
 
@@ -181,7 +183,6 @@ public class GraphDatabaseFacadeFactory
 
         platform.life.add( platform.globalKernelExtensions );
         platform.life.add( createBoltServer( platform, edition, databaseManager ) );
-        platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
         platform.life.add(
