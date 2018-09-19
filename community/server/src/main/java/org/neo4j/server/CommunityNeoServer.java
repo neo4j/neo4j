@@ -73,7 +73,6 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new ConsoleModule( webServer, getConfig() ),
                 new Neo4jBrowserModule( webServer ),
                 createAuthorizationModule(),
-                // TODO: shouldn't SecurityRulesModule use the security log?
                 new SecurityRulesModule( webServer, getConfig(), userLogProvider ) );
     }
 

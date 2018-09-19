@@ -109,7 +109,6 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
     @Override
     protected AuthorizationModule createAuthorizationModule()
     {
-        // TODOH shouldn't this be the security log?
         return new EnterpriseAuthorizationModule( webServer, authManagerSupplier, userLogProvider, getConfig(),
                 getUriWhitelist() );
     }
@@ -128,7 +127,6 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
     protected Iterable<ServerModule> createServerModules()
     {
         List<ServerModule> modules = new ArrayList<>();
-        // TODO: shouldn't this be the security log?
         modules.add( new DatabaseRoleInfoServerModule( webServer, getConfig(), userLogProvider ) );
         if ( getConfig().get( jmx_module_enabled ) )
         {
