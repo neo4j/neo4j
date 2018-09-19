@@ -40,7 +40,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     private static long foo, bar, baz, barbaz, bare, gone;
 
     @Override
-    void createTestGraph( GraphDatabaseService graphDb )
+    public void createTestGraph( GraphDatabaseService graphDb )
     {
         Node deleted;
         try ( Transaction tx = graphDb.beginTx() )

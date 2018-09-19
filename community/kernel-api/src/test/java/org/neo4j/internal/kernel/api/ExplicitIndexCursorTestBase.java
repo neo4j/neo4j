@@ -35,7 +35,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
         extends KernelAPIReadTestBase<G>
 {
     @Override
-    void createTestGraph( GraphDatabaseService graphDb )
+    public void createTestGraph( GraphDatabaseService graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {

@@ -45,7 +45,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
     private static List<Long> nodeIds = new ArrayList<>();
 
     @Override
-    void createTestGraph( GraphDatabaseService graphDb )
+    public void createTestGraph( GraphDatabaseService graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {

@@ -64,7 +64,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     private static long whateverPoint;
 
     @Override
-    void createTestGraph( GraphDatabaseService graphDb )
+    public void createTestGraph( GraphDatabaseService graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {

@@ -96,7 +96,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Override
-    void createTestGraph( GraphDatabaseService graphDb )
+    public void createTestGraph( GraphDatabaseService graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
