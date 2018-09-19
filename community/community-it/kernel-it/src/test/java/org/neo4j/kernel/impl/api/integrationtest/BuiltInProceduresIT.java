@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -350,11 +351,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         // Then
+        GraphDatabaseSettings.SchemaIndex expectedProvider = NATIVE_BTREE10;
         Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
-                "key", "lucene+native",
-                "version", "2.0" );
+                "key", expectedProvider.providerName(),
+                "version", expectedProvider.providerVersion() );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList("foo" ), "ONLINE",
+                new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
                         "node_unique_property", 100D, pdm},
                 new Object[]{"INDEX ON :Person(foo)", "Unnamed index", singletonList( "Person" ),
                         singletonList( "foo" ), "ONLINE", "node_label_property", 100D, pdm},
