@@ -134,7 +134,7 @@ case class ArrayResultExecutionContext(resultArray: Array[AnyValue],
 
   override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit = fail()
 
-  override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
+  override def mergeWith(other: ExecutionContext): Unit = fail()
 
   override def createClone(): ExecutionContext = fail()
 

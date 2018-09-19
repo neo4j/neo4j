@@ -53,7 +53,7 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def set(key: String, value: AnyValue): Unit
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): Unit
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit
-  def mergeWith(other: ExecutionContext): ExecutionContext
+  def mergeWith(other: ExecutionContext): Unit
   def createClone(): ExecutionContext
 
   def setCachedProperty(key: CachedNodeProperty, value: Value): Unit
@@ -94,8 +94,10 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue], cachedProperties
 
   override def size: Int = m.size
 
-  override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
-    case MapExecutionContext(otherMap, otherCached) => MapExecutionContext(m ++ otherMap, cachedProperties ++ otherCached)
+  override def mergeWith(other: ExecutionContext): Unit = other match {
+    case MapExecutionContext(otherMap, otherCached) =>
+      m ++= otherMap
+      cachedProperties ++= otherCached
     case _ => fail()
   }
 

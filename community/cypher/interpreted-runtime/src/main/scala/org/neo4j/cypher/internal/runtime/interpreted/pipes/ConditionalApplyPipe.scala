@@ -29,13 +29,12 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
-      (outerContext) =>
+      outerContext =>
         if (condition(outerContext)) {
-          val original = outerContext.createClone()
           val innerState = state.withInitialContext(outerContext)
-          val innerResults = inner.createResults(innerState)
-          innerResults.map { context => original mergeWith context }
-        } else Iterator.single(outerContext)
+          inner.createResults(innerState)
+        } else
+          Iterator.single(outerContext)
     }
 
   private def condition(context: ExecutionContext) = {

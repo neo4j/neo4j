@@ -117,7 +117,7 @@ class MorselExecutionContext(private val morsel: Morsel, private val longsPerRow
 
   override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit = ???
 
-  override def mergeWith(other: ExecutionContext): ExecutionContext = ???
+  override def mergeWith(other: ExecutionContext): Unit = ???
 
   override def createClone(): MorselExecutionContext = new MorselExecutionContext(morsel, longsPerRow, refsPerRow, currentRow)
 

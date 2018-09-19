@@ -217,7 +217,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   def getRefAtWithoutCheckingInitialized(offset: Int): AnyValue =
     refs(offset)
 
-  override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
+  override def mergeWith(other: ExecutionContext): Unit = other match {
     case slottedOther: SlottedExecutionContext =>
       slottedOther.slots.foreachSlot({
         case (key, otherSlot @ LongSlot(offset, _, CTNode)) =>
@@ -253,7 +253,6 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
         case (cachedNodeProperty, refSlot) =>
           setCachedProperty(cachedNodeProperty, other.getCachedPropertyAt(refSlot.offset))
       })
-      this
 
     case _ =>
       throw new InternalException("Well well, isn't this a delicate situation?")

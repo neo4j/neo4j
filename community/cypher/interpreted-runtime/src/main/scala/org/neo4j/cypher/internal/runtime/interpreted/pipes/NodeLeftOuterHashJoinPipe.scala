@@ -46,9 +46,13 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
       for {rhsRow <- rhs.createResults(state)
            joinKey <- computeKey(rhsRow)}
         yield {
-          val seq = probeTable(joinKey)
+          val lhsRows = probeTable(joinKey)
           rhsKeys.add(joinKey)
-          seq.map(lhsRow => executionContextFactory.copyWith(lhsRow).mergeWith(rhsRow))
+          lhsRows.map { lhsRow =>
+            val outputRow = executionContextFactory.copyWith(lhsRow)
+            outputRow.mergeWith(rhsRow)
+            outputRow
+          }
         }).flatten
 
     def rowsWithoutRhsMatch: Iterator[ExecutionContext] = {

@@ -26,10 +26,8 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID) exte
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
-      (outerContext: ExecutionContext) =>
-        val original = outerContext.createClone()
+      outerContext: ExecutionContext =>
         val innerState = state.withInitialContext(outerContext)
-        val innerResults = inner.createResults(innerState)
-        innerResults.map { context => context mergeWith original }
+        inner.createResults(innerState)
     }
 }

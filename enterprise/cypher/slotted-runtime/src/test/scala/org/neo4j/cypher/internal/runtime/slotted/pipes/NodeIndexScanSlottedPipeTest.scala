@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, SlottedIndexedProperty}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexMockingHelp
+import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
 import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrderNone
 import org.neo4j.values.storable.Values
@@ -30,6 +30,8 @@ import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, 
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
+
+import scala.collection.Map
 
 class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos with SlottedPipeTestHelper with IndexMockingHelp {
 

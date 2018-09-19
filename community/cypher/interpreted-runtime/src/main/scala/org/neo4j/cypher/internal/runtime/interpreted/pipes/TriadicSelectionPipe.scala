@@ -48,11 +48,9 @@ extends PipeWithSource(left) {
       override def setState(triadicSet: LongHashSet) = triadicState = triadicSet
 
     // 2. pass through 'right'
-    }.flatMap { (outerContext) =>
-      val original = outerContext.createClone()
+    }.flatMap { outerContext =>
       val innerState = state.withInitialContext(outerContext)
-      val innerResults = right.createResults(innerState)
-      innerResults.map { context => context mergeWith original }
+      right.createResults(innerState)
 
     // 3. Probe
     }.filter { ctx =>

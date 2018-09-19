@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.opencypher.v9_0.util.symbols.CTNumber
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
@@ -30,7 +30,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should work by applying the identity operator on the rhs") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs = pipeWithResults { (state) => Iterator(state.initialContext.get) }
+    val rhs = pipeWithResults { state => Iterator(state.initialContext.get) }
 
     val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
@@ -41,20 +41,10 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
     val rhsData = "c" -> Values.intValue(36)
-    val rhs = pipeWithResults { (state) => Iterator(ExecutionContext.empty += rhsData) }
+    val rhs = pipeWithResults { state => Iterator(state.initialContext.get += rhsData) }
 
     val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
     result should beEquivalentTo(lhsData.map(_ + rhsData))
-  }
-
-  test("should work even if inner pipe overwrites values") {
-    val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
-    val rhs = pipeWithResults { (state) => Iterator(state.initialContext.get += "b" -> null) }
-
-    val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
-
-    result should beEquivalentTo(lhsData)
   }
 }

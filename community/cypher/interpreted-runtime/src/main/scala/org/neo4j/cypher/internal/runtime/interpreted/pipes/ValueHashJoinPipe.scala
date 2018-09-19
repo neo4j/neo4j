@@ -46,12 +46,15 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     if (table.isEmpty)
       return Iterator.empty
 
-    val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey = rhsExpression(context, state) if joinKey != Values.NO_VALUE}
+    val result = for {rhsRow <- rhsIterator
+                      joinKey = rhsExpression(rhsRow, state) if joinKey != Values.NO_VALUE}
       yield {
-
-        val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-        seq.map(context.mergeWith)
+        val lhsRows = table.getOrElse(joinKey, mutable.MutableList.empty)
+        lhsRows.map { lhsRow =>
+          val outputRow = lhsRow.createClone()
+          outputRow.mergeWith(rhsRow)
+          outputRow
+        }
       }
 
     result.flatten

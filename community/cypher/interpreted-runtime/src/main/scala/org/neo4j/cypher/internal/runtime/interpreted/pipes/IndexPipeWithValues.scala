@@ -42,7 +42,7 @@ trait IndexPipeWithValues extends Pipe {
 
   case class CtxResultCreatorWithValues(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
     override def createResult(nodeValueHit: NodeValueHit): ExecutionContext = {
-      var newContext = executionContextFactory.copyWith(baseContext, ident, nodeValueHit.node)
+      val newContext = executionContextFactory.copyWith(baseContext, ident, nodeValueHit.node)
       for (i <- indexPropertyIndices.indices) {
         newContext.setCachedProperty(indexCachedNodeProperties(i), nodeValueHit.propertyValue(indexPropertyIndices(i)))
       }
