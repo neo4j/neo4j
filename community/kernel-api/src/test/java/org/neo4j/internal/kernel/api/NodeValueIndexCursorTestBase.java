@@ -23,6 +23,7 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.Assume;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -543,7 +544,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformBooleanSearch() throws KernelException
     {
         // given
-        boolean needsValues = false;
+        boolean needsValues = indexProvidesAllValues();
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
@@ -570,7 +571,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldPerformTextArraySearch() throws KernelException
     {
         // given
-        boolean needsValues = false;
+        boolean needsValues = indexProvidesAllValues();
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
@@ -606,11 +607,11 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexScan( index, node, IndexOrder.NONE, false );
+            read.nodeIndexScan( index, node, IndexOrder.NONE, indexProvidesAllValues() );
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
-            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, false );
+            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, indexProvidesAllValues() );
         }
     }
 
@@ -753,19 +754,22 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldProvideValuesForPoints() throws Exception
     {
         // given
-        boolean needsValues = indexProvidesAllValues();
+        Assume.assumeTrue( indexProvidesAllValues() );
+
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
         IndexReference index = schemaRead.index( label, prop );
+        assertEquals( IndexValueCapability.YES, index.valueCapability( ValueCategory.GEOMETRY ) );
+
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, Cartesian ) );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, true, IndexQuery.range( prop, Cartesian ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, index.valueCapability( ValueCategory.GEOMETRY ),needsValues, whateverPoint );
+            assertFoundNodesAndValue( node, uniqueIds, index.valueCapability( ValueCategory.GEOMETRY ), true, whateverPoint );
         }
     }
 
@@ -773,19 +777,22 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldProvideValuesForAllTypes() throws Exception
     {
         // given
-        boolean needsValues = indexProvidesAllValues();
+        Assume.assumeTrue( indexProvidesAllValues() );
+
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
         IndexReference index = schemaRead.index( label, prop );
+        assertEquals( IndexValueCapability.YES, index.valueCapability( ValueCategory.UNKNOWN ) );
+
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exists( prop ) );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, true, IndexQuery.exists( prop ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, index.valueCapability( ValueCategory.UNKNOWN ),needsValues, nodesOfAllPropertyTypes );
+            assertFoundNodesAndValue( node, uniqueIds, index.valueCapability( ValueCategory.UNKNOWN ), true, nodesOfAllPropertyTypes );
         }
     }
 
@@ -819,8 +826,11 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    private void assertFoundNodesAndValue( NodeValueIndexCursor node, int nodes, MutableLongSet uniqueIds, IndexValueCapability expectValue,
-            boolean indexProvidesValues )
+    private void assertFoundNodesAndValue( NodeValueIndexCursor node,
+                                           int nodes,
+                                           MutableLongSet uniqueIds,
+                                           IndexValueCapability expectValue,
+                                           boolean indexProvidesValues )
     {
         uniqueIds.clear();
         for ( int i = 0; i < nodes; i++ )
@@ -942,6 +952,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldNotFindDeletedNodeInIndexScan() throws Exception
     {
         // Given
+        boolean needsValues = indexProvidesAllValues();
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
@@ -952,14 +963,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, false );
+            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, needsValues );
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
-            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, false );
+            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, needsValues );
 
             // then
             tx.dataWrite().nodeDelete( strOne );
-            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, false );
-            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT - 1, uniqueIds, wildcardCapability, false );
+            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, needsValues );
+            assertFoundNodesAndValue( node, TOTAL_NODE_COUNT - 1, uniqueIds, wildcardCapability, needsValues );
         }
     }
 

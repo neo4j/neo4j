@@ -95,16 +95,16 @@ abstract class Read implements TxStateHolder,
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index, false );
         cursorImpl.setRead( this, null );
-        IndexProgressor.NodeValueClient withValues = injectValues( cursorImpl, needsValues, index, reader );
+        IndexProgressor.NodeValueClient withValues = injectValues( cursorImpl, needsValues, index );
         IndexProgressor.NodeValueClient withFullPrecision = injectFullValuePrecision( withValues, query, reader );
         reader.query( withFullPrecision, indexOrder, needsValues, query );
     }
 
     private IndexProgressor.NodeValueClient injectValues( IndexProgressor.NodeValueClient cursor,
                                                           boolean needsValues,
-                                                          IndexReference index, IndexReader reader )
+                                                          IndexReference index )
     {
-        if ( needsValues && GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName().equals( index.providerKey() ) )
+        if ( KernelIndexAugmentation.shouldInjectValues( index, needsValues ) )
         {
             return new NodeValueInjector( cursor,
                                           cursors.allocateNodeCursor(),
@@ -217,7 +217,10 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues ) throws KernelException
+    public final void nodeIndexScan( IndexReference index,
+                                     NodeValueIndexCursor cursor,
+                                     IndexOrder indexOrder,
+                                     boolean needsValues ) throws KernelException
     {
         ktx.assertOpen();
         if ( hasForbiddenProperties( index ) )
@@ -228,8 +231,11 @@ abstract class Read implements TxStateHolder,
 
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
-        ((DefaultNodeValueIndexCursor) cursor).setRead( this, null );
-        indexReader( index, false ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
+
+        DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
+        cursorImpl.setRead( this, null );
+        IndexProgressor.NodeValueClient withValues = injectValues( cursorImpl, needsValues, index );
+        indexReader( index, false ).query( withValues, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )

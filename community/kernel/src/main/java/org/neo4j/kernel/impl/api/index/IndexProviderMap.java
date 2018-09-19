@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.newapi.KernelIndexAugmentation;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
@@ -73,8 +74,10 @@ public interface IndexProviderMap
      */
     default CapableIndexDescriptor withCapabilities( StoreIndexDescriptor descriptor )
     {
-        IndexCapability capability = lookup( descriptor.providerDescriptor() ).getCapability();
-        return new CapableIndexDescriptor( descriptor, capability );
+        IndexProviderDescriptor providerDescriptor = descriptor.providerDescriptor();
+        IndexCapability capability = lookup( providerDescriptor ).getCapability();
+        IndexCapability augmented = KernelIndexAugmentation.augmentIndexCapability( capability, providerDescriptor );
+        return new CapableIndexDescriptor( descriptor, augmented );
     }
 
     IndexProviderMap EMPTY = new IndexProviderMap()
