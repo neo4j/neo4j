@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -43,6 +42,8 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class ConstraintRecoveryIT
@@ -83,14 +84,17 @@ public class ConstraintRecoveryIT
         } );
         dbFactory.setMonitors( monitors );
 
-        db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabase( pathToDb );
+        // This test relies on behaviour that is specific to the Lucene populator, where uniqueness is controlled
+        // after index has been populated, which is why we're using NATIVE20 and index booleans (they end up in Lucene)
+        db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabaseBuilder( pathToDb )
+                .setConfig( default_schema_provider, NATIVE20.providerIdentifier() )
+                .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 2; i++ )
             {
-                Node node1 = db.createNode( LABEL );
-                node1.setProperty( KEY, true );
+                db.createNode( LABEL ).setProperty( KEY, true );
             }
 
             tx.success();
@@ -99,7 +103,7 @@ public class ConstraintRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
-            fail("Should have failed with ConstraintViolationException");
+            fail( "Should have failed with ConstraintViolationException" );
             tx.success();
         }
         catch ( ConstraintViolationException ignored )
@@ -118,7 +122,7 @@ public class ConstraintRecoveryIT
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 5000, TimeUnit.MILLISECONDS );
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
 
         try ( Transaction tx = db.beginTx() )
