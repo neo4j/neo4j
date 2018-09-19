@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.security.User;
 public interface UserManager
 {
     String INITIAL_USER_NAME = "neo4j";
+    String INITIAL_PASSWORD = "neo4j";
 
     User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException;

@@ -87,7 +87,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
         if ( userRepository.numberOfUsers() == 0 )
         {
-            User neo4j = newUser( INITIAL_USER_NAME, "neo4j", true );
+            User neo4j = newUser( INITIAL_USER_NAME, INITIAL_PASSWORD, true );
             if ( initialUserRepository.numberOfUsers() > 0 )
             {
                 User user = initialUserRepository.getUserByName( INITIAL_USER_NAME );

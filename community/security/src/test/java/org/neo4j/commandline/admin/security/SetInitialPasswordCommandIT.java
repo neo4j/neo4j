@@ -192,7 +192,48 @@ public class SetInitialPasswordCommandIT
                         "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` and `roles` files if you " +
                         "want to reset your database to only have a default user with the provided password." );
         verify( out ).exit( 1 );
-        verify( out, never() ).stdOutLine( anyString() );
+    }
+
+    @Test
+    public void shouldErrorIfRealUsersAlreadyExistV2() throws Throwable
+    {
+        // Given
+        // Create an `auth` file with the default neo4j user, but not the default password
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "not-the-default-password" );
+        File authFile = getAuthFile( "auth" );
+        fileSystem.mkdirs( authFile.getParentFile() );
+        fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
+
+        // When
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );
+
+        // Then
+        assertNoAuthIniFile();
+        verify( out, times( 1 ) )
+                .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
+                        "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` file if you " +
+                        "want to reset your database to only have a default user with the provided password." );
+        verify( out ).exit( 1 );
+
+        verify( out, times( 1 ) ).stdOutLine( "Changed password for user 'neo4j'." ); // This is from the initial setup
+    }
+
+    @Test
+    public void shouldNotErrorIfOnlyTheUnmodifiedDefaultNeo4jUserAlreadyExists() throws Throwable
+    {
+        // Given
+        // Create an `auth` file with the default neo4j user
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, UserManager.INITIAL_PASSWORD );
+        File authFile = getAuthFile( "auth" );
+        fileSystem.mkdirs( authFile.getParentFile() );
+        fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
+
+        // When
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "should-not-be-ignored" );
+
+        // Then
+        assertAuthIniFile( "should-not-be-ignored" );
+        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
     }
 
     private void assertAuthIniFile( String password ) throws Throwable
