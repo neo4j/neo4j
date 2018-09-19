@@ -45,6 +45,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class RelationshipChainExplorerTest
@@ -109,7 +110,14 @@ public class RelationshipChainExplorerTest
 
     private static void breakTheChain( RecordStore<RelationshipRecord> relationshipStore )
     {
-        int relationshipTowardsEndOfChain = 16;
+        RelationshipRecord record = relationshipStore.getRecord( 10, relationshipStore.newRecord(), NORMAL );
+        long relationshipTowardsEndOfChain = record.getFirstNode();
+        while ( record.inUse() && !record.isFirstInFirstChain() )
+        {
+            record = relationshipStore.getRecord( relationshipTowardsEndOfChain, relationshipStore.newRecord(), FORCE );
+            relationshipTowardsEndOfChain = record.getFirstPrevRel();
+        }
+
         relationshipStore.updateRecord( new RelationshipRecord( relationshipTowardsEndOfChain, 0, 0, 0 ) );
     }
 
