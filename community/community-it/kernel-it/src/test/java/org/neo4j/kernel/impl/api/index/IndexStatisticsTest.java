@@ -431,6 +431,7 @@ public class IndexStatisticsTest
             }
 
             // Node count == indexed node count
+            cursor = ktx.cursors().allocateNodeValueIndexCursor();
             ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exists( propertyKeyId ) );
             int nodesInIndex = 0;
             while ( cursor.next() )
