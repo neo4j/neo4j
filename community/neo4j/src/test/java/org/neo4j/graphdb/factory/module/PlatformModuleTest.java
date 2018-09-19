@@ -52,7 +52,6 @@ class PlatformModuleTest
     @Test
     void shouldRunDeferredExecutors() throws InterruptedException
     {
-        Map<String, String> configOverrides = new HashMap<>( 0 );
         AtomicInteger counter = new AtomicInteger( 0 );
         Semaphore lock = new Semaphore( 1 );
 
@@ -76,7 +75,7 @@ class PlatformModuleTest
         assertThat( counter.get(), equalTo( 0 ) );
 
         // When I construct a PlatformModule...
-        PlatformModule pm = new PlatformModule( testDirectory.storeDir(), Config.defaults( configOverrides ), DatabaseInfo.UNKNOWN, externalDependencies );
+        PlatformModule pm = new PlatformModule( testDirectory.storeDir(), Config.defaults(), DatabaseInfo.UNKNOWN, externalDependencies );
 
         // then the tasks that I queued up earlier should be run...
         // the timeout here is really high to ensure that this test does not become flaky because of a slow running JVM

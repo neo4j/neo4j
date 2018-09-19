@@ -40,7 +40,7 @@ public class BufferingExecutor implements DeferredExecutor
 {
     private final Queue<Runnable> buffer = new LinkedList<>();
 
-    private Executor realExecutor;
+    private volatile Executor realExecutor;
 
     public void satisfyWith( Executor executor )
     {
