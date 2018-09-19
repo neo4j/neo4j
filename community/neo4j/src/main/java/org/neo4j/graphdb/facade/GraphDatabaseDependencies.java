@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.map.immutable.ImmutableMapFactoryImpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -198,7 +199,7 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     @Override
     public Iterable<Pair<DeferredExecutor,Group>> deferredExecutors()
     {
-        return deferredExecutors == null ? new ArrayList<>( 0 ) : deferredExecutors;
+        return deferredExecutors;
     }
 
     // This method is needed to convert the non generic KernelExtensionFactory type returned from Service.load
