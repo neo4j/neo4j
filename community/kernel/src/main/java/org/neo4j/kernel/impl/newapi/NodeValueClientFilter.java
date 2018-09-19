@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.io.IOUtils;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
@@ -192,8 +193,6 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     @Override
     public void close()
     {
-        node.close();
-        property.close();
-        progressor.close();
+        IOUtils.closeAllSilently( node, property, progressor );
     }
 }

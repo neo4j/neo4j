@@ -27,6 +27,8 @@ import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+
 /**
  * Gathers the business logic on what indexes to augment with node property value injection.
  *
@@ -39,12 +41,16 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public class KernelIndexAugmentation
 {
-    private static final String NATIVE_PROVIDER = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName();
+    private static boolean isNativeBTree( String key, String version )
+    {
+        return NATIVE_BTREE10.providerName().equals( key ) &&
+               NATIVE_BTREE10.providerVersion().equals( version );
+    }
 
     public static IndexCapability augmentIndexCapability( IndexCapability capability,
                                                           IndexProviderDescriptor providerDescriptor )
     {
-        if ( NATIVE_PROVIDER.equals( providerDescriptor.getKey() ) )
+        if ( isNativeBTree( providerDescriptor.getKey(), providerDescriptor.getVersion() ) )
         {
             return new IndexCapability()
             {
@@ -69,6 +75,6 @@ public class KernelIndexAugmentation
 
     public static boolean shouldInjectValues( IndexReference index, boolean needsValues )
     {
-        return needsValues && NATIVE_PROVIDER.equals( index.providerKey() );
+        return needsValues && isNativeBTree( index.providerKey(), index.providerVersion() );
     }
 }
