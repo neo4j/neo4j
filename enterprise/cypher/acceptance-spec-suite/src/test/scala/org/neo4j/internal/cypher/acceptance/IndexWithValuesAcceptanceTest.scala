@@ -24,10 +24,17 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.impl.proc.Procedures
 
 class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
+
+  // Need to override so that graph.execute will not throw an exception
+  override def databaseConfig(): collection.Map[Setting[_], String] = super.databaseConfig() ++ Map(
+    GraphDatabaseSettings.default_schema_provider -> GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerIdentifier
+  )
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -203,6 +210,16 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.toList should equal(List(Map("n.prop1" -> 42), Map("n.prop1" -> 43)))
   }
 
+  test("should plan exists with GetValue when the property is projected") {
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE exists(n.prop3) RETURN n.prop3", executeBefore = createSomeNodes)
+
+    result.executionPlanDescription() should (
+      not(includeSomewhere.aPlan("Projection").withDBHits()) and
+        includeSomewhere.aPlan("NodeIndexScan")
+          .withExactVariables("n", "cached[n.prop3]"))
+    result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "fooism"), Map("n.prop3" -> "ismfama")))
+  }
+
   test("should plan starts with seek with GetValue when the property is projected") {
     val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n:Awesome) WHERE n.prop3 STARTS WITH 'foo' RETURN n.prop3", executeBefore = createSomeNodes)
 
@@ -210,7 +227,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexSeekByRange")
           .withExactVariables("n", "cached[n.prop3]"))
-    result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "footurama"), Map("n.prop3" -> "fooism"), Map("n.prop3" -> "fooism")))
+    result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "fooism")))
   }
 
   test("should plan ends with seek with GetValue when the property is projected") {
@@ -220,7 +237,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexEndsWithScan")
           .withExactVariables("n", "cached[n.prop3]"))
-    result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "footurama"), Map("n.prop3" -> "ismfama"), Map("n.prop3" -> "ismfama")))
+    result.toList.toSet should equal(Set(Map("n.prop3" -> "footurama"), Map("n.prop3" -> "ismfama")))
   }
 
   test("should plan contains seek with GetValue when the property is projected") {
@@ -230,7 +247,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
       not(includeSomewhere.aPlan("Projection").withDBHits()) and
         includeSomewhere.aPlan("NodeIndexContainsScan")
           .withExactVariables("n", "cached[n.prop3]"))
-    result.toList.toSet should equal(Set(Map("n.prop3" -> "fooism"), Map("n.prop3" -> "fooism"), Map("n.prop3" -> "ismfama"), Map("n.prop3" -> "ismfama")))
+    result.toList.toSet should equal(Set(Map("n.prop3" -> "fooism"), Map("n.prop3" -> "ismfama")))
   }
 
   test("should plan index seek with GetValue when the property is projected (composite index)") {

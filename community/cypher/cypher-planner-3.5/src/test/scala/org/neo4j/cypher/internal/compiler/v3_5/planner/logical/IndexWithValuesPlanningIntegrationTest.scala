@@ -612,6 +612,44 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
+  // EXISTS
+
+  test("should plan exists scan with GetValue when the property is projected") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n.prop"
+
+    plan._2 should equal(
+      Projection(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map(cachedNodePropertyProj("n", "prop"))
+      )
+    )
+  }
+
+  test("should plan exists scan with DoNotGetValue when the index does not provide values") {
+    val plan = new given {
+      indexOn("Awesome", "prop")
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n.prop"
+
+    plan._2 should equal(
+      Projection(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map(propertyProj("n", "prop"))
+      )
+    )
+  }
+
   // ENDS WITH scan
 
   test("should plan index ends with scan with GetValue when the property is projected") {
