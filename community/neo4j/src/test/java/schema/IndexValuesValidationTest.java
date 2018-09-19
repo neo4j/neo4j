@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -36,15 +35,21 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 
 @ExtendWith( TestDirectoryExtension.class )
 class IndexValuesValidationTest
@@ -54,10 +59,12 @@ class IndexValuesValidationTest
 
     private GraphDatabaseService database;
 
-    @BeforeEach
-    void setUp()
+    void setUp( String... settings )
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.storeDir() );
+        database = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( directory.storeDir() )
+                .setConfig( stringMap( settings ) )
+                .newGraphDatabase();
     }
 
     @AfterEach
@@ -67,8 +74,9 @@ class IndexValuesValidationTest
     }
 
     @Test
-    void validateIndexedNodeProperties()
+    void validateIndexedNodePropertiesInLucene()
     {
+        setUp( default_schema_provider.name(), GraphDatabaseSettings.SchemaIndex.NATIVE10.providerIdentifier() );
         Label label = Label.label( "indexedNodePropertiesTestLabel" );
         String propertyName = "indexedNodePropertyName";
 
@@ -92,8 +100,36 @@ class IndexValuesValidationTest
     }
 
     @Test
+    void validateIndexedNodePropertiesInNativeBtree()
+    {
+        setUp();
+        Label label = Label.label( "indexedNodePropertiesTestLabel" );
+        String propertyName = "indexedNodePropertyName";
+
+        createIndex( label, propertyName );
+
+        try ( Transaction ignored = database.beginTx() )
+        {
+            database.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+        }
+
+        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class, () ->
+        {
+            try ( Transaction transaction = database.beginTx() )
+            {
+                Node node = database.createNode( label );
+                node.setProperty( propertyName, StringUtils.repeat( "a", keyValueSizeCapFromPageSize( PAGE_SIZE ) + 1 ) );
+                transaction.success();
+            }
+        } );
+        assertThat( argumentException.getMessage(),
+                containsString( "is too large to index into this particular index. Please see index documentation for limitations." ) );
+    }
+
+    @Test
     void validateNodePropertiesOnPopulation()
     {
+        setUp();
         Label label = Label.label( "populationTestNodeLabel" );
         String propertyName = "populationTestPropertyName";
 
@@ -126,6 +162,7 @@ class IndexValuesValidationTest
     @Test
     void validateExplicitIndexedNodeProperties()
     {
+        setUp();
         Label label = Label.label( "explicitIndexedNodePropertiesTestLabel" );
         String propertyName = "explicitIndexedNodeProperties";
         String explicitIndexedNodeIndex = "explicitIndexedNodeIndex";
@@ -155,6 +192,7 @@ class IndexValuesValidationTest
     @Test
     void validateExplicitIndexedRelationshipProperties()
     {
+        setUp();
         Label label = Label.label( "explicitIndexedRelationshipPropertiesTestLabel" );
         String propertyName = "explicitIndexedRelationshipProperties";
         String explicitIndexedRelationshipIndex = "explicitIndexedRelationshipIndex";
