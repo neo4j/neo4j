@@ -21,7 +21,6 @@ package org.neo4j.index.backup;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.index.IndexFileNames;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,6 +37,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -59,23 +59,16 @@ public class IndexBackupIT
     @Rule
     public RandomRule randomRule = new RandomRule();
     @Rule
-    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
+    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule().startLazily();
     private CheckPointer checkPointer;
     private IndexingService indexingService;
     private FileSystemAbstraction fileSystem;
 
-    @Before
-    public void setUp()
-    {
-        checkPointer = resolveDependency( CheckPointer.class );
-        indexingService = resolveDependency( IndexingService.class );
-        fileSystem = resolveDependency( FileSystemAbstraction.class );
-    }
-
     @Test
-    public void concurrentIndexSnapshotUseDifferentSnapshots() throws Exception
+    public void concurrentLuceneIndexSnapshotUseDifferentSnapshots() throws Exception
     {
         Label label = Label.label( "testLabel" );
+        database.withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
         prepareDatabase( label );
 
         forceCheckpoint( checkPointer );
@@ -105,7 +98,6 @@ public class IndexBackupIT
         firstCheckpointSnapshot.close();
         secondCheckpointSnapshot.close();
         thirdCheckpointSnapshot.close();
-
     }
 
     @Test
@@ -221,6 +213,10 @@ public class IndexBackupIT
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
+
+        checkPointer = resolveDependency( CheckPointer.class );
+        indexingService = resolveDependency( IndexingService.class );
+        fileSystem = resolveDependency( FileSystemAbstraction.class );
     }
 
     private void generateData( Label label )
