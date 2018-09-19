@@ -75,6 +75,7 @@ public class UserManagementProceduresLoggingTest
                 new EnterpriseSecurityContext( new MockAuthSubject( "mats" ), AccessMode.Static.NONE, Collections.emptySet(), false );
 
         setSubject( adminContext );
+        log.clear();
     }
 
     private void setSubject( EnterpriseSecurityContext securityContext )

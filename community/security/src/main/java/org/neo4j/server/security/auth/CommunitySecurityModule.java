@@ -106,7 +106,7 @@ public class CommunitySecurityModule extends SecurityModule
         return getUserRepositoryFile( config, INITIAL_USER_STORE_FILENAME );
     }
 
-    public static File getUserRepositoryFile( Config config, String fileName )
+    private static File getUserRepositoryFile( Config config, String fileName )
     {
         // Resolve auth store file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
