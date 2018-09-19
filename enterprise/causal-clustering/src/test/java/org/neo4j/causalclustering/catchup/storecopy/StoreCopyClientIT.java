@@ -327,7 +327,7 @@ public class StoreCopyClientIT
         catch ( StoreCopyFailedException e )
         {
             assertableLogProvider.assertContainsExactlyOneMessageMatching(
-                    both( startsWith( "Connection refused:" ) ).and( containsString( "localhost/127.0.0.1:" + port ) ) );
+                    both( containsString( "Connection refused:" ) ).and( containsString( "localhost/127.0.0.1:" + port ) ) );
         }
     }
 

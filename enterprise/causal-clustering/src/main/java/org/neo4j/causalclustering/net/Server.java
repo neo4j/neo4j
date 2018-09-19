@@ -29,7 +29,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 
-import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.helper.SuspendableLifeCycle;
@@ -115,17 +114,14 @@ public class Server extends SuspendableLifeCycle
         try
         {
             channel = bootstrap.bind().syncUninterruptibly().channel();
-            debugLog.info( "%s: bound to '%s' with transport '%s'", serverName, listenAddress, bootstrapConfiguration.channelClass() );
+            debugLog.info( "%s: bound to '%s' with transport '%s'", serverName, listenAddress, bootstrapConfiguration.channelClass().getSimpleName() );
         }
         catch ( Exception e )
         {
-            //noinspection ConstantConditions netty sneaky throw
-            if ( e instanceof BindException )
-            {
-                String message = serverName + ": address is already bound: " + listenAddress;
-                userLog.error( message );
-                debugLog.error( message, e );
-            }
+            String message =
+                    format( "%s: cannot bind to '%s' with transport '%s'.", serverName, listenAddress, bootstrapConfiguration.channelClass().getSimpleName() );
+            userLog.error( message + " Message: " + e.getMessage() );
+            debugLog.error( message, e );
             throw e;
         }
     }
