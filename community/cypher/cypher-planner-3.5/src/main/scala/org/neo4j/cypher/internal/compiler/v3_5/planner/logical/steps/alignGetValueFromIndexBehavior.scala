@@ -84,7 +84,7 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
 
   private def collectPropertiesAndVariables(expression: FoldableAny): Set[Expression] =
     expression.treeFold(Set.empty[Expression]) {
-      case prop: Property => acc => (acc + prop, None)
+      case prop@Property(v: Variable, _) => acc => (acc + prop, None)
       case v: Variable => acc => (acc + v, None)
     }
 
@@ -123,7 +123,7 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
       case Variable(newVarName) =>
         projectExpressions.collectFirst {
           case (`newVarName`, oldVar:Variable) => oldVar
-          case (`newVarName`, oldProp: Property) => oldProp
+          case (`newVarName`, oldProp@Property(v: Variable, _)) => oldProp
         }
     }
   }
