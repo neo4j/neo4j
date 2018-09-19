@@ -19,6 +19,11 @@
  */
 package org.neo4j.helpers.collection;
 
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.impl.list.immutable.ImmutableListFactoryImpl;
+import org.eclipse.collections.impl.map.immutable.ImmutableMapFactoryImpl;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -602,6 +607,11 @@ public final class Iterables
         return addToCollection( iterator, new ArrayList<>() );
     }
 
+    public static <T> ImmutableList<T> asImmutableList( Iterable<? extends T> iterator )
+    {
+        return ImmutableListFactoryImpl.INSTANCE.ofAll(iterator);
+    }
+
     public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
     {
         Map<T, U> map = new HashMap<>();
@@ -610,6 +620,16 @@ public final class Iterables
             map.put( pair.first(), pair.other() );
         }
         return map;
+    }
+
+    public static <T, U> ImmutableMap<T, U> asImmutableMap( Map<T, U> map )
+    {
+        return ImmutableMapFactoryImpl.INSTANCE.ofAll( map );
+    }
+
+    public static <T, U> ImmutableMap<T, U> asImmutableMap( Iterable<Pair<T, U>> pairs )
+    {
+        return asImmutableMap( asMap( pairs ) );
     }
 
     /**
