@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering
 
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.{AscIndexOrder, IndexOrderCapability, NoIndexOrder}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{AscIndexOrder, BothAscDescIndexOrder, IndexOrderCapability, NoIndexOrder}
 import org.opencypher.v9_0.util.symbols.CypherType
 
 /**
@@ -46,6 +46,8 @@ object ResultOrdering {
     orderBehaviorFromIndex match {
       case NoIndexOrder => ProvidedOrder.empty
       case AscIndexOrder =>
+        toProvidedOrder(properties.map {case (name, _) => (name, AscColumnOrder)})
+      case BothAscDescIndexOrder =>
         toProvidedOrder(properties.map {case (name, _) => (name, AscColumnOrder)})
       case _ => throw new IllegalStateException("There is no support for this index order: " + orderBehaviorFromIndex)
     }
