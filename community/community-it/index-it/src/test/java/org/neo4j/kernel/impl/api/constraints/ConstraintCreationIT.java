@@ -32,17 +32,18 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 
 public class ConstraintCreationIT
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     private static final Label LABEL = Label.label( "label1" );
     private static final long indexId = 1;
@@ -51,8 +52,33 @@ public class ConstraintCreationIT
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        db.withSetting( default_schema_provider, NATIVE20.providerIdentifier() ); // <-- includes Lucene sub-provider
+        attemptAndFailConstraintCreation();
 
+        // then
+        IndexProvider indexProvider =
+                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
+        File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
+
+        assertFalse( new IndexFolderLayout( indexDir ).getIndexFolder().exists() );
+    }
+
+    @Test
+    public void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails()
+    {
+        // given
+        attemptAndFailConstraintCreation();
+
+        // then
+        IndexProvider indexProvider =
+                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
+        File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
+
+        assertEquals( 0, indexDir.listFiles().length );
+    }
+
+    private void attemptAndFailConstraintCreation()
+    {
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 2; i++ )
@@ -80,11 +106,5 @@ public class ConstraintCreationIT
         {
             assertEquals( 0, Iterables.count( db.schema().getIndexes() ) );
         }
-
-        IndexProvider indexProvider =
-                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
-        File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
-
-        assertFalse( new IndexFolderLayout( indexDir ).getIndexFolder().exists() );
     }
 }
