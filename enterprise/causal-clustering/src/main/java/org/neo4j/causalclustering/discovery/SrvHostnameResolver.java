@@ -26,13 +26,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.naming.NamingException;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.internal.LogService;
 
 public class SrvHostnameResolver extends RetryingHostnameResolver
 {
@@ -40,17 +39,19 @@ public class SrvHostnameResolver extends RetryingHostnameResolver
     private final Log log;
     private final SrvRecordResolver srvRecordResolver;
 
-    public static SrvHostnameResolver getInstance( LogProvider logProvider, LogProvider userLogProvider, SrvRecordResolver srvHostnameResolver, Config config )
+    public static RemoteMembersResolver resolver( LogService logService, SrvRecordResolver srvHostnameResolver, Config config )
     {
-        return new SrvHostnameResolver( logProvider, userLogProvider, srvHostnameResolver, config, defaultRetryStrategy( config, logProvider ) );
+        SrvHostnameResolver hostnameResolver =
+                new SrvHostnameResolver( logService, srvHostnameResolver, config, defaultRetryStrategy( config, logService.getInternalLogProvider() ) );
+        return new InitialDiscoveryMembersResolver( hostnameResolver, config );
     }
 
-    SrvHostnameResolver( LogProvider logProvider, LogProvider userLogProvider, SrvRecordResolver srvRecordResolver, Config config,
+    SrvHostnameResolver( LogService logService, SrvRecordResolver srvRecordResolver, Config config,
             MultiRetryStrategy<AdvertisedSocketAddress,Collection<AdvertisedSocketAddress>> retryStrategy )
     {
         super( config, retryStrategy );
-        log = logProvider.getLog( getClass() );
-        userLog = userLogProvider.getLog( getClass() );
+        log = logService.getInternalLog( getClass() );
+        userLog = logService.getUserLog( getClass() );
         this.srvRecordResolver = srvRecordResolver;
     }
 
@@ -75,7 +76,7 @@ public class SrvHostnameResolver extends RetryingHostnameResolver
         }
         catch ( NamingException e )
         {
-            log.error( "Failed to resolve srv records for '%s'", initialAddress.getHostname(), e );
+            log.error( String.format( "Failed to resolve srv records for '%s'", initialAddress.getHostname() ), e );
             return Collections.emptySet();
         }
     }

@@ -20,21 +20,37 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.discovery.kubernetes;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
-
-public interface DiscoveryServiceFactory
+/**
+ * See <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#objectmeta-v1-meta">ObjectMeta</a>
+ */
+public class ObjectMetadata
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            RemoteMembersResolver remoteMembersResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy,
-            Monitors monitors );
+    private String deletionTimestamp;
+    private String name;
 
-    TopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, RemoteMembersResolver remoteMembersResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    public ObjectMetadata()
+    {
+    }
+
+    public String deletionTimestamp()
+    {
+        return deletionTimestamp;
+    }
+
+    public String name()
+    {
+        return name;
+    }
+
+    public void setDeletionTimestamp( String deletionTimestamp )
+    {
+        this.deletionTimestamp = deletionTimestamp;
+    }
+
+    public void setName( String name )
+    {
+        this.name = name;
+    }
 }

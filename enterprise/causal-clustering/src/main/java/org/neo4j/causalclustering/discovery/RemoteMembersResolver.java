@@ -22,19 +22,12 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import java.util.Collection;
+import java.util.function.Function;
 
-public interface DiscoveryServiceFactory
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
+public interface RemoteMembersResolver
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            RemoteMembersResolver remoteMembersResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy,
-            Monitors monitors );
-
-    TopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, RemoteMembersResolver remoteMembersResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    <REMOTE> Collection<REMOTE> resolve( Function<AdvertisedSocketAddress,REMOTE> transform );
 }

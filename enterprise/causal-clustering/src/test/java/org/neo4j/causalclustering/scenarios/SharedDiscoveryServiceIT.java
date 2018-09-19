@@ -39,7 +39,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.InitialDiscoveryMembersResolver;
 import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
 import org.neo4j.causalclustering.discovery.RaftCoreTopologyConnector;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
@@ -104,10 +104,12 @@ public class SharedDiscoveryServiceIT
             Set<MemberId> expectedTargetSet )
     {
         JobScheduler jobScheduler = createInitialisedScheduler();
-        HostnameResolver hostnameResolver = new NoOpHostnameResolver();
+        Config config = config();
+        InitialDiscoveryMembersResolver
+                remoteMemberResolver = new InitialDiscoveryMembersResolver( new NoOpHostnameResolver(), config );
 
-        CoreTopologyService topologyService = discoveryServiceFactory.coreTopologyService( config(), member,
-                jobScheduler, logProvider, userLogProvider, hostnameResolver, new TopologyServiceNoRetriesStrategy(),
+        CoreTopologyService topologyService = discoveryServiceFactory.coreTopologyService( config, member,
+                jobScheduler, logProvider, userLogProvider, remoteMemberResolver, new TopologyServiceNoRetriesStrategy(),
                 new Monitors() );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }

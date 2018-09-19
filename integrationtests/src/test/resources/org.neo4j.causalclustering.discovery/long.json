@@ -1,0 +1,86 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"orchestra-controller\"},\"name\":\"orchestra-controller\",\"namespace\":\"default\"},\"spec\":{\"clusterIP\":\"None\",\"ports\":[{\"name\":\"fakeport\",\"port\":1337}],\"selector\":{\"app\":\"orchestra-controller\"}}}\n"
+        },
+        "creationTimestamp": "2018-09-13T12:25:41Z",
+        "labels": {
+          "app": "orchestra-controller",
+          "environment": "andy"
+        },
+        "name": "orchestra-controller",
+        "namespace": "default",
+        "resourceVersion": "2635",
+        "selfLink": "/api/v1/namespaces/default/services/orchestra-controller",
+        "uid": "210e84da-b750-11e8-ab06-42010a840184"
+      },
+      "spec": {
+        "clusterIP": "None",
+        "ports": [
+          {
+            "name": "fakeport",
+            "port": 1337,
+            "protocol": "TCP",
+            "targetPort": 1337
+          }
+        ],
+        "selector": {
+          "app": "orchestra-controller"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"orchestra-webapp\"},\"name\":\"orchestras\",\"namespace\":\"default\"},\"spec\":{\"ports\":[{\"name\":\"https\",\"port\":443,\"protocol\":\"TCP\",\"targetPort\":\"https\"}],\"selector\":{\"app\":\"orchestra-webapp\"},\"type\":\"ClusterIP\"}}\n"
+        },
+        "creationTimestamp": "2018-09-13T12:25:41Z",
+        "labels": {
+          "app": "orchestra-webapp",
+          "environment": "andy"
+        },
+        "name": "%s",
+        "namespace": "default",
+        "resourceVersion": "2638",
+        "selfLink": "/api/v1/namespaces/default/services/orchestras",
+        "uid": "2141a469-b750-11e8-ab06-42010a840184"
+      },
+      "spec": {
+        "clusterIP": "10.63.254.252",
+        "ports": [
+          {
+            "name": "%s",
+            "port": %d,
+            "protocol": "TCP",
+            "targetPort": "https"
+          }
+        ],
+        "selector": {
+          "app": "orchestra-webapp"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    }
+  ],
+  "kind": "ServiceList",
+  "metadata": {
+    "resourceVersion": "",
+    "selfLink": ""
+  }
+}

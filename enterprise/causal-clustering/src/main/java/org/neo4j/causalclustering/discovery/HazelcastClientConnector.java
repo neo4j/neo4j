@@ -27,7 +27,6 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.core.HazelcastInstance;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -36,13 +35,13 @@ public class HazelcastClientConnector implements HazelcastConnector
 {
     private final Config config;
     private final LogProvider logProvider;
-    private final HostnameResolver hostnameResolver;
+    private final RemoteMembersResolver remoteMembersResolver;
 
-    public HazelcastClientConnector( Config config, LogProvider logProvider, HostnameResolver hostnameResolver )
+    public HazelcastClientConnector( Config config, LogProvider logProvider, RemoteMembersResolver remoteMembersResolver )
     {
         this.config = config;
         this.logProvider = logProvider;
-        this.hostnameResolver = hostnameResolver;
+        this.remoteMembersResolver = remoteMembersResolver;
     }
 
     @Override
@@ -52,13 +51,9 @@ public class HazelcastClientConnector implements HazelcastConnector
 
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
 
-        for ( AdvertisedSocketAddress address : config.get( CausalClusteringSettings.initial_discovery_members ) )
-        {
-            for ( AdvertisedSocketAddress advertisedSocketAddress : hostnameResolver.resolve( address ) )
-            {
-                networkConfig.addAddress( advertisedSocketAddress.toString() );
-            }
-        }
+        remoteMembersResolver
+                .resolve( AdvertisedSocketAddress::toString )
+                .forEach( networkConfig::addAddress );
 
         additionalConfig( networkConfig, logProvider );
 

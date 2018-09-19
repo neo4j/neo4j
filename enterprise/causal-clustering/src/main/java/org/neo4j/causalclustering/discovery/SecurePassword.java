@@ -22,19 +22,33 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import java.security.SecureRandom;
+import java.util.Arrays;
 
-public interface DiscoveryServiceFactory
+public class SecurePassword implements AutoCloseable
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            RemoteMembersResolver remoteMembersResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy,
-            Monitors monitors );
+    private final char[] password;
+    private static final int lowerBound = ' ';
+    private static final int upperBound = '~';
+    private static final int range = upperBound - lowerBound;
 
-    TopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, RemoteMembersResolver remoteMembersResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    public SecurePassword( int length, SecureRandom random )
+    {
+        password = new char[length];
+        for ( int i = 0; i < password.length; i++ )
+        {
+            password[i] = (char) (random.nextInt( range ) + lowerBound); // Some keystores (PKCS12 on Oracle JDK 10) check for printable ASCII range
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        Arrays.fill( password, (char) 0 );
+    }
+
+    public char[] password()
+    {
+        return password;
+    }
 }

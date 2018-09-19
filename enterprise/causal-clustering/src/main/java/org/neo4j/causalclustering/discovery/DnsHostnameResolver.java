@@ -30,9 +30,7 @@ import java.util.Set;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-
-import static java.lang.String.format;
+import org.neo4j.logging.internal.LogService;
 
 public class DnsHostnameResolver extends RetryingHostnameResolver
 {
@@ -40,17 +38,19 @@ public class DnsHostnameResolver extends RetryingHostnameResolver
     private final Log log;
     private final DomainNameResolver domainNameResolver;
 
-    public static DnsHostnameResolver getInstance( LogProvider logProvider, LogProvider userLogProvider, DomainNameResolver domainNameResolver, Config config )
+    public static RemoteMembersResolver resolver( LogService logService, DomainNameResolver domainNameResolver, Config config )
     {
-        return new DnsHostnameResolver( logProvider, userLogProvider, domainNameResolver, config, defaultRetryStrategy( config, logProvider ) );
+        DnsHostnameResolver hostnameResolver =
+                new DnsHostnameResolver( logService, domainNameResolver, config, defaultRetryStrategy( config, logService.getInternalLogProvider() ) );
+        return new InitialDiscoveryMembersResolver( hostnameResolver, config );
     }
 
-    DnsHostnameResolver( LogProvider logProvider, LogProvider userLogProvider, DomainNameResolver domainNameResolver, Config config,
+    DnsHostnameResolver( LogService logService, DomainNameResolver domainNameResolver, Config config,
             MultiRetryStrategy<AdvertisedSocketAddress,Collection<AdvertisedSocketAddress>> retryStrategy )
     {
         super( config, retryStrategy );
-        log = logProvider.getLog( getClass() );
-        userLog = userLogProvider.getLog( getClass() );
+        log = logService.getInternalLog( getClass() );
+        userLog = logService.getUserLog( getClass() );
         this.domainNameResolver = domainNameResolver;
     }
 

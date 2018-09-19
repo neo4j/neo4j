@@ -1,0 +1,18 @@
+{
+    "kind": "ServiceList",
+    "items": [
+        {
+            "metadata": {
+                "name": "%s"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "%s",
+                        "port": %d
+                    }
+                ]
+            }
+        }
+    ]
+}

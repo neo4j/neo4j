@@ -20,21 +20,36 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.discovery.kubernetes;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import org.codehaus.jackson.annotate.JsonSubTypes;
+import org.codehaus.jackson.annotate.JsonTypeInfo;
 
-public interface DiscoveryServiceFactory
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, property = "kind" )
+@JsonSubTypes( {
+        @JsonSubTypes.Type( value = ServiceList.class, name = "ServiceList" ),
+        @JsonSubTypes.Type( value = Status.class, name = "Status" )
+} )
+public abstract class KubernetesType
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            RemoteMembersResolver remoteMembersResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy,
-            Monitors monitors );
+    private String kind;
 
-    TopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, RemoteMembersResolver remoteMembersResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    public String kind()
+    {
+        return kind;
+    }
+
+    public void setKind( String kind )
+    {
+        this.kind = kind;
+    }
+
+    public abstract <T> T handle( Visitor<T> visitor );
+
+    public interface Visitor<T>
+    {
+        T visit( Status status );
+
+        T visit( ServiceList serviceList );
+    }
 }

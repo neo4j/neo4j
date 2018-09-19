@@ -35,7 +35,7 @@ public class SharedDiscoveryServiceFactory implements DiscoveryServiceFactory
 
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
+            LogProvider logProvider, LogProvider userLogProvider, RemoteMembersResolver remoteMembersResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy, Monitors monitors )
     {
         return new SharedDiscoveryCoreClient( discoveryService, myself, logProvider, config );
@@ -43,7 +43,7 @@ public class SharedDiscoveryServiceFactory implements DiscoveryServiceFactory
 
     @Override
     public TopologyService readReplicaTopologyService( Config config, LogProvider logProvider, JobScheduler jobScheduler, MemberId myself,
-            HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
+            RemoteMembersResolver remoteMembersResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         return new SharedDiscoveryReadReplicaClient( discoveryService, config, myself, logProvider );
     }

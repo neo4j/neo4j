@@ -37,21 +37,21 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
+            LogProvider logProvider, LogProvider userLogProvider, RemoteMembersResolver remoteMembersResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy, Monitors monitors )
     {
         configureHazelcast( config, logProvider );
-        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver,
+        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider, remoteMembersResolver,
                 topologyServiceRetryStrategy, monitors );
     }
 
     @Override
     public TopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
-                                            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
+                                            JobScheduler jobScheduler, MemberId myself, RemoteMembersResolver remoteMembersResolver,
                                             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         configureHazelcast( config, logProvider );
-        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, hostnameResolver ), jobScheduler,
+        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, remoteMembersResolver ), jobScheduler,
                 logProvider, config, myself );
     }
 

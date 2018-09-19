@@ -23,22 +23,32 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 
-import static java.util.Collections.singleton;
-
-public class NoOpHostnameResolver implements HostnameResolver
+public class InitialDiscoveryMembersResolver implements RemoteMembersResolver
 {
-    public static RemoteMembersResolver resolver( Config config )
+    private final HostnameResolver hostnameResolver;
+    private final List<AdvertisedSocketAddress> advertisedSocketAddresses;
+
+    public InitialDiscoveryMembersResolver( HostnameResolver hostnameResolver, Config config )
     {
-        return new InitialDiscoveryMembersResolver( new NoOpHostnameResolver(), config );
+        this.hostnameResolver = hostnameResolver;
+        advertisedSocketAddresses = config.get( CausalClusteringSettings.initial_discovery_members );
     }
 
     @Override
-    public Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress advertisedSocketAddresses )
+    public <T> Collection<T> resolve( Function<AdvertisedSocketAddress,T> transform )
     {
-        return singleton(advertisedSocketAddresses);
+        return advertisedSocketAddresses
+                .stream()
+                .flatMap( raw -> hostnameResolver.resolve( raw ).stream() )
+                .map( transform )
+                .collect( Collectors.toSet() );
     }
 }

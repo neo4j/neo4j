@@ -70,7 +70,7 @@ public class PkiUtils
     /* Generating SSL certificates takes a long time.
      * This non-official setting allows us to use a fast source of randomness when running tests */
     private static final boolean useInsecureCertificateGeneration = Boolean.getBoolean( "org.neo4j.useInsecureCertificateGeneration" );
-    private static final String CERTIFICATE_TYPE = "X.509";
+    public static final String CERTIFICATE_TYPE = "X.509";
     private static final String DEFAULT_ENCRYPTION = "RSA";
     private final SecureRandom random;
     /** Current time minus 1 year, just in case software clock goes back due to time synchronization */

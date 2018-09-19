@@ -28,7 +28,7 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.InitialDiscoveryMembersResolver;
 import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyServiceNoRetriesStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -53,21 +53,23 @@ public abstract class BaseCoreTopologyServiceIT
     @Test( timeout = 120_000 )
     public void shouldBeAbleToStartAndStopWithoutSuccessfulJoin() throws Throwable
     {
-        JobScheduler jobScheduler = createInitialisedScheduler();
-        HostnameResolver hostnameResolver = new NoOpHostnameResolver();
-
         // Random members that does not exists, discovery will never succeed
         String initialHosts = "localhost:" + PortAuthority.allocatePort() + ",localhost:" + PortAuthority.allocatePort();
         Config config = Config.defaults();
         config.augment( initial_discovery_members, initialHosts );
         config.augment( CausalClusteringSettings.discovery_listen_address, "localhost:" + PortAuthority.allocatePort() );
+
+        JobScheduler jobScheduler = createInitialisedScheduler();
+        InitialDiscoveryMembersResolver
+                initialDiscoveryMemberResolver = new InitialDiscoveryMembersResolver( new NoOpHostnameResolver(), config );
+
         CoreTopologyService service = discoveryServiceType.createFactory().coreTopologyService(
                 config,
                 new MemberId( UUID.randomUUID() ),
                 jobScheduler,
                 NullLogProvider.getInstance(),
                 NullLogProvider.getInstance(),
-                hostnameResolver,
+                initialDiscoveryMemberResolver,
                 new TopologyServiceNoRetriesStrategy(),
                 new Monitors() );
         service.init();

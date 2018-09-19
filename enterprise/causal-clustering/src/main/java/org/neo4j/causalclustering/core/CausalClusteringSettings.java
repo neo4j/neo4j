@@ -29,22 +29,13 @@ import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactorySelector;
-import org.neo4j.causalclustering.discovery.DnsHostnameResolver;
-import org.neo4j.causalclustering.discovery.DomainNameResolverImpl;
-import org.neo4j.causalclustering.discovery.HostnameResolver;
-import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
-import org.neo4j.causalclustering.discovery.SrvHostnameResolver;
-import org.neo4j.causalclustering.discovery.SrvRecordResolverImpl;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
-import org.neo4j.function.TriFunction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
@@ -208,26 +199,29 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Long> in_flight_cache_max_bytes =
             setting( "causal_clustering.in_flight_cache.max_bytes", BYTES, "2G" );
 
-    public enum DiscoveryType
-    {
-        DNS( ( logProvider, userLogProvider, conf ) -> DnsHostnameResolver.getInstance( logProvider, userLogProvider, new DomainNameResolverImpl(), conf ) ),
+    @Description( "Address for Kubernetes API" )
+    public static final Setting<AdvertisedSocketAddress> kubernetes_address =
+            setting( "causal_clustering.kubernetes.address", ADVERTISED_SOCKET_ADDRESS, "kubernetes.default.svc:443" );
 
-        LIST( ( logProvider, userLogProvider, conf ) -> new NoOpHostnameResolver() ),
+    @Description( "File location of token for Kubernetes API" )
+    public static final Setting<File> kubernetes_token =
+            setting( "causal_clustering.kubernetes.token", PATH, "/var/run/secrets/kubernetes.io/serviceaccount/token" );
 
-        SRV( ( logProvider, userLogProvider, conf ) -> SrvHostnameResolver.getInstance( logProvider, userLogProvider, new SrvRecordResolverImpl(), conf ) );
+    @Description( "File location of namespace for Kubernetes API" )
+    public static final Setting<File> kubernetes_namespace =
+            setting( "causal_clustering.kubernetes.namespace", PATH, "/var/run/secrets/kubernetes.io/serviceaccount/namespace" );
 
-        private final TriFunction<LogProvider,LogProvider,Config,HostnameResolver> resolverSupplier;
+    @Description( "File location of CA certificate for Kubernetes API" )
+    public static final Setting<File> kubernetes_ca_crt =
+            setting( "causal_clustering.kubernetes.ca_crt", PATH, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" );
 
-        DiscoveryType( TriFunction<LogProvider,LogProvider,Config,HostnameResolver> resolverSupplier )
-        {
-            this.resolverSupplier = resolverSupplier;
-        }
+    @Description( "LabelSelector for Kubernetes API" )
+    public static final Setting<String> kubernetes_label_selector =
+            setting( "causal_clustering.kubernetes.label_selector", STRING, NO_DEFAULT );
 
-        public HostnameResolver getHostnameResolver( LogProvider logProvider, LogProvider userLogProvider, Config config )
-        {
-            return this.resolverSupplier.apply( logProvider, userLogProvider, config );
-        }
-    }
+    @Description( "Service port name for discovery for Kubernetes API" )
+    public static final Setting<String> kubernetes_service_port_name =
+            setting( "causal_clustering.kubernetes.service_port_name", STRING, NO_DEFAULT );
 
     @Internal
     @Description( "The polling interval when attempting to resolve initial_discovery_members from DNS and SRV records." )

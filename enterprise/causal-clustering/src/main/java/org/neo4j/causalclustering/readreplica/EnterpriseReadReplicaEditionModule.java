@@ -57,7 +57,7 @@ import org.neo4j.causalclustering.core.TransactionBackupServiceProvider;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.RemoteMembersResolver;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
@@ -212,7 +212,7 @@ public class EnterpriseReadReplicaEditionModule extends DefaultEditionModule
 
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
-        HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
+        RemoteMembersResolver hostnameResolver = chooseResolver( config, platformModule.logging );
 
         configureDiscoveryService( discoveryServiceFactory, dependencies, config, logProvider );
 

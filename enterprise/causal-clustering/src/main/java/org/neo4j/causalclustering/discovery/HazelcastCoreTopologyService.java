@@ -36,6 +36,7 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.nio.Address;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -67,7 +68,6 @@ import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_
 import static com.hazelcast.spi.properties.GroupProperty.PREFER_IPv4_STACK;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.disable_middleware_logging;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
@@ -87,7 +87,7 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
 
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
-    private final HostnameResolver hostnameResolver;
+    private final RemoteMembersResolver remoteMembersResolver;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
     private final Monitor monitor;
     private final String localDBName;
@@ -111,14 +111,14 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
     private volatile boolean stopped;
 
     public HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
+            LogProvider logProvider, LogProvider userLogProvider, RemoteMembersResolver remoteMembersResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy, Monitors monitors )
     {
         super( config, myself, logProvider, userLogProvider );
         this.localDBName = config.get( CausalClusteringSettings.database );
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
-        this.hostnameResolver = hostnameResolver;
+        this.remoteMembersResolver = remoteMembersResolver;
         this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
         this.monitor = monitors.newMonitor( Monitor.class );
     }
@@ -233,14 +233,9 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
-        List<AdvertisedSocketAddress> initialMembers = config.get( initial_discovery_members );
-        for ( AdvertisedSocketAddress address : initialMembers )
-        {
-            for ( AdvertisedSocketAddress advertisedSocketAddress : hostnameResolver.resolve( address ) )
-            {
-                tcpIpConfig.addMember( advertisedSocketAddress.toString() );
-            }
-        }
+        Collection<String> initialMembers = remoteMembersResolver.resolve( AdvertisedSocketAddress::toString );
+
+        initialMembers.forEach( tcpIpConfig::addMember );
 
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
         NetworkConfig networkConfig = new NetworkConfig();
@@ -318,7 +313,7 @@ public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
         return hazelcastInstance;
     }
 
-    private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
+    private void logConnectionInfo( Collection<String> initialMembers )
     {
         userLog.info( "My connection info: " + "[\n\tDiscovery:   listen=%s, advertised=%s," +
                       "\n\tTransaction: listen=%s, advertised=%s, " + "\n\tRaft:        listen=%s, advertised=%s, " +

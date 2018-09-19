@@ -32,7 +32,7 @@ import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.RemoteMembersResolver;
 import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.identity.ClusterBinder;
@@ -69,10 +69,10 @@ public class ClusteringModule
         Dependencies dependencies = platformModule.dependencies;
         Monitors monitors = platformModule.monitors;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
+        RemoteMembersResolver remoteMembersResolver = chooseResolver( config, platformModule.logging );
 
         topologyService = discoveryServiceFactory.coreTopologyService( config, myself, platformModule.jobScheduler,
-                logProvider, userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ), monitors );
+                logProvider, userLogProvider, remoteMembersResolver, resolveStrategy( config, logProvider ), monitors );
 
         life.add( topologyService );
 

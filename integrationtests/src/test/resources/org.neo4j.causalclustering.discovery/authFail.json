@@ -1,0 +1,1 @@
+{"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":"services is forbidden: User \"system:serviceaccount:default:default\" cannot list services in the namespace \"default\"","reason":"Forbidden","details":{"kind":"services"},"code":403}

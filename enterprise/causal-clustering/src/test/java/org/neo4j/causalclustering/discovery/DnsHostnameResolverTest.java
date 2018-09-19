@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.SimpleLogService;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -44,6 +44,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.causalclustering.discovery.MultiRetryStrategyTest.testRetryStrategy;
 
 public class DnsHostnameResolverTest
 {
@@ -53,7 +54,7 @@ public class DnsHostnameResolverTest
     private final Config config = Config.defaults( CausalClusteringSettings.minimum_core_cluster_size_at_formation, "2" );
 
     private final DnsHostnameResolver resolver =
-            new DnsHostnameResolver( logProvider, userLogProvider, mockDomainNameResolver, config, testRetryStrategy( 1 ) );
+            new DnsHostnameResolver( new SimpleLogService( userLogProvider, logProvider ), mockDomainNameResolver, config, testRetryStrategy( 1 ) );
 
     @Test
     public void hostnamesAreResolvedByTheResolver()
@@ -121,7 +122,8 @@ public class DnsHostnameResolverTest
                 .thenReturn( new InetAddress[0] )
                 .thenCallRealMethod();
 
-        DnsHostnameResolver resolver = new DnsHostnameResolver( logProvider, userLogProvider, mockResolver, config, testRetryStrategy( 2 ) );
+        DnsHostnameResolver resolver =
+                new DnsHostnameResolver( new SimpleLogService( userLogProvider, logProvider ), mockResolver, config, testRetryStrategy( 2 ) );
 
         // when
         List<AdvertisedSocketAddress> resolvedAddresses =
@@ -132,10 +134,5 @@ public class DnsHostnameResolverTest
         assertEquals( 2, resolvedAddresses.size() );
         assertEquals( 1234, resolvedAddresses.get( 0 ).getPort() );
         assertEquals( 1234, resolvedAddresses.get( 1 ).getPort() );
-    }
-
-    private MultiRetryStrategy<AdvertisedSocketAddress,Collection<AdvertisedSocketAddress>> testRetryStrategy( int numRetries )
-    {
-        return new MultiRetryStrategy<>( 0, numRetries, NullLogProvider.getInstance(), new MultiRetryStrategyTest.CountingSleeper() );
     }
 }

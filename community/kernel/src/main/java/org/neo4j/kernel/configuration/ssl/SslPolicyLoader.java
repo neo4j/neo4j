@@ -270,7 +270,7 @@ public class SslPolicyLoader
 
         try
         {
-            certificateFactory = CertificateFactory.getInstance( "X.509" );
+            certificateFactory = CertificateFactory.getInstance( PkiUtils.CERTIFICATE_TYPE );
         }
         catch ( CertificateException e )
         {
@@ -348,7 +348,7 @@ public class SslPolicyLoader
         int i = 0;
         for ( File trustedCertFile : trustedCertFiles )
         {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance( "X.509" );
+            CertificateFactory certificateFactory = CertificateFactory.getInstance( PkiUtils.CERTIFICATE_TYPE );
             try ( InputStream input = Files.newInputStream( trustedCertFile.toPath() ) )
             {
                 while ( input.available() > 0 )

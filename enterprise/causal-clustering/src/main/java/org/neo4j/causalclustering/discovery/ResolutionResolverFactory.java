@@ -23,15 +23,15 @@
 package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.DiscoveryType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.internal.LogService;
 
 public class ResolutionResolverFactory
 {
-    public static HostnameResolver chooseResolver( Config config, LogProvider logProvider,
-            LogProvider userLogProvider )
+    public static RemoteMembersResolver chooseResolver( Config config, LogService logService )
     {
-        CausalClusteringSettings.DiscoveryType discoveryType = config.get( CausalClusteringSettings.discovery_type );
-        return discoveryType.getHostnameResolver( logProvider, userLogProvider, config );
+        DiscoveryType discoveryType = config.get( CausalClusteringSettings.discovery_type );
+        return discoveryType.getHostnameResolver( logService, config );
     }
 }

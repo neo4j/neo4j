@@ -28,9 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import javax.naming.NamingException;
-
-import org.neo4j.stream.Streams;
 
 public class MockSrvRecordResolver extends SrvRecordResolver
 {
