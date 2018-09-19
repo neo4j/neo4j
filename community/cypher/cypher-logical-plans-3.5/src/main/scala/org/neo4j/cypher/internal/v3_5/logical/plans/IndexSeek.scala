@@ -75,8 +75,13 @@ object IndexSeek {
     }
 
     def prop(prop: String) = {
-      val id = PropertyKeyId(propIds.getOrElse(prop, nextPropId()))
-      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), id), getValue)
+      val id =
+        if (propIds.nonEmpty)
+          propIds.getOrElse(prop, throw new IllegalArgumentException(s"Property `$prop` has no provided id. Either provide ids for all properties, or provide none. Provided properties: $propIds"))
+        else
+          nextPropId()
+
+      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue)
     }
 
     def value(value: String): Expression =
@@ -137,6 +142,6 @@ object IndexSeek {
 
       NodeIndexSeek(node, label, properties, CompositeQueryExpression(valueExprs), argumentIds, indexOrder)
     } else
-      throw new IllegalArgumentException("Cannot parse 'str' and index seek.")
+      throw new IllegalArgumentException(s"Cannot parse `$indexSeekString` as a index seek.")
   }
 }

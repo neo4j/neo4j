@@ -315,8 +315,6 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("all we need is to apply ourselves") {
     // given
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)
-    val label = LabelToken("label2", LabelId(0))
-    val seekExpression = SingleQueryExpression(literalInt(42))
     val rhs = IndexSeek("z:label2(prop = 42)", argumentIds = Set(x))
     val apply = Apply(lhs, rhs)
 

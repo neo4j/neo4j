@@ -305,12 +305,12 @@ public class IndexingCompositeQueryAcceptanceTest
         }
     }
 
-    public interface IndexSeek
+    private interface IndexSeek
     {
         ResourceIterator<Node> findNodes( String[] keys, Object[] values, GraphDatabaseService db );
     }
 
-    public static IndexSeek biIndexSeek =
+    private static IndexSeek biIndexSeek =
             ( keys, values, db ) ->
             {
                 assert keys.length == 2;
@@ -318,7 +318,7 @@ public class IndexingCompositeQueryAcceptanceTest
                 return db.findNodes( LABEL, keys[0], values[0], keys[1], values[1] );
             };
 
-    public static IndexSeek triIndexSeek =
+    private static IndexSeek triIndexSeek =
             ( keys, values, db ) ->
             {
                 assert keys.length == 3;
@@ -326,7 +326,7 @@ public class IndexingCompositeQueryAcceptanceTest
                 return db.findNodes( LABEL, keys[0], values[0], keys[1], values[1], keys[2], values[2] );
             };
 
-    public static IndexSeek mapIndexSeek =
+    private static IndexSeek mapIndexSeek =
             ( keys, values, db ) ->
             {
                 return db.findNodes( LABEL, propertyMap( keys, values ) );
