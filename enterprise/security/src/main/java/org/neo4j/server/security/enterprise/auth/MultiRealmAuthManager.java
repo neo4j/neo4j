@@ -55,6 +55,7 @@ import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -104,83 +105,90 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     @Override
     public EnterpriseLoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        EnterpriseLoginContext securityContext;
-
-        ShiroAuthToken token = new ShiroAuthToken( authToken );
-        assertValidScheme( token );
-
         try
         {
-            securityContext = new StandardEnterpriseLoginContext(
-                    this, (ShiroSubject) securityManager.login( null, token ) );
-            AuthenticationResult authenticationResult = securityContext.subject().getAuthenticationResult();
-            if ( authenticationResult == AuthenticationResult.SUCCESS )
+            EnterpriseLoginContext securityContext;
+
+            ShiroAuthToken token = new ShiroAuthToken( authToken );
+            assertValidScheme( token );
+
+            try
             {
-                if ( logSuccessfulLogin )
+                securityContext = new StandardEnterpriseLoginContext(
+                        this, (ShiroSubject) securityManager.login( null, token ) );
+                AuthenticationResult authenticationResult = securityContext.subject().getAuthenticationResult();
+                if ( authenticationResult == AuthenticationResult.SUCCESS )
                 {
-                    securityLog.info( securityContext.subject(), "logged in" );
+                    if ( logSuccessfulLogin )
+                    {
+                        securityLog.info( securityContext.subject(), "logged in" );
+                    }
                 }
+                else if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+                {
+                    securityLog.info( securityContext.subject(), "logged in (password change required)" );
+                }
+                else
+                {
+                    String errorMessage = ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject())
+                            .getAuthenticationFailureMessage();
+                    securityLog.error( "[%s]: failed to log in: %s", escape( token.getPrincipal().toString() ), errorMessage );
+                }
+                // No need to keep full Shiro authentication info around on the subject
+                ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
             }
-            else if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+            catch ( UnsupportedTokenException e )
             {
-                securityLog.info( securityContext.subject(), "logged in (password change required)" );
+                securityLog.error( "Unknown user failed to log in: %s", e.getMessage() );
+                Throwable cause = e.getCause();
+                if ( cause instanceof InvalidAuthTokenException )
+                {
+                    throw new InvalidAuthTokenException( cause.getMessage() + ": " + token );
+                }
+                throw invalidToken( ": " + token );
             }
-            else
+            catch ( ExcessiveAttemptsException e )
             {
-                String errorMessage = ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject())
-                        .getAuthenticationFailureMessage();
+                // NOTE: We only get this with single (internal) realm authentication
+                securityContext = new StandardEnterpriseLoginContext( this,
+                        new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
+                securityLog.error( "[%s]: failed to log in: too many failed attempts",
+                        escape( token.getPrincipal().toString() ) );
+            }
+            catch ( AuthenticationException e )
+            {
+                if ( e.getCause() != null && e.getCause() instanceof AuthProviderTimeoutException )
+                {
+                    Throwable cause = e.getCause().getCause();
+                    securityLog.error( "[%s]: failed to log in: auth server timeout%s",
+                            escape( token.getPrincipal().toString() ),
+                            cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
+                    throw new AuthProviderTimeoutException( e.getCause().getMessage(), e.getCause() );
+                }
+                else if ( e.getCause() != null && e.getCause() instanceof AuthProviderFailedException )
+                {
+                    Throwable cause = e.getCause().getCause();
+                    securityLog.error( "[%s]: failed to log in: auth server connection refused%s",
+                            escape( token.getPrincipal().toString() ),
+                            cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
+                    throw new AuthProviderFailedException( e.getCause().getMessage(), e.getCause() );
+                }
+                securityContext = new StandardEnterpriseLoginContext( this,
+                        new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
+                Throwable cause = e.getCause();
+                Throwable causeCause = e.getCause() != null ? e.getCause().getCause() : null;
+                String errorMessage = String.format( "invalid principal or credentials%s%s",
+                        cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "",
+                        causeCause != null && causeCause.getMessage() != null ? " (" + causeCause.getMessage() + ")" : "" );
                 securityLog.error( "[%s]: failed to log in: %s", escape( token.getPrincipal().toString() ), errorMessage );
             }
-            // No need to keep full Shiro authentication info around on the subject
-            ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
-        }
-        catch ( UnsupportedTokenException e )
-        {
-            securityLog.error( "Unknown user failed to log in: %s", e.getMessage() );
-            Throwable cause = e.getCause();
-            if ( cause != null && cause instanceof InvalidAuthTokenException )
-            {
-                throw new InvalidAuthTokenException( cause.getMessage() + ": " + token );
-            }
-            throw invalidToken( ": " + token );
-        }
-        catch ( ExcessiveAttemptsException e )
-        {
-            // NOTE: We only get this with single (internal) realm authentication
-            securityContext = new StandardEnterpriseLoginContext( this,
-                    new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
-            securityLog.error( "[%s]: failed to log in: too many failed attempts",
-                    escape( token.getPrincipal().toString() ) );
-        }
-        catch ( AuthenticationException e )
-        {
-            if ( e.getCause() != null && e.getCause() instanceof AuthProviderTimeoutException )
-            {
-                Throwable cause = e.getCause().getCause();
-                securityLog.error( "[%s]: failed to log in: auth server timeout%s",
-                        escape( token.getPrincipal().toString() ),
-                        cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
-                throw new AuthProviderTimeoutException( e.getCause().getMessage(), e.getCause() );
-            }
-            else if ( e.getCause() != null && e.getCause() instanceof AuthProviderFailedException )
-            {
-                Throwable cause = e.getCause().getCause();
-                securityLog.error( "[%s]: failed to log in: auth server connection refused%s",
-                        escape( token.getPrincipal().toString() ),
-                        cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
-                throw new AuthProviderFailedException( e.getCause().getMessage(), e.getCause() );
-            }
-            securityContext = new StandardEnterpriseLoginContext( this,
-                    new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
-            Throwable cause = e.getCause();
-            Throwable causeCause = e.getCause() != null ? e.getCause().getCause() : null;
-            String errorMessage = String.format( "invalid principal or credentials%s%s",
-                    cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "",
-                    causeCause != null && causeCause.getMessage() != null ? " (" + causeCause.getMessage() + ")" : "" );
-            securityLog.error( "[%s]: failed to log in: %s", escape( token.getPrincipal().toString() ), errorMessage );
-        }
 
-        return securityContext;
+            return securityContext;
+        }
+        finally
+        {
+            AuthToken.clearCredentials( authToken );
+        }
     }
 
     private void assertValidScheme( ShiroAuthToken token ) throws InvalidAuthTokenException

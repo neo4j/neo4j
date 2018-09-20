@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -109,7 +110,7 @@ public class AuthProceduresIT
     public void newUserShouldBeAbleToChangePassword() throws Throwable
     {
         // Given
-        authManager.newUser( "andres", "banana", true );
+        authManager.newUser( "andres", UTF8.encode( "banana" ), true );
 
         // Then
         assertEmpty( login("andres", "banana"), "CALL dbms.changePassword('abc')" );
@@ -119,7 +120,7 @@ public class AuthProceduresIT
     public void newUserShouldNotBeAbleToCallOtherProcedures() throws Throwable
     {
         // Given
-        authManager.newUser( "andres", "banana", true );
+        authManager.newUser( "andres", UTF8.encode( "banana" ), true );
         LoginContext user = login("andres", "banana");
 
         // Then
@@ -200,7 +201,7 @@ public class AuthProceduresIT
     @Test
     public void shouldDeleteUser() throws Exception
     {
-        authManager.newUser( "andres", "123", false );
+        authManager.newUser( "andres", UTF8.encode( "123" ), false );
         assertEmpty( admin, "CALL dbms.security.deleteUser('andres')" );
         try
         {
@@ -228,7 +229,7 @@ public class AuthProceduresIT
     @Test
     public void shouldListUsers() throws Exception
     {
-        authManager.newUser( "andres", "123", false );
+        authManager.newUser( "andres", UTF8.encode( "123" ), false );
         assertSuccess( admin, "CALL dbms.security.listUsers() YIELD username",
                 r -> assertKeyIs( r, "username", "neo4j", "andres" ) );
     }
@@ -236,7 +237,7 @@ public class AuthProceduresIT
     @Test
     public void shouldReturnUsersWithFlags() throws Exception
     {
-        authManager.newUser( "andres", "123", false );
+        authManager.newUser( "andres", UTF8.encode( "123" ), false );
         Map<String,Object> expected = map(
                 "neo4j", listOf( PWD_CHANGE ),
                 "andres", listOf()
@@ -251,7 +252,7 @@ public class AuthProceduresIT
         assertSuccess( admin, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
 
-        authManager.newUser( "andres", "123", false );
+        authManager.newUser( "andres", UTF8.encode( "123" ), false );
         LoginContext andres = login( "andres", "123" );
         assertSuccess( andres, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );

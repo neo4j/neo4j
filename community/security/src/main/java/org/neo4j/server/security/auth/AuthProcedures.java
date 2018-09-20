@@ -35,6 +35,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.string.UTF8;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.procedure.Mode.DBMS;
@@ -56,8 +57,9 @@ public class AuthProcedures
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
+        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
         securityContext.assertCredentialsNotExpired();
-        userManager.newUser( username, password, requirePasswordChange );
+        userManager.newUser( username, UTF8.encode( password ), requirePasswordChange );
     }
 
     @Description( "Delete the specified user." )
@@ -77,6 +79,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
+        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
         changePassword( password );
     }
 
@@ -84,11 +87,12 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
+        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
         if ( securityContext.subject() == AuthSubject.ANONYMOUS )
         {
             throw new AuthorizationViolationException( "Anonymous cannot change password" );
         }
-        userManager.setUserPassword( securityContext.subject().username(), password, false );
+        userManager.setUserPassword( securityContext.subject().username(), UTF8.encode( password ), false );
         securityContext.subject().setPasswordChangeNoLongerRequired();
     }
 

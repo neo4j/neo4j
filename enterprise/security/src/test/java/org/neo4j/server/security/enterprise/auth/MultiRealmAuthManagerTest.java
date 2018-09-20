@@ -71,6 +71,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -332,7 +333,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        userManager.newUser( "foo", "bar", true );
+        userManager.newUser( "foo", password( "bar" ), true );
 
         // Then
         User user = users.getUserByName( "foo" );
@@ -435,7 +436,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         final User user = newUser( "jake", "abc123", false );
         users.create( user );
         manager.start();
-        when( authStrategy.authenticate( user, "abc123" ) ).thenReturn( AuthenticationResult.SUCCESS );
+        when( authStrategy.authenticate( user,  password( "abc123" ) ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
         userManager.activateUser( "jake", false );
@@ -492,7 +493,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        userManager.setUserPassword( "jake", "hello, world!", false );
+        userManager.setUserPassword( "jake", password( "hello, world!" ), false );
 
         // Then
         User user = userManager.getUser( "jake" );
@@ -525,7 +526,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         // When
         try
         {
-            userManager.setUserPassword( "unknown", "hello, world!", false );
+            userManager.setUserPassword( "unknown", password( "hello, world!" ), false );
             fail( "exception expected" );
         }
         catch ( InvalidArgumentsException e )
@@ -536,23 +537,23 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
 
     private void createTestUsers() throws Throwable
     {
-        userManager.newUser( "morpheus", "abc123", false );
+        userManager.newUser( "morpheus", password( "abc123" ), false );
         userManager.newRole( "admin", "morpheus" );
         setMockAuthenticationStrategyResult( "morpheus", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "trinity", "abc123", false );
+        userManager.newUser( "trinity", password( "abc123" ), false );
         userManager.newRole( "architect", "trinity" );
         setMockAuthenticationStrategyResult( "trinity", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "tank", "abc123", false );
+        userManager.newUser( "tank", password( "abc123" ), false );
         userManager.newRole( "publisher", "tank" );
         setMockAuthenticationStrategyResult( "tank", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "neo", "abc123", false );
+        userManager.newUser( "neo", password( "abc123" ), false );
         userManager.newRole( "reader", "neo" );
         setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "smith", "abc123", false );
+        userManager.newUser( "smith", password( "abc123" ), false );
         userManager.newRole( "agent", "smith" );
         setMockAuthenticationStrategyResult( "smith", "abc123", AuthenticationResult.SUCCESS );
     }
@@ -567,7 +568,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         // When
         SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) )
                 .authorize( token, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        userManager.setUserPassword( "neo4j", "1234", false );
+        userManager.setUserPassword( "neo4j", password( "1234" ), false );
         securityContext.subject().logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
@@ -706,7 +707,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
     private void setMockAuthenticationStrategyResult( String username, String password, AuthenticationResult result )
     {
         final User user = users.getUserByName( username );
-        when( authStrategy.authenticate( user, password ) ).thenReturn( result );
+        when( authStrategy.authenticate( user, password( password ) ) ).thenReturn( result );
     }
 
     @Override

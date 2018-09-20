@@ -24,5 +24,5 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 public interface PasswordPolicy
 {
     // TODO: We may want to reintroduce AuthSubject here to be able to check against repeating last used passwords etc.
-    void validatePassword( String password ) throws InvalidArgumentsException;
+    void validatePassword( byte[] password ) throws InvalidArgumentsException;
 }

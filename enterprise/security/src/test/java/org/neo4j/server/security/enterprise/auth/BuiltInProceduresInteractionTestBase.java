@@ -83,6 +83,7 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
@@ -859,7 +860,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldHandleWriteAfterAllowedReadProcedureForWriteUser() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         userManager.addRoleToUser( PUBLISHER, "role1Subject" );
@@ -871,7 +872,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldNotAllowNonWriterToWriteAfterCallingAllowedWriteProc() throws Exception
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "nopermission", "abc", false );
+        userManager.newUser( "nopermission", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "nopermission" );
         // should be able to invoke allowed procedure
@@ -886,7 +887,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldNotAllowUnauthorizedAccessToProcedure() throws Exception
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "nopermission", "abc", false );
+        userManager.newUser( "nopermission", password( "abc" ), false );
         // should not be able to invoke any procedure
         assertFail( neo.login( "nopermission", "abc" ), "CALL test.staticReadProcedure()", READ_OPS_NOT_ALLOWED );
         assertFail( neo.login( "nopermission", "abc" ), "CALL test.staticWriteProcedure()", WRITE_OPS_NOT_ALLOWED );
@@ -897,7 +898,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldNotAllowNonReaderToReadAfterCallingAllowedReadProc() throws Exception
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "nopermission", "abc", false );
+        userManager.newUser( "nopermission", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "nopermission" );
         // should not be able to invoke any procedure
@@ -911,7 +912,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldHandleNestedReadProcedures() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),
@@ -923,7 +924,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldHandleDoubleNestedReadProcedures() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),
@@ -935,7 +936,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldFailNestedAllowedWriteProcedureFromAllowedReadProcedure() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertFail( neo.login( "role1Subject", "abc" ),
@@ -947,7 +948,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldFailNestedAllowedWriteProcedureFromAllowedReadProcedureEvenIfAdmin() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         userManager.addRoleToUser( PredefinedRoles.ADMIN, "role1Subject" );
@@ -960,7 +961,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldRestrictNestedReadProcedureFromAllowedWriteProcedures() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertFail( neo.login( "role1Subject", "abc" ),
@@ -972,7 +973,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldHandleNestedReadProcedureWithDifferentAllowedRole() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),
@@ -985,7 +986,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldFailNestedAllowedWriteProcedureFromNormalReadProcedure() throws Throwable
     {
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         userManager.addRoleToUser( PredefinedRoles.PUBLISHER, "role1Subject" ); // Even if subject has WRITE permission
@@ -1000,7 +1001,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         userManager = neo.getLocalUserManager();
 
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),
@@ -1013,7 +1014,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         userManager = neo.getLocalUserManager();
 
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),
@@ -1026,7 +1027,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         userManager = neo.getLocalUserManager();
 
-        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newUser( "role1Subject", password( "abc" ), false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),

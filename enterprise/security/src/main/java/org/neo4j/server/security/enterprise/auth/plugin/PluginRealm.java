@@ -33,6 +33,7 @@ import org.apache.shiro.subject.PrincipalCollection;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -187,27 +188,35 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
             {
                 AuthToken pluginAuthToken =
                         PluginApiAuthToken.createFromMap( ((ShiroAuthToken) token).getAuthTokenMap() );
-                if ( authPlugin != null )
+                try
                 {
-                    AuthInfo authInfo = authPlugin.authenticateAndAuthorize( pluginAuthToken );
-                    if ( authInfo != null )
+                    if ( authPlugin != null )
                     {
-                        PluginAuthInfo pluginAuthInfo =
-                                PluginAuthInfo.createCacheable( authInfo, getName(), secureHasher );
+                        AuthInfo authInfo = authPlugin.authenticateAndAuthorize( pluginAuthToken );
+                        if ( authInfo != null )
+                        {
+                            PluginAuthInfo pluginAuthInfo =
+                                    PluginAuthInfo.createCacheable( authInfo, getName(), secureHasher );
 
-                        cacheAuthorizationInfo( pluginAuthInfo );
+                            cacheAuthorizationInfo( pluginAuthInfo );
 
-                        return pluginAuthInfo;
+                            return pluginAuthInfo;
+                        }
+                    }
+                    else if ( authenticationPlugin != null )
+                    {
+                        org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
+                                authenticationPlugin.authenticate( pluginAuthToken );
+                        if ( authenticationInfo != null )
+                        {
+                            return PluginAuthenticationInfo.createCacheable( authenticationInfo, getName(), secureHasher );
+                        }
                     }
                 }
-                else if ( authenticationPlugin != null )
+                finally
                 {
-                    org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
-                            authenticationPlugin.authenticate( pluginAuthToken );
-                    if ( authenticationInfo != null )
-                    {
-                        return PluginAuthenticationInfo.createCacheable( authenticationInfo, getName(), secureHasher );
-                    }
+                    // Clear credentials
+                    Arrays.fill( pluginAuthToken.credentials(), (char) 0 );
                 }
             }
             catch ( org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException |
@@ -365,7 +374,15 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
                 try
                 {
                     AuthToken pluginApiAuthToken = PluginApiAuthToken.createFromMap( authToken );
-                    return customCredentialsMatcher.doCredentialsMatch( pluginApiAuthToken );
+                    try
+                    {
+                        return customCredentialsMatcher.doCredentialsMatch( pluginApiAuthToken );
+                    }
+                    finally
+                    {
+                        // Clear credentials
+                        Arrays.fill( pluginApiAuthToken.credentials(), (char) 0 );
+                    }
                 }
                 catch ( InvalidAuthTokenException e )
                 {

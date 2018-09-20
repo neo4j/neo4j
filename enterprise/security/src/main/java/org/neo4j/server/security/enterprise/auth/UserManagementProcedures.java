@@ -31,6 +31,7 @@ import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.string.UTF8;
 
 import static org.neo4j.procedure.Mode.DBMS;
 
@@ -45,7 +46,8 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        userManager.newUser( username, password, requirePasswordChange );
+        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
+        userManager.newUser( username, UTF8.encode( password ), requirePasswordChange );
     }
 
     @Deprecated
@@ -54,6 +56,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     public void changePasswordDeprecated( @Name( "password" ) String password )
             throws InvalidArgumentsException, IOException
     {
+        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
         changePassword( password, false );
     }
 
@@ -63,6 +66,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "false" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
+        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
         setUserPassword( securityContext.subject().username(), password, requirePasswordChange );
     }
 
@@ -72,6 +76,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
+        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
         securityContext.assertCredentialsNotExpired();
         setUserPassword( username, newPassword, requirePasswordChange );
     }
@@ -186,7 +191,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     private void setUserPassword( String username, String newPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        userManager.setUserPassword( username, newPassword, requirePasswordChange );
+        userManager.setUserPassword( username, UTF8.encode( newPassword ), requirePasswordChange );
         if ( securityContext.subject().hasUsername( username ) )
         {
             securityContext.subject().setPasswordChangeNoLongerRequired();

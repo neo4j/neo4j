@@ -38,6 +38,7 @@ import org.neo4j.server.security.enterprise.auth.MultiRealmAuthManagerRule;
 import org.neo4j.server.security.enterprise.auth.MultiRealmAuthManagerRule.FullSecurityLog;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BoltInitChangePasswordTest
@@ -51,7 +52,7 @@ public class BoltInitChangePasswordTest
     public void setup() throws Throwable
     {
         authentication = new BasicAuthentication( authManagerRule.getManager(), authManagerRule.getManager() );
-        authManagerRule.getManager().getUserManager().newUser( "neo4j", "123", true );
+        authManagerRule.getManager().getUserManager().newUser( "neo4j", password( "123" ), true );
     }
 
     @Test

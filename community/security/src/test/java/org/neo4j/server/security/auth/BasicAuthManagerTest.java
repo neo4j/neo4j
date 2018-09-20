@@ -24,6 +24,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -84,7 +86,7 @@ public class BasicAuthManagerTest extends InitialUserTest
         final User user = user1;
 
         // When
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( SUCCESS );
+        when( authStrategy.authenticate( user, password( "abc123" ) ) ).thenReturn( SUCCESS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", SUCCESS );
@@ -100,7 +102,7 @@ public class BasicAuthManagerTest extends InitialUserTest
         final User user = user1;
 
         // When
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( TOO_MANY_ATTEMPTS );
+        when( authStrategy.authenticate( user, password( "abc123" ) ) ).thenReturn( TOO_MANY_ATTEMPTS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", TOO_MANY_ATTEMPTS );
@@ -116,7 +118,7 @@ public class BasicAuthManagerTest extends InitialUserTest
         final User user = user1;
 
         // When
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( SUCCESS );
+        when( authStrategy.authenticate( user, password( "abc123" ) )).thenReturn( SUCCESS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", PASSWORD_CHANGE_REQUIRED );
@@ -141,7 +143,7 @@ public class BasicAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        manager.newUser( "foo", "bar", true );
+        manager.newUser( "foo", password( "bar" ), true );
 
         // Then
         User user = users.getUserByName( "foo" );
@@ -155,7 +157,7 @@ public class BasicAuthManagerTest extends InitialUserTest
     {
         // Given
         manager.start();
-        manager.newUser( "jake", "abc123", true );
+        manager.newUser( "jake", password( "abc123" ), true );
 
         // When
         manager.deleteUser( "jake" );
@@ -169,7 +171,7 @@ public class BasicAuthManagerTest extends InitialUserTest
     {
         // Given
         manager.start();
-        manager.newUser( "jake", "abc123", true );
+        manager.newUser( "jake", password( "abc123" ), true );
 
         try
         {
@@ -195,10 +197,10 @@ public class BasicAuthManagerTest extends InitialUserTest
     {
         // Given
         manager.start();
-        manager.newUser( "jake", "abc123", true );
+        manager.newUser( "jake", password( "abc123" ), true );
 
         // When
-        manager.setUserPassword( "jake", "hello, world!", false );
+        manager.setUserPassword( "jake", password( "hello, world!" ), false );
 
         // Then
         User user = manager.getUser( "jake" );
@@ -215,7 +217,7 @@ public class BasicAuthManagerTest extends InitialUserTest
         // When
         try
         {
-            manager.setUserPassword( "unknown", "hello, world!", false );
+            manager.setUserPassword( "unknown", password( "hello, world!" ), false );
             fail( "exception expected" );
         }
         catch ( InvalidArgumentsException e )
@@ -266,5 +268,10 @@ public class BasicAuthManagerTest extends InitialUserTest
     protected AuthManager authManager()
     {
         return manager;
+    }
+
+    public static byte[] password( String passwordString )
+    {
+        return passwordString.getBytes( StandardCharsets.UTF_8 );
     }
 }

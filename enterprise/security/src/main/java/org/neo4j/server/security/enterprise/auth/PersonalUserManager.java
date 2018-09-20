@@ -50,7 +50,7 @@ class PersonalUserManager implements EnterpriseUserManager
     }
 
     @Override
-    public User newUser( String username, String initialPassword, boolean requirePasswordChange )
+    public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException, AuthorizationViolationException
     {
         try
@@ -181,7 +181,7 @@ class PersonalUserManager implements EnterpriseUserManager
     }
 
     @Override
-    public void setUserPassword( String username, String password, boolean requirePasswordChange )
+    public void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException, AuthorizationViolationException
     {
         if ( subject.hasUsername( username ) )
