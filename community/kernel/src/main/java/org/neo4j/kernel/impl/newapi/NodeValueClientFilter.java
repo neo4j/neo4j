@@ -193,6 +193,6 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     @Override
     public void close()
     {
-        IOUtils.closeAllSilently( node, property, progressor );
+        IOUtils.closeAll( RuntimeException.class, node, property, progressor );
     }
 }
