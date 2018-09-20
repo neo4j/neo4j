@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.phases
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.{StatementCondition, containsNoNodesOfType}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticChecker, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
   extends Phase[BaseContext, BaseState, BaseState] {
@@ -37,7 +37,8 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
     context.errorHandler(errors)
 
-    from.withSemanticState(state)
+    val table = SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes)
+    from.withSemanticState(state).withSemanticTable(table)
   }
 
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
