@@ -255,7 +255,7 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
   }
 
   test("should provide sensible error message for using compiled expression with compiled runtime") {
-    intercept[Exception](graph.execute("CYPHER runtime=compiled expressionEngine=compiled RETURN 1")).getMessage should be("Unsupported EXPRESSION ENGINE - RUNTIME combination: compiled - compiled")
+    intercept[Exception](graph.execute("CYPHER runtime=compiled expressionEngine=compiled RETURN 1")).getMessage should be("Cannot combine EXPRESSION ENGINE 'compiled' with RUNTIME 'compiled'")
   }
 
   test("should be able to use compiled expression engine with slotted") {

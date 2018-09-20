@@ -123,7 +123,7 @@ class PreParser(configuredVersion: CypherVersion,
       throw new InvalidArgumentException(s"Unsupported PLANNER - VERSION combination: ${planner.pick.name} - ${version.pick.name}")
 
     if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine.pick, runtime.pick)))
-      throw new InvalidPreparserOption(s"Unsupported EXPRESSION ENGINE - RUNTIME combination: ${expressionEngine.pick.name} - ${runtime.pick.name}")
+      throw new InvalidPreparserOption(s"Cannot combine EXPRESSION ENGINE '${expressionEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
 
     val isPeriodicCommit = preParsedStatement.statement.trim.startsWith("USING PERIODIC COMMIT")
 
