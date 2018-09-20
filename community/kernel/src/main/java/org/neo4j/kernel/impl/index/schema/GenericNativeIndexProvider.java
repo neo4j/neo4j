@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -119,6 +118,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
      * A space filling curve configuration used when reading spatial index values.
      */
     private final SpaceFillingCurveConfiguration configuration;
+    private final boolean archiveFailedIndex;
 
     public GenericNativeIndexProvider( int priority, IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache,
             FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
@@ -127,6 +127,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
 
         this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
+        this.archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
     }
 
     @Override
@@ -136,13 +137,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
         {
             int numberOfSlots = descriptor.properties().length;
             Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
-            try
+            if ( storeFile != null )
             {
+                // The index file exists and is sane so use it to read header information from.
                 GBPTree.readHeader( pageCache, storeFile, new NativeIndexHeaderReader( new SpaceFillingCurveSettingsReader( settings ) ) );
-            }
-            catch ( NoSuchFileException e )
-            {
-                // This is OK, it doesn't exist yet so just don't load any CRS settings from it
             }
             return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, settings ) );
         }
@@ -156,7 +154,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
     {
         return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor,
-                layout.getSpaceFillingCurveSettings(), configuration );
+                layout.getSpaceFillingCurveSettings(), directoryStructure(), configuration, archiveFailedIndex );
     }
 
     @Override

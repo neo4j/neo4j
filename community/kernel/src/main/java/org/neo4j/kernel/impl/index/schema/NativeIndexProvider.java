@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -64,6 +65,14 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         this.readOnly = readOnly;
     }
 
+    /**
+     * Instantiates the {@link Layout} which is used in the index backing this native index provider.
+     *
+     * @param descriptor the {@link StoreIndexDescriptor} for this index.
+     * @param storeFile index store file, since some layouts may depend on contents of the header.
+     * If {@code null} it means that nothing must be read from the file before or while instantiating the layout.
+     * @return the correct {@link Layout} for the index.
+     */
     abstract LAYOUT layout( StoreIndexDescriptor descriptor, File storeFile );
 
     @Override
@@ -75,7 +84,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         }
 
         File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
-        return newIndexPopulator( storeFile, layout( descriptor, storeFile ), descriptor );
+        return newIndexPopulator( storeFile, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor );
     }
 
     protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor );

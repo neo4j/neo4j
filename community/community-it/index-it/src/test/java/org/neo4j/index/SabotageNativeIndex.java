@@ -68,7 +68,6 @@ public class SabotageNativeIndex implements DatabaseRule.RestartAction
         else
         {
             // Completely scramble file, assuming small files
-            System.out.println( "scrambling " + fileOrDir );
             try ( StoreChannel channel = fs.open( fileOrDir, OpenMode.READ_WRITE ) )
             {
                 if ( channel.size() > mebiBytes( 10 ) )

@@ -31,7 +31,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -42,7 +41,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final File storeFile;
     final IndexLayout<KEY,VALUE> layout;
     final FileSystemAbstraction fileSystem;
-    final IndexDescriptor descriptor;
+    final StoreIndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
