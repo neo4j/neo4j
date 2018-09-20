@@ -44,10 +44,16 @@ public class LegacyCredential implements Credential
     private final byte[] salt;
     private final byte[] passwordHash;
 
-    public static LegacyCredential forPassword( String password )
+    public static LegacyCredential forPassword( byte[] password )
     {
         byte[] salt = randomSalt();
         return new LegacyCredential( salt, hash( salt, password ) );
+    }
+
+    // For testing purposes only!
+    public static LegacyCredential forPassword( String password )
+    {
+        return forPassword( UTF8.encode( password ) );
     }
 
     public LegacyCredential( byte[] salt, byte[] passwordHash )
@@ -67,9 +73,16 @@ public class LegacyCredential implements Credential
     }
 
     @Override
-    public boolean matchesPassword( String password )
+    public boolean matchesPassword( byte[] password )
     {
         return byteEquals( passwordHash, hash( salt, password ) );
+    }
+
+    // For testing purposes only!
+    @Override
+    public boolean matchesPassword( String password )
+    {
+        return byteEquals( passwordHash, hash( salt, UTF8.encode( password ) ) );
     }
 
     @Override
@@ -149,14 +162,13 @@ public class LegacyCredential implements Credential
                '}';
     }
 
-    private static byte[] hash( byte[] salt, String password )
+    private static byte[] hash( byte[] salt, byte[] password )
     {
         try
         {
-            byte[] passwordBytes = UTF8.encode( password );
             MessageDigest m = MessageDigest.getInstance( DIGEST_ALGO );
             m.update( salt, 0, salt.length );
-            m.update( passwordBytes, 0, passwordBytes.length );
+            m.update( password, 0, password.length );
             return m.digest();
         }
         catch ( NoSuchAlgorithmException e )

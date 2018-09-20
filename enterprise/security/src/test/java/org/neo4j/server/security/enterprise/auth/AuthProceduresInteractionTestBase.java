@@ -46,6 +46,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
 import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures.exceptionsInProcedure;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
@@ -891,7 +892,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldPrintUserAndRolesWhenPermissionDenied() throws Throwable
     {
-        userManager.newUser( "mats", "foo", false );
+        userManager.newUser( "mats", password( "foo" ), false );
         userManager.newRole( "failer", "mats" );
         S mats = neo.login( "mats", "foo" );
 

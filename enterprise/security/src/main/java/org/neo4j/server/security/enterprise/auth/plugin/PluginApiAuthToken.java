@@ -22,6 +22,8 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -75,26 +77,27 @@ public class PluginApiAuthToken implements AuthToken
         // Always require principal
         String principal = org.neo4j.kernel.api.security.AuthToken.safeCast( PRINCIPAL, authTokenMap );
 
-        String credentials = null;
+        byte[] credentials = null;
         if ( scheme.equals( org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME ) )
         {
             // Basic scheme requires credentials
-            credentials = org.neo4j.kernel.api.security.AuthToken.safeCast( CREDENTIALS, authTokenMap );
+            credentials = org.neo4j.kernel.api.security.AuthToken.safeCastCredentials( CREDENTIALS, authTokenMap );
         }
         else
         {
             // Otherwise credentials are optional
             Object credentialsObject = authTokenMap.get( CREDENTIALS );
-            if ( credentialsObject instanceof String )
+            if ( credentialsObject instanceof byte[] )
             {
-                credentials = (String) credentialsObject;
+                credentials = (byte[]) credentialsObject;
             }
         }
         Map<String,Object> parameters = org.neo4j.kernel.api.security.AuthToken.safeCastMap( PARAMETERS, authTokenMap );
 
         return PluginApiAuthToken.of(
                 principal,
-                credentials != null ? credentials.toCharArray() : null,
+                // Convert UTF8 byte[] to char[] (this should not create any intermediate copies)
+                credentials != null ? StandardCharsets.UTF_8.decode( ByteBuffer.wrap( credentials ) ).array() : null,
                 parameters );
     }
 }

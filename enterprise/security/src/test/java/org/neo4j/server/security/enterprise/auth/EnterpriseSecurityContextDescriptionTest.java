@@ -41,6 +41,7 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 
@@ -58,7 +59,7 @@ public class EnterpriseSecurityContextDescriptionTest
     {
         authManagerRule.getManager().start();
         manager = authManagerRule.getManager().getUserManager();
-        manager.newUser( "mats", "foo", false );
+        manager.newUser( "mats", password( "foo" ), false );
     }
 
     @Test

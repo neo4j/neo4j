@@ -61,6 +61,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class PropertyLevelSecurityIT
@@ -88,10 +89,10 @@ public class PropertyLevelSecurityIT
         Procedures procedures = db.getDependencyResolver().resolveDependency( Procedures.class );
         procedures.registerProcedure( TestProcedure.class );
         EnterpriseUserManager userManager = authManager.getUserManager();
-        userManager.newUser( "Neo", "eon", false );
-        userManager.newUser( "Smith", "mr", false );
-        userManager.newUser( "Jones", "mr", false );
-        userManager.newUser( "Morpheus", "dealwithit", false );
+        userManager.newUser( "Neo", password( "eon" ), false );
+        userManager.newUser( "Smith", password( "mr" ), false );
+        userManager.newUser( "Jones", password( "mr" ), false );
+        userManager.newUser( "Morpheus", password( "dealwithit" ), false );
 
         userManager.newRole( "procRole", "Jones" );
         userManager.newRole( "Agent", "Smith", "Jones" );

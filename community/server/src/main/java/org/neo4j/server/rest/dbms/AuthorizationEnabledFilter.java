@@ -45,6 +45,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.web.JettyHttpConnection;
 import org.neo4j.server.web.XForwardUtil;
+import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
@@ -156,7 +157,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     private LoginContext authenticate( String username, String password ) throws InvalidAuthTokenException
     {
         AuthManager authManager = authManagerSupplier.get();
-        Map<String,Object> authToken = newBasicAuthToken( username, password );
+        Map<String,Object> authToken = newBasicAuthToken( username, UTF8.encode( password ) );
         return authManager.login( authToken );
     }
 

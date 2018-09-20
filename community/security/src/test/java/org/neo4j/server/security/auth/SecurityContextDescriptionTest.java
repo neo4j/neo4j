@@ -33,6 +33,7 @@ import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class SecurityContextDescriptionTest
@@ -52,7 +53,7 @@ public class SecurityContextDescriptionTest
                     Config.defaults() );
         manager.init();
         manager.start();
-        manager.newUser( "johan", "bar", false );
+        manager.newUser( "johan", password( "bar" ), false );
         context = manager.login( authToken( "johan", "bar" ) ).authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
