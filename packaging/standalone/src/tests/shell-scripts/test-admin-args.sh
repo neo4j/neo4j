@@ -25,4 +25,9 @@ test_expect_success "should specify heap size when given" "
   test_expect_java_arg '-Xmx666m'
 "
 
+test_expect_success "should pass parallel collector option" "
+  neo4j-home/bin/neo4j-admin &&
+  test_expect_java_arg '-XX:+UseParallelGC'
+"
+
 test_done

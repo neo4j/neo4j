@@ -110,7 +110,7 @@ call_main_class() {
 
   export NEO4J_HOME NEO4J_CONF
 
-  exec "${JAVA_CMD}" ${JAVA_OPTS:-} ${JAVA_MEMORY_OPTS[@]:-} \
+  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS[@]:-} \
     -classpath "${CLASSPATH}" \
     ${EXTRA_JVM_ARGUMENTS:-} \
     $class_name "$@"

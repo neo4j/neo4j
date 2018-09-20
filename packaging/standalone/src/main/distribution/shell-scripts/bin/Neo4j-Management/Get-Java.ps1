@@ -260,7 +260,8 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
       if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0,$ClassPath.Length - 1) } # Strip the trailing semicolon if needed
 
       $ShellArgs = @()
-      $ShellArgs += @("-classpath $($EnvClassPrefix);$ClassPath",
+      $ShellArgs += @("-XX:+UseParallelGC",
+        "-classpath $($EnvClassPrefix);$ClassPath",
         "-Dbasedir=`"$($Neo4jServer.Home)`"",`
            '-Dfile.encoding=UTF-8')
 

@@ -10,4 +10,9 @@ test_expect_success "should invoke backup main class" "
   test_expect_java_arg 'org.neo4j.backup.BackupTool'
 "
 
+test_expect_success "should pass parallel collector option" "
+  neo4j-home/bin/neo4j-backup || true &&
+  test_expect_java_arg '-XX:+UseParallelGC'
+"
+
 test_done

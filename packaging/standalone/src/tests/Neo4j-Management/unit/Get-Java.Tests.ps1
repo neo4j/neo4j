@@ -315,6 +315,17 @@ InModuleScope Neo4j-Management {
       }
     }
 
+    Context "Utility Invoke - Should provide parallel collector option" {
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '99.99' -ServerType 'Community'
+
+      $result = Get-Java -ForUtility -StartingClass 'someclass' -Neo4jServer $serverObject -ErrorAction Stop
+      $resultArgs = ($result.args -join ' ')
+
+      It "should have parallel collector java option" {
+        $resultArgs | Should Match ([regex]::Escape('-XX:+UseParallelGC'))
+      }
+    }
+
     Context "Server Invoke - Should handle paths with spaces" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
          -RootDir 'TestDrive:\Neo4j Home' `
