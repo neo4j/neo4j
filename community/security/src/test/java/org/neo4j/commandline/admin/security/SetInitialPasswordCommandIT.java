@@ -149,7 +149,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldErrorIfRealUsersAlreadyExist() throws Throwable
+    public void shouldErrorIfRealUsersAlreadyExistCommunity() throws Throwable
     {
         // Given
         File authFile = getAuthFile( "auth" );
@@ -162,7 +162,33 @@ public class SetInitialPasswordCommandIT
         // Then
         assertNoAuthIniFile();
         verify( out, times( 1 ) )
-                .stdErrLine( "command failed: initial password was not set because live Neo4j-users were detected." );
+                .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
+                        "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` file if you " +
+                        "want to reset your database to only have a default user with the provided password." );
+        verify( out ).exit( 1 );
+        verify( out, times( 0 ) ).stdOutLine( anyString() );
+    }
+
+    @Test
+    public void shouldErrorIfRealUsersAlreadyExistEnterprise() throws Throwable
+    {
+        // Given
+        File authFile = getAuthFile( "auth" );
+        File rolesFile = getAuthFile( "roles" );
+
+        fileSystem.mkdirs( authFile.getParentFile() );
+        fileSystem.create( authFile );
+        fileSystem.create( rolesFile );
+
+        // When
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );
+
+        // Then
+        assertNoAuthIniFile();
+        verify( out, times( 1 ) )
+                .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
+                        "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` and `roles` files if you " +
+                        "want to reset your database to only have a default user with the provided password." );
         verify( out ).exit( 1 );
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
