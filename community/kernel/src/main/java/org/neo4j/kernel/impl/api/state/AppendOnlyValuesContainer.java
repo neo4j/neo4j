@@ -118,7 +118,6 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 {
     private static final int CHUNK_SIZE = (int) ByteUnit.kibiBytes( 512 );
     private static final int REMOVED = 0xFF;
-    private static final int ENCODED_ZONE_ID = 1;
 
     private final int chunkSize;
     private final List<ByteBuffer> chunks = new ArrayList<>();
@@ -550,11 +549,14 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 
     private static ZoneId toZoneId( int z )
     {
-        if ( (ENCODED_ZONE_ID & z) != 0 )
+        // if lowest bit is set to 1 then it's a shifted zone id
+        if ( (z & 1) != 0 )
         {
             final String zoneId = TimeZones.map( (short) (z >> 1) );
             return ZoneId.of( zoneId );
         }
+        // otherwise it's a shifted offset seconds value
+        // preserve sign bit for negative offsets
         return ZoneOffset.ofTotalSeconds( z >> 1 );
     }
 
@@ -833,11 +835,13 @@ public class AppendOnlyValuesContainer implements ValuesContainer
             if ( zone instanceof ZoneOffset )
             {
                 final int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
+                // lowest bit set to 0: it's a zone offset in seconds
                 buf.putInt( offsetSeconds << 1 );
             }
             else
             {
-                final int zoneId = ENCODED_ZONE_ID | (TimeZones.map( zone.getId() ) << 1);
+                // lowest bit set to 1: it's a zone id
+                final int zoneId = (TimeZones.map( zone.getId() ) << 1) | 1;
                 buf.putInt( zoneId );
             }
         }
