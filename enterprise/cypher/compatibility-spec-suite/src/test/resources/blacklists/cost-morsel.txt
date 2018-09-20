@@ -461,3 +461,5 @@ Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with a
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with null argument"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+//Bug in TCK keys should not mandate order
+Feature "KeysAcceptance": Scenario "Using `keys()` on a literal map"
