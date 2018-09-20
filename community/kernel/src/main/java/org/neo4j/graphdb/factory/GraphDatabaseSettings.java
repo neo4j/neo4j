@@ -250,6 +250,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> cypher_expression_engine = setting(
             "unsupported.cypher.expression_engine", optionsIgnoreCase( "INTERPRETED", "COMPILED" ), "INTERPRETED" );
 
+    @Description( "Number of uses before an expression is considered for compilation" )
+    @Internal
+    public static final Setting<Integer> cypher_expression_recompilation_limit =
+            buildSetting( "unsupported.cypher.expression_recompilation_limit", INTEGER, "1" ).constraint( min( 0 ) ).build();
+
     @Description( "Enable tracing of compilation in cypher." )
     @Internal
     public static final Setting<Boolean> cypher_compiler_tracing = setting( "unsupported.cypher.compiler_tracing", BOOLEAN, FALSE );
