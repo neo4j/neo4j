@@ -159,8 +159,10 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
                 {
                     // Use the supplied SpaceFillingCurve range instead of the GeometryRangePredicate because at the time of calling this method
                     // the original geometry range have been split up into multiple sub-ranges and this invocation is for one of those sub-ranges.
-                    treeKeyFrom.initFromDerivedSpatialValue( i, crs, range.min, fromInclusion( (RangePredicate<?>) predicate ) );
-                    treeKeyTo.initFromDerivedSpatialValue( i, crs, range.max + 1, toInclusion( (RangePredicate<?>) predicate ) );
+                    // We can not take query inclusion / exclusion into consideration here because then we risk missing border values. Always use
+                    // Inclusion.LOW / HIGH respectively and filter out points later on.
+                    treeKeyFrom.initFromDerivedSpatialValue( i, crs, range.min, LOW );
+                    treeKeyTo.initFromDerivedSpatialValue( i, crs, range.max + 1, HIGH );
                 }
                 else
                 {
