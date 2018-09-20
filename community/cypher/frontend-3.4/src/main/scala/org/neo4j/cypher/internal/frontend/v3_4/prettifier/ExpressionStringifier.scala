@@ -94,7 +94,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         val e = s.extractExpression.map(e => " | " + this.apply(e)).getOrElse("")
         val expr = this.apply(expression)
         s"extract($v IN $expr$p$e)"
-      case PatternComprehension(variable, RelationshipsPattern(relChain), predicate, proj, _) =>
+      case PatternComprehension(variable, RelationshipsPattern(relChain), predicate, proj) =>
         val v = variable.map(e => s"${this.apply(e)} = ").getOrElse("")
         val p = predicate.map(e => " WHERE " + this.apply(e)).getOrElse("")
         s"[$v${pattern(relChain)}$p | ${this.apply(proj)}]"
@@ -105,7 +105,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         s"all${prettyScope(scope, e)}"
       case NoneIterablePredicate(scope, e) =>
         s"none${prettyScope(scope, e)}"
-      case MapProjection(variable, items, _) =>
+      case MapProjection(variable, items) =>
         val itemsText = items.map {
           case LiteralEntry(k, e) => s"${backtick(k.name)}: ${this.apply(e)}"
           case VariableSelector(v) => this.apply(v)

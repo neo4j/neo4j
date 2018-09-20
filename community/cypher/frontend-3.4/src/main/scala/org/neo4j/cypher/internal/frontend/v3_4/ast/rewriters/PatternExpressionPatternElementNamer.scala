@@ -32,7 +32,7 @@ object PatternExpressionPatternElementNamer {
   def apply(expr: PatternComprehension): (PatternComprehension, Map[PatternElement, Variable]) = {
     val unnamedMap = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
-    val namedExpr = expr.copy(pattern = namedPattern)(expr.position)
+    val namedExpr = expr.copy(pattern = namedPattern)(expr.position, expr.outerScope)
     (namedExpr, unnamedMap)
   }
 

@@ -516,4 +516,14 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     res.toList should equal(List(Map("arraySize" -> 1)))
   }
 
+  test("should not explode because we RETURN an expand star with a pattern comprehension") {
+    val query =
+      """
+        |EXPLAIN MATCH (a)
+        |RETURN *, [ (a)-[:HAS_BUREAU]->(bureau:Bureau) | bureau.CREDIT_ACTIVE = "Active"] as bureauStatus
+      """.stripMargin
+
+    val result = graph.execute(query)
+    result.resultAsString() // should not throw
+  }
 }

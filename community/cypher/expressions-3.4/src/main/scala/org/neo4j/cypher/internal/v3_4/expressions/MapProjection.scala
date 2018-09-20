@@ -21,13 +21,19 @@ import org.neo4j.cypher.internal.util.v3_4.InputPosition
 case class MapProjection(
                           name: Variable, // Since this is always rewritten to DesugaredMapProjection this
                                           // (and in the elements below) may not need to be LogicalVariable
-                          items: Seq[MapProjectionElement],
-                          definitionPos: Option[InputPosition] = None)
-                        (val position: InputPosition)
+                          items: Seq[MapProjectionElement])
+                        (val position: InputPosition, val definitionPos: Option[InputPosition] = None)
   extends Expression {
 
-  def withDefinitionPos(pos:InputPosition): MapProjection =
-    copy(definitionPos = Some(pos))(position)
+  def withDefinitionPos(definitionPos:InputPosition): MapProjection =
+    copy()(position, Some(definitionPos))
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    MapProjection(
+      children(0).asInstanceOf[Variable],
+      children(1).asInstanceOf[Seq[MapProjectionElement]]
+    )(position, definitionPos).asInstanceOf[this.type]
+  }
 }
 
 sealed trait MapProjectionElement extends Expression

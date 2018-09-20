@@ -22,13 +22,13 @@ import org.neo4j.cypher.internal.v3_4.expressions._
 case object inlineNamedPathsInPatternComprehensions extends Rewriter {
 
   private val instance = bottomUp(Rewriter.lift {
-    case expr @ PatternComprehension(Some(path), pattern, predicate, projection, _) =>
+    case expr @ PatternComprehension(Some(path), pattern, predicate, projection) =>
       val patternElement = pattern.element
       expr.copy(
         namedPath = None,
         predicate = predicate.map(_.inline(path, patternElement)),
         projection = projection.inline(path, patternElement)
-      )(expr.position)
+      )(expr.position, expr.outerScope)
   })
 
   private implicit final class InliningExpression(val expr: Expression) extends AnyVal {

@@ -75,20 +75,28 @@ object ListComprehension {
 }
 
 case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: RelationshipsPattern,
-                                predicate: Option[Expression], projection: Expression,
-                                outerScope: Set[LogicalVariable] = Set.empty)
-                               (val position: InputPosition)
+                                predicate: Option[Expression], projection: Expression)
+                               (val position: InputPosition, val outerScope: Set[LogicalVariable])
   extends ScopeExpression {
 
   self =>
 
-  def withOuterScope(outerScope: Set[LogicalVariable]) =
-    copy(outerScope = outerScope)(position)
+  def withOuterScope(outerScope: Set[LogicalVariable]): PatternComprehension =
+    copy()(position, outerScope)
 
   override val introducedVariables: Set[LogicalVariable] = {
     val introducedInternally = namedPath.toSet ++ pattern.element.allVariables
     val introducedExternally = introducedInternally -- outerScope
     introducedExternally
+  }
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    PatternComprehension(
+      children(0).asInstanceOf[Option[LogicalVariable]],
+      children(1).asInstanceOf[RelationshipsPattern],
+      children(2).asInstanceOf[Option[Expression]],
+      children(3).asInstanceOf[Expression]
+    )(position, outerScope).asInstanceOf[this.type]
   }
 }
 

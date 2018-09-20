@@ -99,9 +99,20 @@ object LogicalPlanConverter {
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
+
         case (mp: astV3_3.MapProjection, children: Seq[AnyRef]) =>
-          expressionsV3_4.MapProjection(children(0).asInstanceOf[expressionsV3_4.Variable],
-            children(1).asInstanceOf[Seq[expressionsV3_4.MapProjectionElement]])(helpers.as3_4(mp.position))
+          expressionsV3_4.MapProjection(
+            children(0).asInstanceOf[expressionsV3_4.Variable],
+            children(1).asInstanceOf[Seq[expressionsV3_4.MapProjectionElement]]
+          )(helpers.as3_4(mp.position), children(2).asInstanceOf[Option[InputPosition]])
+
+        case (pc: astV3_3.PatternComprehension, children: Seq[AnyRef]) =>
+          expressionsV3_4.PatternComprehension(
+            children(0).asInstanceOf[Option[expressionsV3_4.LogicalVariable]],
+            children(1).asInstanceOf[expressionsV3_4.RelationshipsPattern],
+            children(2).asInstanceOf[Option[expressionsV3_4.Expression]],
+            children(3).asInstanceOf[expressionsV3_4.Expression]
+          )(helpers.as3_4(pc.position), children(4).asInstanceOf[Set[expressionsV3_4.LogicalVariable]])
 
         case (item@(_: compilerV3_3.ast.PrefixSeekRangeWrapper |
                     _: compilerV3_3.ast.InequalitySeekRangeWrapper |

@@ -79,7 +79,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
           (newAcc, Some(identity))
 
       // replace pattern comprehension
-      case expr@PatternComprehension(namedPath, pattern, predicate, projection, _) =>
+      case expr@PatternComprehension(namedPath, pattern, predicate, projection) =>
         acc =>
           assert(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")
           // only process pattern expressions that were not contained in previously seen nested plans
@@ -88,7 +88,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
           } else {
             val arguments = planArguments ++ scopeMap(expr)
             val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr, context, solveds, cardinalities)
-            val uniqueNamedExpr = namedExpr.copy()(expr.position)
+            val uniqueNamedExpr = namedExpr.copy()(expr.position, expr.outerScope)
 
             val rewrittenExpression = NestedPlanExpression(plan, projection)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)

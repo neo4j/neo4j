@@ -93,7 +93,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       pattern = pat,
       predicate = None,
       projection = varFor("k")
-    )(pos)
+    )(pos, Set.empty)
 
     expr.withOuterScope(Set(varFor("n"), varFor("k"))).dependencies should equal(Set(varFor("n"), varFor("k")))
     expr.withOuterScope(Set.empty).dependencies should equal(Set.empty)

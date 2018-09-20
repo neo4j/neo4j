@@ -102,7 +102,7 @@ trait Literals extends Parser
   def MapProjection: Rule1[ast.MapProjection] = rule {
     group(
       Variable ~~ ch('{') ~~ zeroOrMore(LiteralEntry | PropertySelector | VariableSelector | AllPropertiesSelector, CommaSep) ~~ ch('}')
-    ) ~~>> (ast.MapProjection(_, _))
+    ) ~~>> ((a, b) => pos => ast.MapProjection(a, b)(pos, None))
   }
 
   def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
