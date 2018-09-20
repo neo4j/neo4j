@@ -80,30 +80,39 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     val planningNotificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
-    val logicalPlanResult =
+    val logicalPlanResult: LogicalPlanResult =
       planner.parseAndPlan(preParsedQuery, tracer, planningNotificationLogger, transactionalContext, params)
+    internalCompile(logicalPlanResult, preParsedQuery.expressionEngine, preParsingNotifications,
+                    planningNotificationLogger.notifications.map(asKernelNotification(planningNotificationLogger.offset)))
+  }
+
+  override def recompile(in: ExecutableQuery, expressionEngine: CypherExpressionEngineOption): ExecutableQuery =
+    in.maybeLogicalPlanResult.map(internalCompile(_, expressionEngine, Set.empty, Set.empty)).getOrElse(in)
+
+  private def internalCompile(logicalPlanResult: LogicalPlanResult, expressionEngine: CypherExpressionEngineOption,
+                              preParsingNotifications: Set[Notification],
+                              planningNotifications: Set[Notification]) = {
 
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
-
     val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.notificationLogger,
                                                logicalPlanResult.plannerContext.planContext,
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
                                                queryType == READ_ONLY,
-                                               preParsedQuery.expressionEngine == CypherExpressionEngineOption.compiled)
+                                               expressionEngine == CypherExpressionEngineOption.compiled)
 
     val executionPlan3_5 = runtime.compileToExecutable(planState, runtimeContext)
 
     new CypherExecutableQuery(
-      logicalPlan,
+      logicalPlanResult,
       runtimeContext.readOnly,
       logicalPlanResult.logicalPlanState.planningAttributes.cardinalities,
       logicalPlanResult.logicalPlanState.planningAttributes.providedOrders,
       executionPlan3_5,
       preParsingNotifications,
-      planningNotificationLogger.notifications.map(asKernelNotification(planningNotificationLogger.offset)),
+      planningNotifications,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames,
       logicalPlanResult.extractedParams,
@@ -146,7 +155,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case _ => Array()
     }
 
-  protected class CypherExecutableQuery(logicalPlan: LogicalPlan,
+  protected class CypherExecutableQuery(logicalPlanResult: LogicalPlanResult,
                                         readOnly: Boolean,
                                         cardinalities: Cardinalities,
                                         providedOrders: ProvidedOrders,
@@ -163,6 +172,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
     private val resourceMonitor = kernelMonitors.newMonitor(classOf[ResourceMonitor])
+    private val logicalPlan = logicalPlanResult.logicalPlanState.logicalPlan
 
     private def getQueryContext(transactionalContext: TransactionalContext) = {
       val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext),
@@ -170,6 +180,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                )(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
+
+    override def maybeLogicalPlanResult: Option[LogicalPlanResult] = Some(logicalPlanResult)
 
     def execute(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode,
                 params: MapValue): Result = {

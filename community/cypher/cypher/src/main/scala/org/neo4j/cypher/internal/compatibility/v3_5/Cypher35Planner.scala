@@ -171,6 +171,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
           planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
                                            transactionalContext,
                                            () => createPlan(shouldBeCached = true),
+                                            (_, _) => None,
                                            syntacticQuery.queryText).executableQuery
 
         else if (!enoughParametersSupplied)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherExpressionEngineOption(runtimeName: String) extends CypherOption(runtimeName)
+sealed abstract class CypherExpressionEngineOption(engineName: String) extends CypherOption(engineName)
 
 case object CypherExpressionEngineOption extends CypherOptionCompanion[CypherExpressionEngineOption] {
   case object interpreted extends CypherExpressionEngineOption("interpreted")

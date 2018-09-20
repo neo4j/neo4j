@@ -53,7 +53,8 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.cypher_worker_count),
       config.get(GraphDatabaseSettings.cypher_morsel_size),
       config.get(GraphDatabaseSettings.enable_morsel_runtime_trace),
-      config.get(GraphDatabaseSettings.cypher_task_wait)
+      config.get(GraphDatabaseSettings.cypher_task_wait),
+      config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit)
     )
   }
 
@@ -89,7 +90,9 @@ case class CypherConfiguration(version: CypherVersion,
                                workers: Int,
                                morselSize: Int,
                                doSchedulerTracing: Boolean,
-                               waitTimeout: Int) {
+                               waitTimeout: Int,
+                               recompilationLimit: Int) {
+
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
       workers = workers,

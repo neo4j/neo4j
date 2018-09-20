@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherException
+import org.neo4j.cypher.{CypherException, CypherExpressionEngineOption}
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -47,4 +47,7 @@ trait Compiler {
               transactionalContext: TransactionalContext,
               params: MapValue
              ): ExecutableQuery
+
+  @throws[org.neo4j.cypher.CypherException]
+  def recompile(executableQuery: ExecutableQuery, expressionEngine: CypherExpressionEngineOption): ExecutableQuery = executableQuery
 }
