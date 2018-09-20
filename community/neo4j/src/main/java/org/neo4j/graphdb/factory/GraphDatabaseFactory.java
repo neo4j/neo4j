@@ -73,10 +73,7 @@ public class GraphDatabaseFactory
 
     /**
      * @param storeDir desired embedded database store dir
-     * @deprecated Currently {@code storeDir} points to a directory where the particular database is located.
-     * That is a subject to change in a future major release.
      */
-    @Deprecated
     public GraphDatabaseService newEmbeddedDatabase( File storeDir )
     {
         return newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
@@ -84,10 +81,7 @@ public class GraphDatabaseFactory
 
     /**
      * @param storeDir desired embedded database store dir
-     * @deprecated Currently {@code storeDir} points to a directory where the particular database is located.
-     * That is a subject to change in a future major release.
      */
-    @Deprecated
     public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
     {
         final GraphDatabaseFactoryState state = getStateCopy();
