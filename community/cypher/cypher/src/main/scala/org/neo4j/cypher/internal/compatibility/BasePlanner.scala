@@ -73,6 +73,7 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
       override def queryCacheHit(queryKey: STATEMENT, metaData: String): Unit = {}
       override def queryCacheMiss(queryKey: STATEMENT, metaData: String): Unit = {}
       override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {}
+      override def queryCacheRecompile(queryKey: STATEMENT, metaData: String): Unit = {}
     }
 
   protected def createReusabilityState(logicalPlanState: LogicalPlanState,
@@ -98,6 +99,7 @@ trait CypherCacheHitMonitor[T] {
   def cacheHit(key: T) {}
   def cacheMiss(key: T) {}
   def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
+  def cacheRecompile(key: T) {}
 }
 
 trait CypherCacheMonitor[T] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor

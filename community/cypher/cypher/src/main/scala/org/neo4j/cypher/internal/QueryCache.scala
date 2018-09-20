@@ -45,6 +45,8 @@ trait CacheTracer[QUERY_KEY] {
 
   def queryCacheMiss(queryKey: QUERY_KEY, metaData: String): Unit
 
+  def queryCacheRecompile(queryKey: QUERY_KEY, metaData: String): Unit
+
   def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String): Unit
 
   def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit
@@ -64,9 +66,40 @@ trait CacheTracer[QUERY_KEY] {
 class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: CacheabilityInfo](
     val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
 
-  val inner: Cache[QUERY_KEY, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, EXECUTABLE_QUERY]()
+  private val inner: Cache[QUERY_KEY, CachedValue] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, CachedValue]()
 
   import QueryCache.NOT_PRESENT
+
+  /*
+    * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
+    * and whether or not it has been recompiled.
+    */
+  private class CachedValue(val value: EXECUTABLE_QUERY, private val recompiled: Boolean) {
+
+    private var _numberOfHits = 0
+
+    def markAsSeen(): Unit = {
+      _numberOfHits += 1
+    }
+
+    def isRecompiled: Boolean = recompiled
+
+    def numberOfHits: Int = _numberOfHits
+
+    def canEqual(other: Any): Boolean = other.isInstanceOf[CachedValue]
+
+    override def equals(other: Any): Boolean = other match {
+      case that: CachedValue =>
+        (that canEqual this) &&
+          value == that.value
+      case _ => false
+    }
+
+    override def hashCode(): Int = {
+      val state = Seq(value)
+      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    }
+  }
 
   /**
     * Retrieve the CachedExecutionPlan associated with the given queryKey, or compile, cache and
@@ -75,12 +108,14 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
     * @param queryKey the queryKey to retrieve the execution plan for
     * @param tc TransactionalContext in which to compile and compute staleness
     * @param compile Compiler to use if the query is not cached or stale
+    * @param recompile Recompile function to use if the query is deemed hot
     * @param metaData String which will be passed to the CacheTracer
     * @return A CacheLookup with an CachedExecutionPlan
     */
   def computeIfAbsentOrStale(queryKey: QUERY_KEY,
                              tc: TransactionalContext,
                              compile: () => EXECUTABLE_QUERY,
+                             recompile: (Int, EXECUTABLE_QUERY) => Option[EXECUTABLE_QUERY],
                              metaData: String = ""
                             ): CacheLookup[EXECUTABLE_QUERY] = {
     if (maximumSize == 0)
@@ -91,9 +126,17 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
           compileAndCache(queryKey, tc, compile, metaData)
 
         case executableQuery =>
-          stalenessCaller.staleness(tc, executableQuery) match {
+          //mark as seen from cache
+          executableQuery.markAsSeen()
+
+          stalenessCaller.staleness(tc, executableQuery.value) match {
             case NotStale =>
-              hit(queryKey, executableQuery, metaData)
+              //check if query is up for recompilation
+              val newCachedValue = if (!executableQuery.isRecompiled) {
+                recompile(executableQuery.numberOfHits, executableQuery.value).map(recompileQuery(queryKey, metaData, _)).getOrElse(executableQuery)
+              } else executableQuery
+
+              hit(queryKey, newCachedValue, metaData)
             case Stale(secondsSincePlan) =>
               tracer.queryCacheStale(queryKey, secondsSincePlan, metaData)
               compileAndCache(queryKey, tc, compile, metaData)
@@ -116,7 +159,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                        ): CacheLookup[EXECUTABLE_QUERY] = {
     val newExecutableQuery = compile()
     if (newExecutableQuery.shouldBeCached) {
-      inner.put(queryKey, newExecutableQuery)
+      inner.put(queryKey, new CachedValue(newExecutableQuery, recompiled = false))
       miss(queryKey, newExecutableQuery, metaData)
     } else {
       tracer.queryCacheMiss(queryKey, metaData)
@@ -125,10 +168,10 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
   }
 
   private def hit(queryKey: QUERY_KEY,
-                  executableQuery: EXECUTABLE_QUERY,
+                  executableQuery: CachedValue,
                   metaData: String) = {
     tracer.queryCacheHit(queryKey, metaData)
-    CacheHit(executableQuery)
+    CacheHit(executableQuery.value)
   }
 
   private def miss(queryKey: QUERY_KEY,
@@ -136,6 +179,13 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                    metaData: String) = {
     tracer.queryCacheMiss(queryKey, metaData)
     CacheMiss(newExecutableQuery)
+  }
+
+  private def recompileQuery(queryKey: QUERY_KEY, metaData: String, query: EXECUTABLE_QUERY) = {
+    tracer.queryCacheRecompile(queryKey, metaData)
+    val value = new CachedValue(query, recompiled = true)
+    inner.put(queryKey, value)
+    value
   }
 
   /**

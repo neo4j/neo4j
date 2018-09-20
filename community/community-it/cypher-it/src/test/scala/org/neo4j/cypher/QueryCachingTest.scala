@@ -220,6 +220,54 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     actual should equal(expected)
   }
 
+  test("No recompilation on first attempt") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN $n + 3 < 6"
+    val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
+
+    graph.execute(s"CYPHER expressionEngine=compiled $query", params).resultAsString()
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))"
+    )
+
+    actual should equal(expected)
+  }
+
+  test("One and only one recompilation after several attempts") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN $n + 3 < 6"
+    val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
+
+    graph.execute(s"CYPHER expressionEngine=compiled $query", params).resultAsString()
+    graph.execute(s"CYPHER expressionEngine=compiled $query", params).resultAsString()
+    graph.execute(s"CYPHER expressionEngine=compiled $query", params).resultAsString()
+    graph.execute(s"CYPHER expressionEngine=compiled $query", params).resultAsString()
+    graph.execute(s"CYPHER expressionEngine=compiled $query", params).resultAsString()
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheRecompile: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 expressionEngine=compiled $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+
+    actual should equal(expected)
+  }
+
   private class LoggingStringCacheListener extends StringCacheMonitor {
     private var log: mutable.Builder[String, List[String]] = List.newBuilder
 
@@ -243,6 +291,10 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
     override def cacheDiscard(key: Pair[String, ParameterTypeMap], ignored: String, secondsSinceReplan: Int): Unit = {
       log += s"cacheDiscard: $key"
+    }
+
+    override def cacheRecompile(key: Pair[String, ParameterTypeMap]): Unit = {
+      log += s"cacheRecompile: $key"
     }
   }
 }

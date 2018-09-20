@@ -84,7 +84,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   }
 
-  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
+  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, recompiled: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
   }
 
@@ -103,6 +103,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
+    }
+
+    override def queryCacheRecompile(queryKey: Pair[AnyRef, ParameterTypeMap],
+                                     metaData: String): Unit = {
+      counts = counts.copy(recompiled = counts.recompiled + 1)
     }
   }
 

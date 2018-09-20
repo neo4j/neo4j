@@ -192,6 +192,7 @@ public class QueryInvalidationIT
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
         private final AtomicInteger discards = new AtomicInteger();
+        private final AtomicInteger recompilations = new AtomicInteger();
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
@@ -214,15 +215,22 @@ public class QueryInvalidationIT
         }
 
         @Override
+        public void cacheRecompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        {
+            recompilations.incrementAndGet();
+        }
+
+        @Override
         public String toString()
         {
             return "TestMonitor{hits=" + hits + ", misses=" + misses + ", discards=" + discards + ", waitTime=" +
-                   waitTime + "}";
+                   waitTime + ", recompilations=" + recompilations +  "}";
         }
 
         public void reset()
         {
             hits.set( 0 );
+            recompilations.set( 0 );
             misses.set( 0 );
             discards.set( 0 );
             waitTime.set( 0 );

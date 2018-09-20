@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import scala.collection.immutable.Map;
+
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.helpers.collection.Pair;
@@ -45,6 +47,12 @@ public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.coll
     public void queryCacheMiss( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, String metaData )
     {
         monitor.cacheMiss( queryKey );
+    }
+
+    @Override
+    public void queryCacheRecompile( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
+    {
+        monitor.cacheRecompile( queryKey );
     }
 
     @Override
