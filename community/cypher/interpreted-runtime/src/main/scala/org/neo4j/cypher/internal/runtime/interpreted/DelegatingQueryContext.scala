@@ -317,6 +317,9 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
 
   override def hasProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.hasProperty(obj, propertyKeyId))
 
+  override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
+    inner.hasTxStatePropertyForCachedNodeProperty(nodeId, propertyKeyId)
+
   override def propertyKeyIds(obj: Long): Array[Int] = singleDbHit(inner.propertyKeyIds(obj))
 
   override def removeProperty(obj: Long, propertyKeyId: Int): Unit = singleDbHit(inner.removeProperty(obj, propertyKeyId))

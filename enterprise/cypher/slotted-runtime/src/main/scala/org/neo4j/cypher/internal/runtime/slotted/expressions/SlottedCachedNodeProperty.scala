@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CachedNodePropertyLogic
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedNodeProperty
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 
 case class SlottedCachedNodeProperty(nodeOffset: Int,
                                      propertyKey: Int,
-                                     cachedPropertyOffset: Int) extends CachedNodePropertyLogic with SlottedExpression {
+                                     cachedPropertyOffset: Int) extends AbstractCachedNodeProperty with SlottedExpression {
 
   override def getNodeId(ctx: ExecutionContext): Long = ctx.getLongAt(nodeOffset)
 
@@ -38,7 +38,7 @@ case class SlottedCachedNodeProperty(nodeOffset: Int,
 
 case class SlottedCachedNodePropertyLate(nodeOffset: Int,
                                          propertyKey: String,
-                                         cachedPropertyOffset: Int) extends CachedNodePropertyLogic with SlottedExpression {
+                                         cachedPropertyOffset: Int) extends AbstractCachedNodeProperty with SlottedExpression {
 
   override def getNodeId(ctx: ExecutionContext): Long = ctx.getLongAt(nodeOffset)
 

@@ -172,8 +172,8 @@ class SlottedRewriter(tokenContext: TokenContext) {
         slotConfiguration(nodeVariableName) match {
           case LongSlot(offset, _, CTNode) =>
             tokenContext.getOptPropertyKeyId(propKey) match {
-              case Some(propId) => ast.CachedNodeProperty(offset, propId, slotConfiguration.getCachedNodePropertyOffsetFor(prop))(prop)
-              case None => ast.CachedNodePropertyLate(offset, propKey, slotConfiguration.getCachedNodePropertyOffsetFor(prop))(prop)
+              case Some(propId) => ast.CachedNodeProperty(offset, propId, slotConfiguration.getCachedNodePropertyOffsetFor(prop))
+              case None => ast.CachedNodePropertyLate(offset, propKey, slotConfiguration.getCachedNodePropertyOffsetFor(prop))
             }
 
           case slot: Slot =>
@@ -268,19 +268,6 @@ class SlottedRewriter(tokenContext: TokenContext) {
             propertyExists
         } else
           e
-
-
-//      case _: ReduceExpression =>
-//        throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
-//
-//      case _: DesugaredMapProjection =>
-//        throw new CantCompileQueryException(s"Expressions with map projections are not yet supported in slot allocation")
-//
-//      case _: ShortestPathExpression =>
-//        throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in slot allocation")
-//
-//      case _: PatternExpression =>
-//        throw new CantCompileQueryException(s"Pattern expressions not yet supported in the slotted runtime")
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }

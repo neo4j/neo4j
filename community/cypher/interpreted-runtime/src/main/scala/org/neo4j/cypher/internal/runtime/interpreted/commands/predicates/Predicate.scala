@@ -19,16 +19,29 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, IsList, IsMap}
+import org.neo4j.cypher.internal.runtime.interpreted.CastSupport
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.IsList
+import org.neo4j.cypher.internal.runtime.interpreted.IsMap
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedNodeProperty
 import org.neo4j.cypher.operations.CypherBoolean
-import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
-import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
-import org.opencypher.v9_0.util.{CypherTypeException, NonEmptyList}
+import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
+import org.opencypher.v9_0.util.CypherTypeException
+import org.opencypher.v9_0.util.NonEmptyList
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext, state: QueryState): Value =
@@ -168,6 +181,31 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
   def arguments = Seq(variable)
 
   def symbolTableDependencies = variable.symbolTableDependencies
+}
+
+case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Predicate {
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    cachedNodeProperty match {
+      case cnp: AbstractCachedNodeProperty =>
+        val nodeId = cnp.getNodeId(m)
+        if (nodeId == StatementConstants.NO_SUCH_NODE) {
+          None
+        } else {
+          Some(state.query.nodeOps.hasTxStatePropertyForCachedNodeProperty(nodeId, cnp.getPropertyKey(state.query)))
+        }
+      case _ => throw new CypherTypeException("Expected " + cachedNodeProperty + " to be a cached node property.")
+    }
+  }
+
+  override def toString: String = s"hasCachedNodeProp($cachedNodeProperty)"
+
+  def containsIsNull = false
+
+  def rewrite(f: Expression => Expression) = f(CachedNodePropertyExists(cachedNodeProperty.rewrite(f)))
+
+  def arguments = Seq(cachedNodeProperty)
+
+  def symbolTableDependencies: Set[String] = cachedNodeProperty.symbolTableDependencies
 }
 
 trait StringOperator {

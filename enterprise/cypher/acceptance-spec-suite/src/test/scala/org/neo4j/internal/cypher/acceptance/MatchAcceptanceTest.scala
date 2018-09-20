@@ -571,8 +571,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head)))
-    result.executionPlanDescription().toString should include("NodeIndexSeek")
-    result.executionPlanDescription().toString should not include "NodeIndexScan"
+    result.executionPlanDescription() should includeSomewhere.aPlan("NodeIndexSeek")
+    result.executionPlanDescription() should not(includeSomewhere.aPlan("NodeIndexScan"))
   }
 
   test("index hints should work in optional match") {

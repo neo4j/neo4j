@@ -30,7 +30,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.opencypher.v9_0.util.CypherTypeException
 
-abstract class CachedNodePropertyLogic extends Expression {
+abstract class AbstractCachedNodeProperty extends Expression {
 
   // abstract stuff
 
@@ -63,7 +63,7 @@ abstract class CachedNodePropertyLogic extends Expression {
 }
 
 case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plans.CachedNodeProperty)
-  extends CachedNodePropertyLogic
+  extends AbstractCachedNodeProperty
 {
   def symbolTableDependencies = Set(nodeName, key.cacheKey)
 

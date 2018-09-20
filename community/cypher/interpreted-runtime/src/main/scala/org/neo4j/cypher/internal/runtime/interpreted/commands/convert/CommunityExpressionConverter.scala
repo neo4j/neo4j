@@ -21,16 +21,25 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.PathExtractorExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{values => commandvalues}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandexpressions}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions.functions._
-import org.opencypher.v9_0.expressions.{DesugaredMapProjection, Expression, PropertyKeyName, functions}
+import org.opencypher.v9_0.expressions.DesugaredMapProjection
+import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.PropertyKeyName
+import org.opencypher.v9_0.expressions.functions
 import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.{InternalException, NonEmptyList}
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.NonEmptyList
 import org.opencypher.v9_0.{expressions => ast}
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
@@ -204,6 +213,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           case property: ast.Property =>
             val propertyKey = getPropertyKey(property.propertyKey)
             commands.predicates.PropertyExists(self.toCommandExpression(id, property.map), propertyKey)
+          case property: ASTCachedNodeProperty =>
+            commands.predicates.CachedNodePropertyExists(self.toCommandExpression(id, property))
           case expression: ast.PatternExpression =>
             self.toCommandPredicate(id, expression)
           case expression: pipes.NestedPipeExpression =>

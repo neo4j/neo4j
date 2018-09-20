@@ -22,19 +22,27 @@ package org.neo4j.cypher.internal.runtime
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
-import org.neo4j.graphdb.{Path, PropertyContainer}
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualNodeValue}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
 import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.util.EntityNotFoundException
 
 import scala.collection.Iterator
 
@@ -255,7 +263,20 @@ trait Operations[T] {
 
   def hasProperty(obj: Long, propertyKeyId: Int): Boolean
 
+  /**
+    * @return `None` if there are no changes.
+    *         `Some(NO_VALUE)` if the property was deleted.
+    *         `Some(v)` if the property was set to v
+    * @throws EntityNotFoundException if the node was deleted
+    */
   def getTxStateProperty(obj: Long, propertyKeyId: Int): Option[Value]
+
+  /**
+    * @return `true` if TxState has no changes, which indicates the cached node property must exist,
+    *        or if the property was changed.
+    *        `false` if the property or the node were deleted in TxState.
+    */
+  def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean
 
   def propertyKeyIds(obj: Long): Array[Int]
 

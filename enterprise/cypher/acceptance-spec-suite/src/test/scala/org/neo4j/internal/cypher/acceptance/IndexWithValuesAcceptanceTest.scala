@@ -44,6 +44,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     graph.createIndex("Awesome", "prop1", "prop2")
     graph.createIndex("Awesome", "prop3")
     graph.createIndex("Awesome", "prop4")
+    graph.createIndex("Awesome", "emptyProp")
     graph.createIndex("DateString", "ds")
     graph.createIndex("DateDate", "d")
   }
@@ -334,6 +335,32 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.toList should equal(List(Map("n.prop1" -> null)))
   }
 
+  test("index-backed property values should be removed on node delete") {
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 DETACH DELETE n RETURN n.prop1"
+    failWithError(Configs.Interpreted - Configs.Cost2_3 + Configs.Procs, query, Seq(/* Node with id 4 */ "has been deleted in this transaction"))
+  }
+
+  test("index-backed property values should not exist after node deleted") {
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 DETACH DELETE n RETURN exists(n.prop1)"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("exists(n.prop1)" -> false)))
+  }
+
+  test("index-backed property values should not exist after node deleted - optional match case") {
+    val query = "OPTIONAL MATCH (n:Awesome) WHERE n.prop1 = 42 DETACH DELETE n RETURN exists(n.prop1)"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    assertIndexSeekWithValues(result)
+    result.toList should equal(List(Map("exists(n.prop1)" -> false)))
+  }
+
+  test("existance of index-backed property values of optional node from an empty index, where the node is deleted") {
+    val query = "OPTIONAL MATCH (n:Awesome) WHERE n.emptyProp = 42 DETACH DELETE n RETURN exists(n.emptyProp)"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    assertIndexSeekWithValues(result, "n.emptyProp")
+    result.toList should equal(List(Map("exists(n.emptyProp)" -> null)))
+  }
+
   test("index-backed property values should be updated on map property write") {
     val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 SET n = {decoy1: 1, prop1: 'newValue', decoy2: 2} RETURN n.prop1"
     val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
@@ -370,10 +397,10 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
         .containingVariables("n")
   }
 
-  private def assertIndexSeekWithValues(result: RewindableExecutionResult) = {
+  private def assertIndexSeekWithValues(result: RewindableExecutionResult, propName: String = "n.prop1") = {
     result.executionPlanDescription() should
       includeSomewhere.aPlan("NodeIndexSeek")
-        .containingVariables("n", "cached[n.prop1]")
+        .containingVariables("n", s"cached[$propName]")
   }
 
   private def registerTestProcedures(): Unit = {

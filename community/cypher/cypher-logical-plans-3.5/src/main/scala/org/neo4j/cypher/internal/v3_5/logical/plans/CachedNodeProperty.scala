@@ -24,6 +24,12 @@ import org.opencypher.v9_0.expressions.{Expression => ASTExpression, PropertyKey
 import org.opencypher.v9_0.util.InputPosition
 
 /**
+  * Common super class of CachedNodeProperty
+  * and its slotted specializations.
+  */
+trait ASTCachedNodeProperty extends ASTExpression
+
+/**
   * A node property value that is cached in the execution context. Such a value can be
   * retrieved very fast, but care has to be taken to it doesn't out-dated by writes to
   * the graph/transaction state.
@@ -33,7 +39,7 @@ import org.opencypher.v9_0.util.InputPosition
   */
 case class CachedNodeProperty(nodeVariableName: String,
                               propertyKey: PropertyKeyName
-                            )(val position: InputPosition) extends ASTExpression with SemanticCheckableExpression {
+                            )(val position: InputPosition) extends ASTCachedNodeProperty with SemanticCheckableExpression {
 
   def cacheKey: String = s"$nodeVariableName.${propertyKey.name}"
 

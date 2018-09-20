@@ -586,6 +586,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Option[Value] = {
+      if (isDeletedInThisTx(nodeId)) throw new EntityNotFoundException(
+        s"Node with id $nodeId has been deleted in this transaction")
       val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
       Option(nodePropertyInTx)
     }
@@ -605,6 +607,20 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         }
       } finally {
         IOUtils.closeAll(node, property)
+      }
+    }
+
+    override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean = {
+      if (isDeletedInThisTx(nodeId)) {
+        // Node deleted in TxState
+        false
+      } else {
+        val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
+        nodePropertyInTx match {
+          case null => true // no changes in TxState. Property is cached, so it must exist.
+          case Values.NO_VALUE => false // property removed in TxState
+          case _ => true // property changed in TxState
+        }
       }
     }
 
@@ -811,6 +827,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       transactionalContext.kernelTransaction.locks().releaseExclusiveRelationshipLock(obj)
 
     override def getTxStateProperty(obj: Long, propertyKeyId: Int): Option[Value] =
+      throw new UnsupportedOperationException("Not implemented: there was no user of this method as there are no relationship indexes.")
+
+    override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
       throw new UnsupportedOperationException("Not implemented: there was no user of this method as there are no relationship indexes.")
   }
 
