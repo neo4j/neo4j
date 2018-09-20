@@ -54,6 +54,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DEFAULT;
@@ -84,6 +85,7 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
  * Settings for Neo4j.
@@ -1067,6 +1069,26 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Long> tx_state_max_off_heap_memory = buildSetting(
             "dbms.tx_state.max_off_heap_memory", BYTES, "2G" )
             .constraint( min( 0L ) )
+            .build();
+
+    @Description( "Defines the maximum size of an off-heap memory block that can be cached to speed up allocations for transaction state data. " +
+            "The value must be a power of 2." )
+    public static final Setting<Long> tx_state_off_heap_max_cacheable_block_size = buildSetting(
+            "dbms.tx_state.off_heap.max_cacheable_block_size", BYTES, "512k" )
+            .constraint( min( kibiBytes( 4 ) ) )
+            .constraint( ( x, ignore ) ->
+            {
+                checkArgument( Long.bitCount( x ) == 1, "Value must be a power of 2: %d", x );
+                return x;
+            } )
+            .build();
+
+    @Description( "Defines the size of the off-heap memory blocks cache. The cache will contain this number of blocks for each block size " +
+            "that is power of two. Thus, maximum amount of memory used by blocks cache can be calculated as " +
+            "2 * dbms.tx_state.off_heap.max_cacheable_block_size * dbms.tx_state.off_heap.block_cache_size" )
+    public static final Setting<Integer> tx_state_off_heap_block_cache_size = buildSetting(
+            "dbms.tx_state.off_heap.block_cache_size", INTEGER, "128" )
+            .constraint( min( 16 ) )
             .build();
 
     // Needed to validate config, accessed via reflection

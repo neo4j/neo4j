@@ -85,6 +85,8 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 
 /**
@@ -353,15 +355,18 @@ public class PlatformModule
         case ON_HEAP:
             return CollectionsFactorySupplier.ON_HEAP;
         case OFF_HEAP:
+            final CachingOffHeapBlockAllocator allocator = new CachingOffHeapBlockAllocator(
+                    config.get( tx_state_off_heap_max_cacheable_block_size ),
+                    config.get( tx_state_off_heap_block_cache_size ) );
             final OffHeapBlockAllocator sharedBlockAllocator;
             final long maxMemory = config.get( GraphDatabaseSettings.tx_state_max_off_heap_memory );
             if ( maxMemory > 0 )
             {
-                sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator( new CachingOffHeapBlockAllocator(), maxMemory );
+                sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator( allocator, maxMemory );
             }
             else
             {
-                sharedBlockAllocator = new CachingOffHeapBlockAllocator();
+                sharedBlockAllocator = allocator;
             }
             life.add( onShutdown( sharedBlockAllocator::release ) );
             return () -> new OffHeapCollectionsFactory( sharedBlockAllocator );

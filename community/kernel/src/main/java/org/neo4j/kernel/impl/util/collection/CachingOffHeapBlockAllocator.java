@@ -47,30 +47,24 @@ import static org.neo4j.util.Preconditions.requirePositive;
  */
 public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
 {
+
+    private final SynchronizedLongObjectMap<BlockingQueue<MemoryBlock>> pool = new SynchronizedLongObjectMap<>( new LongObjectHashMap<>() );
     /**
      * Max size of cached blocks including alignment padding.
      */
-    private static final long DEFAULT_MAX_CACHEABLE_SIZE = ByteUnit.kibiBytes( 512 ) + Long.BYTES - 1;
-
+    private final long maxCacheableBlockSize;
     /**
      * Max number of blocks of each size to store.
      */
-    private static final int DEFAULT_MAX_CACHED_BLOCKS = 128;
-
-    private final SynchronizedLongObjectMap<BlockingQueue<MemoryBlock>> pool = new SynchronizedLongObjectMap<>( new LongObjectHashMap<>() );
-    private final long maxCacheableBlockSize;
     private final int maxCachedBlocks;
     private volatile boolean released;
 
-    /**
-     */
     public CachingOffHeapBlockAllocator()
     {
-        this( DEFAULT_MAX_CACHEABLE_SIZE, DEFAULT_MAX_CACHED_BLOCKS );
+        this( ByteUnit.kibiBytes( 512 ) + Long.BYTES - 1, 128 );
     }
 
-    @VisibleForTesting
-    CachingOffHeapBlockAllocator( long maxCacheableBlockSize, int maxCachedBlocks )
+    public CachingOffHeapBlockAllocator( long maxCacheableBlockSize, int maxCachedBlocks )
     {
         this.maxCacheableBlockSize = requireNonNegative( maxCacheableBlockSize );
         this.maxCachedBlocks = requireNonNegative( maxCachedBlocks );
