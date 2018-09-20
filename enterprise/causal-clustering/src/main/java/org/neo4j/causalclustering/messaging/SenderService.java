@@ -22,6 +22,11 @@
  */
 package org.neo4j.causalclustering.messaging;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -29,24 +34,18 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-
 import org.neo4j.causalclustering.net.BootstrapConfiguration;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.scheduler.JobHandle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobHandle;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static org.neo4j.causalclustering.net.BootstrapConfiguration.preferNativeClientConfig;
-import static org.neo4j.causalclustering.net.NioBootstrapConfig.nioClientConfig;
+import static org.neo4j.causalclustering.net.BootstrapConfiguration.clientConfig;
 
 public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
 {
@@ -67,7 +66,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
         this.channels = new ReconnectingChannels();
-        this.bootstrapConfiguration = useNativeTransport ? preferNativeClientConfig() : nioClientConfig();
+        this.bootstrapConfiguration = clientConfig( useNativeTransport );
     }
 
     @Override

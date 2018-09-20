@@ -33,36 +33,36 @@ import java.util.concurrent.ThreadFactory;
 
 public interface BootstrapConfiguration<TYPE extends Channel>
 {
-    static BootstrapConfiguration<? extends ServerSocketChannel> preferNativeServerConfig()
+    static BootstrapConfiguration<? extends ServerSocketChannel> serverConfig( boolean preferNative )
     {
-        if ( Epoll.isAvailable() )
+        if ( preferNative )
         {
-            return EpollBootstrapConfig.epollServerConfig();
+            if ( Epoll.isAvailable() )
+            {
+                return EpollBootstrapConfig.epollServerConfig();
+            }
+            else if ( KQueue.isAvailable() )
+            {
+                return KQueueBootsrapConfig.kQueueServerConfig();
+            }
         }
-        else if ( KQueue.isAvailable() )
-        {
-            return KQueueBootsrapConfig.kQueueServerConfig();
-        }
-        else
-        {
-            return NioBootstrapConfig.nioServerConfig();
-        }
+        return NioBootstrapConfig.nioServerConfig();
     }
 
-    static BootstrapConfiguration<? extends SocketChannel> preferNativeClientConfig()
+    static BootstrapConfiguration<? extends SocketChannel> clientConfig( boolean preferNative )
     {
-        if ( Epoll.isAvailable() )
+        if ( preferNative )
         {
-            return EpollBootstrapConfig.epollClientConfig();
+            if ( Epoll.isAvailable() )
+            {
+                return EpollBootstrapConfig.epollClientConfig();
+            }
+            else if ( KQueue.isAvailable() )
+            {
+                return KQueueBootsrapConfig.kQueueClientConfig();
+            }
         }
-        else if ( KQueue.isAvailable() )
-        {
-            return KQueueBootsrapConfig.kQueueClientConfig();
-        }
-        else
-        {
-            return NioBootstrapConfig.nioClientConfig();
-        }
+        return NioBootstrapConfig.nioClientConfig();
     }
 
     EventLoopGroup eventLoopGroup( ThreadFactory threadFactory );

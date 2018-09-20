@@ -46,8 +46,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static org.neo4j.causalclustering.net.BootstrapConfiguration.preferNativeClientConfig;
-import static org.neo4j.causalclustering.net.NioBootstrapConfig.nioClientConfig;
+import static org.neo4j.causalclustering.net.BootstrapConfiguration.clientConfig;
 
 public class CatchUpClient extends LifecycleAdapter
 {
@@ -66,7 +65,7 @@ public class CatchUpClient extends LifecycleAdapter
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.channelInitializer = channelInitializer;
-        this.bootstrapConfiguration = useNativeTransport ? preferNativeClientConfig() : nioClientConfig();
+        this.bootstrapConfiguration = clientConfig( useNativeTransport );
     }
 
     public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )

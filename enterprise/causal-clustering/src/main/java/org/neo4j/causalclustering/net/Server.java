@@ -39,8 +39,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.causalclustering.net.BootstrapConfiguration.preferNativeServerConfig;
-import static org.neo4j.causalclustering.net.NioBootstrapConfig.nioServerConfig;
+import static org.neo4j.causalclustering.net.BootstrapConfiguration.serverConfig;
 
 public class Server extends SuspendableLifeCycle
 {
@@ -49,7 +48,7 @@ public class Server extends SuspendableLifeCycle
     private final String serverName;
 
     private final NamedThreadFactory threadFactory;
-    private final boolean useNativeTransport;
+    private final BootstrapConfiguration<? extends ServerSocketChannel> bootstrapConfiguration;
     private final ChildInitializer childInitializer;
     private final ChannelInboundHandler parentHandler;
     private final ListenSocketAddress listenAddress;
@@ -74,7 +73,7 @@ public class Server extends SuspendableLifeCycle
         this.userLog = userLogProvider.getLog( getClass() );
         this.serverName = serverName;
         this.threadFactory = new NamedThreadFactory( serverName );
-        this.useNativeTransport = useNativeTransport;
+        this.bootstrapConfiguration = serverConfig( useNativeTransport );
     }
 
     public Server( ChildInitializer childInitializer, ListenSocketAddress listenAddress, String serverName )
@@ -95,7 +94,6 @@ public class Server extends SuspendableLifeCycle
         {
             return;
         }
-        BootstrapConfiguration<? extends ServerSocketChannel> bootstrapConfiguration = useNativeTransport ? preferNativeServerConfig() : nioServerConfig();
 
         workerGroup = bootstrapConfiguration.eventLoopGroup( threadFactory );
 
