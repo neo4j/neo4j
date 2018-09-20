@@ -47,7 +47,7 @@ public class LuceneRecoveryIT
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 3, MINUTES ).build();
+    public final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 30, MINUTES ).build();
 
     @Test
     public void testHardCoreRecovery() throws Exception
@@ -132,7 +132,7 @@ public class LuceneRecoveryIT
         }
     }
 
-    private boolean exceptionContainsStackTraceElementFromPackage( Throwable e, String packageName )
+    private static boolean exceptionContainsStackTraceElementFromPackage( Throwable e, String packageName )
     {
         for ( StackTraceElement element : e.getStackTrace() )
         {
@@ -144,7 +144,7 @@ public class LuceneRecoveryIT
         return false;
     }
 
-    private void awaitFile( File file ) throws InterruptedException
+    private static void awaitFile( File file ) throws InterruptedException
     {
         long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 300 );
         while ( !file.exists() && System.currentTimeMillis() < end )
