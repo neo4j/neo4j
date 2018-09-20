@@ -36,7 +36,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
     if (input.isEmpty) return empty
 
-    val limit = asPrimitiveLong(exp(state.createOrGetInitialContext(executionContextFactory), state))
+    val limit = asPrimitiveLong(exp(state.newExecutionContext(executionContextFactory), state))
 
     new AbstractIterator[ExecutionContext] {
       private var remaining = limit

@@ -42,9 +42,6 @@ class SlottedQueryState(query: QueryContext,
   extends QueryState(query, resources, params, decorator, initialContext, triadicState,
     repeatableReads, cachedIn, lenientCreateRelationship) {
 
-  override def createOrGetInitialContext(factory: ExecutionContextFactory): ExecutionContext =
-    initialContext.getOrElse(factory.newExecutionContext())
-
   override def withDecorator(decorator: PipeDecorator) =
     new SlottedQueryState(query, resources, params, decorator, initialContext, triadicState, repeatableReads, cachedIn, lenientCreateRelationship)
 

@@ -55,7 +55,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
-    val baseContext = state.createOrGetInitialContext(executionContextFactory)
+    val baseContext = state.newExecutionContext(executionContextFactory)
 
     val resultCreator =
       if (needsValues) CtxResultCreatorWithValues(baseContext)

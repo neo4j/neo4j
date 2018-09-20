@@ -46,7 +46,7 @@ case class NodeIndexScanPipe(ident: String,
     reference
   }
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val baseContext = state.createOrGetInitialContext(executionContextFactory)
+    val baseContext = state.newExecutionContext(executionContextFactory)
     val resultCreator =
       if (needsValues) CtxResultCreatorWithValues(baseContext)
       else CtxResultCreator(baseContext)

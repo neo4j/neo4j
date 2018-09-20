@@ -43,9 +43,6 @@ class QueryState(val query: QueryContext,
   private var _pathValueBuilder: PathValueBuilder = _
   private var _exFactory: ExecutionContextFactory = _
 
-  def createOrGetInitialContext(factory: ExecutionContextFactory): ExecutionContext =
-    initialContext.getOrElse(ExecutionContext.empty)
-
   def newExecutionContext(factory: ExecutionContextFactory): ExecutionContext = {
     initialContext match {
       case Some(init) => factory.copyWith(init)
