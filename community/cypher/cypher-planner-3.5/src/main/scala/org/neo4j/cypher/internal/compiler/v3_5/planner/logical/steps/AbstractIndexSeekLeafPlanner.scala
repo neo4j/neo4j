@@ -218,25 +218,31 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     maybeMatchingPredicates
       .filter(isValidPredicateCombination)
       .map { matchingPredicates =>
-        val types = matchingPredicates.map(mp => mp.propertyType)
-
-        // Ask the index for its value capabilities for the types of all properties.
-        // We might override some of these later if they value is known in an equality predicate
-        val propertyBehaviorFromIndex = indexDescriptor.valueCapability(types)
-
-        // Combine plannable predicates with their available properties
-        val propertyBehaviours = propertyBehaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
-          case (_, true) => CanGetValue
-          case (behavior, _) => behavior
-        }
-
-        // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
-        val indexNamesAndTypes = matchingPredicates.map(mp => s"${mp.name}.${mp.propertyKeyName.name}").zip(types)
-        val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, indexNamesAndTypes, indexDescriptor.orderCapability)
-
-        // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
-        (matchingPredicates, propertyBehaviours, providedOrder)
+        matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrder)
       }
+  }
+
+  private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],
+                                                                   indexDescriptor: IndexDescriptor,
+                                                                   interestingOrder: InterestingOrder): (Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder) = {
+    val types = matchingPredicates.map(mp => mp.propertyType)
+
+    // Ask the index for its value capabilities for the types of all properties.
+    // We might override some of these later if they value is known in an equality predicate
+    val propertyBehaviorFromIndex = indexDescriptor.valueCapability(types)
+
+    // Combine plannable predicates with their available properties
+    val propertyBehaviours = propertyBehaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
+      case (_, true) => CanGetValue
+      case (behavior, _) => behavior
+    }
+
+    // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
+    val indexNamesAndTypes = matchingPredicates.map(mp => s"${mp.name}.${mp.propertyKeyName.name}").zip(types)
+    val providedOrder= ResultOrdering.withIndexOrderCapability(interestingOrder, indexNamesAndTypes, indexDescriptor.orderCapability)
+
+    // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
+    (matchingPredicates, propertyBehaviours, providedOrder)
   }
 
   private def isValidPredicateCombination(foundPredicates: Seq[IndexCompatiblePredicate]): Boolean = {
