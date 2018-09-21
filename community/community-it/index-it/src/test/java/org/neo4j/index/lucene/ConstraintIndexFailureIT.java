@@ -42,7 +42,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.INITIAL_STATE;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_OVERRIDE;
+import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
 import static org.neo4j.test.TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER;
 
 public class ConstraintIndexFailureIT
@@ -87,7 +87,7 @@ public class ConstraintIndexFailureIT
             assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
             assertThat( e.getCause().getCause().getMessage(), allOf(
                     containsString( "The index is in a failed state:" ),
-                    containsString( POPULATION_FAILURE_OVERRIDE ) ) );
+                    containsString( INITIAL_STATE_FAILURE_MESSAGE ) ) );
         }
         finally
         {

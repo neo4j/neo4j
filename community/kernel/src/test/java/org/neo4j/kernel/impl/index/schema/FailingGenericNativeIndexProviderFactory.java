@@ -62,12 +62,13 @@ import static java.util.Arrays.copyOfRange;
  */
 public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
 {
-    public static final String POPULATION_FAILURE_OVERRIDE = "Was told to fail";
+    public static final String INITIAL_STATE_FAILURE_MESSAGE = "Override initial state as failed";
+    private static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";
 
     public enum FailureType
     {
         POPULATION,
-        INITIAL_STATE;
+        INITIAL_STATE
     }
 
     private final GenericNativeIndexProviderFactory actual;
@@ -79,7 +80,7 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
         this( new GenericNativeIndexProviderFactory(), 10_000, failureTypes );
     }
 
-    public FailingGenericNativeIndexProviderFactory( GenericNativeIndexProviderFactory actual, int priority, FailureType... failureTypes )
+    private FailingGenericNativeIndexProviderFactory( GenericNativeIndexProviderFactory actual, int priority, FailureType... failureTypes )
     {
         super( ExtensionType.DATABASE, actual.getKeys().iterator().next() );
         if ( failureTypes.length == 0 )
@@ -118,9 +119,9 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
                         }
 
                         @Override
-                        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
+                        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
                         {
-                            throw new RuntimeException( "Failing index population on purpose" );
+                            throw new RuntimeException( POPULATION_FAILURE_MESSAGE );
                         }
 
                         @Override
@@ -172,7 +173,7 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
             @Override
             public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
             {
-                return failureTypes.contains( FailureType.INITIAL_STATE ) ? POPULATION_FAILURE_OVERRIDE : actualProvider.getPopulationFailure( descriptor );
+                return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE : actualProvider.getPopulationFailure( descriptor );
             }
 
             @Override
