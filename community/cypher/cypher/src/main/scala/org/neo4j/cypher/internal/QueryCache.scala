@@ -78,7 +78,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
 
     private var _numberOfHits = 0
 
-    def markAsSeen(): Unit = {
+    def markHit(): Unit = {
       _numberOfHits += 1
     }
 
@@ -125,16 +125,23 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
         case NOT_PRESENT =>
           compileAndCache(queryKey, tc, compile, metaData)
 
-        case executableQuery =>
+        case cachedValue =>
           //mark as seen from cache
-          executableQuery.markAsSeen()
+          cachedValue.markHit()
 
-          stalenessCaller.staleness(tc, executableQuery.value) match {
+          stalenessCaller.staleness(tc, cachedValue.value) match {
             case NotStale =>
               //check if query is up for recompilation
-              val newCachedValue = if (!executableQuery.isRecompiled) {
-                recompile(executableQuery.numberOfHits, executableQuery.value).map(recompileQuery(queryKey, metaData, _)).getOrElse(executableQuery)
-              } else executableQuery
+              val newCachedValue = if (!cachedValue.isRecompiled) {
+                recompile(cachedValue.numberOfHits, cachedValue.value) match {
+                  case Some(recompiledQuery) =>
+                    tracer.queryCacheRecompile(queryKey, metaData)
+                    val recompiled = new CachedValue(recompiledQuery, recompiled = true)
+                    inner.put(queryKey, recompiled)
+                    recompiled
+                  case None => cachedValue
+                }
+              } else cachedValue
 
               hit(queryKey, newCachedValue, metaData)
             case Stale(secondsSincePlan) =>
@@ -179,13 +186,6 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                    metaData: String) = {
     tracer.queryCacheMiss(queryKey, metaData)
     CacheMiss(newExecutableQuery)
-  }
-
-  private def recompileQuery(queryKey: QUERY_KEY, metaData: String, query: EXECUTABLE_QUERY) = {
-    tracer.queryCacheRecompile(queryKey, metaData)
-    val value = new CachedValue(query, recompiled = true)
-    inner.put(queryKey, value)
-    value
   }
 
   /**

@@ -30,40 +30,14 @@ class QueryCacheTest extends CypherFunSuite {
   type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
   type Key = Pair[String, Map[String, Class[_]]]
 
-  class MyValue(val key: String) {
-    private var recompiled = false
-    def recompile(): Unit = {
-      recompiled = true
-    }
-    def isRecompiled: Boolean = recompiled
-
-
-    def canEqual(other: Any): Boolean = other.isInstanceOf[MyValue]
-
-    override def equals(other: Any): Boolean = other match {
-      case that: MyValue =>
-        (that canEqual this) &&
-          key == that.key
-      case _ => false
-    }
-
-    override def hashCode(): Int = {
-      val state = Seq(key)
-      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-    }
-
-    override def toString = s"MyValue($key)"
-  }
+  case class MyValue(key: String)(val recompiled: Boolean)
 
   private val TC = mock[TransactionalContext]
   private val RECOMPILE_LIMIT = 2
   private val RECOMPILE = (count: Int, value: MyValue) => {
-    if (count > RECOMPILE_LIMIT) {
-      value.recompile()
-      Some(value)
-    } else None
+    if (count > RECOMPILE_LIMIT) Some(value.copy()(recompiled = true))
+    else None
   }
-
 
   test("first time accessing the cache should be a cache miss") {
     // Given
@@ -73,10 +47,9 @@ class QueryCacheTest extends CypherFunSuite {
 
     // When
     val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
-
     // Then
     valueFromCache should equal(CacheMiss(valueFromKey(key)))
-    valueFromCache.executableQuery.isRecompiled should equal(false)
+    valueFromCache.executableQuery.recompiled should equal(false)
     verify(tracer).queryCacheMiss(key, "")
     verifyNoMoreInteractions(tracer)
   }
@@ -96,8 +69,8 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     value1FromCache should equal(CacheMiss(valueFromKey(key1)))
     value2FromCache should equal(CacheMiss(valueFromKey(key2)))
-    value1FromCache.executableQuery.isRecompiled should equal(false)
-    value2FromCache.executableQuery.isRecompiled should equal(false)
+    value1FromCache.executableQuery.recompiled should equal(false)
+    value2FromCache.executableQuery.recompiled should equal(false)
 
     verify(tracer).queryCacheMiss(key1, "")
     verify(tracer).queryCacheMiss(key2, "")
@@ -116,7 +89,7 @@ class QueryCacheTest extends CypherFunSuite {
 
     // Then
     valueFromCache should equal(CacheHit(valueFromKey(key)))
-    valueFromCache.executableQuery.isRecompiled should equal(false)
+    valueFromCache.executableQuery.recompiled should equal(false)
     verify(tracer).queryCacheMiss(key, "")
     verify(tracer).queryCacheHit(key, "")
     verifyNoMoreInteractions(tracer)
@@ -135,7 +108,7 @@ class QueryCacheTest extends CypherFunSuite {
 
     // Then
     valueFromCache should equal(CacheMiss(valueFromKey(key)))
-    valueFromCache.executableQuery.isRecompiled should equal(false)
+    valueFromCache.executableQuery.recompiled should equal(false)
 
     verify(tracer, times(2)).queryCacheMiss(key, "")
     verify(tracer).queryCacheStale(key, secondsSinceReplan, "")
@@ -156,7 +129,7 @@ class QueryCacheTest extends CypherFunSuite {
 
     // Then
     valueFromCache should equal(CacheHit(valueFromKey(key)))
-    valueFromCache.executableQuery.isRecompiled should equal(true)
+    valueFromCache.executableQuery.recompiled should equal(true)
 
     verify(tracer).queryCacheMiss(key, "")
     verify(tracer, times(3)).queryCacheHit(key, "")
