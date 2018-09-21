@@ -197,8 +197,7 @@ public enum NotificationCode
     MISSING_PARAMETERS_FOR_EXPLAIN(
             SeverityLevel.WARNING,
             Status.Statement.ParameterMissing,
-            "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. " +
-            "Expected parameter(s):" ),
+            "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN." ),
     SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,

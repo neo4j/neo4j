@@ -185,8 +185,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     var acc = 0
     notifications.foreach(n => {
       n.getDescription should equal(
-        "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. " +
-          "Expected parameter(s): (m)"
+        "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: m)"
       )
       acc = acc + 1
     })

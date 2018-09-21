@@ -144,7 +144,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       checkForSchemaChanges(planContext)
 
       // If the query is not cached we want to do the full planning
-      def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): LogicalPlanWithCacheabilityInfo = {
+      def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
         val logicalPlanState = planner.planPreparedQuery(preparedQuery, context)
         notification.LogicalPlanNotifications
           .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
@@ -153,7 +153,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
         val reusabilityState = createReusabilityState(logicalPlanState, planContext)
-        LogicalPlanWithCacheabilityInfo(logicalPlanState, reusabilityState, shouldBeCached)
+        CacheableLogicalPlan(logicalPlanState, reusabilityState, shouldBeCached)
       }
 
       val autoExtractParams = ValueConversion.asValues(preparedQuery.extractedParams()) // only extracted ones
@@ -163,7 +163,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         override def apply(name: String, value: AnyValue): java.lang.Boolean = queryParamNames.contains(name)
       })
 
-      val enoughParametersSupplied = queryParamNames.nonEmpty && (queryParamNames.size == filteredParams.size) // this is relevant if the query has parameters
+      val enoughParametersSupplied = queryParamNames.size == filteredParams.size // this is relevant if the query has parameters
 
       val cacheableLogicalPlan =
         // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
@@ -174,7 +174,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
                                            syntacticQuery.queryText).executableQuery
 
         else if (!enoughParametersSupplied)
-          createPlan(shouldBeCached = false, queryParamNames.filterNot(filteredParams.containsKey))
+          createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
         else
           createPlan(shouldBeCached = false)
 

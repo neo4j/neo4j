@@ -119,7 +119,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
       inner.put(queryKey, newExecutableQuery)
       miss(queryKey, newExecutableQuery, metaData)
     } else {
-      tracer.queryCacheMiss(queryKey, metaData) // @Reviewer: I think it is debatable if we want to always log a miss here or not. Leaning towards logging a miss, but please give me feedback on that
+      tracer.queryCacheMiss(queryKey, metaData)
       CacheDisabled(newExecutableQuery)
     }
   }
