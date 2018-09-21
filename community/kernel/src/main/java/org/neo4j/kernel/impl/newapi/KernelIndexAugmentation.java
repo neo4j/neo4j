@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
@@ -64,6 +64,12 @@ public class KernelIndexAugmentation
                 public IndexValueCapability valueCapability( ValueCategory... valueCategories )
                 {
                     return IndexValueCapability.YES;
+                }
+
+                @Override
+                public IndexLimitation[] limitations()
+                {
+                    return capability.limitations();
                 }
             };
         }
