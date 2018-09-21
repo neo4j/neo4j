@@ -5,6 +5,18 @@ test_description="Test JVM compatibility checking"
 . ./lib/sharness.sh
 fake_install
 
+test_expect_success "should run happily with Java 11" "
+  FAKE_JAVA_VERSION='11' test_expect_stdout_matching 'unsupported Java runtime' run_console
+"
+
+test_expect_success "should run happily with Java 10" "
+  FAKE_JAVA_VERSION='10' test_expect_stdout_matching 'unsupported Java runtime' run_console
+"
+
+test_expect_success "should run happily with Java 9" "
+  FAKE_JAVA_VERSION='9' test_expect_stdout_matching 'unsupported Java runtime' run_console
+"
+
 test_expect_success "should run happily with Java 8" "
   FAKE_JAVA_VERSION='1.8.0_51' run_console
 "

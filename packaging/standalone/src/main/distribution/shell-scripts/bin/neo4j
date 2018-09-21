@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 # Callers may provide the following environment variables to customize this script:
 #  * JAVA_HOME
 #  * JAVA_CMD
@@ -24,6 +25,9 @@
 #  * NEO4J_CONF
 #  * NEO4J_START_WAIT
 
+#############################################################
+#      File content is generated based on .m4 template      #
+#############################################################
 
 set -o errexit -o nounset -o pipefail
 [[ "${TRACE:-}" ]] && set -o xtrace
@@ -84,16 +88,23 @@ check_java() {
   [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && version_command+=("${JAVA_MEMORY_OPTS[@]}")
 
   JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
-  if [[ "${JAVA_VERSION}" < "1.8" ]]; then
-    echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
-    _show_java_help
-    exit 1
+  if [[ $JAVA_VERSION = "1."* ]]; then
+    if [[ "${JAVA_VERSION}" < "1.8" ]]; then
+      echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
+      _show_java_help
+      exit 1
+    fi
+    if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
+      unsupported_runtime_warning
+    fi
+  else
+      unsupported_runtime_warning
   fi
+}
 
-  if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
+unsupported_runtime_warning() {
     echo "WARNING! You are using an unsupported Java runtime. "
     _show_java_help
-  fi
 }
 
 # Resolve a path relative to $NEO4J_HOME.  Don't resolve if

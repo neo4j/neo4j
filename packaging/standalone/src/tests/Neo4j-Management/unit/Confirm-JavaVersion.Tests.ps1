@@ -100,6 +100,26 @@ InModuleScope Neo4j-Management {
       }
     }
 
+    Context "Valid Java install (10.0.2 JDK) in JAVA_HOME environment variable" {
+      # Mock the java version output file
+      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "10.0.2"`n`rJava HotSpot(TM) 64-Bit Server VM (build 10.0.2+13, mixed mode)' } }
+      Mock Write-Warning {}
+
+      $result = Confirm-JavaVersion -Path $global:mockJavaExe
+
+      It "should return true" {
+        $result | Should Be $true
+      }
+
+      It "should not emit warnings" {
+        Assert-MockCalled Write-Warning -Times 0
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
+      }
+    }
+
     Context "Unsupport Java install (1.8 Bad-JRE) in JAVA_HOME environment variable" {
       # Mock the java version output file
       Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "1.8.0"`n`rJava BadSpot(TM) 64-Bit Server VM (build 11.11-a11, mixed mode)' } }

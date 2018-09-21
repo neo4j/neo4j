@@ -17,6 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#############################################################
+#      File content is generated based on .m4 template      #
+#############################################################
 
 set -o errexit -o nounset -o pipefail
 [[ "${TRACE:-}" ]] && set -o xtrace
@@ -77,16 +80,23 @@ check_java() {
   [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && version_command+=("${JAVA_MEMORY_OPTS[@]}")
 
   JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
-  if [[ "${JAVA_VERSION}" < "1.8" ]]; then
-    echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
-    _show_java_help
-    exit 1
+  if [[ $JAVA_VERSION = "1."* ]]; then
+    if [[ "${JAVA_VERSION}" < "1.8" ]]; then
+      echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
+      _show_java_help
+      exit 1
+    fi
+    if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
+      unsupported_runtime_warning
+    fi
+  else
+      unsupported_runtime_warning
   fi
+}
 
-  if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
+unsupported_runtime_warning() {
     echo "WARNING! You are using an unsupported Java runtime. "
     _show_java_help
-  fi
 }
 
 # Resolve a path relative to $NEO4J_HOME.  Don't resolve if
@@ -180,10 +190,15 @@ _read_config() {
       if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
         key="${BASH_REMATCH[1]}"
       fi
-      if [[ "${!key:-}" ]]; then
-        export ${key}="${!key} ${value}"
+      # Ignore keys that start with a number because export ${key}= will fail - it is not valid for a bash env var to start with a digit
+      if [[ ! "${key}" =~ ^[0-9]+.*$ ]]; then
+        if [[ "${!key:-}" ]]; then
+          export ${key}="${!key} ${value}"
+        else
+          export ${key}="${value}"
+        fi
       else
-        export ${key}="${value}"
+        echo >&2 "WARNING: Ignoring key ${key}, environment variables cannot start with a number."
       fi
     fi
   }
