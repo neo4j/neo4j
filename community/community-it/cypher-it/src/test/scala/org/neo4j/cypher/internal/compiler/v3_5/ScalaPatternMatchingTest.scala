@@ -43,9 +43,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
     // When
     val result = withQueryState { queryState =>
-      val ctx = ExecutionContext.empty
-      ctx.set("a", aNode)
-      matcher.getMatches(ctx, queryState).toList
+      matcher.getMatches(ExecutionContext.empty.copyWith("a", aNode), queryState).toList
     }
 
     // Then
@@ -62,9 +60,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
     // When
     val result = withQueryState { queryState =>
-      val ctx = ExecutionContext.empty
-      ctx.set("a", aNode)
-      matcher.getMatches(ctx, queryState).toList
+      matcher.getMatches(ExecutionContext.empty.copyWith("a", aNode), queryState).toList
     }
 
     // Then
@@ -85,9 +81,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
     // When
     val result = withQueryState { queryState =>
-      val ctx = ExecutionContext.empty
-      ctx.set("a", n0)
-      matcher.getMatches(ctx, queryState).toList
+      matcher.getMatches(ExecutionContext.empty.copyWith("a", n0), queryState).toList
     }
 
     // Then
@@ -107,8 +101,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     val n1 = createNode()
     val rel = relate(n0, n1)
 
-    val startingState = ExecutionContext.empty
-    startingState.set(Seq("a" -> n0, "b" -> n1, "r1" -> rel))
+    val startingState = ExecutionContext.empty.copyWith(Seq("a" -> n0, "b" -> n1, "r1" -> rel))
 
     // When
     val result = withQueryState { queryState =>
@@ -131,8 +124,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     val n1 = createNode()
     val rel = relate(n0, n1)
 
-    val startingState = ExecutionContext.empty
-    startingState.set(Seq("a" -> n0, "b" -> n1, "r1" -> rel))
+    val startingState = ExecutionContext.empty.copyWith(Seq("a" -> n0, "b" -> n1, "r1" -> rel))
 
     // When
     val result = withQueryState { queryState =>
@@ -157,9 +149,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
     // When
     val result = withQueryState { queryState =>
-      val ctx = ExecutionContext.empty
-      ctx.set("a", aNode)
-      matcher.getMatches(ctx, queryState).toList
+      matcher.getMatches(ExecutionContext.empty.copyWith("a", aNode), queryState).toList
     }
 
     // Then
@@ -180,9 +170,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
     // When
     val result = withQueryState { queryState =>
-      val ctx = ExecutionContext.empty
-      ctx.set("a", aNode)
-      matcher.getMatches(ctx, queryState).toList
+      matcher.getMatches(ExecutionContext.empty.copyWith("a", aNode), queryState).toList
     }
 
     // Then
@@ -203,9 +191,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
     // When
     val result = withQueryState { queryState =>
-      val ctx = ExecutionContext.empty
-      ctx.set("a", aNode)
-      matcher.getMatches(ctx, queryState).toList
+      matcher.getMatches(ExecutionContext.empty.copyWith("a", aNode), queryState).toList
     }
 
     // Then
@@ -226,9 +212,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
     // When
     val result = withQueryState { queryState =>
-      val ctx = ExecutionContext.empty
-      ctx.set("a", aNode)
-      matcher.getMatches(ctx, queryState).toList
+      matcher.getMatches(ExecutionContext.empty.copyWith("a", aNode), queryState).toList
     }
 
     // Then

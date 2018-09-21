@@ -37,10 +37,7 @@ class PatternComprehensionTest extends CypherFunSuite {
     val patternComprehension = PathExpression(Seq(aTob), True(), getB, allowIntroducingNewIdentifiers = true)
     val state = QueryStateHelper.empty
 
-    val ctx = ExecutionContext.empty
-    ctx.set("a", NO_VALUE)
-
-    val a = patternComprehension(ctx, state)
+    val a = patternComprehension(ExecutionContext.empty.copyWith("a", NO_VALUE), state)
 
     a should equal(NO_VALUE)
   }
@@ -49,10 +46,8 @@ class PatternComprehensionTest extends CypherFunSuite {
     val aTob: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, SemanticDirection.OUTGOING)
     val patternComprehension = PathExpression(Seq(aTob), True(), getB, allowIntroducingNewIdentifiers = true)
     val state = QueryStateHelper.empty
-    val ctx = ExecutionContext.empty
-    ctx.set("b", NO_VALUE)
 
-    val a = patternComprehension(ctx, state)
+    val a = patternComprehension(ExecutionContext.empty.copyWith("b", NO_VALUE), state)
 
     a should equal(NO_VALUE)
   }

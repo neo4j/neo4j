@@ -31,8 +31,6 @@ import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
-import scala.collection.Map
-
 class NodeIndexScanSlottedPipeTest extends CypherFunSuite with ImplicitDummyPos with SlottedPipeTestHelper with IndexMockingHelp {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
