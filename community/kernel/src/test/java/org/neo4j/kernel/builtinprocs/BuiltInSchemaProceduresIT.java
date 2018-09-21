@@ -41,6 +41,40 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 {
     @Test
+    public void testSchemaTableNodesShouldNotDependOnOrderOfCreation() throws Throwable
+    {
+        // Given
+
+        // Node1: (:B {type:'B1})
+        // Node2: (:B {type:'B2', size: 5})
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId1 = transaction.dataWrite().nodeCreate();
+        long nodeId2 = transaction.dataWrite().nodeCreate();
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "B" );
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "type" );
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "size" );
+        transaction.dataWrite().nodeSetProperty( nodeId1, prop1, Values.stringValue("B1") );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.stringValue( "B2" ) );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop2, Values.intValue( 5 ) );
+        transaction.dataWrite().nodeAddLabel( nodeId1, labelId1 );
+        transaction.dataWrite().nodeAddLabel( nodeId2, labelId1 );
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "okapi", "schema" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "type", Arrays.asList( "String" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "size", Arrays.asList( "Integer" ), true} )
+                ));
+
+         printStream( stream );
+    }
+
+    @Test
     public void testSchemaTableWithNodes() throws Throwable
     {
         // Given
