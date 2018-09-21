@@ -65,7 +65,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
     override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], query: String, secondsSinceReplan: Int) {
-      log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $query")
+      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds: $query")
     }
   })
 
@@ -123,7 +123,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         transactionalContext: TransactionalContext,
                         params: MapValue): (() => ExecutableQuery, (Int) => Option[ExecutableQuery]) = preParsedQuery.expressionEngine match {
     //if we are using compiled expressions we start interpreted and change to compiled when hot enough
-    case CypherExpressionEngineOption.compiled =>
+    case CypherExpressionEngineOption.compiled if config.recompilationLimit > 0 =>
       val primary: () => ExecutableQuery = () => masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.interpreted),
                                                  tracer, transactionalContext, params)
       val secondary: (Int) => Option[ExecutableQuery] =
