@@ -23,6 +23,8 @@ import sun.misc.Signal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -63,6 +65,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     private static final String SIGINT = "INT";
 
     private volatile NeoServer server;
+    private volatile OutputStream userLogFileStream;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     // in case we have errors loading/validating the configuration log to stdout
@@ -145,10 +148,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         String location = "unknown location";
         try
         {
-            if ( server != null )
-            {
-                server.stop();
-            }
+            doShutdown();
 
             removeShutdownHook();
 
@@ -234,14 +234,31 @@ public abstract class ServerBootstrapper implements Bootstrapper
         }
     }
 
+    private void doShutdown()
+    {
+        if ( server != null )
+        {
+            server.stop();
+        }
+        if ( userLogFileStream != null )
+        {
+            try
+            {
+                userLogFileStream.flush();
+                userLogFileStream.close();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+    }
+
     private void addShutdownHook()
     {
         shutdownHook = new Thread( () -> {
             log.info( "Neo4j Server shutdown initiated by request" );
-            if ( server != null )
-            {
-                server.stop();
-            }
+            doShutdown();
         } );
         Runtime.getRuntime().addShutdownHook( shutdownHook );
     }
@@ -269,7 +286,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
         {
             if ( rotationThreshold == 0L )
             {
-                return builder.toOutputStream( createOrOpenAsOutputStream( fs, destination, true ) );
+                userLogFileStream = createOrOpenAsOutputStream( fs, destination, true );
+                return builder.toOutputStream( userLogFileStream );
             }
             return builder.toOutputStream(
                     new RotatingFileOutputStreamSupplier(
