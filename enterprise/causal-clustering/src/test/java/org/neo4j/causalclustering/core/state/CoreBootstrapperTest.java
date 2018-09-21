@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.causalclustering.backup.RestoreClusterUtils;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenState;
@@ -37,11 +37,11 @@ import org.neo4j.causalclustering.core.state.machines.tx.LastCommittedIndexFinde
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
+import org.neo4j.causalclustering.helpers.ClassicNeo4jStore;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
@@ -53,6 +53,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreBootstrapperTest
@@ -71,8 +72,7 @@ public class CoreBootstrapperTest
         // given
         int nodeCount = 100;
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        File classicNeo4jStore = RestoreClusterUtils.createClassicNeo4jStore(
-                testDirectory.directory(), fileSystem, nodeCount, Standard.LATEST_NAME );
+        File classicNeo4jStore = ClassicNeo4jStore.builder( testDirectory.directory(), fileSystem ).amountOfNodes( nodeCount ).build().getStoreDir();
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         CoreBootstrapper bootstrapper = new CoreBootstrapper( classicNeo4jStore, pageCache, fileSystem,
@@ -104,6 +104,32 @@ public class CoreBootstrapperTest
 
         long lastCommittedIndex = lastCommittedIndexFinder.getLastCommittedIndex();
         assertEquals( -1, lastCommittedIndex );
+    }
+
+    @Test
+    public void shouldFailToBootstrapIfClusterIsInNeedOfRecovery() throws IOException
+    {
+        // given
+        int nodeCount = 100;
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
+        File storeInNeedOfRecovery = ClassicNeo4jStore.builder( testDirectory.directory(), fileSystem ).amountOfNodes( nodeCount ).needToRecover().build().getStoreDir();
+
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        CoreBootstrapper bootstrapper = new CoreBootstrapper( storeInNeedOfRecovery, pageCache, fileSystem,
+                Config.defaults(), NullLogProvider.getInstance() );
+
+        // when
+        Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
+        try
+        {
+            bootstrapper.bootstrap( membership );
+            fail(  );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertEquals( e.getMessage(), "Cannot bootstrap. Recovery is required. Please ensure that the seeded store comes from a cleanly shutdown " +
+                    "instance of Neo4j or a Neo4j backup" );
+        }
     }
 
     private MemberId randomMember()
