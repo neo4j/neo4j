@@ -117,7 +117,7 @@ public class CoreBootstrapper
     {
         if ( recoveryRequiredChecker.isRecoveryRequiredAt( storeDir ) )
         {
-            throw new IllegalStateException( "Cannot bootstrap. Recovery is required. Please ensure that the seeded store comes from a cleanly shutdown " +
+            throw new IllegalStateException( "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded comes from a cleanly shutdown " +
                     "instance of Neo4j or a Neo4j backup" );
         }
         StoreFactory factory = new StoreFactory( storeDir, config,

@@ -127,7 +127,7 @@ public class CoreBootstrapperTest
         }
         catch ( IllegalStateException e )
         {
-            assertEquals( e.getMessage(), "Cannot bootstrap. Recovery is required. Please ensure that the seeded store comes from a cleanly shutdown " +
+            assertEquals( e.getMessage(), "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded comes from a cleanly shutdown " +
                     "instance of Neo4j or a Neo4j backup" );
         }
     }
