@@ -72,6 +72,9 @@ public class ServerUserLogTest
         // then no exceptions are thrown and
         assertThat( getStdOut(), not( empty() ) );
         assertTrue( !Files.exists( getUserLogFileLocation( dir ) ) );
+
+        // stop the server so that resources are released and test teardown isn't flaky
+        serverBootstrapper.stop();
     }
 
     @Test
@@ -83,15 +86,19 @@ public class ServerUserLogTest
 
         // when
         serverBootstrapper.start( dir, Optional.empty(),
-                MapUtil.stringMap( database_path.name(), homeDir.absolutePath().getAbsolutePath(), store_user_log_to_stdout.name(), "false" )
-
+                MapUtil.stringMap(
+                        database_path.name(), homeDir.absolutePath().getAbsolutePath(),
+                        store_user_log_to_stdout.name(), "false"
+                )
         );
 
         // then no exceptions are thrown and
-
         assertThat( getStdOut(), empty() );
         assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
         assertThat( readUserLogFile( dir ), not( empty() ) );
+
+        // stop the server so that resources are released and test teardown isn't flaky
+        serverBootstrapper.stop();
     }
 
     private List<String> getStdOut()
