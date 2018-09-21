@@ -32,12 +32,10 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
     val list = makeTraversable(value)
     val iterator = list.iterator()
     val contextWithAcc = m.copyWith(acc, init(m, state))
-    val innerMap = contextWithAcc.createClone()
     while(iterator.hasNext) {
-      innerMap.set(id, iterator.next())
-      innerMap.set(acc, expression(innerMap, state))
+      contextWithAcc.set(id, iterator.next())
+      contextWithAcc.set(acc, expression(contextWithAcc, state))
     }
-    contextWithAcc.set(acc, innerMap(acc))
     contextWithAcc(acc)
   }
 

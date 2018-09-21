@@ -532,7 +532,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // then
     val list = result.toList
-    println(list)
     list should equal(List(Map("n" -> null)))
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
