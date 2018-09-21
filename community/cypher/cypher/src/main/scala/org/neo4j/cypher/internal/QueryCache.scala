@@ -115,7 +115,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
   def computeIfAbsentOrStale(queryKey: QUERY_KEY,
                              tc: TransactionalContext,
                              compile: () => EXECUTABLE_QUERY,
-                             recompile: (Int, EXECUTABLE_QUERY) => Option[EXECUTABLE_QUERY],
+                             recompile: (Int) => Option[EXECUTABLE_QUERY],
                              metaData: String = ""
                             ): CacheLookup[EXECUTABLE_QUERY] = {
     if (maximumSize == 0)
@@ -133,7 +133,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
             case NotStale =>
               //check if query is up for recompilation
               val newCachedValue = if (!cachedValue.recompiled) {
-                recompile(cachedValue.numberOfHits, cachedValue.value) match {
+                recompile(cachedValue.numberOfHits) match {
                   case Some(recompiledQuery) =>
                     tracer.queryCacheRecompile(queryKey, metaData)
                     val recompiled = new CachedValue(recompiledQuery, recompiled = true)

@@ -214,7 +214,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
           planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), Map.empty),
                                            transactionalContext,
                                            createPlan,
-                                           (_, _) => None,
+                                           _ => None,
                                            syntacticQuery.queryText).executableQuery
         else
           createPlan()

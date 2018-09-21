@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, RecordingNotificationLogger, devNullLogger}
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.opencypher.v9_0.util.{DeprecatedStartNotification, SyntaxException => InternalSyntaxException}
 
 object MasterCompiler {
@@ -76,21 +76,8 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
               params: MapValue
              ): ExecutableQuery = {
 
-    // Do the compilation
     val logger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
-    innerCompile(preParsedQuery, logger,
-                 (c, n) => c.compile(preParsedQuery, tracer, n, transactionalContext, params))
-  }
 
-
-  /**
-    * Compile query or recursively fallback to 3.1 in some cases.
-    *
-    * @param preParsedQuery the query to compile
-    * @return the compiled query
-    */
-  def innerCompile(preParsedQuery: PreParsedQuery, logger: InternalNotificationLogger,
-                   producer: (Compiler, Set[Notification]) => ExecutableQuery): ExecutableQuery = {
     def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
 
     val supportedRuntimes3_1 = Seq(CypherRuntimeOption.interpreted, CypherRuntimeOption.default)
@@ -106,46 +93,53 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
       }
     }
 
-    if ((preParsedQuery.version == CypherVersion.v3_4 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
-      logger.log(RulePlannerUnavailableFallbackNotification)
-      innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1), logger, producer)
+    /**
+      * Compile query or recursively fallback to 3.1 in some cases.
+      *
+      * @param preParsedQuery the query to compile
+      * @return the compiled query
+      */
+    def innerCompile(preParsedQuery: PreParsedQuery, params: MapValue): ExecutableQuery = {
 
-    } else if (preParsedQuery.version == CypherVersion.v3_5) {
-      val compiler3_5 = compilerLibrary.selectCompiler(preParsedQuery.version,
-                                                       preParsedQuery.planner,
-                                                       preParsedQuery.runtime,
-                                                       preParsedQuery.updateStrategy)
+      if ((preParsedQuery.version == CypherVersion.v3_4 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
+        logger.log(RulePlannerUnavailableFallbackNotification)
+        innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1), params)
 
-      try {
-        producer(compiler3_5, notificationsSoFar())
-      } catch {
-        case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
-          val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
-          logger.log(CreateUniqueUnavailableFallback(ex3_5.pos.get))
-          assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
-          innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), logger, producer)
+      } else if (preParsedQuery.version == CypherVersion.v3_5) {
+        val compiler3_5 = compilerLibrary.selectCompiler(preParsedQuery.version,
+                                                         preParsedQuery.planner,
+                                                         preParsedQuery.runtime,
+                                                         preParsedQuery.updateStrategy)
 
-        case ex: SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
-          val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
-          logger.log(StartUnavailableFallback)
-          logger.log(DeprecatedStartNotification(inputPosition, ex.getMessage))
-          assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
-          innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), logger, producer)
+        try {
+          compiler3_5.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
+        } catch {
+          case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+            val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
+            logger.log(CreateUniqueUnavailableFallback(ex3_5.pos.get))
+            assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
+            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), params)
+
+          case ex: SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
+            val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
+            logger.log(StartUnavailableFallback)
+            logger.log(DeprecatedStartNotification(inputPosition, ex.getMessage))
+            assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
+            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), params)
+        }
+
+      } else {
+
+        val compiler = compilerLibrary.selectCompiler(preParsedQuery.version,
+                                                      preParsedQuery.planner,
+                                                      preParsedQuery.runtime,
+                                                      preParsedQuery.updateStrategy)
+
+        compiler.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
       }
-
-    } else {
-
-      val compiler = compilerLibrary.selectCompiler(preParsedQuery.version,
-                                                    preParsedQuery.planner,
-                                                    preParsedQuery.runtime,
-                                                    preParsedQuery.updateStrategy)
-      producer(compiler, notificationsSoFar())
     }
+
+    // Do the compilation
+    innerCompile(preParsedQuery, params)
   }
-
-
-  def recompile(executableQuery: ExecutableQuery, preParsedQuery: PreParsedQuery): ExecutableQuery = {
-    innerCompile(preParsedQuery, devNullLogger, (c, _) => c.recompile(executableQuery, preParsedQuery.expressionEngine))
-  }
-
 }

@@ -39,7 +39,7 @@ class QueryCacheStressTest extends CypherFunSuite {
 
     // When
     val futures = Future.sequence((1 to 100).map(_ => Future {
-      cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+      cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
     }))
 
     // Then
@@ -54,7 +54,7 @@ class QueryCacheStressTest extends CypherFunSuite {
 
     // When
     val futures = Future.sequence((1 to 100).map(_ => Future {
-      cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+      cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
     }))
 
     // Then

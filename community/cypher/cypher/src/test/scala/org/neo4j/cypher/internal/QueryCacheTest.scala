@@ -37,7 +37,7 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
     // Then
     valueFromCache should equal(CacheMiss(valueFromKey(key)))
     valueFromCache.executableQuery.recompiled should equal(false)
@@ -54,8 +54,8 @@ class QueryCacheTest extends CypherFunSuite {
 
 
     // When
-    val value1FromCache = cache.computeIfAbsentOrStale(key1, TC, compileKey(key1), RECOMPILE)
-    val value2FromCache = cache.computeIfAbsentOrStale(key2, TC, compileKey(key2), RECOMPILE)
+    val value1FromCache = cache.computeIfAbsentOrStale(key1, TC, compileKey(key1), recompile(key1))
+    val value2FromCache = cache.computeIfAbsentOrStale(key2, TC, compileKey(key2), recompile(key2))
 
     // Then
     value1FromCache should equal(CacheMiss(valueFromKey(key1)))
@@ -73,10 +73,10 @@ class QueryCacheTest extends CypherFunSuite {
     val tracer = newTracer()
     val cache = newCache(tracer)
     val key = newKey("foo")
-    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
 
     // Then
     valueFromCache should equal(CacheHit(valueFromKey(key)))
@@ -92,10 +92,10 @@ class QueryCacheTest extends CypherFunSuite {
     val secondsSinceReplan = 17
     val cache = newCache(tracer, alwaysStale(secondsSinceReplan))
     val key = newKey("foo")
-    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
 
     // Then
     valueFromCache should equal(CacheMiss(valueFromKey(key)))
@@ -113,10 +113,10 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
-    cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
-    cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
 
     // Then
     valueFromCache should equal(CacheHit(valueFromKey(key)))
@@ -135,7 +135,7 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    (1 to 100).foreach(_ => cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE))
+    (1 to 100).foreach(_ => cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key)))
 
     // Then
     verify(tracer).queryCacheMiss(key, "")
@@ -149,8 +149,8 @@ class QueryCacheTest extends CypherFunSuite {
     case class MyValue(key: String)(val recompiled: Boolean)
 
     private val RECOMPILE_LIMIT = 2
-    val RECOMPILE: (Int, MyValue) => Option[MyValue] = (count: Int, value: MyValue) => {
-      if (count > RECOMPILE_LIMIT) Some(value.copy()(recompiled = true))
+    def recompile(key: Key): (Int) => Option[MyValue] = (count: Int) => {
+      if (count > RECOMPILE_LIMIT) Some(MyValue(key.first())(recompiled = true))
       else None
     }
 
