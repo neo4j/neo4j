@@ -125,27 +125,49 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
 
   override def newExecutionContext(): ExecutionContext = ExecutionContext.empty
 
-  override def copyWith(init: ExecutionContext): ExecutionContext =
-    init.createClone()
-
-  override def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext =
-    row.copyWith(newEntries)
+  // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
+  override def copyWith(init: ExecutionContext): ExecutionContext = init match {
+    case context: MapExecutionContext =>
+      context.createClone()
+    case _ =>
+      init.createClone()
+  }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext =
-    row.copyWith(key, value)
+  override def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext = row match {
+    case context: MapExecutionContext =>
+      context.copyWith(newEntries)
+    case _ =>
+      row.copyWith(newEntries)
+  }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row: ExecutionContext,
+  override def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext = row match {
+    case context: MapExecutionContext =>
+      context.copyWith(key, value)
+    case _ =>
+      row.copyWith(key, value)
+  }
+
+  // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
+  override def copyWith(row : ExecutionContext,
                         key1: String, value1: AnyValue,
-                        key2: String, value2: AnyValue): ExecutionContext =
-    row.copyWith(key1, value1, key2, value2)
+                        key2: String, value2: AnyValue): ExecutionContext = row match {
+    case context: MapExecutionContext =>
+      context.copyWith(key1, value1, key2, value2)
+    case _ =>
+      row.copyWith(key1, value1, key2, value2)
+    }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row: ExecutionContext,
+  override def copyWith(row : ExecutionContext,
                         key1: String, value1: AnyValue,
                         key2: String, value2: AnyValue,
-                        key3: String, value3: AnyValue): ExecutionContext =
-    row.copyWith(key1, value1, key2, value2, key3, value3)
+                        key3: String, value3: AnyValue): ExecutionContext = row match {
+    case context: MapExecutionContext =>
+      context.copyWith(key1, value1, key2, value2, key3, value3)
+    case _ =>
+      row.copyWith(key1, value1, key2, value2, key3, value3)
+  }
 
 }

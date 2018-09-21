@@ -131,7 +131,6 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue], cachedProperties
     m.put(key3, value3)
   }
 
-  // @Reviewer: is it ok that we changed the signature of these methods?
   override def copyWith(key: String, value: AnyValue): ExecutionContext = {
     val newCtx = createClone()
     newCtx.set(key, value)
