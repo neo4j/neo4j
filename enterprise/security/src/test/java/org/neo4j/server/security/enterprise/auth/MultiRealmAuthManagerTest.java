@@ -31,6 +31,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.function.ToIntFunction;
+import java.util.Map;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -66,11 +67,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.clearedPasswordWithSameLenghtAs;
 import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
@@ -687,6 +690,127 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         assertFalse( securityContext.mode().allowsReads() );
         assertFalse( securityContext.mode().allowsWrites() );
         assertFalse( securityContext.mode().allowsSchemaWrites() );
+    }
+
+    @Test
+    public void shouldClearPasswordOnLogin() throws Throwable
+    {
+        // Given
+        when( authStrategy.authenticate( any(), any() ) ).thenReturn( AuthenticationResult.SUCCESS );
+
+        manager.start();
+        userManager.newUser( "jake", password( "abc123" ), true );
+        byte[] password = password( "abc123" );
+        Map<String,Object> authToken = AuthToken.newBasicAuthToken( "jake", password );
+
+        // When
+        manager.login( authToken );
+
+        // Then
+        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
+        assertThat( authToken.get( AuthToken.CREDENTIALS ), equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
+    }
+
+    @Test
+    public void shouldClearPasswordOnInvalidAuthToken() throws Throwable
+    {
+        // Given
+        manager.start();
+        byte[] password = password( "abc123" );
+        Map<String,Object> authToken = AuthToken.newBasicAuthToken( "jake", password );
+        authToken.put( AuthToken.SCHEME_KEY, null ); // Null is not a valid scheme
+
+        // When
+        try
+        {
+            manager.login( authToken );
+            fail( "exception expected" );
+        }
+        catch ( InvalidAuthTokenException e )
+        {
+            // expected
+        }
+        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
+        assertThat( authToken.get( AuthToken.CREDENTIALS ), equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
+    }
+
+    @Test
+    public void shouldClearPasswordOnNewUser() throws Throwable
+    {
+        // Given
+        manager.start();
+        byte[] password = password( "abc123" );
+
+        // When
+        userManager.newUser( "jake", password, true );
+
+        // Then
+        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
+        User user = userManager.getUser( "jake" );
+        assertTrue( user.credentials().matchesPassword( "abc123" ) );
+    }
+
+    @Test
+    public void shouldClearPasswordOnNewUserAlreadyExists() throws Throwable
+    {
+        // Given
+        manager.start();
+        userManager.newUser( "jake", password( "abc123" ), true );
+        byte[] password = password( "abc123" );
+
+        // When
+        try
+        {
+            userManager.newUser( "jake", password, true );
+            fail( "exception expected" );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            // expected
+        }
+
+        // Then
+        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
+    }
+
+    @Test
+    public void shouldClearPasswordOnSetUserPassword() throws Throwable
+    {
+        // Given
+        manager.start();
+        userManager.newUser( "jake", password( "old" ), false );
+        byte[] newPassword = password( "abc123" );
+
+        // When
+        userManager.setUserPassword( "jake", newPassword, false );
+
+        // Then
+        assertThat( newPassword, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
+        User user = userManager.getUser( "jake" );
+        assertTrue( user.credentials().matchesPassword( "abc123" ) );
+    }
+
+    @Test
+    public void shouldClearPasswordOnSetUserPasswordWithInvalidPassword() throws Throwable
+    {
+        // Given
+        manager.start();
+        userManager.newUser( "jake", password( "abc123" ), false );
+        byte[] newPassword = password( "abc123" );
+
+        // When
+        try
+        {
+            userManager.setUserPassword( "jake", newPassword, false );
+            fail( "exception expected" );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            // expected
+        }
+
+        // Then
+        assertThat( newPassword, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
     }
 
     private AssertableLogProvider.LogMatcher info( String message )
