@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.security.auth;
 
+import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
@@ -125,6 +126,26 @@ public class BasicAuthenticationTest
 
         // Then
         authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", UTF8.encode( "secret" ) ) );
+    }
+
+    @Test
+    public void shouldClearCredentialsAfterUse() throws Exception
+    {
+        // When
+        byte[] oldPassword = UTF8.encode( "secret2" );
+        byte[] newPassword1 = UTF8.encode( "secret" );
+        byte[] newPassword2 = UTF8.encode( "secret" );
+
+        authentication.authenticate(
+                map( "scheme", "basic", "principal", "mike", "credentials", oldPassword,
+                        "new_credentials", newPassword1 ) );
+
+        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", newPassword2 ) );
+
+        // Then
+        assertThat( oldPassword, isCleared() );
+        assertThat( newPassword1, isCleared() );
+        assertThat( newPassword2, isCleared() );
     }
 
     @Test
@@ -240,6 +261,38 @@ public class BasicAuthenticationTest
         {
             mismatchDescription.appendText( "was " )
                     .appendValue( item.status() );
+        }
+    }
+
+    static CredentialsClearedMatcher isCleared()
+    {
+        return new CredentialsClearedMatcher();
+    }
+
+    static class CredentialsClearedMatcher extends BaseMatcher<byte[]>
+    {
+        @Override
+        public boolean matches( Object o )
+        {
+            if ( o instanceof byte[] )
+            {
+                byte[] bytes = (byte[]) o;
+                for ( int i = 0; i < bytes.length; i++ )
+                {
+                    if ( bytes[i] != (byte) 0 )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendText( "Byte array should contain only zeroes" );
         }
     }
 }
