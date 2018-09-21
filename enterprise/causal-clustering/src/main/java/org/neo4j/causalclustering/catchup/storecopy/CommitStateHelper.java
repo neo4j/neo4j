@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -99,13 +99,8 @@ public class CommitStateHelper
         }
     }
 
-    public boolean hasTxLogs( DatabaseLayout databaseLayout )
+    public boolean hasTxLogs( DatabaseLayout databaseLayout ) throws IOException
     {
-        File[] files = fs.listFiles( databaseLayout.databaseDirectory(), TransactionLogFiles.DEFAULT_FILENAME_FILTER );
-        if ( files == null )
-        {
-            throw new RuntimeException( "Files was null. Incorrect directory or I/O error?" );
-        }
-        return files.length > 0;
+        return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache ).withConfig( config ).build().logFiles().length > 0;
     }
 }
