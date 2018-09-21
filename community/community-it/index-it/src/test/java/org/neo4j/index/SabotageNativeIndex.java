@@ -40,7 +40,7 @@ public class SabotageNativeIndex implements DatabaseRule.RestartAction
 {
     private final Random random;
 
-    public SabotageNativeIndex( Random random )
+    SabotageNativeIndex( Random random )
     {
         this.random = random;
     }
@@ -48,22 +48,24 @@ public class SabotageNativeIndex implements DatabaseRule.RestartAction
     @Override
     public void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout ) throws IOException
     {
-        int files = scrambleIndexFiles( fs, nativeIndexDirectoryStructure( databaseLayout ).rootDirectory(), 0 );
-        assertThat( files, greaterThanOrEqualTo( 1 ) );
+        int files = scrambleIndexFiles( fs, nativeIndexDirectoryStructure( databaseLayout ).rootDirectory() );
+        assertThat( "there is no index to sabotage", files, greaterThanOrEqualTo( 1 ) );
     }
 
-    private int scrambleIndexFiles( FileSystemAbstraction fs, File fileOrDir, int count ) throws IOException
+    private int scrambleIndexFiles( FileSystemAbstraction fs, File fileOrDir ) throws IOException
     {
         if ( fs.isDirectory( fileOrDir ) )
         {
+            int count = 0;
             File[] children = fs.listFiles( fileOrDir );
             if ( children != null )
             {
                 for ( File child : children )
                 {
-                    return scrambleIndexFiles( fs, child, count );
+                    count += scrambleIndexFiles( fs, child );
                 }
             }
+            return count;
         }
         else
         {
@@ -74,28 +76,15 @@ public class SabotageNativeIndex implements DatabaseRule.RestartAction
                 {
                     throw new IllegalArgumentException( "Was expecting small files here" );
                 }
-                ByteBuffer buffer = ByteBuffer.allocate( (int) channel.size() );
-                channel.readAll( buffer );
-                buffer.flip();
-                for ( int i = 0; i < buffer.limit(); i++ )
-                {
-                    byte existing = buffer.get( i );
-                    byte scrambled = existing;
-                    while ( scrambled == existing )
-                    {
-                        scrambled = (byte) random.nextInt();
-                    }
-                    buffer.put( i, scrambled );
-                }
-                channel.position( 0 );
-                channel.writeAll( buffer );
+                byte[] bytes = new byte[(int) channel.size()];
+                random.nextBytes( bytes );
+                channel.writeAll( ByteBuffer.wrap( bytes ) );
             }
-            count++;
+            return 1;
         }
-        return count;
     }
 
-    public static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout )
+    static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout )
     {
         return IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider(
                 GenericNativeIndexProvider.DESCRIPTOR );
