@@ -25,8 +25,9 @@ package cypher.features
 import cypher.features.ScenarioTestHelper.printComputedBlacklist
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Disabled
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
-class CostMorselAcceptanceTests extends BaseAcceptanceTest {
+class CostMorselAcceptanceTests extends EnterpriseBaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
@@ -42,7 +43,7 @@ class CostMorselAcceptanceTests extends BaseAcceptanceTest {
 
   @Disabled
   def generateBlacklistTCKTestCostMorsel(): Unit = {
-    printComputedBlacklist(scenarios, CostMorselTestConfig)
+    printComputedBlacklist(scenarios, CostMorselTestConfig, new TestEnterpriseGraphDatabaseFactory())
     fail("Do not forget to add @ignore to this method")
   }
 }

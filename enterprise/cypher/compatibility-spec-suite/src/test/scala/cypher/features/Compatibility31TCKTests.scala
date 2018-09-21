@@ -27,16 +27,17 @@ import java.util
 import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.opencypher.tools.tck.api.Scenario
 
-class Compatibility31TCKTests extends BaseTCKTests {
+class Compatibility31TCKTests extends EnterpriseBaseTCKTests {
 
   // If you want to only run a specific feature or scenario, go to the BaseTCKTests
 
   @TestFactory
   def runCompatibility31(): util.Collection[DynamicTest] = {
     val filteredScenarios = scenarios.filterNot(testsWithProblems)
-    createTests(filteredScenarios, Compatibility31TestConfig)
+    createTests(filteredScenarios, Compatibility31TestConfig, new TestEnterpriseGraphDatabaseFactory())
   }
 
   //TODO: Fix Schroedinger's test cases in TCK or find way to handle here
@@ -57,7 +58,7 @@ class Compatibility31TCKTests extends BaseTCKTests {
 
   @Disabled
   def generateBlacklistCompatibility31(): Unit = {
-    printComputedBlacklist(scenarios, Compatibility31TestConfig)
+    printComputedBlacklist(scenarios, Compatibility31TestConfig, new TestEnterpriseGraphDatabaseFactory())
     fail("Do not forget to add @ignore to this method")
   }
 }

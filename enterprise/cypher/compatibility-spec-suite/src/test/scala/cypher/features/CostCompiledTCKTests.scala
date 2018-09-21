@@ -27,19 +27,20 @@ import java.util
 import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
-class CostCompiledTCKTests extends BaseTCKTests {
+class CostCompiledTCKTests extends EnterpriseBaseTCKTests {
 
   // If you want to only run a specific feature or scenario, go to the BaseTCKTests
 
   @TestFactory
   def runCostCompiled(): util.Collection[DynamicTest] = {
-    createTests(scenarios, CostCompiledTestConfig)
+    createTests(scenarios, CostCompiledTestConfig, new TestEnterpriseGraphDatabaseFactory())
   }
 
   @Disabled
   def generateBlacklistCostCompiled(): Unit = {
-    printComputedBlacklist(scenarios, CostCompiledTestConfig)
+    printComputedBlacklist(scenarios, CostCompiledTestConfig, new TestEnterpriseGraphDatabaseFactory())
     fail("Do not forget to add @ignore to this method")
   }
 }

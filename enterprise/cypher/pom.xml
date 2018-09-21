@@ -19,7 +19,6 @@
   <properties>
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
-    <opencypher.version>1.0.0-M11</opencypher.version>
   </properties>
 
   <scm>
@@ -37,7 +36,6 @@
         </property>
       </activation>
       <modules>
-        <module>spec-suite-tools</module>
         <module>acceptance-spec-suite</module>
         <module>compatibility-spec-suite</module>
         <module>physical-planning</module>

@@ -27,19 +27,20 @@ import java.util
 import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
-class Compatibility31AcceptanceTests extends BaseAcceptanceTest {
+class Compatibility31AcceptanceTests extends EnterpriseBaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
   @TestFactory
   def runCompatibility31(): util.Collection[DynamicTest] = {
-    createTests(scenarios, Compatibility31TestConfig)
+    createTests(scenarios, Compatibility31TestConfig, new TestEnterpriseGraphDatabaseFactory())
   }
 
   @Disabled
   def generateBlacklistCompatibility31(): Unit = {
-    printComputedBlacklist(scenarios, Compatibility31TestConfig)
+    printComputedBlacklist(scenarios, Compatibility31TestConfig, new TestEnterpriseGraphDatabaseFactory())
     fail("Do not forget to add @ignore to this method")
   }
 }

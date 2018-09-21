@@ -44,6 +44,9 @@
         <module>cypher-logical-plans-3.5</module>
         <module>runtime-util</module>
         <module>interpreted-runtime</module>
+        <module>acceptance-spec-suite</module>
+        <module>compatibility-spec-suite</module>
+        <module>spec-suite-tools</module>
       </modules>
     </profile>
   </profiles>

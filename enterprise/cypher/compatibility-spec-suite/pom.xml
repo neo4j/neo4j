@@ -11,11 +11,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-compatibility-spec-suite</artifactId>
+  <artifactId>neo4j-enterprise-cypher-compatibility-spec-suite</artifactId>
   <packaging>jar</packaging>
   <version>3.5.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compatibility Specification Suite</name>
-  <description>Neo4j query language compatibility suite</description>
+  <name>Neo4j - Cypher Compatibility Specification Suite, enterprise edition</name>
+  <description>Neo4j query language compatibility suite, enterprise edition</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -26,7 +26,7 @@
 
   <properties>
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
-    <moduleName>org.neo4j.internal.cypher.compatibility.spec.suite</moduleName>
+    <moduleName>org.neo4j.internal.enterprise.cypher.compatibility.spec.suite</moduleName>
   </properties>
 
   <licenses>
