@@ -276,7 +276,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                  invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
           declare[java.util.ArrayList[AnyValue]](extractedVars),
           assign(extractedVars, newInstance(constructor[java.util.ArrayList[AnyValue]])),
-          //Iterator<AnyValue> iter = extracted.iterator();
+          //Iterator<AnyValue> iter = list.iterator();
           //while (iter.hasNext) {
           //   AnyValue currentValue = iter.next();
           declare[java.util.Iterator[AnyValue]](iterVariable),
