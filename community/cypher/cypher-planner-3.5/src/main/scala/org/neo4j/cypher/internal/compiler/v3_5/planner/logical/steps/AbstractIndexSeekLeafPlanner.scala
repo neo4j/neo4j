@@ -149,51 +149,47 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
 
   private def asIndexCompatiblePredicate(argumentIds: Set[String],
-                                       arguments: Set[LogicalVariable],
-                                       hints: Set[Hint])(
-                                        implicit labelPredicateMap: Map[String, Set[HasLabels]],
-                                        semanticTable: SemanticTable):
+                                         arguments: Set[LogicalVariable],
+                                         hints: Set[Hint])(
+                                          implicit labelPredicateMap: Map[String, Set[HasLabels]],
+                                          semanticTable: SemanticTable):
   PartialFunction[Expression, IndexCompatiblePredicate] = {
-    // n.prop IN [ ... ]
-    case predicate@AsPropertySeekable(seekable: PropertySeekable)
-      if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
-      val queryExpression = seekable.args.asQueryExpression
-      IndexCompatiblePredicate(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = true,
-        hints, argumentIds, solvesPredicate = true)
+    def validDependencies(seekable: Seekable[_]): Boolean = {
+      seekable.dependencies.forall(arguments) && !arguments(seekable.ident)
+    }
+    {
+      // n.prop IN [ ... ]
+      // n.prop = ...
+      // ... = n.prop
+      case predicate@AsPropertySeekable(seekable: PropertySeekable) if validDependencies(seekable) =>
+        val queryExpression = seekable.args.asQueryExpression
+        IndexCompatiblePredicate(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = true,
+          hints, argumentIds, solvesPredicate = true)
 
-    // ... = n.prop
-    // In some rare cases, we can't rewrite these predicates cleanly,
-    // and so planning needs to search for these cases explicitly
-    case predicate@Equals(a, prop@Property(seekable@LogicalVariable(_), propKeyName))
-      if a.dependencies.forall(arguments) && !arguments(seekable) =>
-      val expr = SingleQueryExpression(a)
-      IndexCompatiblePredicate(seekable.name, propKeyName, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)), exactPredicate = true,
-        hints, argumentIds, solvesPredicate = true)
+      // n.prop STARTS WITH "prefix%..."
+      case predicate@AsStringRangeSeekable(seekable) if validDependencies(seekable) =>
+        val partialPredicate = PartialPredicate(seekable.expr, predicate)
+        val queryExpression = seekable.asQueryExpression
+        val propertyKey = seekable.propertyKey
+        IndexCompatiblePredicate(seekable.name, propertyKey, partialPredicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
+          hints, argumentIds, solvesPredicate = true)
 
-    // n.prop STARTS WITH "prefix%..."
-    case predicate@AsStringRangeSeekable(seekable) =>
-      val partialPredicate = PartialPredicate(seekable.expr, predicate)
-      val queryExpression = seekable.asQueryExpression
-      val propertyKey = seekable.propertyKey
-      IndexCompatiblePredicate(seekable.name, propertyKey, partialPredicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
-        hints, argumentIds, solvesPredicate = true)
+      // n.prop <|<=|>|>= value
+      case predicate@AsValueRangeSeekable(seekable) if validDependencies(seekable) =>
+        val queryExpression = seekable.asQueryExpression
+        val keyName = seekable.propertyKeyName
+        IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
+          hints, argumentIds, solvesPredicate = true)
 
-    // n.prop <|<=|>|>= value
-    case predicate@AsValueRangeSeekable(seekable)
-      if seekable.expr.inequalities.forall(x => (x.rhs.dependencies -- arguments).isEmpty) =>
-      val queryExpression = seekable.asQueryExpression
-      val keyName = seekable.propertyKeyName
-      IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
-        hints, argumentIds, solvesPredicate = true)
-
-    // The planned index seek will almost satisfy the predicate, but with the possibility of some false positives.
-    // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
-    // but not mark it as solved, since the planner will still need to solve it with a Filter.
-    case predicate@AsDistanceSeekable(seekable) =>
-      val queryExpression = seekable.asQueryExpression
-      val keyName = seekable.propertyKeyName
-      IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
-        hints, argumentIds, solvesPredicate = false)
+      // The planned index seek will almost satisfy the predicate, but with the possibility of some false positives.
+      // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
+      // but not mark it as solved, since the planner will still need to solve it with a Filter.
+      case predicate@AsDistanceSeekable(seekable) if validDependencies(seekable) =>
+        val queryExpression = seekable.asQueryExpression
+        val keyName = seekable.propertyKeyName
+        IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
+          hints, argumentIds, solvesPredicate = false)
+    }
   }
 
   /**

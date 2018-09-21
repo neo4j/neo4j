@@ -325,6 +325,66 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     }
   }
 
+  test("should use index for distance query of points with maxDistance in horizon") {
+    // Given
+    graph.createIndex("Place", "location")
+    setupPointsBothCRS()
+
+    // <= cartesian
+    {
+      val query =
+        s"""WITH 10 AS maxDistance
+           |MATCH (p:Place)
+           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance
+           |RETURN p.location as point
+        """.stripMargin
+
+      // Then
+      val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, -10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
+      )
+      expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
+    }
+  }
+
+  test("should not use index for distance query of points with maxDistance in horizon") {
+    // Given
+    graph.createIndex("Place", "location")
+    setupPointsBothCRS()
+
+    graph.execute(
+      """MATCH (p:Place) CREATE (:Preference {maxDistance: 10})<-[:R]-(p),
+        |                       (:Preference {maxDistance: 10})<-[:R]-(p),
+        |                       (:Preference {maxDistance: 10})<-[:R]-(p)""".stripMargin)
+
+    // <= cartesian
+    {
+      val query =
+        s"""MATCH (p:Place)-->(x:Preference)
+           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
+           |RETURN p.location as point
+        """.stripMargin
+
+      // Then
+      val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, -10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
+      )
+      val result = executeWith(distanceConfig, query)
+      result.executionPlanDescription() shouldNot includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgumentRegex(".*distance.*".r)
+      result.toList.toSet should equal(expected)
+    }
+  }
+
   test("indexed points at date line") {
     // Given
     graph.createIndex("Place", "location")

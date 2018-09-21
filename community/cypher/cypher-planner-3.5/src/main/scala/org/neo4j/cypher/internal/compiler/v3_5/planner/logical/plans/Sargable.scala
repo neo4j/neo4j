@@ -47,6 +47,13 @@ object AsPropertySeekable {
     case WithSeekableArgs(prop@Property(ident: LogicalVariable, propertyKey), rhs)
       if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
+
+    // In some rare cases, we can't rewrite these predicates cleanly,
+    // and so planning needs to search for these cases explicitly
+    case Equals(lhs, prop@Property(ident: LogicalVariable, propertyKey))
+      if !lhs.dependencies(ident) =>
+      Some(PropertySeekable(prop, ident, SingleSeekableArg(lhs)))
+
     case _ =>
       None
   }
@@ -135,6 +142,12 @@ object AsDistanceSeekable {
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
     case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)))) =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+
+    case AndedPropertyInequalities(_, _, inequalities) if inequalities.size == 1 =>
+      inequalities.head match {
+        case AsDistanceSeekable(seekable) => Some(seekable)
+        case _ => None
+      }
 
     case _ =>
       None
@@ -235,7 +248,7 @@ sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
 case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: LogicalVariable, propertyKey: PropertyKeyName)
   extends RangeSeekable[StartsWith, Expression] {
 
-  def dependencies: Set[LogicalVariable] = Set.empty
+  def dependencies: Set[LogicalVariable] = expr.rhs.dependencies
 
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
@@ -261,7 +274,7 @@ case class PointDistanceSeekable(ident: LogicalVariable,
 case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
   extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
-  def dependencies: Set[LogicalVariable] = expr.inequalities.map(_.dependencies).toSet.flatten
+  def dependencies: Set[LogicalVariable] = expr.inequalities.map(_.rhs.dependencies).toSet.flatten
 
   def range: InequalitySeekRange[Expression] =
     InequalitySeekRange.fromPartitionedBounds(expr.inequalities.partition {

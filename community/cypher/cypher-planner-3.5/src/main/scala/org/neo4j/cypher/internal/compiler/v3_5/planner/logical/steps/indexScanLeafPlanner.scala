@@ -36,15 +36,18 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     val lpp = context.logicalPlanProducer
 
+    def onlyArgumentDependencies(expr: Expression): Boolean =
+      expr.dependencies.map(_.name).forall(qg.argumentIds)
+
     e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
-      case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) =>
+      case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, propertyKey.name, qg, interestingOrder, prop, CTString, predicate,
                             lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
-      case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) =>
+      case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, propertyKey.name, qg, interestingOrder, prop, CTString, predicate,
                             lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
