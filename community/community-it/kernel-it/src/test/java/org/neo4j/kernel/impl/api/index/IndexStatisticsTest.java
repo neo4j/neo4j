@@ -399,44 +399,47 @@ public class IndexStatisticsTest
             int labelId = ktx.tokenRead().nodeLabel( PERSON_LABEL );
             int propertyKeyId = ktx.tokenRead().propertyKey( NAME_PROPERTY );
             IndexReference index = ktx.schemaRead().index( labelId, propertyKeyId );
-            NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-
-            // Node --> Index
-            for ( Node node : filter( n -> n.hasLabel( label ) && n.hasProperty( NAME_PROPERTY ), db.getAllNodes() ) )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                nodesInStore++;
-                String name = (String) node.getProperty( NAME_PROPERTY );
-                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, name ) );
-                boolean found = false;
-                while ( cursor.next() )
+                // Node --> Index
+                for ( Node node : filter( n -> n.hasLabel( label ) && n.hasProperty( NAME_PROPERTY ), db.getAllNodes() ) )
                 {
-                    long indexedNode = cursor.nodeReference();
-                    if ( indexedNode == node.getId() )
+                    nodesInStore++;
+                    String name = (String) node.getProperty( NAME_PROPERTY );
+                    ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, name ) );
+                    boolean found = false;
+                    while ( cursor.next() )
                     {
-                        if ( found )
+                        long indexedNode = cursor.nodeReference();
+                        if ( indexedNode == node.getId() )
                         {
-                            mismatches.add( "Index has multiple entries for " + name + " and " + indexedNode );
+                            if ( found )
+                            {
+                                mismatches.add( "Index has multiple entries for " + name + " and " + indexedNode );
+                            }
+                            found = true;
                         }
-                        found = true;
+                    }
+                    if ( !found )
+                    {
+                        mismatches.add( "Index is missing entry for " + name );
                     }
                 }
-                if ( !found )
+                if ( !mismatches.isEmpty() )
                 {
-                    mismatches.add( "Index is missing entry for " + name );
+                    fail( join( mismatches.toArray(), format( "%n" ) ) );
                 }
             }
-            if ( !mismatches.isEmpty() )
-            {
-                fail( join( mismatches.toArray(), format( "%n" ) ) );
-            }
-
             // Node count == indexed node count
-            cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exists( propertyKeyId ) );
-            int nodesInIndex = 0;
-            while ( cursor.next() )
+            int nodesInIndex;
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                nodesInIndex++;
+                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exists( propertyKeyId ) );
+                nodesInIndex = 0;
+                while ( cursor.next() )
+                {
+                    nodesInIndex++;
+                }
             }
             assertEquals( nodesInStore, nodesInIndex );
         }
