@@ -244,15 +244,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         along the line of:
 
         ListValue list = [evaluate collection expression];
-        ExecutionContext copyOfContext = context.createClone();
+        ExecutionContext innerContext = context.createClone();
         ArrayList<AnyValue> extracted = new ArrayList<>();
         for ( AnyValue currentValue : list ) {
-            ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
+            innerContext.set([name from scope], currentValue);
             extracted.add([result from inner expression using innerContext]);
         }
         return VirtualValues.fromList(extracted);
        */
-      val copyOfContext = namer.nextVariableName()
       //this is the context inner expressions should see
       val innerContext = namer.nextVariableName()
       val iterVariable = namer.nextVariableName()
@@ -268,16 +267,16 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         val currentValue = namer.nextVariableName()
         val ops = Seq(
           //ListValue list = [evaluate collection expression];
-          //ExecutionContext copyOfContext = context.createClone();
+          //ExecutionContext innerContext = context.createClone();
           //ArrayList<AnyValue> extracted = new ArrayList<>();
           declare[ListValue](listVar),
           assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
-          declare[ExecutionContext](copyOfContext),
-          assign(copyOfContext,
+          declare[ExecutionContext](innerContext),
+          assign(innerContext,
                  invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
           declare[java.util.ArrayList[AnyValue]](extractedVars),
           assign(extractedVars, newInstance(constructor[java.util.ArrayList[AnyValue]])),
-          //Iterator<AnyValue> iter = list.iterator();
+          //Iterator<AnyValue> iter = extracted.iterator();
           //while (iter.hasNext) {
           //   AnyValue currentValue = iter.next();
           declare[java.util.Iterator[AnyValue]](iterVariable),
@@ -285,10 +284,10 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           loop(invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext"))) {block(Seq(
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
-              declare[ExecutionContext](innerContext),
-            //ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
-            assign(innerContext, invoke(load(copyOfContext), method[ExecutionContext, ExecutionContext, String, AnyValue]("set"),
-                                        constant(scope.variable.name), load(currentValue)))) ++ innerVars ++ Seq(
+            //innerContext.set([name from scope], currentValue);
+            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
+                                        constant(scope.variable.name), load(currentValue))
+          ) ++ innerVars ++ Seq(
             //extracted.add([result from inner expression using innerContext]);
             invokeSideEffect(load(extractedVars), method[java.util.ArrayList[_], Boolean, Object]("add"),
                              nullCheck(inner)(inner.ir))):_*)
@@ -306,14 +305,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         along the line of:
 
         ListValue list = [evaluate collection expression];
-        ExecutionContext copyOfContext = context.copyWith(acc, init);
+        ExecutionContext innerContext = context.copyWith(acc, init);
         for ( AnyValue currentValue : list ) {
-            ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
-            copyOfContext = copyOfContext.set(acc, [result from inner expression using innerContext[)
+            innerContext.set([name from scope], currentValue);
+            innerContext.set(acc, [result from inner expression using innerContext[)
         }
-        return copyOfContext.apply(acc)
+        return innerContext.apply(acc)
        */
-      val copyOfContext = namer.nextVariableName()
       //this is the context inner expressions should see
       val innerContext = namer.nextVariableName()
       val iterVariable = namer.nextVariableName()
@@ -329,11 +327,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         val currentValue = namer.nextVariableName()
         val ops = Seq(
           //ListValue list = [evaluate collection expression];
-          //ExecutionContext copyOfContext = context.copyWith(acc, init);
+          //ExecutionContext innerContext = context.copyWith(acc, init);
           declare[ListValue](listVar),
           assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
-          declare[ExecutionContext](copyOfContext),
-          assign(copyOfContext,
+          declare[ExecutionContext](innerContext),
+          assign(innerContext,
                  invoke(loadContext(currentContext),
                         method[ExecutionContext, ExecutionContext, String, AnyValue]("copyWith"),
                         constant(scope.accumulator.name), nullCheck(init)(init.ir))),
@@ -345,16 +343,15 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           loop(invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext"))) {block(Seq(
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
-            declare[ExecutionContext](innerContext),
-            //ExecutionContext innerContext = copyOfContext.set([name from scope], currentValue);
-            assign(innerContext, invoke(load(copyOfContext), method[ExecutionContext, ExecutionContext, String, AnyValue]("set"),
-                                        constant(scope.variable.name), load(currentValue)))) ++ innerVars ++ Seq(
-            //copyOfContext = copyOfContext.set(acc, [inner expression using innerContext])
-            assign(copyOfContext, invoke(load(copyOfContext), method[ExecutionContext, ExecutionContext, String, AnyValue]("set"),
-                   constant(scope.accumulator.name), nullCheck(inner)(inner.ir)))):_*)
+            // innerContext.set([name from scope], currentValue);
+            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
+                                        constant(scope.variable.name), load(currentValue))) ++ innerVars ++ Seq(
+            //innerContext.set(acc, [inner expression using innerContext])
+            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
+                   constant(scope.accumulator.name), nullCheck(inner)(inner.ir))):_*)
           },
-          //return copyOfContext.apply(acc);
-          cast[AnyValue](invoke(load(copyOfContext), method[ExecutionContext, Object, Object]("apply"), constant(scope.accumulator.name)))
+          //return innerContext(acc);
+          cast[AnyValue](invoke(load(innerContext), method[ExecutionContext, Object, Object]("apply"), constant(scope.accumulator.name)))
         )
         IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields ++ init.fields,  collection.variables ++ init.variables,
                                collection.nullCheck ++ init.nullCheck)
