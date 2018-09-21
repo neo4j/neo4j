@@ -51,7 +51,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
         yield {
           val lhsRows = table.getOrElse(joinKey, mutable.MutableList.empty)
           lhsRows.map { lhsRow =>
-            val output = executionContextFactory.copyWith(lhsRow)
+            val output = lhsRow.createClone()
             output.mergeWith(rhsRow)
             output
           }

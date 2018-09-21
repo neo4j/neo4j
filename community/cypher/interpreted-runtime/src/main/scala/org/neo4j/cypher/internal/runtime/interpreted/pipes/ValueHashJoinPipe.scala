@@ -51,7 +51,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
       yield {
         val lhsRows = table.getOrElse(joinKey, mutable.MutableList.empty)
         lhsRows.map { lhsRow =>
-          val outputRow = executionContextFactory.copyWith(lhsRow)
+          val outputRow = lhsRow.createClone()
           outputRow.mergeWith(rhsRow)
           outputRow
         }

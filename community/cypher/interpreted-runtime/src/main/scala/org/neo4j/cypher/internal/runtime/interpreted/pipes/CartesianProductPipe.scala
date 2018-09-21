@@ -28,7 +28,7 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
     for (lhsRow <- lhs.createResults(state);
          rhsRow <- rhs.createResults(state))
       yield {
-        val output = executionContextFactory.copyWith(lhsRow)
+        val output = lhsRow.createClone()
         output.mergeWith(rhsRow)
         output
       }
