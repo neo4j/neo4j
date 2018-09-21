@@ -25,19 +25,10 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.scalatest.mock.MockitoSugar
 
 class QueryCacheTest extends CypherFunSuite {
-  type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
-  type Key = Pair[String, Map[String, Class[_]]]
-
-  case class MyValue(key: String)(val recompiled: Boolean)
-
-  private val TC = mock[TransactionalContext]
-  private val RECOMPILE_LIMIT = 2
-  private val RECOMPILE = (count: Int, value: MyValue) => {
-    if (count > RECOMPILE_LIMIT) Some(value.copy()(recompiled = true))
-    else None
-  }
+  import QueryCacheTest._
 
   test("first time accessing the cache should be a cache miss") {
     // Given
@@ -46,7 +37,7 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
     // Then
     valueFromCache should equal(CacheMiss(valueFromKey(key)))
     valueFromCache.executableQuery.recompiled should equal(false)
@@ -63,8 +54,8 @@ class QueryCacheTest extends CypherFunSuite {
 
 
     // When
-    val value1FromCache = cache.computeIfAbsentOrStale(key1, TC, compile(key1), RECOMPILE)
-    val value2FromCache = cache.computeIfAbsentOrStale(key2, TC, compile(key2), RECOMPILE)
+    val value1FromCache = cache.computeIfAbsentOrStale(key1, TC, compileKey(key1), RECOMPILE)
+    val value2FromCache = cache.computeIfAbsentOrStale(key2, TC, compileKey(key2), RECOMPILE)
 
     // Then
     value1FromCache should equal(CacheMiss(valueFromKey(key1)))
@@ -82,10 +73,10 @@ class QueryCacheTest extends CypherFunSuite {
     val tracer = newTracer()
     val cache = newCache(tracer)
     val key = newKey("foo")
-    val _ = cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
+    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
 
     // Then
     valueFromCache should equal(CacheHit(valueFromKey(key)))
@@ -101,10 +92,10 @@ class QueryCacheTest extends CypherFunSuite {
     val secondsSinceReplan = 17
     val cache = newCache(tracer, alwaysStale(secondsSinceReplan))
     val key = newKey("foo")
-    val _ = cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
+    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
 
     // Then
     valueFromCache should equal(CacheMiss(valueFromKey(key)))
@@ -122,10 +113,10 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
-    cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
-    cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE)
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
+    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE)
 
     // Then
     valueFromCache should equal(CacheHit(valueFromKey(key)))
@@ -144,7 +135,7 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    (1 to 100).foreach(_ => cache.computeIfAbsentOrStale(key, TC, compile(key), RECOMPILE))
+    (1 to 100).foreach(_ => cache.computeIfAbsentOrStale(key, TC, compileKey(key), RECOMPILE))
 
     // Then
     verify(tracer).queryCacheMiss(key, "")
@@ -152,16 +143,32 @@ class QueryCacheTest extends CypherFunSuite {
     verify(tracer).queryCacheRecompile(key, "")
     verifyNoMoreInteractions(tracer)
   }
+}
 
-  private def newKey(string: String): Key = Pair.of(string, Map.empty[String, Class[_]])
+  object QueryCacheTest extends MockitoSugar {
+    case class MyValue(key: String)(val recompiled: Boolean)
 
-  private def newCache(tracer: Tracer = newTracer(), stalenessCaller:PlanStalenessCaller[MyValue] = neverStale()) = {
+    private val RECOMPILE_LIMIT = 2
+    val RECOMPILE: (Int, MyValue) => Option[MyValue] = (count: Int, value: MyValue) => {
+      if (count > RECOMPILE_LIMIT) Some(value.copy()(recompiled = true))
+      else None
+    }
+
+    val TC: TransactionalContext = mock[TransactionalContext]
+    type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
+    type Key = Pair[String, Map[String, Class[_]]]
+
+    def compileKey(key: Key): () => MyValue = () => valueFromKey(key)
+
+    def newKey(string: String): Key = Pair.of(string, Map.empty[String, Class[_]])
+
+   def newCache(tracer: Tracer = newTracer(), stalenessCaller:PlanStalenessCaller[MyValue] = neverStale()): QueryCache[String, Pair[String, ParameterTypeMap], MyValue] = {
     new QueryCache[String, Pair[String, ParameterTypeMap], MyValue](10, stalenessCaller, tracer)
   }
 
-  private def newTracer(): Tracer = mock[Tracer]
+   def newTracer(): Tracer = mock[Tracer]
 
-  private def neverStale(): PlanStalenessCaller[MyValue] = {
+   def neverStale(): PlanStalenessCaller[MyValue] = {
     val stalenessCaller: PlanStalenessCaller[MyValue] = mock[PlanStalenessCaller[MyValue]]
     when(stalenessCaller.staleness(any[TransactionalContext], any[MyValue])).thenReturn(NotStale)
     stalenessCaller
@@ -173,7 +180,5 @@ class QueryCacheTest extends CypherFunSuite {
     stalenessCaller
   }
 
-  private def compile(key: Key) = () => valueFromKey(key)
-
-  private def valueFromKey(key: Key) = new MyValue(key.first())
+  private def valueFromKey(key: Key): MyValue = MyValue(key.first())(recompiled = false)
 }

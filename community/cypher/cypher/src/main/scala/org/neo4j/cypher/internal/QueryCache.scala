@@ -74,15 +74,15 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
     * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
     * and whether or not it has been recompiled.
     */
-  private class CachedValue(val value: EXECUTABLE_QUERY, private val recompiled: Boolean) {
+  private class CachedValue(val value: EXECUTABLE_QUERY, val recompiled: Boolean) {
 
-    private var _numberOfHits = 0
+    @volatile private var _numberOfHits = 0
 
     def markHit(): Unit = {
-      _numberOfHits += 1
+      if (!recompiled) {
+        _numberOfHits += 1
+      }
     }
-
-    def isRecompiled: Boolean = recompiled
 
     def numberOfHits: Int = _numberOfHits
 
@@ -132,7 +132,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
           stalenessCaller.staleness(tc, cachedValue.value) match {
             case NotStale =>
               //check if query is up for recompilation
-              val newCachedValue = if (!cachedValue.isRecompiled) {
+              val newCachedValue = if (!cachedValue.recompiled) {
                 recompile(cachedValue.numberOfHits, cachedValue.value) match {
                   case Some(recompiledQuery) =>
                     tracer.queryCacheRecompile(queryKey, metaData)
