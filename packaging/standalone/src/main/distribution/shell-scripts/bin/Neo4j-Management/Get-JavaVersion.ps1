@@ -19,10 +19,10 @@
 
 <#
 .SYNOPSIS
-Confirms whether the specificed java executable is suitable for Neo4j
+Confirms whether the specificed java executable is suitable for Neo4j and checks if Java is Java 8
 
 .DESCRIPTION
-Confirms whether the specificed java executable is suitable for Neo4j
+Confirms whether the specificed java executable is suitable for Neo4j and checks if Java is Java 8
 
 .PARAMETER Path
 Full path to the Java executable, java.exe
@@ -33,13 +33,15 @@ Get-JavaVersion -Path 'C:\Program Files\Java\jre1.8.0_71\bin\java.exe'
 Retrieves the Java version for 'C:\Program Files\Java\jre1.8.0_71\bin\java.exe'.
 
 .OUTPUTS
-System.Boolean
+System.Collections.Hashtable
+isValid
+isJava8
 
 .NOTES
 This function is private to the powershell module
 
 #>
-function Confirm-JavaVersion
+function Get-JavaVersion
 {
   [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
   param(
@@ -57,13 +59,13 @@ function Confirm-JavaVersion
     if ($result.exitCode -ne 0) {
       Write-Warning "Unable to determine Java Version"
       Write-Host $result.capturedOutput
-      return $true
+      return @{ 'isValid' = $true; 'isJava8' = $true }
     }
 
     if ($result.capturedOutput.Count -eq 0) {
       Write-Verbose "Java did not output version information"
       Write-Warning "Unable to determine Java Version"
-      return $true
+      return @{ 'isValid' = $true; 'isJava8' = $true }
     }
 
     $javaHelpText = "* Please use Oracle(R) Java(TM) 8, OpenJDK(TM) or IBM J9 to run Neo4j Server.`n" +
@@ -81,7 +83,7 @@ function Confirm-JavaVersion
     } else {
       Write-Verbose "Could not determine the Java Version"
       Write-Warning "Unable to determine Java Version"
-      return $true
+      return @{ 'isValid' = $true; 'isJava8' = $true }
     }
 
     # Check for Java Version Compatibility
@@ -90,8 +92,10 @@ function Confirm-JavaVersion
     if ($javaVersion -lt '1.8') {
       Write-Warning "ERROR! Neo4j cannot be started using java version $($javaVersion)"
       Write-Warning $javaHelpText
-      return $false
+      return @{ 'isValid' = $false; 'isJava8' = $false }
     }
+    # Anything less then 1.9 is some Java 1.8 version
+    $isJava8 = $javaVersion -lt '1.9'
 
     # Check for Java Edition
     $regex = '(Java HotSpot\(TM\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM'
@@ -100,7 +104,7 @@ function Confirm-JavaVersion
       Write-Warning $javaHelpText
     }
 
-    return $true
+    Write-Output @{ 'isValid' = $true; 'isJava8' = $isJava8 }
   }
 
   end {

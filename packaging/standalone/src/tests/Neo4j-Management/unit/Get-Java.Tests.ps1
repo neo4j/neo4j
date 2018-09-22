@@ -36,7 +36,7 @@ InModuleScope Neo4j-Management {
     Mock Get-ItemProperty { $null } -ParameterFilter {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment*'
     }
-    Mock Confirm-JavaVersion { $true }
+    Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava8' = $true } }
 
     # Java Detection Tests
     Context "Valid Java install in JAVA_HOME environment variable" {
@@ -52,7 +52,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Legacy Java install in JAVA_HOME environment variable" {
-      Mock Confirm-JavaVersion -Verifiable { $false }
+      Mock Get-JavaVersion -Verifiable {  @{ 'isValid' = $false; 'isJava8' = $false } }
 
       It "should throw if java is not supported" {
         { Get-Java -ErrorAction Stop } | Should Throw
@@ -265,6 +265,59 @@ InModuleScope Neo4j-Management {
 
       It "should set NumberOfGCLogFiles" {
         $resultArgs | Should Match ([regex]::Escape(' -XX:NumberOfGCLogFiles='))
+      }
+
+      It "should set specific options" {
+        $resultArgs | Should Match ([regex]::Escape(' key1=value1'))
+        $resultArgs | Should Match ([regex]::Escape(' key2=value2'))
+      }
+    }
+
+    Context "Server Invoke - Enable Post Java 8 Default GC Logs" {
+      Mock Get-JavaVersion {  @{ 'isValid' = $true; 'isJava8' = $false } }
+      
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+         -NeoConfSettings 'dbms.logs.gc.enabled=true'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+      $resultArgs = ($result.args -join ' ')
+
+      It "should set default options" {
+        $resultArgs | Should Match ([regex]::Escape('-Xlog:gc*,safepoint,age*=trace'))
+      }
+
+      It "should set gc log file size" {
+        $resultArgs | Should Match ([regex]::Escape('filesize='))
+      }
+
+      It "should set number of gc logs" {
+        $resultArgs | Should Match ([regex]::Escape('filecount='))
+      }
+
+      It "should set file location" {
+        $resultArgs | Should Match ([regex]::Escape('file='))
+      }
+    }
+
+    Context "Server Invoke - Enable Post Java 8 Specific GC Logs" {
+      Mock Get-JavaVersion {  @{ 'isValid' = $true; 'isJava8' = $false } }
+
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+         -NeoConfSettings 'dbms.logs.gc.enabled=true','dbms.logs.gc.options=key1=value1 key2=value2'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+      $resultArgs = ($result.args -join ' ')
+
+      It "should set gc file" {
+        $resultArgs | Should Match ([regex]::Escape('file='))
+      }
+
+      It "should set gc log file size" {
+        $resultArgs | Should Match ([regex]::Escape('filesize='))
+      }
+
+      It "should set number of gc log files" {
+        $resultArgs | Should Match ([regex]::Escape('filecount='))
       }
 
       It "should set specific options" {
