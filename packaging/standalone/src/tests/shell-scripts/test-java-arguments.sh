@@ -125,6 +125,47 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=8 -XX:GCLogFileSize=10m'
   "
 
+  test_expect_success "should set gc log location when gc log is enabled for post java 8" "
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    FAKE_JAVA_VERSION='10.0.2' ${run_command} &&
+    test_expect_java_arg 'file=$(neo4j_home)/logs/gc.log'
+  "
+
+  test_expect_success "should put gc log into configured logs directory for post java 8" "
+    mkdir -p '$(neo4j_home)/some-other-logs' &&
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    set_config 'dbms.directories.logs' 'some-other-logs' neo4j.conf &&
+    FAKE_JAVA_VERSION='9.0.4' ${run_command} &&
+    test_expect_java_arg 'file=$(neo4j_home)/some-other-logs/gc.log'
+  "
+
+  test_expect_success "should set gc logging options when gc log is enabled for post java 8" "
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    set_config 'dbms.logs.gc.options' '-Xlog:gc+class*=debug' neo4j.conf &&
+    FAKE_JAVA_VERSION='11' ${run_command} &&
+    test_expect_java_arg '-Xlog:gc+class*=debug'
+  "
+
+  test_expect_success "should set default gc logging options when none are provided for post java 8" "
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    FAKE_JAVA_VERSION='11' ${run_command} &&
+    test_expect_java_arg '-Xlog:gc*,safepoint,age*=trace'
+  "
+
+  test_expect_success "should set gc logging rotation options for post java 8" "
+    clear_config &&
+    set_config 'dbms.logs.gc.rotation.size' '10m' neo4j.conf &&
+    set_config 'dbms.logs.gc.rotation.keep_number' '8' neo4j.conf &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf
+
+    FAKE_JAVA_VERSION='10.0.4' ${run_command} &&
+    test_expect_java_arg 'file=$(neo4j_home)/logs/gc.log::filecount=8,filesize=10m'
+  "
+
   test_expect_success "should pass config dir location" "
     ${run_command} &&
     test_expect_java_arg '--config-dir=$(neo4j_home)/conf'

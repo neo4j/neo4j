@@ -85,8 +85,42 @@ check_limits() {
   fi
 }
 
+setup_memory_opts() {
+  if [[ -n "${dbms_memory_heap_initial_size:-}" ]]; then
+    local mem="${dbms_memory_heap_initial_size}"
+    if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
+      mem="${mem}m"
+      cat >&2 <<EOF
+WARNING: dbms.memory.heap.initial_size will require a unit suffix in a
+         future version of Neo4j. Please add a unit suffix to your
+         configuration. Example:
+
+         dbms.memory.heap.initial_size=512m
+                                          ^
+EOF
+    fi
+    JAVA_MEMORY_OPTS+=("-Xms${mem}")
+  fi
+  if [[ -n "${dbms_memory_heap_max_size:-}" ]]; then
+    local mem="${dbms_memory_heap_max_size}"
+    if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
+      mem="${mem}m"
+      cat >&2 <<EOF
+WARNING: dbms.memory.heap.max_size will require a unit suffix in a
+         future version of Neo4j. Please add a unit suffix to your
+         configuration. Example:
+
+         dbms.memory.heap.max_size=512m
+                                      ^
+EOF
+    fi
+    JAVA_MEMORY_OPTS+=("-Xmx${mem}")
+  fi
+}
+
 check_java() {
   _find_java_cmd
+  setup_memory_opts
 
   version_command=("${JAVA_CMD}" "-version")
   [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && version_command+=("${JAVA_MEMORY_OPTS[@]}")
