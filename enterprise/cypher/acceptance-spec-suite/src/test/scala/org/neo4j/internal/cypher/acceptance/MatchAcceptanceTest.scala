@@ -33,6 +33,9 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  test("soos") {
+    graph.execute("RETURN sin(cos(sin(5)))").resultAsString()
+  }
   test("should handle negative node id gracefully") {
     createNode("id" -> 0)
     for (i <- 1 to 1000) createNode("id" -> i)

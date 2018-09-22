@@ -22,9 +22,8 @@ package org.neo4j.cypher
 sealed abstract class CypherExpressionEngineOption(engineName: String) extends CypherOption(engineName)
 
 case object CypherExpressionEngineOption extends CypherOptionCompanion[CypherExpressionEngineOption] {
+  case object default extends CypherExpressionEngineOption("default")
   case object interpreted extends CypherExpressionEngineOption("interpreted")
   case object compiled extends CypherExpressionEngineOption("compiled")
   val all: Set[CypherExpressionEngineOption] = Set(interpreted, compiled)
-
-  override def default: CypherExpressionEngineOption = interpreted
 }

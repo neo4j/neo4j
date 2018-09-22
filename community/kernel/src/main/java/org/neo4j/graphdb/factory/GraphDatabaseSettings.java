@@ -245,10 +245,10 @@ public class GraphDatabaseSettings implements LoadableConfig
             "unsupported.cypher.runtime",
         optionsIgnoreCase( "INTERPRETED", "COMPILED", "SLOTTED" , "MORSEL", DEFAULT ), DEFAULT );
 
-    @Description( "By setting this to true compiled expressions will be disabled and only interpreted expressions will be used." )
+    @Description( "Choose the default expression engine " )
     @Internal
     public static final Setting<String> cypher_expression_engine = setting(
-            "unsupported.cypher.expression_engine", optionsIgnoreCase( "INTERPRETED", "COMPILED" ), "COMPILED" );
+            "unsupported.cypher.expression_engine", optionsIgnoreCase( "INTERPRETED", "COMPILED", DEFAULT ), DEFAULT );
 
     @Description( "Number of uses before an expression is considered for compilation" )
     @Internal
