@@ -283,7 +283,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
 
         // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test,web", handler.getQueryMap().get( TAGS ) );
+        assertEquals( "test,appserver,web", handler.getQueryMap().get( TAGS ) );
     }
 
     @Test
@@ -474,17 +474,17 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         boolean isTrue( T value );
     }
 
-    private void assertGotSuccessWithRetry( Condition<Integer> condition ) throws Exception
+    private static void assertGotSuccessWithRetry( Condition<Integer> condition ) throws Exception
     {
         assertGotPingWithRetry( UdcTimerTask.successCounts, condition );
     }
 
-    private void assertGotFailureWithRetry( Condition<Integer> condition ) throws Exception
+    private static void assertGotFailureWithRetry( Condition<Integer> condition ) throws Exception
     {
         assertGotPingWithRetry( UdcTimerTask.failureCounts, condition );
     }
 
-    private void assertGotPingWithRetry( Map<String,Integer> counts, Condition<Integer> condition ) throws Exception
+    private static void assertGotPingWithRetry( Map<String,Integer> counts, Condition<Integer> condition ) throws Exception
     {
         for ( int i = 0; i < 100; i++ )
         {
