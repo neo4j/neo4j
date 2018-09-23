@@ -90,7 +90,7 @@ class GenericLayout extends IndexLayout<CompositeGenericKey,NativeIndexValue>
 
     GenericLayout( int numberOfSlots, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
     {
-        super( "NSIL", 0, 2 );
+        super( "NSIL", 0, 3 );
         this.numberOfSlots = numberOfSlots;
         this.spatialSettings = spatialSettings;
     }

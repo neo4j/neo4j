@@ -142,9 +142,7 @@ public final class UTF8StringValue extends StringValue
             return 0;
         }
 
-        CodePointCursor cpc = new CodePointCursor();
-        cpc.values = bytes;
-        cpc.i = offset;
+        CodePointCursor cpc = new CodePointCursor( bytes, offset );
         int hash = 1;
         int len = offset + byteLength;
 
@@ -158,9 +156,7 @@ public final class UTF8StringValue extends StringValue
     @Override
     public long updateHash( HashFunction hashFunction, long hash )
     {
-        CodePointCursor cpc = new CodePointCursor();
-        cpc.values = bytes;
-        cpc.i = offset;
+        CodePointCursor cpc = new CodePointCursor( bytes, offset );
         int len = offset + byteLength;
 
         while ( cpc.i < len )
@@ -177,13 +173,19 @@ public final class UTF8StringValue extends StringValue
         return hashFunction.update( hash, cpc.codePointCount );
     }
 
-    private static class CodePointCursor
+    public static class CodePointCursor
     {
-        byte[] values;
-        int i;
-        int codePointCount;
+        private byte[] values;
+        private int i;
+        private int codePointCount;
 
-        long nextCodePoint()
+        public CodePointCursor( byte[] values, int offset )
+        {
+            this.values = values;
+            this.i = offset;
+        }
+
+        public long nextCodePoint()
         {
             codePointCount++;
             byte b = values[i];

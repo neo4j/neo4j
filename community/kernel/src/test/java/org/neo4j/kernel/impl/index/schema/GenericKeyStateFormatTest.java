@@ -91,6 +91,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         values.add( rnd.nextLongArray() );
         values.add( rnd.nextFloatArray() );
         values.add( rnd.nextDoubleArray() );
+        values.add( rnd.nextCharArray() );
         // ZONED_DATE_TIME
         values.add( rnd.nextDateTimeValue() );
         // LOCAL_DATE_TIME
@@ -114,6 +115,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         values.add( rnd.nextLongValue() );
         values.add( rnd.nextFloatValue() );
         values.add( rnd.nextDoubleValue() );
+        values.add( rnd.nextCharValue() );
         // GEOMETRY
         values.add( rnd.nextGeographicPoint() );
         values.add( rnd.nextGeographicPointArray() );
@@ -229,6 +231,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
                 if ( readValue != Values.NO_VALUE )
                 {
                     assertEquals( value, readValue, "expected read value to be " + value + ", but was " + readValue );
+                    assertEquals( value.getClass(), readValue.getClass() );
                 }
             }
         }

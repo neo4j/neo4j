@@ -435,6 +435,45 @@ class GenericKeyStateTest
         assertEquals( srcValue, dereferencedValue );
     }
 
+    @Test
+    void indexedCharShouldComeBackAsCharValue()
+    {
+        shouldReadBackToExactOriginalValue( random.randomValues().nextCharValue() );
+    }
+
+    @Test
+    void indexedCharArrayShouldComeBackAsCharArrayValue()
+    {
+        shouldReadBackToExactOriginalValue( random.randomValues().nextCharArray() );
+    }
+
+    private void shouldReadBackToExactOriginalValue( Value srcValue )
+    {
+        // given
+        GenericKeyState state = newKeyState();
+        state.clear();
+        state.writeValue( srcValue, NEUTRAL );
+        Value retrievedValueAfterWrittenToState = state.asValue();
+        assertEquals( srcValue, retrievedValueAfterWrittenToState );
+        assertEquals( srcValue.getClass(), retrievedValueAfterWrittenToState.getClass() );
+
+        // ... which is written to cursor
+        PageCursor cursor = newPageCursor();
+        int offset = cursor.getOffset();
+        state.put( cursor );
+        int keySize = cursor.getOffset() - offset;
+        cursor.setOffset( offset );
+
+        // when reading it back
+        state.clear();
+        state.read( cursor, keySize );
+
+        // then it should also be retrieved as char value
+        Value retrievedValueAfterReadFromCursor = state.asValue();
+        assertEquals( srcValue, retrievedValueAfterReadFromCursor );
+        assertEquals( srcValue.getClass(), retrievedValueAfterReadFromCursor.getClass() );
+    }
+
     private void assertHighestStringArray()
     {
         for ( int i = 0; i < 1000; i++ )
@@ -542,6 +581,7 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextLocalTimeValue(),
                 () -> random.randomValues().nextPeriod(),
                 () -> random.randomValues().nextDuration(),
+                () -> random.randomValues().nextCharValue(),
                 () -> random.randomValues().nextTextValue(),
                 () -> random.randomValues().nextAlphaNumericTextValue(),
                 () -> random.randomValues().nextBooleanValue(),
@@ -554,6 +594,7 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextLocalTimeArray(),
                 () -> random.randomValues().nextDurationArray(),
                 () -> random.randomValues().nextDurationArray(),
+                () -> random.randomValues().nextCharArray(),
                 () -> random.randomValues().nextTextArray(),
                 () -> random.randomValues().nextAlphaNumericTextArray(),
                 () -> random.randomValues().nextBooleanArray(),

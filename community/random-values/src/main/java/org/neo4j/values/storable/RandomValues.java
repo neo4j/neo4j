@@ -82,6 +82,7 @@ public class RandomValues
         LONG( ValueGroup.NUMBER, LongValue.class ),
         FLOAT( ValueGroup.NUMBER, FloatValue.class ),
         DOUBLE( ValueGroup.NUMBER, DoubleValue.class ),
+        CHAR( ValueGroup.TEXT, CharValue.class ),
         STRING( ValueGroup.TEXT, TextValue.class ),
         STRING_ALPHANUMERIC( ValueGroup.TEXT, TextValue.class ),
         STRING_ASCII( ValueGroup.TEXT, TextValue.class ),
@@ -104,6 +105,7 @@ public class RandomValues
         LONG_ARRAY( ValueGroup.NUMBER_ARRAY, LongArray.class, true ),
         FLOAT_ARRAY( ValueGroup.NUMBER_ARRAY, FloatArray.class, true ),
         DOUBLE_ARRAY( ValueGroup.NUMBER_ARRAY, DoubleArray.class, true ),
+        CHAR_ARRAY( ValueGroup.TEXT_ARRAY, CharArray.class, true ),
         STRING_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
         STRING_ALPHANUMERIC_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
         STRING_ASCII_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
@@ -331,6 +333,8 @@ public class RandomValues
             return nextFloatValue();
         case DOUBLE:
             return nextDoubleValue();
+        case CHAR:
+            return nextCharValue();
         case STRING_ALPHANUMERIC:
             return nextAlphaNumericTextValue();
         case STRING_ASCII:
@@ -373,6 +377,8 @@ public class RandomValues
             return nextFloatArray();
         case DOUBLE_ARRAY:
             return nextDoubleArray();
+        case CHAR_ARRAY:
+            return nextCharArray();
         case STRING_ARRAY:
             return nextTextArray();
         case STRING_ALPHANUMERIC_ARRAY:
@@ -649,6 +655,18 @@ public class RandomValues
         default:
             throw new IllegalArgumentException( "Unknown value type " + type );
         }
+    }
+
+    public CharValue nextCharValue()
+    {
+        return Values.charValue( nextCharRaw() );
+    }
+
+    public char nextCharRaw()
+    {
+        int codePoint = bmpCodePoint();
+        assert (codePoint & ~0xFFFF) == 0;
+        return (char) codePoint;
     }
 
     /**
@@ -993,6 +1011,22 @@ public class RandomValues
         default:
             throw new IllegalStateException( nextInt + " not a valid point type" );
         }
+    }
+
+    public CharArray nextCharArray()
+    {
+        return Values.charArray( nextCharArrayRaw( minArray(), maxArray() ) );
+    }
+
+    private char[] nextCharArrayRaw( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        char[] array = new char[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = nextCharRaw();
+        }
+        return array;
     }
 
     /**

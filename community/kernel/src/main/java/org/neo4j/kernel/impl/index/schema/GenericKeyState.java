@@ -46,6 +46,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.PrimitiveArrayWriting;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.TimeZones;
+import org.neo4j.values.storable.UTF8StringValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -113,6 +114,11 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private static final int SHIFT_TABLE = Integer.bitCount( MASK_CODE );
     private static final int MASK_TABLE_READ = 0xC00000; // 2b
     private static final int MASK_TABLE_PUT = MASK_TABLE_READ >>> SHIFT_TABLE;
+    // in-memory marker in long2 for TEXT value type, i.e. 1:CHAR, 0:STRING
+    private static final long CHAR_TYPE_STATE_MARKER = 0x2;
+    // persistent marker in 2B length, 1:CHAR, 0:STRING
+    private static final int CHAR_TYPE_LENGTH_MARKER = 0x8000;
+    private static final long MASK_BOOLEAN = 0x1;
 
     // Immutable
     private final IndexSpecificSpaceFillingCurveSettingsCache settings;
@@ -129,7 +135,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     // zoned time:            long0 (nanosOfDayUTC), long1 (zoneOffsetSeconds)
     // local time:            long0 (nanoOfDay)
     // duration:              long0 (totalAvgSeconds), long1 (nanosOfSecond), long2 (months), long3 (days)
-    // text:                  long0 (length), long1 (bytesDereferenced), long2 (ignoreLength), long3 (isHighest), byteArray
+    // text:                  long0 (length), long1 (bytesDereferenced), long2 (ignoreLength|charValue), long3 (isHighest), byteArray
     // boolean:               long0
     // number:                long0 (value), long1 (number type)
 
@@ -427,7 +433,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     }
 
     /* <minimalSplitter> */
-    public static void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    static void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
     {
         into.clear();
         into.copyMetaFrom( right );
@@ -649,7 +655,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return durationAsValue( long0, long1, long2, long3 );
         case TEXT:
             long1 = TRUE; // bytes dereferenced
-            return textAsValue( byteArray, long0 );
+            return textAsValue( byteArray, long0, long2 );
         case BOOLEAN:
             return booleanAsValue( long0 );
         case NUMBER:
@@ -673,6 +679,12 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
                     i -> durationAsValue( long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) ) );
         case TEXT_ARRAY:
             // no need to set bytes dereferenced because byte[][] owned by this class will be deserialized into String objects.
+            if ( isCharValueType( long2 ) )
+            {
+                // this is a char[]
+                return charArrayAsValue();
+            }
+            // this ia a String[]
             return Values.of( populateValueArray( new String[arrayLength], i -> textAsValueRaw( byteArrayArray[i], long0Array[i] ) ) );
         case BOOLEAN_ARRAY:
             return booleanArrayAsValue();
@@ -681,6 +693,21 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
+    }
+
+    private static boolean isCharValueType( long long2 )
+    {
+        return booleanOf( long2 >> 1 );
+    }
+
+    private Value charArrayAsValue()
+    {
+        char[] chars = new char[arrayLength];
+        for ( int i = 0; i < arrayLength; i++ )
+        {
+            chars[i] = textAsChar( byteArrayArray[i] );
+        }
+        return Values.charArray( chars );
     }
 
     private Value numberArrayAsValue()
@@ -1036,7 +1063,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             putDuration( cursor, long0, long1, long2, long3 );
             break;
         case TEXT:
-            putText( cursor, byteArray, long0 );
+            putText( cursor, byteArray, long0, long2 );
             break;
         case BOOLEAN:
             putBoolean( cursor, long0 );
@@ -1068,7 +1095,10 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             putArray( cursor, ( c, i ) -> putDuration( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
             break;
         case TEXT_ARRAY:
-            putArray( cursor, ( c, i ) -> putText( c, byteArrayArray[i], long0Array[i] ) );
+            boolean isCharType = isCharValueType( long2 );
+            short typeMarker = (short) (isCharType ? CHAR_TYPE_LENGTH_MARKER : 0);
+            putArrayLength( cursor, (short) (toNonNegativeShortExact( arrayLength ) | typeMarker) );
+            putArrayItems( cursor, ( c, i ) -> putText( c, byteArrayArray[i], long0Array[i], 0/*since we've already put the type marker don't do it here*/ ) );
             break;
         case BOOLEAN_ARRAY:
             putArray( cursor, ( c, i ) -> putBoolean( c, long0Array[i] ) );
@@ -1128,7 +1158,17 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void putArray( PageCursor cursor, ArrayElementWriter writer )
     {
-        cursor.putShort( toNonNegativeShortExact( arrayLength ) );
+        putArrayLength( cursor, toNonNegativeShortExact( arrayLength ) );
+        putArrayItems( cursor, writer );
+    }
+
+    private void putArrayLength( PageCursor cursor, short arrayLengthHeader )
+    {
+        cursor.putShort( arrayLengthHeader );
+    }
+
+    private void putArrayItems( PageCursor cursor, ArrayElementWriter writer )
+    {
         for ( int i = 0; i < arrayLength; i++ )
         {
             writer.write( cursor, i );
@@ -1164,10 +1204,14 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         cursor.putByte( (byte) long0 );
     }
 
-    private static void putText( PageCursor cursor, byte[] byteArray, long long0 )
+    private static void putText( PageCursor cursor, byte[] byteArray, long long0, long long2 )
     {
+        // There are two variants of a text value, one is string, the other is char. Both are the same ValueGroup, i.e. TEXT
+        // and should be treated the same, it's just that we need to know if it's a char so that we can materialize a CharValue for chars.
+        // We put a special marker for char values, knowing that a char is exactly 2 bytes in storage.
+        // This can be picked up by reader and set the right flag in state so that a CharValue can be materialized.
         short length = toNonNegativeShortExact( long0 );
-        cursor.putShort( length );
+        cursor.putShort( isCharValueType( long2 ) ? (short) (length | CHAR_TYPE_LENGTH_MARKER) : length );
         cursor.putBytes( byteArray, 0, length );
     }
 
@@ -1296,7 +1340,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private boolean readArray( PageCursor cursor, ArrayType type, ArrayElementReader reader )
     {
-        if ( !setArrayLengthWhenReading( cursor ) )
+        if ( !setArrayLengthWhenReading( cursor, cursor.getShort() ) )
         {
             return false;
         }
@@ -1393,11 +1437,14 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private boolean readTextArray( PageCursor cursor, int maxSize )
     {
-        if ( !setArrayLengthWhenReading( cursor ) )
+        short rawLength = cursor.getShort();
+        boolean isCharType = (rawLength & CHAR_TYPE_LENGTH_MARKER) != 0;
+        short length = (short) (rawLength & ~CHAR_TYPE_LENGTH_MARKER);
+        if ( !setArrayLengthWhenReading( cursor, length ) )
         {
             return false;
         }
-        beginArray( arrayLength, ArrayType.STRING );
+        beginArray( arrayLength, isCharType ? ArrayType.CHAR : ArrayType.STRING );
         for ( int i = 0; i < arrayLength; i++ )
         {
             short bytesLength = cursor.getShort();
@@ -1415,9 +1462,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         return true;
     }
 
-    private boolean setArrayLengthWhenReading( PageCursor cursor )
+    private boolean setArrayLengthWhenReading( PageCursor cursor, short length )
     {
-        arrayLength = cursor.getShort();
+        arrayLength = length;
         if ( arrayLength < 0 || arrayLength > BIGGEST_REASONABLE_ARRAY_LENGTH )
         {
             setCursorException( cursor, "non-valid array length, " + arrayLength );
@@ -1495,11 +1542,19 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     private boolean readText( PageCursor cursor, int maxSize )
     {
         // For performance reasons cannot be redirected to writeString, due to byte[] reuse
-        short bytesLength = cursor.getShort();
+        short rawLength = cursor.getShort();
+        boolean isCharType = (rawLength & CHAR_TYPE_LENGTH_MARKER) != 0;
+        short bytesLength = (short) (rawLength & ~CHAR_TYPE_LENGTH_MARKER);
         if ( bytesLength < 0 || bytesLength > maxSize )
         {
             setCursorException( cursor, "non-valid bytes length for text, " + bytesLength );
             return false;
+        }
+
+        if ( isCharType )
+        {
+            // Remember this fact, i.e. set the flag in this state
+            long2 |= CHAR_TYPE_STATE_MARKER;
         }
         setBytesLength( bytesLength );
         cursor.getBytes( byteArray, 0, bytesLength );
@@ -1782,6 +1837,8 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     public void writeString( char value ) throws RuntimeException
     {
         writeString( String.valueOf( value ) );
+        // Mark this value as a specific type of TEXT.
+        long2 |= CHAR_TYPE_STATE_MARKER;
     }
 
     @Override
@@ -1988,6 +2045,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             break;
         case CHAR:
             type = Type.TEXT_ARRAY;
+            long2 |= CHAR_TYPE_STATE_MARKER;
             break;
         case POINT:
             type = Type.GEOMETRY_ARRAY;
@@ -2242,11 +2300,34 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
         return booleanOf( long0 );
     }
 
-    private static Value textAsValue( byte[] byteArray, long long0 )
+    private static Value textAsValue( byte[] byteArray, long long0, long long2 )
     {
         // There's a difference between composing a single text value and a array text values
         // and there's therefore no common "raw" variant of it
-        return byteArray == null ? NO_VALUE : Values.utf8Value( byteArray, 0, (int) long0 );
+
+        if ( byteArray == null )
+        {
+            return NO_VALUE;
+        }
+
+        if ( isCharValueType( long2 ) )
+        {
+            // This is a char value.
+            return Values.charValue( textAsChar( byteArray ) );
+        }
+
+        // This is a string value
+        return Values.utf8Value( byteArray, 0, (int) long0 );
+    }
+
+    private static char textAsChar( byte[] byteArray )
+    {
+        long codePoint = new UTF8StringValue.CodePointCursor( byteArray, 0 ).nextCodePoint();
+        if ( (codePoint & ~0xFFFF) != 0 )
+        {
+            throw new IllegalStateException( "Char value seems to be bigger than what a char can hold " + codePoint );
+        }
+        return (char) codePoint;
     }
 
     private static String textAsValueRaw( byte[] byteArray, long long0 )
@@ -2326,7 +2407,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private static boolean booleanOf( long longValue )
     {
-        return longValue == TRUE;
+        return (longValue & MASK_BOOLEAN) == TRUE;
     }
 
     @Override

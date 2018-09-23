@@ -43,6 +43,7 @@ import org.neo4j.test.rule.RandomRule;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 @RunWith( Parameterized.class )
@@ -244,7 +245,7 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
 
     private static void assertHit( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor, Long expectedKey ) throws IOException
     {
-        assert cursor.next() : "Had no next when expecting key " + expectedKey;
+        assertTrue( "Had no next when expecting key " + expectedKey, cursor.next() );
         Hit<MutableLong,MutableLong> hit = cursor.get();
         assertEquals( expectedKey.longValue(), hit.key().longValue() );
         assertEquals( value( expectedKey ), hit.value().longValue() );
