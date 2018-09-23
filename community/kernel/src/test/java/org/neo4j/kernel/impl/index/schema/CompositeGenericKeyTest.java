@@ -72,6 +72,6 @@ class CompositeGenericKeyTest
         {
             totalStringLength += string.getBytes( StandardCharsets.UTF_8 ).length;
         }
-        return 5 + 2 * arrayLength + totalStringLength;
+        return 1 + 2 + 2 * arrayLength + totalStringLength;
     }
 }

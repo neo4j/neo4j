@@ -341,14 +341,15 @@ public class GenericIndexValidationIT
     private enum NamedDynamicValueGenerator
     {
         string( Byte.BYTES, 4036, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
-        byteArray( SIZE_NUMBER_BYTE, 4033, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
-        shortArray( SIZE_NUMBER_SHORT, 2016, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
+        byteArray( SIZE_NUMBER_BYTE, 4035, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
+        shortArray( SIZE_NUMBER_SHORT, 2017, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
         intArray( SIZE_NUMBER_INT, 1008, i -> random.randomValues().nextIntArrayRaw( i, i ) ),
         longArray( SIZE_NUMBER_LONG, 504, i -> random.randomValues().nextLongArrayRaw( i, i ) ),
         floatArray( SIZE_NUMBER_FLOAT, 1008, i -> random.randomValues().nextFloatArrayRaw( i, i ) ),
         doubleArray( SIZE_NUMBER_DOUBLE, 504, i -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
-        booleanArray( SIZE_BOOLEAN, 4034, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
-        stringArray1( SIZE_STRING_LENGTH + 1, 1344, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
+        booleanArray( SIZE_BOOLEAN, 4036, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
+        charArray( Byte.BYTES, 1345, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue().toCharArray() ),
+        stringArray1( SIZE_STRING_LENGTH + 1, 1345, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
         stringArray10( SIZE_STRING_LENGTH + 10, 336, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
         stringArray100( SIZE_STRING_LENGTH + 100, 39, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
         stringArray1000( SIZE_STRING_LENGTH + 1000, 4, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
@@ -359,10 +360,10 @@ public class GenericIndexValidationIT
         localDateTimeArray( SIZE_LOCAL_DATE_TIME, 336, i -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
         durationArray( SIZE_DURATION, 144, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
         periodArray( SIZE_DURATION, 144, i -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
-        cartesianPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
-        cartesian3DPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
-        geographicPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
-        geographic3DPointArray( SIZE_GEOMETRY, 503, i -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
+        cartesianPointArray( SIZE_GEOMETRY, 504, i -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
+        cartesian3DPointArray( SIZE_GEOMETRY, 504, i -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
+        geographicPointArray( SIZE_GEOMETRY, 504, i -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
+        geographic3DPointArray( SIZE_GEOMETRY, 504, i -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
 
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;

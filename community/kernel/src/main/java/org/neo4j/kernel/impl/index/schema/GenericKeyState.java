@@ -101,7 +101,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     public static final int SIZE_NUMBER_LONG =     Long.BYTES;     /* raw value bits */
     public static final int SIZE_NUMBER_FLOAT =    Integer.BYTES;  /* raw value bits */
     public static final int SIZE_NUMBER_DOUBLE =   Long.BYTES;     /* raw value bits */
-    private static final int SIZE_ARRAY_LENGTH =   Integer.BYTES;
+    private static final int SIZE_ARRAY_LENGTH =   Short.BYTES;
     private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / SIZE_NUMBER_BYTE;
 
     private static final long TRUE = 1;
@@ -1128,7 +1128,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private void putArray( PageCursor cursor, ArrayElementWriter writer )
     {
-        cursor.putInt( arrayLength );
+        cursor.putShort( toNonNegativeShortExact( arrayLength ) );
         for ( int i = 0; i < arrayLength; i++ )
         {
             writer.write( cursor, i );
@@ -1166,9 +1166,18 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private static void putText( PageCursor cursor, byte[] byteArray, long long0 )
     {
-        short length = (short) long0;
+        short length = toNonNegativeShortExact( long0 );
         cursor.putShort( length );
         cursor.putBytes( byteArray, 0, length );
+    }
+
+    private static short toNonNegativeShortExact( long value )
+    {
+        if ( (value & ~0x7FFF) != 0 )
+        {
+            throw new IllegalArgumentException( value + " is bigger than maximum for a signed short (2B) " + 0x7FFF );
+        }
+        return (short) value;
     }
 
     private static void putDuration( PageCursor cursor, long long0, long long1, long long2, long long3 )
@@ -1408,7 +1417,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     private boolean setArrayLengthWhenReading( PageCursor cursor )
     {
-        arrayLength = cursor.getInt();
+        arrayLength = cursor.getShort();
         if ( arrayLength < 0 || arrayLength > BIGGEST_REASONABLE_ARRAY_LENGTH )
         {
             setCursorException( cursor, "non-valid array length, " + arrayLength );
