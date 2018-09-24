@@ -47,13 +47,6 @@ object AsPropertySeekable {
     case WithSeekableArgs(prop@Property(ident: LogicalVariable, propertyKey), rhs)
       if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
-
-    // In some rare cases, we can't rewrite these predicates cleanly,
-    // and so planning needs to search for these cases explicitly
-    case Equals(lhs, prop@Property(ident: LogicalVariable, propertyKey))
-      if !lhs.dependencies(ident) =>
-      Some(PropertySeekable(prop, ident, SingleSeekableArg(lhs)))
-
     case _ =>
       None
   }

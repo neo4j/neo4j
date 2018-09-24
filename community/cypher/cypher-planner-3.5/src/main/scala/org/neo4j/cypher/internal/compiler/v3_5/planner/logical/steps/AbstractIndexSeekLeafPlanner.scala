@@ -159,11 +159,18 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
     {
       // n.prop IN [ ... ]
-      // n.prop = ...
-      // ... = n.prop
       case predicate@AsPropertySeekable(seekable: PropertySeekable) if validDependencies(seekable) =>
         val queryExpression = seekable.args.asQueryExpression
         IndexCompatiblePredicate(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = true,
+          hints, argumentIds, solvesPredicate = true)
+
+      // ... = n.prop
+      // In some rare cases, we can't rewrite these predicates cleanly,
+      // and so planning needs to search for these cases explicitly
+      case predicate@Equals(a, prop@Property(seekable@LogicalVariable(_), propKeyName))
+        if a.dependencies.forall(arguments) && !arguments(seekable) =>
+        val expr = SingleQueryExpression(a)
+        IndexCompatiblePredicate(seekable.name, propKeyName, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)), exactPredicate = true,
           hints, argumentIds, solvesPredicate = true)
 
       // n.prop STARTS WITH "prefix%..."
