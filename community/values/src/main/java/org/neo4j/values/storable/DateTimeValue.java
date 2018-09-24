@@ -412,7 +412,17 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private DateTimeValue( ZonedDateTime value )
     {
-        this.value = value;
+        ZoneId zone = value.getZone();
+        if ( zone instanceof ZoneOffset )
+        {
+            this.value = value;
+        }
+        else
+        {
+            // Do a 2-way lookup of the zone to make sure we only use the new name of renamed zones
+            ZoneId mappedZone = ZoneId.of( TimeZones.map( TimeZones.map( zone.getId() ) ) );
+            this.value = value.withZoneSameInstant( mappedZone );
+        }
         this.epochSeconds = this.value.toEpochSecond();
     }
 
