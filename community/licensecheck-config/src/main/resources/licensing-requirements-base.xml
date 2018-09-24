@@ -34,7 +34,7 @@
   <liked-license>Mozilla Public License, Version 2.0</liked-license>
   <liked-license>SIL OFL 1.1</liked-license>
   <liked-license>ISC</liked-license>
-
+  <liked-license>Unlicense</liked-license>
 
   <override-licenses>
     <artifact id="org.scala-lang:scala-library:">
@@ -96,6 +96,9 @@
       <aka>BSD-like</aka>
       <aka>New BSD License</aka>
       <aka>BSD 3-Clause "New" or "Revised" License (BSD-3-Clause)</aka>
+      <aka>BSD-2-Clause</aka>
+      <aka>BSD-3-Clause</aka>
+      <aka>BSD*</aka>
     </license>
     <license name="BSD License 2-clause">
       <aka>BSD-2-Clause</aka>
@@ -119,6 +122,7 @@
     </license>
     <license name="GNU General Public License, Version 3">
       <aka>GPL3</aka>
+      <aka>GPL-3.0</aka>
     </license>
     <license name="GNU Lesser General Public License, Version 2.1">
       <aka>LGPL2.1</aka>
@@ -130,6 +134,9 @@
     <license name="MIT License">
       <aka>MIT</aka>
       <aka>The MIT License</aka>
+      <aka>(GPL-2.0 OR MIT)</aka>
+      <aka>(MIT or Apache-2.0)</aka>
+      <aka>(BSD-2-Clause OR MIT OR Apache-2.0)</aka>
     </license>
     <license name="Bouncy Castle License">
       <aka>Bouncy Castle Licence</aka>
@@ -141,5 +148,4 @@
       <option>GNU General Public License, version 2 with the Classpath Exception</option>
     </dual-license>
   </dual-licenses>
-
 </licensing-requirements>
