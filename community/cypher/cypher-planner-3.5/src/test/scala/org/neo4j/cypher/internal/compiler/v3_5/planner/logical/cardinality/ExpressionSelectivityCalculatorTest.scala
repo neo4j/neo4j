@@ -25,6 +25,13 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_LIST_CARDINALITY
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_PROPERTY_SELECTIVITY
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_RANGE_SELECTIVITY
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_STRING_LENGTH
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_TYPE_SELECTIVITY
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
@@ -54,7 +61,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(ineqality, Seq.empty)
     val ineqResult = calculator(ineqality.expr)
-    ineqResult should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY)
+    ineqResult should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("half-open (>=) range with no label") {
@@ -64,7 +71,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(ineqality, Seq.empty)
     val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor + GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor)
+    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor + DEFAULT_EQUALITY_SELECTIVITY.factor)
   }
 
   test("closed (> && <) range with no label") {
@@ -75,7 +82,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(ineqality, Seq.empty)
     val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
   }
 
   test("closed (>= && <) range with no label") {
@@ -86,7 +93,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(ineqality, Seq.empty)
     val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor / 2 + GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor)
+    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2 + DEFAULT_EQUALITY_SELECTIVITY.factor)
   }
 
   test("three inequalities should be equal to two inequalities, no labels") {
@@ -98,7 +105,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(ineqality, Seq.empty)
     val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
   }
 
   test("half-open (>) range with one label") {
@@ -115,7 +122,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     ineqResult.factor should equal(
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         +- 0.00000001
     )
   }
@@ -134,7 +141,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     ineqResult.factor should equal(
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != 3
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         + 0.2 // Selectivity for .prop
         * 0.25 // Selectivity for == 3
         +- 0.00000001
@@ -156,7 +163,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     ineqResult.factor should equal(
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
     )
   }
@@ -176,7 +183,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     ineqResult.factor should equal(
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != 3
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         + 0.2 // Selectivity for .prop
         * 0.25 // Selectivity for == 3
         +- 0.00000001
@@ -199,7 +206,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     ineqResult.factor should equal(
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
     )
   }
@@ -215,7 +222,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val ineqResult = calculator(ineqality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY)
+    ineqResult should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("closed (> && <) range with one label, no index") {
@@ -230,7 +237,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val ineqResult = calculator(ineqality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult.factor should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
   }
 
   test("half-open (>) range with two labels, one index") {
@@ -250,7 +257,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     ineqResult.factor should equal(
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         +- 0.00000001
     )
   }
@@ -273,7 +280,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     ineqResult.factor should equal(
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != 3
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
     )
   }
@@ -298,12 +305,12 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val personIndexSelectivity = (
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
         * 0.9 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
       )
 
     ineqResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
@@ -330,14 +337,14 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val personIndexSelectivity = (
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != 3
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         + 0.2 // Selectivity for .prop
         * 0.25 // Selectivity for == 3
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
         * 0.9 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         + 0.5 // Selectivity for .prop
         * 0.1 // Selectivity for == 3
       )
@@ -367,12 +374,12 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val personIndexSelectivity = (
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
         * 0.9 // Selectivity for != x
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
       )
 
     ineqResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
@@ -400,14 +407,14 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val personIndexSelectivity = (
       0.2 // Selectivity for .prop
         * 0.75 // Selectivity for != 3
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         + 0.2 // Selectivity for .prop
         * 0.25 // Selectivity for == 3
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
         * 0.9 // Selectivity for != 3
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         + 0.5 // Selectivity for .prop
         * 0.1 // Selectivity for == 3
       )
@@ -424,7 +431,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   test("distance with no label") {
     val calculator = setUpCalculator(distance, Seq.empty)
     val distanceResult = calculator(distance.expr)
-    distanceResult should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY)
+    distanceResult should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("distance with one label") {
@@ -436,7 +443,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult.factor should equal(0.1)
     distanceResult.factor should equal(
       0.2 // exists n.prop
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // point distance
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
     )
   }
 
@@ -454,11 +461,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val personIndexSelectivity = (
       0.2 // Selectivity for .prop
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // point distance
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // point distance
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
       )
 
     distanceResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
@@ -472,7 +479,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(stringPredicate, Seq.empty)
     val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult should equal(GraphStatistics.DEFAULT_PROPERTY_SELECTIVITY * GraphStatistics.DEFAULT_TYPE_SELECTIVITY)
+    stringPredicateResult should equal(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
   }
 
   test("starts with length 1, no label") {
@@ -480,7 +487,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(stringPredicate, Seq.empty)
     val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY)
+    stringPredicateResult should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("starts with length 2, no label") {
@@ -488,7 +495,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(stringPredicate, Seq.empty)
     val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult.factor should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    stringPredicateResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
   }
 
   test("starts with length unknown, no label") {
@@ -496,7 +503,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(stringPredicate, Seq.empty)
     val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult.factor should equal(GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor / GraphStatistics.DEFAULT_STRING_LENGTH
+    stringPredicateResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / DEFAULT_STRING_LENGTH
     +- 0.00000001)
   }
 
@@ -511,7 +518,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
       0.2 // exists
-      * GraphStatistics.DEFAULT_TYPE_SELECTIVITY.factor // is string
+      * DEFAULT_TYPE_SELECTIVITY.factor // is string
     )
   }
 
@@ -526,7 +533,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
       0.2 // exists
-      * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // starts with
+      * DEFAULT_RANGE_SEEK_FACTOR // starts with
     )
   }
 
@@ -541,7 +548,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
       0.2 // exists
-      * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
+      * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
     )
   }
 
@@ -556,7 +563,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
       0.2 // exists
-      * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / GraphStatistics.DEFAULT_STRING_LENGTH // starts with
+      * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
     )
   }
 
@@ -576,11 +583,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val personIndexSelectivity = (
       0.2 // exists
-        * GraphStatistics.DEFAULT_TYPE_SELECTIVITY.factor // is string
+        * DEFAULT_TYPE_SELECTIVITY.factor // is string
       )
     val animalIndexSelectivity = (
       0.5 // exists
-        * GraphStatistics.DEFAULT_TYPE_SELECTIVITY.factor // is string
+        * DEFAULT_TYPE_SELECTIVITY.factor // is string
       )
 
     stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
@@ -603,11 +610,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val personIndexSelectivity = (
       0.2 // exists
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // starts with
+        * DEFAULT_RANGE_SEEK_FACTOR // starts with
       )
     val animalIndexSelectivity = (
       0.5 // exists
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR // starts with
+        * DEFAULT_RANGE_SEEK_FACTOR // starts with
       )
 
     stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
@@ -630,11 +637,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val personIndexSelectivity = (
       0.2 // exists
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
       )
     val animalIndexSelectivity = (
       0.5 // exists
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
+        * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
       )
 
     stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
@@ -657,11 +664,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val personIndexSelectivity = (
       0.2 // exists
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / GraphStatistics.DEFAULT_STRING_LENGTH // starts with
+        * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
       )
     val animalIndexSelectivity = (
       0.5 // exists
-        * GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR / GraphStatistics.DEFAULT_STRING_LENGTH // starts with
+        * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
       )
 
     stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
@@ -675,7 +682,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   test("exists with no label") {
     val calculator = setUpCalculator(exists, Seq.empty)
     val existsResult = calculator(exists.expr)
-    existsResult should equal(GraphStatistics.DEFAULT_PROPERTY_SELECTIVITY)
+    existsResult should equal(DEFAULT_PROPERTY_SELECTIVITY)
   }
 
   test("exists with one label") {
@@ -695,7 +702,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val existsResult = calculator(exists.expr)
 
     labelResult.factor should equal(0.1)
-    existsResult should equal(GraphStatistics.DEFAULT_PROPERTY_SELECTIVITY)
+    existsResult should equal(DEFAULT_PROPERTY_SELECTIVITY)
   }
 
   test("exists with two labels, one index") {
@@ -741,7 +748,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(equals, Seq.empty)
     val eqResult = calculator(equals.expr)
-    eqResult should equal(GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY)
+    eqResult should equal(DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("equality with no label, size 2") {
@@ -749,7 +756,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(equals, Seq.empty)
     val eqResult = calculator(equals.expr)
-    val resFor1 = GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor
+    val resFor1 = DEFAULT_EQUALITY_SELECTIVITY.factor
     eqResult.factor should equal(resFor1 + resFor1 - resFor1 * resFor1)
   }
 
@@ -758,8 +765,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(equals, Seq.empty)
     val eqResult = calculator(equals.expr)
-    val resFor1 = GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
-    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to GraphStatistics.DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
+    val resFor1 = DEFAULT_EQUALITY_SELECTIVITY
+    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
   }
 
   test("equality with one label, size 0") {
@@ -808,7 +815,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     val resFor1 = Selectivity(0.05)
-    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to GraphStatistics.DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
+    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
   }
 
   test("equality with two labels, size 0") {
@@ -877,7 +884,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
     val resFor1 = Selectivity(0.2 + 0.5 - 0.2 * 0.5)
-    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to GraphStatistics.DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
+    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
   }
 
   // OTHER
@@ -933,6 +940,25 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
                         labelCardinalities: Map[LabelId, Double] = Map(indexPerson.label -> 1000.0),
                         indexCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 200.0),
                         indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 50.0)): GraphStatistics = {
+
+    // sanity check:
+    for {
+      (id, indexCardinality) <- indexCardinalities
+      labelCardinality <- labelCardinalities.get(id.label)
+    } {
+      if (indexCardinality > labelCardinality) {
+        throw new IllegalArgumentException("Wrong test setup: Index cardinality cannot be larger than label cardinality")
+      }
+    }
+    for {
+      (id, indexUniqueCardinality) <- indexUniqueCardinalities
+      otherCardinality <- indexCardinalities.get(id) ++ labelCardinalities.get(id.label)
+    } {
+      if (indexUniqueCardinality > otherCardinality) {
+        throw new IllegalArgumentException("Wrong test setup: Index unique cardinality cannot be larger than index cardinality or label cardinality")
+      }
+    }
+
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(10000.0)
     labelCardinalities.foreach { case (label, number) =>

@@ -195,13 +195,16 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable,
                                                         selections: Selections)
                                                        (implicit semanticTable: SemanticTable): Selectivity = {
-    val defaultEq = DEFAULT_EQUALITY_SELECTIVITY
-    val defaultRange = DEFAULT_RANGE_SELECTIVITY * Selectivity(1.0 / Math.min(seekable.expr.inequalities.size, 2))
-    val default = if (seekable.hasEquality)
-      // If the sum should ever (by changing the constants) be more than 1 we default to 1
-      Selectivity.of(defaultEq.factor + defaultRange.factor).getOrElse(Selectivity.ONE)
-    else
-      defaultRange
+
+    def default = {
+      val defaultRange = DEFAULT_RANGE_SELECTIVITY * Selectivity(1.0 / Math.min(seekable.expr.inequalities.size, 2))
+      if (seekable.hasEquality) {
+        // If the sum should ever (by changing the constants) be more than 1 we default to 1
+        Selectivity.of(DEFAULT_EQUALITY_SELECTIVITY.factor + defaultRange.factor).getOrElse(Selectivity.ONE)
+      } else {
+        defaultRange
+      }
+    }
 
     val labels: Set[LabelName] = selections.labelsOnNode(seekable.ident.name)
     val indexRangeSelectivities: Seq[Selectivity] = labels.toIndexedSeq.flatMap {
@@ -244,13 +247,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       case None => DEFAULT_STRING_LENGTH
     }
 
-    val default = if (stringLength == 0) {
+    def default = if (stringLength == 0) {
       // This is equal to exists && isString
       DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY
     } else {
       // This is equal to range, but anti-proportional to the string length
-      val factor = 1.0 / stringLength
-      Selectivity(factor * DEFAULT_RANGE_SELECTIVITY.factor)
+      Selectivity(DEFAULT_RANGE_SELECTIVITY.factor / stringLength)
     }
 
     val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, selections, propertyKey)
@@ -260,8 +262,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         exists * DEFAULT_TYPE_SELECTIVITY
       } else {
         // This is equal to range, but anti-proportional to the string length
-        val factor = 1.0 / stringLength
-        val res = exists.factor * DEFAULT_RANGE_SEEK_FACTOR * factor
+        val res = exists.factor * DEFAULT_RANGE_SEEK_FACTOR / stringLength
         Selectivity(res)
       }
     }
