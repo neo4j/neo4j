@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class ClassicNeo4jStore
@@ -101,7 +102,7 @@ public class ClassicNeo4jStore
             return new ClassicNeo4jStore( storeDir );
         }
 
-        private void createStore( File base, FileSystemAbstraction fileSystem, String dbName, int nodesToCreate, String recordFormat, boolean recoveryNeeded )
+        private static void createStore( File base, FileSystemAbstraction fileSystem, String dbName, int nodesToCreate, String recordFormat, boolean recoveryNeeded )
                 throws IOException
         {
             File storeDir = new File( base, dbName );
@@ -125,13 +126,19 @@ public class ClassicNeo4jStore
             if ( recoveryNeeded )
             {
                 File tmpLogs = new File( base, "unrecovered" );
-
-                fileSystem.copyRecursively( storeDir, tmpLogs );
+                fileSystem.mkdir( tmpLogs );
+                for ( File file : fileSystem.listFiles( storeDir, LogFiles.FILENAME_FILTER ) )
+                {
+                    fileSystem.copyFile( file, new File( tmpLogs, file.getName() ) );
+                }
 
                 db.shutdown();
 
-                fileSystem.deleteRecursively( storeDir );
-                fileSystem.renameFile( tmpLogs, storeDir );
+                for ( File file : fileSystem.listFiles( storeDir, LogFiles.FILENAME_FILTER ) )
+                {
+                    fileSystem.deleteFile( file );
+                }
+                LogFiles.move( fileSystem, tmpLogs, storeDir );
             }
             else
             {
