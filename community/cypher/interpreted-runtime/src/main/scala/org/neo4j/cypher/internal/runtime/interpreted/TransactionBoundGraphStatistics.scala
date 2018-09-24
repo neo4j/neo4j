@@ -49,6 +49,7 @@ object TransactionBoundGraphStatistics {
           schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
 
+        // This is = 1 / number of unique values
         val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
 
         Selectivity.of(indexSelectivity)
