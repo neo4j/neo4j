@@ -181,6 +181,11 @@ public enum NotificationCode
             Status.Statement.PlannerUnavailableWarning,
         "CREATE UNIQUE is unsupported for current CYPHER version, the query has been executed by an older CYPHER version"
     ),
+    CREATE_UNIQUE_DEPRECATED(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "CREATE UNIQUE is deprecated and will be removed in a future version."
+    ),
     START_UNAVAILABLE_FALLBACK(
             SeverityLevel.WARNING,
             Status.Statement.PlannerUnavailableWarning,

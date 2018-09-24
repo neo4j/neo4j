@@ -24,10 +24,12 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
@@ -37,7 +39,9 @@ import org.neo4j.procedure.Procedure;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PLANNER;
 
 public class DeprecationAcceptanceTest extends NotificationTestSupport
@@ -188,6 +192,31 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         assertNotifications( "EXPLAIN START r=relationship:index('key:value*') RETURN r", containsItem( deprecatedStartWarning ) );
     }
 
+    // DEPRECATED CREATE UNIQUE
+
+    @Test
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault()
+    {
+        // when
+        Result result = db().execute( "MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+
+        // then
+        assertThat( result.getNotifications(), containsItem( deprecatedCreateUnique ) );
+        result.close();
+    }
+
+    @Test
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_5()
+    {
+        // when
+        Result result = db().execute( "CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        InputPosition position = new InputPosition( 36, 1, 37 );
+
+        // then
+        assertThat( result.getNotifications(), containsItem( deprecatedCreateUnique ) );
+        result.close();
+    }
+
     // DEPRECATED SYNTAX
 
     @Test
@@ -260,7 +289,10 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                           any( InputPosition.class ), SeverityLevel.WARNING );
 
     private Matcher<Notification> deprecatedStartWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                                                                           containsString( "START has been deprecated and will be removed in a future version. " ), any( InputPosition.class ), SeverityLevel.WARNING );
+                                                                         containsString( "START has been deprecated and will be removed in a future version. " ), any( InputPosition.class ), SeverityLevel.WARNING );
+
+    private Matcher<Notification> deprecatedCreateUnique = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                                                                         containsString( "CREATE UNIQUE is deprecated and will be removed in a future version." ), any( InputPosition.class ), SeverityLevel.WARNING );
 
     private Matcher<Notification> deprecatedProcedureWarning =
             notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated procedure." ),

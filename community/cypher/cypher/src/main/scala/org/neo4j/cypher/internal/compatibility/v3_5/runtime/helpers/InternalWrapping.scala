@@ -33,6 +33,8 @@ object InternalWrapping {
       NotificationCode.START_UNAVAILABLE_FALLBACK.notification(graphdb.InputPosition.empty)
     case CreateUniqueUnavailableFallback(pos) =>
       NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos.withOffset(offset).asInputPosition)
+    case CreateUniqueDeprecated(pos) =>
+      NotificationCode.CREATE_UNIQUE_DEPRECATED.notification(pos.withOffset(offset).asInputPosition)
     case RulePlannerUnavailableFallbackNotification =>
       NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(graphdb.InputPosition.empty)
     case DeprecatedStartNotification(pos, message) =>

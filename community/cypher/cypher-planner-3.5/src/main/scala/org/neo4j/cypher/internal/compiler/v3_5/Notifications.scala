@@ -29,6 +29,8 @@ case object StartUnavailableFallback extends InternalNotification
 
 case class CreateUniqueUnavailableFallback(position: InputPosition) extends InternalNotification
 
+case class CreateUniqueDeprecated(position: InputPosition) extends InternalNotification
+
 case object RulePlannerUnavailableFallbackNotification extends InternalNotification
 
 case object PlannerUnsupportedNotification extends InternalNotification

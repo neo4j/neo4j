@@ -117,6 +117,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
           case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
             logger.log(CreateUniqueUnavailableFallback(ex3_5.pos.get))
+            logger.log(CreateUniqueDeprecated(ex3_5.pos.get))
             assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
             innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), params)
 
