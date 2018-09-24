@@ -4,18 +4,48 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  @firebase/app
+  @firebase/app-types
+  @firebase/auth
+  @firebase/auth-types
+  @firebase/database
+  @firebase/database-types
+  @firebase/firestore
+  @firebase/firestore-types
+  @firebase/functions
+  @firebase/functions-types
+  @firebase/logger
+  @firebase/messaging
+  @firebase/messaging-types
+  @firebase/polyfill
+  @firebase/storage
+  @firebase/storage-types
+  @firebase/util
+  @firebase/webchannel-wrapper
   Apache Commons Lang
-  disposables.js
-  dom-storage.js
-  ecdsa-sig-formatter.js
-  firebase.js
+  ascli
+  aws-sign2
+  bytebuffer
+  caseless
+  detect-libc
+  disposables
+  firebase
+  forever-agent
+  grpc
+  long
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  neo4j-driver
   Netty/All-in-One
-  rxjs.js
+  oauth-sign
+  protobufjs
+  request
+  rxjs
+  tslib
+  tunnel-agent
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -224,19 +254,23 @@ Apache Software License, Version 2.0
 
 ------------------------------------------------------------------------------
 BSD License
-  antlr4.js
-  buffer-equal-constant-time.js
+  antlr4
+  bcrypt-pbkdf
+  boom
+  cryptiles
   D3.js
-  dnd-core.js
-  hoek.js
-  hoist-non-react-statics.js
-  ieee754.js
-  invariant.js
-  joi.js
-  react-dnd-html5-backend.js
-  react-dnd.js
-  sprintf-js.js
-  topo.js
+  dnd-core
+  hawk
+  hoek
+  hoist-non-react-statics
+  ieee754
+  json-schema
+  node-pre-gyp
+  qs
+  react-dnd
+  react-dnd-html5-backend
+  sntp
+  tough-cookie
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -268,11 +302,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License 2-clause
-  esprima.js
-  isemail.js
-  node-noop.js
-  staged-git-files.js
-  stringify-object.js
+  tar-pack
+  uri-js
 ------------------------------------------------------------------------------
 
 Copyright <year> <copyright holder>
@@ -436,17 +467,40 @@ This Agreement is governed by the laws of the State of New York and the intellec
 
 ------------------------------------------------------------------------------
 ISC
-  css-color-keywords.js
-  get-own-enumerable-property-symbols.js
-  graceful-fs.js
-  isexe.js
-  lru-cache.js
-  minimatch.js
-  pseudomap.js
-  sax.js
-  signal-exit.js
-  which.js
-  yallist.js
+  abbrev
+  aproba
+  are-we-there-yet
+  block-stream
+  cliui
+  console-control-strings
+  css-color-keywords
+  fs.realpath
+  fstream
+  fstream-ignore
+  gauge
+  glob
+  graceful-fs
+  har-schema
+  har-validator
+  has-unicode
+  inflight
+  inherits
+  ini
+  json-stringify-safe
+  minimatch
+  nopt
+  npmlog
+  once
+  osenv
+  rimraf
+  semver
+  set-blocking
+  signal-exit
+  tar
+  uid-number
+  wide-align
+  wrappy
+  y18n
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -468,171 +522,151 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------------------------------------------------------------------------------
 MIT License
-  
-  ansi-escapes.js
-  ansi-regex.js
-  ansi-styles.js
-  app-root-path.js
-  argparse.js
-  asap.js
-  ascii-data-table.js
-  assertion-error.js
-  attr-accept.js
-  babel-runtime.js
-  balanced-match.js
-  base64-js.js
-  base64url.js
+  ajv
+  ansi-regex
+  asap
+  ascii-data-table
+  asn1
+  assert-plus
+  assertion-error
+  asynckit
+  attr-accept
+  aws4
+  babel-runtime
+  balanced-match
+  base64-js
   bootstrap
-  brace-expansion.js
-  buffer.js
+  brace-expansion
+  buffer
+  camelcase
   canvg
-  chai.js
-  chalk.js
-  check-error.js
-  ci-info.js
-  classnames.js
-  cli-cursor.js
-  cli-spinners.js
-  cli-truncate.js
-  code-point-at.js
-  codemirror.js
-  color-convert.js
-  color-name.js
-  commander.js
-  concat-map.js
-  core-js.js
-  cosmiconfig.js
-  cross-spawn.js
-  css-to-react-native.js
-  date-fns.js
-  deep-eql.js
-  elegant-spinner.js
-  encoding.js
-  error-ex.js
-  escape-string-regexp.js
-  execa.js
-  exit-hook.js
-  faye-websocket.js
-  fbjs.js
-  figures.js
-  file-saver.js
+  chai
+  check-error
+  classnames
+  co
+  code-point-at
+  codemirror
+  colour
+  combined-stream
+  concat-map
+  core-js
+  core-util-is
+  css-to-react-native
+  dashdash
+  debug
+  decamelize
+  deep-eql
+  deep-extend
+  delayed-stream
+  delegates
+  dom-storage
+  ecc-jsbn
+  encoding
+  extend
+  extsprintf
+  fast-deep-equal
+  fast-json-stable-stringify
+  faye-websocket
+  fbjs
+  file-saver
   Font Awesome CSS
-  fuzzaldrin.js
-  get-func-name.js
-  get-stream.js
-  has-ansi.js
-  has-flag.js
-  http-parser-js.js
-  husky.js
-  iconv-lite.js
-  immutability-helper.js
-  indent-string.js
-  is-arrayish.js
-  is-ci.js
-  is-extglob.js
-  is-finite.js
-  is-fullwidth-code-point.js
-  is-function.js
-  is-glob.js
-  is-obj.js
-  is-plain-object.js
-  is-promise.js
-  is-regexp.js
-  is-stream.js
-  isobject.js
-  isomorphic-fetch.js
-  jest-get-type.js
-  jest-validate.js
-  js-tokens.js
-  js-yaml.js
-  jsonic.js
-  jsonwebtoken.js
-  jwa.js
-  jws.js
-  leven.js
-  lint-staged.js
-  listr-silent-renderer.js
-  listr-update-renderer.js
-  listr-verbose-renderer.js
-  listr.js
-  lodash-es.js
-  lodash.js
-  log-symbols.js
-  log-update.js
-  loose-envify.js
-  minimist.js
-  moment.js
-  ms.js
-  node-fetch.js
-  normalize-path.js
-  npm-path.js
-  npm-run-path.js
-  npm-which.js
-  number-is-nan.js
-  object-assign.js
-  onetime.js
-  ora.js
-  os-homedir.js
-  p-finally.js
-  p-map.js
-  parse-json.js
-  path-key.js
-  pathval.js
-  pinkie-promise.js
-  pinkie.js
-  postcss-value-parser.js
-  preact-compat.js
-  preact-redux.js
-  preact-render-to-string.js
-  preact-suber.js
-  preact-transition-group.js
-  preact.js
-  pretty-format.js
-  promise-polyfill.js
-  promise.js
-  prop-types.js
-  querystringify.js
-  react-addons-pure-render-mixin.js
-  react-dropzone.js
-  react-icon-base.js
-  react-icons.js
-  react-timeago.js
-  redux-observable.js
-  redux.js
-  regenerator-runtime.js
-  repeating.js
-  require-from-string.js
-  requires-port.js
-  restore-cursor.js
-  safe-buffer.js
-  save-as.js
-  setimmediate.js
-  shebang-command.js
-  shebang-regex.js
-  slice-ansi.js
-  standalone-react-addons-pure-render-mixin.js
-  stream-to-observable.js
-  string-width.js
-  strip-ansi.js
-  strip-eof.js
-  strip-indent.js
-  styled-components.js
-  stylis.js
-  suber.js
-  supports-color.js
-  swipe-js-iso.js
-  symbol-observable.js
-  type-detect.js
-  ua-parser-js.js
-  url-parse.js
-  uuid.js
-  websocket-driver.js
-  websocket-extensions.js
-  whatwg-fetch.js
-  xml2js.js
-  xmlbuilder.js
-  xmlhttprequest.js
-  xtend.js
+  form-data
+  fuzzaldrin
+  get-func-name
+  getpass
+  has-flag
+  http-parser-js
+  http-signature
+  iconv-lite
+  invariant
+  invert-kv
+  is-fullwidth-code-point
+  is-plain-object
+  is-stream
+  is-typedarray
+  isarray
+  isobject
+  isomorphic-fetch
+  isstream
+  js-tokens
+  jsbn
+  json-schema-traverse
+  jsonic
+  jsprim
+  lcid
+  lodash
+  lodash-es
+  lodash.debounce
+  loose-envify
+  mime-db
+  mime-types
+  minimist
+  mkdirp
+  ms
+  nan
+  node-fetch
+  number-is-nan
+  object-assign
+  optjs
+  os-homedir
+  os-locale
+  os-tmpdir
+  path-is-absolute
+  pathval
+  performance-now
+  postcss-value-parser
+  process-nextick-args
+  promise
+  promise-polyfill
+  prop-types
+  punycode
+  querystringify
+  rc
+  react
+  react-addons-pure-render-mixin
+  react-dom
+  react-dropzone
+  react-icon-base
+  react-icons
+  react-is
+  react-redux
+  react-suber
+  react-timeago
+  readable-stream
+  redux
+  redux-observable
+  regenerator-runtime
+  requires-port
+  safe-buffer
+  safer-buffer
+  save-as
+  setimmediate
+  sshpk
+  string-width
+  string_decoder
+  stringstream
+  strip-ansi
+  strip-json-comments
+  styled-components
+  stylis
+  stylis-rule-sheet
+  suber
+  supports-color
+  swipe-js-iso
+  symbol-observable
+  type-detect
+  ua-parser-js
+  url-parse
+  util-deprecate
+  uuid
+  verror
+  websocket-driver
+  websocket-extensions
+  whatwg-fetch
+  window-size
+  wrap-ansi
+  xmlhttprequest
+  yargs
 ------------------------------------------------------------------------------
 
 The MIT License
@@ -753,6 +787,37 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 
+
+
+------------------------------------------------------------------------------
+Unlicense
+  tweetnacl
+------------------------------------------------------------------------------
+
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <http://unlicense.org/>
 
 
 

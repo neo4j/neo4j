@@ -38,7 +38,7 @@
   <liked-license>SIL OFL 1.1</liked-license>
   <liked-license>ISC</liked-license>
   <liked-license>Creative Commons 0</liked-license> <!--TODO check -->
-
+  <liked-license>Unlicense</liked-license>
 
   <override-licenses>
     <artifact id="org.scala-lang:scala-library:">
@@ -102,6 +102,7 @@
       <aka>BSD-like</aka>
       <aka>New BSD License</aka>
       <aka>BSD 3-Clause "New" or "Revised" License (BSD-3-Clause)</aka>
+      <aka>BSD*</aka>
     </license>
     <license name="BSD License 2-clause">
       <aka>BSD-2-Clause</aka>
@@ -137,6 +138,9 @@
       <aka>MIT</aka>
       <aka>The MIT License</aka>
       <aka>MIT license</aka>
+      <aka>(GPL-2.0 OR MIT)</aka>
+      <aka>(MIT or Apache-2.0)</aka>
+      <aka>(BSD-2-Clause OR MIT OR Apache-2.0)</aka>
     </license>
     <license name="Mozilla Public License, Version 2.0">
       <aka>Mozilla Public License, v. 2.0</aka>
