@@ -1584,6 +1584,42 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     Mockito.verifyNoMoreInteractions(context)
   }
 
+  test("filter function local access only") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+
+    //When, filter(bar IN ["a", "aa", "aaa"] WHERE bar="aa")
+    val compiled = compile(filter("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), literalString("aa"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(list(stringValue("aa"), stringValue("aaa")))
+  }
+
+  test("filter function accessing outer scope") {
+    //Given
+    val context = MapExecutionContext(mutable.Map("foo" -> stringValue("aa")), mutable.Map.empty)
+
+    //When, filter(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aa")
+    val compiled = compile(filter("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), varFor("foo"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(list(stringValue("aa"), stringValue("aaa")))
+  }
+
+  test("filter on null") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+
+    //When, filter(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aa")
+    val compiled = compile(filter("bar", noValue,
+      startsWith(varFor("bar"), varFor("aa"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
   test("extract function local access only") {
     //Given
     val context = new MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
@@ -1773,8 +1809,11 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def sliceFull(list: Expression, from: Expression, to: Expression) = ListSlice(list, Some(from), Some(to))(pos)
 
+  private def filter(variable: String, collection: Expression, predicate: Expression) =
+    FilterExpression(varFor(variable), collection, Some(predicate) )(pos)
+
   private def extract(variable: String, collection: Expression, extract: Expression) =
-    ExtractExpression(varFor(variable), collection,  None, Some(extract) )(pos)
+    ExtractExpression(varFor(variable), collection, None, Some(extract) )(pos)
 
   private def reduce(accumulator: String, init: Expression, variable: String, collection: Expression, expression: Expression) =
     ReduceExpression(varFor(accumulator), init, varFor(variable), collection,  expression)(pos)
