@@ -98,7 +98,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
       }
 
-    case Add(lhs, rhs) =>
+    case org.opencypher.v9_0.expressions.Add(lhs, rhs) =>
       for {l <- internalCompileExpression(lhs, currentContext)
            r <- internalCompileExpression(rhs, currentContext)
       } yield {
@@ -109,7 +109,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
     case UnaryAdd(source) => internalCompileExpression(source, currentContext)
 
-    case Subtract(lhs, rhs) =>
+    case org.opencypher.v9_0.expressions.Subtract(lhs, rhs) =>
       for {l <- internalCompileExpression(lhs, currentContext)
            r <- internalCompileExpression(rhs, currentContext)
       } yield {

@@ -1913,11 +1913,11 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def function(name: String) =
     FunctionInvocation(Namespace()(pos), FunctionName(name)(pos), distinct = false, IndexedSeq.empty)(pos)
 
-  private def add(l: Expression, r: Expression) = Add(l, r)(pos)
+  private def add(l: Expression, r: Expression) = org.opencypher.v9_0.expressions.Add(l, r)(pos)
 
   private def unaryAdd(source: Expression) = UnaryAdd(source)(pos)
 
-  private def subtract(l: Expression, r: Expression) = Subtract(l, r)(pos)
+  private def subtract(l: Expression, r: Expression) = org.opencypher.v9_0.expressions.Subtract(l, r)(pos)
 
   private def unarySubtract(source: Expression) = UnarySubtract(source)(pos)
 
