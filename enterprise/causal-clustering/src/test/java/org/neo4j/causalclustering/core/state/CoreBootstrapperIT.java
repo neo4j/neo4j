@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.causalclustering.backup.RestoreClusterUtils;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenState;
@@ -37,13 +37,13 @@ import org.neo4j.causalclustering.core.state.machines.tx.LastCommittedIndexFinde
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
+import org.neo4j.causalclustering.helpers.ClassicNeo4jStore;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
@@ -60,6 +60,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_id_batch_size;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
@@ -70,8 +71,7 @@ public class CoreBootstrapperIT
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule )
-                                          .around( pageCacheRule ).around( testDirectory );
+    public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( pageCacheRule ).around( testDirectory );
 
     @Test
     public void shouldSetAllCoreState() throws Exception
@@ -79,13 +79,12 @@ public class CoreBootstrapperIT
         // given
         int nodeCount = 100;
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        File classicNeo4jStore = RestoreClusterUtils.createClassicNeo4jStore(
-                testDirectory.directory(), fileSystem, nodeCount, Standard.LATEST_NAME );
+        File classicNeo4jStore = ClassicNeo4jStore.builder( testDirectory.directory(), fileSystem ).amountOfNodes( nodeCount ).build().getStoreDir();
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         DatabaseLayout databaseLayout = DatabaseLayout.of( classicNeo4jStore );
-        CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem,
-                Config.defaults(), NullLogProvider.getInstance() );
+        CoreBootstrapper bootstrapper =
+                new CoreBootstrapper( databaseLayout, pageCache, fileSystem, Config.defaults(), NullLogProvider.getInstance(), new Monitors() );
         bootstrapAndVerify( nodeCount, fileSystem, databaseLayout, pageCache, Config.defaults(), bootstrapper );
     }
 
@@ -95,19 +94,82 @@ public class CoreBootstrapperIT
         // given
         int nodeCount = 100;
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        File baseDirectory = testDirectory.directory();
         String customTransactionLogsLocation = "transaction-logs";
-        File classicNeo4jStore = RestoreClusterUtils.createClassicNeo4jStore( baseDirectory, fileSystem, nodeCount,
-                Standard.LATEST_NAME, customTransactionLogsLocation );
+        File classicNeo4jStore = ClassicNeo4jStore
+                .builder( testDirectory.directory(), fileSystem )
+                .amountOfNodes( nodeCount )
+                .logicalLogsLocation( customTransactionLogsLocation )
+                .build()
+                .getStoreDir();
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         DatabaseLayout databaseLayout = DatabaseLayout.of( classicNeo4jStore );
-        Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location,
-                customTransactionLogsLocation );
-        CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem,
-                config, NullLogProvider.getInstance() );
+        Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location, customTransactionLogsLocation );
+        CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem, config, NullLogProvider.getInstance(), new Monitors() );
 
         bootstrapAndVerify( nodeCount, fileSystem, databaseLayout, pageCache, config, bootstrapper );
+    }
+
+    @Test
+    public void shouldFailToBootstrapIfClusterIsInNeedOfRecovery() throws IOException
+    {
+        // given
+        int nodeCount = 100;
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
+        File storeInNeedOfRecovery =
+                ClassicNeo4jStore.builder( testDirectory.directory(), fileSystem ).amountOfNodes( nodeCount ).needToRecover().build().getStoreDir();
+
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( storeInNeedOfRecovery );
+        CoreBootstrapper bootstrapper =
+                new CoreBootstrapper( databaseLayout, pageCache, fileSystem, Config.defaults(), NullLogProvider.getInstance(), new Monitors() );
+
+        // when
+        Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
+        try
+        {
+            bootstrapper.bootstrap( membership );
+            fail();
+        }
+        catch ( Exception e )
+        {
+            assertEquals( e.getMessage(), "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded comes from a cleanly shutdown " +
+                    "instance of Neo4j or a Neo4j backup" );
+        }
+    }
+
+    @Test
+    public void shouldFailToBootstrapIfClusterIsInNeedOfRecoveryWithCustomLogicalLogsLocation() throws IOException
+    {
+        // given
+        int nodeCount = 100;
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
+        String customTransactionLogsLocation = "transaction-logs";
+        File storeInNeedOfRecovery = ClassicNeo4jStore
+                .builder( testDirectory.directory(), fileSystem )
+                .amountOfNodes( nodeCount )
+                .logicalLogsLocation( customTransactionLogsLocation )
+                .needToRecover()
+                .build()
+                .getStoreDir();
+
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( storeInNeedOfRecovery );
+        Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location, customTransactionLogsLocation );
+        CoreBootstrapper bootstrapper = new CoreBootstrapper( databaseLayout, pageCache, fileSystem, config, NullLogProvider.getInstance(), new Monitors() );
+
+        // when
+        Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
+        try
+        {
+            bootstrapper.bootstrap( membership );
+            fail();
+        }
+        catch ( Exception e )
+        {
+            assertEquals( e.getMessage(), "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded comes from a cleanly shutdown " +
+                    "instance of Neo4j or a Neo4j backup" );
+        }
     }
 
     private static void bootstrapAndVerify( long nodeCount, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache, Config config,

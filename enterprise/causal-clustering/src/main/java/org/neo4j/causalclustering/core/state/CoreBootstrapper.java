@@ -41,6 +41,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -84,18 +86,25 @@ public class CoreBootstrapper
     private final FileSystemAbstraction fs;
     private final Config config;
     private final LogProvider logProvider;
+    private final RecoveryRequiredChecker recoveryRequiredChecker;
 
-    CoreBootstrapper( DatabaseLayout databaseLayout, PageCache pageCache, FileSystemAbstraction fs, Config config, LogProvider logProvider )
+    CoreBootstrapper( DatabaseLayout databaseLayout, PageCache pageCache, FileSystemAbstraction fs, Config config, LogProvider logProvider, Monitors monitors )
     {
         this.databaseLayout = databaseLayout;
         this.pageCache = pageCache;
         this.fs = fs;
         this.config = config;
         this.logProvider = logProvider;
+        this.recoveryRequiredChecker = new RecoveryRequiredChecker( fs, pageCache, config, monitors );
     }
 
     public CoreSnapshot bootstrap( Set<MemberId> members ) throws Exception
     {
+        if ( recoveryRequiredChecker.isRecoveryRequiredAt( databaseLayout ) )
+        {
+            throw new IllegalStateException( "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded " +
+                    "comes from a cleanly shutdown instance of Neo4j or a Neo4j backup" );
+        }
         StoreFactory factory = new StoreFactory( databaseLayout, config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
