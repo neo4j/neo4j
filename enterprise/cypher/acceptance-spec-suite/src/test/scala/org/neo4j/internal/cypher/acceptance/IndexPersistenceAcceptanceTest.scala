@@ -36,12 +36,13 @@ import scala.collection.Map
 
 class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
 
-  private var dbDir = TestDirectory.testDirectory(getClass).prepareDirectoryForTest("test")
+  private val testDir = TestDirectory.testDirectory(getClass)
+  private var dbDir: File = _
 
   override val cypherComparisonSupport = false
 
   override protected def initTest() {
-    FileUtils.deleteRecursively(dbDir)
+    dbDir = testDir.prepareDirectoryForTest(System.currentTimeMillis().toString)
     startGraphDatabase(dbDir)
   }
 
