@@ -106,4 +106,27 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     val result = executeWith(Configs.All, query, Configs.All - worksCorrectlyInConfig)
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
   }
+
+  // Waiting for new front-end release
+  ignore("should not explode on complex filter() projection in write query") {
+
+    val query = """UNWIND [{children : [
+                  |            {_type : "browseNodeId", _text : "20" },
+                  |            {_type : "childNodes", _text : "21" }
+                  |        ]},
+                  |       {children : [
+                  |            {_type : "browseNodeId", _text : "30" },
+                  |            {_type : "childNodes", _text : "31" }
+                  |        ]}] AS row
+                  |
+                  |WITH   head(filter( child IN row.children WHERE child._type = "browseNodeId" ))._text as nodeId,
+                  |       head(filter( child IN row.children WHERE child._type = "childNodes" )) as childElement
+                  |
+                  |MERGE  (parent:Category { id: toInt(nodeId) })
+                  |
+                  |RETURN *""".stripMargin
+
+    val result = graph.execute(query)
+    result.resultAsString() // should not explode
+  }
 }

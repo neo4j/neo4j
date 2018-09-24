@@ -343,7 +343,7 @@ trait UpdateGraph {
         val actualType = expressionTypeInfo.actual
         actualType == typeSpec || actualType == CTAny.invariant
 
-      case None => throw new InternalException(s"Expression ${p.map} has to type from semantic analysis")
+      case None => throw new InternalException(s"Expression ${p.map} has no type from semantic analysis")
     }
 
   /*
