@@ -23,6 +23,8 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
+import java.net.ConnectException;
+import java.util.Optional;
 
 import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -33,6 +35,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
+import static org.neo4j.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 class BackupRandomMember extends RepeatOnRandomMember
@@ -50,7 +53,7 @@ class BackupRandomMember extends RepeatOnRandomMember
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember member ) throws IncorrectUsage
+    protected void doWorkOnMember( ClusterMember member ) throws IncorrectUsage, CommandFailed
     {
         try
         {
@@ -71,7 +74,16 @@ class BackupRandomMember extends RepeatOnRandomMember
         }
         catch ( CommandFailed e )
         {
-            log.info( "Backup command failed" );
+            Optional<Throwable> connectException = findCauseOrSuppressed( e, t -> t instanceof ConnectException );
+            if ( connectException.isPresent() )
+            {
+                log.info( "Benign failure: " + connectException.get().getMessage() );
+            }
+            else
+            {
+                log.error( "Unexpected failure", e );
+                throw e;
+            }
         }
     }
 

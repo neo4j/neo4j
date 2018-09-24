@@ -26,6 +26,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
@@ -259,6 +260,48 @@ public class Exceptions
             root = root.getCause();
         }
         return root;
+    }
+
+    /**
+     * Searches the entire exception hierarchy of causes and suppressed exceptions against the given predicate.
+     *
+     * @param e exception to start searching from.
+     * @return the first exception found matching the predicate.
+     */
+    public static Optional<Throwable> findCauseOrSuppressed( Throwable e, Predicate<Throwable> predicate )
+    {
+        if ( e == null )
+        {
+            return Optional.empty();
+        }
+        if ( predicate.test( e ) )
+        {
+            return Optional.of( e );
+        }
+        if ( e.getCause() != null && e.getCause() != e )
+        {
+            Optional<Throwable> cause = findCauseOrSuppressed( e.getCause(), predicate );
+            if ( cause.isPresent() )
+            {
+                return cause;
+            }
+        }
+        if ( e.getSuppressed() != null )
+        {
+            for ( Throwable suppressed : e.getSuppressed() )
+            {
+                if ( suppressed == e )
+                {
+                    continue;
+                }
+                Optional<Throwable> cause = findCauseOrSuppressed( suppressed, predicate );
+                if ( cause.isPresent() )
+                {
+                    return cause;
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     public static String stringify( Throwable throwable )
