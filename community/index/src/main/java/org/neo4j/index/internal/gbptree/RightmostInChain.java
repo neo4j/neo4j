@@ -70,7 +70,7 @@ class RightmostInChain
         {
             errorMessage = addPatternToExceptionMessage( newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
                     newRightmostLeftSiblingPointerGeneration, newRightmostNode, errorMessage );
-            throw new IllegalStateException( errorMessage );
+            throw new TreeInconsistencyException( errorMessage );
         }
 
         // Update currentRightmostNode = newRightmostNode;
