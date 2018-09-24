@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -60,6 +61,8 @@ import static java.lang.String.format;
 public class TestDirectory extends ExternalResource
 {
     private static final String DEFAULT_DATABASE_DIRECTORY = "graph.db";
+    // Used for generating unique directory names for the same tests across different runs of the JVM.
+    private static final long JVM_EXECUTION_HASH = new Random().nextLong();
 
     private final FileSystemAbstraction fileSystem;
     private File testClassBaseFolder;
@@ -271,7 +274,7 @@ public class TestDirectory extends ExternalResource
 
     public File prepareDirectoryForTest( String test ) throws IOException
     {
-        String dir = DigestUtils.md5Hex( test );
+        String dir = DigestUtils.md5Hex( JVM_EXECUTION_HASH + test );
         evaluateClassBaseTestFolder();
         register( test, dir );
         return cleanDirectory( dir );
@@ -360,7 +363,7 @@ public class TestDirectory extends ExternalResource
         try ( PrintStream printStream =
                     new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ), true ) ) )
         {
-            printStream.println( format( "%s=%s\n", dir, test ) );
+            printStream.print( format( "%s = %s%n", dir, test ) );
         }
         catch ( IOException e )
         {
