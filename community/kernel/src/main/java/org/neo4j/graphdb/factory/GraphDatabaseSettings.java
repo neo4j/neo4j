@@ -23,7 +23,10 @@ import java.io.File;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Dynamic;
@@ -650,6 +653,13 @@ public class GraphDatabaseSettings implements LoadableConfig
         {
             String configuredSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
             return providerIdentifier().equals( configuredSchemaProvider ) ? 100 : priority;
+        }
+
+        public static SchemaIndex defaultProvider()
+        {
+            return Arrays.stream( values() )
+                    .max( Comparator.comparingInt( o -> o.priority ) )
+                    .orElseThrow( NoSuchElementException::new );
         }
     }
 

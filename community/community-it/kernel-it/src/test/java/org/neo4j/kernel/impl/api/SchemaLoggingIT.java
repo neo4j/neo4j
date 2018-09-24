@@ -60,7 +60,7 @@ public class SchemaLoggingIT
 
         // then
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        GraphDatabaseSettings.SchemaIndex expectedProvider = GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+        GraphDatabaseSettings.SchemaIndex expectedProvider = GraphDatabaseSettings.SchemaIndex.defaultProvider();
         logProvider.assertAtLeastOnce( match.info( "Index population started: [%s]", ":User(name) [provider: {key=" +
                 expectedProvider.providerName() + ", version=" + expectedProvider.providerVersion() + "}]" ) );
 

@@ -46,7 +46,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -326,7 +325,6 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        //TODO: Add test support for composite indexes
         transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1 ) );
         transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId1 ) );
         transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1, propertyKeyId2 ) );
@@ -351,7 +349,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         // Then
-        GraphDatabaseSettings.SchemaIndex expectedProvider = NATIVE_BTREE10;
+        GraphDatabaseSettings.SchemaIndex expectedProvider = GraphDatabaseSettings.SchemaIndex.defaultProvider();
         Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
                 "key", expectedProvider.providerName(),
                 "version", expectedProvider.providerVersion() );
