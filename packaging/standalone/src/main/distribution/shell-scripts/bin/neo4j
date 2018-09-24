@@ -524,34 +524,40 @@ do_version() {
   exec "${command_line[@]}"
 }
 
+setup_java () {
+  check_java
+  setup_java_opts
+  setup_arbiter_options
+}
+
 main() {
   setup_environment
   CONSOLE_LOG="${NEO4J_LOGS}/neo4j.log"
   NEO4J_PIDFILE="${NEO4J_RUN}/neo4j.pid"
   readonly CONSOLE_LOG NEO4J_PIDFILE
 
-  check_java
-  setup_java_opts
-  setup_arbiter_options
-
   case "${1:-}" in
     console)
+      setup_java
       print_active_database
       print_configurable_paths
       do_console
       ;;
 
     start)
+      setup_java
       print_active_database
       print_configurable_paths
       do_start
       ;;
 
     stop)
+      setup_arbiter_options
       do_stop
       ;;
 
     restart)
+      setup_java
       do_stop
       do_start
       ;;
@@ -561,6 +567,7 @@ main() {
       ;;
 
     --version|version)
+      setup_java
       do_version
       ;;
 
