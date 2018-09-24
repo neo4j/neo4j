@@ -139,6 +139,9 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
       }
     }
 
+    if (preParsedQuery.planner == CypherPlannerOption.rule)
+      logger.log(DeprecatedPlannerNotification)
+
     // Do the compilation
     innerCompile(preParsedQuery, params)
   }

@@ -184,93 +184,45 @@ public class NotificationTestSupport
         result.close();
     }
 
-    public static class ChangedResults
-    {
-        @Deprecated
-        public final String oldField = "deprecated";
-        public final String newField = "use this";
-    }
+    Matcher<Notification> rulePlannerUnavailable = notification( "Neo.ClientNotification.Statement.PlannerUnavailableWarning", containsString(
+            "Using RULE planner is unsupported for current CYPHER version, the query has been executed by an older CYPHER version" ),
+                                                                           any( InputPosition.class ), SeverityLevel.WARNING );
 
-    public static class TestProcedures
-    {
-
-        @Procedure( "newProc" )
-        public void newProc()
-        {
-        }
-
-        @Deprecated
-        @Procedure( name = "oldProc", deprecatedBy = "newProc" )
-        public void oldProc()
-        {
-        }
-
-        @Procedure( "changedProc" )
-        public Stream<ChangedResults> changedProc()
-        {
-            return Stream.of( new ChangedResults() );
-        }
-    }
-
-    protected Matcher<Notification> cartesianProductWarning = notification( "Neo.ClientNotification.Statement.CartesianProductWarning", containsString(
+    Matcher<Notification> cartesianProductWarning = notification( "Neo.ClientNotification.Statement.CartesianProductWarning", containsString(
             "If a part of a query contains multiple disconnected patterns, this will build a " +
                     "cartesian product between all those parts. This may produce a large amount of data and slow down" + " query processing. " +
                     "While occasionally intended, it may often be possible to reformulate the query that avoids the " + "use of this cross " +
                     "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH" ), any( InputPosition.class ),
             SeverityLevel.WARNING );
 
-    protected Matcher<Notification> largeLabelCSVWarning = notification( "Neo.ClientNotification.Statement.NoApplicableIndexWarning", containsString(
+    Matcher<Notification> largeLabelCSVWarning = notification( "Neo.ClientNotification.Statement.NoApplicableIndexWarning", containsString(
             "Using LOAD CSV with a large data set in a query where the execution plan contains the " +
                     "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely " +
                     "not perform well on large data sets. Please consider using a schema index." ), any( InputPosition.class ), SeverityLevel.WARNING );
 
-    protected Matcher<Notification> deprecatedFeatureWarning =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated function." ),
-                    any( InputPosition.class ), SeverityLevel.WARNING );
-
-    protected Matcher<Notification> deprecatedStartWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-            containsString( "START has been deprecated and will be removed in a future version. " ), any( InputPosition.class ), SeverityLevel.WARNING );
-
-    protected Matcher<Notification> deprecatedProcedureWarning =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated procedure." ),
-                    any( InputPosition.class ), SeverityLevel.WARNING );
-
-    protected Matcher<Notification> deprecatedProcedureReturnFieldWarning =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated field from a procedure." ),
-                    any( InputPosition.class ), SeverityLevel.WARNING );
-
-    protected Matcher<Notification> deprecatedBindingWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-            containsString( "Binding relationships to a list in a variable length pattern is deprecated." ), any( InputPosition.class ),
-            SeverityLevel.WARNING );
-
-    protected Matcher<Notification> deprecatedSeparatorWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString(
-            "The semantics of using colon in the separation of alternative relationship " +
-                    "types in conjunction with the use of variable binding, inlined property " +
-                    "predicates, or variable length will change in a future version." ), any( InputPosition.class ), SeverityLevel.WARNING );
-
-    protected Matcher<Notification> eagerOperatorWarning = notification( "Neo.ClientNotification.Statement.EagerOperatorWarning", containsString(
+    Matcher<Notification> eagerOperatorWarning = notification( "Neo.ClientNotification.Statement.EagerOperatorWarning", containsString(
             "Using LOAD CSV with a large data set in a query where the execution plan contains the " +
                     "Eager operator could potentially consume a lot of memory and is likely to not perform well. " +
                     "See the Neo4j Manual entry on the Eager operator for more information and hints on " + "how problems could be avoided." ),
             any( InputPosition.class ), SeverityLevel.WARNING );
 
-    protected Matcher<Notification> unknownPropertyKeyWarning =
+    Matcher<Notification> unknownPropertyKeyWarning =
             notification( "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning", containsString( "the missing property name is" ),
                     any( InputPosition.class ), SeverityLevel.WARNING );
 
-    protected Matcher<Notification> unknownRelationshipWarning =
+    Matcher<Notification> unknownRelationshipWarning =
             notification( "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning", containsString( "the missing relationship type is" ),
                     any( InputPosition.class ), SeverityLevel.WARNING );
 
-    protected Matcher<Notification> unknownLabelWarning =
+    Matcher<Notification> unknownLabelWarning =
             notification( "Neo.ClientNotification.Statement.UnknownLabelWarning", containsString( "the missing label name is" ), any( InputPosition.class ),
                     SeverityLevel.WARNING );
 
-    protected Matcher<Notification> dynamicPropertyWarning = notification( "Neo.ClientNotification.Statement.DynamicPropertyWarning",
+    Matcher<Notification> dynamicPropertyWarning = notification( "Neo.ClientNotification.Statement.DynamicPropertyWarning",
             containsString( "Using a dynamic property makes it impossible to use an index lookup for this query" ), any( InputPosition.class ),
             SeverityLevel.WARNING );
 
-    protected Matcher<Notification> joinHintUnsupportedWarning = notification( "Neo.Status.Statement.JoinHintUnsupportedWarning",
+    Matcher<Notification> joinHintUnsupportedWarning = notification( "Neo.Status.Statement.JoinHintUnsupportedWarning",
             containsString( "Using RULE planner is unsupported for queries with join hints, please use COST planner instead" ), any( InputPosition.class ),
             SeverityLevel.WARNING );
 }

@@ -19,13 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,23 +31,13 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.impl.notification.NotificationCode;
-import org.neo4j.graphdb.impl.notification.NotificationDetail;
-import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.procedure.Procedure;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
@@ -61,8 +45,6 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE
 import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.LENGTH_ON_NON_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_LABEL;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.index;
@@ -77,7 +59,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
         InputPosition position = InputPosition.empty;
 
         // then
-        assertThat( result.getNotifications(), contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        assertThat( result.getNotifications(), containsItem( rulePlannerUnavailable ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
@@ -378,56 +360,6 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void shouldWarnOnDeprecatedToInt()
-    {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
-                assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one", containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
-    public void shouldWarnOnDeprecatedUpper()
-    {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
-                assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one", containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
-    public void shouldWarnOnDeprecatedLower()
-    {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
-                assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one", containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
-    public void shouldWarnOnDeprecatedRels()
-    {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
-                assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r", containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
-    public void shouldWarnOnDeprecatedProcedureCalls() throws Exception
-    {
-        db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
-        {
-            assertNotifications( version + "explain CALL oldProc()", containsItem( deprecatedProcedureWarning ) );
-            assertNotifications( version + "explain CALL oldProc() RETURN 1", containsItem( deprecatedProcedureWarning ) );
-        } );
-    }
-
-    @Test
-    public void shouldWarnOnDeprecatedProcedureResultField() throws Exception
-    {
-        db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
-        Stream.of( "CYPHER 3.5" ).forEach(
-                version -> assertNotifications(
-                        version + "explain CALL changedProc() YIELD oldField RETURN oldField",
-                        containsItem( deprecatedProcedureReturnFieldWarning )
-                ) );
-    }
-
-    @Test
     public void shouldWarnOnUnboundedShortestPath()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
@@ -552,37 +484,6 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
             assertNotifications( version + "EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n",
                     containsItem( dynamicPropertyWarning ) );
         } );
-    }
-
-    @Test
-    public void shouldWarnOnFutureAmbiguousRelTypeSeparator()
-    {
-        List<String> deprecatedQueries = Arrays.asList( "explain MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[x:A|:B|:C]-() RETURN a",
-                "explain MATCH (a)-[:A|:B|:C*]-() RETURN a" );
-
-        List<String> nonDeprecatedQueries =
-                Arrays.asList( "explain MATCH (a)-[:A|B|C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[:A|:B|:C]-(b) RETURN a,b",
-                        "explain MATCH (a)-[:A|B|C]-(b) RETURN a,b" );
-
-        for ( String query : deprecatedQueries )
-        {
-            assertNotifications( "CYPHER 3.5 " + query, containsItem( deprecatedSeparatorWarning ) );
-        }
-
-        for ( String query : nonDeprecatedQueries )
-        {
-            assertNotifications( "CYPHER 3.5 " + query, containsNoItem( deprecatedSeparatorWarning ) );
-        }
-    }
-
-    @Test
-    public void shouldWarnOnBindingVariableLengthRelationship()
-    {
-        assertNotifications( "CYPHER 3.5 explain MATCH ()-[rs*]-() RETURN rs", containsItem( deprecatedBindingWarning
-        ) );
-
-        assertNotifications( "CYPHER 3.5 explain MATCH p = ()-[*]-() RETURN relationships(p) AS rs", containsNoItem(
-                deprecatedBindingWarning ) );
     }
 
     @Test
@@ -725,82 +626,6 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
                 version -> shouldNotNotifyInStream( version, " EXPLAIN CREATE (n {prop: 42})" ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForAllNodeScan()
-    {
-        assertNotifications( "EXPLAIN START n=node(*) RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForNodeById()
-    {
-        assertNotifications( "EXPLAIN START n=node(1337) RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForNodeByIds()
-    {
-        assertNotifications( "EXPLAIN START n=node(42,1337) RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForNodeIndexSeek()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forNodes( "index" );
-        }
-        assertNotifications( "EXPLAIN START n=node:index(key = 'value') RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForNodeIndexSearch()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forNodes( "index" );
-        }
-        assertNotifications( "EXPLAIN START n=node:index('key:value*') RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForAllRelScan()
-    {
-        assertNotifications( "EXPLAIN START r=relationship(*) RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForRelById()
-    {
-        assertNotifications( "EXPLAIN START r=relationship(1337) RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForRelByIds()
-    {
-        assertNotifications( "EXPLAIN START r=relationship(42,1337) RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForRelIndexSeek()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forRelationships( "index" );
-        }
-        assertNotifications( "EXPLAIN START r=relationship:index(key = 'value') RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void shouldWarnThatStartIsDeprecatedForRelIndexSearch()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forRelationships( "index" );
-        }
-        assertNotifications( "EXPLAIN START r=relationship:index('key:value*') RETURN r", containsItem( deprecatedStartWarning ) );
     }
 
     @Test
