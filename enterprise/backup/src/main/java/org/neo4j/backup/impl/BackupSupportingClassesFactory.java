@@ -25,6 +25,7 @@ package org.neo4j.backup.impl;
 import java.io.OutputStream;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -97,7 +98,8 @@ public class BackupSupportingClassesFactory
         return new BackupSupportingClasses(
                 backupDelegatorFromConfig( pageCache, config ),
                 haFromConfig( pageCache ),
-                pageCache );
+                pageCache,
+                Arrays.asList( pageCache, jobScheduler ) );
     }
 
     private BackupProtocolService haFromConfig( PageCache pageCache )

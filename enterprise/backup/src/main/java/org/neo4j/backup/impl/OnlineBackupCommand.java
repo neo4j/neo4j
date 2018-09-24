@@ -62,21 +62,19 @@ class OnlineBackupCommand implements AdminCommand
     {
         OnlineBackupContext onlineBackupContext = contextBuilder.createContext( args );
         protocolWarn( onlineBackupContext );
-        BackupSupportingClasses backupSupportingClasses =
-                backupSupportingClassesFactory.createSupportingClasses( onlineBackupContext.getConfig() );
+        try ( BackupSupportingClasses backupSupportingClasses = backupSupportingClassesFactory.createSupportingClasses( onlineBackupContext.getConfig() ) )
+        {
+            // Make sure destination exists
+            checkDestination( onlineBackupContext.getRequiredArguments().getDirectory() );
+            checkDestination( onlineBackupContext.getRequiredArguments().getReportDir() );
 
-        // Make sure destination exists
-        checkDestination( onlineBackupContext.getRequiredArguments().getDirectory() );
-        checkDestination( onlineBackupContext.getRequiredArguments().getReportDir() );
+            BackupStrategyCoordinator backupStrategyCoordinator =
+                    backupStrategyCoordinatorFactory.backupStrategyCoordinator( onlineBackupContext, backupSupportingClasses.getBackupProtocolService(),
+                            backupSupportingClasses.getBackupDelegator(), backupSupportingClasses.getPageCache() );
 
-        BackupStrategyCoordinator backupStrategyCoordinator = backupStrategyCoordinatorFactory.backupStrategyCoordinator(
-                onlineBackupContext,
-                backupSupportingClasses.getBackupProtocolService(),
-                backupSupportingClasses.getBackupDelegator(),
-                backupSupportingClasses.getPageCache() );
-
-        backupStrategyCoordinator.performBackup( onlineBackupContext );
-        outsideWorld.stdOutLine( "Backup complete." );
+            backupStrategyCoordinator.performBackup( onlineBackupContext );
+            outsideWorld.stdOutLine( "Backup complete." );
+        }
     }
 
     private void checkDestination( Path path ) throws CommandFailed

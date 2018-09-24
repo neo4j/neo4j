@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -99,7 +100,8 @@ public class OnlineBackupCommandTest
         backupDirectory = testDirectory.directory( "backupDirectory" ).toPath();
         reportDirectory = testDirectory.directory( "reportDirectory/" ).toPath();
         BackupSupportingClasses backupSupportingClasses =
-                new BackupSupportingClasses( mock( BackupDelegator.class ), mock( BackupProtocolService.class ), mock( PageCache.class ) );
+                new BackupSupportingClasses( mock( BackupDelegator.class ), mock( BackupProtocolService.class ), mock( PageCache.class ),
+                        Collections.emptyList() );
         when( backupSupportingClassesFactory.createSupportingClasses( any() ) ).thenReturn( backupSupportingClasses );
 
         requiredArguments =
