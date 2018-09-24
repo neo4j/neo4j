@@ -1584,6 +1584,52 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     Mockito.verifyNoMoreInteractions(context)
   }
 
+  test("any in list function local access only") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+
+    //When
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
+    val compiledTrue = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      equals(varFor("bar"), literalString("a"))))
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "b")
+    val compiledFalse = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      equals(varFor("bar"), literalString("b"))))
+
+    //Then
+    compiledTrue.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledFalse.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
+  test("any in list function accessing outer scope") {
+    //Given
+    val context = MapExecutionContext(mutable.Map("a" -> stringValue("a"), "b" -> stringValue("b")), mutable.Map.empty)
+
+    //When
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH a)
+    val compiledTrue = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      equals(varFor("bar"), varFor("a"))))
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH aa)
+    val compiledFalse = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      equals(varFor("bar"), varFor("b"))))
+
+    //Then
+    compiledTrue.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledFalse.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
+  test("any in list on null") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+
+    //When, any(bar IN null WHERE bar STARTS WITH foo)
+    val compiled = compile(anyInList("bar", noValue,
+      equals(varFor("bar"), varFor("foo"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
   test("all in list function local access only") {
     //Given
     val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
@@ -1854,6 +1900,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def sliceTo(list: Expression, to: Expression) = ListSlice(list, None, Some(to))(pos)
 
   private def sliceFull(list: Expression, from: Expression, to: Expression) = ListSlice(list, Some(from), Some(to))(pos)
+
+  private def anyInList(variable: String, collection: Expression, predicate: Expression) =
+    AnyIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
 
   private def allInList(variable: String, collection: Expression, predicate: Expression) =
     AllIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)

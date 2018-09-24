@@ -238,6 +238,69 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                        constant(name)))
       Some(IntermediateExpression(load(variableName), Seq.empty, Seq(local), Set(equal(load(variableName), noValue))))
 
+    case AnyIterablePredicate(scope, collectionExpression) =>
+      /*
+        ListValue list = [evaluate collection expression];
+        ExecutionContext innerContext = context.createClone();
+        Iterator<AnyValue> listIterator = list.iterator();
+        boolean isMatch = false;
+        while( isMatch==false && listIterator.hasNext() )
+        {
+            AnyValue currentValue = listIterator.next();
+            innerContext.set([name from scope], currentValue);
+            isMatch = [result from inner expression using innerContext]
+        }
+        return Values.booleanValue(isMatch);
+       */
+      val innerContext = namer.nextVariableName()
+      val iterVariable = namer.nextVariableName()
+      for {collection <- internalCompileExpression(collectionExpression, currentContext)
+           inner <- internalCompileExpression(scope.innerPredicate.get, Some(load(innerContext)))//Note we update the context here
+      } yield {
+        //inner variables must be evaluated after we modify context
+        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
+          Seq(declare(v.typ, v.name), assign(v.name, v.value))
+        }
+        val listVar = namer.nextVariableName()
+        val currentValue = namer.nextVariableName()
+        val isMatch = namer.nextVariableName()
+        val ops = Seq(
+          // ListValue list = [evaluate collection expression];
+          // ExecutionContext innerContext = context.createClone();
+          // boolean isMatch = false;
+          declare[ListValue](listVar),
+          assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
+          declare[ExecutionContext](innerContext),
+          assign(innerContext,
+            invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
+          declare[Boolean](isMatch),
+          assign(isMatch, constant(false)),
+          // Iterator<AnyValue> listIterator = list.iterator();
+          // while( isMatch==false listIterator.hasNext())
+          // {
+          //    AnyValue currentValue = listIterator.next();
+          declare[java.util.Iterator[AnyValue]](iterVariable),
+          assign(iterVariable, invoke(load(listVar), method[ListValue, java.util.Iterator[AnyValue]]("iterator"))),
+          loop(and(equal(load(isMatch), constant(false)), invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext")))) {block(Seq(
+            declare[AnyValue](currentValue),
+            assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
+            //innerContext.set([name from scope], currentValue);
+            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
+              constant(scope.variable.name), load(currentValue))
+          ) ++ innerVars ++ Seq(
+            // boolean isMatch = [result from inner expression using innerContext]
+            assign(isMatch,
+              invoke(cast[BooleanValue](nullCheck(inner)(inner.ir)), method[BooleanValue, Boolean]("booleanValue")))
+          ):_*)
+          },
+          // }
+          // return Values.booleanValue(isMatch);
+          invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), load(isMatch))
+        )
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+          collection.nullCheck)
+      }
+
     case AllIterablePredicate(scope, collectionExpression) =>
       /*
         ListValue list = [evaluate collection expression];
@@ -276,7 +339,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           declare[Boolean](isMatch),
           assign(isMatch, constant(true)),
           // Iterator<AnyValue> listIterator = list.iterator();
-          // while( listIterator.hasNext() && isMatch)
+          // while( isMatch && listIterator.hasNext())
           // {
           //    AnyValue currentValue = listIterator.next();
           declare[java.util.Iterator[AnyValue]](iterVariable),
