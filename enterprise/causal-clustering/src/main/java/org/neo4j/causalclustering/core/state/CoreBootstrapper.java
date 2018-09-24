@@ -37,6 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -97,6 +98,7 @@ public class CoreBootstrapper
     private final FileSystemAbstraction fs;
     private final Config config;
     private final LogProvider logProvider;
+    private final RecoveryRequiredChecker recoveryRequiredChecker;
 
     CoreBootstrapper( File storeDir, PageCache pageCache, FileSystemAbstraction fs, Config config, LogProvider logProvider )
     {
@@ -105,10 +107,16 @@ public class CoreBootstrapper
         this.fs = fs;
         this.config = config;
         this.logProvider = logProvider;
+        this.recoveryRequiredChecker = new RecoveryRequiredChecker( fs, pageCache );
     }
 
     public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
     {
+        if ( recoveryRequiredChecker.isRecoveryRequiredAt( storeDir ) )
+        {
+            throw new IllegalStateException( "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded " +
+                    "comes from a cleanly shutdown instance of Neo4j or a Neo4j backup" );
+        }
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
