@@ -75,6 +75,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -125,7 +126,7 @@ public class MessageDecoderTest
         channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, new InitMessage( userAgent, authToken ) ) ) );
         channel.finishAndReleaseAll();
 
-        verify( stateMachine ).process( eq( new InitMessage( userAgent, authToken ) ), any() );
+        verify( stateMachine ).process( refEq( new InitMessage( userAgent, authToken ), "authToken" ), any() );
     }
 
     @Test

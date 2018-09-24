@@ -50,9 +50,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.security.AuthToken.CREDENTIALS;
-import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
+import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -60,7 +58,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 class ConnectedStateTest
 {
     private static final String USER_AGENT = "Driver 2.0";
-    private static final Map<String,Object> AUTH_TOKEN = map( PRINCIPAL, "neo4j", CREDENTIALS, "password" );
+    private static final Map<String,Object> AUTH_TOKEN = newBasicAuthToken( "neo4j", "password" );
     private static final InitMessage INIT_MESSAGE = new InitMessage( USER_AGENT, AUTH_TOKEN );
 
     private final ConnectedState state = new ConnectedState();
