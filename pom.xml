@@ -946,7 +946,6 @@
         <jdk>[9, )</jdk>
       </activation>
       <properties>
-        <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</java.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java.additional.args>-nobootcp</scala.java.additional.args>
       </properties>
