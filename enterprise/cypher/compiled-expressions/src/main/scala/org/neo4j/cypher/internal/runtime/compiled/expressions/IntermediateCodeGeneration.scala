@@ -238,6 +238,78 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                        constant(name)))
       Some(IntermediateExpression(load(variableName), Seq.empty, Seq(local), Set(equal(load(variableName), noValue))))
 
+    case SingleIterablePredicate(scope, collectionExpression) =>
+      /*
+        ListValue list = [evaluate collection expression];
+        ExecutionContext innerContext = context.createClone();
+        Iterator<AnyValue> listIterator = list.iterator();
+        int matches = 0;
+        while( matches < 2 && listIterator.hasNext() )
+        {
+            AnyValue currentValue = listIterator.next();
+            innerContext.set([name from scope], currentValue);
+            boolean isMatch = [result from inner expression using innerContext]
+            if (isMatch)
+            {
+                matches++;
+            }
+        }
+        return Values.booleanValue(matches == 1);
+       */
+      val innerContext = namer.nextVariableName()
+      val iterVariable = namer.nextVariableName()
+      for {collection <- internalCompileExpression(collectionExpression, currentContext)
+           inner <- internalCompileExpression(scope.innerPredicate.get, Some(load(innerContext)))//Note we update the context here
+      } yield {
+        //inner variables must be evaluated after we modify context
+        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
+          Seq(declare(v.typ, v.name), assign(v.name, v.value))
+        }
+        val listVar = namer.nextVariableName()
+        val currentValue = namer.nextVariableName()
+        val matches = namer.nextVariableName()
+        val isMatch = namer.nextVariableName()
+        val ops = Seq(
+          // ListValue list = [evaluate collection expression];
+          // ExecutionContext innerContext = context.createClone();
+          // int matches = 0;
+          declare[ListValue](listVar),
+          assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
+          declare[ExecutionContext](innerContext),
+          assign(innerContext,
+            invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
+          declare[Int](matches),
+          assign(matches, constant(0)),
+          // Iterator<AnyValue> listIterator = list.iterator();
+          // while( matches < 2 && listIterator.hasNext())
+          // {
+          //    AnyValue currentValue = listIterator.next();
+          declare[java.util.Iterator[AnyValue]](iterVariable),
+          assign(iterVariable, invoke(load(listVar), method[ListValue, java.util.Iterator[AnyValue]]("iterator"))),
+          loop(and(lessThan(load(matches), constant(2)), invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext")))) {block(Seq(
+            declare[AnyValue](currentValue),
+            assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
+            //innerContext.set([name from scope], currentValue);
+            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
+              constant(scope.variable.name), load(currentValue))
+          ) ++ innerVars ++ Seq(
+            // if ([result from inner expression using innerContext])
+            // {
+            //    matches = matches + 1;
+            // }
+            condition(invoke(cast[BooleanValue](nullCheck(inner)(inner.ir)), method[BooleanValue, Boolean]("booleanValue")))(
+              assign(matches, add(load(matches), constant(1)))
+            )
+          ):_*)
+          },
+          // }
+          // return Values.booleanValue(matches == 1);
+          invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), equal(load(matches), constant(1)))
+        )
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+          collection.nullCheck)
+      }
+
     case NoneIterablePredicate(scope, collectionExpression) =>
       /*
         ListValue list = [evaluate collection expression];

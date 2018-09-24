@@ -129,6 +129,38 @@ case class Ternary(condition: IntermediateRepresentation,
                    onFalse: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
+  * Defines {{{lhs + rhs}}}
+  *
+  * @param lhs the left-hand side to check
+  * @param rhs the right-hand side to check
+  */
+case class Add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Defines {{{lhs - rhs}}}
+  *
+  * @param lhs the left-hand side to check
+  * @param rhs the right-hand side to check
+  */
+case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Defines {{{lhs < rhs}}}
+  *
+  * @param lhs the left-hand side to check
+  * @param rhs the right-hand side to check
+  */
+case class Lt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Defines {{{lhs > rhs}}}
+  *
+  * @param lhs the left-hand side to check
+  * @param rhs the right-hand side to check
+  */
+case class Gt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   * Defines equality or identy, i.e. {{{lhs == rhs}}}
   *
   * @param lhs the left-hand side to check
@@ -377,6 +409,18 @@ object IntermediateRepresentation {
   def ternary(condition: IntermediateRepresentation,
               onTrue: IntermediateRepresentation,
               onFalse: IntermediateRepresentation): IntermediateRepresentation = Ternary(condition, onTrue, onFalse)
+
+  def add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Add(lhs, rhs)
+
+  def subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Subtract(lhs, rhs)
+
+  def lessThan(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Lt(lhs, rhs)
+
+  def greaterThan(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Gt(lhs, rhs)
 
   def equal(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Eq(lhs, rhs)

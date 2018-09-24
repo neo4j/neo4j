@@ -174,6 +174,23 @@ object CodeGeneration {
       Expression.ternary(compileExpression(condition, block),
                          compileExpression(onTrue, block),
                          compileExpression(onFalse, block))
+
+    //lhs + rhs
+    case Add(lhs, rhs) =>
+      Expression.add(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //lhs - rhs
+    case Subtract(lhs, rhs) =>
+      Expression.subtract(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //lhs < rhs
+    case Lt(lhs, rhs) =>
+      Expression.lt(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //lhs > rhs
+    case Gt(lhs, rhs) =>
+      Expression.gt(compileExpression(lhs, block), compileExpression(rhs, block))
+
     //lhs == rhs
     case Eq(lhs, rhs) =>
       Expression.equal(compileExpression(lhs, block), compileExpression(rhs, block))

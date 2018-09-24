@@ -1584,6 +1584,63 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     Mockito.verifyNoMoreInteractions(context)
   }
 
+  test("single in list function local access only") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+
+    //When
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
+    val compiledNone = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), literalString("b"))))
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aa")
+    val compiledSingle = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), literalString("aaa"))))
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aaa")
+    val compiledMany = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), literalString("a"))))
+
+    //Then
+    compiledNone.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+    compiledSingle.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledMany.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
+  test("single in list function accessing outer scope") {
+    //Given
+    val context = MapExecutionContext(mutable.Map(
+      "b" -> stringValue("b"),
+      "a" -> stringValue("a"),
+      "aaa" -> stringValue("aaa")), mutable.Map.empty)
+
+    //When
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
+    val compiledNone = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), varFor("b"))))
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aa")
+    val compiledSingle = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), varFor("aaa"))))
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aaa")
+    val compiledMany = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), varFor("a"))))
+
+    //Then
+    compiledNone.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+    compiledSingle.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledMany.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
+  test("single in list on null") {
+    //Given
+    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+
+    //When, single(bar IN null WHERE bar STARTS WITH foo)
+    val compiled = compile(singleInList("bar", noValue,
+      equals(varFor("bar"), varFor("foo"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
   test("none in list function local access only") {
     //Given
     val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
@@ -1946,6 +2003,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def sliceTo(list: Expression, to: Expression) = ListSlice(list, None, Some(to))(pos)
 
   private def sliceFull(list: Expression, from: Expression, to: Expression) = ListSlice(list, Some(from), Some(to))(pos)
+
+  private def singleInList(variable: String, collection: Expression, predicate: Expression) =
+    SingleIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
 
   private def noneInList(variable: String, collection: Expression, predicate: Expression) =
     NoneIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
