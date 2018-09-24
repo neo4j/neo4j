@@ -206,6 +206,7 @@ public class SchemaCalculator
                 }
                 propertyCursor.close();
 
+                Set<Integer> helperSet;
                 Set<Integer> oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
 
                 // find out which old properties we did not visited and mark them as nullable
@@ -216,18 +217,32 @@ public class SchemaCalculator
                         // Even if we find property key on other rels with this type, set all of them nullable
                         nullableRelationshipTypes.add( typeId );
                     }
+
+                    helperSet = oldPropertyKeySet;
                 }
                 else
                 {
+                    if ( oldPropertyKeySet.size() > propertyIds.size() )
+                    {
+                        // new rel is missing some properties of prior seen rels
+                        oldPropertyKeySet.removeAll( propertyIds );
+                        helperSet = oldPropertyKeySet;
+                    }
+                    else
+                    {
+                        // new rel has new not-yet seen property
+                        helperSet = new HashSet( propertyIds );
+                        helperSet.removeAll( oldPropertyKeySet );
+                    }
+
                     // we can and need to skip this if we found the empty set
-                    oldPropertyKeySet.removeAll( propertyIds );
-                    oldPropertyKeySet.forEach( id -> {
+                    helperSet.forEach( id -> {
                         Pair<Integer,Integer> key = Pair.of( typeId, id );
                         relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key ).setNullable();
                     } );
                 }
 
-                propertyIds.addAll( oldPropertyKeySet );
+                propertyIds.addAll( helperSet );
                 relationshipTypeIdToPropertyKeysMapping.put( typeId, propertyIds );
             }
             relationshipScanCursor.close();
