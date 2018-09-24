@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,7 +81,7 @@ public class IndexProvidedValuesTest extends KernelAPIReadTestBase<ReadTestSuppo
         {
             RandomValues randomValues = randomRule.randomValues();
 
-            RandomValues.Type[] allExceptNonSortable = randomValues.excluding( RandomValues.Type.STRING,
+            RandomValues.Type[] allExceptNonSortable = RandomValues.excluding( RandomValues.Type.STRING,
                                                                                RandomValues.Type.STRING_ARRAY );
 
             for ( int i = 0; i < N_NODES; i++ )
