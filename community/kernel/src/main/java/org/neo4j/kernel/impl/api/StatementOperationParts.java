@@ -28,6 +28,8 @@ import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 public class StatementOperationParts
 {
     private final QueryRegistrationOperations queryRegistrationOperations;
+    private static final String ERROR_MSG =
+            "No part of type " + QueryRegistrationOperations.class.getSimpleName() + " assigned";
 
     public StatementOperationParts( QueryRegistrationOperations queryRegistrationOperations )
     {
@@ -36,7 +38,7 @@ public class StatementOperationParts
 
     QueryRegistrationOperations queryRegistrationOperations()
     {
-        return Objects.requireNonNull( queryRegistrationOperations, "No part of type " + QueryRegistrationOperations.class.getSimpleName() + " assigned" );
+        return Objects.requireNonNull( queryRegistrationOperations, ERROR_MSG );
     }
 
     public StatementOperationParts override( QueryRegistrationOperations queryRegistrationOperations )
