@@ -207,6 +207,9 @@ public interface ConsistencyReport
 
         @Documented( "The first relationship group record has another node set as owner." )
         void relationshipGroupHasOtherOwner( RelationshipGroupRecord group );
+
+        @Documented( "The property chain contains circular reference." )
+        void propertyChainContainsCircularReference( PropertyRecord propertyRecord );
     }
 
     interface RelationshipConsistencyReport
