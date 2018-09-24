@@ -30,12 +30,12 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -45,23 +45,22 @@ public class CommitStateHelperTest
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public final DefaultFileSystemRule fsr = new DefaultFileSystemRule();
-    @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private Config config;
     private CommitStateHelper commitStateHelper;
-    private File storeDir;
     private DatabaseLayout databaseLayout;
+    private FileSystemAbstraction fsa;
 
     @Before
     public void setUp()
     {
         File txLogLocation = new File( testDirectory.directory(), "txLogLocation" );
         config = Config.builder().withSetting( GraphDatabaseSettings.logical_logs_location, txLogLocation.getAbsolutePath() ).build();
-        storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.storeDir();
         databaseLayout = DatabaseLayout.of( storeDir, config.get( GraphDatabaseSettings.active_database ) );
-        commitStateHelper = new CommitStateHelper( pageCacheRule.getPageCache( fsr ), fsr, config );
+        fsa = testDirectory.getFileSystem();
+        commitStateHelper = new CommitStateHelper( pageCacheRule.getPageCache( fsa ), fsa, config );
     }
 
     @Test
@@ -76,7 +75,7 @@ public class CommitStateHelperTest
     public void shouldNotHaveTxLogsIfDirectoryIsEmpty() throws IOException
     {
         File txDir = config.get( GraphDatabaseSettings.logical_logs_location );
-        txDir.mkdir();
+        fsa.mkdir( txDir );
 
         assertFalse( commitStateHelper.hasTxLogs( databaseLayout ) );
     }
@@ -85,9 +84,9 @@ public class CommitStateHelperTest
     public void shouldNotHaveTxLogsIfDirectoryHasFilesWithIncorrectName() throws IOException
     {
         File txDir = config.get( GraphDatabaseSettings.logical_logs_location );
-        txDir.mkdir();
+        fsa.mkdir( txDir );
 
-        fsr.create( new File( txDir, "foo.bar" ) );
+        fsa.create( new File( txDir, "foo.bar" ) ).close();
 
         assertFalse( commitStateHelper.hasTxLogs( databaseLayout ) );
     }
@@ -96,8 +95,8 @@ public class CommitStateHelperTest
     public void shouldHaveTxLogsIfDirectoryHasTxFile() throws IOException
     {
         File txDir = config.get( GraphDatabaseSettings.logical_logs_location );
-        txDir.mkdir();
-        fsr.create( new File( txDir, TransactionLogFiles.DEFAULT_NAME + ".0" ) );
+        fsa.mkdir( txDir );
+        fsa.create( new File( txDir, TransactionLogFiles.DEFAULT_NAME + ".0" ) ).close();
 
         assertTrue( commitStateHelper.hasTxLogs( databaseLayout ) );
     }
