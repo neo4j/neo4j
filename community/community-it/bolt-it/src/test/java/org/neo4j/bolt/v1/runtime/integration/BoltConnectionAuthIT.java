@@ -29,6 +29,7 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.string.UTF8;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -37,6 +38,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -58,10 +60,7 @@ public class BoltConnectionAuthIT
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
-        InitMessage init = new InitMessage( USER_AGENT, map(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j" ) );
+        InitMessage init = new InitMessage( USER_AGENT, newBasicAuthToken( "neo4j", "neo4j" ) );
 
         machine.process( init, recorder );
         machine.process( new RunMessage( "CREATE ()", EMPTY_MAP ), recorder );
@@ -81,10 +80,7 @@ public class BoltConnectionAuthIT
         String version = "Neo4j/" + Version.getNeo4jVersion();
 
         // When
-        InitMessage init = new InitMessage( USER_AGENT, map(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j" ) );
+        InitMessage init = new InitMessage( USER_AGENT, newBasicAuthToken( "neo4j", "neo4j" ) );
 
         machine.process( init, recorder );
         machine.process( new RunMessage( "CREATE ()", EMPTY_MAP ), recorder );
@@ -100,10 +96,7 @@ public class BoltConnectionAuthIT
         BoltStateMachine machine = env.newMachine( boltChannel );
 
         // When... then
-        InitMessage init = new InitMessage( USER_AGENT, map(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "j4oen" ) );
+        InitMessage init = new InitMessage( USER_AGENT, newBasicAuthToken( "neo4j", "j4oen" ) );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.process( init, recorder ) );
 
@@ -121,8 +114,8 @@ public class BoltConnectionAuthIT
         InitMessage message = new InitMessage( USER_AGENT, map(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "neo4j",
-                "new_credentials", "secret" ) );
+                "credentials", UTF8.encode( "neo4j" ),
+                "new_credentials", UTF8.encode( "secret" ) ) );
         machine.process( message, recorder );
         machine.process( new RunMessage( "CREATE ()", EMPTY_MAP ), recorder );
 
