@@ -150,7 +150,7 @@ object helpers {
     case nfV3_4.DeprecatedFieldNotification(position, procedure, field) => compilerv3_5.DeprecatedFieldNotification(as3_5(position), procedure, field)
     case nfV3_4.DeprecatedVarLengthBindingNotification(position, variable) => nfv3_5.DeprecatedVarLengthBindingNotification(as3_5(position), variable)
     case nfV3_4.DeprecatedRelTypeSeparatorNotification(position) => nfv3_5.DeprecatedRelTypeSeparatorNotification(as3_5(position))
-    case nfV3_4.DeprecatedPlannerNotification => compilerv3_5.DeprecatedPlannerNotification
+    case nfV3_4.DeprecatedPlannerNotification => compilerv3_5.DeprecatedRulePlannerNotification
     case nfV3_4.ExperimentalFeatureNotification(msg) => compilerv3_5.ExperimentalFeatureNotification(msg)
     case nfV3_4.SuboptimalIndexForContainsQueryNotification(label, propertyKeys) => compilerv3_5.SuboptimalIndexForConstainsQueryNotification(label, propertyKeys)
     case nfV3_4.SuboptimalIndexForEndsWithQueryNotification(label, propertyKeys) => compilerv3_5.SuboptimalIndexForEndsWithQueryNotification(label, propertyKeys)

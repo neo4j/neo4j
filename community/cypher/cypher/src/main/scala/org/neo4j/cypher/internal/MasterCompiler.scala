@@ -141,7 +141,10 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
     }
 
     if (preParsedQuery.planner == CypherPlannerOption.rule)
-      logger.log(DeprecatedPlannerNotification)
+      logger.log(DeprecatedRulePlannerNotification)
+
+    if (preParsedQuery.runtime == CypherRuntimeOption.compiled)
+      logger.log(DeprecatedCompiledRuntimeNotification)
 
     // Do the compilation
     innerCompile(preParsedQuery, params)

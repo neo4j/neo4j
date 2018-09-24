@@ -251,7 +251,7 @@ object ExecutionResultWrapper {
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
       NotificationCode.DEPRECATED_PROCEDURE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedPlannerNotification =>
-      NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
+      NotificationCode.DEPRECATED_RULE_PLANNER.notification(graphdb.InputPosition.empty)
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_1.InputPosition) {

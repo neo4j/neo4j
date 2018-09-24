@@ -46,12 +46,17 @@ public enum NotificationCode
         Status.Statement.FeatureDeprecationWarning,
         "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead"
     ),
-    DEPRECATED_PLANNER(
+    DEPRECATED_RULE_PLANNER(
         SeverityLevel.WARNING,
         Status.Statement.FeatureDeprecationWarning,
         "The rule planner, which was used to plan this query, is deprecated and will be discontinued soon. " +
                 "If you did not explicitly choose the rule planner, you should try to change your query so that the " +
                 "rule planner is not used"
+    ),
+    DEPRECATED_COMPILED_RUNTIME(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The compiled runtime, which was requested to execute this query, is deprecated and will be removed in a future release."
     ),
     PLANNER_UNSUPPORTED(
         SeverityLevel.WARNING,

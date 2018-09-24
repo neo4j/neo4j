@@ -79,8 +79,10 @@ object InternalWrapping {
       NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
     case DeprecatedRelTypeSeparatorNotification(pos) =>
       NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedPlannerNotification =>
-      NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
+    case DeprecatedRulePlannerNotification =>
+      NotificationCode.DEPRECATED_RULE_PLANNER.notification(graphdb.InputPosition.empty)
+    case DeprecatedCompiledRuntimeNotification =>
+      NotificationCode.DEPRECATED_COMPILED_RUNTIME.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>

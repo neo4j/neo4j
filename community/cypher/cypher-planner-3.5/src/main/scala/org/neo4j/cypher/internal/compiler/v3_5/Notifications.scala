@@ -63,6 +63,8 @@ case class ProcedureWarningNotification(position: InputPosition, procedure: Stri
 
 case class DeprecatedFieldNotification(position: InputPosition, procedure: String, field: String) extends InternalNotification
 
-case object DeprecatedPlannerNotification extends InternalNotification
+case object DeprecatedRulePlannerNotification extends InternalNotification
+
+case object DeprecatedCompiledRuntimeNotification extends InternalNotification
 
 case class ExperimentalFeatureNotification(msg: String) extends InternalNotification

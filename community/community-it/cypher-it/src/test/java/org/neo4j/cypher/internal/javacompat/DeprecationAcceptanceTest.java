@@ -24,12 +24,10 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
@@ -37,12 +35,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PLANNER;
 
 public class DeprecationAcceptanceTest extends NotificationTestSupport
 {
@@ -56,7 +50,19 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         InputPosition position = InputPosition.empty;
 
         // then
-        assertThat( result.getNotifications(), containsItem( deprecatedPlanner ) );
+        assertThat( result.getNotifications(), containsItem( deprecatedRulePlanner ) );
+        result.close();
+    }
+
+    @Test
+    public void deprecatedCompiledRuntime()
+    {
+        // when
+        Result result = db().execute( "CYPHER runtime=compiled RETURN 1" );
+        InputPosition position = InputPosition.empty;
+
+        // then
+        assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );
         result.close();
     }
 
@@ -284,8 +290,12 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
             notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated function." ),
                           any( InputPosition.class ), SeverityLevel.WARNING );
 
-    private Matcher<Notification> deprecatedPlanner =
+    private Matcher<Notification> deprecatedRulePlanner =
             notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The rule planner, which was used to plan this query, is deprecated and will be discontinued soon. If you did not explicitly choose the rule planner, you should try to change your query so that the rule planner is not used" ),
+                          any( InputPosition.class ), SeverityLevel.WARNING );
+
+    private Matcher<Notification> deprecatedCompiledRuntime =
+            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The compiled runtime, which was requested to execute this query, is deprecated and will be removed in a future release." ),
                           any( InputPosition.class ), SeverityLevel.WARNING );
 
     private Matcher<Notification> deprecatedStartWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
