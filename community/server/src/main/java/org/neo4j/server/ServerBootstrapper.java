@@ -242,15 +242,19 @@ public abstract class ServerBootstrapper implements Bootstrapper
         }
         if ( userLogFileStream != null )
         {
-            try
-            {
-                userLogFileStream.flush();
-                userLogFileStream.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
+            closeUserLogFileStream();
+        }
+    }
+
+    private void closeUserLogFileStream()
+    {
+        try ( OutputStream stream = userLogFileStream )
+        {
+            stream.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 
