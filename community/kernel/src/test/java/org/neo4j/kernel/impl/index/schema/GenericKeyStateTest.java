@@ -87,6 +87,9 @@ import static org.neo4j.values.storable.Values.timeArray;
 @ExtendWith( RandomExtension.class )
 class GenericKeyStateTest
 {
+    private final IndexSpecificSpaceFillingCurveSettingsCache noSpecificIndexSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+
     @Inject
     private static RandomRule random;
 
@@ -659,9 +662,7 @@ class GenericKeyStateTest
 
     private GenericKeyState newKeyState()
     {
-        IndexSpecificSpaceFillingCurveSettingsCache indexSettings =
-                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
-        return new GenericKeyState( indexSettings );
+        return new GenericKeyState( noSpecificIndexSettings );
     }
 
     @FunctionalInterface
