@@ -23,8 +23,8 @@
 package org.neo4j.cypher.internal.runtime.parallel
 
 import java.util
-import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue, Executors}
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -100,38 +100,38 @@ abstract class SchedulerTest extends CypherFunSuite {
 
     val s = newScheduler(64)
 
-    var output = new ArrayBuffer[Int]
-    val aggregator = Aggregator(buffer => {
-                                  for (x <- buffer)
-                                    output += x
-                                })
+    val aggregator = SumAggregator()
 
     val tasks = SubTasker(List(
-      PushToEager(List(1,2,3), aggregator),
-      PushToEager(List(4,5,6), aggregator)))
+      PushToEager(List(1,10,100), aggregator),
+      PushToEager(List(1000,10000,100000), aggregator)))
 
     val queryExecution = s.execute(tasks, tracer)
 
     queryExecution.await()
-    output.toSet should equal(Set(1, 2, 3, 4, 5, 6))
+    aggregator.sum.get() should be(111111)
   }
 
   // HELPER TASKS
 
-  case class Aggregator(method: util.Collection[Int] => Unit) extends Task {
+  case class SumAggregator() extends Task {
 
-    val buffer = new ConcurrentLinkedQueue[Int]
+    val buffer = new ConcurrentLinkedQueue[Integer]
+    val sum = new AtomicInteger()
 
     override def executeWorkUnit(): Seq[Task] = {
-      method(buffer)
-      buffer.clear()
+      var value = buffer.poll()
+      while (value != null) {
+        sum.addAndGet(value)
+        value = buffer.poll()
+      }
       Nil
     }
 
     override def canContinue: Boolean = buffer.nonEmpty
   }
 
-  case class PushToEager(subResults: Seq[Int], eager: Aggregator) extends Task {
+  case class PushToEager(subResults: Seq[Int], eager: SumAggregator) extends Task {
 
     private val resultSequence = subResults.iterator
 
