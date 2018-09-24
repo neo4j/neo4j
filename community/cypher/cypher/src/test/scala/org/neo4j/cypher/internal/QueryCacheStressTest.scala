@@ -61,6 +61,7 @@ class QueryCacheStressTest extends CypherFunSuite {
     val (hits, misses) = Await.result(futures, 60.seconds).partition {
       case _: CacheHit[_] => true
       case _: CacheMiss[_] => false
+      case _ => fail("we only expect hits and misses")
     }
 
     misses.size should be >= 1

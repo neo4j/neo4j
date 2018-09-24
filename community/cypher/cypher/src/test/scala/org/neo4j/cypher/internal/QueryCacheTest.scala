@@ -146,7 +146,9 @@ class QueryCacheTest extends CypherFunSuite {
 }
 
   object QueryCacheTest extends MockitoSugar {
-    case class MyValue(key: String)(val recompiled: Boolean)
+    case class MyValue(key: String)(val recompiled: Boolean) extends CacheabilityInfo {
+      override def shouldBeCached: Boolean = true
+    }
 
     private val RECOMPILE_LIMIT = 2
     def recompile(key: Key): (Int) => Option[MyValue] = (count: Int) => {
