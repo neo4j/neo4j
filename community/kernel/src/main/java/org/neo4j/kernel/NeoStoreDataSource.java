@@ -227,6 +227,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private final boolean failOnCorruptedLogFiles;
+    private final KernelAuxTransactionStateManager auxTxStateManager;
 
     public NeoStoreDataSource( DatabaseCreationContext context )
     {
@@ -280,6 +281,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseAvailability = context.getDatabaseAvailability();
         this.failOnCorruptedLogFiles = context.getConfig().get( GraphDatabaseSettings.fail_on_corrupted_log_files );
+        auxTxStateManager = new KernelAuxTransactionStateManager();
     }
 
     // We do our own internal life management:
@@ -304,6 +306,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( idGeneratorFactory );
         dataSourceDependencies.satisfyDependency( idController );
         dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+        dataSourceDependencies.satisfyDependency( auxTxStateManager );
 
         life = new LifeSupport();
         dataSourceDependencies.satisfyDependency( explicitIndexProvider );
@@ -599,9 +602,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 buildStatementOperations( cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
-        KernelAuxTransactionStateManager auxTxStateManager = new KernelAuxTransactionStateManager();
         auxTxStateManager.registerProvider( new ExplicitIndexTransactionStateProvider( indexConfigStore, explicitIndexProvider ) );
-        dataSourceDependencies.satisfyDependency( auxTxStateManager );
 
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,

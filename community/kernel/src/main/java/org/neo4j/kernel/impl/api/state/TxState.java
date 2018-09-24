@@ -101,8 +101,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
 
-    private boolean hasChanges;
-    private boolean hasDataChanges;
+    private long revision;
+    private long dataRevision;
 
     public TxState()
     {
@@ -199,7 +199,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean hasChanges()
     {
-        return hasChanges;
+        return revision != 0;
     }
 
     @Override
@@ -252,13 +252,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private void changed()
     {
-        hasChanges = true;
+        revision++;
     }
 
     private void dataChanged()
     {
         changed();
-        hasDataChanges = true;
+        dataRevision = revision;
     }
 
     @Override
@@ -825,7 +825,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean hasDataChanges()
     {
-        return hasDataChanges;
+        return dataRevision != 0;
+    }
+
+    public long getDataRevision()
+    {
+        return dataRevision;
     }
 
     /**

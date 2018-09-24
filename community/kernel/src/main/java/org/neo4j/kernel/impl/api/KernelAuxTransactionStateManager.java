@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateCloseException;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateHolder;

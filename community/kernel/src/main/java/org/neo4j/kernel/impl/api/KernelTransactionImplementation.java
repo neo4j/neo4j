@@ -1092,6 +1092,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return constraintSemantics.decorateTxStateVisitor( storageReader, operations.dataRead(), operations.cursors(), txState, txStateVisitor );
     }
 
+    /**
+     * The revision of the data changes in this transaction. This number is opaque, except that it is zero if there have been no data changes in this
+     * transaction. And making and then undoing a change does not count as "no data changes." This number will always change when there is a data change in a
+     * transaction, however, such that one can reliably tell whether or not there has been any data changes in a transaction since last time the transaction
+     * data revision was obtained for the given transaction.
+     * @return The opaque data revision for this transaction, or zero if there has been no data changes in this transaction.
+     */
+    public long getTransactionDataRevision()
+    {
+        return hasDataChanges() ? 0 : txState.getDataRevision();
+    }
+
     public static class Statistics
     {
         private volatile long cpuTimeNanosWhenQueryStarted;

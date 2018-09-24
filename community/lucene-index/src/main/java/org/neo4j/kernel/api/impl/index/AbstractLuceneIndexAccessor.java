@@ -42,8 +42,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, INDEX extends DatabaseIndex<READER>>
-        implements IndexAccessor
+public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, INDEX extends DatabaseIndex<READER>> implements IndexAccessor
 {
     protected final LuceneIndexWriter writer;
     protected final INDEX luceneIndex;
