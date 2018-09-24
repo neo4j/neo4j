@@ -41,6 +41,6 @@ class Compatibility34TCKTests extends EnterpriseBaseTCKTests {
   @Disabled
   def generateBlacklistCompatibility34(): Unit = {
     printComputedBlacklist(scenarios, Compatibility34TestConfig, new TestEnterpriseGraphDatabaseFactory())
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 }

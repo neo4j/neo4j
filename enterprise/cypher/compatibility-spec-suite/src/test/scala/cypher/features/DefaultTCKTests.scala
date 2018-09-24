@@ -41,6 +41,6 @@ class DefaultTCKTests extends EnterpriseBaseTCKTests {
   @Disabled
   def generateBlacklistDefault(): Unit = {
     printComputedBlacklist(scenarios, DefaultTestConfig, new TestEnterpriseGraphDatabaseFactory())
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 }

@@ -44,6 +44,6 @@ class CostMorselAcceptanceTests extends EnterpriseBaseAcceptanceTest {
   @Disabled
   def generateBlacklistTCKTestCostMorsel(): Unit = {
     printComputedBlacklist(scenarios, CostMorselTestConfig, new TestEnterpriseGraphDatabaseFactory())
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 }

@@ -41,6 +41,6 @@ class Compatibility31AcceptanceTests extends EnterpriseBaseAcceptanceTest {
   @Disabled
   def generateBlacklistCompatibility31(): Unit = {
     printComputedBlacklist(scenarios, Compatibility31TestConfig, new TestEnterpriseGraphDatabaseFactory())
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 }

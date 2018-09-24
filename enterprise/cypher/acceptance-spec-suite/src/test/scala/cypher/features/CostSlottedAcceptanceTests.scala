@@ -41,6 +41,6 @@ class CostSlottedAcceptanceTests extends EnterpriseBaseAcceptanceTest {
   @Disabled
   def generateBlacklistCostSlotted(): Unit = {
     printComputedBlacklist(scenarios, CostSlottedTestConfig, new TestEnterpriseGraphDatabaseFactory())
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 }

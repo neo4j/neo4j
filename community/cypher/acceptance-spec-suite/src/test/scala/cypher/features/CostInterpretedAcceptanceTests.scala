@@ -38,6 +38,6 @@ class CostInterpretedAcceptanceTests extends BaseAcceptanceTest {
   @Disabled
   def generateBlacklistCostInterpreted(): Unit = {
     printComputedBlacklist(scenarios, CostInterpretedTestConfig, new TestGraphDatabaseFactory())
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 }
