@@ -59,6 +59,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     private final int maxCachedBlocks;
     private volatile boolean released;
 
+    @VisibleForTesting
     public CachingOffHeapBlockAllocator()
     {
         this( ByteUnit.kibiBytes( 512 ) + Long.BYTES - 1, 128 );
