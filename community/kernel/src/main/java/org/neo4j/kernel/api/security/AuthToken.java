@@ -72,6 +72,7 @@ public interface AuthToken
         return (byte[]) value;
     }
 
+    @SuppressWarnings( "unchecked" )
     static Map<String,Object> safeCastMap( String key, Map<String,Object> authToken )
             throws InvalidAuthTokenException
     {
@@ -95,13 +96,13 @@ public interface AuthToken
     static void clearCredentials( Map<String,Object> authToken )
     {
         Object credentials = authToken.get( CREDENTIALS );
-        if ( credentials != null && credentials instanceof byte[] )
+        if ( credentials instanceof byte[] )
         {
             Arrays.fill( (byte[]) credentials, (byte) 0 );
         }
 
         Object newCredentials = authToken.get( NEW_CREDENTIALS );
-        if ( newCredentials != null && newCredentials instanceof byte[] )
+        if ( newCredentials instanceof byte[] )
         {
             Arrays.fill( (byte[]) newCredentials, (byte) 0 );
         }

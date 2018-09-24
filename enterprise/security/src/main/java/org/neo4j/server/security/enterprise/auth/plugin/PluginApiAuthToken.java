@@ -24,6 +24,7 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -64,12 +65,20 @@ public class PluginApiAuthToken implements AuthToken
         return parameters;
     }
 
-    public static AuthToken of( String principal, char[] credentials, Map<String,Object> parameters )
+    void clearCredentials()
+    {
+        if ( credentials != null )
+        {
+            Arrays.fill( credentials, (char) 0 );
+        }
+    }
+
+    public static PluginApiAuthToken of( String principal, char[] credentials, Map<String,Object> parameters )
     {
         return new PluginApiAuthToken( principal, credentials, parameters );
     }
 
-    public static AuthToken createFromMap( Map<String,Object> authTokenMap ) throws InvalidAuthTokenException
+    public static PluginApiAuthToken createFromMap( Map<String,Object> authTokenMap ) throws InvalidAuthTokenException
     {
         String scheme = org.neo4j.kernel.api.security.AuthToken
                 .safeCast( org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY, authTokenMap );

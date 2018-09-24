@@ -186,7 +186,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
         {
             try
             {
-                AuthToken pluginAuthToken =
+                PluginApiAuthToken pluginAuthToken =
                         PluginApiAuthToken.createFromMap( ((ShiroAuthToken) token).getAuthTokenMap() );
                 try
                 {
@@ -216,7 +216,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
                 finally
                 {
                     // Clear credentials
-                    Arrays.fill( pluginAuthToken.credentials(), (char) 0 );
+                    pluginAuthToken.clearCredentials();
                 }
             }
             catch ( org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException |
