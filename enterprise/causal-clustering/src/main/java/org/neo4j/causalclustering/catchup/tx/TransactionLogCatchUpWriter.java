@@ -49,6 +49,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -160,10 +161,13 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     {
         if ( asPartOfStoreCopy )
         {
-            /* A checkpoint which points to the beginning of the log file, meaning that
+            /* A checkpoint which points to the beginning of all the log files, meaning that
             all the streamed transactions will be applied as part of recovery. */
-            long logVersion = logFiles.getHighestLogVersion();
-            writer.checkPoint( new LogPosition( logVersion, LOG_HEADER_SIZE ) );
+            long logVersion = logFiles.getLowestLogVersion();
+            LogPosition checkPointPosition = new LogPosition( logVersion, LOG_HEADER_SIZE );
+
+            log.info( "Writing checkpoint as part of store copy: " + checkPointPosition );
+            writer.checkPoint( checkPointPosition );
 
             // * comment copied from old StoreCopyClient *
             // since we just create new log and put checkpoint into it with offset equals to
@@ -177,8 +181,8 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
             MetaDataStore.setRecord(
                     pageCache,
                     neoStore,
-                    MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                    LOG_HEADER_SIZE );
+                    LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
+                    checkPointPosition.getByteOffset() );
         }
 
         lifespan.close();
