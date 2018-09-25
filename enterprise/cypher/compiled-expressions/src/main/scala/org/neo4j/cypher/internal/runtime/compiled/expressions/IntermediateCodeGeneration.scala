@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import java.util.regex
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper.isPredicate
 import org.neo4j.cypher.internal.runtime.DbAccess
@@ -290,8 +290,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-              constant(scope.variable.name), load(currentValue))
+            contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             // if ([result from inner expression using innerContext])
             // {
@@ -357,8 +356,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-              constant(scope.variable.name), load(currentValue))
+            contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             // isMatch = [result from inner expression using innerContext]
             // isMatch = !isMatch
@@ -422,8 +420,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-              constant(scope.variable.name), load(currentValue))
+            contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             // isMatch = [result from inner expression using innerContext]
             assign(isMatch,
@@ -485,8 +482,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-              constant(scope.variable.name), load(currentValue))
+            contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             // isMatch = [result from inner expression using innerContext]
             assign(isMatch,
@@ -553,8 +549,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-              constant(scope.variable.name), load(currentValue))
+            contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             declare[Boolean](isFiltered),
             // boolean isFiltered = [result from inner expression using innerContext]
@@ -623,8 +618,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-                                        constant(scope.variable.name), load(currentValue))
+            contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             //extracted.add([result from inner expression using innerContext]);
             invokeSideEffect(load(extractedVars), method[java.util.ArrayList[_], Boolean, Object]("add"),
@@ -683,11 +677,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             // innerContext.set([name from scope], currentValue);
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-                                        constant(scope.variable.name), load(currentValue))) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue))
+          ) ++ innerVars ++ Seq(
             //innerContext.set(acc, [inner expression using innerContext])
-            invokeSideEffect(load(innerContext), method[ExecutionContext, Unit, String, AnyValue]("set"),
-                   constant(scope.accumulator.name), nullCheck(inner)(inner.ir))):_*)
+            contextSet(scope.accumulator.name, load(innerContext), nullCheck(inner)(inner.ir))
+          ):_*)
           },
           //return innerContext(acc);
           cast[AnyValue](invoke(load(innerContext), method[ExecutionContext, Object, Object]("apply"), constant(scope.accumulator.name)))
@@ -1587,6 +1581,15 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       None
   }
 
+  private def contextSet(key: String, context: IntermediateRepresentation, value: IntermediateRepresentation): IntermediateRepresentation = {
+    slots.get(key) match {
+      case Some(LongSlot(offset, _, _)) =>
+        setLongAt(offset, Some(context), value)
+      case Some(RefSlot(offset, _, _)) =>
+        setRefAt(offset, Some(context), value)
+    }
+  }
+
   private def getLongAt(offset: Int, currentContext: Option[IntermediateRepresentation]): IntermediateRepresentation =
     invoke(loadContext(currentContext), method[ExecutionContext, Long, Int]("getLongAt"),
            constant(offset))
@@ -1597,6 +1600,10 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
   private def setRefAt(offset: Int, currentContext: Option[IntermediateRepresentation], value: IntermediateRepresentation): IntermediateRepresentation =
     invokeSideEffect(loadContext(currentContext), method[ExecutionContext, Unit, Int, AnyValue]("setRefAt"),
+                     constant(offset), value)
+
+  private def setLongAt(offset: Int, currentContext: Option[IntermediateRepresentation], value: IntermediateRepresentation): IntermediateRepresentation =
+    invokeSideEffect(loadContext(currentContext), method[ExecutionContext, Unit, Int, AnyValue]("setLongAt"),
                      constant(offset), value)
 
   private def loadContext(currentContext: Option[IntermediateRepresentation]) = currentContext.getOrElse(load("context"))
