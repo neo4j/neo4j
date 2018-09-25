@@ -31,8 +31,9 @@ import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.util.Preconditions.requireNonNegative;
+import static org.neo4j.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.util.Preconditions.requirePositive;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * Block allocator that caches freed blocks matching following criteria:
@@ -47,7 +48,6 @@ import static org.neo4j.util.Preconditions.requirePositive;
  */
 public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
 {
-
     private final SynchronizedLongObjectMap<BlockingQueue<MemoryBlock>> pool = new SynchronizedLongObjectMap<>( new LongObjectHashMap<>() );
     /**
      * Max size of cached blocks including alignment padding.
@@ -62,12 +62,12 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     @VisibleForTesting
     public CachingOffHeapBlockAllocator()
     {
-        this( ByteUnit.kibiBytes( 512 ) + Long.BYTES - 1, 128 );
+        this( ByteUnit.kibiBytes( 512 ), 128 );
     }
 
     public CachingOffHeapBlockAllocator( long maxCacheableBlockSize, int maxCachedBlocks )
     {
-        this.maxCacheableBlockSize = requireNonNegative( maxCacheableBlockSize );
+        this.maxCacheableBlockSize = requirePowerOfTwo( maxCacheableBlockSize );
         this.maxCachedBlocks = requireNonNegative( maxCachedBlocks );
     }
 
