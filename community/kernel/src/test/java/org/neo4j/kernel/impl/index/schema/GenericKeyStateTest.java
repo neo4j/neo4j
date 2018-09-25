@@ -132,7 +132,7 @@ class GenericKeyStateTest
     }
 
     @ParameterizedTest
-    @MethodSource( "validLosslessValueGenerators" )
+    @MethodSource( "validValueGenerators" )
     void readWhatIsWritten( ValueGenerator valueGenerator )
     {
         // Given
@@ -194,7 +194,7 @@ class GenericKeyStateTest
     }
 
     @ParameterizedTest
-    @MethodSource( "validLosslessValueGenerators" )
+    @MethodSource( "validComparableValueGenerators" )
     void compareToMustAlignWithValuesCompareTo( ValueGenerator valueGenerator )
     {
         // Given
@@ -221,11 +221,9 @@ class GenericKeyStateTest
         }
     }
 
-    // The reason this test doesn't test geometry, a.k.a. lossy values, is that this test asserts that PointValue comparison matches
-    // comparison between point keys in the index. They won't match because the point keys in the index are ordered according to
-    // the 2D/3D -> 1D mapping value and not the actual points.
+    // The reason this test doesn't test incomparable values is that it relies on ordering being same as that of the Values module.
     @ParameterizedTest
-    @MethodSource( "validLosslessValueGenerators" )
+    @MethodSource( "validComparableValueGenerators" )
     void mustProduceValidMinimalSplitters( ValueGenerator valueGenerator )
     {
         // Given
@@ -543,23 +541,23 @@ class GenericKeyStateTest
                 "right state equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
     }
 
-    private static Value nextValidValue( boolean includeLossy )
+    private static Value nextValidValue( boolean includeIncomparable )
     {
         Value value;
         do
         {
             value = random.randomValues().nextValue();
         }
-        while ( !includeLossy && isLossy( value ) );
+        while ( !includeIncomparable && isIncomparable( value ) );
         return value;
     }
 
-    private static boolean isLossy( Value value )
+    private static boolean isIncomparable( Value value )
     {
         return isGeometryValue( value ) || isGeometryArray( value );
     }
 
-    private static ValueGenerator[] listValueGenerators( boolean includeLossy )
+    private static ValueGenerator[] listValueGenerators( boolean includeIncomparable )
     {
         List<ValueGenerator> generators = new ArrayList<>( asList(
                 // single
@@ -594,10 +592,10 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextFloatArray(),
                 () -> random.randomValues().nextDoubleArray(),
                 // and a random
-                () -> nextValidValue( includeLossy )
+                () -> nextValidValue( includeIncomparable )
         ) );
 
-        if ( includeLossy )
+        if ( includeIncomparable )
         {
             generators.addAll( asList(
                     // single
@@ -622,7 +620,7 @@ class GenericKeyStateTest
         return Stream.of( listValueGenerators( true ) );
     }
 
-    private static Stream<ValueGenerator> validLosslessValueGenerators()
+    private static Stream<ValueGenerator> validComparableValueGenerators()
     {
         return Stream.of( listValueGenerators( false ) );
     }
