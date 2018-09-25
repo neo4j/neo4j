@@ -138,35 +138,33 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   }
 
   override def copyWith(key: String, value: AnyValue): ExecutionContext = {
-    val newCtx = createClone()
-    newCtx.set(key, value)
-    newCtx
+    val newMap = m.clone()
+    newMap.put(key, value)
+    cloneFromMap(newMap)
   }
 
   override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
-    val newCtx = createClone()
-    newCtx.set(key1, value1, key2, value2)
-    newCtx
+    val newMap = m.clone()
+    newMap.put(key1, value1)
+    newMap.put(key2, value2)
+    cloneFromMap(newMap)
   }
 
   override def copyWith(key1: String, value1: AnyValue,
                         key2: String, value2: AnyValue,
                         key3: String, value3: AnyValue): ExecutionContext = {
-    val newCtx = createClone()
-    newCtx.set(key1, value1, key2, value2, key3, value3)
-    newCtx
+    val newMap = m.clone()
+    newMap.put(key1, value1)
+    newMap.put(key2, value2)
+    newMap.put(key3, value3)
+    cloneFromMap(newMap)
   }
 
   override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
-    val newCtx = createClone()
-    newCtx.set(newEntries)
-    newCtx
+    cloneFromMap(m.clone() ++ newEntries)
   }
 
-  override def createClone(): ExecutionContext = {
-    val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
-    new MapExecutionContext(m.clone(), newCachedProperties)
-  }
+  override def createClone(): ExecutionContext = cloneFromMap(m.clone())
 
   override def -=(key: String): this.type = {
     m.remove(key)
@@ -208,4 +206,9 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   }
 
   override def getCachedPropertyAt(offset: Int): Value = fail()
+
+  private def cloneFromMap(newMap: MutableMap[String, AnyValue]): ExecutionContext = {
+    val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
+    new MapExecutionContext(newMap, newCachedProperties)
+  }
 }
