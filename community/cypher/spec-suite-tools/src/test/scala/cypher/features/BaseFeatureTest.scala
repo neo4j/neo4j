@@ -20,7 +20,7 @@
 package cypher.features
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 import java.nio.file.{FileSystems, Files, Paths}
 import java.util
 
@@ -50,6 +50,21 @@ abstract class BaseFeatureTest {
   }
 
   def allTckScenarios: Seq[Scenario] = parseClasspathFeatures(featuresPath).flatMap(_.scenarios)
+
+  // When running externally from e.g. TeamCity we will get a jar and can use the same procedure as for allTckScenarios
+  // When running locally we need to use the file system instead
+  def allAcceptanceScenarios: Seq[Scenario] = {
+    val packageURL: URL = classOf[BaseFeatureTest].getProtectionDomain.getCodeSource.getLocation
+    val resourcePath: String = "/acceptance/features"
+
+    if (packageURL.toString.contains("jar"))
+      parseClasspathFeatures(resourcePath).flatMap(_.scenarios)
+    else {
+      val featuresURI: URI = new URL(packageURL.toString + resourcePath).toURI
+      parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios) //TODO: Change this back to the following line when TCK M12 is released
+      //val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
+    }
+  }
 
   def parseClasspathFeatures(path: String): Seq[Feature] = {
     val resource = getClass.getResource(path).toURI

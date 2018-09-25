@@ -23,7 +23,7 @@
 package cypher.features
 
 import java.io.File
-import java.net.URI
+import java.net.{URI, URL}
 
 import org.junit.Assert.fail
 import org.junit.jupiter.api.Test
@@ -35,13 +35,7 @@ abstract class EnterpriseBaseAcceptanceTest extends BaseFeatureTest {
   val featureToRun = ""
   val scenarioToRun = ""
 
-  val featuresURI: URI = getClass.getResource("/acceptance/features").toURI
-
-  val scenarios: Seq[Scenario] = {
-    val all = parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios) //TODO: Change this back to the following line when TCK M12 is released
-    //val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
-    filterScenarios(all, featureToRun, scenarioToRun)
-  }
+  val scenarios: Seq[Scenario] =  filterScenarios(allAcceptanceScenarios, featureToRun, scenarioToRun)
 
   @Test
   def debugTokensNeedToBeEmpty(): Unit = {
