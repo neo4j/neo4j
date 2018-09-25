@@ -87,8 +87,6 @@ object InternalWrapping {
       NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
     case SuboptimalIndexForEndsWithQueryNotification(label, properties) =>
       NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
-    case MissingParametersNotification(names) =>
-      NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Explain with missing parameters", names.mkString("Missing parameters: ",", ","")))
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {

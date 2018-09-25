@@ -144,48 +144,37 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       checkForSchemaChanges(planContext)
 
       // If the query is not cached we want to do the full planning
-      def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
+      def createPlan(): CacheableLogicalPlan = {
         val logicalPlanState = planner.planPreparedQuery(preparedQuery, context)
         notification.LogicalPlanNotifications
           .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
           .foreach(notificationLogger.log)
-        if (missingParameterNames.nonEmpty) {
-          notificationLogger.log(MissingParametersNotification(missingParameterNames))
-        }
+
         val reusabilityState = createReusabilityState(logicalPlanState, planContext)
-        CacheableLogicalPlan(logicalPlanState, reusabilityState, shouldBeCached)
+        CacheableLogicalPlan(logicalPlanState, reusabilityState)
       }
 
-      val autoExtractParams = ValueConversion.asValues(preparedQuery.extractedParams()) // only extracted ones
-      // Filter the parameters to retain only those that are actually used in the query (or a subset of them, if not enough
-      // parameters where given in the first place)
-      val filteredParams: MapValue = params.updatedWith(autoExtractParams).filter(new BiFunction[String, AnyValue, java.lang.Boolean] {
+      // Filter the parameters to retain only those that are actually used in the query
+      val filteredParams = params.filter(new BiFunction[String, AnyValue, java.lang.Boolean] {
         override def apply(name: String, value: AnyValue): java.lang.Boolean = queryParamNames.contains(name)
       })
 
-      val enoughParametersSupplied = queryParamNames.size == filteredParams.size // this is relevant if the query has parameters
-
       val cacheableLogicalPlan =
-        // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
-        if (preParsedQuery.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied))
+        if (preParsedQuery.debugOptions.isEmpty)
           planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
                                            transactionalContext,
-                                           () => createPlan(shouldBeCached = true),
+                                           createPlan,
                                            _ => None,
                                            syntacticQuery.queryText).executableQuery
-
-        else if (!enoughParametersSupplied)
-          createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
         else
-          createPlan(shouldBeCached = false)
+          createPlan()
 
       LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
-        autoExtractParams,
+        ValueConversion.asValues(preparedQuery.extractedParams()),
         cacheableLogicalPlan.reusability,
-        context,
-        cacheableLogicalPlan.shouldBeCached)
+        context)
     }
   }
 

@@ -113,8 +113,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlanResult.extractedParams,
       buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan3_5.runtimeName),
       planState.plannerName,
-      queryType,
-      logicalPlanResult.shouldBeCached)
+      queryType)
   }
 
   private def buildCompilerInfo(logicalPlan: LogicalPlan,
@@ -162,8 +161,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         override val extractedParams: MapValue,
                                         override val compilerInfo: CompilerInfo,
                                         plannerName: PlannerName,
-                                        queryType: InternalQueryType,
-                                        override val shouldBeCached: Boolean) extends ExecutableQuery {
+                                        queryType: InternalQueryType) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
     private val resourceMonitor = kernelMonitors.newMonitor(classOf[ResourceMonitor])

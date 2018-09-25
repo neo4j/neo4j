@@ -57,6 +57,5 @@ case class LogicalPlanResult(logicalPlanState: LogicalPlanState,
                              paramNames: Seq[String],
                              extractedParams: MapValue,
                              reusability: ReusabilityState,
-                             plannerContext: PlannerContext,
-                             shouldBeCached: Boolean)
+                             plannerContext: PlannerContext)
 

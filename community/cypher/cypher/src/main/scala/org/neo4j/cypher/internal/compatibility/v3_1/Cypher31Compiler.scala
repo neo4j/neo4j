@@ -70,8 +70,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
                                 preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                                 offSet: InputPosition3_1,
                                 override val paramNames: Seq[String],
-                                override val extractedParams: MapValue,
-                                override val shouldBeCached: Boolean = true) extends ExecutableQuery {
+                                override val extractedParams: MapValue) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
