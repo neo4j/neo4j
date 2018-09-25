@@ -137,7 +137,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         {
             int numberOfSlots = descriptor.properties().length;
             Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
-            if ( storeFile != null )
+            if ( storeFile != null && fs.fileExists( storeFile ) )
             {
                 // The index file exists and is sane so use it to read header information from.
                 GBPTree.readHeader( pageCache, storeFile, new NativeIndexHeaderReader( new SpaceFillingCurveSettingsReader( settings ) ) );
@@ -209,5 +209,5 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         {
             return limitations;
         }
-    };
+    }
 }
