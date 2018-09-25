@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-public abstract class StringIndexAccessorTest extends NativeIndexAccessorTest<StringIndexKey,NativeIndexValue>
+public class StringIndexAccessorTest extends NativeIndexAccessorTest<StringIndexKey,NativeIndexValue>
 {
     @Override
     StringIndexAccessor makeAccessor() throws IOException
@@ -31,5 +31,9 @@ public abstract class StringIndexAccessorTest extends NativeIndexAccessorTest<St
         return new StringIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor, indexDescriptor );
     }
 
-    // TODO test reader unsupported index order
+    @Override
+    protected LayoutTestUtil<StringIndexKey,NativeIndexValue> createLayoutTestUtil()
+    {
+        return new StringNonUniqueLayoutTestUtil();
+    }
 }

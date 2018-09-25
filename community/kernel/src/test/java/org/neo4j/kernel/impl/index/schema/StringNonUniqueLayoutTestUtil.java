@@ -31,12 +31,6 @@ class StringNonUniqueLayoutTestUtil extends StringLayoutTestUtil
     }
 
     @Override
-    IndexLayout<StringIndexKey,NativeIndexValue> createLayout()
-    {
-        return new StringLayout();
-    }
-
-    @Override
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();

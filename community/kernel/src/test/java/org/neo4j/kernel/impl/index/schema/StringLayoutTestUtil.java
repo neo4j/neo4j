@@ -35,7 +35,7 @@ import static java.util.Arrays.copyOf;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
-abstract class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValue>
+class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValue>
 {
     StringLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
     {
@@ -51,9 +51,15 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,Native
     }
 
     @Override
+    IndexLayout<StringIndexKey,NativeIndexValue> createLayout()
+    {
+        return new StringLayout();
+    }
+
+    @Override
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
-        return generateAddUpdatesFor( STRINGS );
+        return someUpdatesWithDuplicateValues();
     }
 
     @Override

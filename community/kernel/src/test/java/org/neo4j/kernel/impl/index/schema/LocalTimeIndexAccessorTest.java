@@ -26,19 +26,19 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-public class LocalDateTimeNonUniqueIndexAccessorTest extends NativeIndexAccessorTest<LocalDateTimeIndexKey,NativeIndexValue>
+public class LocalTimeIndexAccessorTest extends NativeIndexAccessorTest<LocalTimeIndexKey,NativeIndexValue>
 {
     @Override
-    NativeIndexAccessor<LocalDateTimeIndexKey,NativeIndexValue> makeAccessor() throws IOException
+    NativeIndexAccessor<LocalTimeIndexKey,NativeIndexValue> makeAccessor() throws IOException
     {
-        TemporalIndexFiles.FileLayout<LocalDateTimeIndexKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.LOCAL_DATE_TIME );
+        TemporalIndexFiles.FileLayout<LocalTimeIndexKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.LOCAL_TIME );
         return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor );
     }
 
     @Override
-    protected LayoutTestUtil<LocalDateTimeIndexKey,NativeIndexValue> createLayoutTestUtil()
+    protected LayoutTestUtil<LocalTimeIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
-        return new LocalDateTimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
+        return new LocalTimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
+
 }

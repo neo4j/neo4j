@@ -26,20 +26,19 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-public class DurationUniqueIndexAccessorTest extends NativeIndexAccessorTest<DurationIndexKey,NativeIndexValue>
+public class TimeIndexAccessorTest extends NativeIndexAccessorTest<ZonedTimeIndexKey,NativeIndexValue>
 {
     @Override
-    NativeIndexAccessor<DurationIndexKey,NativeIndexValue> makeAccessor() throws IOException
+    NativeIndexAccessor<ZonedTimeIndexKey,NativeIndexValue> makeAccessor() throws IOException
     {
-        TemporalIndexFiles.FileLayout<DurationIndexKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
+        TemporalIndexFiles.FileLayout<ZonedTimeIndexKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
         return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor );
     }
 
     @Override
-    protected LayoutTestUtil<DurationIndexKey,NativeIndexValue> createLayoutTestUtil()
+    protected LayoutTestUtil<ZonedTimeIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>(
-                new DurationLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new TimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 
 }

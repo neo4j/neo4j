@@ -26,7 +26,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-public class DurationNonUniqueIndexAccessorTest extends NativeIndexAccessorTest<DurationIndexKey,NativeIndexValue>
+public class DurationIndexAccessorTest extends NativeIndexAccessorTest<DurationIndexKey,NativeIndexValue>
 {
     @Override
     NativeIndexAccessor<DurationIndexKey,NativeIndexValue> makeAccessor() throws IOException

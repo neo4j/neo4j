@@ -38,12 +38,17 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-public abstract class NumberIndexAccessorTest extends NativeIndexAccessorTest<NumberIndexKey,NativeIndexValue>
+public class NumberIndexAccessorTest extends NativeIndexAccessorTest<NumberIndexKey,NativeIndexValue>
 {
     @Override
     NumberIndexAccessor makeAccessor() throws IOException
     {
         return new NumberIndexAccessor( pageCache, fs, getIndexFile(), layout, immediate(), monitor, indexDescriptor );
+    }
+    @Override
+    protected LayoutTestUtil<NumberIndexKey,NativeIndexValue> createLayoutTestUtil()
+    {
+        return new NumberNonUniqueLayoutTestUtil();
     }
 
     @Test

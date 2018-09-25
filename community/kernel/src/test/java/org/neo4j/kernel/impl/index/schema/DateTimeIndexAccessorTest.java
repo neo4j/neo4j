@@ -19,14 +19,26 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import java.io.IOException;
 
-public class SpatialUniqueIndexAccessorTest extends SpatialIndexAccessorTest
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.values.storable.ValueGroup;
+
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+
+public class DateTimeIndexAccessorTest extends NativeIndexAccessorTest<ZonedDateTimeIndexKey,NativeIndexValue>
 {
     @Override
-    protected LayoutTestUtil<SpatialIndexKey,NativeIndexValue> createLayoutTestUtil()
+    NativeIndexAccessor<ZonedDateTimeIndexKey,NativeIndexValue> makeAccessor() throws IOException
     {
-        return new UniqueLayoutTestUtil<>(
-                new SpatialLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ), configuredSettings.forCRS( crs ), crs ) );
+        TemporalIndexFiles.FileLayout<ZonedDateTimeIndexKey> fileLayout =
+                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_DATE_TIME );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor );
+    }
+
+    @Override
+    protected LayoutTestUtil<ZonedDateTimeIndexKey,NativeIndexValue> createLayoutTestUtil()
+    {
+        return new DateTimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 }

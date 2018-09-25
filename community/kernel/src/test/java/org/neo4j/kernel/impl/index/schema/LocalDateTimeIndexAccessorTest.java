@@ -19,13 +19,26 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import java.io.IOException;
 
-public class SpatialNonUniqueIndexAccessorTest extends SpatialIndexAccessorTest
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.values.storable.ValueGroup;
+
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+
+public class LocalDateTimeIndexAccessorTest extends NativeIndexAccessorTest<LocalDateTimeIndexKey,NativeIndexValue>
 {
     @Override
-    protected LayoutTestUtil<SpatialIndexKey,NativeIndexValue> createLayoutTestUtil()
+    NativeIndexAccessor<LocalDateTimeIndexKey,NativeIndexValue> makeAccessor() throws IOException
     {
-        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ), configuredSettings.forCRS( crs ), crs );
+        TemporalIndexFiles.FileLayout<LocalDateTimeIndexKey> fileLayout =
+                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.LOCAL_DATE_TIME );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, immediate(), monitor, indexDescriptor );
+    }
+
+    @Override
+    protected LayoutTestUtil<LocalDateTimeIndexKey,NativeIndexValue> createLayoutTestUtil()
+    {
+        return new LocalDateTimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 }

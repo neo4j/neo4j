@@ -23,13 +23,14 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-abstract class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialIndexKey,NativeIndexValue>
+public class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialIndexKey,NativeIndexValue>
 {
     static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
@@ -42,6 +43,12 @@ abstract class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialI
         spatialFile = new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, super.getIndexFile() );
         return new SpatialIndexAccessor.PartAccessor( pageCache, fs, spatialFile.getLayoutForNewIndex(), immediate(), monitor, indexDescriptor,
                 new StandardConfiguration() );
+    }
+
+    @Override
+    protected LayoutTestUtil<SpatialIndexKey,NativeIndexValue> createLayoutTestUtil()
+    {
+        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ), configuredSettings.forCRS( crs ), crs );
     }
 
     @Override
