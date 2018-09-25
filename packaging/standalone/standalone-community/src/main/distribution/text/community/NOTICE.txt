@@ -60,6 +60,7 @@ Apache Software License, Version 2.0
   Data Mapper for Jackson
   detect-libc
   disposables
+  fastinfoset
   firebase
   forever-agent
   grpc
@@ -136,8 +137,19 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
+CDDL+GPL-1.1
+  JAXB Core
+  JAXB Runtime
+  TXW2 Runtime
+
+Common Development and Distribution License Version 1.0
+  JavaBeans(TM) Activation Framework
+
 Common Development and Distribution License Version 1.1
+  Extended StAX API
+  istack common utility code runtime
   Java Servlet API
+  jaxb-api
   jersey-core
   jersey-server
   jersey-servlet
@@ -152,6 +164,7 @@ Eclipse Public License - v 1.0
   Eclipse Collections Main Library
 
 GNU General Public License, version 2 with the Classpath Exception
+  Extended StAX API
   Java Servlet API
 
 ISC
@@ -355,6 +368,10 @@ Eclipse Collections API
 Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
+
+Extended StAX API
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
 
 Java Servlet API
   Common Development and Distribution License Version 1.1
