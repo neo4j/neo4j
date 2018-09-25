@@ -1580,6 +1580,9 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         setLongAt(offset, Some(context), value)
       case Some(RefSlot(offset, _, _)) =>
         setRefAt(offset, Some(context), value)
+      case None =>
+        // @Reviewer: does this look ok? We fall into this case when working setting temporary fields, e.g., in inner context of filter()
+        invokeSideEffect(context, method[ExecutionContext, Unit, String, AnyValue]("set"), constant(key), value)
     }
   }
 
