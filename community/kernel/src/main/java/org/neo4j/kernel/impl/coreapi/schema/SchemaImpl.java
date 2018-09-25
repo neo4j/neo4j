@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.TransientInterruptException;
 import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -191,6 +192,7 @@ public class SchemaImpl implements Schema
     {
         actions.assertInOpenTransaction();
         long timeout = System.currentTimeMillis() + unit.toMillis( duration );
+        long iteration = 0;
         do
         {
             IndexState state = getIndexState( index );
@@ -203,10 +205,11 @@ public class SchemaImpl implements Schema
             default:
                 try
                 {
-                    Thread.sleep( 100 );
+                    Thread.sleep( iteration++ < 100 ? 10 : 100 );
                 }
                 catch ( InterruptedException e )
-                {   // What to do?
+                {
+                    throw new TransientInterruptException( "Interrupted while waiting for index to come online: " + index, e );
                 }
                 break;
             }
