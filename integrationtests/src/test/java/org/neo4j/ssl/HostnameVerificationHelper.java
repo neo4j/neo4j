@@ -60,7 +60,7 @@ public class HostnameVerificationHelper
                 .withSetting( SSL_POLICY_CONFIG.public_certificate, validCertificatePath.toString() )
 
                 .withSetting( SSL_POLICY_CONFIG.tls_versions, "TLSv1.2" )
-                .withSetting( SSL_POLICY_CONFIG.ciphers, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA" )
+                .withSetting( SSL_POLICY_CONFIG.ciphers, "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA" )
 
                 .withSetting( SSL_POLICY_CONFIG.client_auth, "none" )
                 .withSetting( SSL_POLICY_CONFIG.allow_key_generation, "false" )
