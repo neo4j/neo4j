@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
@@ -49,12 +48,6 @@ class UniqueLayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE ext
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return delegate.someUpdatesNoDuplicateValues();
-    }
-
-    @Override
-    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
-    {
-        return delegate.rangeQuery( from, fromInclusive, to, toInclusive );
     }
 
     @Override

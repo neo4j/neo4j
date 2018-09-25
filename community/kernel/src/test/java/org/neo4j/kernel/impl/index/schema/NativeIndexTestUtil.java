@@ -56,7 +56,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<KEY>,VALUE extends NativeIndexValue>
+public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
 {
     static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
 
@@ -135,10 +135,10 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
     {
         KEY lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
-        lowest.initValueAsLowest( ValueGroup.UNKNOWN );
+        lowest.initValueAsLowest( 0, ValueGroup.UNKNOWN );
         KEY highest = layout.newKey();
         highest.initialize( Long.MAX_VALUE );
-        highest.initValueAsHighest( ValueGroup.UNKNOWN );
+        highest.initValueAsHighest( 0, ValueGroup.UNKNOWN );
         return tree.seek( lowest, highest );
     }
 

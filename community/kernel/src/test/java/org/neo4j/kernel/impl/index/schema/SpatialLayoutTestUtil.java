@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -77,12 +76,6 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,Native
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
-    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
-    {
-        return IndexQuery.range( 0, from , fromInclusive, to, toInclusive );
     }
 
     @Override

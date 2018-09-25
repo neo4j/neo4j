@@ -25,7 +25,6 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.LocalTimeValue;
@@ -60,12 +59,6 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeIndexKey,Na
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
-    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
-    {
-        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
     }
 
     @Override

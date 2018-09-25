@@ -39,7 +39,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-abstract class LayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE extends NativeIndexValue>
+abstract class LayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
     private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
@@ -65,7 +65,10 @@ abstract class LayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE 
         return 0.1;
     }
 
-    abstract IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive );
+    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
+    {
+        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
+    }
 
     abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
 
