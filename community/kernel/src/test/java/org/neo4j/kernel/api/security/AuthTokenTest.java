@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import org.neo4j.string.UTF8;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -35,7 +37,7 @@ public class AuthTokenTest
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
+        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
         assertThat("Should have no realm", token.get(AuthToken.REALM_KEY), nullValue());
     }
@@ -45,7 +47,7 @@ public class AuthTokenTest
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret", "my realm" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
+        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
         assertThat("Should have correct realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
     }
@@ -55,7 +57,7 @@ public class AuthTokenTest
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "basic" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
+        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
         assertThat("Should have correctno realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
     }
@@ -65,7 +67,7 @@ public class AuthTokenTest
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
+        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo("my scheme"));
         assertThat("Should have correct realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
     }
@@ -75,7 +77,7 @@ public class AuthTokenTest
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme", map("a", "A", "b", "B") );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
-        assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
+        assertThat( "Should have correct password", token.get( AuthToken.CREDENTIALS ), equalTo( UTF8.encode( "my secret" ) ) );
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo("my scheme"));
         assertThat("Should have correct realm", token.get(AuthToken.REALM_KEY), equalTo( "my realm" ));
         assertThat("Should have correct parameters", token.get(AuthToken.PARAMETERS), equalTo( map("a", "A", "b", "B") ));
