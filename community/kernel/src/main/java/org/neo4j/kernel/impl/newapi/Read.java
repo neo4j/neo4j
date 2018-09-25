@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -95,27 +94,8 @@ abstract class Read implements TxStateHolder,
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index, false );
         cursorImpl.setRead( this, null );
-        IndexProgressor.NodeValueClient withValues = injectValues( cursorImpl, needsValues, index );
-        IndexProgressor.NodeValueClient withFullPrecision = injectFullValuePrecision( withValues, query, reader );
+        IndexProgressor.NodeValueClient withFullPrecision = injectFullValuePrecision( cursorImpl, query, reader );
         reader.query( withFullPrecision, indexOrder, needsValues, query );
-    }
-
-    private IndexProgressor.NodeValueClient injectValues( IndexProgressor.NodeValueClient cursor,
-                                                          boolean needsValues,
-                                                          IndexReference index )
-    {
-        if ( KernelIndexAugmentation.shouldInjectValues( index, needsValues ) )
-        {
-            return new NodeValueInjector( cursor,
-                                          cursors.allocateNodeCursor(),
-                                          cursors.allocatePropertyCursor(),
-                                          this,
-                                          index.properties() );
-        }
-        else
-        {
-            return cursor;
-        }
     }
 
     private IndexProgressor.NodeValueClient injectFullValuePrecision( IndexProgressor.NodeValueClient cursor,
@@ -234,8 +214,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this, null );
-        IndexProgressor.NodeValueClient withValues = injectValues( cursorImpl, needsValues, index );
-        indexReader( index, false ).query( withValues, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
+        indexReader( index, false ).query( cursorImpl, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )
