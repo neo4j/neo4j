@@ -624,7 +624,7 @@ public class AllStoreHolder extends Read
         if ( ktx.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
+                    ktx.txState().indexDiffSetsBySchema( descriptor.schema() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
