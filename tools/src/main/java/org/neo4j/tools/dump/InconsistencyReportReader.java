@@ -27,8 +27,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-import org.neo4j.consistency.RecordType;
-import org.neo4j.tools.dump.inconsistency.Inconsistencies;
+import org.neo4j.tools.dump.InconsistentRecords.Type;
 
 /**
  * Reads CC inconsistency reports. Example of entry:
@@ -50,9 +49,9 @@ import org.neo4j.tools.dump.inconsistency.Inconsistencies;
 public class InconsistencyReportReader
 {
     private static final String INCONSISTENT_WITH = "Inconsistent with: ";
-    private final Inconsistencies inconsistencies;
+    private final InconsistentRecords inconsistencies;
 
-    public InconsistencyReportReader( Inconsistencies inconsistencies )
+    public InconsistencyReportReader( InconsistentRecords inconsistencies )
     {
         this.inconsistencies = inconsistencies;
     }
@@ -68,8 +67,8 @@ public class InconsistencyReportReader
     public void read( BufferedReader bufferedReader ) throws IOException
     {
         String line = bufferedReader.readLine();
-        RecordType inconsistentRecordType;
-        RecordType inconsistentWithRecordType;
+        Type inconsistentRecordType;
+        Type inconsistentWithRecordType;
         long inconsistentRecordId;
         long inconsistentWithRecordId;
 
@@ -86,7 +85,13 @@ public class InconsistencyReportReader
                 }
                 line = line.trim();
                 inconsistentRecordType = toRecordType( entityType( line ) );
-                inconsistentRecordId = id( line );
+                if ( inconsistentRecordType == null )
+                {
+                    continue;
+                }
+
+                inconsistentRecordId = inconsistentRecordType.extractId( line );
+                inconsistencies.reportInconsistency( inconsistentRecordType, inconsistentRecordId );
 
                 // Then get the Inconsistent With line:
                 line = bufferedReader.readLine();
@@ -100,10 +105,11 @@ public class InconsistencyReportReader
                 {
                     line = line.substring( INCONSISTENT_WITH.length() ).trim();
                     inconsistentWithRecordType = toRecordType( entityType( line ) );
-                    inconsistentWithRecordId = id( line );
-                    inconsistencies.reportInconsistency(
-                            inconsistentRecordType, inconsistentRecordId,
-                            inconsistentWithRecordType, inconsistentWithRecordId );
+                    if ( inconsistentWithRecordType != null )
+                    {
+                        inconsistentWithRecordId = inconsistentWithRecordType.extractId( line );
+                        inconsistencies.reportInconsistency( inconsistentWithRecordType, inconsistentWithRecordId );
+                    }
                     line = bufferedReader.readLine(); // Prepare a line for the next iteration of the loop.
                 }
             }
@@ -116,7 +122,7 @@ public class InconsistencyReportReader
         }
     }
 
-    private RecordType toRecordType( String entityType )
+    private Type toRecordType( String entityType )
     {
         if ( entityType == null )
         {
@@ -127,60 +133,23 @@ public class InconsistencyReportReader
         switch ( entityType )
         {
         case "Relationship":
-            return RecordType.RELATIONSHIP;
+            return Type.RELATIONSHIP;
         case "Node":
-            return RecordType.NODE;
+            return Type.NODE;
         case "Property":
-            return RecordType.PROPERTY;
+            return Type.PROPERTY;
         case "RelationshipGroup":
-            return RecordType.RELATIONSHIP_GROUP;
+            return Type.RELATIONSHIP_GROUP;
         case "IndexRule":
-            return RecordType.SCHEMA;
+            return Type.SCHEMA_INDEX;
         case "IndexEntry":
-            return RecordType.NODE;
+            return Type.NODE;
+        case "NodeLabelRange":
+            return Type.NODE_LABEL_RANGE;
         default:
             // it's OK, we just haven't implemented support for this yet
             return null;
         }
-    }
-
-    private long id( String line )
-    {
-        int bracket = line.indexOf( '[' );
-        if ( bracket > -1 )
-        {
-            int separator = min( getSeparatorIndex( ',', line, bracket ),
-                    getSeparatorIndex( ';', line, bracket ),
-                    getSeparatorIndex( ']', line, bracket ) );
-            int equally = line.indexOf( '=', bracket );
-            int startPosition = (isNotPlainId( bracket, separator, equally ) ? equally : bracket) + 1;
-            if ( separator > -1 )
-            {
-                return Long.parseLong( line.substring( startPosition, separator ) );
-            }
-        }
-        return -1;
-    }
-
-    private static int min( int... values )
-    {
-        int min = Integer.MAX_VALUE;
-        for ( int value : values )
-        {
-            min = Math.min( min, value );
-        }
-        return min;
-    }
-
-    private int getSeparatorIndex( char character, String line, int bracket )
-    {
-        int index = line.indexOf( character, bracket );
-        return index >= 0 ? index : Integer.MAX_VALUE;
-    }
-
-    private boolean isNotPlainId( int bracket, int comma, int equally )
-    {
-        return (equally > bracket) && (equally < comma);
     }
 
     private String entityType( String line )
