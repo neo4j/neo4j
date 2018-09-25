@@ -404,6 +404,11 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Duration> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
 
+    @Description( "The catch up protocol times out if the given duration elapses with no network activity. " +
+            "Every message received by the client from the server extends the time out duration." )
+    public static final Setting<Duration> catch_up_client_inactivity_timeout =
+            setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "10m" );
+
     @Description( "Maximum retry time per request during store copy. Regular store files and indexes are downloaded in separate requests during store copy." +
             " This configures the maximum time failed requests are allowed to resend. " )
     public static final Setting<Duration> store_copy_max_retry_time_per_request =

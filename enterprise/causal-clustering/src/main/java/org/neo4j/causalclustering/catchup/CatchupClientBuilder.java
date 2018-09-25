@@ -29,6 +29,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
@@ -61,6 +62,7 @@ public class CatchupClientBuilder
     private ApplicationSupportedProtocols catchupProtocols = new ApplicationSupportedProtocols( CATCHUP, emptyList() );
     private Collection<ModifierSupportedProtocols> modifierProtocols = emptyList();
     private Clock clock = systemClock();
+    private long inactivityTimeoutMillis = TimeUnit.SECONDS.toMillis( 10 );
     private boolean useNativeTransport = true;
 
     public CatchupClientBuilder()
@@ -100,6 +102,12 @@ public class CatchupClientBuilder
     public CatchupClientBuilder handshakeTimeout( Duration handshakeTimeout )
     {
         this.handshakeTimeout = handshakeTimeout;
+        return this;
+    }
+
+    public CatchupClientBuilder inactivityTimeoutMillis( long inactivityTimeoutMillis )
+    {
+        this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         return this;
     }
 
@@ -143,6 +151,6 @@ public class CatchupClientBuilder
                     handshakeTimeout, debugLogProvider, userLogProvider );
         };
 
-        return new CatchUpClient( debugLogProvider, clock, channelInitializer, useNativeTransport );
+        return new CatchUpClient( debugLogProvider, clock, inactivityTimeoutMillis, channelInitializer, useNativeTransport );
     }
 }

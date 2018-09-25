@@ -45,13 +45,16 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 import static org.neo4j.causalclustering.net.BootstrapConfiguration.clientConfig;
 
 public class CatchUpClient extends LifecycleAdapter
 {
     private final Log log;
     private final Clock clock;
+    private final long inactivityTimeoutMillis;
     private final Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer;
 
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
@@ -59,11 +62,13 @@ public class CatchUpClient extends LifecycleAdapter
 
     private EventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( LogProvider logProvider, Clock clock, Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer,
+    public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis,
+            Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer,
             boolean useNativeTransport )
     {
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
+        this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         this.channelInitializer = channelInitializer;
         this.bootstrapConfiguration = clientConfig( useNativeTransport );
     }
@@ -80,7 +85,6 @@ public class CatchUpClient extends LifecycleAdapter
             channel.setResponseHandler( responseHandler, future );
             future.whenComplete( new ReleaseOnComplete( channel ) );
             channel.send( request );
-            return future.get();
         }
         catch ( Exception e )
         {
@@ -90,6 +94,8 @@ public class CatchUpClient extends LifecycleAdapter
             }
             throw new CatchUpClientException( "Failed to send request", e );
         }
+        String operation = format( "Completed exceptionally when executing operation %s on %s ", request, upstream );
+        return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }
 
     private class ReleaseOnComplete implements BiConsumer<Object,Throwable>

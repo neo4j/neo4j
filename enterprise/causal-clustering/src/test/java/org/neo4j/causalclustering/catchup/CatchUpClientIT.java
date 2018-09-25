@@ -29,19 +29,21 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.channels.ClosedChannelException;
 import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -51,27 +53,29 @@ import org.neo4j.ports.allocation.PortAuthority;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CatchUpClientIT
+class CatchUpClientIT
 {
 
     private LifeSupport lifeSupport;
+    private int inactivityTimeoutMillis = 10000;
 
-    @Before
-    public void initLifeCycles()
+    @BeforeEach
+    void initLifeCycles()
     {
         lifeSupport = new LifeSupport();
     }
 
-    @After
-    public void shutdownLifeSupport()
+    @AfterEach
+    void shutdownLifeSupport()
     {
         lifeSupport.stop();
         lifeSupport.shutdown();
     }
 
     @Test
-    public void shouldCloseHandlerIfChannelIsClosedInClient() throws LifecycleException
+    void shouldCloseHandlerIfChannelIsClosedInClient() throws LifecycleException
     {
         // given
         String hostname = "localhost";
@@ -95,7 +99,7 @@ public class CatchUpClientIT
     }
 
     @Test
-    public void shouldCloseHandlerIfChannelIsClosedOnServer()
+    void shouldCloseHandlerIfChannelIsClosedOnServer()
     {
         // given
         String hostname = "localhost";
@@ -114,8 +118,35 @@ public class CatchUpClientIT
         lifeSupport.start();
 
         // then
-        assertClosedChannelException( hostname, port, emptyClient );
+        CatchUpClientException catchUpClientException = assertThrows( CatchUpClientException.class,
+                () -> emptyClient.makeBlockingRequest( new AdvertisedSocketAddress( hostname, port ), new GetStoreIdRequest(), neverCompletingAdaptor() ) );
+        assertEquals( ClosedChannelException.class, Exceptions.rootCause( catchUpClientException ).getClass() );
         assertTrue( wasClosedByServer.get() );
+    }
+
+    @Test
+    void shouldTimeoutDueToInactivity()
+    {
+        // given
+        String hostname = "localhost";
+        int port = PortAuthority.allocatePort();
+        ListenSocketAddress listenSocketAddress = new ListenSocketAddress( hostname, port );
+        inactivityTimeoutMillis = 0;
+
+        Server closingChannelServer = catchupServer( listenSocketAddress );
+        CatchUpClient emptyClient = emptyClient();
+
+        lifeSupport.add( closingChannelServer );
+        lifeSupport.add( emptyClient );
+
+        // when
+        lifeSupport.init();
+        lifeSupport.start();
+
+        // then
+        CatchUpClientException catchUpClientException = assertThrows( CatchUpClientException.class,
+                () -> emptyClient.makeBlockingRequest( new AdvertisedSocketAddress( hostname, port ), new GetStoreIdRequest(), neverCompletingAdaptor() ) );
+        assertEquals( TimeoutException.class, Exceptions.rootCause( catchUpClientException ).getClass() );
     }
 
     private CatchUpClient emptyClient()
@@ -179,7 +210,8 @@ public class CatchUpClientIT
 
     private CatchUpClient catchupClient( ChannelHandler... channelHandlers )
     {
-        return new CatchUpClient( NullLogProvider.getInstance(), Clock.systemUTC(), catchUpResponseHandler -> new ChannelInitializer<SocketChannel>()
+        return new CatchUpClient( NullLogProvider.getInstance(), Clock.systemUTC(), inactivityTimeoutMillis,
+                catchUpResponseHandler -> new ChannelInitializer<SocketChannel>()
         {
             @Override
             protected void initChannel( SocketChannel ch )
