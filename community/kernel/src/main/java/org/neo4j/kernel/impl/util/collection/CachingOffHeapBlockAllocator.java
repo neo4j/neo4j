@@ -20,9 +20,8 @@
 
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.map.mutable.primitive.SynchronizedLongObjectMap;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -32,32 +31,28 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.helpers.Numbers.log2floor;
+import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * Block allocator that caches freed blocks matching following criteria:
  * <ul>
- *     <li>Aligned size (without alignment padding) must be power of 2
- *     <li>Unaligned size (with alignment padding) must be less or equal to {@link #maxCacheableBlockSize}
+ *     <li>Size must be power of 2
+ *     <li>Size must be less or equal to {@link #maxCacheableBlockSize}
  * </ul>
- *
- * This class can store at most {@link #maxCachedBlocks} blocks of each cacheable size.
  *
  * This class is thread safe.
  */
 public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
 {
-    private final SynchronizedLongObjectMap<BlockingQueue<MemoryBlock>> pool = new SynchronizedLongObjectMap<>( new LongObjectHashMap<>() );
     /**
-     * Max size of cached blocks including alignment padding.
+     * Max size of cached blocks, a power of 2
      */
     private final long maxCacheableBlockSize;
-    /**
-     * Max number of blocks of each size to store.
-     */
-    private final int maxCachedBlocks;
     private volatile boolean released;
+    private final BlockingQueue<MemoryBlock>[] caches;
 
     @VisibleForTesting
     public CachingOffHeapBlockAllocator()
@@ -65,24 +60,36 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         this( ByteUnit.kibiBytes( 512 ), 128 );
     }
 
+    /**
+     * @param maxCacheableBlockSize Max size of cached blocks including alignment padding, must be a power of 2
+     * @param maxCachedBlocks Max number of blocks of each size to store
+     */
     public CachingOffHeapBlockAllocator( long maxCacheableBlockSize, int maxCachedBlocks )
     {
+        requirePositive( maxCachedBlocks );
         this.maxCacheableBlockSize = requirePowerOfTwo( maxCacheableBlockSize );
-        this.maxCachedBlocks = requireNonNegative( maxCachedBlocks );
+
+        final int numOfCaches = log2floor( maxCacheableBlockSize ) + 1;
+        //noinspection unchecked
+        this.caches = new BlockingQueue[numOfCaches];
+        for ( int i = 0; i < caches.length; i++ )
+        {
+            caches[i] = new ArrayBlockingQueue<>( maxCachedBlocks );
+        }
     }
 
     @Override
     public MemoryBlock allocate( long size, MemoryAllocationTracker tracker )
     {
         requirePositive( size );
-        if ( size > maxCacheableBlockSize || Long.bitCount( size ) > 1 )
+        checkState( !released, "Allocator is already released" );
+        if ( !isCacheable( size ) )
         {
             return allocateNew( size, tracker );
         }
 
-        final BlockingQueue<MemoryBlock> cached = pool.getIfAbsentPut( size, () -> new ArrayBlockingQueue<>( maxCachedBlocks ) );
-
-        MemoryBlock block = cached.poll();
+        final BlockingQueue<MemoryBlock> cache = caches[log2floor( size )];
+        MemoryBlock block = cache.poll();
         if ( block == null )
         {
             block = allocateNew( size, tracker );
@@ -98,14 +105,14 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     @Override
     public void free( MemoryBlock block, MemoryAllocationTracker tracker )
     {
-        if ( released || block.size > maxCacheableBlockSize || Long.bitCount( block.size ) > 1 )
+        if ( released || !isCacheable( block.size ) )
         {
             doFree( block, tracker );
             return;
         }
 
-        final BlockingQueue<MemoryBlock> cached = pool.getIfAbsentPut( block.size, () -> new ArrayBlockingQueue<>( maxCachedBlocks ) );
-        if ( cached.offer( block ) )
+        final BlockingQueue<MemoryBlock> cache = caches[log2floor( block.size )];
+        if ( cache.offer( block ) )
         {
             tracker.deallocated( block.unalignedSize );
         }
@@ -119,11 +126,13 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     public void release()
     {
         released = true;
-        pool.forEach( cached ->
+        final List<MemoryBlock> blocks = new ArrayList<>();
+        for ( final BlockingQueue<MemoryBlock> cache : caches )
         {
-            cached.forEach( block -> UnsafeUtil.free( block.unalignedAddr, block.unalignedSize ) );
-        } );
-        pool.clear();
+            cache.drainTo( blocks );
+            blocks.forEach( block -> UnsafeUtil.free( block.unalignedAddr, block.unalignedSize ) );
+            blocks.clear();
+        }
     }
 
     @VisibleForTesting
@@ -140,5 +149,10 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         final long addr = UnsafeUtil.alignedMemory( unalignedAddr, Long.BYTES );
         UnsafeUtil.setMemory( unalignedAddr, unalignedSize, (byte) 0 );
         return new MemoryBlock( addr, size, unalignedAddr, unalignedSize );
+    }
+
+    private boolean isCacheable( long size )
+    {
+        return isPowerOfTwo( size ) && size <= maxCacheableBlockSize;
     }
 }
