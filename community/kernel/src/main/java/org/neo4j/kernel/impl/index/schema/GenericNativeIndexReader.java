@@ -102,8 +102,6 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
                     CompositeGenericKey treeKeyTo = layout.newKey();
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
                     boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
-
-                    // TODO needsValues==true could be problematic, no?
                     startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, indexOrder, needFiltering, needsValues );
                 }
             }
