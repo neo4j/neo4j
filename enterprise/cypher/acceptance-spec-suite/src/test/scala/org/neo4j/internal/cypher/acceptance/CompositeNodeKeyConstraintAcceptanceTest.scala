@@ -190,7 +190,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       Configs.AbsolutelyAll - Configs.Before3_3AndRule,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
-      List(("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%s" +
+      List(("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name) IS NODE KEY:%s" +
         "Both Node(%d) and Node(%d) have the label `Person` and property `name` = 'A'").format(String.format("%n"), a, b))
     )
   }

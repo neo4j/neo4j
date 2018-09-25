@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -180,12 +181,14 @@ public class BuiltInProceduresTest
         // Given
         givenUniqueConstraint( "User", "name" );
         givenNodePropExistenceConstraint( "User", "name" );
-
+        givenNodeKeys( "User", "name" );
         // When/Then
         assertThat( call( "db.constraints" ),
-                contains(
+                containsInAnyOrder(
                         record( "CONSTRAINT ON ( user:User ) ASSERT exists(user.name)" ),
-                        record( "CONSTRAINT ON ( user:User ) ASSERT user.name IS UNIQUE" ) ) );
+                        record( "CONSTRAINT ON ( user:User ) ASSERT user.name IS UNIQUE" ),
+                        record( "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NODE KEY" )
+                ) );
     }
 
     @Test
@@ -452,6 +455,18 @@ public class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         constraints.add( ConstraintDescriptorFactory.existsForLabel( labelId, propId ) );
+    }
+
+    private void givenNodeKeys( String label, String...props )
+    {
+        int labelId = token( label, labels );
+        int[] propIds = new int[props.length];
+        for ( int i = 0; i < propIds.length; i++ )
+        {
+            propIds[i] = token( props[i], propKeys );
+        }
+
+        constraints.add( ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propIds ) );
     }
 
     private void givenPropertyKeys( String... keys )

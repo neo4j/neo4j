@@ -52,11 +52,16 @@ public abstract class IndexBackedConstraintDescriptor extends ConstraintDescript
     {
         String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
         String nodeName = labelName.toLowerCase();
-        String properties = SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds(), nodeName + ".",
-                schema().getPropertyIds().length > 1 );
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS %s", nodeName, labelName, properties,
+
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS %s", nodeName, labelName,
+                formatProperties( schema.getPropertyIds(), tokenNameLookup, nodeName ),
                 constraintTypeText() );
     }
 
     protected abstract String constraintTypeText();
+
+    protected String formatProperties( int[] propertyIds, TokenNameLookup tokenNameLookup, String nodeName )
+    {
+        return SchemaUtil.niceProperties( tokenNameLookup, propertyIds, nodeName + ".", propertyIds.length > 1 );
+    }
 }

@@ -20,7 +20,9 @@
 package org.neo4j.kernel.api.schema.constraints;
 
 
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
@@ -33,5 +35,10 @@ public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
     protected String constraintTypeText()
     {
         return "NODE KEY";
+    }
+
+    protected String formatProperties( int[] propertyIds, TokenNameLookup tokenNameLookup, String nodeName )
+    {
+        return SchemaUtil.niceProperties( tokenNameLookup, propertyIds, nodeName + ".", true );
     }
 }

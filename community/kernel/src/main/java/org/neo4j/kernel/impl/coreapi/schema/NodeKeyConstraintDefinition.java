@@ -48,7 +48,7 @@ public class NodeKeyConstraintDefinition extends NodeConstraintDefinition
     @Override
     public String toString()
     {
-        return format( "ON (%1$s:%2$s) ASSERT %3$s IS NODE KEY",
+        return format( "ON (%1$s:%2$s) ASSERT (%3$s) IS NODE KEY",
                 label.name().toLowerCase(), label.name(), propertyText() );
     }
 }

@@ -154,7 +154,7 @@ public class PECListingIT extends AbstractShellIT
                 "  ON :Person\\(surname\\) ONLINE \\(for uniqueness constraint\\)",
                 "Constraints",
                 "  ON \\(person:Person\\) ASSERT person.name IS UNIQUE",
-                "  ON \\(person:Person\\) ASSERT person.surname IS NODE KEY",
+                "  ON \\(person:Person\\) ASSERT \\(person.surname\\) IS NODE KEY",
                 "  ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
                 "  ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
