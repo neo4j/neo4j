@@ -1098,7 +1098,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         falseValue)), Seq(f), Seq.empty, Set.empty))
 
     case HasLabels(nodeExpression, labels)  if labels.nonEmpty =>
-      for (node <- compileExpression(nodeExpression)) yield {
+      for (node <- internalCompileExpression(nodeExpression, currentContext)) yield {
         val tokensAndNames = labels.map(l => field[Int](s"label${l.name}", constant(-1)) -> l.name)
 
         val init = tokensAndNames.map {
