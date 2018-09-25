@@ -482,7 +482,7 @@ public abstract class Expression extends ExpressionTemplate
         }
         else
         {
-            throw new IllegalArgumentException( "Not a valid constant!" );
+            throw new IllegalArgumentException( "Not a valid constant: " + value );
         }
 
         return new Expression( reference )
