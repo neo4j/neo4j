@@ -108,13 +108,13 @@ class GeometryType extends Type
     void putValue( PageCursor cursor, GenericKeyState state )
     {
         putCrs( cursor, state.long1, state.long2, state.long3 );
-        put( cursor, state.long0, state.long3, state.long1Array, 0 );
+        putPoint( cursor, state.long0, state.long3, state.long1Array, 0 );
     }
 
     @Override
     boolean readValue( PageCursor cursor, int size, GenericKeyState into )
     {
-        return readCrs( cursor, into ) && read( cursor, into );
+        return readCrs( cursor, into ) && readPoint( cursor, into );
     }
 
     @Override
@@ -164,7 +164,7 @@ class GeometryType extends Type
         }
     }
 
-    static void put( PageCursor cursor, long long0, long long3, long[] long1Array, int long1ArrayOffset )
+    static void putPoint( PageCursor cursor, long long0, long long3, long[] long1Array, int long1ArrayOffset )
     {
         assertHasCoordinates( long3, long1Array );
         cursor.putLong( long0 );
@@ -207,7 +207,7 @@ class GeometryType extends Type
         return true;
     }
 
-    static boolean read( PageCursor cursor, GenericKeyState into )
+    static boolean readPoint( PageCursor cursor, GenericKeyState into )
     {
         into.long0 = cursor.getLong();
         // into.long3 have just been read by readCrs, before this method is called

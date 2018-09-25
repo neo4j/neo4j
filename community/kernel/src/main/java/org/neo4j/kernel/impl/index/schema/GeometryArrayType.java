@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -34,14 +35,23 @@ import static java.lang.String.format;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.assertHasCoordinates;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.dimensions;
-import static org.neo4j.kernel.impl.index.schema.GeometryType.put;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.putCrs;
+import static org.neo4j.kernel.impl.index.schema.GeometryType.putPoint;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.readCrs;
 
+/**
+ * Handles {@link PointValue[]}.
+ *
+ * Note about lazy initialization of {@link GenericKeyState} data structures: a point type is special in that it contains a {@link CoordinateReferenceSystem},
+ * which dictates how much space it will occupy. When serializing a {@link PointArray} into {@link GenericKeyState} (via the logic in this class)
+ * the {@link CoordinateReferenceSystem} isn't known at initialization, where only the type and array length is known.
+ * This is why some state is initialize lazily when observing the first point in the array.
+ */
 class GeometryArrayType extends AbstractArrayType<PointValue>
 {
     // Affected key state:
     // long0Array (rawValueBits)
+    // long1Array (coordinates)
     // long1 (coordinate reference system tableId)
     // long2 (coordinate reference system code)
 
@@ -81,8 +91,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         key.long0Array = ensureBigEnough( key.long0Array, length );
 
         // Since this method is called when serializing a PointValue into the key state, the CRS and number of dimensions
-        // are unknown at this point. Instead key.long1Array will be initialized lazily upon observing the first array item,
-        // because that's when we first will know that information.
+        // are unknown at this point. Read more about why lazy initialization is required in the class-level javadoc.
         if ( length == 0 && key.long1Array == null )
         {
             // There's this special case where we're initializing an empty geometry array and so the long1Array
@@ -110,7 +119,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     {
         putCrs( cursor, state.long1, state.long2, state.long3 );
         int dimensions = dimensions( state );
-        putArray( cursor, state, ( c, k, i ) -> put( c, state.long0Array[i], state.long3, state.long1Array, i * dimensions ) );
+        putArray( cursor, state, ( c, k, i ) -> putPoint( c, k.long0Array[i], k.long3, k.long1Array, i * dimensions ) );
     }
 
     @Override
@@ -133,8 +142,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         int dimensions = dimensions( into );
         if ( into.currentArrayOffset == 0 )
         {
-            // Initialize the coordinates array lazily because we don't know the dimension count
-            // when initializeArray is called, only afterwards when the header have been read.
+            // Read more about why lazy initialization is required in the class-level javadoc.
             into.long1Array = ensureBigEnough( into.long1Array, dimensions * into.arrayLength );
         }
         for ( int i = 0, offset = into.currentArrayOffset * dimensions; i < dimensions; i++ )
@@ -150,6 +158,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         state.long0Array[offset] = derivedSpaceFillingCurveValue;
         if ( offset == 0 )
         {
+            // Read more about why lazy initialization is required in the class-level javadoc.
             int dimensions = coordinates.length;
             state.long1Array = ensureBigEnough( state.long1Array, dimensions * state.arrayLength );
             state.long3 = dimensions;
