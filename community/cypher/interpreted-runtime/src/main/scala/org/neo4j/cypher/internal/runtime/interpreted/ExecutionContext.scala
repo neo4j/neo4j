@@ -37,7 +37,7 @@ object ExecutionContext {
     context
   }
 
-  def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty): MapExecutionContext = MapExecutionContext(m, MutableMaps.empty)
+  def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty): MapExecutionContext = new MapExecutionContext(m, null)
 }
 
 trait ExecutionContext extends MutableMap[String, AnyValue] {
@@ -73,7 +73,7 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def isNull(key: String): Boolean
 }
 
-case class MapExecutionContext(m: MutableMap[String, AnyValue], cachedProperties: MutableMap[CachedNodeProperty, Value])
+class MapExecutionContext(private val m: MutableMap[String, AnyValue], private var cachedProperties: MutableMap[CachedNodeProperty, Value] = null)
   extends ExecutionContext {
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = fail()
@@ -95,9 +95,15 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue], cachedProperties
   override def size: Int = m.size
 
   override def mergeWith(other: ExecutionContext): Unit = other match {
-    case MapExecutionContext(otherMap, otherCached) =>
-      m ++= otherMap
-      cachedProperties ++= otherCached
+    case otherMapCtx: MapExecutionContext =>
+      m ++= otherMapCtx.m
+      if (cachedProperties == null) {
+        cachedProperties = otherMapCtx.cachedProperties
+      } else if (otherMapCtx.cachedProperties != null) {
+        cachedProperties ++= otherMapCtx.cachedProperties
+      } else {
+        //otherMapCtx.cachedProperties is null so do nothing
+      }
     case _ => fail()
   }
 
@@ -157,7 +163,10 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue], cachedProperties
     newCtx
   }
 
-  override def createClone(): ExecutionContext = MapExecutionContext(m.clone(), cachedProperties.clone())
+  override def createClone(): ExecutionContext = {
+    val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
+    new MapExecutionContext(m.clone(), newCachedProperties)
+  }
 
   override def -=(key: String): this.type = {
     m.remove(key)
@@ -182,11 +191,21 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue], cachedProperties
       case _ => false
     }
 
-  override def setCachedProperty(key: CachedNodeProperty, value: Value): Unit = cachedProperties.put(key, value)
+  override def setCachedProperty(key: CachedNodeProperty, value: Value): Unit = {
+    if (cachedProperties == null) {
+      cachedProperties = MutableMap.empty
+    }
+    cachedProperties.put(key, value)
+  }
 
   override def setCachedPropertyAt(offset: Int, value: Value): Unit = fail()
 
-  override def getCachedProperty(key: CachedNodeProperty): Value = cachedProperties(key)
+  override def getCachedProperty(key: CachedNodeProperty): Value = {
+    if (cachedProperties == null) {
+      throw new NoSuchElementException("key not found: " + key)
+    }
+    cachedProperties(key)
+  }
 
   override def getCachedPropertyAt(offset: Int): Value = fail()
 }

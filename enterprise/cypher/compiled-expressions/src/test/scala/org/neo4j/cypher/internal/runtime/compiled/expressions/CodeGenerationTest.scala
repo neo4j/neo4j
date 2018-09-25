@@ -1586,7 +1586,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("extract function local access only") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
 
     //When, extract(bar IN ["a", "aa", "aaa"] | size(bar))
     val compiled = compile(extract("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
@@ -1598,7 +1598,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("extract function accessing outer scope") {
     //Given
-    val context = MapExecutionContext(mutable.Map("foo" -> intValue(10)), mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map("foo" -> intValue(10)), mutable.Map.empty)
 
     //When, extract(bar IN [1, 2, 3] | bar + foo)
     val compiled = compile(extract("bar", listOf(literalInt(1), literalInt(2), literalInt(3)),
@@ -1610,7 +1610,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("extract on null") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
 
     //When, extract(bar IN ["a", "aa", "aaa"] | size(bar)
     val compiled = compile(extract("bar", noValue,
@@ -1622,7 +1622,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("reduce function local access only") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
 
     //When, reduce(count = 0, bar IN ["a", "aa", "aaa"] | count + size(bar))
     val compiled = compile(reduce("count", literalInt(0), "bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
@@ -1634,7 +1634,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("reduce function accessing outer scope") {
     //Given
-    val context = MapExecutionContext(mutable.Map("foo" -> intValue(10)), mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map("foo" -> intValue(10)), mutable.Map.empty)
 
     //When, reduce(count = 0, bar IN [1, 2, 3] | count + bar + foo)
     val compiled = compile(reduce("count", literalInt(0),  "bar", listOf(literalInt(1), literalInt(2), literalInt(3)),
@@ -1646,7 +1646,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("reduce on null") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
 
     //When, reduce(count = 0, bar IN ["a", "aa", "aaa"] | count + size(bar))
     val compiled = compile(reduce("count", literalInt(0), "bar", noValue,
