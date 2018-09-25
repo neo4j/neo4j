@@ -1101,7 +1101,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public long getTransactionDataRevision()
     {
-        return hasDataChanges() ? 0 : txState.getDataRevision();
+        return hasDataChanges() ? txState.getDataRevision() : 0;
     }
 
     public static class Statistics
