@@ -30,11 +30,11 @@ import io.netty.channel.kqueue.KQueueSocketChannel;
 
 import java.util.concurrent.ThreadFactory;
 
-public abstract class KQueueBootsrapConfig<CHANNEL extends Channel> implements BootstrapConfiguration<CHANNEL>
+public abstract class KQueueBootstrapConfig<CHANNEL extends Channel> implements BootstrapConfiguration<CHANNEL>
 {
-    public static KQueueBootsrapConfig<KQueueServerSocketChannel> kQueueServerConfig()
+    public static KQueueBootstrapConfig<KQueueServerSocketChannel> kQueueServerConfig()
     {
-        return new KQueueBootsrapConfig<KQueueServerSocketChannel>()
+        return new KQueueBootstrapConfig<KQueueServerSocketChannel>()
         {
             @Override
             public Class<KQueueServerSocketChannel> channelClass()
@@ -44,9 +44,9 @@ public abstract class KQueueBootsrapConfig<CHANNEL extends Channel> implements B
         };
     }
 
-    public static KQueueBootsrapConfig<KQueueSocketChannel> kQueueClientConfig()
+    public static KQueueBootstrapConfig<KQueueSocketChannel> kQueueClientConfig()
     {
-        return new KQueueBootsrapConfig<KQueueSocketChannel>()
+        return new KQueueBootstrapConfig<KQueueSocketChannel>()
         {
             @Override
             public Class<KQueueSocketChannel> channelClass()

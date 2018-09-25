@@ -43,7 +43,7 @@ public interface BootstrapConfiguration<TYPE extends Channel>
             }
             else if ( KQueue.isAvailable() )
             {
-                return KQueueBootsrapConfig.kQueueServerConfig();
+                return KQueueBootstrapConfig.kQueueServerConfig();
             }
         }
         return NioBootstrapConfig.nioServerConfig();
@@ -59,7 +59,7 @@ public interface BootstrapConfiguration<TYPE extends Channel>
             }
             else if ( KQueue.isAvailable() )
             {
-                return KQueueBootsrapConfig.kQueueClientConfig();
+                return KQueueBootstrapConfig.kQueueClientConfig();
             }
         }
         return NioBootstrapConfig.nioClientConfig();
