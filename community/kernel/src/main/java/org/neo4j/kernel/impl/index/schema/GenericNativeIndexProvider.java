@@ -187,17 +187,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
         @Override
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            for ( ValueCategory valueCategory : valueCategories )
-            {
-                if ( valueCategory == ValueCategory.GEOMETRY || valueCategory == ValueCategory.GEOMETRY_ARRAY )
-                {
-                    return IndexValueCapability.NO;
-                }
-                if ( valueCategory == ValueCategory.UNKNOWN )
-                {
-                    return IndexValueCapability.PARTIAL;
-                }
-            }
             return IndexValueCapability.YES;
         }
 
