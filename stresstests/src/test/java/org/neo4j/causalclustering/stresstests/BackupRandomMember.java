@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Optional;
 
@@ -32,6 +33,7 @@ import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
@@ -42,6 +44,7 @@ class BackupRandomMember extends RepeatOnRandomMember
 {
     private final File baseBackupDir;
     private final Log log;
+    private final FileSystemAbstraction fs;
     private long backupNumber;
     private long successfulBackups;
 
@@ -49,11 +52,12 @@ class BackupRandomMember extends RepeatOnRandomMember
     {
         super( control, resources );
         this.baseBackupDir = resources.backupDir();
+        this.fs = resources.fileSystem();
         this.log = resources.logProvider().getLog( getClass() );
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember member ) throws IncorrectUsage, CommandFailed
+    protected void doWorkOnMember( ClusterMember member ) throws IncorrectUsage, CommandFailed, IOException
     {
         try
         {
@@ -71,6 +75,7 @@ class BackupRandomMember extends RepeatOnRandomMember
 
             log.info( String.format( "Created backup %s from %s", backupName, member ) );
             successfulBackups++;
+            fs.deleteRecursively( new File( baseBackupDir, backupName ) );
         }
         catch ( CommandFailed e )
         {
