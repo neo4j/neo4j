@@ -72,28 +72,32 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     public void deprecatedToInt()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one", containsItem( deprecatedFeatureWarning ) ) );
+                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one",
+                                                          containsItem( deprecatedFeatureWarning ) ) );
     }
 
     @Test
     public void deprecatedUpper()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one", containsItem( deprecatedFeatureWarning ) ) );
+                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one",
+                                                          containsItem( deprecatedFeatureWarning ) ) );
     }
 
     @Test
     public void deprecatedLower()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one", containsItem( deprecatedFeatureWarning ) ) );
+                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one",
+                                                          containsItem( deprecatedFeatureWarning ) ) );
     }
 
     @Test
     public void deprecatedRels()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r", containsItem( deprecatedFeatureWarning ) ) );
+                .forEach( version -> assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r",
+                                                          containsItem( deprecatedFeatureWarning ) ) );
     }
 
     @Test
@@ -102,8 +106,10 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
         Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
                                                          {
-                                                             assertNotifications( version + "explain CALL oldProc()", containsItem( deprecatedProcedureWarning ) );
-                                                             assertNotifications( version + "explain CALL oldProc() RETURN 1", containsItem( deprecatedProcedureWarning ) );
+                                                             assertNotifications( version + "explain CALL oldProc()",
+                                                                                  containsItem( deprecatedProcedureWarning ) );
+                                                             assertNotifications( version + "explain CALL oldProc() RETURN 1",
+                                                                                  containsItem( deprecatedProcedureWarning ) );
                                                          } );
     }
 
@@ -287,37 +293,40 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     private Matcher<Notification> deprecatedFeatureWarning =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated function." ),
-                          any( InputPosition.class ), SeverityLevel.WARNING );
+            deprecation( "The query used a deprecated function." );
 
     private Matcher<Notification> deprecatedRulePlanner =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The rule planner, which was used to plan this query, is deprecated and will be discontinued soon. If you did not explicitly choose the rule planner, you should try to change your query so that the rule planner is not used" ),
-                          any( InputPosition.class ), SeverityLevel.WARNING );
+            deprecation( "The rule planner, which was used to plan this query, is deprecated and will " +
+                         "be discontinued soon. If you did not explicitly choose the rule planner, " +
+                         "you should try to change your query so that the rule planner is not used" );
 
     private Matcher<Notification> deprecatedCompiledRuntime =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The compiled runtime, which was requested to execute this query, is deprecated and will be removed in a future release." ),
-                          any( InputPosition.class ), SeverityLevel.WARNING );
+            deprecation( "The compiled runtime, which was requested to execute this query, is deprecated " +
+                         "and will be removed in a future release." );
 
-    private Matcher<Notification> deprecatedStartWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                                                                         containsString( "START has been deprecated and will be removed in a future version. " ), any( InputPosition.class ), SeverityLevel.WARNING );
+    private Matcher<Notification> deprecatedStartWarning =
+            deprecation( "START has been deprecated and will be removed in a future version. " );
 
-    private Matcher<Notification> deprecatedCreateUnique = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                                                                         containsString( "CREATE UNIQUE is deprecated and will be removed in a future version." ), any( InputPosition.class ), SeverityLevel.WARNING );
+    private Matcher<Notification> deprecatedCreateUnique =
+            deprecation( "CREATE UNIQUE is deprecated and will be removed in a future version." );
 
     private Matcher<Notification> deprecatedProcedureWarning =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated procedure." ),
-                          any( InputPosition.class ), SeverityLevel.WARNING );
+            deprecation( "The query used a deprecated procedure." );
 
     private Matcher<Notification> deprecatedProcedureReturnFieldWarning =
-            notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated field from a procedure." ),
-                          any( InputPosition.class ), SeverityLevel.WARNING );
+            deprecation( "The query used a deprecated field from a procedure." );
 
-    private Matcher<Notification> deprecatedBindingWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                                                                             containsString( "Binding relationships to a list in a variable length pattern is deprecated." ), any( InputPosition.class ),
-                                                                             SeverityLevel.WARNING );
+    private Matcher<Notification> deprecatedBindingWarning =
+            deprecation( "Binding relationships to a list in a variable length pattern is deprecated." );
 
-    private Matcher<Notification> deprecatedSeparatorWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString(
-            "The semantics of using colon in the separation of alternative relationship " +
-                    "types in conjunction with the use of variable binding, inlined property " +
-                    "predicates, or variable length will change in a future version." ), any( InputPosition.class ), SeverityLevel.WARNING );
+    private Matcher<Notification> deprecatedSeparatorWarning =
+            deprecation( "The semantics of using colon in the separation of alternative relationship " +
+                         "types in conjunction with the use of variable binding, inlined property " +
+                         "predicates, or variable length will change in a future version." );
+
+    private Matcher<Notification> deprecation( String message )
+    {
+        return notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                             containsString( message ), any( InputPosition.class ), SeverityLevel.WARNING );
+    }
 }
