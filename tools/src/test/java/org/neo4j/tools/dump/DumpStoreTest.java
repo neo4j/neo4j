@@ -22,21 +22,26 @@
  */
 package org.neo4j.tools.dump;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static org.junit.Assert.assertEquals;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DumpStoreTest
+@ExtendWith( SuppressOutputExtension.class )
+class DumpStoreTest
 {
     @Test
-    public void dumpStoreShouldPrintBufferWithContent()
+    void dumpStoreShouldPrintBufferWithContent()
     {
         // Given
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -56,11 +61,11 @@ public class DumpStoreTest
         dumpStore.dumpHex( record, buffer, 2, 4 );
 
         // Then
-        assertEquals( String.format( "@ 0x00000008: 00 01 02 03  04 05 06 07  08 09%n" ), outStream.toString() );
+        assertEquals( format( "@ 0x00000008: 00 01 02 03  04 05 06 07  08 09%n" ), outStream.toString() );
     }
 
     @Test
-    public void dumpStoreShouldPrintShorterMessageForAllZeroBuffer()
+    void dumpStoreShouldPrintShorterMessageForAllZeroBuffer()
     {
         // Given
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -74,6 +79,14 @@ public class DumpStoreTest
         dumpStore.dumpHex( record, buffer, 2, 4 );
 
         // Then
-        assertEquals( String.format( ": all zeros @ 0x8 - 0xc%n" ), outStream.toString() );
+        assertEquals( format( ": all zeros @ 0x8 - 0xc%n" ), outStream.toString() );
+    }
+
+    @Test
+    void canDumpNeoStoreFileContent() throws Exception
+    {
+        URL neostore = getClass().getClassLoader().getResource( "neostore" );
+        String neostoreFile = neostore.getFile();
+        DumpStore.main( neostoreFile );
     }
 }

@@ -21,8 +21,11 @@ package org.neo4j.io.layout;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.util.Preconditions;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Enumeration of storage implementation specific files for particular database.
@@ -100,5 +103,26 @@ public enum DatabaseFile
     boolean hasIdFile()
     {
         return hasIdFile;
+    }
+
+    /**
+     * Determine database file for provided file name.
+     *
+     * @param name - database file name to map
+     * @return an {@link Optional} that wraps the matching database file that matches to the specified name,
+     * or {@link Optional#empty()} if the given file name does not match to any of database files.
+     */
+    public static Optional<DatabaseFile> fileOf( String name )
+    {
+        requireNonNull( name );
+        DatabaseFile[] databaseFiles = DatabaseFile.values();
+        for ( DatabaseFile databaseFile : databaseFiles )
+        {
+            if ( databaseFile.names.contains( name ) )
+            {
+                return Optional.of( databaseFile );
+            }
+        }
+        return Optional.empty();
     }
 }

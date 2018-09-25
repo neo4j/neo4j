@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
@@ -102,7 +103,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
               PageCache pageCache = createPageCache( fs, createInitialisedScheduler() ) )
         {
             final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( DatabaseLayout.of( file ),
+            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( DatabaseLayout.of( file.getParentFile() ),
                     Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider(), EmptyVersionContextSupplier.EMPTY );
 
             for ( String arg : args )
@@ -142,9 +143,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
                 throw new IllegalArgumentException( "No such file: " + fileName );
             }
         }
-        DatabaseFile databaseFile = DatabaseFile.valueOf( file.getName() );
-        StoreType storeType = StoreType.typeOf( databaseFile ).orElseThrow(
-                () -> new IllegalArgumentException( "Not a store file: " + fileName ) );
+        DatabaseFile databaseFile = DatabaseFile.fileOf( file.getName() ).orElseThrow( illegalArgumentExceptionSupplier( fileName ) );
+        StoreType storeType = StoreType.typeOf( databaseFile ).orElseThrow( illegalArgumentExceptionSupplier( fileName ) );
         try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStores( storeType ) )
         {
             switch ( storeType )
@@ -180,6 +180,11 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
                 throw new IllegalArgumentException( "Unsupported store type: " + storeType );
             }
         }
+    }
+
+    private static Supplier<IllegalArgumentException> illegalArgumentExceptionSupplier( String fileName )
+    {
+        return () -> new IllegalArgumentException( "Not a store file: " + fileName );
     }
 
     private static void dumpMetaDataStore( NeoStores neoStores )
