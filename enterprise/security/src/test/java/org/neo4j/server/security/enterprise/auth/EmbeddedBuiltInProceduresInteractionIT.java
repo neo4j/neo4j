@@ -27,7 +27,7 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
@@ -118,7 +118,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         return new EnterpriseLoginContext()
         {
             @Override
-            public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
+            public EnterpriseSecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
             {
                 return new EnterpriseSecurityContext( subject(), inner.mode(), Collections.emptySet(), false );
             }

@@ -28,8 +28,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.function.IntPredicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,7 +69,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         return neoShiroSubject;
     }
 
-    private StandardAccessMode mode( Function<String, Integer> tokenLookup )
+    private StandardAccessMode mode( ToIntFunction<String> tokenLookup )
     {
         boolean isAuthenticated = shiroSubject.isAuthenticated();
         return new StandardAccessMode(
@@ -84,7 +84,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
+    public EnterpriseSecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
     {
         StandardAccessMode mode = mode( propertyIdLookup );
         return new EnterpriseSecurityContext( neoShiroSubject, mode, mode.roles, isAdmin() );
@@ -109,7 +109,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 .collect( Collectors.toSet() );
     }
 
-    private IntPredicate queryForPropertyPermissions( Function<String, Integer> tokenLookup )
+    private IntPredicate queryForPropertyPermissions( ToIntFunction<String> tokenLookup )
     {
         return authManager.getPropertyPermissions( roles(), tokenLookup );
     }

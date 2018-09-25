@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Clock;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -51,7 +51,7 @@ public class EnterpriseSecurityContextDescriptionTest
             new RateLimitedAuthenticationStrategy( Clock.systemUTC(), Config.defaults() ) );
 
     private EnterpriseUserManager manager;
-    private Function<String, Integer> token = s -> -1;
+    private final ToIntFunction<String> token = s -> -1;
 
     @Before
     public void setUp() throws Throwable

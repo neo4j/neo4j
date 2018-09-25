@@ -38,7 +38,7 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -48,12 +48,12 @@ import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
-import org.neo4j.server.security.auth.LegacyCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.auth.LegacyCredential;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
@@ -81,7 +81,7 @@ public class InternalFlatFileRealmTest
 
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
-    private Function<String, Integer> token = s -> -1;
+    private final ToIntFunction<String> token = s -> -1;
 
     @Before
     public void setup() throws Throwable

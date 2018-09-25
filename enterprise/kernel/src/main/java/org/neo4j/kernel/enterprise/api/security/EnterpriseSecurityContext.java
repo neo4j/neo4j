@@ -24,7 +24,7 @@ package org.neo4j.kernel.enterprise.api.security;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -52,7 +52,7 @@ public class EnterpriseSecurityContext extends SecurityContext
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
+    public EnterpriseSecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
     {
         return this;
     }

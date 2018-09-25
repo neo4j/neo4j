@@ -35,7 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -197,7 +197,7 @@ public class TransactionEventsIT
             }
 
             @Override
-            public SecurityContext authorize( Function<String,Integer> propertyIdLookup, String dbName )
+            public SecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
             {
                 return new SecurityContext( subject, AccessMode.Static.WRITE );
             }

@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -66,12 +66,11 @@ public class LdapCachingTest
     private TestRealm testRealm;
     private FakeTicker fakeTicker;
 
-    private Function<String, Integer> token;
+    private final ToIntFunction<String> token = s -> -1;
 
     @Before
     public void setup() throws Throwable
     {
-        token = s -> -1;
         SecurityLog securityLog = mock( SecurityLog.class );
         InternalFlatFileRealm internalFlatFileRealm =
             new InternalFlatFileRealm(
@@ -98,7 +97,7 @@ public class LdapCachingTest
         authManager.getUserManager().newUser( "mats", "456", false );
     }
 
-    private Config getLdapConfig()
+    private static Config getLdapConfig()
     {
         return Config.defaults( stringMap(
                 SecuritySettings.native_authentication_enabled.name(), "false",

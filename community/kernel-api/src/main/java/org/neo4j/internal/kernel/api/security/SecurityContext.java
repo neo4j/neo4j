@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
@@ -62,7 +62,7 @@ public class SecurityContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Function<String, Integer> propertyIdLookup, String dbName )
+    public SecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
     {
         return this;
     }
